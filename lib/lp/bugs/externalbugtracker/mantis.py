@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Mantis ExternalBugTracker utility."""
@@ -10,20 +10,32 @@ import cgi
 import csv
 import urllib
 import urllib2
-
-from BeautifulSoup import BeautifulSoup, Comment, SoupStrainer
 from urlparse import urlunparse
 
-from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.webapp.url import urlparse
+from BeautifulSoup import (
+    BeautifulSoup,
+    Comment,
+    SoupStrainer,
+    )
 
+from canonical.launchpad.webapp.url import urlparse
 from lp.bugs.externalbugtracker import (
-    BugNotFound, BugTrackerConnectError, BugWatchUpdateError,
-    BugWatchUpdateWarning, ExternalBugTracker, InvalidBugId, LookupTree,
-    UnknownRemoteStatusError, UnparseableBugData)
+    BugNotFound,
+    BugTrackerConnectError,
+    BugWatchUpdateError,
+    ExternalBugTracker,
+    InvalidBugId,
+    LookupTree,
+    UnknownRemoteStatusError,
+    UnparsableBugData,
+    )
 from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
-from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
+from lp.services.propertycache import cachedproperty
 
 
 class MantisLoginHandler(urllib2.HTTPRedirectHandler):
@@ -37,10 +49,13 @@ class MantisLoginHandler(urllib2.HTTPRedirectHandler):
            https://bugtrack.alsa-project.org/alsa-bug/view.php?id=3301
 
       2. Mantis redirects us to:
-           .../alsa-bug/login_page.php?return=%2Falsa-bug%2Fview.php%3Fid%3D3301
+           .../alsa-bug/login_page.php?
+                 return=%2Falsa-bug%2Fview.php%3Fid%3D3301
 
       3. We notice this, rewrite the query, and skip to login.php:
-           .../alsa-bug/login.php?return=%2Falsa-bug%2Fview.php%3Fid%3D3301&username=guest&password=guest
+           .../alsa-bug/login.php?
+                 return=%2Falsa-bug%2Fview.php%3Fid%3D3301&
+                 username=guest&password=guest
 
       4. Mantis accepts our credentials then redirects us to the bug
          view page via a cookie test page (login_cookie_test.php)
@@ -60,22 +75,21 @@ class MantisLoginHandler(urllib2.HTTPRedirectHandler):
             query = cgi.parse_qs(query, True)
             query['username'] = query['password'] = ['guest']
             if 'return' not in query:
-                raise BugWatchUpdateWarning(
-                    "Mantis redirected us to the login page "
-                    "but did not set a return path.")
+                raise BugTrackerConnectError(
+                    url, ("Mantis redirected us to the login page "
+                          "but did not set a return path."))
 
             query = urllib.urlencode(query, True)
             url = urlunparse(
                 (scheme, host, path, params, query, fragment))
 
-        # XXX: Gavin Panella 2007-08-28: Previous versions of the Mantis
-        # external bug tracker fetched login_anon.php in addition to the
-        # login.php method above, but none of the Mantis installations tested
-        # actually needed this. For example, the ALSA bugtracker actually
-        # issues an error "Your account may be disabled" when
-        # accessing this page. For now it's better to *not* try this
-        # page because we may end up annoying admins with spurious
-        # login attempts.
+        # Previous versions of the Mantis external bug tracker fetched
+        # login_anon.php in addition to the login.php method above, but none
+        # of the Mantis installations tested actually needed this. For
+        # example, the ALSA bugtracker actually issues an error "Your account
+        # may be disabled" when accessing this page. For now it's better to
+        # *not* try this page because we may end up annoying admins with
+        # spurious login attempts.
 
         return url
 
@@ -259,7 +273,7 @@ class Mantis(ExternalBugTracker):
         csv_data = self.csv_data.strip().split("\r\n0")
 
         if not csv_data:
-            raise UnparseableBugData("Empty CSV for %s" % self.baseurl)
+            raise UnparsableBugData("Empty CSV for %s" % self.baseurl)
 
         # Clean out stray, unquoted newlines inside csv_data to avoid
         # the CSV module blowing up.
@@ -271,11 +285,11 @@ class Mantis(ExternalBugTracker):
         # ordering and even different columns in the export.
         self.headers = [h.lower() for h in csv_data.pop(0).split(",")]
         if len(self.headers) < 2:
-            raise UnparseableBugData("CSV header mangled: %r" % self.headers)
+            raise UnparsableBugData("CSV header mangled: %r" % self.headers)
 
         if not csv_data:
             # A file with a header and no bugs is also useless.
-            raise UnparseableBugData("CSV for %s contained no bugs!"
+            raise UnparsableBugData("CSV for %s contained no bugs!"
                                      % self.baseurl)
 
         try:
@@ -291,8 +305,7 @@ class Mantis(ExternalBugTracker):
             return bugs
 
         except csv.Error, error:
-            raise UnparseableBugData(
-                "Exception parsing CSV file: %s." % error)
+            raise UnparsableBugData("Exception parsing CSV file: %s." % error)
 
     def _processCSVBugLine(self, bug_line):
         """Processes a single line of the CSV.
@@ -364,18 +377,16 @@ class Mantis(ExternalBugTracker):
             text=lambda node: (node.strip() == key
                                and not isinstance(node, Comment)))
         if key_node is None:
-            raise UnparseableBugData(
-                "Key %r not found." % (key,))
+            raise UnparsableBugData("Key %r not found." % (key,))
 
         value_cell = key_node.findNext('td')
         if value_cell is None:
-            raise UnparseableBugData(
+            raise UnparsableBugData(
                 "Value cell for key %r not found." % (key,))
 
         value_node = value_cell.string
         if value_node is None:
-            raise UnparseableBugData(
-                "Value for key %r not found." % (key,))
+            raise UnparsableBugData("Value for key %r not found." % (key,))
 
         return value_node.strip()
 
@@ -399,39 +410,35 @@ class Mantis(ExternalBugTracker):
             text=lambda node: (node.strip() == key
                                and not isinstance(node, Comment)))
         if key_node is None:
-            raise UnparseableBugData(
-                "Key %r not found." % (key,))
+            raise UnparsableBugData("Key %r not found." % (key,))
 
         key_cell = key_node.parent
         if key_cell is None:
-            raise UnparseableBugData(
-                "Cell for key %r not found." % (key,))
+            raise UnparsableBugData("Cell for key %r not found." % (key,))
 
         key_row = key_cell.parent
         if key_row is None:
-            raise UnparseableBugData(
-                "Row for key %r not found." % (key,))
+            raise UnparsableBugData("Row for key %r not found." % (key,))
 
         try:
             key_pos = key_row.findAll('td').index(key_cell)
         except ValueError:
-            raise UnparseableBugData(
+            raise UnparsableBugData(
                 "Key cell in row for key %r not found." % (key,))
 
         value_row = key_row.findNextSibling('tr')
         if value_row is None:
-            raise UnparseableBugData(
+            raise UnparsableBugData(
                 "Value row for key %r not found." % (key,))
 
         value_cell = value_row.findAll('td')[key_pos]
         if value_cell is None:
-            raise UnparseableBugData(
+            raise UnparsableBugData(
                 "Value cell for key %r not found." % (key,))
 
         value_node = value_cell.string
         if value_node is None:
-            raise UnparseableBugData(
-                "Value for key %r not found." % (key,))
+            raise UnparsableBugData("Value for key %r not found." % (key,))
 
         return value_node.strip()
 

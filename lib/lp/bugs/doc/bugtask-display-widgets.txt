@@ -13,8 +13,8 @@ This widget is used to display the assignee of a bug task. It displays
 the assignee's browser name, with a link to his person page, and with a
 person icon in front of the name.
 
-    >>> from canonical.widgets.bugtask import AssigneeDisplayWidget
-    >>> from canonical.launchpad.interfaces import IBugSet, IBugTask
+    >>> from lp.bugs.browser.widgets.bugtask import AssigneeDisplayWidget
+    >>> from lp.bugs.interfaces.bug import IBugSet, IBugTask
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> firefox_bugtask = bug_one.bugtasks[0]
     >>> firefox_bugtask.assignee.displayname
@@ -30,7 +30,7 @@ person icon in front of the name.
 If we would want to display a different value than the real assignee,
 we can use setRenderedValue()
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> assignee_widget.setRenderedValue(foo_bar)
     >>> print assignee_widget()
@@ -66,7 +66,7 @@ This widget is used for displaying DBItem attributes of the bug task,
 like status and importance. It displays the title of the item
 in a span with the appropriate css class:
 
-    >>> from canonical.widgets.bugtask import DBItemDisplayWidget
+    >>> from lp.bugs.browser.widgets.bugtask import DBItemDisplayWidget
     >>> firefox_bugtask.status.title
     'New'
     >>> status_field = IBugTask['status'].bind(firefox_bugtask)
@@ -86,7 +86,7 @@ If the value is None, a dash is displayed:
 
 We can set a specific value to be displayed using setRenderedValue():
 
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> status_widget.setRenderedValue(BugTaskStatus.CONFIRMED)
     >>> print status_widget()
     <span class="statusCONFIRMED">Confirmed</span>

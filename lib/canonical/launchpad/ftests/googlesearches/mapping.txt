@@ -20,3 +20,5 @@
 
 /cse?client=google-csbe&cx=ABCDEF2323&ie=utf8&num=20&oe=utf8&output=xml_no_dtd&q=no-meaningful&start=0 googlesearchservice-no-meaningful-results.xml
 
+# This stub service is also used to impersonate the Blog feed
+/blog-feed blog.launchpad.net-feed.xml

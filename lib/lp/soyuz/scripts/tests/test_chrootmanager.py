@@ -1,23 +1,25 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ChrootManager facilities tests."""
 
 __metaclass__ = type
 
-from unittest import TestCase, TestLoader
 import os
 import re
 import tempfile
+from unittest import TestCase
 
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.scripts.ftpmaster import (
-    ChrootManager, ChrootManagerError)
-from canonical.testing import LaunchpadZopelessLayer
+    ChrootManager,
+    ChrootManagerError,
+    )
 
 
 class TestChrootManager(TestCase):
@@ -157,7 +159,3 @@ class TestChrootManager(TestCase):
 
         self.assertRaises(
             ChrootManagerError, chroot_manager.add)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

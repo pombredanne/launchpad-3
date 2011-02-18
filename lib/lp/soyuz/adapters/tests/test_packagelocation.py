@@ -7,12 +7,16 @@ import unittest
 
 from zope.component import getUtility
 
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.soyuz.adapters.packagelocation import (
-    PackageLocationError, build_package_location)
-from lp.soyuz.interfaces.archive import ArchivePurpose
+    build_package_location,
+    PackageLocationError,
+    )
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import TestCaseWithFactory
-from canonical.testing import LaunchpadZopelessLayer
+from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
+
 
 class TestPackageLocation(TestCaseWithFactory):
     """Test the `PackageLocation` class."""
@@ -20,10 +24,11 @@ class TestPackageLocation(TestCaseWithFactory):
 
     def getPackageLocation(self, distribution_name='ubuntu', suite=None,
                            purpose=None, person_name=None,
-                           archive_name=None):
+                           archive_name=None, packageset_names=None):
         """Use a helper method to setup a `PackageLocation` object."""
         return build_package_location(
-            distribution_name, suite, purpose, person_name, archive_name)
+            distribution_name, suite, purpose, person_name, archive_name,
+            packageset_names=packageset_names)
 
     def testSetupLocationForCOPY(self):
         """`PackageLocation` for COPY archives."""
@@ -33,7 +38,8 @@ class TestPackageLocation(TestCaseWithFactory):
         returned_location = self.factory.makeCopyArchiveLocation(
             distribution=ubuntu, name='now-comes-the-mystery',
             owner=self.factory.makePerson(name='mysteryman'))
-        copy_archive = returned_location.archive
+        copy_archive = remove_security_proxy_and_shout_at_engineer(
+            returned_location).archive
 
         # Now use the created copy archive to test the build_package_location
         # helper (called via getPackageLocation):
@@ -45,6 +51,7 @@ class TestPackageLocation(TestCaseWithFactory):
         self.assertEqual(location.pocket.name, 'RELEASE')
         self.assertEqual(location.archive.displayname,
                          'Copy archive now-comes-the-mystery for Mysteryman')
+        self.assertEqual([], location.packagesets)
 
     def testSetupLocationForPRIMARY(self):
         """`PackageLocation` for PRIMARY archives."""
@@ -54,6 +61,7 @@ class TestPackageLocation(TestCaseWithFactory):
         self.assertEqual(location.pocket.name, 'RELEASE')
         self.assertEqual(location.archive.displayname,
                          'Primary Archive for Ubuntu Linux')
+        self.assertEqual([], location.packagesets)
 
     def testSetupLocationForPPA(self):
         """`PackageLocation` for PPA archives."""
@@ -65,6 +73,7 @@ class TestPackageLocation(TestCaseWithFactory):
         self.assertEqual(location.pocket.name, 'RELEASE')
         self.assertEqual(location.archive.displayname,
                          'PPA for Celso Providelo')
+        self.assertEqual([], location.packagesets)
 
     def testSetupLocationForPARTNER(self):
         """`PackageLocation` for PARTNER archives."""
@@ -74,6 +83,16 @@ class TestPackageLocation(TestCaseWithFactory):
         self.assertEqual(location.pocket.name, 'RELEASE')
         self.assertEqual(location.archive.displayname,
                          'Partner Archive for Ubuntu Linux')
+        self.assertEqual([], location.packagesets)
+
+    def testSetupLocationWithPackagesets(self):
+        packageset_name1 = u"foo-packageset"
+        packageset_name2 = u"bar-packageset"
+        packageset1 = self.factory.makePackageset(name=packageset_name1)
+        packageset2 = self.factory.makePackageset(name=packageset_name2)
+        location = self.getPackageLocation(
+            packageset_names=[packageset_name1, packageset_name2])
+        self.assertEqual([packageset1, packageset2], location.packagesets)
 
     def testSetupLocationUnknownDistribution(self):
         """`PackageLocationError` is raised on unknown distribution."""
@@ -114,6 +133,24 @@ class TestPackageLocation(TestCaseWithFactory):
             self.getPackageLocation,
             distribution_name='debian',
             purpose=ArchivePurpose.PARTNER)
+
+    def test_build_package_location_when_packageset_unknown(self):
+        """`PackageLocationError` is raised on unknown packageset."""
+        self.assertRaises(
+            PackageLocationError,
+            self.getPackageLocation,
+            distribution_name='debian',
+            packageset_names=[u"unknown"])
+
+    def test_build_package_location_when_one_packageset_unknown(self):
+        """Test that with one of two packagesets unknown."""
+        packageset_name = u"foo-packageset"
+        self.factory.makePackageset(name=packageset_name)
+        self.assertRaises(
+            PackageLocationError,
+            self.getPackageLocation,
+            distribution_name='debian',
+            packageset_names=[packageset_name, u"unknown"])
 
     def testSetupLocationPPANotMatchingDistribution(self):
         """`PackageLocationError` is raised when PPA does not match the
@@ -167,6 +204,18 @@ class TestPackageLocation(TestCaseWithFactory):
             distribution_name='ubuntu', purpose=ArchivePurpose.PARTNER)
         self.assertNotEqual(location_ubuntu_partner, location_cprov_ppa)
 
+    def testComparePackagesets(self):
+        location_ubuntu_hoary = self.getPackageLocation()
+        location_ubuntu_hoary_again = self.getPackageLocation()
+        packageset = self.factory.makePackageset()
+        location_ubuntu_hoary.packagesets = [packageset]
+        self.assertNotEqual(
+            location_ubuntu_hoary, location_ubuntu_hoary_again)
+
+        location_ubuntu_hoary_again.packagesets = [packageset]
+        self.assertEqual(
+            location_ubuntu_hoary, location_ubuntu_hoary_again)
+
     def testRepresentation(self):
         """Check if PackageLocation is represented correctly."""
         location_ubuntu_hoary = self.getPackageLocation()
@@ -203,6 +252,14 @@ class TestPackageLocation(TestCaseWithFactory):
         self.assertEqual(
             str(location_ubuntu_partner),
             'Partner Archive for Ubuntu Linux: hoary-RELEASE')
+
+        self.factory.makePackageset(name=u"foo-packageset")
+        location_ubuntu_packageset = self.getPackageLocation(
+            packageset_names=[u"foo-packageset"])
+        self.assertEqual(
+            str(location_ubuntu_packageset),
+            'Primary Archive for Ubuntu Linux: '
+            'hoary-RELEASE [foo-packageset]')
 
 
 def test_suite():

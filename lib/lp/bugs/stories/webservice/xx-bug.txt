@@ -18,6 +18,7 @@ At the top level we provide a collection of bugs.
   15
   >>> bug_entries = sorted(bugs['entries'], key=itemgetter('id'))
   >>> pprint_entry(bug_entries[0])
+  activity_collection_link: u'http://.../bugs/11/activity'
   attachments_collection_link: u'http://.../bugs/11/attachments'
   bug_tasks_collection_link: u'http://.../bugs/11/bug_tasks'
   bug_watches_collection_link: u'http://.../bugs/11/bug_watches'
@@ -52,6 +53,7 @@ At the top level we provide a collection of bugs.
   users_affected_with_dupes_collection_link: u'http://.../bugs/11/users_affected_with_dupes'
   users_unaffected_collection_link: u'http://.../bugs/11/users_unaffected'
   users_unaffected_count: 0
+  web_link: u'http://bugs.../bugs/11'
   who_made_private_link: None
 
 Bugs are indexed by number beneath the top-level collection.
@@ -115,8 +117,8 @@ Distribution or a DistributionSourcePackage.
 Activity is recorded and notifications are sent for newly created
 bugs.
 
-    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.model.bugnotification import BugNotification
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> from zope.component import getUtility
 
@@ -210,7 +212,7 @@ the web UI. It is impossible, for example, to create circular relationships.
   ...       webservice.getAbsoluteUrl('/bugs/5'), 'application/json',
   ...       dumps(dict(
   ...           duplicate_of_link=webservice.getAbsoluteUrl('/bugs/16'))))
-  HTTP/1.1 417 Expectation Failed
+  HTTP/1.1 400 Bad Request
   ...
   Bug 16 is already a duplicate of bug 5. You
   can only mark a bug report as duplicate of one that
@@ -238,6 +240,7 @@ Each bug has a collection of messages.
   resource_type_link: u'http://.../#message'
   self_link: u'http://.../firefox/+bug/5/comments/0'
   subject: u'Firefox install instructions should be complete'
+  web_link: u'http://bugs.../firefox/+bug/5/comments/0'
 
 The messages are stored beneath the bug-specific collection. Their
 URLs are based on their position with respect to the
@@ -282,6 +285,7 @@ We can add a new message to a bug by calling the newMessage method.
   resource_type_link: u'http://api.launchpad.dev/beta/#message'
   self_link: u'http://api.launchpad.dev/beta/firefox/+bug/5/comments/1'
   subject: u'A new message'
+  web_link: u'...'
 
 We don't have to submit a subject when we add a new message.
 
@@ -300,6 +304,7 @@ We don't have to submit a subject when we add a new message.
   ...
   self_link: u'http://api.launchpad.dev/beta/firefox/+bug/5/comments/2'
   subject: u'Re: Firefox install instructions should be complete'
+  web_link: u'...'
 
 
 Bug tasks
@@ -327,6 +332,7 @@ data in a bug task is derived from the bug.
   date_fix_committed: None
   date_fix_released: None
   date_in_progress: None
+  date_incomplete: None
   date_left_closed: None
   date_left_new: None
   date_triaged: None
@@ -341,6 +347,7 @@ data in a bug task is derived from the bug.
   status: u'Confirmed'
   target_link: u'http://api.../debian/+source/mozilla-firefox'
   title: u'Bug #1 in mozilla-firefox (Debian): "Firefox does not support SVG"'
+  web_link: u'http://bugs.../debian/+source/mozilla-firefox/+bug/1'
 
 The collection of bug tasks is not exposed as a resource:
 
@@ -472,9 +479,8 @@ into an upstream task.
   ...     target=webservice.getAbsoluteUrl('/bzr'))
   HTTP/1.1 400 Bad Request
   ...
-  IllegalTarget: Distribution bug tasks may only be re-targeted to
+  Distribution bug tasks may only be re-targeted to
   a package in the same distribution.
-  <BLANKLINE>
 
 We can't move a task from one distribution to another.
 
@@ -483,9 +489,8 @@ We can't move a task from one distribution to another.
   ...     target=webservice.getAbsoluteUrl('/ubuntu/+source/alsa-utils'))
   HTTP/1.1 400 Bad Request
   ...
-  IllegalTarget: Distribution bug tasks may only be re-targeted to
+  Distribution bug tasks may only be re-targeted to
   a package in the same distribution.
-  <BLANKLINE>
 
 We can change an upstream task to target a different project.
 
@@ -505,9 +510,7 @@ But we can't make it into a distro task.
   ...     target=webservice.getAbsoluteUrl('/ubuntu/+source/alsa-utils'))
   HTTP/1.1 400 Bad Request
   ...
-  IllegalTarget: Upstream bug tasks may only be re-targeted to
-  another project.
-  <BLANKLINE>
+  Upstream bug tasks may only be re-targeted to another project.
 
 If the milestone of a task is on a target other than the new
 target, we reset it in order to avoid data inconsistencies.
@@ -571,7 +574,7 @@ similar to bug 1 for Firefox.
   ...     firefox_bugtask['self_link'],
   ...     'findSimilarBugs')
   HTTP/1.1 200 Ok...
-  {"total_size": 0, "start": null, "entries": []}
+  {"total_size": 0, "start": 0, "entries": []}
 
 If we add a new bug that's quite similar to others, findSimilarBugs()
 will return something more useful.
@@ -625,12 +628,18 @@ Initially there are no nominations.
 
     >>> pprint_collection(webservice.named_get(
     ...     '/bugs/%d' % bug.id, 'getNominations').jsonBody())
-    start: None
+    start: 0
     total_size: 0
     ---
 
+    >>> from zope.component import getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> login('foo.bar@canonical.com')
     >>> john = factory.makePerson(name='john')
+    >>> debuntu = removeSecurityProxy(debuntu)
+    >>> debuntu.bug_supervisor = john
+    >>> fooix = removeSecurityProxy(fooix)
+    >>> fooix.bug_supervisor = john
     >>> logout()
 
     >>> from canonical.launchpad.testing.pages import webservice_for_person
@@ -667,6 +676,7 @@ But John, an unprivileged user, wants it fixed in Fooix 0.1.1.
     status: u'Nominated'
     target_link: u'http://.../fooix/0.1'
     ---
+
 
 John cannot approve or decline the nomination.
 
@@ -787,7 +797,7 @@ A bug cannot be nominated for a non-series.
     ...     target=john_webservice.getAbsoluteUrl('/fooix'))
     HTTP/1.1 400 Bad Request
     ...
-    NominationError: This bug cannot be nominated for Fooix.
+    This bug cannot be nominated for Fooix.
 
 The bug also can't be nominated for Debuntu 5.0, as it has no
 Debuntu tasks.
@@ -802,7 +812,7 @@ Debuntu tasks.
     ...     target=john_webservice.getAbsoluteUrl('/debuntu/5.0'))
     HTTP/1.1 400 Bad Request
     ...
-    NominationError: This bug cannot be nominated for Debuntu 5.0.
+    This bug cannot be nominated for Debuntu 5.0.
 
 Bug subscriptions
 -----------------
@@ -822,13 +832,14 @@ We can get the collection of subscriptions to a bug.
   resource_type_link: u'http://.../#bug_subscription'
   self_link: u'http://.../bugs/1/+subscription/name12'
   subscribed_by_link: u'http://.../~janitor'
-
+  <BLANKLINE>
   bug_link: u'http://.../bugs/1'
   date_created: u'2006-10-16T18:31:43.154816+00:00'
   person_link: u'http://.../~stevea'
   resource_type_link: u'http://.../#bug_subscription'
   self_link: u'http://.../bugs/1/+subscription/stevea'
   subscribed_by_link: u'http://.../~janitor'
+  <BLANKLINE>
 
 Each subscription can be accessed individually.
 
@@ -852,7 +863,6 @@ We can also create new subscriptions.
 
     >>> new_subscription = webservice.named_post(
     ...     bug_one['self_link'], 'subscribe',
-    ...     suppress_notify=False,
     ...     person=webservice.getAbsoluteUrl('/~cprov')).jsonBody()
     >>> pprint_entry(new_subscription)
     bug_link: ...
@@ -866,6 +876,34 @@ uses the calling user.
     >>> print webservice.named_post(
     ...     bug_one['self_link'], 'unsubscribe')
     HTTP/1.1 200 Ok...
+
+Using the devel api, an individual can subscribe themself at a given
+BugNotificationLevel.
+
+    >>> bug_one_devel = webservice.get(
+    ...     '/bugs/1', api_version='devel').jsonBody()
+    >>> new_subscription = webservice.named_post(
+    ...     bug_one_devel['self_link'], 'subscribe',
+    ...     person=webservice.getAbsoluteUrl('/~salgado'),
+    ...     level=u"Details", api_version="devel").jsonBody()
+    >>> pprint_entry(new_subscription)
+    bug_link: u'.../bugs/1'
+    bug_notification_level: u'Details'
+    date_created: u'...'
+    person_link: u'...'
+    resource_type_link: u'...'
+    self_link: u'...'
+    subscribed_by_link: u'...'
+
+They can also update the subscription's bug_notification_level directly.
+
+    >>> patch = {u'bug_notification_level': u'Nothing'}
+    >>> pprint_entry(
+    ...     webservice.patch(
+    ...         new_subscription['self_link'], 'application/json',
+    ...         dumps(patch), api_version="devel").jsonBody())
+    bug_link: u'.../bugs/1'
+    bug_notification_level: u'Nothing'...
 
 If one person tries to unsubscribe another individual, the web
 service will return an unauthorized error.
@@ -905,7 +943,6 @@ this, the group must first be re-subscribed.
 
     >>> print webservice.named_post(
     ...     bug_one['self_link'], 'subscribe',
-    ...     suppress_notify=False,
     ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
     HTTP/1.1 200 Ok...
 
@@ -949,7 +986,6 @@ himself.
 
     >>> print webservice.named_post(
     ...     bug_six['self_link'], 'subscribe',
-    ...     suppress_notify=False,
     ...     person=webservice.getAbsoluteUrl('/~salgado'))
     HTTP/1.1 200 Ok...
 
@@ -980,7 +1016,6 @@ To demonstrate, first subscribe Ubuntu Team to bug_six, the duplicate.
 
     >>> print webservice.named_post(
     ...     bug_six['self_link'], 'subscribe',
-    ...     suppress_notify=False,
     ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
     HTTP/1.1 200 Ok...
     >>> bug_six_subscriptions = webservice.get(
@@ -1034,12 +1069,13 @@ report described by the bugwatch.
   last_error_type: None
   owner_link: u'http://.../~mark'
   remote_bug: u'2000'
-  remote_importance: None
+  remote_importance: u''
   remote_status: u''
   resource_type_link: u'http://.../#bug_watch'
   self_link: u'http://.../bugs/1/+watch/2'
   title: u'The Mozilla.org Bug Tracker #2000'
   url: u'https://bugzilla.mozilla.org/show_bug.cgi?id=2000'
+  web_link: u'http://bugs.../bugs/1/+watch/2'
 
   >>> bug_watch = webservice.get(bug_watch_2000['self_link']).jsonBody()
   >>> bug_watch == bug_watch_2000
@@ -1111,7 +1147,7 @@ Following the redirect, we can see the new bug watch:
   self_link: u'http://.../bugs/1/+watch/13'
   title: u'The Mozilla.org Bug Tracker #9876'
   url: u'https://bugzilla.mozilla.org/show_bug.cgi?id=9876'
-
+  web_link: u'http://bugs.../bugs/1/+watch/13'
 
 Bug Trackers
 ------------
@@ -1132,6 +1168,7 @@ Bug Trackers
   summary: u'The Mozilla.org bug tracker is the grand-daddy of bugzillas...'
   title: u'The Mozilla.org Bug Tracker'
   watches_collection_link: u'http://.../bugs/bugtrackers/mozilla.org/watches'
+  web_link: u'http://bugs.../bugs/bugtrackers/mozilla.org'
 
 We can change various aspects of bug trackers.
 
@@ -1163,11 +1200,6 @@ the bug tracker can be found has changed.
   X-Lazr-Oopsid: OOPS-...
   <BLANKLINE>
   Object: <...BugTrackerSet object at ...>, name: u'mozilla.org'
-  <BLANKLINE>
-  Traceback (most recent call last):
-  ...
-  NotFound: Object: <...BugTrackerSet object at ...>, name: u'mozilla.org'
-  <BLANKLINE>
 
 Naturally, if we follow the Location: header then we'll get the
 renamed bug tracker.
@@ -1188,6 +1220,7 @@ renamed bug tracker.
   summary: u'Where Bob files his bugs.'
   title: u"Bob's Tracker"
   watches_collection_link: u'http://.../bugs/bugtrackers/bob/watches'
+  web_link: u'http://bugs.../bugs/bugtrackers/bob'
 
 Non-admins can't disable a bugtracker through the API.
 
@@ -1196,10 +1229,7 @@ Non-admins can't disable a bugtracker through the API.
     ...     dumps(dict(active=False)))
     HTTP/1.1 401 Unauthorized
     ...
-    Traceback (most recent call last):
-    ...
-    Unauthorized: (<BugTracker at ...>, 'active', 'launchpad.Admin')
-    <BLANKLINE>
+    (<BugTracker at ...>, 'active', 'launchpad.Admin')
 
 Admins can, however.
 
@@ -1219,7 +1249,7 @@ Bug 1 has no attachments:
   ...     bug_one['attachments_collection_link']).jsonBody()
   >>> pprint_collection(attachments)
   resource_type_link: u'http://.../#bug_attachment-page-resource'
-  start: None
+  start: 0
   total_size: 0
   ---
 
@@ -1252,6 +1282,7 @@ Now, bug 1 has one attachment:
   self_link: u'http://.../bugs/1/+attachment/1'
   title: u'numbers.txt'
   type: u'Unspecified'
+  web_link: u'http://bugs.../bugs/1/+attachment/1'
   ---
 
 The attachment can be fetched directly:
@@ -1265,6 +1296,7 @@ The attachment can be fetched directly:
   self_link: u'http://.../bugs/1/+attachment/1'
   title: u'numbers.txt'
   type: u'Unspecified'
+  web_link: u'http://bugs.../bugs/1/+attachment/1'
 
 Fetching the data actually yields a redirect to the Librarian, which
 we must follow to download the data.
@@ -1274,7 +1306,7 @@ we must follow to download the data.
   HTTP/1.1 303 See Other...
   Content-Length: 0
   Content-Type: text/plain
-  Location: http://localhost:58000/.../numbers.txt
+  Location: http://.../numbers.txt
   ...
 
   >>> from urllib2 import urlopen
@@ -1308,6 +1340,7 @@ attachment. This is where our comment is recorded.
   resource_type_link: u'http://.../#message'
   self_link: u'http://.../firefox/+bug/1/comments/2'
   subject: u'Re: Firefox does not support SVG'
+  web_link: u'http://bugs.../firefox/+bug/1/comments/2'
 
 The message also links back to the attachments that were uploaded at
 the same time.
@@ -1351,7 +1384,7 @@ But we can remove the attachment altogether.
   ...     bug_one['attachments_collection_link']).jsonBody()
   >>> pprint_collection(attachments)
   resource_type_link: u'http://api.launchpad.dev/beta/#bug_attachment-page-resource'
-  start: None
+  start: 0
   total_size: 0
   ---
 
@@ -1436,8 +1469,44 @@ setting the tags_combinator parameter to 'All'.
     ...     '/ubuntu', 'searchTasks',
     ...     tags=['crash', 'dataloss'],
     ...     tags_combinator='All').jsonBody())
-    start: None
+    start: 0
     total_size: 0
+    ---
+
+It can also be used to find bugs modified since a certain date.
+
+    >>> from datetime import timedelta
+    >>> from lp.testing.sampledata import ADMIN_EMAIL
+    >>> login(ADMIN_EMAIL)
+    >>> target = factory.makeProduct()
+    >>> bug = factory.makeBug(product=target)
+    >>> bug = removeSecurityProxy(bug)
+    >>> date = bug.date_last_updated - timedelta(days=6)
+    >>> logout()
+
+    >>> pprint_collection(webservice.named_get(
+    ...     '/%s' % target.name, 'searchTasks',
+    ...     modified_since=u'%s' % date ).jsonBody())
+    start: 0
+    total_size: 1
+    ...
+    ---
+
+It can also be used to find bug tasks created since a certain date.
+
+    >>> from lp.bugs.interfaces.bugtarget import IBugTarget
+    >>> login(ADMIN_EMAIL)
+    >>> target = IBugTarget(factory.makeProduct())
+    >>> task = factory.makeBugTask(target=target)
+    >>> date = task.datecreated - timedelta(days=8)
+    >>> logout()
+
+    >>> pprint_collection(webservice.named_get(
+    ...     '/%s' % target.name, 'searchTasks',
+    ...     created_since=u'%s' % date).jsonBody())
+    start: 0
+    total_size: 1
+    ...
     ---
 
 It is possible to search for bugs targeted to a milestone within a
@@ -1678,7 +1747,7 @@ empty:
     ...     '/~testuser3', 'searchTasks'
     ...     ).jsonBody()
     >>> pprint_collection(related)
-    start: None
+    start: 0
     total_size: 0
     ---
 
@@ -1719,7 +1788,7 @@ We can search for bugs that are linked to branches...
     http://api.launchpad.dev/beta/firefox/+bug/1
     http://api.launchpad.dev/beta/firefox/+bug/16
     http://api.launchpad.dev/beta/firefox/+bug/20
-    http://api.launchpad.dev/beta/firefox/+bug/22
+    http://api.launchpad.dev/beta/firefox/+bug/24
 
 
 Affected users
@@ -1779,6 +1848,7 @@ The collection of all CVEs is available at the top level.
     status: u'Candidate'
     title: u'CVE-2005-2737 (Candidate)'
     url: u'http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=2005-2737'
+    web_link: u'http://bugs.launchpad.dev/bugs/cve/2005-2737'
     ---
     ...
     self_link: u'http://.../bugs/cve/2005-2736'
@@ -1816,6 +1886,7 @@ And for every bug we can look at the CVEs linked to it.
     status: u'Entry'
     title: u'CVE-1999-8979 (Entry)'
     url: u'http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=1999-8979'
+    web_link: u'http://bugs.launchpad.dev/bugs/cve/1999-8979'
     ---
 
 For every CVE we can also look at the bugs linked to it.
@@ -1835,7 +1906,7 @@ Unlink CVEs from that bug.
     HTTP/1.1 200 Ok...
     >>> pprint_collection(webservice.get(bug_one_cves_url).jsonBody())
     resource_type_link: u'http://.../#cve-page-resource'
-    start: None
+    start: 0
     total_size: 0
     ---
 
@@ -1996,3 +2067,75 @@ For every branch we can also look at the bugs linked to it.
     ...     branch_entry['bug_link']).jsonBody()
     >>> print bug_link['self_link']
     http://.../bugs/4
+
+Bug expiration
+--------------
+
+In addition to can_expire bugs have an isExpirable method to which a custom time
+period, days_old, can be passed.  This is then used with
+findExpirableBugTasks.  This allows projects to create their own janitor using
+a different period for bug expiration.
+
+Check to ensure that isExpirable() works without days_old.
+
+    >>> bug_four = webservice.get("/bugs/4").jsonBody()
+    >>> print webservice.named_get(bug_four['self_link'],
+    ...     'isExpirable').jsonBody()
+    False
+
+Pass isExpirable() an integer for days_old.
+
+    >>> bug_four = webservice.get("/bugs/4").jsonBody()
+    >>> print webservice.named_get(bug_four['self_link'], 'isExpirable',
+    ...     days_old='14').jsonBody()
+    False
+
+Pass isExpirable() a string for days_old.
+
+    >>> bug_four = webservice.get("/bugs/4").jsonBody()
+    >>> print webservice.named_get(bug_four['self_link'], 'isExpirable',
+    ...     days_old='sixty')
+    HTTP/1.1 400 Bad Request
+    ...
+    days_old: got 'unicode', expected int: u'sixty'
+
+Can expire
+----------
+
+can_expire is not exported in the development version of the API.
+
+    >>> bug_four = webservice.get("/bugs/4", api_version='devel').jsonBody()
+    >>> bug_four[can_expire]
+    Traceback (most recent call last):
+    ...
+    NameError: name 'can_expire' is not defined
+
+
+Bug activity
+------------
+
+Each bug has a collection of activities that have taken place with it.
+
+  >>> from lazr.restful.testing.webservice import (
+  ...     pprint_collection, pprint_entry)
+  >>> activity = webservice.get(
+  ...     bug_one['activity_collection_link']).jsonBody()
+  >>> pprint_collection(activity)
+  next_collection_link: u'http://.../bugs/1/activity?ws.start=5&ws.size=5'
+  resource_type_link: u'http://.../#bug_activity-page-resource'
+  start: 0
+  total_size: 25
+  ...
+
+  >>> bug_nine_activity = webservice.get(
+  ...   "/bugs/9/activity").jsonBody()
+  >>> pprint_entry(bug_nine_activity['entries'][1])
+  bug_link: u'http://.../bugs/9'
+  datechanged: u'2006-02-23T16:42:40.288553+00:00'
+  message: None
+  newvalue: u'Confirmed'
+  oldvalue: u'Unconfirmed'
+  person_link: u'http://.../~name12'
+  resource_type_link: u'http://.../#bug_activity'
+  self_link: u'http://.../bugs/9/activity'
+  whatchanged: u'thunderbird: status'

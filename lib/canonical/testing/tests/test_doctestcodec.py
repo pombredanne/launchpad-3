@@ -6,14 +6,9 @@
 __metaclass__ = type
 __all__ = []
 
-import unittest
-
-from zope.testing.doctestunit import DocTestSuite
+from doctest import DocTestSuite
 
 import canonical.testing.doctestcodec
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(DocTestSuite(canonical.testing.doctestcodec))
-    return suite
-
+    return DocTestSuite(canonical.testing.doctestcodec)

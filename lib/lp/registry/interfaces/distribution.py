@@ -20,48 +20,86 @@ __all__ = [
     'NoSuchDistribution',
     ]
 
-from zope.schema import Bool, Choice, Datetime, List, Object, Text, TextLine
-from zope.interface import Attribute, Interface
-
-from lazr.restful.fields import CollectionField, Reference
+from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
-   collection_default_content, export_as_webservice_collection,
-   export_as_webservice_entry, export_operation_as,
-   export_read_operation, exported, operation_parameters,
-   operation_returns_collection_of, operation_returns_entry,
-   rename_parameters_as)
+    collection_default_content,
+    export_as_webservice_collection,
+    export_as_webservice_entry,
+    export_operation_as,
+    export_read_operation,
+    exported,
+    operation_parameters,
+    operation_returns_collection_of,
+    operation_returns_entry,
+    rename_parameters_as,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
 from lazr.restful.interface import copy_field
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    List,
+    Object,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    Description, PublicPersonChoice, Summary, Title)
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
+from canonical.launchpad.interfaces.launchpad import (
+    IHasAppointedDriver,
+    IHasDrivers,
+    )
+from canonical.launchpad.validators.name import name_validator
+from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
+from lp.app.interfaces.launchpad import (
+    ILaunchpadUsage,
+    IServiceUsage,
+    )
+from lp.blueprints.interfaces.specificationtarget import ISpecificationTarget
+from lp.blueprints.interfaces.sprint import IHasSprints
+from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
+from lp.bugs.interfaces.bugtarget import (
+    IBugTarget,
+    IOfficialBugTagTargetPublic,
+    IOfficialBugTagTargetRestricted,
+    )
+from lp.bugs.interfaces.securitycontact import IHasSecurityContact
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
-from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
-from lp.bugs.interfaces.securitycontact import IHasSecurityContact
-from lp.bugs.interfaces.bugtarget import (
-    IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.karma import IKarmaContext
-from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasDrivers, ILaunchpadUsage)
-from lp.registry.interfaces.role import IHasOwner
-from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
 from lp.registry.interfaces.milestone import (
-    ICanGetMilestonesDirectly, IHasMilestones)
+    ICanGetMilestonesDirectly,
+    IHasMilestones,
+    )
 from lp.registry.interfaces.pillar import IPillar
-from lp.blueprints.interfaces.specificationtarget import (
-    ISpecificationTarget)
-from lp.blueprints.interfaces.sprint import IHasSprints
-from lp.translations.interfaces.translationgroup import (
-    ITranslationPolicy)
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
-from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.fields import (
-    IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
+from lp.registry.interfaces.role import IHasOwner
+from lp.services.fields import (
+    Description,
+    IconImageUpload,
+    LogoImageUpload,
+    MugshotImageUpload,
+    PillarNameField,
+    PublicPersonChoice,
+    Summary,
+    Title,
+    )
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
+    )
+from lp.translations.interfaces.translationpolicy import ITranslationPolicy
 
 
 class IDistributionMirrorMenuMarker(Interface):
@@ -91,10 +129,11 @@ class IDistributionDriverRestricted(Interface):
 
 class IDistributionPublic(
     IBugTarget, ICanGetMilestonesDirectly, IHasAppointedDriver,
-    IHasBuildRecords, IHasDrivers, IHasMentoringOffers, IHasMilestones,
-    IHasOwner, IHasSecurityContact, IHasSprints, ITranslationPolicy,
-    IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
-    IOfficialBugTagTargetPublic, IPillar, ISpecificationTarget):
+    IHasBuildRecords, IHasDrivers, IHasMilestones,
+    IHasOwner, IHasSecurityContact, IHasSprints, IHasTranslationImports,
+    ITranslationPolicy, IKarmaContext, ILaunchpadUsage, IMakesAnnouncements,
+    IOfficialBugTagTargetPublic, IPillar, IServiceUsage,
+    ISpecificationTarget):
     """Public IDistribution properties."""
 
     id = Attribute("The distro's unique number.")
@@ -180,7 +219,7 @@ class IDistributionPublic(
                 "The person or team responsible for decisions about features "
                 "and bugs that will be targeted for any series in this "
                 "distribution. Note that you can also specify a driver "
-                "on each series who's permissions will be limited to that "
+                "on each series whose permissions will be limited to that "
                 "specific series."),
             required=False, vocabulary='ValidPersonOrTeam'))
     drivers = Attribute(
@@ -195,28 +234,35 @@ class IDistributionPublic(
         description=_("The person or team that has the rights to review and "
                       "mark this distribution's mirrors as official."),
         required=True, vocabulary='ValidPersonOrTeam'))
-    lucilleconfig = TextLine(
-        title=_("Lucille Config"),
-        description=_("The Lucille Config."), required=False)
-    archive_mirrors = exported(CollectionField(
-        description=_("All enabled and official ARCHIVE mirrors of this "
-                      "Distribution."),
-        readonly=True, value_type=Object(schema=IDistributionMirror)))
-    cdimage_mirrors = exported(CollectionField(
-        description=_("All enabled and official RELEASE mirrors of this "
-                      "Distribution."),
-        readonly=True, value_type=Object(schema=IDistributionMirror)))
+    archive_mirrors = exported(doNotSnapshot(
+        CollectionField(
+            description=_("All enabled and official ARCHIVE mirrors "
+                          "of this Distribution."),
+            readonly=True, value_type=Object(schema=IDistributionMirror))))
+    archive_mirrors_by_country = doNotSnapshot(CollectionField(
+            description=_("All enabled and official ARCHIVE mirrors "
+                          "of this Distribution."),
+            readonly=True, value_type=Object(schema=IDistributionMirror)))
+    cdimage_mirrors = exported(doNotSnapshot(
+        CollectionField(
+            description=_("All enabled and official RELEASE mirrors "
+                          "of this Distribution."),
+            readonly=True, value_type=Object(schema=IDistributionMirror))))
+    cdimage_mirrors_by_country = doNotSnapshot(CollectionField(
+            description=_("All enabled and official ARCHIVE mirrors "
+                          "of this Distribution."),
+            readonly=True, value_type=Object(schema=IDistributionMirror)))
     disabled_mirrors = Attribute(
         "All disabled and official mirrors of this Distribution.")
     unofficial_mirrors = Attribute(
         "All unofficial mirrors of this Distribution.")
     pending_review_mirrors = Attribute(
         "All mirrors of this Distribution that haven't been reviewed yet.")
-    series = exported(
+    series = exported(doNotSnapshot(
         CollectionField(
             title=_("DistroSeries inside this Distribution"),
             # Really IDistroSeries, see _schema_circular_imports.py.
-            value_type=Reference(schema=Interface)))
+            value_type=Reference(schema=Interface))))
     architectures = List(
         title=_("DistroArchSeries inside this Distribution"))
     uploaders = Attribute(_(
@@ -243,9 +289,9 @@ class IDistributionPublic(
         "get the full functionality of LP")
 
     translation_focus = Choice(
-        title=_("Translation Focus"),
+        title=_("Translation focus"),
         description=_(
-            "The DistroSeries that should get the translation effort focus."),
+            "The release series that translators should focus on."),
         required=False,
         vocabulary='FilteredDistroSeries')
 
@@ -260,11 +306,11 @@ class IDistributionPublic(
             # Really IArchive, see _schema_circular_imports.py.
             schema=Interface))
 
-    all_distro_archives = exported(
+    all_distro_archives = exported(doNotSnapshot(
         CollectionField(
             title=_("A sequence of the distribution's non-PPA Archives."),
             readonly=True, required=False,
-            value_type=Reference(schema=Interface)),
+            value_type=Reference(schema=Interface))),
                 # Really IArchive, see _schema_circular_imports.py.
         exported_as='archives')
 
@@ -384,6 +430,13 @@ class IDistributionPublic(
     def getDistroSeriesAndPocket(distroseriesname):
         """Return a (distroseries,pocket) tuple which is the given textual
         distroseriesname in this distribution."""
+
+    def getSeriesByStatus(status):
+        """Query context distribution for distroseries with a given status.
+
+        :param status: Series status to look for
+        :return: list of `IDistroSeries`
+        """
 
     def getSourcePackageCaches(archive=None):
         """The set of all source package info caches for this distribution.
@@ -509,6 +562,18 @@ class IDistributionPublic(
     def getAllPPAs():
         """Return all PPAs for this distribution."""
 
+    # Really returns IArchive, see
+    # _schema_circular_imports.py.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getCommercialPPAs():
+        """Return all commercial PPAs.
+
+        Commercial PPAs are private, but explicitly flagged up as commercial
+        so that they are discoverable by people who wish to buy items
+        from them.
+        """
+
     def searchPPAs(text=None, show_inactive=False):
         """Return all PPAs matching the given text in this distribution.
 
@@ -565,7 +630,20 @@ class IDistributionPublic(
 class IDistribution(
     IDistributionEditRestricted, IDistributionPublic, IHasBugSupervisor,
     IRootContext, IStructuralSubscriptionTarget):
-    """An operating system distribution."""
+    """An operating system distribution.
+
+    Launchpadlib example: retrieving the current version of a package in a
+    particular distroseries.
+
+    ::
+
+        ubuntu = launchpad.distributions["ubuntu"]
+        archive = ubuntu.main_archive
+        series = ubuntu.current_series
+        print archive.getPublishedSources(exact_match=True,
+            source_name="apport",
+            distro_series=series)[0].source_package_version
+    """
     export_as_webservice_entry()
 
 
@@ -612,7 +690,7 @@ class IDistributionSet(Interface):
 
     def new(name, displayname, title, description, summary, domainname,
             members, owner, mugshot=None, logo=None, icon=None):
-        """Creaste a new distribution."""
+        """Create a new distribution."""
 
 
 class NoSuchDistribution(NameLookupFailed):

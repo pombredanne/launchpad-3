@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug tracker views."""
@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'BugTrackerAddView',
     'BugTrackerBreadcrumb',
+    'BugTrackerComponentGroupNavigation',
     'BugTrackerEditView',
     'BugTrackerNavigation',
     'BugTrackerNavigationMenu',
@@ -21,32 +22,59 @@ __all__ = [
 
 from itertools import chain
 
-from zope.interface import implements
-from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget
+from zope.component import getUtility
 from zope.formlib import form
+from zope.interface import implements
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad import _
-from canonical.launchpad.helpers import english_list, shortlist
-from lp.bugs.interfaces.bugtracker import (
-    BugTrackerType, IBugTracker, IBugTrackerSet, IRemoteBug)
+from canonical.launchpad.helpers import (
+    english_list,
+    shortlist,
+    )
 from canonical.launchpad.interfaces.launchpad import (
-    ILaunchBag, ILaunchpadCelebrities)
+    ILaunchBag,
+    ILaunchpadCelebrities,
+    )
 from canonical.launchpad.webapp import (
-    ContextMenu, GetitemNavigation, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, Link, Navigation, action, canonical_url, custom_widget,
-    redirection, structured)
+    canonical_url,
+    ContextMenu,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    Navigation,
+    redirection,
+    stepthrough,
+    structured,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.batching import (
+    ActiveBatchNavigator,
+    BatchNavigator,
+    InactiveBatchNavigator,
+    )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.lazr.utils import smartquote
-from canonical.widgets import DelimitedListWidget, LaunchpadRadioWidget
-
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.widgets.textwidgets import DelimitedListWidget
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType,
+    IBugTracker,
+    IBugTrackerComponentGroup,
+    IBugTrackerSet,
+    IRemoteBug,
+    )
+from lp.services.propertycache import cachedproperty
 
 # A set of bug tracker types for which there can only ever be one bug
 # tracker.
@@ -58,7 +86,9 @@ SINGLE_INSTANCE_TRACKERS = (
 # of.
 NO_DIRECT_CREATION_TRACKERS = (
     SINGLE_INSTANCE_TRACKERS + (
-        BugTrackerType.EMAILADDRESS,))
+        BugTrackerType.EMAILADDRESS,
+        )
+    )
 
 
 class BugTrackerSetNavigation(GetitemNavigation):
@@ -82,8 +112,8 @@ class BugTrackerAddView(LaunchpadFormView):
     page_title = u"Register an external bug tracker"
     schema = IBugTracker
     label = page_title
-    field_names = ['name', 'bugtrackertype', 'title', 'summary',
-                   'baseurl', 'contactdetails']
+    field_names = ['bugtrackertype', 'name', 'title', 'baseurl', 'summary',
+                   'contactdetails']
 
     def setUpWidgets(self, context=None):
         # We only show those bug tracker types for which there can be
@@ -130,21 +160,30 @@ class BugTrackerSetView(LaunchpadView):
     pillar_limit = 3
 
     def initialize(self):
-        # Sort the bug trackers into active and inactive lists so that
-        # we can display them separately.
-        all_bug_trackers = list(self.context)
-        self.active_bug_trackers = [
-            bug_tracker for bug_tracker in all_bug_trackers
-            if bug_tracker.active]
-        self.inactive_bug_trackers = [
-            bug_tracker for bug_tracker in all_bug_trackers
-            if not bug_tracker.active]
+        # eager load related pillars. In future we should do this for
+        # just the rendered trackers, and also use group by to get
+        # bug watch counts per tracker. However the batching makes
+        # the inefficiency tolerable for now. Robert Collins 20100919.
+        self._pillar_cache = self.context.getPillarsForBugtrackers(
+            list(self.context.trackers()))
 
-        bugtrackerset = getUtility(IBugTrackerSet)
-        # The caching of bugtracker pillars here avoids us hitting the
-        # database multiple times for each bugtracker.
-        self._pillar_cache = bugtrackerset.getPillarsForBugtrackers(
-            all_bug_trackers)
+    @property
+    def inactive_tracker_count(self):
+        return self.inactive_trackers.currentBatch().listlength
+
+    @cachedproperty
+    def active_trackers(self):
+        results = self.context.trackers(active=True)
+        navigator = ActiveBatchNavigator(results, self.request)
+        navigator.setHeadings('tracker', 'trackers')
+        return navigator
+
+    @cachedproperty
+    def inactive_trackers(self):
+        results = self.context.trackers(active=False)
+        navigator = InactiveBatchNavigator(results, self.request)
+        navigator.setHeadings('tracker', 'trackers')
+        return navigator
 
     def getPillarData(self, bugtracker):
         """Return dict of pillars and booleans indicating ellipsis.
@@ -164,7 +203,7 @@ class BugTrackerSetView(LaunchpadView):
             has_more_pillars = False
         return {
             'pillars': pillars[:self.pillar_limit],
-            'has_more_pillars': has_more_pillars
+            'has_more_pillars': has_more_pillars,
         }
 
 
@@ -371,6 +410,25 @@ class BugTrackerEditView(LaunchpadEditFormView):
     def cancel_url(self):
         return canonical_url(self.context)
 
+    def reschedule_action_condition(self, action):
+        """Return True if the user can see the reschedule action."""
+        user_can_reset_watches = check_permission(
+            "launchpad.Admin", self.context)
+        return (
+            user_can_reset_watches and
+            self.context.watches.count() > 0)
+
+    @action(
+        'Reschedule all watches', name='reschedule',
+        condition=reschedule_action_condition)
+    def rescheduleAction(self, action, data):
+        """Reschedule all the watches for the bugtracker."""
+        self.context.resetWatches()
+        self.request.response.addInfoNotification(
+            "All bug watches on %s have been rescheduled." %
+            self.context.title)
+        self.next_url = canonical_url(self.context)
+
 
 class BugTrackerNavigation(Navigation):
 
@@ -387,6 +445,18 @@ class BugTrackerNavigation(Navigation):
         else:
             # else list the watching bugs
             return RemoteBug(self.context, remotebug, bugs)
+
+    @stepthrough("+components")
+    def component_groups(self, name):
+        return self.context.getRemoteComponentGroup(name)
+
+
+class BugTrackerComponentGroupNavigation(Navigation):
+
+    usedfor = IBugTrackerComponentGroup
+
+    def traverse(self, name):
+        return self.context.getComponent(name)
 
 
 class BugTrackerSetBreadcrumb(Breadcrumb):

@@ -172,7 +172,7 @@ def main():
 
         echo 'Initializing new node.';
         try {
-            store node (id=@new_node, comment='%s');
+            store node (id=@new_node, comment='%s', event node=@master_node);
             echo 'Creating new node paths.';
         """ % (node_id, target_connection_string, comment))
 
@@ -188,6 +188,9 @@ def main():
 
     script += dedent("""\
         } on error { echo 'Failed.'; exit 1; }
+
+        echo 'You may need to restart the Slony daemons now. If the first';
+        echo 'of the following syncs passes then there is no need.';
         """)
 
     full_sync = []
@@ -200,6 +203,7 @@ def main():
             wait for event (
                 origin = @%(nickname)s, confirmed=ALL,
                 wait on = @%(nickname)s, timeout=0);
+            echo 'Ok. Replication syncing fine with new node.';
             """ % {'nickname': nickname}))
     full_sync = '\n'.join(full_sync)
     script += full_sync
@@ -210,6 +214,7 @@ def main():
         subscribe set (
             id=%d, provider=@master_node, receiver=@new_node, forward=yes);
         echo 'Waiting for subscribe to start processing.';
+        echo 'This will block on long running transactions.';
         sync (id = @master_node);
         wait for event (
             origin = @master_node, confirmed = ALL,

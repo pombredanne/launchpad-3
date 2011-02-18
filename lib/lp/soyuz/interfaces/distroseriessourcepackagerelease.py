@@ -11,14 +11,12 @@ __all__ = [
     'IDistroSeriesSourcePackageRelease',
     ]
 
-from zope.schema import Object
 from zope.interface import Attribute
+from zope.schema import Object
 
 from canonical.launchpad import _
-from lp.soyuz.interfaces.sourcepackagerelease import (
-    ISourcePackageRelease)
-from canonical.launchpad.interfaces.librarian import (
-    ILibraryFileAlias)
+from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
 class IDistroSeriesSourcePackageRelease(ISourcePackageRelease):
@@ -55,10 +53,6 @@ class IDistroSeriesSourcePackageRelease(ISourcePackageRelease):
     binaries = Attribute(
         "Return binaries resulted from this sourcepackagerelease and  "
         "published in this distroseries.")
-
-    meta_binaries = Attribute(
-        "A list of distinct meta binaries built from this "
-        "sourcepackagerelease and published in this distroseries.")
 
     current_published = Attribute("is last SourcePackagePublishing record "
                                   "that is in PUBLISHED status.")

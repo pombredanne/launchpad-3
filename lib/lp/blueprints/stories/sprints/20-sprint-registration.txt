@@ -1,4 +1,5 @@
-= Sprint Registration =
+Sprint Registration
+===================
 
 It should be possible to register yourself to attend the sprint:
 
@@ -13,22 +14,23 @@ It should be possible to register yourself to attend the sprint:
     >>> print browser.title
     Register your attendance : Ubuntu Below Zero : Meetings
 
-Invalid dates, for instance entering a starting date after the ending date,
-are reported as errors to the users. (See also the tests in
+Invalid dates, for instance entering a starting date after the ending
+date, are reported as errors to the users. (See also the tests in
 lib/canonical/launchpad/doc/sprintattendance-pages.txt)
 
-By default, the form will be pre-filled out with arrival and departure dates
-that correspond to the full length of the conference and imply the user will
-be available to participate in any session.
+By default, the form will be pre-filled out with arrival and departure
+dates that correspond to the full length of the conference and imply the
+user will be available to participate in any session.
 
     >>> browser.getControl('From').value
     '2006-01-10 08:30'
+
     >>> browser.getControl('To').value
     '2006-02-12 17:00'
 
-We accept a starting date up to one day before the sprint starts (which we
-will map to starting at the start of the sprint), and a departure date up to
-one day after the sprint ends.
+We accept a starting date up to one day before the sprint starts (which
+we will map to starting at the start of the sprint), and a departure
+date up to one day after the sprint ends.
 
     >>> browser.getControl('From').value = '2006-01-10 10:30:00'
     >>> browser.getControl('To').value = '2005-02-04 20:11:00'
@@ -36,6 +38,7 @@ one day after the sprint ends.
 
     >>> print browser.url
     http://launchpad.dev/sprints/ubz/+attend
+
     >>> for tag in find_tags_by_class(browser.contents, 'message'):
     ...     print tag.renderContents()
     There is 1 error.
@@ -49,12 +52,12 @@ An attendance that starts after the end of the sprint is also an error:
 
     >>> print browser.url
     http://launchpad.dev/sprints/ubz/+attend
+
     >>> for tag in find_tags_by_class(browser.contents, 'message'):
     ...     print tag.renderContents()
     There are 2 errors.
     Please pick a date before 2006-02-12 17:00
     Please pick a date before 2006-02-13 17:00
-
 
 Similarly, an attendance that ends before the start of a sprint is an
 error:
@@ -65,15 +68,16 @@ error:
 
     >>> print browser.url
     http://launchpad.dev/sprints/ubz/+attend
+
     >>> for tag in find_tags_by_class(browser.contents, 'message'):
     ...     print tag.renderContents()
     There are 2 errors.
     Please pick a date after 2006-01-09 08:30
     Please pick a date after 2006-01-10 08:30
 
-With the dates fixed, Sample person can attend the sprint.  The user
-is staying an extra week past the end of the sprint, which is fine
-since the date range overlaps that of the sprint.
+With the dates fixed, Sample person can attend the sprint.  The user is
+staying an extra week past the end of the sprint, which is fine since
+the date range overlaps that of the sprint.
 
     >>> browser.getControl('From').value = '2006-01-10 10:30:00'
     >>> browser.getControl('To').value = '2006-02-12 20:11:00'
@@ -98,6 +102,7 @@ dates are prefilled (they have been clamped to the sprint duration):
     >>> browser.getLink('Register yourself').click()
     >>> print browser.getControl('From').value
     2006-01-10 10:30
+
     >>> print browser.getControl('To').value
     2006-02-12 17:00
 
@@ -113,6 +118,7 @@ start and end of the conference.
 
     >>> browser.getControl('From').value
     '2006-01-10 08:30'
+
     >>> browser.getControl('To').value
     '2006-02-12 17:00'
 
@@ -132,15 +138,17 @@ Sample Person registers Salgado as well.
     >>> browser.getLink('Register someone else').click()
     >>> browser.url
     'http://launchpad.dev/sprints/ubz/+register'
-    >>> browser.getControl('Attendee').value = 'guilherme.salgado@canonical.com'
+
+    >>> browser.getControl('Attendee').value = (
+    ...     'guilherme.salgado@canonical.com')
     >>> browser.getControl('Register').click()
 
 And verifies that Carlos and Salgado are now listed:
 
-     >>> print_attendees(browser.contents)
-     Carlos Perell&#243; Mar&#237;n
-     Sample Person
-     Guilherme Salgado
+    >>> print_attendees(browser.contents)
+    Carlos Perell&#243; Mar&#237;n
+    Sample Person
+    Guilherme Salgado
 
 In order to make it easy to organize a meeting, we provide a facility
 for exporting the list of attendees in CSV format to registered users,
@@ -149,17 +157,20 @@ drivers, owners, and admins.
 First, we add a couple of IRC nicknames for Carlos.
 
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> from lp.registry.model.person import IrcID
     >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.model.person import IrcID
     >>> login('carlos@canonical.com')
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
     >>> IrcID(person=carlos, network='freenode', nickname='carlos')
     <IrcID at ...>
+
     >>> IrcID(person=carlos, network='QuakeNet', nickname='qarlos')
     <IrcID at ...>
+
     >>> sorted([ircid.nickname for ircid in carlos.ircnicknames])
     [u'carlos', u'qarlos']
+
     >>> logout()
 
     >>> browser.getLink('Export attendees to CSV').click()
@@ -189,3 +200,5 @@ Unregistered and anonymous users cannot access the CSV report.
     Traceback (most recent call last):
     ...
     Unauthorized:...
+
+

@@ -14,7 +14,6 @@
       <thead>
         <tr>
           <th colspan="2">Name</th>
-          <th tal:condition="view/product_enabled">Project</th>
           <th tal:condition="view/owner_enabled">Owner</th>
           <th tal:condition="view/branch_enabled">Base Branch</th>
           <th>Registered</th>
@@ -27,11 +26,6 @@
               <a tal:attributes="href recipe/fmt:url"
                  tal:content="recipe/name">Recipe name</a>
             </td>
-            <td tal:condition="view/product_enabled">
-              <a tal:replace="structure recipe/base_branch/product/fmt:link">
-                Product
-              </a>
-            </td>
             <td tal:condition="view/owner_enabled">
               <a tal:replace="structure recipe/owner/fmt:link">
                 Owner
@@ -39,7 +33,7 @@
             </td>
             <td tal:condition="view/branch_enabled">
               <a tal:replace="structure recipe/base_branch/fmt:link">
-                Owner
+                Branch
               </a>
             </td>
             <td tal:content="recipe/date_created/fmt:datetime" />

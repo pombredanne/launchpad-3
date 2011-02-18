@@ -11,8 +11,8 @@ the things on Launchpad.
     >>> import pytz
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.code.enums import BranchLifecycleStatus, BranchType
-    >>> from lp.code.interfaces.branch import IBranch
     >>> from lazr.restful.marshallers import DateTimeFieldMarshaller
+    >>> from lp.code.interfaces.branch import IBranch
 
 To make this document a little more readable, we'll have to define some
 helpers. This one turns a JSON date/time response into a Python
@@ -123,6 +123,8 @@ time goes on.
     last_scanned_id: None
     lifecycle_status: u'Development'
     linked_bugs_collection_link: u'http://.../~eric/fooix/trunk/linked_bugs'
+    merge_queue_config: None
+    merge_queue_link: None
     mirror_status_message: None
     name: u'trunk'
     owner_link: u'.../~eric'
@@ -140,8 +142,8 @@ time goes on.
     subscriptions_collection_link: u'http://.../~eric/fooix/trunk/subscriptions'
     unique_name: u'~eric/fooix/trunk'
     url: None
+    web_link: u'http://code.../~eric/fooix/trunk'
     whiteboard: None
-
 
 There is a branch merge proposal with Fooix trunk as the target branch, so it
 should have a branch at the endpoint of landing_candidates.

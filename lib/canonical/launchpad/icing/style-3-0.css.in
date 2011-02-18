@@ -126,8 +126,22 @@
    Universal presentation
    Block elements.
 */
+/* XXX EdwinGrubbs 2010-06-18 bug=570354
+ * The PrettyOverlay css uses static values for the width, but
+ * the overlay needs to stretch for forms with wide input fields.
+ */
+.yui-pretty-overlay {
+    width: auto !important;
+    min-width: 402px;
+    }
+
+.yui-pretty-overlay #yui-pretty-overlay-modal {
+    width: auto !important;
+    min-width: 340px;
+    }
+
 html, body {
-    font-family: "dejavu sans", "bitstream vera sans", verdana, sans-serif;
+    font-family: UbuntuBeta, Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
     font-size: 93%;
     }
 body.private {
@@ -151,7 +165,6 @@ h2 {
     margin-bottom: 0.3em;
     margin-top: 0.3em;
     font-size: 123.1%;
-    color: #5a5a5a;
     }
 h3 {
     font-size: 108%;
@@ -171,7 +184,8 @@ table.wide {
     width: 60em;
     }
 pre, code, samp, tt, .console {
-    font-size: 116%;
+    font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
+    font-size: 93%;
     margin-bottom: 0.8em;
     }
 pre.wrap {
@@ -206,15 +220,39 @@ div.three.column.left, div.three.column.right {
 hr {
     display: none;
     }
-
+div.profiling_info {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border: 3px solid red;
+    background-color: white;
+    text-align: left;
+    padding: 1em;
+    }
+div.profiling_info h1 {
+    color: red;
+    }
+div.profiling_info h2 {
+    border-bottom: 3px solid gray;
+    color: black;
+    }
+div.profiling_info h3 {
+    border-bottom: 1px solid gray;
+    color: black;
+    }
+div.profiling_info p {
+    color: black;
+    }
+div.hide_reveal_profiling {
+    text-decoration: underline;
+    color: #093;
+    font-size: 85%;
+    }
 
 /* =========================
    Universal presentation
    Inline elements.
 */
-a {
-    outline: none;
-    }
 :link, :visited {
     /* Links are blue, brighter when clicked, and greyer once visited. */
     color: #03a;
@@ -239,9 +277,15 @@ a.help {
 a.help:hover, a.help:hover {
     text-decoration: none;
     }
-a.help.icon {
+a.help.icon, a.sprite.maybe.help {
     border: none;
 }
+a.invalid-link {
+    disabled: True;
+    color: #909090;
+    text-decoration: none;
+    cursor: default;
+    }
 img, a img {
     /* No border on images that are links. */
     border: none;
@@ -489,7 +533,7 @@ th, td {
     vertical-align: baseline;
     }
 thead th, tr.thead th {
-    text-align: center;
+    text-align: left;
     vertical-align: bottom;
     }
 th.icon, td.icon {
@@ -615,9 +659,6 @@ table.listing table tfoot td, table.listing table td {
 table.listing tfoot td {
     border: 1px solid #d2d2d2;
     }
-table.listing tr.note {
-    font-size: 77%;
-    }
 table.listing th, table.listing td {
     padding: 0.25em;
     }
@@ -633,7 +674,7 @@ table.listing td {
     border: 1px #d2d2d2;
     border-style: dotted none none none;
     }
-table.listing tr.note td {
+table.listing .note td {
     border-style: none;
     }
 table.listing img {
@@ -672,6 +713,13 @@ table.summary ul, table.summary ul li {
     margin: 0;
     padding: 0;
     }
+div.centered {
+    text-align: center;
+    }
+div.centered table {
+    margin: 0 auto;
+    text-align: left;
+    }
 .batch-navigation-links .next {
     /* Next links have icons: */
     background: center right no-repeat;
@@ -695,7 +743,23 @@ table.summary ul, table.summary ul li {
 .batch-navigation-links .next {
     margin-right: 0.25em;
     }
-
+.flowed-block {
+    display: table-cell;
+    display: inline-table;
+    display: inline-block;
+    text-align: left;
+    vertical-align: top;
+    }
+.results {
+    background-color: #f4f4f4;
+    padding: 2px 10px 5px 10px;
+    -webkit-border-bottom-right-radius: 4px;
+    -webkit-border-bottom-left-radius: 4px;
+    -moz-border-radius-bottomright: 4px;
+    -moz-border-radius-bottomleft: 4px;
+    border-bottom-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    }
 
 /* =========================
    Universal presentation
@@ -715,6 +779,12 @@ form table tbody th {
     }
 form table label {
     font-weight: bold;
+    }
+.compound {
+    margin-bottom: .5em;
+    }
+.field.subordinate label {
+    font-weight: normal;
     }
 fieldset {
     border-width: 2px 0 0;
@@ -747,7 +817,11 @@ button {
 .fieldRequired, .fieldOptional {
     color: #999;
     }
+.field.subordinate {
+    margin-left: 2.6em;
+    }
 .formHelp {
+    max-width: 45em;
     margin: 0.2em 0 0.5em 0.2em;
     color: #777;
     }
@@ -873,33 +947,39 @@ h1 .edit {
     top: -3px;
     margin-left: 0.5em;
     }
-.yui-ieditor {
+.yui3-ieditor {
     padding-right: 288px;
     }
-.lazr-multiline-edit .yui-ieditor {
+h1 .yui3-ieditor-errors {
+    font-size: 0.5em;
+    }
+.lazr-multiline-edit .yui3-ieditor {
     padding-right: 0;
     }
 .lazr-multiline-edit textarea {
     max-width: inherit;
     }
-.lazr-multiline-edit .yui-ieditor-input {
-    padding-right: 5px !important;
-    }
 .widget-hd.js-action {
     /* The js-action class is also used for non-links, for example, with
        expand/collapse sections. */
     color: #093;
-    cursor:pointer;
+    cursor: pointer;
     }
 .widget-hd.js-action:hover {
     text-decoration: underline;
     }
+
+.yui3-ichoicesource-content .value:hover {
+    text-decoration: underline;
+    cursor: pointer;
+    }
+
 .error.message, .warning.message, .informational.message {
     border: solid #666;
     border-width: 1px 2px 2px 1px;
     color: black;
-    margin: 0 auto 10px auto;
-    padding: 0 10px 10px 20px;
+    margin: 1em auto 1em auto;
+    padding: 0 1em 1em 2em;
     width: 30em;
     }
 .error.message::before, .warning.message::before,
@@ -929,6 +1009,9 @@ h1 .edit {
     }
 .informational.message::before {
     content: url(/@@/info-large);
+    }
+.informational p.last {
+    margin-bottom: 0;
     }
 .debugging {
     /* Debugging messages are white on grey, alerts have an info icon. */
@@ -1055,7 +1138,7 @@ span.see-all {
     margin-top: 1em;
     }
 p.search-results {
-    font-size: 116%;
+    font-size: 93%;
     }
 .top-portlet .summary {
     margin: 0 0 1em 0;
@@ -1088,18 +1171,28 @@ p.search-results {
 .demo {
     background-color: #fee;
     }
-#locationbar {
-    /* The following style works around the fact that the locationbar, which
-    is only used of the Login/Register links in 3.0 UI, is accessible on
-    "locationless" pages. It adds extra space at the top of every page in
-    Launchpad but that does actually look quite good ... ;-).*/
-    height: 1em;
+.login-logout {
+    position: absolute;
+    top: .5em;
+    right: 1.5em;
+    }
+#rendertime {
+    float: left;
+    margin: 0.2em 1.2em 0 0;
+    color: #666;
+    font-size: 77%;
     }
 div.watermark-apps-portlet {
-    padding-bottom:1em;
+    clear: both;
+    margin-bottom: .5em;
+    white-space: no-wrap;
+    }
+div.watermark-apps-portlet .wide {
+    width: 75%;
+    vertical-align: bottom;
+    margin-bottom: 0.3em;
     }
 div.watermark-apps-portlet img {
-    float: left;
     margin: 0 1.5em 0 0;
     }
 div.watermark-apps-portlet h1, div.watermark-apps-portlet h2 {
@@ -1153,19 +1246,20 @@ div.watermark-apps-portlet span img {
     width: 100%;
     white-space: nowrap;
     }
+.context-publication {
+    margin-bottom: 1em;
+    }
 .registering {
     /* Registered slot */
-    float: right;
-    font-size: 85%;
+    margin: .5em 0 1em 0;
+    font-style: italic;
+    font-size: 77%;
     color: #666;
-    position: relative;
-    top: 2em;
     }
 .breadcrumbs {
     margin-left: 0;
     list-style-type: none;
     clear: both;
-    margin-bottom: 2em;
     font-size: 77%;
     }
 .breadcrumbs li {
@@ -1193,6 +1287,9 @@ div.watermark-apps-portlet span img {
 #logincontrol img {
     /* align the image with the text */
     margin-bottom: -2px;
+    }
+#logincontrol form {
+    margin: 0;
     }
 #logincontrol input[type='submit'] {
     /* The button lacks the right margin that buttons usually have: */
@@ -1291,25 +1388,8 @@ div.watermark-apps-portlet span img {
     padding-top: 0.3em;
     padding-bottom: 0.3em;
     }
-.involvement a.bugs {
-    color: #b9413e;
-    background: url(/@@/bugs-arrow-right.png) right center no-repeat;
-    }
-.involvement a.answers {
-    color: #5265b2;
+.involvement a.bugs, .involvement a.answers, .involvement a.translations, .involvement a.code, .involvement a.blueprints {
     background: url(/@@/answers-arrow-right.png) right center no-repeat;
-    }
-.involvement a.translations {
-    color: #c5458e;
-    background: url(/@@/translations-arrow-right.png) right center no-repeat;
-    }
-.involvement a.code {
-    color: #d39f57;
-    background: url(/@@/code-arrow-right.png) right center no-repeat;
-    }
-.involvement a.blueprints {
-    color: #5ba4c6;
-    background: url(/@@/blueprints-arrow-right.png) right center no-repeat;
     }
 .involvement a:hover {
     text-decoration: none;
@@ -1390,9 +1470,29 @@ span.help {
    Universal presentation
    Colors and fonts
 */
-.answers-stat {
-    color: #3840BE;
+
+h1, h2, h3, 
+table.listing thead, 
+#homepage-stats strong, 
+#application-footer strong, 
+#application-summary strong {
+    color: #5a5a5a;
+}
+
+.exception {
+    color: #cc0000;
     }
+.highlight {
+    background: #ddd;
+    border: 1px solid #ddd;
+    }
+.lowlight {
+  opacity: .5;
+  filter: alpha(opacity=50);
+  -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
+}
+
+
 .questionstatusOPEN {
     color: #000;
     }
@@ -1415,9 +1515,6 @@ span.help {
     }
 
 
-.blueprints-stat {
-    color: #3594BB;
-    }
 .specstatusAPPROVED {
     color: green;
     }
@@ -1481,9 +1578,6 @@ span.help {
     }
 
 
-.bugs-stat {
-    color: #9F2B33;
-    }
 .bug-activity {
     color: #555;
     }
@@ -1539,9 +1633,6 @@ a.unofficial-tag {
     }
 
 
-.code-stat {
-    color: #D18B39;
-    }
 .vcsimportSUCCESS {
     /* inherited text color */
     }
@@ -1622,9 +1713,6 @@ a.unofficial-tag {
     }
 
 
-.translations-stat {
-    color: #BB3A84;
-    }
 .translationimportstatusAPPROVED,
 .translationimportstatusAPPROVED a {
     color: #050;
@@ -1655,9 +1743,7 @@ a.unofficial-tag {
     }
 
 
-.registry-stat {
-    /* default */
-    }
+
 .distromirrorstatusUP,
 .distromirrorstatusONEHOURBEHIND,
 .distromirrorstatusTWOHOURSBEHIND,
@@ -1696,10 +1782,14 @@ a.unofficial-tag {
 .launchpad-gold {
     color: #F8C300;
     }
+
+.discreet, .lesser, .duplicate-details {
+    font-size: 85%;
+    }
 pre.changelog, table.diff,
 .bug-comment, .bug-activity, .codereviewcomment {
-    font-size: 116%;
-    font-family: monospace;
+    font-size: 93%;
+    font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
     }
 .cloud-size-smallest {
     font-size: 77%;
@@ -1724,6 +1814,20 @@ pre.changelog, table.diff,
     }
 .cloud-light {
     color: #b8b8ff;
+    }
+
+/* Inline description editing.
+ * Override the lazr-js style for all uses.
+ */
+div#edit-description,
+div#edit-commit_message {
+    font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
+    font-size: 93%;
+    margin: 1em 0;
+    }
+
+.yui3-ieditor-multiline .yui3-ieditor-input {
+    top: 0;
     }
 
 
@@ -1777,6 +1881,12 @@ body.tab-bugs #portlet-subscribers .sprite {
       setting the display in this way breaks the icons.
     */
     display: inline;
+    }
+body.tab-bugs #duplicate-actions .sprite {
+    /* Override sprite style for edit icon on "Mark as duplicate"
+       to make the text not appear on a second line.
+    */
+    display:inline;
     }
 .yui-picker-results li.sprite {
     /* XXX: EdwinGrubbs 2009-07-27 bug=405476
@@ -1958,11 +2068,11 @@ body.tab-bugs #portlet-subscribers .sprite {
     background-image: url(/@@/person-inactive-badge.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
-.mentoring {
-    background-image: url(/@@/mentoring.png); /* sprite-ref: icon-sprites */
+.undecided {
+    background-image: url(/@@/maybe.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
-.undecided {
+.maybe {
     background-image: url(/@@/maybe.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
@@ -2176,6 +2286,10 @@ body.tab-bugs #portlet-subscribers .sprite {
     background-image: url(/@@/haspatch-icon.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
+.tour {
+    background-image: url(/@@/tour-icon); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+    }
 .large-branch {
     background-image: url(/@@/branch-large.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
@@ -2210,10 +2324,6 @@ body.tab-bugs #portlet-subscribers .sprite {
     }
 .large-launchpad {
     background-image: url(/@@/launchpad-large.png); /* sprite-ref: icon-sprites */
-    background-repeat: no-repeat;
-    }
-.large-mentoring {
-    background-image: url(/@@/mentoring-large.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
 .large-proposal {
@@ -2313,7 +2423,7 @@ ul.latest-ppa-updates li {
     background-repeat: no-repeat;
     background-position:right center;
     }
-table#packages_list tr.superseded {
+table#packages_list tr.superseded, tr.blacklisted {
     background-color: #eee;
     }
 ul.latest-ppa-updates li:nth-child(odd) {

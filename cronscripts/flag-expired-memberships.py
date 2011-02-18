@@ -15,9 +15,11 @@ from datetime import datetime, timedelta
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ILaunchpadCelebrities,
-    ITeamMembershipSet)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.interfaces.teammembership import (
+    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
+    ITeamMembershipSet,
+    )
 from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 
@@ -41,8 +43,10 @@ class ExpireMemberships(LaunchpadCronScript):
             days=DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT)
         self.txn.begin()
         for membership in membershipset.getMembershipsToExpire(
-                min_date_for_warning):
+            min_date_for_warning, exclude_autorenewals=True):
             membership.sendExpirationWarningEmail()
+            self.logger.debug("Sent warning email to %s in %s team."
+                          % (membership.person.name, membership.team.name))
         self.txn.commit()
 
     def main(self):
@@ -59,4 +63,3 @@ if __name__ == '__main__':
     script = ExpireMemberships('flag-expired-memberships',
                                dbuser=config.expiredmembershipsflagger.dbuser)
     script.lock_and_run()
-

@@ -19,10 +19,16 @@ import bz2
 import glob
 import logging
 import os
+import signal
+import sys
 
-from twisted.python import log
+from twisted.python import (
+    log,
+    logfile,
+    )
 from twisted.python.logfile import DailyLogFile
 from twisted.web import xmlrpc
+from zope.interface import implements
 
 from canonical.launchpad.scripts import logger
 from canonical.launchpad.webapp import errorlog
@@ -31,7 +37,6 @@ from canonical.librarian.utils import copy_and_close
 
 class OOPSLoggingObserver(log.PythonLoggingObserver):
     """A version of `PythonLoggingObserver` that logs OOPSes for errors."""
-
     # XXX: JonathanLange 2008-12-23 bug=314959: As best as I can tell, this
     # ought to be a log *handler*, not a feature of the bridge from
     # Twisted->Python logging. Ask Michael about this.
@@ -189,3 +194,34 @@ class LoggingProxy(xmlrpc.Proxy):
             return result
         deferred = xmlrpc.Proxy.callRemote(self, method, *args)
         return deferred.addBoth(_logResult)
+
+
+class RotatableFileLogObserver:
+    """A log observer that uses a log file and reopens it on SIGUSR1."""
+
+    implements(log.ILogObserver)
+
+    def __init__(self, logfilepath):
+        """Set up the logfile and possible signal handler.
+
+        Installs the signal handler for SIGUSR1 to make the process re-open
+        the log file.
+
+        :param logfilepath: The path to the logfile. If None, stdout is used
+            for logging and no signal handler will be installed.
+        """
+        if logfilepath is None:
+            logFile = sys.stdout
+        else:
+            logFile = logfile.LogFile.fromFullPath(
+                logfilepath, rotateLength=None)
+            # Override if signal is set to None or SIG_DFL (0)
+            if not signal.getsignal(signal.SIGUSR1):
+                def signalHandler(signal, frame):
+                    from twisted.internet import reactor
+                    reactor.callFromThread(logFile.reopen)
+                signal.signal(signal.SIGUSR1, signalHandler)
+        self.observer = log.FileLogObserver(logFile)
+
+    def __call__(self, eventDict):
+        self.observer.emit(eventDict)

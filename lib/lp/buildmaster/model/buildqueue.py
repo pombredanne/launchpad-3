@@ -12,24 +12,50 @@ __all__ = [
     ]
 
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import logging
-import pytz
 
+import pytz
 from sqlobject import (
-    StringCol, ForeignKey, BoolCol, IntCol, IntervalCol, SQLObjectNotFound)
-from zope.component import getSiteManager, getUtility
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    IntervalCol,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from zope.component import (
+    getSiteManager,
+    getUtility,
+    )
 from zope.interface import implements
 
+from canonical.database.constants import DEFAULT
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, NotFoundError)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.app.errors import NotFoundError
+from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, IBuildFarmJob)
+    IBuildFarmJob,
+    )
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior)
-from lp.buildmaster.interfaces.buildqueue import IBuildQueue, IBuildQueueSet
+    IBuildFarmJobBehavior,
+    )
+from lp.buildmaster.interfaces.buildqueue import (
+    IBuildQueue,
+    IBuildQueueSet,
+    )
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 
@@ -86,6 +112,14 @@ class BuildQueue(SQLBase):
     implements(IBuildQueue)
     _table = "BuildQueue"
     _defaultOrder = "id"
+
+    def __init__(self, job, job_type=DEFAULT,  estimated_duration=DEFAULT,
+                 virtualized=DEFAULT, processor=DEFAULT, lastscore=None):
+        super(BuildQueue, self).__init__(job_type=job_type, job=job,
+            virtualized=virtualized, processor=processor,
+            estimated_duration=estimated_duration, lastscore=lastscore)
+        if lastscore is None and self.specific_job is not None:
+            self.score()
 
     job = ForeignKey(dbName='job', foreignKey='Job', notNull=True)
     job_type = EnumCol(

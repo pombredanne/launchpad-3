@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `PPAReportScript.` """
@@ -6,16 +6,17 @@
 __metaclass__ = type
 
 import os
-from StringIO import StringIO
 import shutil
+from StringIO import StringIO
 import tempfile
 import unittest
 
 from canonical.config import config
-from canonical.launchpad.scripts import BufferLogger
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.services.log.logger import BufferLogger
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.scripts.ppareport import PPAReportScript
+from lp.testing.fakemethod import FakeMethod
 
 
 class TestPPAReport(unittest.TestCase):
@@ -68,13 +69,12 @@ class TestPPAReport(unittest.TestCase):
         # Override the output handlers if no 'output' option was passed
         # via command-line.
         if output is None:
+
             def set_test_output():
                 reporter.output = StringIO()
             reporter.setOutput = set_test_output
 
-            def close_test_output():
-                pass
-            reporter.closeOutput = close_test_output
+            reporter.closeOutput = FakeMethod()
 
         return reporter
 
@@ -137,8 +137,7 @@ class TestPPAReport(unittest.TestCase):
             reporter.output.getvalue().splitlines(), [
                 '= PPAs over 80.00% of their quota =',
                 '',
-                ]
-            )
+                ])
 
         # Quota threshold can be specified.
         reporter = self.getReporter(quota_threshold=.01)
@@ -150,8 +149,7 @@ class TestPPAReport(unittest.TestCase):
                 'http://launchpad.dev/~cprov/+archive/ppa | 1024 | 9',
                 'http://launchpad.dev/~mark/+archive/ppa | 1024 | 9',
                 '',
-                ]
-            )
+                ])
 
     def testUserEmails(self):
         # UserEmails report lists user name, user displayname and user
@@ -166,8 +164,7 @@ class TestPPAReport(unittest.TestCase):
                 'cprov | Celso Providelo | celso.providelo@canonical.com',
                 'mark | Mark Shuttleworth | mark@example.com',
                 '',
-                ]
-            )
+                ])
 
         # UserEmails report can be generated for a single PPA.
         reporter = self.getReporter(ppa_owner='cprov')
@@ -178,8 +175,7 @@ class TestPPAReport(unittest.TestCase):
                 '= PPA user emails =',
                 'cprov | Celso Providelo | celso.providelo@canonical.com',
                 '',
-                ]
-            )
+                ])
 
     def testOrphanRepos(self):
         # OrphanRepos report lists all directories in the PPA root that
@@ -192,8 +188,7 @@ class TestPPAReport(unittest.TestCase):
             reporter.output.getvalue().splitlines(), [
                 '= Orphan PPA repositories =',
                 '',
-                ]
-            )
+                ])
         # We create a 'orphan' repository.
         orphan_repo = os.path.join(
             config.personalpackagearchive.root, 'orphan')
@@ -208,8 +203,7 @@ class TestPPAReport(unittest.TestCase):
                 '= Orphan PPA repositories =',
                 '/var/tmp/ppa.test/orphan',
                 '',
-                ]
-            )
+                ])
         # Remove the orphan directory.
         shutil.rmtree(orphan_repo)
 
@@ -226,8 +220,7 @@ class TestPPAReport(unittest.TestCase):
                 '/var/tmp/ppa.test/cprov',
                 '/var/tmp/ppa.test/mark',
                 '',
-                ]
-            )
+                ])
         # We create both active PPA repositories.
         owner_names = [ppa.owner.name for ppa in reporter.ppas]
         created_repos = []
@@ -245,8 +238,7 @@ class TestPPAReport(unittest.TestCase):
             reporter.output.getvalue().splitlines(), [
                 '= Missing PPA repositories =',
                 '',
-                ]
-            )
+                ])
 
         # Remove the created repositories.
         for repo_path in created_repos:
@@ -261,13 +253,12 @@ class TestPPAReport(unittest.TestCase):
             gen_missing_repos=True, output=output_path)
         reporter.main()
         self.assertEquals(
-            open(output_path).read().splitlines(),[
+            open(output_path).read().splitlines(), [
                 '= Missing PPA repositories =',
                 '/var/tmp/ppa.test/cprov',
                 '/var/tmp/ppa.test/mark',
                 '',
-                ]
-            )
+                ])
         # Remove the report file.
         os.remove(output_path)
 
@@ -288,8 +279,7 @@ class TestPPAReport(unittest.TestCase):
                 '/var/tmp/ppa.test/cprov',
                 '/var/tmp/ppa.test/mark',
                 '',
-                ]
-            )
+                ])
         # Another run for generating user emails report
         reporter = self.getReporter(gen_user_emails=True)
         reporter.main()
@@ -299,9 +289,4 @@ class TestPPAReport(unittest.TestCase):
                 'cprov | Celso Providelo | celso.providelo@canonical.com',
                 'mark | Mark Shuttleworth | mark@example.com',
                 '',
-                ]
-            )
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+                ])

@@ -7,17 +7,19 @@ __metaclass__ = type
 
 
 import logging
-from unittest import TestCase, TestLoader
+from unittest import (
+    TestCase,
+    )
 
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import syncUpdate
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.testing.faketransaction import FakeTransaction
 from lp.translations.scripts.copy_distroseries_translations import (
-    copy_distroseries_translations)
-
-from canonical.testing import LaunchpadZopelessLayer
+    copy_distroseries_translations,
+    )
 
 
 class TestCopying(TestCase):
@@ -60,8 +62,3 @@ class TestCopying(TestCase):
         sid = series_set.findByName('sid')[0]
         self.assertFalse(sid.hide_all_translations)
         self.assertFalse(sid.defer_translation_imports)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
-

@@ -9,10 +9,10 @@ when given certain user-configurable URLs.
 """
 
 
-from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
-from canonical.config import config
-from canonical.launchpad.webapp.url import urlsplit
-from canonical.lazr.pidfile import make_pidfile, get_pid, pidfile_path
+from BaseHTTPServer import (
+    BaseHTTPRequestHandler,
+    HTTPServer,
+    )
 import errno
 import logging
 import os
@@ -21,6 +21,13 @@ import socket
 import subprocess
 import time
 
+from canonical.config import config
+from canonical.launchpad.webapp.url import urlsplit
+from canonical.lazr.pidfile import (
+    get_pid,
+    make_pidfile,
+    pidfile_path,
+    )
 
 # Set up basic logging.
 log = logging.getLogger(__name__)

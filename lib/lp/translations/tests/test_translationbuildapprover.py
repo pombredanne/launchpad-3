@@ -5,16 +5,18 @@
 
 __metaclass__ = type
 
-import transaction
 from unittest import TestLoader
 
+import transaction
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.testing import LaunchpadZopelessLayer
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue, RosettaImportStatus)
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.testing import TestCaseWithFactory
+from lp.translations.enums import RosettaImportStatus
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue,
+    )
 from lp.translations.model.approver import TranslationBuildApprover
 
 
@@ -206,7 +208,7 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
         self.assertEqual([
                 RosettaImportStatus.APPROVED,
                 RosettaImportStatus.APPROVED,
-                RosettaImportStatus.NEEDS_REVIEW
+                RosettaImportStatus.NEEDS_REVIEW,
                 ],
                 [entry.status for entry in entries])
 

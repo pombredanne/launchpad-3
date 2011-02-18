@@ -23,10 +23,6 @@
     tal:content="structure notification/message"
   >A warning notification message</div>
   <div class="informational message"
-    tal:repeat="notification notifications/notice"
-    tal:content="structure notification/message"
-  >A notice notification message</div>
-  <div class="informational message"
     tal:repeat="notification notifications/info"
     tal:content="structure notification/message"
   >An info notification message</div>
@@ -39,7 +35,7 @@
 
 <metal:load-javascript define-macro="load-javascript"
   tal:define="
-      revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
+      revno modules/lp.app.versioninfo/revno | string:unknown;
       icingroot string:/+icing/rev${revno};
       devmode modules/canonical.config/config/devmode;
       yui string:${icingroot}/yui;
@@ -69,183 +65,30 @@
   <script type="text/javascript"
           tal:attributes="src string:${icingroot}/MochiKit.js"></script>
 
-  <tal:devmode condition="devmode">
-
-    <tal:comment replace="nothing">
-      Instead of loading the yui.js seed we will load three of it's five
-      sub-components.
-
-      We leave out get.js and loader.js, effectively disabling
-      dynamic loading of modules.
-
-      XXX mars 2009-11-03
-      To see what modules are missing you have to change yui-base.js to
-      yui-base-debug.js and move the <script/> node outside of this block.
-
-      This will hopefully be fixed in YUI itself.
-      See http://yuilibrary.com/projects/yui3/ticket/2528368
-    </tal:comment>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/yui/yui-base.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/yui/yui-log.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/yui/yui-later.js"></script>
-
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/oop/oop.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/event/event.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/event/event-key.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/event-custom/event-custom.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/event-simulate/event-simulate.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/dom/dom.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/node/node.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/node-focusmanager/node-focusmanager.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/node/node-event-simulate.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/dump/dump.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/io/io.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/json/json.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/attribute/attribute.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/base/base.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/substitute/substitute.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/anim/anim.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/classnamemanager/classnamemanager.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/plugin/plugin.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/pluginhost/pluginhost.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/widget/widget.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/widget/widget-position-ext.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/cookie/cookie.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/widget/widget-position.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/widget/widget-position-ext.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/widget/widget-stack.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/widget/widget-stdmod.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/overlay/overlay.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${yui}/node-menunav/node-menunav.js"></script>
-
-    <script type="text/javascript"
-            tal:attributes="src string:${lazr_js}/lazr/lazr.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lazr_js}/anim/anim.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lazr_js}/inlineedit/editor.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lazr_js}/autocomplete/autocomplete.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lazr_js}/overlay/overlay.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lazr_js}/activator/activator.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lazr_js}/picker/picker.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lazr_js}/formoverlay/formoverlay.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lazr_js}/choiceedit/choiceedit.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lazr_js}/effects/effects.js"></script>
-
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/lp/lp.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/lp/lp-mochi.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/lp/dragscroll.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/lp/picker.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/lp/mapping.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/registry/milestoneoverlay.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/registry/milestonetable.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/registry/timeline.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/sorttable/sorttable.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/inlinehelp/inlinehelp.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/client/client.js"></script>
-
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/code/branch.bugspeclinks.js">
-    </script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/code/branch.status.js">
-    </script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/code/branchmergeproposal.diff.js">
-      </script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/code/branch.subscription.js">
-    </script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/code/branchmergeproposal.status.js">
-    </script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/code/branchmergeproposal.reviewcomment.js">
-    </script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/code/productseries-setbranch.js">
-    </script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/lp/comment.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/lp/errors.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/registry/team.js"></script>
-
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/translations/importqueue.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/translations/languages.js"></script>
-    <script type="text/javascript"
-            tal:attributes="src string:${lp_js}/translations/pofile.js"></script>
-
-  </tal:devmode>
-  <tal:production condition="not:devmode">
-    <script type="text/javascript"
-            tal:attributes="src string:${icingroot}/build/launchpad.js"></script>
-  </tal:production>
+  <script type="text/javascript"
+          tal:attributes="src string:${icingroot}/build/launchpad.js"></script>
 
   <script type="text/javascript"
       tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
   <script type="text/javascript">
     // Define a global YUI sandbox that should be used by everyone.
-    var LPS = YUI();
+    var LPS = YUI({
+      // Don't try to fetch the loader module.
+      bootstrap: false,
+      // Don't try to fetch CSS files.
+      fetchCSS: false,
+      // Turn off combo loading.
+      combine: false,
+      // For paranoia, set a low timeout to not wait on loading a resource.
+      timeout: 50
+      });
   </script>
 </metal:load-javascript>
 
 
 <metal:page-javascript define-macro="page-javascript"
   tal:define="
-      revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
+      revno modules/lp.app.versioninfo/revno | string:unknown;
       icingroot_contrib string:/+icing-contrib/rev${revno};
       devmode modules/canonical.config/config/devmode;
       map_query string:&amp;file=api&amp;v=2&amp;key=${modules/canonical.config/config/google/maps_api_key};">
@@ -259,18 +102,10 @@
     <script type="text/javascript"
             tal:attributes="src string:${icingroot_contrib}/JSONScriptRequest.js"></script>
   </tal:needs_json>
-  <tal:needs-gmap2 condition="request/needs_gmap2">
-    <script type="text/javascript"
-            tal:condition="devmode"
-            tal:attributes="src string:http://maps.google.com/maps?${map_query};"></script>
-    <script type="text/javascript"
-            tal:condition="not: devmode"
-            tal:attributes="src string:https://maps-api-ssl.google.com/maps?oe=utf-8&amp;client=gme-canonical${map_query};"></script>
-  </tal:needs-gmap2>
 
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
-  <script type="text/javascript">
+  <script id="base-layout-load-scripts" type="text/javascript">
     LPS.use('node', 'lp', function(Y) {
         Y.on('load', function(e) {
             sortables_init();
@@ -284,13 +119,20 @@
         // anywhere outside of it.
         Y.on('click', handleClickOnPage, window);
     });
+
+    LPS.use('lp.app.links',
+      function(Y) {
+        Y.on('load', function(e) {
+            Y.lp.app.links.check_valid_lp_links();
+        }, window);
+    });
   </script>
 </metal:page-javascript>
 
 
 <metal:launchpad-stylesheet-3-0 define-macro="launchpad-stylesheet-3-0"
   tal:define="
-    revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
+    revno modules/lp.app.versioninfo/revno | string:unknown;
     icingroot string:/+icing/rev${revno}">
   <tal:comment replace="nothing">
     This macro loads a single css file containing all our stylesheets.
@@ -392,23 +234,25 @@
     </div>
 
     <div class="colophon">
-      &copy; 2004-2010
+      &copy; 2004-2011
       <a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
       &nbsp;&bull;&nbsp;
       <a tal:attributes="href string:${rooturl}legal">Terms of use</a>
       &nbsp;&bull;&nbsp;
-      <a href="https://help.launchpad.net/Feedback"
-        >Contact us</a>
+      <a tal:condition="not: view/user|nothing"
+        href="/feedback">Contact Launchpad Support</a>
+      <a tal:condition="view/user|nothing"
+        href="/support">Contact Launchpad Support</a>
       &nbsp;&bull;&nbsp;
       <a href="http://identi.ca/launchpadstatus"
         >System status</a>
-      <span id="lp-version" tal:condition="not:is_lpnet">
+      <span id="lp-version">
       &nbsp;&bull;&nbsp;
-        <a href="https://help.launchpad.net/LaunchpadReleases"
-          tal:content="version"/>
+        r<tal:revno replace="revno" />
         <tal:devmode condition="devmode">devmode</tal:devmode>
         <tal:demo condition="is_demo">demo site</tal:demo>
-        <tal:edge condition="is_edge">beta site</tal:edge>
+        (<a href="https://code.launchpad.net/~launchpad-pqm/launchpad/stable/"
+             >get the code</a>)
       </span>
     </div>
   </div>
@@ -419,16 +263,6 @@
     <tal:site_message tal:content="structure site_message">
       This site is running pre-release code.
     </tal:site_message>
-    <tal:edge_only condition="is_edge">
-      <a href="#" class="js-action" onclick="setBetaRedirect(false)"
-         tal:condition="not:request/isRedirectInhibited">
-        Disable edge redirect.
-      </a>
-      <a href="#" class="js-action" onclick="setBetaRedirect(true)"
-         tal:condition="request/isRedirectInhibited">
-        Enable edge redirect.
-      </a>
-    </tal:edge_only>
   </div>
 </metal:site-message>
 

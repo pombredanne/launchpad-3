@@ -7,19 +7,28 @@
 
 __metaclass__ = type
 
-from zope.component import getUtility
+__all__ = [
+    "construct_email_notifications",
+    "get_email_notifications",
+    ]
 
-from canonical.config import config
-from canonical.database.sqlbase import rollback, begin
-from canonical.launchpad.helpers import emailPeople, get_email_template
-from lp.bugs.interfaces.bugmessage import IBugMessageSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.mailnotification import (
-    generate_bug_add_email, MailWrapper, BugNotificationBuilder,
-    get_bugmail_from_address)
+from itertools import groupby
+from operator import itemgetter
+
+import transaction
+
+from canonical.launchpad.helpers import (
+    emailPeople,
+    get_email_template,
+    )
 from canonical.launchpad.scripts.logger import log
 from canonical.launchpad.webapp import canonical_url
+from lp.bugs.mail.bugnotificationbuilder import (
+    BugNotificationBuilder,
+    get_bugmail_from_address,
+    )
+from lp.bugs.mail.newbug import generate_bug_add_email
+from lp.services.mail.mailwrapper import MailWrapper
 
 
 def construct_email_notifications(bug_notifications):
@@ -30,7 +39,7 @@ def construct_email_notifications(bug_notifications):
     """
     first_notification = bug_notifications[0]
     bug = first_notification.bug
-    person = first_notification.message.owner
+    person_causing_change = first_notification.message.owner
     subject = first_notification.message.subject
 
     comment = None
@@ -40,12 +49,17 @@ def construct_email_notifications(bug_notifications):
     recipients = {}
     for notification in bug_notifications:
         for recipient in notification.recipients:
-            for email_person in emailPeople(recipient.person):
+            email_people = emailPeople(recipient.person)
+            if (not person_causing_change.selfgenerated_bugnotifications and
+                person_causing_change in email_people):
+                email_people.remove(person_causing_change)
+            for email_person in email_people:
                 recipients[email_person] = recipient
 
     for notification in bug_notifications:
         assert notification.bug == bug, bug.id
-        assert notification.message.owner == person, person.id
+        assert notification.message.owner == person_causing_change, (
+            person_causing_change.id)
         if notification.is_comment:
             assert comment is None, (
                 "Only one of the notifications is allowed to be a comment.")
@@ -90,27 +104,9 @@ def construct_email_notifications(bug_notifications):
     messages = []
     mail_wrapper = MailWrapper(width=72)
     content = '\n\n'.join(text_notifications)
-    from_address = get_bugmail_from_address(person, bug)
-    # comment_syncing_team can be either None or '' to indicate unset.
-    if comment is not None and config.malone.comment_syncing_team:
-        # The first time we import comments from a bug watch, a comment
-        # notification is added, originating from the Bug Watch Updater.
-        bug_watch_updater = getUtility(
-            ILaunchpadCelebrities).bug_watch_updater
-        is_initial_import_notification = (comment.owner == bug_watch_updater)
-        bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
-            bug, comment)
-        comment_syncing_team = getUtility(IPersonSet).getByName(
-            config.malone.comment_syncing_team)
-        # Only members of the comment syncing team should get comment
-        # notifications related to bug watches or initial comment imports.
-        if (is_initial_import_notification or
-            (bug_message is not None and bug_message.bugwatch is not None)):
-            recipients = dict(
-                (email_person, recipient)
-                for email_person, recipient in recipients.items()
-                if recipient.person.inTeam(comment_syncing_team))
-    bug_notification_builder = BugNotificationBuilder(bug)
+    from_address = get_bugmail_from_address(person_causing_change, bug)
+    bug_notification_builder = BugNotificationBuilder(
+        bug, person_causing_change)
     sorted_recipients = sorted(
         recipients.items(), key=lambda t: t[0].preferredemail.email)
     for email_person, recipient in sorted_recipients:
@@ -129,9 +125,10 @@ def construct_email_notifications(bug_notifications):
         else:
             unsubscribe_notice = ''
 
+        data_wrapper = MailWrapper(width=72, indent='  ')
         body_data = {
             'content': mail_wrapper.format(content),
-            'bug_title': bug.title,
+            'bug_title': data_wrapper.format(bug.title),
             'bug_url': canonical_url(bug),
             'unsubscribe_notice': unsubscribe_notice,
             'notification_rationale': mail_wrapper.format(reason)}
@@ -141,9 +138,10 @@ def construct_email_notifications(bug_notifications):
         # footer.
         if email_person.verbose_bugnotifications:
             email_template = 'bug-notification-verbose.txt'
-            body_data['bug_description'] = bug.description
+            body_data['bug_description'] = data_wrapper.format(
+                bug.description)
 
-            status_base = "Status in %s: %s"
+            status_base = "Status in %s:\n  %s"
             status_strings = []
             for bug_task in bug.bugtasks:
                 status_strings.append(status_base % (bug_task.target.title,
@@ -153,7 +151,7 @@ def construct_email_notifications(bug_notifications):
         else:
             email_template = 'bug-notification.txt'
 
-        body = get_email_template(email_template) % body_data
+        body = (get_email_template(email_template) % body_data).strip()
         msg = bug_notification_builder.build(
             from_address, address, body, subject, email_date,
             rationale, references, msgid)
@@ -161,19 +159,39 @@ def construct_email_notifications(bug_notifications):
 
     return bug_notifications, messages
 
-def _log_exception_and_restart_transaction():
-    """Log an exception and restart the current transaction.
 
-    It's important to restart the transaction if an exception occurs,
-    since if it's a DB exception, the transaction isn't usable anymore.
+def notification_comment_batches(notifications):
+    """Search `notification` for continuous spans with only one comment.
+
+    Generates `comment_group, notification` tuples.
+
+    The notifications are searched in order for continuous spans containing
+    only one comment. Each continous span is given a unique number. Each
+    notification is yielded along with its span number.
     """
-    log.exception(
-        "An exception was raised while building the email notification.")
-    rollback()
-    begin()
+    comment_count = 0
+    for notification in notifications:
+        if notification.is_comment:
+            comment_count += 1
+        # Everything before the 2nd comment is in the first comment group.
+        yield comment_count or 1, notification
 
 
-def get_email_notifications(bug_notifications, date_emailed=None):
+def get_bug_and_owner(notification):
+    """Retrieve `notification`'s `bug` and `message.owner` attributes."""
+    return notification.bug, notification.message.owner
+
+
+def notification_batches(notifications):
+    """Batch notifications for `get_email_notifications`."""
+    notifications_grouped = groupby(notifications, get_bug_and_owner)
+    for (bug, person), notification_group in notifications_grouped:
+        batches = notification_comment_batches(notification_group)
+        for comment_group, batch in groupby(batches, itemgetter(0)):
+            yield [notification for (comment_group, notification) in batch]
+
+
+def get_email_notifications(bug_notifications):
     """Return the email notifications pending to be sent.
 
     The intention of this code is to ensure that as many notifications
@@ -183,44 +201,14 @@ def get_email_notifications(bug_notifications, date_emailed=None):
         - Must be related to the same bug.
         - Must contain at most one comment.
     """
-    # Avoid spurious lint about possibly undefined loop variables.
-    notification = None
-    # Copy bug_notifications because we will modify it as we go.
-    bug_notifications = list(bug_notifications)
-    while bug_notifications:
-        found_comment = False
-        notification_batch = []
-        bug = bug_notifications[0].bug
-        person = bug_notifications[0].message.owner
-        # What the loop below does is find the largest contiguous set of
-        # bug notifications as specified above.
-        #
-        # Note that we iterate over a copy of the notifications here
-        # because we are modifying bug_modifications as we go.
-        for notification in list(bug_notifications):
-            if notification.is_comment and found_comment:
-                # Oops, found a second comment, stop batching.
-                break
-            if notification.bug != bug:
-                # Found a different change, stop batching.
-                break
-            if notification.message.owner != person:
-                # Ah, we've found a change made by somebody else; time
-                # to stop batching too.
-                break
-            notification_batch.append(notification)
-            bug_notifications.remove(notification)
-            if notification.is_comment:
-                found_comment = True
-
-        if date_emailed is not None:
-            notification.date_emailed = date_emailed
+    for batch in notification_batches(bug_notifications):
         # We don't want bugs preventing all bug notifications from
         # being sent, so catch and log all exceptions.
         try:
-            yield construct_email_notifications(notification_batch)
+            yield construct_email_notifications(batch)
         except (KeyboardInterrupt, SystemExit):
             raise
         except:
-            _log_exception_and_restart_transaction()
-
+            log.exception("Error while building email notifications.")
+            transaction.abort()
+            transaction.begin()

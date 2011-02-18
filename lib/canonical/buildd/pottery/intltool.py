@@ -3,8 +3,6 @@
 
 """Functions to build PO templates on the build slave."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 __all__ = [
     'check_potfiles_in',
@@ -80,16 +78,15 @@ def _get_AC_PACKAGE_NAME(config_file):
 
     The value of AC_PACKAGE_NAME is either the first or the fourth
     parameter of the AC_INIT call if it is called with at least two
-    parameters. They may be enclosed in [].
+    parameters.
     """
     params = config_file.getFunctionParams("AC_INIT")
     if params is None or len(params) < 2:
         return None
     if len(params) < 4:
-        value = params[0]
+        return params[0]
     else:
-        value = params[3]
-    return value.strip("[]")
+        return params[3]
 
 
 def _try_substitution(config_files, varname, substitution):
@@ -151,14 +148,14 @@ def get_translation_domain(dirname):
             if value == "AC_PACKAGE_NAME":
                 value = _get_AC_PACKAGE_NAME(config_files[-1])
             else:
-                # Check if the value need a substitution.
+                # Check if the value needs a substitution.
                 substitution = Substitution.get(value)
                 if substitution is not None:
                     # Try to substitute with value.
                     value = _try_substitution(
                         config_files, varname, substitution)
                     if value is None:
-                        # No substitution found, the setup is broken.
+                        # No substitution found; the setup is broken.
                         break
         if value is not None and not keep_trying:
             # A value has been found.
@@ -213,6 +210,28 @@ class ConfigFile(object):
             conf_file = file_or_name
         self.content = conf_file.read()
 
+    def _stripQuotes(self, identifier):
+        """Strip surrounding quotes from `identifier`, if present.
+
+        :param identifier: a string, possibly surrounded by matching
+            'single,' "double," or [bracket] quotes.
+        :return: `identifier` but with the outer pair of matching quotes
+            removed, if they were there.
+        """
+        if len(identifier) < 2:
+            return identifier
+
+        quote_pairs = [
+            ('"', '"'),
+            ("'", "'"),
+            ("[", "]"),
+            ]
+        for (left, right) in quote_pairs:
+            if identifier.startswith(left) and identifier.endswith(right):
+                return identifier[1:-1]
+
+        return identifier
+
     def getVariable(self, name):
         """Search the file for a variable definition with this name."""
         pattern = re.compile(
@@ -220,7 +239,7 @@ class ConfigFile(object):
         result = pattern.search(self.content)
         if result is None:
             return None
-        return result.group(1)
+        return self._stripQuotes(result.group(1))
 
     def getFunctionParams(self, name):
         """Search file for a function call with this name, return parameters.
@@ -229,7 +248,11 @@ class ConfigFile(object):
         result = pattern.search(self.content)
         if result is None:
             return None
-        return [param.strip() for param in result.group(1).split(',')]
+        else:
+            return [
+                self._stripQuotes(param.strip())
+                for param in result.group(1).split(',')
+                ]
 
 
 class Substitution(object):

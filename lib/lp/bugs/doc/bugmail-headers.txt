@@ -15,7 +15,7 @@ BugTask -> Email Header Value
 You can ask an IBugTask for its representation as an email header value:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
 
     >>> bugtaskset = getUtility(IBugTaskSet)
     >>> upstream_firefox_bugtask = bugtaskset.get(2)
@@ -73,7 +73,7 @@ Bugzilla.) For these cases, the assignee value will degrade to the .name value.
 Let's use an example where Scott James Remnant is assigned to a task, but
 doesn't have a "preferred email" set in Launchpad.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> scott = getUtility(IPersonSet).getByName('keybuk')
     >>> debian_firefox_bugtask.transitionToAssignee(scott)
     >>> debian_firefox_bugtask.asEmailHeaderValue()

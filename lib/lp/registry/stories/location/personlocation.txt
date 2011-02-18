@@ -1,4 +1,5 @@
-= Person Locations =
+Person Locations
+================
 
 People can have a location and time zone in Launchpad.  In some cases, a
 person has a time zone, but no location. We test that their home page renders
@@ -15,23 +16,3 @@ location data set, otherwise the location portlet does not show up.
     >>> anon_browser.open('http://launchpad.dev/~zzz')
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'portlet-map'))
-
-If a person has a location, there is a little map portlet in their
-profile page. We can't test all the google javascript, but we can make sure
-there's a map, and the scripts are loaded.
-
-    >>> login('test@canonical.com')
-    >>> yyy = factory.makePerson(name='yyy', time_zone='Europe/London',
-    ...                          latitude=52.2, longitude=0.3)
-    >>> logout()
-
-    >>> anon_browser.open('http://launchpad.dev/~yyy')
-    >>> markup = str(anon_browser.contents)
-    >>> print extract_text(find_tag_by_id(markup, 'portlet-map'), skip_tags=[])
-    Location
-    Time zone: Europe/London...
-    Y.lp.mapping.renderPersonMapSmall(...
-    >>> 'src="http://maps.google.com/maps' in markup
-    True
-    >>> 'build/lp/mapping.js' in markup
-    True

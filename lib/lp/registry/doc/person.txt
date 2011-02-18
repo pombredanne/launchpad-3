@@ -6,11 +6,15 @@ some people which have done work on the free software community but are
 not Launchpad users.
 
     >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IPerson, IProductSet, IEmailAddressSet,
-    ...     IHasStanding)
-    >>> from lp.translations.interfaces.translationimportqueue import (
+    >>> from lp.registry.interfaces.person import (
+    ...     IHasStanding,
+    ...     IPerson,
+    ...     IPersonSet,
+    ...     )
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.translations.interfaces.hastranslationimports import (
     ...     IHasTranslationImports)
 
 Any Person object (either a person or a team) implements IPerson...
@@ -79,8 +83,8 @@ Because the comment will be displayed verbatim in a web page, it must
 start with the word "when" followed by a description of the action that
 caused the entry to be created.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     EmailAddressStatus, PersonCreationRationale)
+    >>> from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+    >>> from lp.registry.interfaces.person import PersonCreationRationale
     >>> p, email = personset.createPersonAndEmail(
     ...     'randomuser@randomhost.com', PersonCreationRationale.POFILEIMPORT,
     ...     comment='when importing the Portuguese translation of firefox',
@@ -136,8 +140,8 @@ using the createPersonAndEmail() method.
     >>> p.account_status
     <DBItem AccountStatus.NOACCOUNT...
 
-    >>> from canonical.launchpad.interfaces.lpstorm import IMasterStore
     >>> from canonical.launchpad.database.account import Account
+    >>> from canonical.launchpad.interfaces.lpstorm import IMasterStore
     >>> account = IMasterStore(Account).get(Account, p.accountID)
     >>> account.activate(
     ...     "Activated by doc test.",
@@ -238,7 +242,7 @@ A Person may be linked to an Account.
 
     >>> login('no-priv@canonical.com')
     >>> person = personset.getByEmail('no-priv@canonical.com')
-    >>> person.account.openid_identifier
+    >>> person.account.openid_identifiers.any().identifier
     u'no-priv_oid'
 
 
@@ -330,7 +334,7 @@ value is available.
 A Launchpad administrator may change a person's standing, and may give a
 reason for the change.
 
-    >>> from canonical.launchpad.interfaces import PersonalStanding
+    >>> from lp.registry.interfaces.person import PersonalStanding
     >>> lifeless.personal_standing = PersonalStanding.GOOD
     >>> lifeless.personal_standing_reason = 'Such a cool guy!'
     >>> from canonical.launchpad.ftests import syncUpdate
@@ -387,7 +391,7 @@ we may have Person objects which are, in fact, teams. To find out
 whether a given object is a person or a team we can use the isTeam()
 method of IPerson or check if the object provides the ITeam interface.
 
-    >>> from canonical.launchpad.interfaces import ITeam
+    >>> from lp.registry.interfaces.person import ITeam
     >>> ddaa = personset.getByName('ddaa')
     >>> ddaa.isTeam()
     False
@@ -437,8 +441,8 @@ is raised.
 PersonSet.newTeam() will also fire an ObjectCreatedEvent for the newly
 created team.
 
-    >>> from canonical.launchpad.ftests.event import TestEventListener
     >>> from zope.lifecycleevent.interfaces import IObjectCreatedEvent
+    >>> from canonical.launchpad.ftests.event import TestEventListener
     >>> def print_event(team, event):
     ...     print "ObjectCreatedEvent fired for team '%s'" % team.name
 
@@ -628,31 +632,6 @@ TeamParticipation entries for themselves.
     >>> vcs_imports.hasParticipationEntryFor(vcs_imports)
     True
 
-The inTeam method is cached to avoid unnecessary database lookups - this
-was a cause of a number of timeouts
-
-    >>> naked_lifeless = removeSecurityProxy(lifeless)
-    >>> naked_lifeless._inTeam_cache[vcs_imports.id]
-    True
-
-    >>> naked_lifeless._inTeam_cache[vcs_imports.id] = False
-    >>> lifeless.inTeam(vcs_imports)
-    False
-
-    >>> naked_lifeless._inTeam_cache[vcs_imports.id] = True
-    >>> lifeless.inTeam(vcs_imports)
-    True
-
-IPerson has a method to clear it; this is used between IPerson instances
-to ensure that the cache can be kept consistent when membership changes.
-
-    >>> naked_lifeless.clearInTeamCache()
-    >>> naked_lifeless._inTeam_cache
-    {}
-
-** See lib/canonical/launchpad/doc/teammembership.txt for more
-information about team membership/participation.
-
 
 Email notifications to teams
 ............................
@@ -660,6 +639,7 @@ Email notifications to teams
 If a team has a contact email address, all notifications we send to the
 team will go to that address.
 
+    >>> login('no-priv@canonical.com')
     >>> ubuntu_team = personset.getByName('ubuntu-team')
     >>> ubuntu_team.preferredemail.email
     u'support@ubuntu.com'
@@ -688,21 +668,11 @@ direct member of that team.
 Team Visibility
 ...............
 
-A Team can have its visibility attribute set to PersonVisibility.PUBLIC,
-PersonVisibility.PRIVATE_MEMBERSHIP, or PersonVisibility.PRIVATE.
+A Team can have its visibility attribute set to
+PersonVisibility.PUBLIC or PersonVisibility.PRIVATE.
 
-A PRIVATE_MEMBERSHIP team is a team that exists for the sole purpose of
-providing a membership list for the purpose of single sign on, etc.
-PRIVATE_MEMBERSHIP teams can have mailing lists but cannot participate
-in Launchpad in other ways.
-
-Like PRIVATE_MEMBERSHIP teams, PRIVATE teams are hidden from view from
-non-members but they are allowed to actually do things in Launchpad.
-
-To prevent leaking of private membership information, private-membership
-teams are only allowed to be connected with a few different database
-objects. This is enforced in the model, but there are also checks in the
-form handling to provide clearer error messages.
+PRIVATE teams are hidden from view from non-members but they are
+allowed to actually do things in Launchpad.
 
 The PublicPersonChoice for interface classes and the
 validate_public_person for database classes only allow public teams to
@@ -712,36 +682,17 @@ The validators will raise a PrivatePersonLinkageError exception if an
 invalid team is passed to the constructor or is used to set one of the
 attributes.
 
-myteam is a private-membership team, so validate_public_person will
-reject it for the BugSubscription.person and
-BugSubscription.subscribed_by attributes.
+Private teams can be subscribed to bugs.
 
     >>> login('foo.bar@canonical.com')
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.registry.interfaces.person import (
     ...     IPersonSet, PersonVisibility)
-    >>> from canonical.launchpad.database import BugSubscription
+    >>> from lp.bugs.model.bugsubscription import BugSubscription
     >>> person_set = getUtility(IPersonSet)
     >>> bug_set = getUtility(IBugSet)
-    >>> myteam = person_set.getByName('myteam')
-    >>> guadamen = person_set.getByName('guadamen')
     >>> bug = bug_set.get(1)
-    >>> bug_subscription = BugSubscription(bug=bug, person=myteam,
-    ...     subscribed_by=guadamen)
-    Traceback (most recent call last):
-    ...
-    PrivatePersonLinkageError: Cannot link person
-    (name=myteam, visibility=PRIVATE_MEMBERSHIP) to <BugSubscription...
-
-    >>> bug_subscription = BugSubscription(bug=bug, person=guadamen,
-    ...                                    subscribed_by=myteam)
-    Traceback (most recent call last):
-    ...
-    PrivatePersonLinkageError: Cannot link person
-    (name=myteam, visibility=PRIVATE_MEMBERSHIP) to <BugSubscription...
-
-Private teams can be subscribed to bugs.
-
+    >>> guadamen = person_set.getByName('guadamen')
     >>> salgado = personset.getByName('salgado')
     >>> private_team = factory.makeTeam(salgado, name='private-team',
     ...     displayname='Private Team',
@@ -755,11 +706,7 @@ And they can subscribe others to bugs.
     ...     subscribed_by=private_team)
 
 Teams also have a 'private' attribute that is true if the team is
-private membership or private and false for public teams.  It is also
-false for people.
-
-    >>> myteam.private
-    True
+private and false for public teams.  It is also false for people.
 
     >>> private_team.private
     True
@@ -770,24 +717,6 @@ false for people.
     >>> salgado.private
     False
 
-The visibility attribute may only be modified if the user has
-launchpad.Commercial permissions.
-
-    >>> login('commercial-member@canonical.com')
-    >>> print myteam.visibility.name
-    PRIVATE_MEMBERSHIP
-
-    >>> myteam.visibility = PersonVisibility.PUBLIC
-    >>> print myteam.visibility.name
-    PUBLIC
-
-    >>> login('no-priv@canonical.com')
-    >>> myteam.visibility = PersonVisibility.PRIVATE
-    Traceback (most recent call last):
-      ...
-    Unauthorized: ...
-
-
 Latest Team Memberships
 -----------------------
 
@@ -795,7 +724,7 @@ The key concept in displaying the latest team memberships is that the
 team list is actually sorted by date joined.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> personset = getUtility(IPersonSet)
     >>> foobar = personset.getByName('name16')
     >>> membership_list = foobar.getLatestApprovedMembershipsForPerson()
@@ -822,11 +751,11 @@ address:
     # First we'll define a utility function to help us displaying
     # the results.
 
-    >>> emailset = getUtility(IEmailAddressSet)
+    >>> naked_emailset = removeSecurityProxy(getUtility(IEmailAddressSet))
     >>> def print_people(results):
     ...     for person in results:
     ...         emails = [email.email
-    ...                   for email in emailset.getByPerson(person)]
+    ...                   for email in naked_emailset.getByPerson(person)]
     ...         print "%s (%s): %s" % (
     ...             person.displayname, person.name, emails)
 
@@ -858,7 +787,7 @@ address:
 The teams returned are dependent upon the team's visibility (privacy)
 and whether the logged in user is a member of those teams.
 
-Anonymous users cannot see non-public teams, such as 'myteam'.
+Anonymous users cannot see non-public teams, such as 'private-team'.
 
     >>> login(ANONYMOUS)
     >>> print_people(personset.find('team'))
@@ -866,7 +795,6 @@ Anonymous users cannot see non-public teams, such as 'myteam'.
     Hoary Gnome Team (name21): []
     HWDB Team (hwdb-team): []
     Just a new team (new-team): []
-    My Team (myteam): []
     No Team Memberships (no-team-memberships):
       [u'no-team-memberships@test.com']
     Other Team (otherteam): []
@@ -882,16 +810,16 @@ Anonymous users cannot see non-public teams, such as 'myteam'.
 
 But Owner, a member of that team, will see it in the results.
 
-    >>> login('owner@canonical.com')
+    >>> login_person(private_team.teamowner)
     >>> print_people(personset.find('team'))
     Another a new team (new3): []
     Hoary Gnome Team (name21): []
     HWDB Team (hwdb-team): []
     Just a new team (new-team): []
-    My Team (myteam): []
     No Team Memberships (no-team-memberships):
       [u'no-team-memberships@test.com']
     Other Team (otherteam): []
+    Private Team (private-team): []
     Simple Team (simple-team): []
     Team Membership Janitor (team-membership-janitor): []
     testing Spanish team (testing-spanish-team): []
@@ -933,7 +861,7 @@ By default, when searching only for people, any person whose account is
 inactive is not included in the list, but we can tell findPerson to
 include them as well.
 
-    >>> from canonical.launchpad.interfaces import AccountStatus
+    >>> from canonical.launchpad.interfaces.account import AccountStatus
     >>> dave = personset.getByName('justdave')
     >>> removeSecurityProxy(dave).account_status = AccountStatus.DEACTIVATED
     >>> transaction.commit()
@@ -962,7 +890,6 @@ Searching only for Teams based on their names or email addresses:
     Hoary Gnome Team (name21): []
     HWDB Team (hwdb-team): []
     Just a new team (new-team): []
-    My Team (myteam): []
     Other Team (otherteam): []
     Simple Team (simple-team): []
     testing Spanish team (testing-spanish-team): []
@@ -972,7 +899,7 @@ Searching only for Teams based on their names or email addresses:
     Warty Gnome Team (warty-gnome): []
     Warty Security Team (name20): []
 
-The Owner user is a member of the private membership team 'myteam' so
+The Owner user is a member of the private team 'myteam' so
 the previous search will include myteam in the results.
 
     >>> login('owner@canonical.com')
@@ -1100,11 +1027,11 @@ alphabetically by package name.
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> pmount = ubuntu.getSourcePackage('pmount')
     >>> pmount.addBugSubscription(no_priv, no_priv)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
 
     >>> mozilla_firefox = ubuntu.getSourcePackage('mozilla-firefox')
     >>> mozilla_firefox.addBugSubscription(no_priv, no_priv)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
 
     >>> [package.name for package in no_priv.getBugSubscriberPackages()]
     [u'mozilla-firefox', u'pmount']
@@ -1120,8 +1047,9 @@ project groups and projects.
 
     >>> login(ANONYMOUS)
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistribution, IProjectGroup, IProduct)
+    >>> from lp.registry.interfaces.distribution import IDistribution
+    >>> from lp.registry.interfaces.product import IProduct
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroup
 
     >>> def print_pillar(pillarname):
     ...     pillar = pillarname.pillar
@@ -1132,25 +1060,22 @@ project groups and projects.
     ...     elif IProduct.providedBy(pillar):
     ...         pillar_type = 'project'
     ...     print "%s: %s (%s)" % (
-    ...         pillar_type, pillar.title, pillar.name)
+    ...         pillar_type, pillar.displayname, pillar.name)
 
     >>> for pillarname in mark.getOwnedOrDrivenPillars():
     ...     print_pillar(pillarname)
-    distribution: Ubuntu Linux (ubuntu)
-    distribution: Redhat Advanced Server (redhat)
-    distribution: Debian GNU/Linux (debian)
-    distribution: The Gentoo Linux (gentoo)
-    distribution: Kubuntu - Free KDE-based Linux (kubuntu)
-    distribution: Ubuntu Test (ubuntutest)
+    distribution: Debian (debian)
+    distribution: Gentoo (gentoo)
+    distribution: Kubuntu (kubuntu)
+    distribution: Red Hat (redhat)
     project group: Apache (apache)
-    project: Tomcat (tomcat)
-    project: ALSA utilities (alsa-utils)
-    project: Derby - Java Database (derby)
+    project: Derby (derby)
+    project: alsa-utils (alsa-utils)
 
     >>> for pillarname in ubuntu_team.getOwnedOrDrivenPillars():
     ...     print_pillar(pillarname)
-    distribution: Ubuntu Linux (ubuntu)
-    distribution: Ubuntu Test (ubuntutest)
+    distribution: Ubuntu (ubuntu)
+    distribution: ubuntutest (ubuntutest)
     project: Tomcat (tomcat)
 
 
@@ -1225,7 +1150,7 @@ Person.languages.
 
 To add new languages we use Person.addLanguage().
 
-    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> languageset = getUtility(ILanguageSet)
     >>> carlos.addLanguage(languageset['pt_BR'])
     >>> [lang.code for lang in carlos.languages]
@@ -1270,7 +1195,7 @@ on certain criteria:
 First, Carlos does not have any completed specifications assigned to
 him:
 
-    >>> from canonical.launchpad.interfaces import SpecificationFilter
+    >>> from lp.blueprints.enums import SpecificationFilter
     >>> carlos.specifications(filter=[
     ...     SpecificationFilter.ASSIGNEE,
     ...     SpecificationFilter.COMPLETE]).count()
@@ -1348,8 +1273,8 @@ We can filter for specifications that contain specific text:
 
 Inactive products are excluded from the listings.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
     >>> from canonical.launchpad.ftests import login
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> login("mark@example.com")
 
@@ -1400,7 +1325,7 @@ within the context of a specific bug target, or in Launchpad in general.
 A person with bugs assigned to them in a context is considered a 'Bug
 Contributor'.
 
-    >>> from canonical.launchpad.interfaces import BugTaskSearchParams
+    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
 
     >>> cprov.searchTasks(
     ...     BugTaskSearchParams(user=foobar, assignee=cprov)).count()
@@ -1414,7 +1339,7 @@ contributor.
 
 We assign a bug task to Celso.
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
     >>> search_params = BugTaskSearchParams(user=foobar)
     >>> search_params.setProduct(firefox)
     >>> firefox_bugtask = getUtility(IBugTaskSet).search(search_params)[0]
@@ -1428,7 +1353,7 @@ Now Celso is a bug contributor in Launchpad.
 
 Celso is a bug contributer in the context of the `firefox` product.
 
-    >>> from canonical.launchpad.interfaces import IProjectGroupSet
+    >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
     >>> cprov.isBugContributorInTarget(user=foobar, target=firefox)
     True
 
@@ -1561,5 +1486,3 @@ Teams are never on probation.
 
     >>> team.is_valid_person
     False
-
-

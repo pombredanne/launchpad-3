@@ -11,12 +11,10 @@ __all__ = [
 
 from collections import defaultdict
 
-from zope.security.proxy import removeSecurityProxy
-
 from storm.base import Storm
-from storm.expr import In
 from storm.info import get_cls_info
 from storm.store import Store
+from zope.security.proxy import removeSecurityProxy
 
 
 def collate(things, key):
@@ -56,7 +54,7 @@ def gen_reload_queries(objects):
         primary_key_column_getter = primary_key_column.__get__
         for store, objects in collate(objects, Store.of):
             primary_keys = map(primary_key_column_getter, objects)
-            condition = In(primary_key_column, primary_keys)
+            condition = primary_key_column.is_in(primary_keys)
             yield store.find(object_type, condition)
 
 

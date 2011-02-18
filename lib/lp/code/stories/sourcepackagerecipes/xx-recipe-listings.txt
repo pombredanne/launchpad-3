@@ -66,7 +66,6 @@ The "Base branch" column should not be shown.
 
     >>> print_recipe_listing_head(nopriv_browser)
     Name
-    Project
     Owner
     Registered
 
@@ -74,9 +73,9 @@ The branch page should have a list of all the recipes the branch is a
 base_branch for.
 
     >>> print_recipe_listing_contents(nopriv_browser)
-    generic-string... Product-name... Person-name...
-    generic-string... Product-name... Person-name...
-    generic-string... Product-name... Person-name...
+    generic-string... Person-name...
+    generic-string... Person-name...
+    generic-string... Person-name...
 
 
 Product Recipe Listings
@@ -87,10 +86,7 @@ Let's use the product from the former branch test.
     >>> nopriv_browser.open(product_url)
     >>> nopriv_browser.getLink('View source package recipes').click()
     >>> print nopriv_browser.url
-    http://launchpad.dev/product-name.../+recipes
-
-The "Project" column should be missing, since, well, all of these recipes are
-from the same product.
+    http://code.launchpad.dev/product-name.../+recipes
 
     >>> print_recipe_listing_head(nopriv_browser)
     Name
@@ -123,13 +119,12 @@ Create a person, make some recipes for that person.
     >>> nopriv_browser.open(person_url)
     >>> nopriv_browser.getLink('View source package recipes').click()
     >>> print nopriv_browser.url
-    http://launchpad.dev/~person-name.../+recipes
+    http://code.launchpad.dev/~person-name.../+recipes
 
 The "Owner" section should be missing.
 
     >>> print_recipe_listing_head(nopriv_browser)
     Name
-    Project
     Base Branch
     Registered
 
@@ -137,6 +132,6 @@ The listings should now show all recipes whose base branch is a branch from
 this product.
 
     >>> print_recipe_listing_contents(nopriv_browser)
-    generic-string... Product-name... lp://dev/... ...
-    generic-string... Product-name... lp://dev/... ...
-    generic-string... Product-name... lp://dev/... ...
+    generic-string... lp://dev/... ...
+    generic-string... lp://dev/... ...
+    generic-string... lp://dev/... ...

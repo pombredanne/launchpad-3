@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -8,6 +8,21 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
+
+  <adapter
+      name="blueprints"
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+      for="lp.blueprints.interfaces.specificationtarget.IHasSpecifications"
+      factory="lp.blueprints.browser.specificationtarget.BlueprintsVHostBreadcrumb"
+      permission="zope.Public"/>
+  <adapter
+      name="blueprints"
+      provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+      for="lp.registry.interfaces.person.IPerson"
+      factory="lp.blueprints.browser.specificationtarget.BlueprintsVHostBreadcrumb"
+      permission="zope.Public"/>
+
+
     <browser:navigation
         module="lp.blueprints.browser.sprint"
         classes="
@@ -18,7 +33,7 @@
     <browser:defaultView
         for="lp.blueprints.interfaces.sprint.ISprint"
         name="+specs"
-        layer="canonical.launchpad.layers.BlueprintLayer"/>
+        layer="lp.blueprints.publisher.BlueprintsLayer"/>
     <browser:url
         for="lp.blueprints.interfaces.sprint.ISprint"
         path_expression="name"
@@ -53,8 +68,7 @@
             name="+mdz-specs.csv"
             attribute="mdzCsv"/>
         <browser:page
-            name="+specs"
-            template="../templates/hasspecifications-specs.pt"/>
+            name="+specs"/>
         <browser:page
             name="+portlet-latestspecs"
             template="../templates/specificationtarget-portlet-latestspecs.pt"/>
@@ -133,7 +147,7 @@
     <browser:url
         for="lp.blueprints.interfaces.sprint.ISprintSet"
         path_expression="string:sprints"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
     <browser:defaultView
         for="lp.blueprints.interfaces.sprint.ISprintSet"
         name="+index"/>
@@ -450,7 +464,7 @@
         <browser:url
             for="lp.blueprints.interfaces.specification.ISpecificationSet"
             path_expression="string:"
-            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
             rootsite="blueprints"/>
         <browser:defaultView
             for="lp.blueprints.interfaces.specification.ISpecificationSet"
@@ -500,8 +514,7 @@
             class="lp.blueprints.browser.specificationtarget.HasSpecificationsView"
             permission="zope.Public">
             <browser:page
-                name="+specs"
-                template="../templates/hasspecifications-specs.pt"/>
+                name="+specs"/>
         </browser:pages>
         <browser:page
             for="lp.blueprints.interfaces.specificationtarget.ISpecificationGoal"
@@ -532,8 +545,7 @@
             class="lp.blueprints.browser.specificationtarget.HasSpecificationsView"
             permission="zope.Public">
             <browser:page
-                name="+specs"
-                template="../templates/hasspecifications-specs.pt"/>
+                name="+specs"/>
             <browser:page
                 name="+portlet-latestspecs"
                 template="../templates/specificationtarget-portlet-latestspecs.pt"/>
@@ -562,7 +574,7 @@
     <browser:defaultView
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         name="+specs"
-        layer="canonical.launchpad.layers.BlueprintLayer"/>
+        layer="lp.blueprints.publisher.BlueprintsLayer"/>
     <browser:page
         name="+addspec"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
@@ -583,8 +595,7 @@
         facet="specifications"
         permission="zope.Public">
         <browser:page
-            name="+specs"
-            template="../templates/hasspecifications-specs.pt"/>
+            name="+specs"/>
         <browser:page
             name="+portlet-latestspecs"
             template="../templates/specificationtarget-portlet-latestspecs.pt"/>

@@ -28,17 +28,18 @@
           <th>Joined</th>
           <th>Role</th>
           <th>Via</th>
-          <th>Mailing List</th>
+          <th
+            tal:condition="not: context/teamowner">Mailing List</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody tal:content="cache:anonymous, 10 minute">
         <tr tal:repeat="participation view/active_participations">
           <td>
             <a tal:replace="structure participation/team/fmt:link">name</a>
           </td>
           <td>
             <tal:date condition="not: participation/via"
-              tal:replace="participation/membership/datejoined/fmt:date">
+              tal:replace="participation/datejoined/fmt:date">
               2005-06-17
             </tal:date>
             <tal:no-date condition="participation/via">
@@ -57,30 +58,29 @@
               &mdash;
             </tal:direct>
           </td>
-          <td>
-            <tal:subscribed condition="participation/team/mailing_list"
-              replace="participation/subscribed">
+          <td
+            tal:condition="not: context/teamowner">
+            <tal:subscribed replace="structure participation/subscribed">
               yes
             </tal:subscribed>
-            <tal:no-list condition="not: participation/team/mailing_list">
-              &mdash;
-            </tal:no-list>
           </td>
         </tr>
       </tbody>
     </table>
 
-    <ul id="participation-actions" class="horizontal"
-      tal:condition="context/required:launchpad.Edit">
-      <li>
-        <a class="sprite add" href="/people/+newteam">Register a team</a>
-      </li>
-      <li>
-        <a class="sprite edit"
-          tal:attributes="href context/menu:overview/editemailaddresses/fmt:url"
-          >Change mailing list subscriptions</a>
-      </li>
-    </ul>
+    <tal:user condition="not: context/teamowner">
+      <ul id="participation-actions" class="horizontal"
+        tal:condition="context/required:launchpad.Edit">
+        <li>
+          <a class="sprite add" href="/people/+newteam">Register a team</a>
+        </li>
+        <li>
+          <a class="sprite edit"
+            tal:attributes="href context/menu:overview/editemailaddresses/fmt:url"
+            >Change mailing list subscriptions</a>
+        </li>
+      </ul>
+    </tal:user>
   </div>
 </body>
 </html>

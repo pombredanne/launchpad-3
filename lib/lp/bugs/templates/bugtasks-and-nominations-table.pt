@@ -37,9 +37,9 @@
           </a>
         </span>
         <script type="text/javascript" tal:content="string:
-          LPS.use('event', 'bugs.bugtask_index', function(Y) {
+          LPS.use('event', 'lp.bugs.bugtask_index', function(Y) {
               Y.on('load', function(e) {
-                  Y.bugs.setup_me_too(
+                  Y.lp.bugs.bugtask_index.setup_me_too(
                       ${view/current_user_affected_js_status},
                       ${view/other_users_affected_count});
               }, window);
@@ -103,7 +103,8 @@
     <tal:addupstream
         define="link context_menu/addupstream"
         condition="link/enabled"
-        replace="structure link/render" />
+        replace="structure link/render" /><a href="/+help/also-affects-project-help.html" target="help" class="sprite maybe">&nbsp;
+             <span class="invisible-link">(?)</span></a>
     <tal:adddistro
         define="link context_menu/adddistro"
         condition="link/enabled"
@@ -113,6 +114,7 @@
         condition="link/enabled"
         replace="structure link/render" />
   </tal:also-affects-links>
+
 </div>
 
 </tal:root>

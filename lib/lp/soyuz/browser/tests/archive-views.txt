@@ -2,7 +2,7 @@
 
 Let's use Celso's PPA for the tests.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
 
@@ -15,11 +15,14 @@ First let's create a copy archive:
 
     >>> from lp.registry.interfaces.distribution import (
     ...     IDistributionSet)
+    >>> from lp.testing.factory import (
+    ...     remove_security_proxy_and_shout_at_engineer)
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> copy_location = factory.makeCopyArchiveLocation(
     ...     distribution=ubuntu,
     ...     name="intrepid-security-rebuild")
-    >>> copy_archive = copy_location.archive
+    >>> copy_archive = remove_security_proxy_and_shout_at_engineer(
+    ...     copy_location).archive
 
 And let's create two views to compare:
 
@@ -65,8 +68,10 @@ IPackageCopyRequest's associated with an archive:
     0
 
     # Create a copy-request to Celso's PPA.
+    >>> naked_copy_location = remove_security_proxy_and_shout_at_engineer(
+    ...     copy_location)
     >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
-    ...     copy_location, copy_archive.owner)
+    ...     naked_copy_location, copy_archive.owner)
 
     >>> len(copy_archive_view.package_copy_requests)
     1
@@ -304,12 +309,15 @@ they were published. We include any relevant builds for failures.
     ...             )
     >>> print_latest_updates(view.latest_updates)
     cdrkit - Failed to build: i386
-    pmount - Successfully built
     iceweasel - Successfully built
+    pmount - Successfully built
 
 Let's now update the datepublished for iceweasel to show that the ordering
-is from most recent.
+is from most recent.  The view's latest_updates property is cached so we need
+to reload the view.
 
+    >>> login('celso.providelo@canonical.com')
+    >>> view = create_initialized_view(cprov.archive, name="+index")
     >>> from canonical.database.constants import UTC_NOW
     >>> login('foo.bar@canonical.com')
     >>> view.filtered_sources[1].datepublished = UTC_NOW
@@ -355,7 +363,7 @@ are building as well as the number of packages waiting to build.
 
 Let's set some builds appropriately to see the results.
 
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> from lp.soyuz.interfaces.binarypackagebuild import (
     ...     IBinaryPackageBuildSet)
     >>> warty_hppa = getUtility(IDistributionSet)['ubuntu']['warty']['hppa']
@@ -444,7 +452,17 @@ from using PPAs.
     True
 
     >>> print view.archive_description_html.value
-    http://example.dom/
+    <p>http://example.dom/</p>
+
+The description is HTML escaped, and not linkified even when it contains HTML
+tags.
+
+    >>> login('admin@canonical.com')
+    >>> cprov.archive.description = (
+    ...     '<a href="http://example.com/">http://example.com/</a>')
+    >>> login(ANONYMOUS)
+    >>> print view.archive_description_html.value
+    <p>&lt;a href="http://example.com/"&gt;http://example.com/&lt;/a&gt;</p>
 
 The PPA description is linked when the user has made a contribution.
 
@@ -734,7 +752,7 @@ dependency. Each element has:
     >>> print dependency.token
     mark/ppa
 
-    >>> print dependency.title
+    >>> print dependency.title.escapedtext
     <a href="http://launchpad.dev/~mark/+archive/ppa">PPA for Mark Shuttleworth</a>
 
 The form focus, now that we have a recorded dependencies, is set to the
@@ -1159,8 +1177,8 @@ team he is member of.
 
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
 
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> ubuntu_team_ppa = getUtility(IArchiveSet).new(
     ...     owner=ubuntu_team, distribution=None, purpose=ArchivePurpose.PPA,
     ...     description="Don't we have a distribution ?")

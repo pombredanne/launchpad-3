@@ -8,9 +8,9 @@ import unittest
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import login
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.testing import TestCaseWithFactory
-from canonical.testing import LaunchpadFunctionalLayer
 
 
 class TestPillarNameSet(TestCaseWithFactory):

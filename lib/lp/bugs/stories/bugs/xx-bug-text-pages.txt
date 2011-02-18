@@ -28,15 +28,16 @@ We'll start by adding some attachments to the bug:
     ...      "bug-patch.diff", is_patch=True, content_type='text/plain',
     ...      description="a patch")
 
-Next, we'll cycle through all statuses so the dates are present:
+Next, we'll cycle through all statuses so the dates are present (to
+toggle away from Fix Released we must be the target owner):
 
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> t0 = bug.bugtasks[0]
     >>> t0.transitionToStatus(BugTaskStatus.INCOMPLETE, mark)
     >>> t0.transitionToStatus(BugTaskStatus.CONFIRMED, mark)
     >>> t0.transitionToStatus(BugTaskStatus.INPROGRESS, mark)
     >>> t0.transitionToStatus(BugTaskStatus.FIXRELEASED, mark)
-    >>> t0.transitionToStatus(BugTaskStatus.NEW, mark)
+    >>> t0.transitionToStatus(BugTaskStatus.NEW, t0.target.owner)
     >>> t0.transitionToStatus(BugTaskStatus.FIXRELEASED, mark)
     >>> logout()
     >>> flush_database_updates()
@@ -70,8 +71,9 @@ all tasks related to that bug, presented in an easy-to-digest format:
     duplicate-of: 
     duplicates: 
     attachments:
-        http://.../file_a.txt text/html
-        http://.../file%20with%20space.txt text/plain; name="file with space.txt"
+       http://bugs.launchpad.dev/.../+files/file_a.txt text/html
+       http://bugs.launchpad.dev/.../+files/file%20with%20space.txt
+         text/plain; name="file with space.txt"
     patches:
         http://.../bug-patch.diff text/plain
     tags: 
@@ -149,7 +151,7 @@ are replaced by a single space.
     >>> attachments_text = text_bug[text_bug.find('attachments:'):]
     >>> attachment_2 = attachments_text.split('\n')[2]
     >>> attachment_2
-    ' http://localhost:58000/.../file%20with%20space.txt text/plain;
+    ' http://bugs.launchpad.dev/.../file%20with%20space.txt text/plain;
     name="file with space.txt"'
 
 
@@ -196,11 +198,29 @@ random separator string for each report:
     >>> separator_bug = separator_regex.findall(text_bug)[0]
     >>> separator_bug_task = separator_regex.findall(text_bug_task)[0]
 
-Now we can show that the individual sections are identical for each report:
+Now we can show that the individual sections are identical for each report.
+The only differences are the download URLs of bug attachments:
 
-    >>> text_bug.split(separator_bug) == text_bug_task.split(separator_bug_task)
+    >>> text_bug_chunks = text_bug.split(separator_bug)
+    >>> text_bug_task_chunks = text_bug_task.split(separator_bug_task)
+    >>> len(text_bug_chunks) == len(text_bug_task_chunks)
     True
 
+    >>> for chunk_no in range(len(text_bug_task_chunks)):
+    ...     if text_bug_task_chunks[chunk_no] != text_bug_chunks[chunk_no]:
+    ...         bug_task_lines = text_bug_task_chunks[chunk_no].split('\n')
+    ...         bug_lines = text_bug_chunks[chunk_no].split('\n')
+    ...         assert(len(bug_task_lines) == len(bug_lines))
+    ...         for line_no in range(len(bug_task_lines)):
+    ...             if bug_lines[line_no] != bug_task_lines[line_no]:
+    ...                 print bug_lines[line_no]
+    ...                 print bug_task_lines[line_no]
+    http://bugs.launchpad.dev/bugs/1/+attachment/1/+files/file_a.txt text/html
+    http://bugs.launchpad.dev/firefox/+bug/.../+files/file_a.txt text/html
+    http://bugs.launchpad.dev/bugs/1/.../+files/file%20with%20space.txt...
+    http://bugs.launchpad.dev/firefox/+bug/.../+files/file%20with%20space.txt...
+    http://bugs.launchpad.dev/bugs/1/.../+files/bug-patch.diff text/plain
+    http://bugs.launchpad.dev/firefox/+bug/.../+files/bug-patch.diff text/plain
 
 == Duplicate Bugs ==
 
@@ -280,6 +300,14 @@ Searching for bugs in a component of a distribution works too.
 
     >>> print anon_browser.contents
     10
+
+This page is also available for project groups.
+
+    >>> anon_browser.open('http://launchpad.dev/mozilla/+bugs-text')
+    >>> print anon_browser.contents
+    15
+    5
+    4
 
 
 == Private bugs ==

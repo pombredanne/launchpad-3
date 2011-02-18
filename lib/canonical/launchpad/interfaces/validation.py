@@ -19,24 +19,30 @@ __all__ = [
     'validate_new_distrotask',
     'valid_upstreamtask',
     'valid_password',
-    'validate_date_interval'
+    'validate_date_interval',
     ]
 
 from cgi import escape
-import urllib
 from textwrap import dedent
+import urllib
 
-from zope.component import getUtility
 from zope.app.form.interfaces import WidgetsError
+from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import NotFoundError
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
+from canonical.launchpad.interfaces.account import IAccount
+from canonical.launchpad.interfaces.emailaddress import (
+    IEmailAddress,
+    IEmailAddressSet,
+    )
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.cve import valid_cve
+from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.url import valid_absolute_url
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.menu import structured
+from lp.app.errors import NotFoundError
 
 
 def can_be_nominated_for_series(series):
@@ -124,6 +130,7 @@ def valid_webref(web_ref):
             scheme (for instance, http:// for a web URL), and ensure the
             URL uses either http, https or ftp.""")))
 
+
 def valid_branch_url(branch_url):
     """Returns True if web_ref is a valid download URL, or raises a
     LaunchpadValidationError.
@@ -188,23 +195,38 @@ def _validate_email(email):
             "${email} isn't a valid email address.",
             mapping={'email': email}))
 
+def _check_email_availability(email):
+    email_address = getUtility(IEmailAddressSet).getByEmail(email)
+    if email_address is not None:
+        # The email already exists; determine what has it.
+        if email_address.person is not None:
+            person = email_address.person
+            message = _('${email} is already registered in Launchpad and is '
+                        'associated with <a href="${url}">${person}</a>.',
+                        mapping={'email': escape(email),
+                                'url': canonical_url(person),
+                                'person': escape(person.displayname)})
+        elif email_address.account is not None:
+            account = email_address.account
+            message = _('${email} is already registered in Launchpad and is '
+                        'associated with the ${account} account.',
+                        mapping={'email': escape(email),
+                                'account': escape(account.displayname)})
+        else:
+            message = _('${email} is already registered in Launchpad.',
+                        mapping={'email': escape(email)})
+        raise LaunchpadValidationError(structured(message))
+
 
 def validate_new_team_email(email):
     """Check that the given email is valid and not registered to
     another launchpad account.
     """
-    from canonical.launchpad.webapp import canonical_url
-    from canonical.launchpad.interfaces import IEmailAddressSet
+    from canonical.launchpad.webapp.publisher import canonical_url
+    from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+
     _validate_email(email)
-    email_address = getUtility(IEmailAddressSet).getByEmail(email)
-    if email_address is not None:
-        person = email_address.person
-        message = _('${email} is already registered in Launchpad and is '
-                    'associated with <a href="${url}">${team}</a>.',
-                    mapping={'email': escape(email),
-                             'url': canonical_url(person),
-                             'team': escape(person.displayname)})
-        raise LaunchpadValidationError(structured(message))
+    _check_email_availability(email)
     return True
 
 
@@ -217,8 +239,8 @@ def validate_new_person_email(email):
     user that the profile he's trying to create already exists, so there's no
     need to create another one.
     """
-    from canonical.launchpad.webapp import canonical_url
-    from canonical.launchpad.interfaces import IPersonSet
+    from canonical.launchpad.webapp.publisher import canonical_url
+    from lp.registry.interfaces.person import IPersonSet
     _validate_email(email)
     owner = getUtility(IPersonSet).getByEmail(email)
     if owner is not None:
@@ -312,7 +334,7 @@ def valid_upstreamtask(bug, product):
     errors = []
     user = getUtility(ILaunchBag).user
     params = BugTaskSearchParams(user, bug=bug)
-    if product.searchTasks(params):
+    if not product.searchTasks(params).is_empty():
         errors.append(LaunchpadValidationError(_(
             'A fix for this bug has already been requested for ${product}',
             mapping={'product': product.displayname})))

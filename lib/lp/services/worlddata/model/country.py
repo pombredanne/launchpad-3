@@ -6,16 +6,22 @@
 __metaclass__ = type
 __all__ = ['Country', 'CountrySet', 'Continent']
 
+from sqlobject import (
+    ForeignKey,
+    SQLRelatedJoin,
+    StringCol,
+    )
 from zope.interface import implements
-
-from sqlobject import StringCol, SQLRelatedJoin, ForeignKey
 
 from canonical.database.constants import DEFAULT
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces import NotFoundError
 from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.app.errors import NotFoundError
 from lp.services.worlddata.interfaces.country import (
-    ICountry, ICountrySet, IContinent)
+    IContinent,
+    ICountry,
+    ICountrySet,
+    )
 
 
 class Country(SQLBase):

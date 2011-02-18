@@ -1,21 +1,27 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 import unittest
 
+from lazr.restful.testing.webservice import FakeRequest
 from zope.publisher.interfaces import NotFound
 
-from lp.testing import TestCaseWithFactory
+from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
 from canonical.launchpad.webapp.servers import StepsToGo
 from canonical.testing.layers import DatabaseFunctionalLayer
-
-from lazr.restful.testing.webservice import FakeRequest
-
 from lp.blueprints.browser import specification
+from lp.blueprints.enums import SpecificationImplementationStatus
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
+from lp.testing.views import create_initialized_view
+
 
 class LocalFakeRequest(FakeRequest):
+
     @property
     def stepstogo(self):
         """See IBasicLaunchpadRequest.
@@ -108,6 +114,82 @@ class TestBranchTraversal(TestCaseWithFactory):
             self.specification.getBranchLink(branch), self.traverse(segments))
 
 
+class TestSpecificationEditStatusView(TestCaseWithFactory):
+    """Test the SpecificationEditStatusView."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_records_started(self):
+        spec = self.factory.makeSpecification(
+            implementation_status=SpecificationImplementationStatus.NOTSTARTED)
+        login_person(spec.owner)
+        form = {
+            'field.implementation_status': 'STARTED',
+            'field.actions.change': 'Change',
+            }
+        view = create_initialized_view(spec, name='+status', form=form)
+        self.assertEqual(
+            SpecificationImplementationStatus.STARTED, spec.implementation_status)
+        self.assertEqual(spec.owner, spec.starter)
+        [notification] = view.request.notifications
+        self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
+        self.assertEqual(
+            'Blueprint is now considered "Started".', notification.message)
+
+    def test_unchanged_lifecycle_has_no_notification(self):
+        spec = self.factory.makeSpecification(
+            implementation_status=SpecificationImplementationStatus.STARTED)
+        login_person(spec.owner)
+        form = {
+            'field.implementation_status': 'SLOW',
+            'field.actions.change': 'Change',
+            }
+        view = create_initialized_view(spec, name='+status', form=form)
+        self.assertEqual(
+            SpecificationImplementationStatus.SLOW, spec.implementation_status)
+        self.assertEqual(0, len(view.request.notifications))
+
+    def test_records_unstarting(self):
+        # If a spec was started, and is changed to not started, a notice is shown.
+        # Also the spec.starter is cleared out.
+        spec = self.factory.makeSpecification(
+            implementation_status=SpecificationImplementationStatus.STARTED)
+        login_person(spec.owner)
+        form = {
+            'field.implementation_status': 'NOTSTARTED',
+            'field.actions.change': 'Change',
+            }
+        view = create_initialized_view(spec, name='+status', form=form)
+        self.assertEqual(
+            SpecificationImplementationStatus.NOTSTARTED,
+            spec.implementation_status)
+        self.assertIs(None, spec.starter)
+        [notification] = view.request.notifications
+        self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
+        self.assertEqual(
+            'Blueprint is now considered "Not started".', notification.message)
+
+    def test_records_completion(self):
+        # If a spec is marked as implemented the user is notifiec it is now
+        # complete.
+        spec = self.factory.makeSpecification(
+            implementation_status=SpecificationImplementationStatus.STARTED)
+        login_person(spec.owner)
+        form = {
+            'field.implementation_status': 'IMPLEMENTED',
+            'field.actions.change': 'Change',
+            }
+        view = create_initialized_view(spec, name='+status', form=form)
+        self.assertEqual(
+            SpecificationImplementationStatus.IMPLEMENTED,
+            spec.implementation_status)
+        self.assertEqual(spec.owner, spec.completer)
+        [notification] = view.request.notifications
+        self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
+        self.assertEqual(
+            'Blueprint is now considered "Complete".', notification.message)
+
+
 class TestSecificationHelpers(unittest.TestCase):
     """Test specification helper functions."""
 
@@ -134,4 +216,3 @@ def test_suite():
 
 if __name__ == '__main__':
     unittest.TextTestRunner().run(test_suite())
-

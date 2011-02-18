@@ -13,13 +13,13 @@ from bzrlib.branch import Branch
 import transaction
 from zope.component import getUtility
 
-from canonical.testing import ZopelessAppServerLayer
 from canonical.launchpad.ftests import import_secret_test_key
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.scripts.tests import run_script
+from canonical.testing.layers import ZopelessAppServerLayer
+from lp.code.model.branchmergeproposaljob import CreateMergeProposalJob
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import GPGSigningContext
-from canonical.launchpad.scripts.tests import run_script
-from lp.code.model.branchmergeproposaljob import CreateMergeProposalJob
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 
 
 class TestCreateMergeProposals(TestCaseWithFactory):

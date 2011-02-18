@@ -5,22 +5,28 @@
 
 __metaclass__ = type
 
-import unittest
 
-
-from BeautifulSoup import BeautifulSoup, SoupStrainer
-
+from BeautifulSoup import (
+    BeautifulSoup,
+    SoupStrainer,
+    )
 from zope.component import getUtility
 from zope.security.checker import selectChecker
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.testing.layers import DatabaseFunctionalLayer
-
 from lp.registry.interfaces.person import IPersonSet
-from lp.testing import login_person, TestCaseWithFactory
-from lp.testing.views import create_initialized_view, create_view
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
+from lp.testing.publication import test_traverse
+from lp.testing.views import (
+    create_initialized_view,
+    create_view,
+    )
 
 
 class LaunchpadRootPermissionTest(TestCaseWithFactory):
@@ -69,12 +75,36 @@ class LaunchpadRootPermissionTest(TestCaseWithFactory):
         self.setUpRegistryExpert()
         view = create_initialized_view(
             self.root, 'index.html', principal=self.expert)
+        # Stub out the getRecentBlogPosts which fetches a blog feed using
+        # urlfetch.
+        view.getRecentBlogPosts = lambda: []
         content = BeautifulSoup(view(), parseOnlyThese=SoupStrainer('a'))
         self.failUnless(
             content.find('a', href='+featuredprojects'),
             "Cannot find the +featuredprojects link on the first page")
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestLaunchpadRootNavigation(TestCaseWithFactory):
+    """Test for the LaunchpadRootNavigation."""
 
+    layer = DatabaseFunctionalLayer
+
+    def test_support(self):
+        # The /support link redirects to answers.
+        context, view, request = test_traverse(
+            'http://launchpad.dev/support')
+        view()
+        self.assertEqual(301, request.response.getStatus())
+        self.assertEqual(
+            'http://answers.launchpad.dev/launchpad',
+            request.response.getHeader('location'))
+
+    def test_feedback(self):
+        # The /feedback link redirects to the help site.
+        context, view, request = test_traverse(
+            'http://launchpad.dev/feedback')
+        view()
+        self.assertEqual(301, request.response.getStatus())
+        self.assertEqual(
+            'https://help.launchpad.net/Feedback',
+            request.response.getHeader('location'))

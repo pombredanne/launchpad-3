@@ -25,6 +25,8 @@
   <include package="zope.app.interface" />
   <include package="zope.app.security" />
 
+  <include package="zope.login" />
+
   <!--
   <include package="zope.app.observable" />
   <include package="zope.app.annotation" />
@@ -36,7 +38,7 @@
   <!--
   <include package="zope.app.container" />
 -->
-  <include package="zope.app.publisher" />
+  <include package="zope.app.publisher.xmlrpc" />
 
   <include package="zope.app.publication" file="meta.zcml" />
   <!-- We don't need any of the default publications. -->

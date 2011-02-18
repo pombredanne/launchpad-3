@@ -2,8 +2,14 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import signal
-from subprocess import Popen, PIPE, STDOUT
+from subprocess import (
+    PIPE,
+    Popen,
+    STDOUT,
+    )
+
 from canonical.launchpad.scripts import log
+
 
 class ExecutionError(Exception):
     """The command executed in a cal() returned a non-zero status"""

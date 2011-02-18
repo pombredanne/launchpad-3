@@ -6,16 +6,21 @@
 __metaclass__ = type
 __all__ = ['Packaging', 'PackagingUtil']
 
+from sqlobject import ForeignKey
 from zope.interface import implements
 
-from sqlobject import ForeignKey
-
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from lp.registry.interfaces.packaging import (
-    IPackaging, IPackagingUtil, PackagingType)
+    IPackaging,
+    IPackagingUtil,
+    PackagingType,
+    )
 from lp.registry.interfaces.person import validate_public_person
 
 
@@ -66,11 +71,11 @@ class PackagingUtil:
             raise AssertionError(
                 "A packaging entry for %s in %s already exists." %
                 (sourcepackagename.name, distroseries.name))
-        Packaging(productseries=productseries,
-                  sourcepackagename=sourcepackagename,
-                  distroseries=distroseries,
-                  packaging=packaging,
-                  owner=owner)
+        return Packaging(productseries=productseries,
+                         sourcepackagename=sourcepackagename,
+                         distroseries=distroseries,
+                         packaging=packaging,
+                         owner=owner)
 
     def deletePackaging(self, productseries, sourcepackagename, distroseries):
         """See `IPackaging`."""

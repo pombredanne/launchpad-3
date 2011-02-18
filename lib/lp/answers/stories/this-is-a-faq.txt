@@ -6,6 +6,22 @@ The Answer Tracker can be used to manage common answers
 (a.k.a. Frequently Asked Question - FAQ) which can be used to answer
 a particular question.
 
+== Fix up sample data ==
+
+The sample data has question titles which perform poorly with the sample data's
+answers in fulltext searching, using efficient tsearch2 queries; we are going
+to overhaul the fulltext search implementation but in the interim less prose
+permits better matching. See bug 612384.
+
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.testing import login, logout
+    >>> login('test@canonical.com')
+    >>> firefox = getUtility(IProductSet)['firefox']
+    >>> svg_question = firefox.getQuestion(2)
+    >>> svg_question.title = 'SVG extension'
+    >>> logout()
+
 
 == Linking to a FAQ ==
 
@@ -51,7 +67,7 @@ relevant' option is selected.
     >>> printFAQOptions(user_browser.contents)
     (*) No existing FAQs are relevant
     ( ) 9: How do I troubleshoot problems with extensions/themes?
-    ( ) 7: How do I install Java?
+    ( ) 8: How do I install Extensions?
 
     >>> print user_browser.getLink('How do I troubleshoot problems').url
     http://answers.launchpad.dev/firefox/+faq/9
@@ -61,13 +77,13 @@ under the radio widgets. That query defaults to the question's title.
 
     >>> search_field = user_browser.getControl(name='field.faq-query')
     >>> print search_field.value
-    Problem showing the SVG demo on W3C site
+    SVG extension
 
 From the titles, it doesn't seem like one of these FAQs would be
 appropriate. The user can modify the search query and hit the 'Search'
 button to update the list of available choices:
 
-    >>> search_field.value = 'Where can I find a SVG plugin'
+    >>> search_field.value = 'SVG plugin'
     >>> user_browser.getControl('Search', index=0).click()
 
 The page is updated with a new list of FAQs:
@@ -78,7 +94,6 @@ The page is updated with a new list of FAQs:
     (*) No existing FAQs are relevant
     ( ) 10: How do I install plugins (Shockwave, QuickTime, etc.)?
     ( ) 7: How do I install Java?
-    ( ) 8: How do I install Extensions?
 
 The most relevant result seems like the good answer, so the user selects
 it.
@@ -143,7 +158,7 @@ question's title are displayed:
     ( ) No existing FAQs are relevant
     (*) 10: How do I install plugins (Shockwave, QuickTime, etc.)?
     ( ) 9: How do I troubleshoot problems with extensions/themes?
-    ( ) 7: How do I install Java?
+    ( ) 8: How do I install Extensions?
 
 He changes the message and click 'Link to FAQ'.
 
@@ -226,7 +241,7 @@ The FAQ title and content are pre-filled with the target question. He
 edits them to be more appropriate:
 
     >>> print owner_browser.getControl('Title').value
-    Problem showing the SVG demo on W3C site
+    SVG extension
     >>> owner_browser.getControl('Title').value = 'Displaying SVG in Firefox'
 
     >>> print owner_browser.getControl('Content').value
@@ -308,10 +323,10 @@ the FAQ:
     >>> print extract_text(find_portlet(
     ...     owner_browser.contents, 'Related questions'))
     Related questions
-    #2 Problem showing the SVG demo on W3C site
+    #2 SVG extension
 
     >>> print owner_browser.getLink(
-    ...     'Problem showing the SVG demo on W3C site').url
+    ...     'SVG extension').url
     http://answers.launchpad.dev/firefox/+question/2
 
 

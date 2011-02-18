@@ -45,7 +45,7 @@ Similarly, posting with a garbage referer fails:
 It also fails if there is no referrer.
 
 Note that we have to set up a monkeypatch to test this in order to work
-around Zope bug 98437 (https://bugs.edge.launchpad.net/zope3/+bug/98437).
+around Zope bug 98437 (https://bugs.launchpad.net/zope3/+bug/98437).
 
   >>> from canonical.launchpad.webapp.servers import LaunchpadBrowserRequest
   >>> original_init = LaunchpadBrowserRequest.__init__
@@ -87,7 +87,7 @@ present a hopefully helpful error message.
   No REFERER Header
   ...
   >>> browser.getLink('the FAQ').url
-  'https://answers.edge.launchpad.net/launchpad/+faq/1024'
+  'https://answers.launchpad.net/launchpad/+faq/1024'
   >>> browser.handleErrors = False
 
 We have a few exceptional cases in which we allow POST requests without a

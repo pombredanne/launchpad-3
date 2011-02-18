@@ -14,6 +14,7 @@ import signal
 
 from ZConfig.components.logger.loghandler import reopenFiles
 
+
 def sigusr2_handler(signum, frame):
     "Rotate logfiles in response to SIGUSR2."""
     reopenFiles()

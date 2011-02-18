@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -10,53 +10,44 @@ __metaclass__ = type
 __all__ = [
     'IBuildFarmJob',
     'IBuildFarmJobOld',
+    'IBuildFarmJobSet',
     'IBuildFarmJobSource',
-    'BuildFarmJobType',
+    'InconsistentBuildFarmJobError',
+    'ISpecificBuildFarmJob',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Datetime, TextLine, Timedelta
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    )
 from lazr.restful.declarations import exported
 from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    TextLine,
+    Timedelta,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-
+from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.builder import IBuilder
 from lp.soyuz.interfaces.processor import IProcessor
 
 
-class BuildFarmJobType(DBEnumeratedType):
-    """Soyuz build farm job type.
+class InconsistentBuildFarmJobError(Exception):
+    """Raised when a BuildFarmJob is in an inconsistent state.
 
-    An enumeration with the types of jobs that may be run on the Soyuz build
-    farm.
+    For example, if a BuildFarmJob has a job type for which no adapter
+    is yet implemented. Or when adapting the BuildFarmJob to a specific
+    type of build job (such as a BinaryPackageBuild) fails.
     """
-
-    PACKAGEBUILD = DBItem(1, """
-        Binary package build
-
-        Build a source package.
-        """)
-
-    BRANCHBUILD = DBItem(2, """
-        Branch build
-
-        Build a package from a bazaar branch.
-        """)
-
-    RECIPEBRANCHBUILD = DBItem(3, """
-        Recipe branch build
-
-        Build a package from a bazaar branch and a recipe.
-        """)
-
-    TRANSLATIONTEMPLATESBUILD = DBItem(4, """
-        Translation template build
-
-        Generate translation templates from a bazaar branch.
-        """)
 
 
 class IBuildFarmJobOld(Interface):
@@ -246,7 +237,41 @@ class IBuildFarmJob(IBuildFarmJobOld):
         vocabulary=BuildFarmJobType,
         description=_("The specific type of job."))
 
+    failure_count = Int(
+        title=_("Failure Count"), required=False, readonly=True,
+        default=0,
+        description=_("Number of consecutive failures for this job."))
+
+    def getSpecificJob():
+        """Return the specific build job associated with this record.
+
+        :raises InconsistentBuildFarmJobError: if a specific job could not be
+            returned.
+        """
+
+    def gotFailure():
+        """Increment the failure_count for this job."""
+
     title = exported(TextLine(title=_("Title"), required=False))
+
+    was_built = Attribute("Whether or not modified by the builddfarm.")
+
+    # This doesn't belong here.  It really belongs in IPackageBuild, but
+    # the TAL assumes it can read this directly.
+    dependencies = exported(
+        TextLine(
+            title=_('Dependencies'), required=False,
+            description=_(
+                'Debian-like dependency line that must be satisfied before '
+                'attempting to build this request.')))
+
+
+class ISpecificBuildFarmJob(IBuildFarmJob):
+    """A marker interface with which to define adapters for IBuildFarmJob.
+
+    This enables the registered adapters for ISpecificBuildFarmJob to be
+    iterated when calculating IBuildFarmJob.specific_job.
+    """
 
 
 class IBuildFarmJobSource(Interface):
@@ -261,4 +286,22 @@ class IBuildFarmJobSource(Interface):
         :param processor: An optional processor for this job.
         :param virtualized: An optional boolean indicating whether
             this job should be run virtualized.
+        """
+
+
+class IBuildFarmJobSet(Interface):
+    """A utility representing a set of build farm jobs."""
+
+    def getBuildsForBuilder(builder_id, status=None, user=None):
+        """Return `IBuildFarmJob` records touched by a builder.
+
+        :param builder_id: The id of the builder for which to find builds.
+        :param status: If given, limit the search to builds with this status.
+        :param user: If given, this will be used to determine private builds
+            that should be included.
+        :return: a `ResultSet` representing the requested builds.
+        """
+
+    def getByID(job_id):
+        """Look up a `IBuildFarmJob` record by id.
         """

@@ -9,39 +9,51 @@ __all__ = [
     'ApportJobDerived',
     ]
 
-import simplejson
 from cStringIO import StringIO
 
+from lazr.delegates import delegates
+import simplejson
 from sqlobject import SQLObjectNotFound
-from storm.base import Storm
 from storm.expr import And
-from storm.locals import Int, Reference, Unicode
-
+from storm.locals import (
+    Int,
+    Reference,
+    Unicode,
+    )
 from zope.component import getUtility
-from zope.interface import classProvides, implements
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.database.temporaryblobstorage import (
-    TemporaryBlobStorage)
+    TemporaryBlobStorage,
+    )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.interfaces.temporaryblobstorage import (
-    ITemporaryStorageManager)
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
-
-from lazr.delegates import delegates
-
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.bugs.interfaces.apportjob import (
-    ApportJobType, IApportJob, IApportJobSource, IProcessApportBlobJob,
-    IProcessApportBlobJobSource)
+    ApportJobType,
+    IApportJob,
+    IApportJobSource,
+    IProcessApportBlobJob,
+    IProcessApportBlobJobSource,
+    )
 from lp.bugs.utilities.filebugdataparser import (
-    FileBugData, FileBugDataParser)
+    FileBugData,
+    FileBugDataParser,
+    )
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
+from lp.services.database.stormbase import StormBase
 
 
-class ApportJob(Storm):
+class ApportJob(StormBase):
     """Base class for jobs related to Apport BLOBs."""
 
     implements(IApportJob)
@@ -145,7 +157,7 @@ class ApportJobDerived(BaseRunnableJob):
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
-        vars =  BaseRunnableJob.getOopsVars(self)
+        vars = BaseRunnableJob.getOopsVars(self)
         vars.extend([
             ('apport_blob_uuid', self.context.blob.uuid),
             ('apport_blob_librarian_url',
@@ -192,8 +204,7 @@ class ProcessApportBlobJob(ApportJobDerived):
             ApportJob.job == Job.id,
             ApportJob.job_type == cls.class_job_type,
             ApportJob.blob_id == TemporaryBlobStorage.id,
-            TemporaryBlobStorage.uuid == uuid
-            )
+            TemporaryBlobStorage.uuid == uuid)
 
         job_for_blob = jobs_for_blob.one()
 

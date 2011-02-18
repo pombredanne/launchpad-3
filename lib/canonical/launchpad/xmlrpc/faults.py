@@ -22,6 +22,7 @@ __all__ = [
     'InvalidBranchUniqueName',
     'InvalidProductIdentifier',
     'InvalidBranchUrl',
+    'OopsOccurred',
     'NoBranchWithID',
     'NoLinkedBranch',
     'NoSuchBranch',
@@ -450,3 +451,28 @@ class NoSuchCodeImportJob(LaunchpadFault):
 
     def __init__(self, job_id):
         LaunchpadFault.__init__(self, job_id=job_id)
+
+
+class AccountSuspended(LaunchpadFault):
+    """Raised by `ISoftwareCenterAgentAPI` when an account is suspended."""
+
+    error_code = 370
+    msg_template = (
+        'The openid_identifier \'%(openid_identifier)s\''
+        ' is linked to a suspended account.')
+
+    def __init__(self, openid_identifier):
+        LaunchpadFault.__init__(self, openid_identifier=openid_identifier)
+
+
+class OopsOccurred(LaunchpadFault):
+    """An oops has occurred performing the requested operation."""
+
+    error_code = 380
+    msg_template = (
+        'An unexpected error has occurred while %(server_op)s. '
+        'Please report a Launchpad bug and quote: %(oopsid)s.')
+
+    def __init__(self, server_op, oopsid):
+        LaunchpadFault.__init__(self, server_op=server_op, oopsid=oopsid)
+        self.oopsid = oopsid

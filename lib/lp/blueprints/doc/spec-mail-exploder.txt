@@ -1,4 +1,5 @@
-= The Spec Mail Exploder =
+The Spec Mail Exploder
+======================
 
 There's an address, notifications@specs.launchpad.net, which looks at
 all incoming email to see if it looks like a change notifications from a
@@ -70,22 +71,23 @@ If no URL is found, None is returned.
     True
 
 
-== The Mail Handler ==
+The Mail Handler
+----------------
 
 The mail handler that handles mail on notifications@specs.launchpad.net
 is SpecificationHandler.
 
     >>> from canonical.config import config
-    >>> from canonical.launchpad.mail.handlers import mail_handlers
+    >>> from lp.services.mail.handlers import mail_handlers
     >>> handler = mail_handlers.get(config.launchpad.specs_domain)
     >>> handler is not None
     True
 
 It has a helper method to help associate a URL with a specification. We
-use this method instead of simply ISpecificationSet.getByURL() since
-the Ubuntu wikis are special, they have more than one domain name
-mapping to the same wiki. So if we start with the correct URL, of
-course we get the specification with that URL.
+use this method instead of simply ISpecificationSet.getByURL() since the
+Ubuntu wikis are special, they have more than one domain name mapping to
+the same wiki. So if we start with the correct URL, of course we get the
+specification with that URL.
 
     >>> spec = handler._getSpecByURL(
     ...     'https://wiki.ubuntu.com/MediaIntegrityCheck')
@@ -129,7 +131,7 @@ spec, and mails it to the related people.
 
     >>> log._log.setLevel(OLD_LOG_LEVEL)
 
-    >>> from canonical.launchpad.interfaces import ISpecificationSet
+    >>> from lp.blueprints.interfaces.specification import ISpecificationSet
     >>> spec = getUtility(ISpecificationSet).getByURL(
     ...     'https://wiki.ubuntu.com/MediaIntegrityCheck')
     >>> spec.notificationRecipientAddresses()
@@ -160,8 +162,10 @@ except for setting the Sender header to our bounce address:
 
     >>> sent_msg['To'] == moin_change['To']
     True
+
     >>> sent_msg['From'] == moin_change['From']
     True
+
     >>> sent_msg['Subject'] == moin_change['Subject']
     True
 
@@ -196,8 +200,9 @@ simply emit a warning and drop the email.
     >>> handler.process(
     ...     sent_msg, 'notifications@specs.launchpad.net',
     ...     filealias=FakeFileAlias(), log=log)
-    WARNING:...:Got back a notification we sent: http://librarian/foo.txt
+    WARNING...:Got back a notification we sent: http://librarian/foo.txt
     True
+
     >>> log._log.setLevel(OLD_LOG_LEVEL)
 
 No emails were sent:
@@ -217,8 +222,9 @@ Launchpad:
     >>> handler.process(
     ...     sent_msg, 'notifications@specs.launchpad.net',
     ...     filealias=FakeFileAlias(), log=log)
-    WARNING:...:We received an email from Launchpad: http://librarian/foo.txt
+    WARNING...:We received an email from Launchpad: http://librarian/foo.txt
     True
+
     >>> log._log.setLevel(OLD_LOG_LEVEL)
 
 Again, no emails were sent:
@@ -248,25 +254,25 @@ subscribers:
     >>> to_addrs == spec.notificationRecipientAddresses()
     True
 
-Lastly, let's simulate sending a moin notification, and use
-handleMail() instead to ensure that handler above handles the email.
-This will make sure that the handler is setup properly to handle
-unknown users, since webmaster@ubuntu.com doesn't belong to any Person
-in Launchpad:
+Lastly, let's simulate sending a moin notification, and use handleMail()
+instead to ensure that handler above handles the email. This will make
+sure that the handler is setup properly to handle unknown users, since
+webmaster@ubuntu.com doesn't belong to any Person in Launchpad:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> getUtility(IPersonSet).getByEmail('webmaster@ubuntu.com') is None
     True
 
     >>> moin_change = read_test_message('moin-change.txt')
-    >>> moin_change['To'] += ", notifications@%s" % (
+    >>> moin_change['X-Launchpad-Original-To'] = "notifications@%s" % (
     ...     config.launchpad.specs_domain)
     >>> moin_change['Sender'] = 'webmaster@ubuntu.com'
 
+    >>> from lp.services.mail.incoming import handleMail
     >>> from lp.services.mail.sendmail import sendmail
-    >>> from canonical.launchpad.mail.incoming import handleMail
     >>> sendmail(moin_change, bulk=False)
     '...'
+
     >>> transaction.commit()
     >>> handleMail()
 
@@ -281,4 +287,5 @@ in Launchpad:
     >>> sent_msg = email.message_from_string(raw_message)
     >>> sent_msg['Message-Id'] == moin_change['Message-Id']
     True
+
 

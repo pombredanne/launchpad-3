@@ -6,14 +6,16 @@
 __metaclass__ = type
 __all__ = ['DistributionSourcePackageCache', ]
 
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
 from zope.interface import implements
 
-from sqlobject import StringCol, ForeignKey
-
 from canonical.database.sqlbase import SQLBase
-
 from lp.soyuz.interfaces.distributionsourcepackagecache import (
-    IDistributionSourcePackageCache)
+    IDistributionSourcePackageCache,
+    )
 
 
 class DistributionSourcePackageCache(SQLBase):

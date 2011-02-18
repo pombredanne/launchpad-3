@@ -10,6 +10,14 @@
 
   <include package=".browser" />
 
+  <publisher
+      name="answers"
+      factory="lp.answers.publisher.answers_request_publication_factory"/>
+  <utility
+      component="lp.answers.publisher.AnswersLayer"
+      provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
+      name="answers" />
+
     <subscriber
         for=".interfaces.question.IQuestion
            lazr.lifecycle.interfaces.IObjectCreatedEvent"
@@ -50,12 +58,6 @@
         for=".interfaces.questionmessage.IQuestionMessage
              lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler=".karma.question_comment_added"
-        />
-
-    <subscriber
-        for=".interfaces.question.IQuestion
-             lazr.lifecycle.interfaces.IObjectModifiedEvent"
-        handler=".model.questionreopening.create_questionreopening"
         />
 
     <class class=".model.questionreopening.QuestionReopening">
@@ -100,7 +102,7 @@
       set_attributes="title description datedue target language"
       />
     <require
-      permission="launchpad.Moderate"
+      permission="launchpad.Append"
       attributes="reject"
       set_attributes="assignee"
       />
@@ -144,28 +146,28 @@
     />
   <adapter
     provides=".interfaces.faqtarget.IFAQTarget"
-    for="canonical.launchpad.interfaces.IDistributionSourcePackage"
+    for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
     factory=".adapters.distrosourcepackage_to_faqtarget"
     />
   <adapter
-    for="canonical.launchpad.interfaces.IDistroSeries"
+    for="lp.registry.interfaces.distroseries.IDistroSeries"
     provides=".interfaces.questiontarget.IQuestionTarget"
     factory=".adapters.series_to_questiontarget"
     />
     <adapter
-      for="canonical.launchpad.interfaces.IProductSeries"
+      for="lp.registry.interfaces.productseries.IProductSeries"
       provides=".interfaces.questiontarget.IQuestionTarget"
       factory=".adapters.series_to_questiontarget"
       />
   <adapter
-    for="canonical.launchpad.interfaces.ISourcePackageRelease"
+    for="lp.soyuz.interfaces.sourcepackagerelease.ISourcePackageRelease"
     provides=".interfaces.questiontarget.IQuestionTarget"
     factory=".adapters.sourcepackagerelease_to_questiontarget"
     />
 
   <adapter
     provides=".interfaces.faqtarget.IFAQTarget"
-    for="canonical.launchpad.interfaces.ISourcePackage"
+    for="lp.registry.interfaces.sourcepackage.ISourcePackage"
     factory=".adapters.sourcepackage_to_faqtarget"
     />
 
@@ -235,7 +237,7 @@
 
 
   <lp:help-folder
-      folder="help" type="canonical.launchpad.layers.AnswersLayer" />
+      folder="help" type="lp.answers.publisher.AnswersLayer" />
   <adapter
       name="answers"
       provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"

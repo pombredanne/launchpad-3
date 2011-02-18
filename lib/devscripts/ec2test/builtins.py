@@ -8,24 +8,30 @@ __all__ = []
 
 import os
 import pdb
+import socket
 import subprocess
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.commands import Command
 from bzrlib.errors import BzrCommandError
 from bzrlib.help import help_commands
-from bzrlib.option import ListOption, Option
-
-import socket
-
+from bzrlib.option import (
+    ListOption,
+    Option,
+    )
 from devscripts import get_launchpad_root
-
+from devscripts.ec2test.account import VALID_AMI_OWNERS
 from devscripts.ec2test.credentials import EC2Credentials
 from devscripts.ec2test.instance import (
-    AVAILABLE_INSTANCE_TYPES, DEFAULT_INSTANCE_TYPE, EC2Instance)
+    AVAILABLE_INSTANCE_TYPES,
+    DEFAULT_INSTANCE_TYPE,
+    EC2Instance,
+    )
 from devscripts.ec2test.session import EC2SessionName
-from devscripts.ec2test.testrunner import EC2TestRunner, TRUNK_BRANCH
-
+from devscripts.ec2test.testrunner import (
+    EC2TestRunner,
+    TRUNK_BRANCH,
+    )
 
 # Options accepted by more than one command.
 
@@ -188,7 +194,6 @@ def _get_branches_and_test_branch(trunk, branch, test_branch):
     return branches, test_branch
 
 
-
 DEFAULT_TEST_OPTIONS = '--subunit -vvv'
 
 
@@ -321,7 +326,18 @@ class cmd_land(EC2Command):
         Option('print-commit', help="Print the full commit message."),
         Option(
             'testfix',
-            help="Include the [testfix] prefix in the commit message."),
+            help="This is a testfix (tags commit with [testfix])."),
+        Option(
+            'no-qa',
+            help="Does not require QA (tags commit with [no-qa])."),
+        Option(
+            'incremental',
+            help="Incremental to other bug fix (tags commit with [incr])."),
+        Option(
+            'rollback', type=int,
+            help=(
+                "Rollback given revision number. (tags commit with "
+                "[rollback=revno]).")),
         Option(
             'commit-text', short_name='s', type=str,
             help=(
@@ -355,10 +371,12 @@ class cmd_land(EC2Command):
     def run(self, merge_proposal=None, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE, postmortem=False,
             debug=False, commit_text=None, dry_run=False, testfix=False,
-            print_commit=False, force=False, attached=False):
+            no_qa=False, incremental=False, rollback=None, print_commit=False,
+            force=False, attached=False):
         try:
             from devscripts.autoland import (
-                LaunchpadBranchLander, MissingReviewError)
+                LaunchpadBranchLander, MissingReviewError, MissingBugsError,
+                MissingBugsIncrementalError)
         except ImportError:
             self.outf.write(
                 "***************************************************\n\n"
@@ -395,13 +413,36 @@ class cmd_land(EC2Command):
             raise BzrCommandError(
                 "Commit text not specified. Use --commit-text, or specify a "
                 "message on the merge proposal.")
+        if rollback and (no_qa or incremental):
+            print (
+                "--rollback option used. Ignoring --no-qa and --incremental.")
         try:
-            commit_message = mp.get_commit_message(commit_text, testfix)
+            commit_message = mp.build_commit_message(
+                commit_text, testfix, no_qa, incremental, rollback=rollback)
         except MissingReviewError:
             raise BzrCommandError(
                 "Cannot land branches that haven't got approved code "
                 "reviews. Get an 'Approved' vote so we can fill in the "
                 "[r=REVIEWER] section.")
+        except MissingBugsError:
+            raise BzrCommandError(
+                "Branch doesn't have linked bugs and doesn't have no-qa "
+                "option set. Use --no-qa, or link the related bugs to the "
+                "branch.")
+        except MissingBugsIncrementalError:
+            raise BzrCommandError(
+                "--incremental option requires bugs linked to the branch. "
+                "Link the bugs or remove the --incremental option.")
+
+        # Override the commit message in the MP with the commit message built
+        # with the proper tags.
+        try:
+            mp.set_commit_message(commit_message)
+        except Exception, e:
+            raise BzrCommandError(
+                "Unable to set the commit message in the merge proposal.\n"
+                "Got: %s" % e)
+
         if print_commit:
             print commit_message
             return
@@ -523,14 +564,21 @@ class cmd_update_image(EC2Command):
         if extra_update_image_command is None:
             extra_update_image_command = []
 
+        # These environment variables are passed through ssh connections to
+        # fresh Ubuntu images and cause havoc if the locales they refer to are
+        # not available. We kill them here to ease bootstrapping, then we
+        # later modify the image to prevent sshd from accepting them.
+        os.environ.pop("LANG", None)
+        os.environ.pop("LC_ALL", None)
+
         credentials = EC2Credentials.load_from_file()
 
         session_name = EC2SessionName.make(EC2TestRunner.name)
         instance = EC2Instance.make(
             session_name, instance_type, machine,
             credentials=credentials)
-        instance.check_bundling_prerequisites()
-
+        instance.check_bundling_prerequisites(
+            ami_name, credentials)
         instance.set_up_and_run(
             postmortem, True, self.update_image, instance,
             extra_update_image_command, ami_name, credentials, public)
@@ -555,7 +603,14 @@ class cmd_update_image(EC2Command):
         :param public: If true, remove proprietary code from the sourcecode
             directory before bundling.
         """
+        # Do NOT accept environment variables via ssh connections.
         user_connection = instance.connect()
+        user_connection.perform(
+            'sudo sed -i "s/^AcceptEnv/#AcceptEnv/" /etc/ssh/sshd_config')
+        user_connection.perform(
+            'sudo kill -HUP $(< /var/run/sshd.pid)')
+        # Reconnect to ensure that the environment is clean.
+        user_connection.reconnect()
         user_connection.perform(
             'bzr launchpad-login %s' % (instance._launchpad_login,))
         for cmd in extra_update_image_command:
@@ -576,6 +631,25 @@ class cmd_update_image(EC2Command):
             'rm -rf .ssh/known_hosts .bazaar .bzr.log')
         user_connection.close()
         instance.bundle(ami_name, credentials)
+
+
+class cmd_images(EC2Command):
+    """Display all available images.
+
+    The first in the list is the default image.
+    """
+
+    def run(self):
+        credentials = EC2Credentials.load_from_file()
+        session_name = EC2SessionName.make(EC2TestRunner.name)
+        account = credentials.connect(session_name)
+        format = "%5s  %-12s  %-12s  %s\n"
+        self.outf.write(format % ("Rev", "AMI", "Owner ID", "Owner"))
+        for revision, images in account.find_images():
+            for image in images:
+                self.outf.write(format % (
+                        revision, image.id, image.ownerId,
+                        VALID_AMI_OWNERS.get(image.ownerId, "unknown")))
 
 
 class cmd_help(EC2Command):

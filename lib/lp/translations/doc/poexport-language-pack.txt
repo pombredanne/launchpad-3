@@ -1,4 +1,5 @@
-= Language Pack Exports =
+Language Pack Exports
+=====================
 
 Launchpad has a way to export all distribution series translations in a
 tarball to provide language packs.
@@ -12,37 +13,22 @@ Some initialisation tasks:
     >>> import transaction
     >>> from canonical.launchpad.ftests import login
     >>> from canonical.launchpad.helpers import string_to_tarfile
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> from lp.translations.scripts.language_pack import \
-    ...    export_language_pack
-    >>> from canonical.librarian.interfaces import ILibrarianClient
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.translations.scripts.language_pack import (
+    ...    export_language_pack)
     >>> from canonical.database.sqlbase import flush_database_caches
+    >>> from canonical.librarian.interfaces import ILibrarianClient
     >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
     >>> login("daf@canonical.com")
 
-    # This is a dummy logger class to capture the export's log messages.
-    >>> class FakeLogger:
-    ...     def __init__(self):
-    ...         self.messages = []
-    ...
-    ...     def log(self, *stuff):
-    ...         self.messages.append(' '.join(stuff))
-    ...
-    ...     debug = info = warn = error = log
-    ...
-    ...     def exception(self, *stuff):
-    ...         self.log(*stuff)
-    ...
-    ...         for line in traceback.format_exception(*sys.exc_info()):
-    ...             if line.strip():
-    ...                 self.log(line)
+    >>> from lp.services.log.logger import BufferLogger
 
 This is handy for examining the tar files that are generated.
 
     >>> def get_name(entry):
     ...     """For sorting: get tar entry's name."""
     ...     return entry.name
-
 
     >>> def examine_tarfile(tarfile):
     ...     """Summarize the contents of a tar file."""
@@ -60,13 +46,14 @@ This is handy for examining the tar files that are generated.
     ...         print "| %5s | %s" % (size, member.name.rstrip('/'))
 
 
-== Base language pack export using Librarian ==
+Base language pack export using Librarian
+-----------------------------------------
 
 When a new language pack export is requested, you can select to use the
-Librarian to store the language pack. That is noted with output_file
-set to None.
+Librarian to store the language pack. That is noted with output_file set
+to None.
 
-    >>> logger = FakeLogger()
+    >>> logger = BufferLogger()
     >>> language_pack = export_language_pack(
     ...     distribution_name='ubuntu',
     ...     series_name='hoary',
@@ -78,18 +65,19 @@ set to None.
 
 Check that the log looks ok.
 
-    >>> print '\n'.join(logger.messages)
-    Selecting PO files for export
-    Number of PO files to export: 12
-    Exporting PO file ... (1/12)
-    Exporting PO file ... (2/12)
+    >>> print logger.getLogBuffer()
+    DEBUG Selecting PO files for export
+    INFO  Number of PO files to export: 12
+    DEBUG Exporting PO file ... (1/12)
+    DEBUG Exporting PO file ... (2/12)
     ...
-    Adding timestamp file
-    Adding mapping file
-    Done.
-    Upload complete, file alias: ...
+    INFO  Adding timestamp file
+    INFO  Adding mapping file
+    INFO  Done.
+    DEBUG Upload complete, file alias: ...
 
     # Get the generated tarball.
+
     >>> tarfile = string_to_tarfile(language_pack.file.read())
 
 The tarball has the right members.
@@ -111,6 +99,7 @@ Directory permissions allow correct use of those directories:
 
     # XXX: 2010-04-26, Salgado, bug=570244: This try/except is needed to make
     # the test pass on python2.5 and 2.6.
+
     >>> try:
     ...     directory = tarfile.getmember('rosetta-hoary/')
     ... except KeyError:
@@ -126,18 +115,19 @@ And one of the included .po files look like what we expected.
     '# traducci\xc3\xb3n de es.po al Spanish\n'
 
 
-== Language pack with XPI translations ==
+Language pack with XPI translations
+-----------------------------------
 
 Launchpad supports XPI file imports. However, we don't have an export
-process ready, and thus, we do it with an external script that does
-that last part based on .po files and the original en-US.xpi file. To
-achieve that, we export all translations for XPI files in a special
-directory: xpi/translation_domain/
+process ready, and thus, we do it with an external script that does that
+last part based on .po files and the original en-US.xpi file. To achieve
+that, we export all translations for XPI files in a special directory:
+xpi/translation_domain/
 
-    >>> from lp.registry.model.sourcepackagename import SourcePackageName
-    >>> from lp.translations.model.potemplate import POTemplate
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.model.sourcepackagename import SourcePackageName
+    >>> from lp.translations.model.potemplate import POTemplate
 
 Get hold of a person.
 
@@ -149,13 +139,16 @@ Get the Grumpy distro series.
 
     >>> series = getUtility(IDistributionSet)['ubuntu'].getSeries('grumpy')
 
-=== Sample data initialisation ===
+
+Sample data initialisation
+..........................
 
 We need to import an XPI template and a translation to see those files
 exported as part of language packs.
 
+    >>> from lp.translations.enums import RosettaImportStatus
     >>> from lp.translations.interfaces.translationimportqueue import (
-    ...     ITranslationImportQueue, RosettaImportStatus)
+    ...     ITranslationImportQueue)
     >>> from lp.translations.utilities.tests.test_xpi_import \
     ...     import get_en_US_xpi_file_to_import
 
@@ -175,9 +168,9 @@ Attach the en-US.xpi (the template) file.
 
     >>> en_US_xpi =  get_en_US_xpi_file_to_import('en-US')
     >>> translation_import_queue = getUtility(ITranslationImportQueue)
-    >>> published = True
+    >>> by_maintainer = True
     >>> template_entry = translation_import_queue.addOrUpdateEntry(
-    ...     firefox_template.path, en_US_xpi.read(), published,
+    ...     firefox_template.path, en_US_xpi.read(), by_maintainer,
     ...     mark, distroseries=series, sourcepackagename=spn,
     ...     potemplate=firefox_template)
 
@@ -186,7 +179,7 @@ Attach the es.xpi file (the translation) file.
     >>> es_xpi = get_en_US_xpi_file_to_import('en-US')
     >>> firefox_es_translation = firefox_template.newPOFile('es')
     >>> translation_entry = translation_import_queue.addOrUpdateEntry(
-    ...     'es.xpi', es_xpi.read(), published,
+    ...     'es.xpi', es_xpi.read(), by_maintainer,
     ...     mark, distroseries=series, sourcepackagename=spn,
     ...     potemplate=firefox_template,
     ...     pofile=firefox_es_translation)
@@ -213,7 +206,8 @@ We do now the import from the queue:
     >>> transaction.commit()
 
 
-=== Language pack export with XPI files ===
+Language pack export with XPI files
+...................................
 
 We are now ready to get an exported language pack with XPI files.
 
@@ -226,9 +220,8 @@ We are now ready to get an exported language pack with XPI files.
     ...     logger=logger)
     >>> transaction.commit()
 
-
-We get other entries in language pack + en-US.xpi file and
-the translations in .po file format.
+We get other entries in language pack + en-US.xpi file and the
+translations in .po file format.
 
     >>> tarfile = string_to_tarfile(language_pack.file.read())
     >>> examine_tarfile(tarfile)
@@ -250,11 +243,12 @@ We got a valid en-US.xpi file.
     ['chrome.manifest', 'chrome/en-US.jar', 'copyover3.png', 'install.rdf']
 
 
-== Base language pack export using Librarian with date limits ==
+Base language pack export using Librarian with date limits
+----------------------------------------------------------
 
 Launchpad is also able to generate a tarball of all files for a
-distribution series that only includes translation files which have
-been changed since a certain date.
+distribution series that only includes translation files which have been
+changed since a certain date.
 
 First we need to set up some data to test with, and for this we need
 some DB classes.
@@ -303,9 +297,8 @@ on 2000/01/01.
 
     >>> pofile_es = template.newPOFile('es')
     >>> translations = { 0: u'blah (es)' }
-    >>> new_translation_message = potmsgset.updateTranslation(
-    ...     pofile_es, mark, translations, is_imported=False,
-    ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> new_translation_message = factory.makeCurrentTranslationMessage(
+    ...     pofile_es, potmsgset, mark, translations=translations)
     >>> pofile_es.date_changed = d2000_01_01
 
 Create a Welsh PO file, with an active translation submission created on
@@ -313,9 +306,8 @@ Create a Welsh PO file, with an active translation submission created on
 
     >>> pofile_cy = template.newPOFile('cy')
     >>> translations = { 0: u'blah (cy)' }
-    >>> new_translation_message = potmsgset.updateTranslation(
-    ...     pofile_cy, mark, translations, is_imported=False,
-    ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> new_translation_message = factory.makeCurrentTranslationMessage(
+    ...     pofile_cy, potmsgset, mark, translations=translations)
     >>> pofile_cy.date_changed = d2000_01_03
     >>> transaction.commit()
 
@@ -324,7 +316,8 @@ PO files.
 
     >>> print series.language_pack_base
     None
-    >>> logger = FakeLogger()
+
+    >>> logger = BufferLogger()
     >>> flush_database_caches()
     >>> language_pack = export_language_pack(
     ...     distribution_name='ubuntu',
@@ -337,21 +330,22 @@ PO files.
 
 Check that the log looks ok.
 
-    >>> print '\n'.join(logger.messages)
-    Selecting PO files for export
-    Number of PO files to export: 4
-    Exporting PO file ... (1/4)
-    Exporting PO file ... (2/4)
-    Exporting PO file ... (3/4)
-    Exporting PO file ... (4/4)
-    Exporting XPI template files.
-    Adding timestamp file
-    Adding mapping file
-    Done.
-    Upload complete, file alias: ...
-    Registered the language pack.
+    >>> print logger.getLogBuffer()
+    DEBUG Selecting PO files for export
+    INFO  Number of PO files to export: 4
+    DEBUG Exporting PO file ... (1/4)
+    DEBUG Exporting PO file ... (2/4)
+    DEBUG Exporting PO file ... (3/4)
+    DEBUG Exporting PO file ... (4/4)
+    INFO  Exporting XPI template files.
+    INFO  Adding timestamp file
+    INFO  Adding mapping file
+    INFO  Done.
+    DEBUG Upload complete, file alias: ...
+    INFO  Registered the language pack.
 
     # Get the generated tarball.
+
     >>> tarfile = string_to_tarfile(language_pack.file.read())
     >>> examine_tarfile(tarfile)
     |     - | rosetta-grumpy
@@ -446,11 +440,12 @@ should get only files that where updated after 2000-01-02.
     >>> transaction.commit()
 
     # Get the generated tarball.
+
     >>> tarfile = string_to_tarfile(language_pack.file.read())
 
-Now, there is only one file exported for the 'test' domain, the one that had
-the modification date after the last generated language pack. We ignore the
-xpi entries because those are outside the scope of this test.
+Now, there is only one file exported for the 'test' domain, the one that
+had the modification date after the last generated language pack. We
+ignore the xpi entries because those are outside the scope of this test.
 
     >>> examine_tarfile(tarfile)
     |     - | rosetta-grumpy
@@ -465,22 +460,23 @@ xpi entries because those are outside the scope of this test.
     |    94 | rosetta-grumpy/xpi/firefox/en.po
     |   102 | rosetta-grumpy/xpi/firefox/es.po
 
-There is another situation where a translation file is exported again
-as part of a language pack update, even without being changed.  It is
-re-exported if its template has been changed since the last language
-pack was produced.
+There is another situation where a translation file is exported again as
+part of a language pack update, even without being changed.  It is re-
+exported if its template has been changed since the last language pack
+was produced.
 
-The latest template change is noted in IPOTemplate.date_last_updated.
-An update to the template causes that field to be updated, so that the
-next export will include all its translations as well.
+The latest template change is noted in IPOTemplate.date_last_updated. An
+update to the template causes that field to be updated, so that the next
+export will include all its translations as well.
 
     >>> template.date_last_updated = datetime.datetime.now(UTC)
 
     # Save changes.
+
     >>> transaction.commit()
 
-We export a language pack with changes relative to a base language
-pack that was exported on 2000-01-03:
+We export a language pack with changes relative to a base language pack
+that was exported on 2000-01-03:
 
     >>> series.language_pack_base.date_exported = d2000_01_03
     >>> flush_database_caches()
@@ -514,7 +510,8 @@ template has.  That's why we get both translations:
     |   102 | rosetta-grumpy/xpi/firefox/es.po
 
 
-== Script arguments and concurrency ==
+Script arguments and concurrency
+--------------------------------
 
 The language-pack-exporter script requires two arguments to run: the
 distribution name, and series name. The script promptly exits if the
@@ -570,3 +567,5 @@ different distribution and series combinations.
 
     >>> proc.returncode
     0
+
+

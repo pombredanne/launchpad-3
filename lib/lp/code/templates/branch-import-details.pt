@@ -2,7 +2,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  tal:define="context_menu context/menu:context">
+  tal:define="context_menu view/context/menu:context">
 
   <tal:imported-branch tal:condition="context/branch_type/enumvalue:IMPORTED">
     <div id="import-details" tal:define="branch context;

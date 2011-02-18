@@ -1,11 +1,13 @@
-= Specification Messages =
+Specification Messages
+======================
 
 Specification messages are messages associated with blueprints. A
 specifiction message is described by the ISpecificationMessage
 interface.
 
 
-== Creating specification messages ==
+Creating specification messages
+-------------------------------
 
 To create a specification message, use
 ISpecificationMessageSet.createMessage:
@@ -17,7 +19,7 @@ ISpecificationMessageSet.createMessage:
     >>> specset = getUtility(ISpecificationSet)
     >>> specmessageset = getUtility(ISpecificationMessageSet)
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> sample_person = getUtility(IPersonSet).get(12)
     >>> spec = specset.getByURL(
     ...     'http://developer.mozilla.org/en/docs/SVG')
@@ -30,7 +32,8 @@ ISpecificationMessageSet.createMessage:
     u'test message subject'
 
 
-== Retrieving specification messages ==
+Retrieving specification messages
+---------------------------------
 
 ISpecificationMessageSet represents the set of all messages in the
 system. An individual ISpecificationMessage can be retrieved with
@@ -39,3 +42,5 @@ ISpecificationMessageSet.get:
     >>> specmessage_one = specmessageset.get(1)
     >>> specmessage_one.message.subject
     u'test message subject'
+
+

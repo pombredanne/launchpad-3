@@ -5,13 +5,62 @@
 
 __metaclass__ = type
 __all__ = [
+    'GoneError',
+    'NameLookupFailed',
+    'NotFoundError',
+    'POSTToNonCanonicalURL',
+    'TranslationUnavailable',
+    'UnexpectedFormData',
     'UserCannotUnsubscribePerson',
     ]
 
+from lazr.restful.declarations import webservice_error
 from zope.security.interfaces import Unauthorized
 
-from lazr.restful.declarations import webservice_error
 
+class TranslationUnavailable(Exception):
+    """Translation objects are unavailable."""
+
+
+class NotFoundError(KeyError):
+    """Launchpad object not found."""
+
+
+class GoneError(KeyError):
+    """Launchpad object is gone."""
+
+
+class NameLookupFailed(NotFoundError):
+    """Raised when a lookup by name fails.
+
+    Subclasses should define the `_message_prefix` class variable, which will
+    be prefixed to the quoted name of the name that could not be found.
+
+    :ivar name: The name that could not be found.
+    """
+
+    _message_prefix = "Not found"
+
+    def __init__(self, name, message=None):
+        if message is None:
+            message = self._message_prefix
+        self.message = "%s: '%s'." % (message, name)
+        self.name = name
+        NotFoundError.__init__(self, self.message)
+
+    def __str__(self):
+        return self.message
+
+
+class UnexpectedFormData(AssertionError):
+    """Got form data that is not what is expected by a form handler."""
+
+
+class POSTToNonCanonicalURL(UnexpectedFormData):
+    """Got a POST to an incorrect URL.
+
+    One example would be a URL containing uppercase letters.
+    """
 
 class UserCannotUnsubscribePerson(Unauthorized):
     """User does not have persmisson to unsubscribe person or team."""

@@ -9,20 +9,23 @@ __metaclass__ = type
 __all__ = ['VerifyPOFileStatsProcess']
 
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import logging
-import pytz
 
+import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from lp.translations.interfaces.pofile import IPOFileSet
-from lp.services.mail.sendmail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.utilities.looptuner import DBLoopTuner
+from lp.services.mail.sendmail import simple_sendmail
+from lp.translations.interfaces.pofile import IPOFileSet
 
 
 class Verifier:

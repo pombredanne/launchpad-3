@@ -5,20 +5,25 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import login
-from canonical.testing import LaunchpadFunctionalLayer
-from canonical.testing import ZopelessDatabaseLayer
-
-from lp.testing import TestCaseWithFactory
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
-from lp.registry.interfaces.productseries import IProductSeriesSet
+from lp.registry.interfaces.productseries import (
+    IProductSeries,
+    IProductSeriesSet,
+    )
+from lp.testing import TestCaseWithFactory
+from lp.testing.matchers import DoesNotSnapshot
 from lp.translations.interfaces.translations import (
-    TranslationsBranchImportMode)
+    TranslationsBranchImportMode,
+    )
 
 
 class TestProductSeriesSetPackaging(TestCaseWithFactory):
@@ -102,7 +107,6 @@ class TestProductSeriesDrivers(TestCaseWithFactory):
         """Make a driver for `object_with_driver`, and return the driver."""
         object_with_driver.driver = self.factory.makePerson()
         return object_with_driver.driver
-
 
     def test_drivers_group(self):
         # A driver on the group is reported as one of the drivers of the
@@ -271,5 +275,46 @@ class TestProductSeriesSet(TestCaseWithFactory):
                 self.ps_set.findByTranslationsImportBranch(branch, True))
 
 
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+class TestProductSeriesReleases(TestCaseWithFactory):
+    '''Tests the releases functions for productseries.'''
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProductSeriesReleases, self).setUp()
+        self.product = self.factory.makeProduct()
+        self.productseries = self.factory.makeProductSeries(
+                                            product=self.product)
+
+    def test_getLatestRelease(self):
+        # getLatestRelease returns the most recent release.
+        self.assertIs(None, self.productseries.getLatestRelease())
+
+        release = self.factory.makeProductRelease(
+                        product=self.product,
+                        productseries=self.productseries)
+        self.assertEqual(release, self.productseries.getLatestRelease())
+
+        second_release = self.factory.makeProductRelease(
+                                product=self.product,
+                                productseries=self.productseries)
+        self.assertEqual(
+            second_release,
+            self.productseries.getLatestRelease())
+
+
+class ProductSeriesSnapshotTestCase(TestCaseWithFactory):
+    """A TestCase for snapshots of productseries."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_productseries(self):
+        """Asserts that fields marked doNotSnapshot are skipped."""
+        productseries = self.factory.makeProductSeries()
+        skipped = [
+            'milestones',
+            'all_milestones',
+            ]
+        self.assertThat(
+            productseries,
+            DoesNotSnapshot(skipped, IProductSeries))

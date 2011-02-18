@@ -10,8 +10,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadFunctionalLayer
-
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.browser.bug import BugView
 from lp.testing import TestCaseWithFactory
 
@@ -39,7 +38,7 @@ class TestBugView(TestCaseWithFactory):
         removeSecurityProxy(attachment.libraryfile).content = None
         self.assertEqual(
             ['regular attachment'],
-            [attachment.title
+            [attachment['attachment'].title
              for attachment in self.view.regular_attachments])
 
     def test_patches_dont_include_invalid_records(self):
@@ -54,7 +53,8 @@ class TestBugView(TestCaseWithFactory):
         removeSecurityProxy(patch.libraryfile).content = None
         self.assertEqual(
             ['patch'],
-            [attachment.title for attachment in self.view.patches])
+            [attachment['attachment'].title
+             for attachment in self.view.patches])
 
 
 def test_suite():

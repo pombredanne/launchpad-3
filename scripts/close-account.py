@@ -15,9 +15,9 @@ import sys
 
 from canonical.database.sqlbase import connect, sqlvalues
 from canonical.launchpad.scripts import db_options, logger_options, logger
-from canonical.launchpad.interfaces import (
-    PersonCreationRationale, QuestionStatus)
-from canonical.launchpad.interfaces.account import AccountStatus
+from lp.answers.interfaces.questionenums import QuestionStatus
+from lp.registry.interfaces.person import PersonCreationRationale
+
 
 def close_account(con, log, username):
     """Close a person's account.
@@ -66,9 +66,7 @@ def close_account(con, log, username):
         UPDATE Person
         SET displayname='Removed by request',
             name=%(new_name)s, language=NULL, account=NULL,
-            addressline1=NULL, addressline2=NULL, organization=NULL,
-            city=NULL, province=NULL, country=NULL, postcode=NULL,
-            phone=NULL, homepage_content=NULL, icon=NULL, mugshot=NULL,
+            homepage_content=NULL, icon=NULL, mugshot=NULL,
             hide_email_addresses=TRUE, registrant=NULL, logo=NULL,
             creation_rationale=%(unknown_rationale)s, creation_comment=NULL
         WHERE id=%(person_id)s

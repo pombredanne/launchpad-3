@@ -25,14 +25,6 @@
 
 /* === Fonts and colors === */
 
-
-
-
-
-.exception {color: #cc0000;}
-.discreet, .lesser, .duplicate-details {font-size: 90%;}
-.extra-discreet {font-size: 75%;}
-.offline {text-align: center; margin: 2em 0;}
 .unavailable {color: #999; background: none;}
 
 .duplicate-details p { padding: 0em; margin-top: 0em; margin-bottom: 0.2em; }
@@ -60,17 +52,6 @@ form.primary.search {
 }
 @media screen {
   .notforscreen {display:none;}
-}
-
-.highlighted, tr.highlight {background: #ddd; border: 1px solid #ddd;}
-.highlighted {padding: 0.5em;}
-.highlighted h3 {margin-top: 0;}
-.unhighlighted {padding: 0 0.5em;}
-.dimmed {
-  padding: 0 0.5em;
-  opacity: .5;
-  filter: alpha(opacity=50);
-  -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
 }
 
 .debug {
@@ -164,12 +145,6 @@ form.primary.search {
   text-decoration: underline;
 }
 
-.tags-container {
-  width: 45%;
-  text-align: left;
-  float: left;
-}
-
 .tags-show { display: block; }
 
 .tags-hide { display: none; }
@@ -246,10 +221,6 @@ a.bg-image {
 
 /* --- Overview --- */
 
-.tab-overview #application-footer strong {
-  background: none;
-  color: #83ad23;
-}
 body.tab-overview #description, div#branch-description {
     width: 50em;
 }
@@ -263,7 +234,6 @@ div#branch-description {
     margin-top: 1em;
 }
 
-.product.series, .series {margin-bottom: 1em;}
 #packages h1, #projects h1 {margin-top: 1.2em;}
 
 
@@ -445,16 +415,6 @@ div.ppa-packaging-tmp-actions .portlet {
 
 /* --- Code --- */
 
-body.tab-branches #actions, body.tab-branches .results {background-color: #ffc;}
-body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
-  background-color: #d18b39;
-}
-.tab-branches h1, .tab-branches h2, .tab-branches h3,
-.tab-branches #application-footer strong, .tab-branches #application-summary strong, .tab-branches #page-summary strong.count {
-  background: none;
-  color: #d18b39;
-}
-
 .branch-no-dev-focus {
   background: #FFF59C;
   vertical-align: middle;
@@ -501,13 +461,6 @@ div.diff .attachmentBody {
 div.diff .horizontal {
   margin: 0;
 }
-body.tab-branches table.listing .section-heading {
-  color: #d18b39;
-}
-
-body.tab-branches table.listing tr.thead, body.tab-branches table.listing thead {
-  color: #666666;
-}
 
 .yui-diff-overlay table.diff {
   font-size: 98%;
@@ -550,19 +503,18 @@ dl.reviews dd {
     color: black !important;
 }
 
+.code-links td.code-count {
+  text-align: right;
+  padding-right: 0.5em;
+}
+
+.code-links td.code-link {
+  text-align: left;
+  margin: 0 0 0 0;
+}
+
 
 /* === Bugs === */
-/* The Launchpad Bugs application uses a maroon color: */
-body.tab-bugs #actions, body.tab-bugs .results {background-color: #fee;}
-body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
-  background-color: #9f2b33;
-}
-.tab-bugs h1, .tab-bugs h2, .tab-bugs h3, .tab-bugs #application-footer strong,
-.tab-bugs table.listing thead {
-  background: none;
-  color: #9f2b33;
-}
-
 
 /* In a bug report page, the current context is highlighted in yellow: */
 #affected-software tr.highlight {background-color: #ff9;}
@@ -585,35 +537,19 @@ div#sub-unsub-spinner {
   padding-right: 1em;
 }
 
-/* --- Blueprints --- */
+.bug-links td.bugs-count {
+  text-align: right;
+  padding-right: 0.5em;
+}
 
-body.tab-specifications #actions, body.tab-specifications .results {
-  background-color: #eff;
+.bug-links td.bugs-link {
+  text-align: left;
 }
-body.tab-specifications #actions h2, body.tab-specifications #actions h2:hover {
-  background-color: #3594bb;
-}
-.tab-specifications h1, .tab-specifications h2, .tab-specifications h3,
-.tab-specifications #application-footer strong,
-.tab-specifications table.listing thead {
-  background: none;
-  color: #3594bb;
-}
+
+
 
 /* === Translations === */
 
-body.tab-translations #actions, body.tab-translations .results {
-  background-color: #f1d7e6;
-}
-body.tab-translations #actions h2, body.tab-translations #actions h2:hover {
-  background-color: #bb3a84;
-}
-.tab-translations h1, .tab-translations h2, .tab-translations h3,
-.tab-translations #application-footer strong,
-.tab-translations table.listing thead {
-  background: none;
-  color: #bb3a84;
-}
 .translation code {font-weight: bold;} /* an interpolation code, such as %i */
 .translation samp { /* a leading/trailing space */
   background: url(/@@/translation-space) center center no-repeat;
@@ -623,43 +559,6 @@ body.tab-translations #actions h2, body.tab-translations #actions h2:hover {
 /* In translation forms, single-line text fields occupy nearly all of the
 available width, just like multi-line fields (see "textarea" above): */
 input.translate {width: 90%; max-width: 60em;}
-
-/* === Answers === */
-
-body.tab-answers #actions, body.tab-answers .results {background-color: #eef;}
-body.tab-answers #actions h2, body.tab-answers #actions h2:hover {
-  background-color: #3840be;
-}
-.tab-answers h1, .tab-answers h2, .tab-answers h3,
-.tab-answers #application-footer strong, .tab-answers table.listing thead {
-  background: none;
-  color: #3840be;
-}
-
-.search-box {
-  text-align: left;
-  float: left;
-  border:1px solid #d6d6d6;
-  margin: 0.5em 0 0.5em 0;
-  color: #717171;
-  padding: 8px;
-  -moz-border-radius: 5px;
-  -o-border-radius: 5px;
-  -webkit-border-radius: 5px;
-}
-
-.search-box form.primary.search {
-  margin: 0.5em;
-}
-
-.bug-links td.bugs-count {
-  text-align: right;
-  padding-right: 0.5em;
-}
-
-.bug-links td.bugs-link {
-  text-align: left;
-}
 
 /* ====== Content area styles ====== */
 

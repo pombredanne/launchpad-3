@@ -140,7 +140,7 @@ published, this will be indicated to the viewer:
     ...     name='pmount', version='0.1-1')[1]
     >>> print pmount_i386_pub.displayname
     pmount 0.1-1 in warty i386
-    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> pmount_i386_pub.status = PackagePublishingStatus.PENDING
     >>> pmount_i386_pub.datepublished = None
     >>> transaction.commit()
@@ -271,9 +271,8 @@ modify some publication in Celso's PPA to SUPERSEDED and DELETED
 states. Note, for consistency we have to create the binary publishing records
 for iceweasel before marking it as superseded.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, PackagePublishingStatus)
     >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('foo.bar@canonical.com')
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> iceweasel_pub = cprov.archive.getPublishedSources(

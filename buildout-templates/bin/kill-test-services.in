@@ -19,8 +19,7 @@ config.generate_overrides()
 import sys
 
 from canonical.testing.layers import MemcachedLayer
-from canonical.librarian.ftests.harness import (
-    LibrarianTestSetup, TacLibrarianTestSetup)
+from canonical.librarian.testing.server import LibrarianTestSetup
 from lp.services.osutils import kill_by_pidfile
 
 
@@ -32,7 +31,6 @@ def main(args):
     kill_by_pidfile(MemcachedLayer.getPidFile())
     print "done."
     print "Killing Librarian....",
-    TacLibrarianTestSetup().tearDown()
     LibrarianTestSetup().tearDownRoot()
     print "done."
     return 0

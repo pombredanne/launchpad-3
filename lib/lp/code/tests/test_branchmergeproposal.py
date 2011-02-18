@@ -8,8 +8,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.testing import DatabaseFunctionalLayer
-
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.tests.test_branch import PermissionTest
 from lp.registry.interfaces.pocket import PackagePublishingPocket

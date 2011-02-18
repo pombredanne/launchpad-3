@@ -67,7 +67,7 @@ getQuestionLanguages() returns the set of languages that is used by all the
 questions in the project group's projects.
 
     # The Firefox project group has one question created in Brazilian
-    # Portuguese. 
+    # Portuguese.
     >>> print ', '.join(
     ...     sorted(language.code
     ...            for language in mozilla_project.getQuestionLanguages()))

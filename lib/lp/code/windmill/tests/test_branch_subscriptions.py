@@ -10,10 +10,9 @@ import unittest
 
 import windmill
 
-from canonical.launchpad.windmill.testing import lpuser
 from lp.code.windmill.testing import CodeWindmillLayer
 from lp.testing import WindmillTestCase
-
+from lp.testing.windmill import lpuser
 
 
 class TestBranchSubscriptions(WindmillTestCase):
@@ -30,7 +29,7 @@ class TestBranchSubscriptions(WindmillTestCase):
         lpuser.FOO_BAR.ensure_login(client)
 
         client.open(url=(
-            windmill.settings['TEST_URL'] + '/~mark/firefox/release--0.9.1'))
+            windmill.settings['TEST_URL'] + '~mark/firefox/release--0.9.1'))
         client.waits.forElement(id=u'none-subscribers', timeout=u'10000')
         client.asserts.assertText(
             xpath=u'//a[@class="sprite add subscribe-self js-action"]',
@@ -40,7 +39,7 @@ class TestBranchSubscriptions(WindmillTestCase):
 
         client.click(
             xpath=u'//a[@class="sprite add subscribe-self js-action"]')
-        client.waits.forElement(id=u'yui-pretty-overlay-modal')
+        client.waits.forElement(id=u'yui3-pretty-overlay-modal')
         client.click(xpath=u'//button[@name="field.actions.subscribe"]')
 
         client.waits.forElement(id=u'editsubscription-icon-name16',
@@ -67,7 +66,7 @@ class TestBranchSubscriptions(WindmillTestCase):
 
         client.open(url=''.join([
             windmill.settings['TEST_URL'],
-            '/~name12/landscape/feature-x/']))
+            '~name12/landscape/feature-x/']))
         client.waits.forPageLoad(timeout=u'10000')
 
         client.waits.forElement(

@@ -22,7 +22,7 @@ from zope.component import getUtility
 from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 from canonical.launchpad.scripts.debsync import do_import
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 
 
 # setup core values and defaults
@@ -77,9 +77,9 @@ class CreateDebWatches(LaunchpadCronScript):
 
         # first find all the published ubuntu packages
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        for p in ubuntu.currentrelease.publishedBinaryPackages(
-            component='main'):
-            target_package_set.add(p.binarypackagename.name)
+        for p in ubuntu.currentrelease.getAllPublishedBinaries():
+            target_package_set.add(
+                p.binarypackagerelease.binarypackagename.name)
         # then add packages passed on the command line
         for package in self.options.packages:
             target_package_set.add(package)

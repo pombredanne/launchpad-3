@@ -11,13 +11,11 @@
     </tal:heading>
 
     <tal:registering metal:fill-slot="registering">
-      <p>
         registered by
         <a tal:replace="structure context/owner/fmt:link" />
         <span tal:content="context/date_created/fmt:displaydate"
               tal:attributes="title context/date_created/fmt:datetime"
           >on 2005-01-01</span>
-      </p>
     </tal:registering>
 
     <tal:main metal:fill-slot="main"
@@ -54,20 +52,20 @@
       <div class="yui-g">
         <div class="yui-u first">
           <div tal:replace="structure context/@@+portlet-listfaqs"
-            tal:condition="context/official_answers" />
+            tal:condition="context/answers_usage/enumvalue:LAUNCHPAD" />
 
           <div tal:replace="structure context/@@+portlet-latestbugs"
-            tal:condition="context/official_malone" />
+            tal:condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD" />
 
           <div tal:replace="structure context/@@+portlet-top-contributors" />
         </div>
 
         <div class="yui-u">
           <div tal:replace="structure context/@@+portlet-latestquestions"
-            tal:condition="context/official_answers" />
+            tal:condition="context/answers_usage/enumvalue:LAUNCHPAD" />
 
           <div tal:replace="structure context/@@+portlet-latestspecs"
-            tal:condition="context/official_blueprints" />
+            tal:condition="context/blueprints_usage/enumvalue:LAUNCHPAD" />
 
           <div tal:replace="structure context/@@+portlet-coming-sprints" />
         </div>

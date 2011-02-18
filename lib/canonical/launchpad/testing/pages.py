@@ -9,42 +9,67 @@
 
 __metaclass__ = type
 
+import doctest
 import os
 import pdb
 import pprint
 import re
-import transaction
 import unittest
-
-from BeautifulSoup import (
-    BeautifulSoup, CData, Comment, Declaration, NavigableString, PageElement,
-    ProcessingInstruction, SoupStrainer, Tag)
-from contrib.oauth import (
-    OAuthConsumer, OAuthRequest, OAuthSignatureMethod_PLAINTEXT, OAuthToken)
 from urlparse import urljoin
 
-from zope.app.testing.functional import HTTPCaller, SimpleCookie
+from BeautifulSoup import (
+    BeautifulSoup,
+    CData,
+    Comment,
+    Declaration,
+    NavigableString,
+    PageElement,
+    ProcessingInstruction,
+    SoupStrainer,
+    Tag,
+    )
+from contrib.oauth import (
+    OAuthConsumer,
+    OAuthRequest,
+    OAuthSignatureMethod_PLAINTEXT,
+    OAuthToken,
+    )
+from lazr.restful.interfaces import IRepresentationCache
+from lazr.restful.testing.webservice import WebServiceCaller
+import transaction
+from zope.app.testing.functional import (
+    HTTPCaller,
+    SimpleCookie,
+    )
 from zope.component import getUtility
-from zope.testbrowser.testing import Browser
-from zope.testing import doctest
 from zope.security.proxy import removeSecurityProxy
+from zope.testbrowser.testing import Browser
 
-from launchpadlib.launchpad import Launchpad
-
-from canonical.launchpad.interfaces import (
-    IOAuthConsumerSet, OAUTH_REALM, ILaunchpadCelebrities,
-    TeamMembershipStatus)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.oauth import (
+    IOAuthConsumerSet,
+    OAUTH_REALM,
+    )
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, SpecialOutputChecker, stop, strip_prefix)
+    LayeredDocFileSuite,
+    SpecialOutputChecker,
+    stop,
+    strip_prefix,
+    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import OAuthPermission
 from canonical.launchpad.webapp.url import urlsplit
-from canonical.testing import PageTestLayer
-from lazr.restful.testing.webservice import WebServiceCaller
+from canonical.testing.layers import PageTestLayer
+from lp.registry.errors import NameAlreadyTaken
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.testing import (
-    ANONYMOUS, launchpadlib_for, login, login_person, logout)
+    ANONYMOUS,
+    launchpadlib_for,
+    login,
+    login_person,
+    logout,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
-from lp.registry.interfaces.person import NameAlreadyTaken
 
 
 class UnstickyCookieHTTPCaller(HTTPCaller):
@@ -294,6 +319,27 @@ def print_table(content, columns=None, skip_rows=None, sep="\t"):
             print sep.join(row_content)
 
 
+def get_radio_button_text_for_field(soup, name):
+    """Find the input called field.name, and return an iterable of strings.
+
+    The resulting output will look something like:
+    ['(*) A checked option', '( ) An unchecked option']
+    """
+    buttons = soup.findAll(
+        'input', {'name': 'field.%s' % name})
+    for button in buttons:
+        if button.parent.name == 'label':
+            label = extract_text(button.parent)
+        else:
+            label = extract_text(
+                soup.find('label', attrs={'for': button['id']}))
+        if button.get('checked', None):
+            radio = '(*)'
+        else:
+            radio = '( )'
+        yield "%s %s" % (radio, label)
+
+
 def print_radio_button_field(content, name):
     """Find the input called field.name, and print a friendly representation.
 
@@ -302,19 +348,8 @@ def print_radio_button_field(content, name):
     ( ) An unchecked option
     """
     main = BeautifulSoup(content)
-    buttons =  main.findAll(
-        'input', {'name': 'field.%s' % name})
-    for button in buttons:
-        if button.parent.name == 'label':
-            label = extract_text(button.parent)
-        else:
-            label = extract_text(
-                main.find('label', attrs={'for': button['id']}))
-        if button.get('checked', None):
-            radio = '(*)'
-        else:
-            radio = '( )'
-        print radio, label
+    for field in get_radio_button_text_for_field(main, name):
+        print field
 
 
 def strip_label(label):
@@ -672,6 +707,16 @@ def webservice_for_person(person, consumer_key='launchpad-library',
     return LaunchpadWebServiceCaller(consumer_key, access_token.key)
 
 
+def ws_uncache(obj):
+    """Manually remove an object from the web service representation cache.
+
+    Directly modifying a data model object during a test may leave
+    invalid data in the representation cache.
+    """
+    cache = getUtility(IRepresentationCache)
+    cache.delete(obj)
+
+
 def setupDTCBrowser():
     """Testbrowser configured for Distribution Translations Coordinators.
 
@@ -776,6 +821,7 @@ def setUpGlobs(test):
     test.globs['print_tag_with_id'] = print_tag_with_id
     test.globs['PageTestLayer'] = PageTestLayer
     test.globs['stop'] = stop
+    test.globs['ws_uncache'] = ws_uncache
 
 
 class PageStoryTestCase(unittest.TestCase):
@@ -809,7 +855,7 @@ class PageStoryTestCase(unittest.TestCase):
         return self._suite.countTestCases()
 
     def shortDescription(self):
-        return "pagetest: %s" % self._description
+        return self._description
 
     def id(self):
         return self.shortDescription()
@@ -871,20 +917,27 @@ def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
     numberedfilenames = sorted(numberedfilenames)
     unnumberedfilenames = sorted(unnumberedfilenames)
 
-    # Add unnumbered tests to the suite individually.
+    suite = unittest.TestSuite()
     checker = SpecialOutputChecker()
-    suite = LayeredDocFileSuite(
-        package=package, checker=checker, stdout_logging=False,
-        layer=PageTestLayer, setUp=setUp,
-        *[os.path.join(storydir, filename)
-          for filename in unnumberedfilenames])
+    # Add unnumbered tests to the suite individually.
+    if unnumberedfilenames:
+        suite.addTest(LayeredDocFileSuite(
+            package=package, checker=checker, stdout_logging=False,
+            layer=PageTestLayer, setUp=setUp,
+            *[os.path.join(storydir, filename)
+              for filename in unnumberedfilenames]))
 
     # Add numbered tests to the suite as a single story.
-    storysuite = LayeredDocFileSuite(
-        package=package, checker=checker, stdout_logging=False,
-        setUp=setUp,
-        *[os.path.join(storydir, filename)
-          for filename in numberedfilenames])
-    suite.addTest(PageStoryTestCase(stripped_storydir, storysuite))
+    if numberedfilenames:
+        storysuite = LayeredDocFileSuite(
+            package=package, checker=checker, stdout_logging=False,
+            setUp=setUp,
+            *[os.path.join(storydir, filename)
+              for filename in numberedfilenames])
+        story_test_id = "story-%s" % stripped_storydir
+        get_id = lambda: story_test_id
+        for test in storysuite:
+            test.id = get_id
+        suite.addTest(PageStoryTestCase(story_test_id, storysuite))
 
     return suite

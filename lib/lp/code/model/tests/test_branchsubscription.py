@@ -3,8 +3,6 @@
 
 """Tests for the BranchSubscrptions model object.."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 import unittest
@@ -12,14 +10,25 @@ import unittest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.code.enums import (
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
-from lp.testing import TestCaseWithFactory, person_logged_in
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 
 
 class TestBranchSubscriptions(TestCaseWithFactory):
     """Tests relating to branch subscriptions in general."""
 
     layer = DatabaseFunctionalLayer
+
+    def test_owner_subscribed(self):
+        # The owner of a branch is subscribed to the branch.
+        branch = self.factory.makeBranch()
+        [subscription] = list(branch.subscriptions)
+        self.assertEqual(branch.owner, subscription.person)
 
     def test_subscribed_by_set(self):
         """The user subscribing is recorded along the subscriber."""

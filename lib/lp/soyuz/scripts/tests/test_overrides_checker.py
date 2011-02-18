@@ -1,13 +1,17 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """archive-override-check tool base class tests."""
 
 __metaclass__ = type
 
-from unittest import TestCase, TestLoader
+from unittest import TestCase
+
 from lp.soyuz.scripts.ftpmaster import (
-    PubBinaryDetails, PubSourceChecker, PubBinaryContent)
+    PubBinaryContent,
+    PubBinaryDetails,
+    PubSourceChecker,
+    )
 
 
 class TestPubBinaryDetails(TestCase):
@@ -29,7 +33,7 @@ class TestPubBinaryDetails(TestCase):
             1, len(self.binary_details.priorities['foo-dev']))
         # not correct value was set yet
         self.assertEqual(
-            False, self.binary_details.correct_priorities.has_key('foo-dev'))
+            False, 'foo-dev' in self.binary_details.correct_priorities)
         # set correct values
         self.binary_details.setCorrectValues()
         # now we have the correct value in place
@@ -151,7 +155,6 @@ class TestPubSourceChecker(TestCase):
             "\t\tW: Priority mismatch: EXTRA != REQUIRED",
             checker.renderReport())
 
-
     def test_multi_binary_priority_success(self):
         """Probe multiple binaries with correct priorities.
 
@@ -169,7 +172,3 @@ class TestPubSourceChecker(TestCase):
         checker.check()
 
         self.assertEqual(None, checker.renderReport())
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

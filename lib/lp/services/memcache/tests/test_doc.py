@@ -7,19 +7,22 @@ __metaclass__ = type
 
 import os.path
 from textwrap import dedent
-import unittest
 
-from zope.component import getUtility
 import zope.pagetemplate.engine
 from zope.pagetemplate.pagetemplate import PageTemplate
 from zope.publisher.browser import TestRequest
 
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
-from canonical.testing.layers import LaunchpadFunctionalLayer, MemcachedLayer
-from lp.services.memcache.interfaces import IMemcacheClient
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.testing.layers import (
+    LaunchpadFunctionalLayer,
+    MemcachedLayer,
+    )
 from lp.services.testing import build_test_suite
-from lp.testing import TestCase
 
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -47,8 +50,8 @@ class TestPageTemplate(PageTemplate):
     def pt_getContext(self, args=(), options={}):
         # Build a minimal context. The cache: expression requires
         # a request.
-        context = {'request': TestRequest()}
-        context.update(options)
+        context = dict(options)
+        context.setdefault('request', TestRequest())
         return context
 
 
@@ -57,13 +60,18 @@ def memcacheSetUp(test):
     test.globs['TestPageTemplate'] = TestPageTemplate
     test.globs['dedent'] = dedent
     test.globs['MemcachedLayer'] = MemcachedLayer
+    test.globs['LaunchpadTestRequest'] = LaunchpadTestRequest
 
+
+def suite_for_doctest(filename):
+    return LayeredDocFileSuite(
+        '../doc/%s' % filename,
+        setUp=memcacheSetUp, tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer)
 
 special = {
-    'tales-cache.txt': LayeredDocFileSuite(
-        '../doc/tales-cache.txt',
-        setUp=memcacheSetUp, tearDown=tearDown,
-        layer=LaunchpadFunctionalLayer),
+    'tales-cache.txt': suite_for_doctest('tales-cache.txt'),
+    'restful-cache.txt': suite_for_doctest('restful-cache.txt'),
     }
 
 

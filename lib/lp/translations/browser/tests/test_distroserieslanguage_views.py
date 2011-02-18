@@ -3,20 +3,18 @@
 
 __metaclass__ = type
 
-import transaction
 import unittest
 
+from lazr.restful.utils import get_current_browser_request
+import transaction
 from zope.component import getUtility
 
-from lazr.restful.utils import get_current_browser_request
-
-from lp.translations.browser.serieslanguage import (
-    DistroSeriesLanguageView)
-from lp.translations.interfaces.translator import ITranslatorSet
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
+from lp.translations.browser.serieslanguage import DistroSeriesLanguageView
+from lp.translations.interfaces.translator import ITranslatorSet
 
 
 class TestDistroSeriesLanguage(TestCaseWithFactory):

@@ -7,10 +7,14 @@ Test harness for tests needing a PostgreSQL backend.
 
 __metaclass__ = type
 
-import unittest
+import atexit
+import os
+import random
 import time
 
 import psycopg2
+
+from canonical.config import config
 from canonical.database.postgresql import (
     generateResetSequencesSQL, resetSequences)
 
@@ -119,7 +123,6 @@ class CursorWrapper:
 
 _org_connect = None
 def fake_connect(*args, **kw):
-    global _org_connect
     return ConnectionWrapper(_org_connect(*args, **kw))
 
 def installFakeConnect():
@@ -136,9 +139,13 @@ def uninstallFakeConnect():
 
 
 class PgTestSetup:
+
     connections = [] # Shared
+    # Use a dynamically generated dbname:
+    dynamic = object()
 
     template = 'template1'
+    # Needs to match configs/testrunner*/*:
     dbname = 'launchpad_ftest'
     dbuser = None
     host = None
@@ -156,7 +163,7 @@ class PgTestSetup:
     # Class attribute. True if we should destroy the DB because changes made.
     _reset_db = True
 
-    def __init__(self, template=None, dbname=None, dbuser=None,
+    def __init__(self, template=None, dbname=dynamic, dbuser=None,
             host=None, port=None, reset_sequences_sql=None):
         '''Construct the PgTestSetup
 
@@ -165,8 +172,34 @@ class PgTestSetup:
         '''
         if template is not None:
             self.template = template
-        if dbname is not None:
+        if dbname is PgTestSetup.dynamic:
+            from canonical.testing.layers import BaseLayer
+            if os.environ.get('LP_TEST_INSTANCE'):
+                self.dbname = "%s_%s" % (
+                    self.__class__.dbname, os.environ.get('LP_TEST_INSTANCE'))
+                # Stash the name we use in the config if a writable config is
+                # available.
+                # Avoid circular imports
+                section = """[database]
+rw_main_master: dbname=%s
+rw_main_slave:  dbname=%s
+
+""" % (self.dbname, self.dbname)
+                if BaseLayer.config_fixture is not None:
+                    BaseLayer.config_fixture.add_section(section)
+                if BaseLayer.appserver_config_fixture is not None:
+                    BaseLayer.appserver_config_fixture.add_section(section)
+            if config.instance_name in (
+                BaseLayer.config_name, BaseLayer.appserver_config_name):
+                config.reloadConfig()
+            else:
+                # Fallback to the class name.
+                self.dbname = self.__class__.dbname
+        elif dbname is not None:
             self.dbname = dbname
+        else:
+            # Fallback to the class name.
+            self.dbname = self.__class__.dbname
         if dbuser is not None:
             self.dbuser = dbuser
         if host is not None:
@@ -235,6 +268,10 @@ class PgTestSetup:
                         "CREATE DATABASE %s TEMPLATE=%s "
                         "ENCODING='UNICODE'" % (
                             self.dbname, self.template))
+                    # Try to ensure our cleanup gets invoked, even in
+                    # the face of adversity such as the test suite
+                    # aborting badly.
+                    atexit.register(self.dropDb)
                     break
                 except psycopg2.DatabaseError, x:
                     if counter == attempts - 1:
@@ -244,7 +281,8 @@ class PgTestSetup:
                         raise
             finally:
                 con.close()
-            time.sleep(1)
+            # Let the other user complete their copying of the template DB.
+            time.sleep(random.random())
         ConnectionWrapper.committed = False
         ConnectionWrapper.dirty = False
         PgTestSetup._last_db = (self.template, self.dbname)
@@ -261,7 +299,6 @@ class PgTestSetup:
         ConnectionWrapper.dirty = False
         if PgTestSetup._reset_db:
             self.dropDb()
-            PgTestSetup._reset_db = True
         #uninstallFakeConnect()
 
     def connect(self):
@@ -321,6 +358,8 @@ class PgTestSetup:
                     cur.execute('VACUUM pg_catalog.pg_shdepend')
             finally:
                 con.close()
+        # Any further setUp's must make a new DB.
+        PgTestSetup._reset_db = True
 
     def force_dirty_database(self):
         """flag the database as being dirty
@@ -331,30 +370,3 @@ class PgTestSetup:
         as database changes made from a subprocess.
         """
         PgTestSetup._reset_db = True
-
-
-class PgTestCase(unittest.TestCase):
-    dbname = None
-    dbuser = None
-    host = None
-    port = None
-    template = None
-    def setUp(self):
-        pg_test_setup = PgTestSetup(
-                self.template, self.dbname, self.dbuser, self.host, self.port
-                )
-        pg_test_setup.setUp()
-        self.dbname = pg_test_setup.dbname
-        self.dbuser = pg_test_setup.dbuser
-        assert self.dbname, 'self.dbname is not set.'
-
-    def tearDown(self):
-        PgTestSetup(
-                self.template, self.dbname, self.dbuser, self.host, self.port
-                ).tearDown()
-
-    def connect(self):
-        return PgTestSetup(
-                self.template, self.dbname, self.dbuser, self.host, self.port
-                ).connect()
-

@@ -10,20 +10,31 @@ Note that these are not interfaces to application content objects.
 """
 __metaclass__ = type
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, TextLine
-from persistent import IPersistent
-
 from lazr.restful.interfaces import IServiceRootResource
-from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
+from persistent import IPersistent
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Int,
+    TextLine,
+    )
 
+from canonical.launchpad import _
 # XXX kiko 2007-02-08:
 # These import shims are actually necessary if we don't go over the
 # entire codebase and fix where the import should come from.
 from canonical.launchpad.webapp.interfaces import (
-    IBasicLaunchpadRequest, ILaunchBag, ILaunchpadRoot, IOpenLaunchBag,
-    NotFoundError, UnexpectedFormData, UnsafeFormGetSubmissionError)
+    IBasicLaunchpadRequest,
+    ILaunchBag,
+    ILaunchpadApplication,
+    ILaunchpadRoot,
+    IOpenLaunchBag,
+    UnsafeFormGetSubmissionError,
+    )
 
 
 __all__ = [
@@ -49,7 +60,6 @@ __all__ = [
     'ILaunchpadCelebrities',
     'ILaunchpadRoot',
     'ILaunchpadSearch',
-    'ILaunchpadUsage',
     'INotificationRecipientSet',
     'IOpenLaunchBag',
     'IPasswordChangeApp',
@@ -61,14 +71,10 @@ __all__ = [
     'IPrivacy',
     'IReadZODBAnnotation',
     'IRosettaApplication',
-    'IStructuralHeaderPresentation',
-    'IStructuralObjectPresentation',
     'IWebServiceApplication',
     'IWriteZODBAnnotation',
     'IZODBAnnotation',
     'NameNotAvailable',
-    'NotFoundError',
-    'UnexpectedFormData',
     'UnknownRecipientError',
     'UnsafeFormGetSubmissionError',
     ]
@@ -100,6 +106,7 @@ class ILaunchpadCelebrities(Interface):
     """
     admin = Attribute("The 'admins' team.")
     bazaar_experts = Attribute("The Bazaar Experts team.")
+    software_center_agent = Attribute("The Software Center Agent.")
     bug_importer = Attribute("The bug importer.")
     bug_watch_updater = Attribute("The Bug Watch Updater.")
     buildd_admin = Attribute("The Build Daemon administrator.")
@@ -114,8 +121,6 @@ class ILaunchpadCelebrities(Interface):
     launchpad = Attribute("The Launchpad project.")
     launchpad_beta_testers = Attribute("The Launchpad Beta Testers team.")
     launchpad_developers = Attribute("The Launchpad development team.")
-    lp_translations = Attribute("The Launchpad Translations product.")
-    mailing_list_experts = Attribute("The Mailing List Experts team.")
     obsolete_junk = Attribute("The Obsolete Junk project.")
     ppa_key_guard = Attribute("The PPA signing keys owner.")
     registry_experts = Attribute("The Registry Administrators team.")
@@ -156,6 +161,9 @@ class IPersonRoles(Interface):
     in_bazaar_experts = Bool(
         title=_("True if this person is a Bazaar expert."),
         required=True, readonly=True)
+    in_software_center_agent = Bool(
+        title=_("True if this person is the Software Center Agent."),
+        required=True, readonly=True)
     in_bug_importer = Bool(
         title=_("True if this person is a bug importer."),
         required=True, readonly=True)
@@ -182,9 +190,6 @@ class IPersonRoles(Interface):
         required=True, readonly=True)
     in_launchpad_developers = Bool(
         title=_("True if this person is a Launchpad developer."),
-        required=True, readonly=True)
-    in_mailing_list_experts = Bool(
-        title=_("True if this person is a mailing list expert."),
         required=True, readonly=True)
     in_ppa_key_guard = Bool(
         title=_("True if this person is the ppa key guard."),
@@ -296,6 +301,9 @@ class IPrivateApplication(ILaunchpadApplication):
 
     bugs = Attribute("""Launchpad Bugs XML-RPC end point.""")
 
+    softwarecenteragent = Attribute(
+        """Software center agent XML-RPC end point.""")
+
 
 class IAuthServerApplication(ILaunchpadApplication):
     """Launchpad legacy AuthServer application root."""
@@ -401,6 +409,13 @@ class IHasDrivers(Interface):
     """
     drivers = Attribute("A list of drivers")
 
+    def personHasDriverRights(person):
+        """Does the given person have launchpad.Driver rights on this object?
+
+        True if the person is one of this object's drivers, its owner or a
+        Launchpad admin.
+        """
+
 
 class IHasAppointedDriver(Interface):
     """An object that has an appointed driver."""
@@ -462,7 +477,8 @@ class IAging(Interface):
     def currentApproximateAge():
         """Return a human-readable string of how old this thing is.
 
-        Values returned are things like '2 minutes', '3 hours', '1 month', etc.
+        Values returned are things like '2 minutes', '3 hours',
+        '1 month', etc.
         """
 
 
@@ -480,38 +496,6 @@ class IHasDateCreated(Interface):
     """Something created on a certain date."""
 
     datecreated = Attribute("The date on which I was created.")
-
-
-class IStructuralHeaderPresentation(Interface):
-    """Adapter for common aspects of a structural object's presentation."""
-
-    def getIntroHeading():
-        """Any heading introduction needed (e.g. "Ubuntu source package:")."""
-
-    def getMainHeading():
-        """can be None"""
-
-
-class IStructuralObjectPresentation(IStructuralHeaderPresentation):
-    """Adapter for less common parts of a structural object's presentation."""
-
-    def listChildren(num):
-        """List up to num children.  Return empty string for none of these"""
-
-    def countChildren():
-        """Return the total number of children."""
-
-    def listAltChildren(num):
-        """List up to num alternative children.
-
-        Return None if alt children are not supported.
-        """
-
-    def countAltChildren():
-        """Return the total number of alt children.
-
-        Will be called only if listAltChildren returns something.
-        """
 
 
 class IAppFrontPageSearchForm(Interface):
@@ -552,6 +536,7 @@ class INotificationRecipientSet(Interface):
     The set maintains the list of `IPerson` that will be contacted as well
     as the email address to use to contact them.
     """
+
     def getEmails():
         """Return all email addresses registered, sorted alphabetically."""
 
@@ -594,7 +579,7 @@ class INotificationRecipientSet(Interface):
         """
 
     def add(person, reason, header):
-        """Add a person or sequence of person to the recipients list.
+        """Add a person or a sequence of persons to the recipients list.
 
         When the added person is a team without an email address, all its
         members emails will be added. If the person is already in the
@@ -608,6 +593,13 @@ class INotificationRecipientSet(Interface):
             X-Launchpad-Message-Rationale header.
         """
 
+    def remove(person):
+        """Remove a person or a list of persons from the recipients list.
+
+        :param person: The `IPerson` or a sequence of `IPerson`
+            that will removed from the recipients list.
+        """
+
     def update(recipient_set):
         """Updates this instance's reasons with reasons from another set.
 
@@ -615,26 +607,3 @@ class INotificationRecipientSet(Interface):
 
         :param recipient_set: An `INotificationRecipientSet`.
         """
-
-class ILaunchpadUsage(Interface):
-    """How the project uses Launchpad."""
-    official_answers = Bool(
-        title=_('People can ask questions in Launchpad Answers'),
-        required=True)
-    official_blueprints = Bool(
-        title=_('This project uses blueprints'), required=True)
-    official_codehosting = Bool(
-        title=_('Code for this project is published in Bazaar branches on'
-                ' Launchpad'),
-        required=True)
-    official_malone = Bool(
-        title=_('Bugs in this project are tracked in Launchpad'),
-        required=True)
-    official_rosetta = Bool(
-        title=_('Translations for this project are done in Launchpad'),
-        required=True)
-    official_anything = Bool (
-        title=_('Uses Launchpad for something'),)
-    enable_bug_expiration = Bool(
-        title=_('Expire Incomplete bug reports when they become inactive'),
-        required=True)

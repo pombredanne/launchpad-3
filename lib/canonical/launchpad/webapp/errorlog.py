@@ -9,16 +9,16 @@ __metaclass__ = type
 
 import contextlib
 import datetime
-import errno
 from itertools import repeat
 import logging
 import os
+import stat
 import re
 import rfc822
-import threading
 import types
 import urllib
 
+from lazr.restful.utils import get_current_browser_request
 import pytz
 from zope.component.interfaces import ObjectEvent
 from zope.error.interfaces import IErrorReportingUtility
@@ -28,25 +28,26 @@ from zope.interface import implements
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.traversing.namespace import view
 
-from lazr.restful.utils import get_current_browser_request
-from canonical.lazr.utils import safe_hasattr
 from canonical.config import config
-from canonical.launchpad import versioninfo
+from lp.app import versioninfo
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.adapter import (
-    get_request_statements, get_request_duration,
-    soft_timeout_expired)
+    get_request_duration,
+    soft_timeout_expired,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    IErrorReport, IErrorReportEvent, IErrorReportRequest)
+    IErrorReport,
+    IErrorReportEvent,
+    IErrorReportRequest,
+    )
 from canonical.launchpad.webapp.opstats import OpStats
+from canonical.lazr.utils import safe_hasattr
+from lp.services.log.uniquefileallocator import UniqueFileAllocator
+from lp.services.timeline.requesttimeline import get_request_timeline
 
 UTC = pytz.utc
 
 LAZR_OOPS_USER_REQUESTED_KEY = 'lazr.oops.user_requested'
-
-# the section of the OOPS ID before the instance identifier is the
-# days since the epoch, which is defined as the start of 2006.
-epoch = datetime.datetime(2006, 01, 01, 00, 00, 00, tzinfo=UTC)
 
 # Restrict the rate at which errors are sent to the Zope event Log
 # (this does not affect generation of error reports).
@@ -61,11 +62,13 @@ _rate_restrict_period = datetime.timedelta(seconds=60)
 # minute.
 _rate_restrict_burst = 5
 
+
 def _normalise_whitespace(s):
     """Normalise the whitespace in a string to spaces"""
     if s is None:
         return None
     return ' '.join(s.split())
+
 
 def _safestr(obj):
     if isinstance(obj, unicode):
@@ -82,13 +85,16 @@ def _safestr(obj):
             'Error in ErrorReportingService while getting a str '
             'representation of an object')
         value = '<unprintable %s object>' % (
-            str(type(obj).__name__)
-            )
+            str(type(obj).__name__))
+    # Some str() calls return unicode objects.
+    if isinstance(value, unicode):
+        return _safestr(value)
     # encode non-ASCII characters
     value = value.replace('\\', '\\\\')
     value = re.sub(r'[\x80-\xff]',
                    lambda match: '\\x%02x' % ord(match.group(0)), value)
     return value
+
 
 def _is_sensitive(request, name):
     """Return True if the given request variable name is sensitive.
@@ -154,35 +160,43 @@ class ErrorReport:
         self.req_vars = req_vars
         self.db_statements = db_statements
         self.branch_nick = versioninfo.branch_nick
-        self.revno  = versioninfo.revno
+        self.revno = versioninfo.revno
         self.informational = informational
 
     def __repr__(self):
         return '<ErrorReport %s %s: %s>' % (self.id, self.type, self.value)
 
-    def write(self, fp):
-        fp.write('Oops-Id: %s\n' % _normalise_whitespace(self.id))
-        fp.write('Exception-Type: %s\n' % _normalise_whitespace(self.type))
-        fp.write('Exception-Value: %s\n' % _normalise_whitespace(self.value))
-        fp.write('Date: %s\n' % self.time.isoformat())
-        fp.write('Page-Id: %s\n' % _normalise_whitespace(self.pageid))
-        fp.write('Branch: %s\n' % self.branch_nick)
-        fp.write('Revision: %s\n' % self.revno)
-        fp.write('User: %s\n' % _normalise_whitespace(self.username))
-        fp.write('URL: %s\n' % _normalise_whitespace(self.url))
-        fp.write('Duration: %s\n' % self.duration)
-        fp.write('Informational: %s\n' % self.informational)
-        fp.write('\n')
+    def get_chunks(self):
+        """Returns a list of bytestrings making up the oops disk content."""
+        chunks = []
+        chunks.append('Oops-Id: %s\n' % _normalise_whitespace(self.id))
+        chunks.append(
+            'Exception-Type: %s\n' % _normalise_whitespace(self.type))
+        chunks.append(
+            'Exception-Value: %s\n' % _normalise_whitespace(self.value))
+        chunks.append('Date: %s\n' % self.time.isoformat())
+        chunks.append('Page-Id: %s\n' % _normalise_whitespace(self.pageid))
+        chunks.append('Branch: %s\n' % _safestr(self.branch_nick))
+        chunks.append('Revision: %s\n' % self.revno)
+        chunks.append('User: %s\n' % _normalise_whitespace(self.username))
+        chunks.append('URL: %s\n' % _normalise_whitespace(self.url))
+        chunks.append('Duration: %s\n' % self.duration)
+        chunks.append('Informational: %s\n' % self.informational)
+        chunks.append('\n')
         safe_chars = ';/\\?:@&+$, ()*!'
         for key, value in self.req_vars:
-            fp.write('%s=%s\n' % (urllib.quote(key, safe_chars),
+            chunks.append('%s=%s\n' % (urllib.quote(key, safe_chars),
                                   urllib.quote(value, safe_chars)))
-        fp.write('\n')
+        chunks.append('\n')
         for (start, end, database_id, statement) in self.db_statements:
-            fp.write('%05d-%05d@%s %s\n' % (
+            chunks.append('%05d-%05d@%s %s\n' % (
                 start, end, database_id, _normalise_whitespace(statement)))
-        fp.write('\n')
-        fp.write(self.tb_text)
+        chunks.append('\n')
+        chunks.append(self.tb_text)
+        return chunks
+
+    def write(self, fp):
+        fp.writelines(self.get_chunks())
 
     @classmethod
     def read(cls, fp):
@@ -197,7 +211,7 @@ class ErrorReport:
         duration = int(float(msg.getheader('duration', '-1')))
         informational = msg.getheader('informational')
 
-        # Explicitely use an iterator so we can process the file
+        # Explicitly use an iterator so we can process the file
         # sequentially. In most instances the iterator will actually
         # be the file object passed in because file objects should
         # support iteration.
@@ -218,8 +232,11 @@ class ErrorReport:
             line = line.strip()
             if line == '':
                 break
-            start, end, db_id, statement = re.match(
-                r'^(\d+)-(\d+)(?:@([\w-]+))?\s+(.*)', line).groups()
+            match = re.match(
+                r'^(\d+)-(\d+)(?:@([\w-]+))?\s+(.*)', line)
+            assert match is not None, (
+                "Unable to interpret oops line: %s" % line)
+            start, end, db_id, statement = match.groups()
             if db_id is not None:
                 db_id = intern(db_id) # This string is repeated lots.
             statements.append(
@@ -242,75 +259,50 @@ class ErrorReportingUtility:
     _ignored_exceptions_for_unauthenticated_users = set(['Unauthorized'])
     _default_config_section = 'error_reports'
 
-    lasterrordir = None
-    lastid = 0
-
     def __init__(self):
-        self.lastid_lock = threading.Lock()
         self.configure()
         self._oops_messages = {}
         self._oops_message_key_iter = (
             index for index, _ignored in enumerate(repeat(None)))
 
     def configure(self, section_name=None):
-        """Configure the utility using the named section form the config.
+        """Configure the utility using the named section from the config.
 
         The 'error_reports' section is used if section_name is None.
         """
         if section_name is None:
             section_name = self._default_config_section
-        self.oops_prefix = config[section_name].oops_prefix
-        self.error_dir = config[section_name].error_dir
         self.copy_to_zlog = config[section_name].copy_to_zlog
-        self.prefix = self.oops_prefix
+        # Start a new UniqueFileAllocator to activate the new configuration.
+        self.log_namer = UniqueFileAllocator(
+            output_root=config[section_name].error_dir,
+            log_type="OOPS",
+            log_subtype=config[section_name].oops_prefix,
+            )
 
     def setOopsToken(self, token):
-        """Append a string to the oops prefix.
+        return self.log_namer.setToken(token)
 
-        :param token: a string to append to a oops_prefix.
-            Scripts that run multiple processes can append a string to
-            the oops_prefix to create a unique identifier for each
-            process.
+    @property
+    def oops_prefix(self):
+        """Get the current effective oops prefix.
+
+        This is the log subtype + anything set via setOopsToken.
         """
-        self.prefix = self.oops_prefix + token
-
-    def _findLastOopsIdFilename(self, directory):
-        """Find details of the last OOPS reported in the given directory.
-
-        This function only considers OOPSes with the currently
-        configured oops_prefix.
-
-        :return: a tuple (oops_id, oops_filename), which will be (0,
-            None) if no OOPS is found.
-        """
-        prefix = self.prefix
-        lastid = 0
-        lastfilename = None
-        for filename in os.listdir(directory):
-            oopsid = filename.rsplit('.', 1)[1]
-            if not oopsid.startswith(prefix):
-                continue
-            oopsid = oopsid[len(prefix):]
-            if oopsid.isdigit() and int(oopsid) > lastid:
-                lastid = int(oopsid)
-                lastfilename = filename
-        return lastid, lastfilename
-
-    def _findLastOopsId(self, directory):
-        """Find the last error number used by this Launchpad instance.
-
-        The purpose of this function is to not repeat sequence numbers
-        if the Launchpad instance is restarted.
-
-        This method is not thread safe, and only intended to be called
-        from the constructor.
-        """
-        return self._findLastOopsIdFilename(directory)[0]
+        return self.log_namer.get_log_infix()
 
     def getOopsReport(self, time):
         """Return the contents of the OOPS report logged at 'time'."""
-        oops_filename = self.getOopsFilename(
-            self._findLastOopsId(self.errordir(time)), time)
+        # How this works - get a serial that was logging in the dir
+        # that logs for time are logged in.
+        serial_from_time = self.log_namer._findHighestSerial(
+            self.log_namer.output_dir(time))
+        # Calculate a filename which combines this most recent serial,
+        # the current log_namer naming rules and the exact timestamp.
+        oops_filename = self.log_namer.getFilename(serial_from_time, time)
+        # Note that if there were no logs written, or if there were two
+        # oops that matched the time window of directory on disk, this
+        # call can raise an IOError.
         oops_report = open(oops_filename, 'r')
         try:
             return ErrorReport.read(oops_report)
@@ -330,84 +322,20 @@ class ErrorReportingUtility:
         Returns None if no OOPS is found.
         """
         now = datetime.datetime.now(UTC)
-        directory = self.errordir(now)
-        oopsid, filename = self._findLastOopsIdFilename(directory)
+        # Check today
+        oopsid, filename = self.log_namer._findHighestSerialFilename(time=now)
         if filename is None:
-            directory = self.errordir(now - datetime.timedelta(days=1))
-            oopsid, filename = self._findLastOopsIdFilename(directory)
+            # Check yesterday, we may have just passed midnight.
+            yesterday = now - datetime.timedelta(days=1)
+            oopsid, filename = self.log_namer._findHighestSerialFilename(
+                time=yesterday)
             if filename is None:
                 return None
-        oops_report = open(os.path.join(directory, filename), 'r')
+        oops_report = open(filename, 'r')
         try:
             return ErrorReport.read(oops_report)
         finally:
             oops_report.close()
-
-    def errordir(self, now=None):
-        """Find the directory to write error reports to.
-
-        Error reports are written to subdirectories containing the
-        date of the error.
-        """
-        if now is not None:
-            now = now.astimezone(UTC)
-        else:
-            now = datetime.datetime.now(UTC)
-        date = now.strftime('%Y-%m-%d')
-        errordir = os.path.join(self.error_dir, date)
-        if errordir != self.lasterrordir:
-            self.lastid_lock.acquire()
-            try:
-                self.lasterrordir = errordir
-                # make sure the directory exists
-                try:
-                    os.makedirs(errordir)
-                except OSError, e:
-                    if e.errno != errno.EEXIST:
-                        raise
-                self.lastid = self._findLastOopsId(errordir)
-            finally:
-                self.lastid_lock.release()
-        return errordir
-
-    def getOopsFilename(self, oops_id, time):
-        """Get the filename for a given OOPS id and time."""
-        oops_prefix = self.prefix
-        error_dir = self.errordir(time)
-        second_in_day = time.hour * 3600 + time.minute * 60 + time.second
-        return os.path.join(
-            error_dir, '%05d.%s%s' % (second_in_day, oops_prefix, oops_id))
-
-    def newOopsId(self, now=None):
-        """Returns an (oopsid, filename) pair for the next Oops ID
-
-        The Oops ID is composed of a short string to identify the
-        Launchpad instance followed by an ID that is unique for the
-        day.
-
-        The filename is composed of the zero padded second in the day
-        followed by the Oops ID.  This ensures that error reports are
-        in date order when sorted lexically.
-        """
-        if now is not None:
-            now = now.astimezone(UTC)
-        else:
-            now = datetime.datetime.now(UTC)
-        # We look up the error directory before allocating a new ID,
-        # because if the day has changed, errordir() will reset the ID
-        # counter to zero.
-        self.errordir(now)
-        self.lastid_lock.acquire()
-        try:
-            self.lastid += 1
-            newid = self.lastid
-        finally:
-            self.lastid_lock.release()
-        oops_prefix = self.prefix
-        day_number = (now - epoch).days + 1
-        oops = 'OOPS-%d%s%d' % (day_number, oops_prefix, newid)
-        filename = self.getOopsFilename(newid, now)
-        return oops, filename
 
     def raising(self, info, request=None, now=None):
         """See IErrorReportingUtility.raising()
@@ -416,16 +344,20 @@ class ErrorReportingUtility:
             determined if not supplied.  Useful for testing.  Not part of
             IErrorReportingUtility).
         """
-        self._raising(info, request=request, now=now, informational=False)
+        return self._raising(
+            info, request=request, now=now, informational=False)
 
     def _raising(self, info, request=None, now=None, informational=False):
         """Private method used by raising() and handling()."""
         entry = self._makeErrorReport(info, request, now, informational)
         if entry is None:
             return
-        # As a side-effect, _makeErrorReport updates self.lastid.
-        filename = self.getOopsFilename(self.lastid, entry.time)
+        filename = entry._filename
         entry.write(open(filename, 'wb'))
+        # Set file permission to: rw-r--r--
+        wanted_permission = (
+            stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+        os.chmod(filename, wanted_permission)
         if request:
             request.oopsid = entry.id
             request.oops = entry
@@ -434,12 +366,12 @@ class ErrorReportingUtility:
             self._do_copy_to_zlog(
                 entry.time, entry.type, entry.url, info, entry.id)
         notify(ErrorReportEvent(entry))
+        return entry
 
     def _makeErrorReport(self, info, request=None, now=None,
                          informational=False):
         """Return an ErrorReport for the supplied data.
 
-        As a side-effect, self.lastid is updated to the integer oops id.
         :param info: Output of sys.exc_info()
         :param request: The IErrorReportRequest which provides context to the
             info.
@@ -528,17 +460,26 @@ class ErrorReportingUtility:
         strurl = _safestr(url)
 
         duration = get_request_duration()
+        # In principle the timeline is per-request, but see bug=623199 -
+        # at this point the request is optional, but get_request_timeline
+        # does not care; when it starts caring, we will always have a
+        # request object (or some annotations containing object).
+        # RBC 20100901
+        timeline = get_request_timeline(request)
+        statements = []
+        for action in timeline.actions:
+            start, end, category, detail = action.logTuple()
+            statements.append(
+                (start, end, _safestr(category), _safestr(detail)))
 
-        statements = sorted(
-            (start, end, _safestr(database_id), _safestr(statement))
-            for (start, end, database_id, statement)
-                in get_request_statements())
+        oopsid, filename = self.log_namer.newId(now)
 
-        oopsid, filename = self.newOopsId(now)
-        return ErrorReport(oopsid, strtype, strv, now, pageid, tb_text,
+        result = ErrorReport(oopsid, strtype, strv, now, pageid, tb_text,
                            username, strurl, duration,
                            req_vars, statements,
                            informational)
+        result._filename = filename
+        return result
 
     def handling(self, info, request=None, now=None):
         """Flag ErrorReport as informational only.
@@ -548,8 +489,10 @@ class ErrorReportingUtility:
             info.
         :param now: The datetime to use as the current time.  Will be
             determined if not supplied.  Useful for testing.
+        :return: The ErrorReport created.
         """
-        self._raising(info, request=request, now=now, informational=True)
+        return self._raising(
+            info, request=request, now=now, informational=True)
 
     def _do_copy_to_zlog(self, now, strtype, url, info, oopsid):
         distant_past = datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=UTC)
@@ -570,7 +513,7 @@ class ErrorReportingUtility:
             # We disable the pylint warning for the blank except.
             try:
                 raise info[0], info[1], traceback
-            except:
+            except info[0]:
                 logging.getLogger('SiteError').exception(
                     '%s (%s)' % (url, oopsid))
 
@@ -579,8 +522,10 @@ class ErrorReportingUtility:
         """Add an oops message to be included in oopses from this context."""
         key = self._oops_message_key_iter.next()
         self._oops_messages[key] = message
-        yield
-        del self._oops_messages[key]
+        try:
+            yield
+        finally:
+            del self._oops_messages[key]
 
 
 globalErrorUtility = ErrorReportingUtility()

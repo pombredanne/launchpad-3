@@ -15,6 +15,8 @@ class FakeTransaction:
 
     Set `log_calls` to True to enable printing of commits and aborts.
     """
+    commit_count = 0
+
     def __init__(self, log_calls=False):
         self.log_calls = log_calls
 
@@ -28,6 +30,7 @@ class FakeTransaction:
 
     def commit(self):
         """Pretend to commit."""
+        self.commit_count += 1
         self._log("COMMIT")
 
     def abort(self):

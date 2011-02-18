@@ -14,18 +14,26 @@ __metaclass__ = type
 __all__ = [
     'ForeignKey',
     'ObjectNotFound',
-    'StartsWith',
     'Sugar',
     'UnknownProperty',
     ]
 
 
-from storm.expr import Like, SQLRaw
-from storm.locals import Int, Reference, Store, Storm
+from storm.locals import (
+    Int,
+    Reference,
+    Store,
+    Storm,
+    )
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.interfaces import (
-     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR, NotFoundError)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
+from lp.app.errors import NotFoundError
 
 
 class ObjectNotFound(NotFoundError):
@@ -51,22 +59,9 @@ class ForeignKey(Reference):
         Reference.__init__(self, None, remote_key)
 
 
-class StartsWith(Like):
-    """Allow Like matching but only at the beginning of a string.
-
-    The string is properly escaped.
-    """
-    def __init__(self, expr, string):
-        # Escape instances of !, _, and % so they don't interfere with the
-        # underlying LIKE operation.  Use ! as the escape character.
-        string = string.replace("!", "!!") \
-                       .replace("_", "!_") \
-                       .replace("%", "!%")
-        Like.__init__(self, expr, string+"%", escape=SQLRaw("'!'"))
-
-
 # Use Storm.__metaclass__ because storm.properties.PropertyPublisherMeta isn't
 # in an __all__.
+
 class Sugary(Storm.__metaclass__):
     """Metaclass that adds support for ForeignKey."""
 

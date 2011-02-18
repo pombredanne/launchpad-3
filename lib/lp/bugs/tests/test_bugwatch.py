@@ -1,37 +1,64 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BugWatchSet."""
 
 __metaclass__ = type
 
-import transaction
 import unittest
-
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from pytz import utc
 from urlparse import urlunsplit
 
+import transaction
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from lazr.lifecycle.snapshot import Snapshot
+
 from canonical.database.constants import UTC_NOW
-
-from canonical.launchpad.ftests import login, ANONYMOUS
-from canonical.launchpad.scripts.garbo import BugWatchActivityPruner
-from canonical.launchpad.scripts.logger import QuietFakeLogger
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    )
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.scripts.garbo import BugWatchActivityPruner
 from canonical.launchpad.webapp import urlsplit
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
-
-from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
-from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType,
+    IBugTrackerSet,
+    )
 from lp.bugs.interfaces.bugwatch import (
-    BugWatchActivityStatus, IBugWatchSet, NoBugTrackerFound,
-    UnrecognizedBugTrackerURL)
-from lp.bugs.model.bugwatch import get_bug_watch_ids
+    BugWatchActivityStatus,
+    IBugWatchSet,
+    NoBugTrackerFound,
+    UnrecognizedBugTrackerURL,
+    )
+from lp.bugs.model.bugwatch import (
+    BugWatchDeletionError,
+    get_bug_watch_ids,
+    )
 from lp.bugs.scripts.checkwatches.scheduler import MAX_SAMPLE_SIZE
 from lp.registry.interfaces.person import IPersonSet
-
-from lp.testing import TestCaseWithFactory, login_person
+from lp.services.log.logger import BufferLogger
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
+from lp.testing.sampledata import ADMIN_EMAIL
 
 
 class ExtractBugTrackerAndBugTestBase:
@@ -173,6 +200,7 @@ class DebbugsExtractBugTrackerAndBugShorthandTest(
     def test_unregistered_tracker_url(self):
         # bugs.debian.org is already registered, so no dice.
         pass
+
 
 class SFExtractBugTrackerAndBugTest(
     ExtractBugTrackerAndBugTestBase, unittest.TestCase):
@@ -440,6 +468,14 @@ class TestBugWatch(TestCaseWithFactory):
         self.assertRaises(
             AssertionError, list, get_bug_watch_ids(['fred']))
 
+    def test_destroySelf_raise_error_when_linked_to_a_task(self):
+        # It's not possible to delete a bug watch that's linked to a
+        # task. Trying will result in a BugWatchDeletionError.
+        bug_watch = self.factory.makeBugWatch()
+        bug = bug_watch.bug
+        bug.default_bugtask.bugwatch = bug_watch
+        self.assertRaises(BugWatchDeletionError, bug_watch.destroySelf)
+
 
 class TestBugWatchSet(TestCaseWithFactory):
     """Tests for the bugwatch updating system."""
@@ -586,7 +622,7 @@ class TestBugWatchActivityPruner(TestCaseWithFactory):
         for i in range(MAX_SAMPLE_SIZE + 1):
             self.bug_watch.addActivity()
 
-        self.pruner = BugWatchActivityPruner(QuietFakeLogger())
+        self.pruner = BugWatchActivityPruner(BufferLogger())
         transaction.commit()
 
     def test_getPrunableBugWatchIds(self):
@@ -659,5 +695,82 @@ class TestBugWatchActivityPruner(TestCaseWithFactory):
             self.failUnless("Activity %s" % i in messages)
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestBugWatchResetting(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestBugWatchResetting, self).setUp(user=ADMIN_EMAIL)
+        self.bug_watch = self.factory.makeBugWatch()
+        self.bug_watch.last_error_type = BugWatchActivityStatus.BUG_NOT_FOUND
+        self.bug_watch.lastchanged = datetime.now(utc) - timedelta(days=1)
+        self.bug_watch.lastchecked = datetime.now(utc) - timedelta(days=1)
+        self.bug_watch.next_check = datetime.now(utc) + timedelta(days=7)
+        self.bug_watch.remote_importance = 'IMPORTANT'
+        self.bug_watch.remotestatus = 'FIXED'
+        self.default_bug_watch_fields = [
+            'last_error_type',
+            'lastchanged',
+            'lastchecked',
+            'next_check',
+            'remote_importance',
+            'remotestatus',
+            ]
+        self.original_bug_watch = Snapshot(
+            self.bug_watch, self.default_bug_watch_fields)
+
+    def _assertBugWatchHasBeenChanged(self, expected_changes=None):
+        """Assert that a bug watch has been changed.
+
+        :param expected_changes: A list of the attribute names that are
+            expected to have changed. If supplied, an assertion error
+            will be raised if one of the expected_changes members has
+            not changed *or* an attribute not in expected_changes has
+            changed. If not supplied, *all* attributes are expected to
+            have changed.
+        """
+        if expected_changes is None:
+            expected_changes = self.default_bug_watch_fields
+
+        actual_changes = []
+        has_changed = True
+        for expected_change in expected_changes:
+            original_value = getattr(self.original_bug_watch, expected_change)
+            current_value = getattr(self.bug_watch, expected_change)
+            if original_value != current_value:
+                has_changed = has_changed and True
+                actual_changes.append(expected_change)
+            else:
+                has_changed = False
+
+        self.assertTrue(
+            has_changed,
+            "Bug watch did not change as expected.\n"
+            "Expected changes: %s\n"
+            "Actual changes: %s" % (expected_changes, actual_changes))
+
+    def test_reset_resets(self):
+        # Calling reset() on a watch resets all of the attributes of the
+        # bug watch.
+        admin_user = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
+        login_person(admin_user)
+        self.bug_watch.reset()
+        self._assertBugWatchHasBeenChanged()
+
+    def test_unprivileged_user_cant_reset_watches(self):
+        # An unprivileged user can't call the reset() method on a bug
+        # watch.
+        unprivileged_user = self.factory.makePerson()
+        login_person(unprivileged_user)
+        self.assertRaises(Unauthorized, getattr, self.bug_watch, 'reset')
+
+    def test_lp_developer_can_reset_watches(self):
+        # A Launchpad developer can call the reset() method on a bug
+        # watch.
+        admin_user = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
+        lp_developers = getUtility(ILaunchpadCelebrities).launchpad_developers
+        lp_dev = self.factory.makePerson()
+        lp_developers.addMember(lp_dev, admin_user)
+        login_person(lp_dev)
+        self.bug_watch.reset()
+        self._assertBugWatchHasBeenChanged()

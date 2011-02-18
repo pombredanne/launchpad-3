@@ -16,14 +16,22 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.batching import BatchNavigator
-
-from lp.bugs.interfaces.cve import ICve, ICveSet
 from canonical.launchpad.validators.cve import valid_cve
-
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, GetitemNavigation)
-from canonical.launchpad.webapp.launchpadform import action, LaunchpadFormView
+    canonical_url,
+    ContextMenu,
+    GetitemNavigation,
+    Link,
+    )
+from canonical.launchpad.webapp.batching import BatchNavigator
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
+from lp.bugs.interfaces.cve import (
+    ICve,
+    ICveSet,
+    )
 
 
 class CveSetNavigation(GetitemNavigation):
@@ -115,8 +123,6 @@ class CveUnlinkView(CveLinkView):
 
 
 class CveSetView:
-
-    __used_for__ = ICveSet
 
     def __init__(self, context, request):
         self.context = context

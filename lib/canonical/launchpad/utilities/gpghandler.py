@@ -16,25 +16,35 @@ import os
 import re
 import shutil
 import socket
+from StringIO import StringIO
 import subprocess
 import tempfile
 import urllib
 import urllib2
-from StringIO import StringIO
 
 import gpgme
 from gpgme import editutil as gpgme_editutil
-
 from zope.interface import implements
 
 from canonical.config import config
-from lp.registry.interfaces.gpg import (
-    GPGKeyAlgorithm, valid_fingerprint)
 from canonical.launchpad.interfaces.gpghandler import (
-    GPGKeyExpired, GPGKeyRevoked, GPGKeyNotFoundError, GPGUploadFailure,
-    GPGVerificationError, IGPGHandler, IPymeKey, IPymeSignature, IPymeUserId,
-    MoreThanOneGPGKeyFound, SecretGPGKeyImportDetected)
+    GPGKeyExpired,
+    GPGKeyNotFoundError,
+    GPGKeyRevoked,
+    GPGUploadFailure,
+    GPGVerificationError,
+    IGPGHandler,
+    IPymeKey,
+    IPymeSignature,
+    IPymeUserId,
+    MoreThanOneGPGKeyFound,
+    SecretGPGKeyImportDetected,
+    )
 from canonical.launchpad.validators.email import valid_email
+from lp.registry.interfaces.gpg import (
+    GPGKeyAlgorithm,
+    valid_fingerprint,
+    )
 
 
 signing_only_param = """
@@ -75,9 +85,9 @@ class GPGHandler:
         # automatically retrieve from the keyserver unknown key when
         # verifying signatures and 'no-auto-check-trustdb' avoid wasting
         # time verifying the local keyring consistence.
-        conf.write ('keyserver hkp://%s\n'
-                    'keyserver-options auto-key-retrieve\n'
-                    'no-auto-check-trustdb\n' % config.gpghandler.host)
+        conf.write('keyserver hkp://%s\n'
+                   'keyserver-options auto-key-retrieve\n'
+                   'no-auto-check-trustdb\n' % config.gpghandler.host)
         conf.close()
         # create a local atexit handler to remove the configuration directory
         # on normal termination.
@@ -156,35 +166,26 @@ class GPGHandler:
             sig = StringIO(signature)
             # store the content
             plain = StringIO(content)
-            # process it
-            try:
-                signatures = ctx.verify(sig, plain, None)
-            except gpgme.GpgmeError, e:
-                # XXX: 2010-04-26, Salgado, bug=570244: This hack is needed
-                # for python2.5 compatibility. We should remove it when we no
-                # longer need to run on python2.5.
-                if hasattr(e, 'message'):
-                    msg = e.message
-                else:
-                    msg = e.strerror
-                raise GPGVerificationError(msg)
+            args = (sig, plain, None)
         else:
             # store clearsigned signature
             sig = StringIO(content)
             # writeable content
             plain = StringIO()
-            # process it
-            try:
-                signatures = ctx.verify(sig, None, plain)
-            except gpgme.GpgmeError, e:
-                # XXX: 2010-04-26, Salgado, bug=570244: This hack is needed
-                # for python2.5 compatibility. We should remove it when we no
-                # longer need to run on python2.5.
-                if hasattr(e, 'message'):
-                    msg = e.message
-                else:
-                    msg = e.strerror
-                raise GPGVerificationError(msg)
+            args = (sig, None, plain)
+
+        # process it
+        try:
+            signatures = ctx.verify(*args)
+        except gpgme.GpgmeError, e:
+            # XXX: 2010-04-26, Salgado, bug=570244: This hack is needed
+            # for python2.5 compatibility. We should remove it when we no
+            # longer need to run on python2.5.
+            if hasattr(e, 'strerror'):
+                msg = e.strerror
+            else:
+                msg = e.message
+            raise GPGVerificationError(msg)
 
         # XXX jamesh 2006-01-31:
         # We raise an exception if we don't get exactly one signature.
@@ -204,7 +205,6 @@ class GPGHandler:
                                        'found multiple signatures')
 
         signature = signatures[0]
-
         # signature.status == 0 means "Ok"
         if signature.status is not None:
             raise GPGVerificationError(signature.status.args)
@@ -218,8 +218,10 @@ class GPGHandler:
                 "Unable to map subkey: %s" % signature.fpr)
 
         # return the signature container
-        return PymeSignature(fingerprint=key.fingerprint,
-                             plain_data=plain.getvalue())
+        return PymeSignature(
+            fingerprint=key.fingerprint,
+            plain_data=plain.getvalue(),
+            timestamp=signature.timestamp)
 
     def importPublicKey(self, content):
         """See IGPGHandler."""
@@ -295,8 +297,7 @@ class GPGHandler:
         # See more information at:
         # http://pyme.sourceforge.net/doc/gpgme/Generating-Keys.html
         result = context.genkey(
-            signing_only_param % {'name': name.encode('utf-8')}
-            )
+            signing_only_param % {'name': name.encode('utf-8')})
 
         # Right, it might seem paranoid to have this many assertions,
         # but we have to take key generation very seriously.
@@ -477,8 +478,8 @@ class GPGHandler:
         """See IGPGHandler"""
         params = {
             'search': '0x%s' % fingerprint,
-            'op': action
-        }
+            'op': action,
+            }
         if public:
             host = config.gpghandler.public_host
         else:
@@ -551,10 +552,11 @@ class PymeSignature(object):
     """See IPymeSignature."""
     implements(IPymeSignature)
 
-    def __init__(self, fingerprint=None, plain_data=None):
+    def __init__(self, fingerprint=None, plain_data=None, timestamp=None):
         """Initialized a signature container."""
         self.fingerprint = fingerprint
         self.plain_data = plain_data
+        self.timestamp = timestamp
 
 
 class PymeKey:

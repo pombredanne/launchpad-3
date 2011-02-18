@@ -3,7 +3,10 @@
 
 """Unit tests for methods of CodeImport and CodeImportSet."""
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import unittest
 
 import pytz
@@ -12,27 +15,41 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.testing.codeimporthelpers import (
-    make_running_import)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.testing.codeimporthelpers import make_running_import
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.code.enums import (
+    CodeImportResultStatus,
+    CodeImportReviewStatus,
+    RevisionControlSystems,
+    )
 from lp.code.errors import (
-    CodeImportAlreadyRequested, CodeImportAlreadyRunning,
-    CodeImportNotInReviewedState)
+    BranchCreatorNotMemberOfOwnerTeam,
+    CodeImportAlreadyRequested,
+    CodeImportAlreadyRunning,
+    CodeImportNotInReviewedState,
+    )
+from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.code.model.codeimport import CodeImportSet
 from lp.code.model.codeimportevent import CodeImportEvent
-from lp.code.model.codeimportjob import CodeImportJob, CodeImportJobSet
+from lp.code.model.codeimportjob import (
+    CodeImportJob,
+    CodeImportJobSet,
+    )
 from lp.code.model.codeimportresult import CodeImportResult
-from lp.code.interfaces.branch import BranchCreatorNotMemberOfOwnerTeam
-from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.registry.interfaces.person import IPersonSet
-from lp.code.enums import (
-    CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems)
-from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.testing import (
-    login, login_person, logout, TestCaseWithFactory, time_counter)
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer)
+    login,
+    login_person,
+    logout,
+    TestCaseWithFactory,
+    time_counter,
+    )
 
 
 class TestCodeImportCreation(TestCaseWithFactory):

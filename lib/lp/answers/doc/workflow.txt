@@ -234,8 +234,8 @@ solved.  He can specify which answer message helped him solved his problem.
     >>> login('no-priv@canonical.com')
     >>> two_weeks_from_now = now + timedelta(days=14)
     >>> confirm_message = question.confirmAnswer(
-    ...     "I upgraded to 512M of RAM (found on eBay) and I've "
-    ...     "successfully managed to install Ubuntu. Thanks for all the help.",
+    ...     "I upgraded to 512M of RAM (found on eBay) and I've successfully "
+    ...     "managed to install Ubuntu. Thanks for all the help.",
     ...     datecreated=two_weeks_from_now, answer=answer_message)
     >>> print confirm_message.action.name
     CONFIRM
@@ -590,7 +590,7 @@ Users without launchpad.Moderator privileges cannot set the assignee.
     >>> question.assignee = sample_person
     Traceback (most recent call last):
       ...
-    Unauthorized: (<Question ...>, 'assignee', 'launchpad.Moderate')
+    Unauthorized: (<Question ...>, 'assignee', 'launchpad.Append')
 
 
 Events
@@ -602,8 +602,8 @@ the message they create and a ObjectModifiedEvent for the question.
     # Register an event listener that will print events it receives.
     >>> from lazr.lifecycle.interfaces import (
     ...     IObjectCreatedEvent, IObjectModifiedEvent)
-    >>> from lp.answers.interfaces.question import IQuestion
     >>> from canonical.lazr.testing.event import TestEventListener
+    >>> from lp.answers.interfaces.question import IQuestion
 
     >>> def print_event(object, event):
     ...     print "Received %s on %s" % (
@@ -739,7 +739,7 @@ Using an IMessage as an explanation
 In all the workflow methods, it is possible to pass an IMessage instead of
 a string.
 
-    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> from canonical.launchpad.interfaces.message import IMessageSet
     >>> login('test@canonical.com')
     >>> messageset = getUtility(IMessageSet)
     >>> question = ubuntu.newQuestion(**new_question_args)

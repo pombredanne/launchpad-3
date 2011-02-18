@@ -19,127 +19,48 @@ the mailing lists are created, messages get sent to the members of the team
 informing them of their new list.  We can ignore these.
 
     >>> from canonical.launchpad.ftests import login, logout
+    >>> from Mailman import MailList
+
+    >>> def makeMailmanList(lp_mailing_list):
+    ...     mlist = MailList.MailList()
+    ...     team = lp_mailing_list.team
+    ...     owner_email = team.teamowner.preferredemail.email
+    ...     mlist.Create(team.name, owner_email, 'password')
+    ...     mlist.host_name = 'lists.prod.launchpad.dev'
+    ...     mlist.web_page_url = 'http://lists.prod.launchpad.dev/mailman/'
+    ...     mlist.Save()
+    ...     mlist.addNewMember(owner_email)
+    ...     mlist.Unlock()
+    ...     return mlist
 
     >>> login('admin@canonical.com')
-
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> owner = removeSecurityProxy(factory.makePerson())
-    >>> team_one = factory.makeTeam(owner=owner, name='staging-one')
-    >>> team_two = factory.makeTeam(owner=owner, name='staging-two')
-    >>> transaction.commit()
-    >>> logout()
-
-    >>> browser = Browser('%s:%s' %
-    ...     (owner._preferredemail_cached.email,
-    ...      owner._password_cleartext_cached))
-
-    >>> from lp.services.mailman.testing import helpers
-    >>> helpers.apply_for_list(browser, 'staging-one')
-    >>> list_one = helpers.review_list('staging-one')
-
-    >>> helpers.apply_for_list(browser, 'staging-two')
-    >>> list_two = helpers.review_list('staging-two')
-
-Anne subscribes to two mailing lists.  Bart and Cris both subscribe to only
-one of the mailing lists.
-
-    >>> helpers.subscribe('Anne', 'staging-one')
-    >>> helpers.subscribe('Anne', 'staging-two')
-    >>> helpers.subscribe('Bart', 'staging-one')
-    >>> helpers.subscribe('Cris', 'staging-two')
-
-A bunch of messages are sent to the mailing lists.
-
-    >>> smtpd.reset()
-    >>> from Mailman.Post import inject
-    >>> inject('staging-one', """\
-    ... From: anne.person@example.com
-    ... To: staging-one@lists.launchpad.dev
-    ... Subject: hello
-    ... Message-ID: <first-injection>
-    ...
-    ... Hello team!
-    ... """)
-
-    # Wait for all recipients to receive the message.
-    >>> for index in range(3):
-    ...     smtpd_watcher.wait_for_mbox_delivery('first-injection')
-
-    >>> inject('staging-two', """\
-    ... From: anne.person@example.com
-    ... To: staging-two@lists.launchpad.dev
-    ... Subject: hello
-    ... Message-ID: <second-injection>
-    ...
-    ... Hello team!
-    ... """)
-
-    # Wait for all recipients to receive the message.
-    >>> for index in range(3):
-    ...     smtpd_watcher.wait_for_mbox_delivery('second-injection')
-
-    >>> inject('staging-one', """\
-    ... From: bart.person@example.com
-    ... To: staging-one@lists.launchpad.dev
-    ... Subject: hello
-    ... Message-ID: <third-injection>
-    ...
-    ... Hello team!
-    ... """)
-
-    # Wait for all recipients to receive the message.
-    >>> for index in range(3):
-    ...     smtpd_watcher.wait_for_mbox_delivery('third-injection')
-
-    >>> inject('staging-two', """\
-    ... From: cris.person@example.com
-    ... To: staging-two@lists.launchpad.dev
-    ... Subject: hello
-    ... Message-ID: <fourth-injection>
-    ...
-    ... Hello team!
-    ... """)
-
-    # Wait for all recipients to receive the message.
-    >>> for index in range(3):
-    ...     smtpd_watcher.wait_for_mbox_delivery('fourth-injection')
-
-    >>> from operator import itemgetter
-    >>> for message in sorted(smtpd, key=itemgetter('sender')):
-    ...     print message['sender']
-    staging-one-bounces+anne.person=example.com@lists.launchpad.dev
-    staging-one-bounces+anne.person=example.com@lists.launchpad.dev
-    staging-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
-    staging-one-bounces+archive=mail-archive.dev@lists.launchpad.dev
-    staging-one-bounces+bart.person=example.com@lists.launchpad.dev
-    staging-one-bounces+bart.person=example.com@lists.launchpad.dev
-    staging-two-bounces+anne.person=example.com@lists.launchpad.dev
-    staging-two-bounces+anne.person=example.com@lists.launchpad.dev
-    staging-two-bounces+archive=mail-archive.dev@lists.launchpad.dev
-    staging-two-bounces+archive=mail-archive.dev@lists.launchpad.dev
-    staging-two-bounces+cris.person=example.com@lists.launchpad.dev
-    staging-two-bounces+cris.person=example.com@lists.launchpad.dev
+    >>> team_one, list_one = factory.makeTeamAndMailingList(
+    ...     'staging-one', 'owner-one')
+    >>> team_two, list_two = factory.makeTeamAndMailingList(
+    ...     'staging-two', 'owner-two')
+    >>> mlist_one = makeMailmanList(list_one)
+    >>> mlist_two = makeMailmanList(list_two)
 
 Give one of the mailing lists a contact address, to further simulate what the
 sync script has to deal with.
 
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import (
-    ...     EmailAddressStatus, IEmailAddressSet, IPersonSet)
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     EmailAddressStatus, IEmailAddressSet)
     >>> from zope.component import getUtility
-    >>> login('admin@canonical.com')
-    >>> team = getUtility(IPersonSet).getByName('staging-two')
     >>> email = getUtility(IEmailAddressSet).new(
-    ...     'contact@example.com', team, EmailAddressStatus.VALIDATED)
-    >>> team.setContactAddress(email)
+    ...     'contact@example.com', team_two, EmailAddressStatus.VALIDATED)
+    >>> team_two.setContactAddress(email)
     >>> logout()
     >>> transaction.commit()
+
+XXX sinzui 2010-10-07 bug=656417: The archive/mbox rsync rules are not tested
+and we need a way to build test versions.
 
 Now we need to simulate the difference between the staging and production
 databases.  To do this, we'll use a helper, but first we need to stop Mailman.
 
-    >>> from canonical.launchpad.mailman import runmailman
     >>> from canonical.testing.layers import LayerProcessController
+    >>> from lp.services.mailman import runmailman
     >>> runmailman.stop_mailman(
     ...     quiet=True, config=LayerProcessController.appserver_config)
     >>> qrunner_watcher.wait_for_shutdown()
@@ -192,7 +113,7 @@ launchpad.conf file.
 
     >>> import os
     >>> import sys
-    >>> from subprocess import *
+    >>> from subprocess import Popen, PIPE
     >>> proc = Popen(
     ...     ('scripts/mlist-sync.py', '--hostname',
     ...      'lists.prod.launchpad.dev', sync_details.source_dir),

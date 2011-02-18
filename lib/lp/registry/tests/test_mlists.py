@@ -6,39 +6,36 @@
 __metaclass__ = type
 
 
-import os
-import sys
 import errno
+import os
+from subprocess import (
+    PIPE,
+    Popen,
+    STDOUT,
+    )
 import tempfile
 import unittest
-
-# Don't use cStringIO in case Unicode leaks through.
-from StringIO import StringIO
-from subprocess import Popen, PIPE, STDOUT
 
 import transaction
 
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.mlistimport import Importer
-from lp.registry.interfaces.person import (
-    PersonVisibility, TeamSubscriptionPolicy)
-from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing.layers import (
-    AppServerLayer, DatabaseFunctionalLayer, LayerProcessController)
+    AppServerLayer,
+    BaseLayer,
+    DatabaseFunctionalLayer,
+    LayerProcessController,
+    )
+from lp.registry.interfaces.person import (
+    PersonVisibility,
+    TeamSubscriptionPolicy,
+    )
+from lp.services.log.logger import BufferLogger
+from lp.testing.factory import LaunchpadObjectFactory
 
 
 factory = LaunchpadObjectFactory()
-
-class CapturingLogger(FakeLogger):
-    def __init__(self):
-        self.io = StringIO()
-
-    def message(self, prefix, *stuff, **kws):
-        # XXX BarryWarsaw 25-Nov-2008 (bug=302183). FakeLogger is broken.
-        fmt = stuff[0]
-        print >> self.io, prefix, fmt % stuff[1:]
 
 
 class BaseMailingListImportTest(unittest.TestCase):
@@ -58,7 +55,7 @@ class BaseMailingListImportTest(unittest.TestCase):
         fd, self.filename = tempfile.mkstemp()
         os.close(fd)
         # A capturing logger.
-        self.logger = CapturingLogger()
+        self.logger = BufferLogger()
 
     def tearDown(self):
         try:
@@ -130,7 +127,7 @@ class TestMailingListImports(BaseMailingListImportTest):
             'dperson@example.org',
             'elly.person@example.com (Elly Q. Person)',
             ))
-        self.assertPeople(u'anne', u'bart', u'cris', u'dave', u'elly',)
+        self.assertPeople(u'anne', u'bart', u'cris', u'dave', u'elly')
         self.assertAddresses(
             u'anne.person@example.com', u'bperson@example.org',
             u'cris.person@example.com', u'dperson@example.org',
@@ -285,7 +282,7 @@ class TestMailingListImports(BaseMailingListImportTest):
             'dperson@example.org',
             'elly.person@example.com',
             ))
-        self.assertEqual(self.logger.io.getvalue(), '')
+        self.assertEqual(self.logger.getLogBuffer(), '')
 
     def test_logging_extended(self):
         # Test that nothing gets logged when all imports are fine.
@@ -298,7 +295,7 @@ class TestMailingListImports(BaseMailingListImportTest):
             'elly.person@example.com (Elly Q. Person)',
             ))
         self.assertEqual(
-            self.logger.io.getvalue(),
+            self.logger.getLogBuffer(),
             'INFO anne.person@example.com (anne) joined and subscribed\n'
             'INFO bperson@example.org (bart) joined and subscribed\n'
             'INFO cris.person@example.com (cris) joined and subscribed\n'
@@ -320,7 +317,7 @@ class TestMailingListImports(BaseMailingListImportTest):
             'hperson@example.org',
             ))
         self.assertEqual(
-            self.logger.io.getvalue(),
+            self.logger.getLogBuffer(),
             'INFO anne.person@example.com (anne) joined and subscribed\n'
             'INFO bperson@example.org (bart) joined and subscribed\n'
             'INFO cris.person@example.com (cris) joined and subscribed\n'
@@ -345,7 +342,7 @@ class TestMailingListImports(BaseMailingListImportTest):
             'elly.person@example.com',
             ))
         self.assertEqual(
-            self.logger.io.getvalue(),
+            self.logger.getLogBuffer(),
             'ERROR No valid email for address: anne.x.person@example.net\n'
             'INFO bperson@example.org (bart) joined and subscribed\n'
             'INFO cris.person@example.com (cris) joined and subscribed\n'
@@ -364,7 +361,7 @@ class TestMailingListImports(BaseMailingListImportTest):
             'bperson@example.org',
             ))
         self.assertEqual(
-            self.logger.io.getvalue(),
+            self.logger.getLogBuffer(),
             'ERROR \xe1\xba\xa2nn\xe1\xba\xbf '
             'P\xe1\xbb\x85rs\xe1\xbb\x91n is already subscribed '
             'to list Aardvarks\n'
@@ -391,7 +388,7 @@ class TestMailingListImportScript(BaseMailingListImportTest):
         args.append(self.team.name)
         return Popen(args, stdout=PIPE, stderr=STDOUT,
                      cwd=LayerProcessController.appserver_config.root,
-                     env=dict(LPCONFIG='testrunner-appserver',
+                     env=dict(LPCONFIG=BaseLayer.appserver_config_name,
                               PATH=os.environ['PATH']))
 
     def test_import(self):
@@ -476,12 +473,12 @@ class TestImportToRestrictedList(BaseMailingListImportTest):
     def _makeList(self, name, owner):
         self.team, self.mailing_list = factory.makeTeamAndMailingList(
             name, owner,
-            visibility=PersonVisibility.PRIVATE_MEMBERSHIP,
+            visibility=PersonVisibility.PRIVATE,
             subscription_policy=TeamSubscriptionPolicy.RESTRICTED)
 
     def test_simple_import_membership(self):
         # Test the import of a list/team membership to a restricted, private
-        # membership team.
+        # team.
         importer = Importer('aardvarks')
         importer.importAddresses((
             'anne.person@example.com',

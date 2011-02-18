@@ -216,8 +216,8 @@ POTemplate is an object with all strings that must be translated for a
 concrete context.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from lp.translations.model.potemplate import POTemplate
     >>> from lp.translations.interfaces.potemplate import IPOTemplate
+    >>> from lp.translations.model.potemplate import POTemplate
     >>> potemplate = POTemplate.get(1)
 
 It implements the IPOTemplate interface.
@@ -228,11 +228,23 @@ It implements the IPOTemplate interface.
 
 == getPOFileByPath ==
 
-We can get an IPOFile inside a templage based on its path.
+We can get an IPOFile inside a template based on its path.
 
     >>> pofile = potemplate.getPOFileByPath('es.po')
     >>> print pofile.title
     Spanish (es) translation of evolution-2.2 in Evolution trunk
+
+
+== getDummyPOFile ==
+
+To get an IPOFile object even for languages which don't have a translation
+of this template, we use the getDummyPOFile method, passing in the language.
+
+    >>> xx_language = factory.makeLanguage(
+    ...     'xx@test', name='Test language')
+    >>> xx_pofile = potemplate.getDummyPOFile(xx_language)
+    >>> print xx_pofile.title
+    Test language (xx@test) translation of evolution-2.2 in Evolution trunk
 
 
 == newPOFile ==
@@ -614,7 +626,10 @@ instead, we get a tarball with all those files.
     >>> print exported_translation_file.content_type
     application/x-gtar
 
-Inspecting the tarball content, we have the list of entries exported.
+Inspecting the tarball content, we have the list of entries exported. This
+includes the 'pt' POFile that was created earlier on the 'evolution'
+product as this is sharing translations with the source package that this
+potemplate is from.
 
     >>> from canonical.launchpad.helpers import string_to_tarfile
     >>> tarfile_string = exported_translation_file.read()
@@ -625,7 +640,7 @@ Inspecting the tarball content, we have the list of entries exported.
     >>> sorted(name.rstrip('/') for name in tarfile.getnames())
     ['evolution-2.2', 'evolution-2.2/evolution-2.2-es.po',
      'evolution-2.2/evolution-2.2-ja.po', 'evolution-2.2/evolution-2.2-xh.po',
-     'po', 'po/evolution-2.2.pot']
+     'po', 'po/evolution-2.2-pt.po', 'po/evolution-2.2.pot']
 
 The *-es.po file is indeed the Spanish translation...
 
@@ -644,6 +659,7 @@ And GNU tar can cope with it.
     evolution-2.2/evolution-2.2-ja.po
     evolution-2.2/evolution-2.2-xh.po
     po/
+    po/evolution-2.2-pt.po
     po/evolution-2.2.pot
     >>> pofile = simple_popen2(
     ...     ['tar', 'zxfO', '-', 'evolution-2.2/evolution-2.2-es.po'],

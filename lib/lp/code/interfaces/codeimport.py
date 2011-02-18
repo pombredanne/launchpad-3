@@ -14,20 +14,41 @@ __all__ = [
 
 import re
 
-from zope.interface import Attribute, Interface
-from zope.schema import Datetime, Choice, Int, TextLine, Timedelta
-from CVS.protocol import CVSRoot, CvsRootError
+from CVS.protocol import (
+    CVSRoot,
+    CvsRootError,
+    )
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    export_write_operation,
+    exported,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import ReferenceChoice
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    TextLine,
+    Timedelta,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice, URIField
 from canonical.launchpad.validators import LaunchpadValidationError
-from lp.code.enums import CodeImportReviewStatus, RevisionControlSystems
+from lp.code.enums import (
+    CodeImportReviewStatus,
+    RevisionControlSystems,
+    )
 from lp.code.interfaces.branch import IBranch
-
-from lazr.restful.declarations import (
-    call_with, export_as_webservice_entry, exported, export_write_operation,
-    REQUEST_USER)
-from lazr.restful.fields import ReferenceChoice
+from lp.services.fields import (
+    PublicPersonChoice,
+    URIField,
+    )
 
 
 def validate_cvs_root(cvsroot):

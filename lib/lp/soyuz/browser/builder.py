@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for builders."""
@@ -20,40 +20,54 @@ __all__ = [
 
 import operator
 
+from zope.app.form.browser import (
+    TextAreaWidget,
+    TextWidget,
+    )
 from zope.component import getUtility
 from zope.event import notify
 from zope.lifecycleevent import ObjectCreatedEvent
-from zope.app.form.browser import TextAreaWidget, TextWidget
 
-from canonical.cachedproperty import cachedproperty
-from canonical.lazr.utils import smartquote
 from canonical.launchpad import _
-from lp.soyuz.browser.build import BuildRecordsView
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.buildmaster.interfaces.builder import IBuilderSet, IBuilder
-from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.webapp import (
-    ApplicationMenu, GetitemNavigation, LaunchpadEditFormView,
-    LaunchpadFormView, LaunchpadView, Link, Navigation,
-    StandardLaunchpadFacets, action, canonical_url, custom_widget,
-    enabled_with_permission, stepthrough)
+    ApplicationMenu,
+    canonical_url,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    Navigation,
+    StandardLaunchpadFacets,
+    stepthrough,
+    )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.widgets import HiddenUserWidget
+from canonical.lazr.utils import smartquote
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.app.widgets.owner import HiddenUserWidget
+from lp.buildmaster.interfaces.builder import (
+    IBuilder,
+    IBuilderSet,
+    )
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.browser.build import (
+    BuildNavigationMixin,
+    BuildRecordsView,
+    )
 
 
-class BuilderSetNavigation(GetitemNavigation):
+class BuilderSetNavigation(GetitemNavigation, BuildNavigationMixin):
     """Navigation methods for IBuilderSet."""
     usedfor = IBuilderSet
 
-    @stepthrough('+build')
-    def traverse_build(self, name):
-        try:
-            build_id = int(name)
-        except ValueError:
-            return None
-        try:
-            build = getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
-        except NotFoundError:
+    @stepthrough('+buildjob')
+    def traverse_buildjob(self, name):
+        build = super(BuilderSetNavigation, self).traverse_buildjob(name)
+        if build is None:
             return None
         else:
             return self.redirectSubTree(canonical_url(build))
@@ -118,7 +132,6 @@ class BuilderOverviewMenu(ApplicationMenu):
 
 class BuilderSetView(LaunchpadView):
     """Default BuilderSet view class."""
-    __used_for__ = IBuilderSet
 
     @property
     def label(self):
@@ -235,7 +248,6 @@ class BuilderView(LaunchpadView):
 
     Implements useful actions for the page template.
     """
-    __used_for__ = IBuilder
 
     @property
     def current_build_duration(self):
@@ -262,9 +274,8 @@ class BuilderView(LaunchpadView):
 class BuilderHistoryView(BuildRecordsView):
     """This class exists only to override the page_title."""
 
-    __used_for__ = IBuilder
-
     page_title = 'Build history'
+    binary_only = False
 
     @property
     def label(self):

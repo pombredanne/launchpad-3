@@ -13,13 +13,20 @@ __all__ = []
 
 import unittest
 
-from lp.bugs.tests.test_bugtarget import (
-    distributionSetUp, distributionSeriesSetUp,
-    distributionSourcePackageSetUp,  productSetUp, productSeriesSetUp,
-    projectSetUp, sourcePackageSetUp)
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, tearDown)
-from canonical.testing import LaunchpadFunctionalLayer
+    LayeredDocFileSuite,
+    tearDown,
+    )
+from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.bugs.tests.test_bugtarget import (
+    distributionSeriesSetUp,
+    distributionSetUp,
+    distributionSourcePackageSetUp,
+    productSeriesSetUp,
+    productSetUp,
+    projectSetUp,
+    sourcePackageSetUp,
+    )
 
 
 def test_suite():

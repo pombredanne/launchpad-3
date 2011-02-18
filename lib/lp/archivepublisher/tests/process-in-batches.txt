@@ -15,10 +15,8 @@ records by 'task' will be ignored.
 
     >>> from lp.archivepublisher.utils import process_in_batches
 
-    >>> class DebugStdOutLogger:
-    ...     def debug(self, text):
-    ...         print 'DEBUG:', text
-    >>> logger = DebugStdOutLogger()
+    >>> from lp.services.log.logger import FakeLogger
+    >>> logger = FakeLogger()
 
 The expected 'input' argument is a `SelectResult`. We will use a
 result set containing all PUBLISHED `BinaryPackagePublishingHistory`
@@ -26,7 +24,7 @@ records.
 
     >>> from lp.soyuz.model.publishing import (
     ...     BinaryPackagePublishingHistory)
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
 
     >>> input = BinaryPackagePublishingHistory.selectBy(
@@ -55,7 +53,7 @@ necessary. The first batch is more than enough to process all
 available published records in the sampledata.
 
     >>> process_in_batches(input, simple_task, logger)
-    DEBUG: Batch [0...) [... MiB]
+    DEBUG Batch [0...) [... MiB]
 
 
 == Coping with changes in the given input ==
@@ -115,8 +113,8 @@ deletions in the given result set.
     >>> process_in_batches(input, nasty_task, logger, goal_seconds=1,
     ...                    minimum_chunk_size=10)
     One gone
-    DEBUG: Batch [0..10) [... MiB]
-    DEBUG: Batch [10...) [... MiB]
+    DEBUG Batch [0..10) [... MiB]
+    DEBUG Batch [10...) [... MiB]
 
     >>> end_set_size = input.count()
     >>> end_set_size < start_set_size
@@ -143,4 +141,4 @@ The code deftly handles this situation.
     >>> process_in_batches(input, very_nasty_task, logger, goal_seconds=1,
     ...                    minimum_chunk_size=10)
     All gone
-    DEBUG: Batch [0..10) [... MiB]
+    DEBUG Batch [0..10) [... MiB]

@@ -25,8 +25,10 @@ keyserver is a trusted data source, so we have to do that.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
 
-    >>> from canonical.launchpad.interfaces import (
-    ...      IGPGHandler, IPymeKey)
+    >>> from canonical.launchpad.interfaces.gpghandler import (
+    ...     IGPGHandler,
+    ...     IPymeKey,
+    ...     )
     >>> gpghandler = getUtility(IGPGHandler)
 
 -------------------------------------------------------------------------
@@ -286,11 +288,11 @@ keyserver web interface.
 IGPGHandler also allow callsites to upload the public part of a local
 key to the configuration keyserver.
 
-We will setup and use the test-keyserver (zeca).
+We will set up and use the test-keyserver.
 
-    >>> from canonical.zeca.ftests.harness import ZecaTestSetup
-    >>> z = ZecaTestSetup()
-    >>> z.setUp()
+    >>> from lp.testing.keyserver import KeyServerTac
+    >>> tac = KeyServerTac()
+    >>> tac.setUp()
 
 Upload the just-generated key to the keyserver so that we can reset
 the local keyring.
@@ -321,13 +323,10 @@ keyserver side.
 
     >>> gpghandler.uploadPublicKey(new_key.fingerprint)
 
-Let's shut zeca down.
-
-    >>> z.tearDown()
-
 An attempt to upload a key when the keyserver is unreachable results
 in a error.
 
+    >>> tac.tearDown()
     >>> gpghandler.uploadPublicKey(new_key.fingerprint)
     Traceback (most recent call last):
     ...

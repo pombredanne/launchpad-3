@@ -22,10 +22,6 @@ where a message inform him of the driver change.
     >>> print browser.url
     http://launchpad.dev/firefox
 
-    >>> for tag in find_tags_by_class(browser.contents, 'informational'):
-    ...     print tag.renderContents()
-    Successfully changed the driver to Sample Person
-
 Sample Person is listed as the driver of the product.
 
     >>> main = find_main_content(browser.contents)

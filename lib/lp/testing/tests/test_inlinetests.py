@@ -4,12 +4,15 @@
 """Run the doc string tests."""
 
 import doctest
-
-from zope.testing.doctest import NORMALIZE_WHITESPACE, ELLIPSIS
+from doctest import (
+    NORMALIZE_WHITESPACE,
+    ELLIPSIS,
+    )
 
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
-from canonical.testing import BaseLayer
+from canonical.testing.layers import BaseLayer
 from lp import testing
+
 
 def test_suite():
     suite = LayeredDocFileSuite(

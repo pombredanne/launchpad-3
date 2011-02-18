@@ -21,7 +21,7 @@
   <div id="packages">
 
   <tal:maintained-packages
-    define="sourcepackagereleases view/get_latest_maintained_packages_with_stats"
+    define="sourcepackagereleases view/latest_maintained_packages_with_stats"
     condition="sourcepackagereleases">
 
   <div class="top-portlet">
@@ -48,7 +48,7 @@
   </tal:maintained-packages>
 
   <tal:uploaded-packages
-    define="sourcepackagereleases view/get_latest_uploaded_but_not_maintained_packages_with_stats"
+    define="sourcepackagereleases view/latest_uploaded_but_not_maintained_packages_with_stats"
     condition="sourcepackagereleases">
 
   <div class="top-portlet">
@@ -74,7 +74,7 @@
   </tal:uploaded-packages>
 
   <tal:ppa-packages
-    define="sourcepackagereleases view/get_latest_uploaded_ppa_packages_with_stats"
+    define="sourcepackagereleases view/latest_uploaded_ppa_packages_with_stats"
     condition="sourcepackagereleases">
 
   <div class="top-portlet">
@@ -150,7 +150,6 @@
       doesn't own or drive any projects.
     </p>
   </div>
-
 </div>
 
 <metal:macros fill-slot="bogus">

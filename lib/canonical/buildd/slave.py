@@ -356,6 +356,8 @@ class BuildDSlave(object):
         # for abort to complete. This is potentially an issue in a heavy
         # load situation.
         if self.builderstatus != BuilderStatus.BUILDING:
+            # XXX: Should raise a known Fault so that the client can make
+            # useful decisions about the error!
             raise ValueError("Slave is not BUILDING when asked to abort")
         self.manager.abort()
         self.builderstatus = BuilderStatus.ABORTING

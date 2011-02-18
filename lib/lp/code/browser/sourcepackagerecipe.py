@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """SourcePackageRecipe views."""
@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'SourcePackageRecipeAddView',
-    'SourcePackageRecipeBuildView',
     'SourcePackageRecipeContextMenu',
     'SourcePackageRecipeEditView',
     'SourcePackageRecipeNavigationMenu',
@@ -15,40 +14,95 @@ __all__ = [
     'SourcePackageRecipeView',
     ]
 
-
-from bzrlib.plugins.builder.recipe import RecipeParser, RecipeParseError
-from zope.interface import providedBy
+from bzrlib.plugins.builder.recipe import (
+    ForbiddenInstructionError,
+    RecipeParseError,
+    RecipeParser,
+    )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import use_template
+from storm.locals import Store
+from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.form.browser.widget import Widget
+from zope.app.form.interfaces import IView
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements, Interface
-from zope.schema import Choice, List, Text
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.formlib import form
+from zope.interface import (
+    implements,
+    Interface,
+    providedBy,
+    )
+from zope.schema import (
+    Field,
+    Choice,
+    List,
+    Text,
+    TextLine,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad import _
 from canonical.launchpad.browser.launchpad import Hierarchy
-from canonical.launchpad.browser.librarian import FileNavigationMixin
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp import (
-    action, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, Link, Navigation, NavigationMenu, stepthrough)
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    NavigationMenu,
+    structured,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    has_structured_doc,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    render_radio_widget_part,
+    )
+from lp.app.browser.lazrjs import (
+    BooleanChoiceWidget,
+    InlineEditPickerWidget,
+    TextAreaEditorWidget,
+    )
+from lp.app.browser.tales import format_link
+from lp.app.widgets.itemswidgets import (
+    LabeledMultiCheckBoxWidget,
+    LaunchpadRadioWidget,
+    )
+from lp.app.widgets.suggestion import RecipeOwnerWidget
+from lp.code.errors import (
+    BuildAlreadyPending,
+    NoSuchBranch,
+    PrivateBranchRecipe,
+    TooNewRecipeFormat,
+    )
+from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.sourcepackagerecipe import (
-    ISourcePackageRecipe, ISourcePackageRecipeSource, MINIMAL_RECIPE_TEXT)
-from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
-from lp.soyuz.browser.archive import make_archive_vocabulary
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet)
-from lp.registry.interfaces.distroseries import IDistroSeriesSet
+    ISourcePackageRecipe,
+    ISourcePackageRecipeSource,
+    MINIMAL_RECIPE_TEXT,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.job.interfaces.job import JobStatus
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.model.archive import Archive
+
+
+RECIPE_BETA_MESSAGE = structured(
+    'We\'re still working on source package recipes. '
+    'We would love for you to try them out, and if you have '
+    'any issues, please '
+    '<a href="http://bugs.launchpad.net/launchpad">'
+    'file a bug</a>.  We\'ll be happy to fix any problems you encounter.')
 
 
 class IRecipesForPerson(Interface):
@@ -65,7 +119,8 @@ class RecipesForPersonBreadcrumb(Breadcrumb):
 
     @property
     def url(self):
-        return canonical_url(self.context, view_name="+recipes")
+        return canonical_url(
+            self.context, view_name="+recipes", rootsite='code')
 
 
 class SourcePackageRecipeHierarchy(Hierarchy):
@@ -92,17 +147,6 @@ class SourcePackageRecipeHierarchy(Hierarchy):
 
         for item in traversed:
             yield item
-
-
-class SourcePackageRecipeNavigation(Navigation):
-    """Navigation from the SourcePackageRecipe."""
-
-    usedfor = ISourcePackageRecipe
-
-    @stepthrough('+build')
-    def traverse_build(self, id):
-        """Traverse to this recipe's builds."""
-        return getUtility(ISourcePackageRecipeBuildSource).getById(int(id))
 
 
 class SourcePackageRecipeNavigationMenu(NavigationMenu):
@@ -140,6 +184,27 @@ class SourcePackageRecipeContextMenu(ContextMenu):
 class SourcePackageRecipeView(LaunchpadView):
     """Default view of a SourcePackageRecipe."""
 
+    def initialize(self):
+        # XXX: rockstar: This should be removed when source package recipes
+        # are put into production. spec=sourcepackagerecipes
+        super(SourcePackageRecipeView, self).initialize()
+        self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
+        recipe = self.context
+        if recipe.build_daily and recipe.daily_build_archive is None:
+            self.request.response.addWarningNotification(
+                structured(
+                    "Daily builds for this recipe will <strong>not</strong> "
+                    "occur.<br/><br/>There is no PPA."))
+        elif self.dailyBuildWithoutUploadPermission():
+            self.request.response.addWarningNotification(
+                structured(
+                    "Daily builds for this recipe will <strong>not</strong> "
+                    "occur.<br/><br/>The owner of the recipe (%s) does not "
+                    "have permission to upload packages into the daily "
+                    "build PPA (%s)" % (
+                        format_link(recipe.owner),
+                        format_link(recipe.daily_build_archive))))
+
     @property
     def page_title(self):
         return "%(name)s\'s %(recipe_name)s recipe" % {
@@ -153,33 +218,73 @@ class SourcePackageRecipeView(LaunchpadView):
         """A list of interesting builds.
 
         All pending builds are shown, as well as 1-5 recent builds.
-        Recent builds are ordered by date completed.
+        Recent builds are ordered by date finished (if completed) or
+        date_started (if date finished is not set due to an error building or
+        other circumstance which resulted in the build not being completed).
+        This allows started but unfinished builds to show up in the view but
+        be discarded as more recent builds become available.
         """
-        builds = list(self.context.getBuilds(pending=True))
+        builds = list(self.context.getPendingBuilds())
         for build in self.context.getBuilds():
             builds.append(build)
             if len(builds) >= 5:
                 break
-        builds.reverse()
         return builds
 
+    def dailyBuildWithoutUploadPermission(self):
+        """Returns true if there are upload permissions to the daily archive.
 
-def buildable_distroseries_vocabulary(context):
-    """Return a vocabulary of buildable distroseries."""
-    ppas = getUtility(IArchiveSet).getPPAsForUser(getUtility(ILaunchBag).user)
-    supported_distros = [ppa.distribution for ppa in ppas]
-    dsset = getUtility(IDistroSeriesSet).search()
-    terms = [SimpleTerm(distro, distro.id, distro.displayname)
-             for distro in dsset if (
-                 distro.active and distro.distribution in supported_distros)]
-    return SimpleVocabulary(terms)
+        If the recipe isn't built daily, we don't consider this a problem.
+        """
+        recipe = self.context
+        ppa = recipe.daily_build_archive
+        if recipe.build_daily:
+            has_upload = ppa.checkArchivePermission(recipe.owner)
+            return not has_upload
+        return False
 
-def target_ppas_vocabulary(context):
-    """Return a vocabulary of ppas that the current user can target."""
-    ppas = getUtility(IArchiveSet).getPPAsForUser(getUtility(ILaunchBag).user)
-    return make_archive_vocabulary(
-        ppa for ppa in ppas
-        if check_permission('launchpad.Append', ppa))
+    @property
+    def person_picker(self):
+        return InlineEditPickerWidget(
+            self.context, ISourcePackageRecipe['owner'],
+            format_link(self.context.owner),
+            header='Change owner',
+            step_title='Select a new owner')
+
+    @property
+    def archive_picker(self):
+        ppa = self.context.daily_build_archive
+        if ppa is None:
+            initial_html = 'None'
+        else:
+            initial_html = format_link(ppa)
+        field = ISourcePackageEditSchema['daily_build_archive']
+        return InlineEditPickerWidget(
+            self.context, field, initial_html,
+            header='Change daily build archive',
+            step_title='Select a PPA')
+
+    @property
+    def recipe_text_widget(self):
+        """The recipe text as widget HTML."""
+        recipe_text = ISourcePackageRecipe['recipe_text']
+        return TextAreaEditorWidget(self.context, recipe_text, title="")
+
+    @property
+    def daily_build_widget(self):
+        return BooleanChoiceWidget(
+            self.context, ISourcePackageRecipe['build_daily'],
+            tag='span',
+            false_text='Built on request',
+            true_text='Built daily',
+            header='Change build schedule')
+
+    @property
+    def description_widget(self):
+        """The description as a widget."""
+        description = ISourcePackageRecipe['description']
+        return TextAreaEditorWidget(
+            self.context, description, title="")
 
 
 class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
@@ -213,10 +318,8 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
     label = title
 
     @property
-    def next_url(self):
+    def cancel_url(self):
         return canonical_url(self.context)
-
-    cancel_url = next_url
 
     def validate(self, data):
         over_quota_distroseries = []
@@ -233,116 +336,224 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
     def request_action(self, action, data):
         """User action for requesting a number of builds."""
         for distroseries in data['distros']:
-            self.context.requestBuild(
-                data['archive'], self.user, distroseries,
-                PackagePublishingPocket.RELEASE)
+            try:
+                self.context.requestBuild(
+                    data['archive'], self.user, distroseries,
+                    PackagePublishingPocket.RELEASE, manual=True)
+            except BuildAlreadyPending, e:
+                self.setFieldError(
+                    'distros',
+                    'An identical build is already pending for %s.' %
+                    e.distroseries)
+                return
+        self.next_url = self.cancel_url
 
 
-class SourcePackageRecipeBuildNavigation(Navigation, FileNavigationMixin):
-
-    usedfor = ISourcePackageRecipeBuild
-
-
-class SourcePackageRecipeBuildView(LaunchpadView):
-    """Default view of a SourcePackageRecipeBuild."""
-
-    @property
-    def status(self):
-        """A human-friendly status string."""
-        if (self.context.buildstate == BuildStatus.NEEDSBUILD
-            and self.eta is None):
-            return 'No suitable builders'
-        return {
-            BuildStatus.NEEDSBUILD: 'Pending build',
-            BuildStatus.FULLYBUILT: 'Successful build',
-            BuildStatus.MANUALDEPWAIT: (
-                'Could not build because of missing dependencies'),
-            BuildStatus.CHROOTWAIT: (
-                'Could not build because of chroot problem'),
-            BuildStatus.SUPERSEDED: (
-                'Could not build because source package was superseded'),
-            BuildStatus.FAILEDTOUPLOAD: 'Could not be uploaded correctly',
-            }.get(self.context.buildstate, self.context.buildstate.title)
-
-    @property
-    def eta(self):
-        """The datetime when the build job is estimated to complete.
-
-        This is the BuildQueue.estimated_duration plus the
-        Job.date_started or BuildQueue.getEstimatedJobStartTime.
-        """
-        if self.context.buildqueue_record is None:
-            return None
-        queue_record = self.context.buildqueue_record
-        if queue_record.job.status == JobStatus.WAITING:
-            start_time = queue_record.getEstimatedJobStartTime()
-            if start_time is None:
-                return None
-        else:
-            start_time = queue_record.job.date_started
-        duration = queue_record.estimated_duration
-        return start_time + duration
-
-    @property
-    def date(self):
-        """The date when the build completed or is estimated to complete."""
-        if self.estimate:
-            return self.eta
-        return self.context.datebuilt
-
-    @property
-    def estimate(self):
-        """If true, the date value is an estimate."""
-        if self.context.datebuilt is not None:
-            return False
-        return self.eta is not None
-
-    def binary_builds(self):
-        return list(self.context.binary_builds)
-
-
-class ISourcePackageAddEditSchema(Interface):
+class ISourcePackageEditSchema(Interface):
     """Schema for adding or editing a recipe."""
 
     use_template(ISourcePackageRecipe, include=[
         'name',
         'description',
         'owner',
+        'build_daily',
         ])
+    daily_build_archive = Choice(vocabulary='TargetPPAs',
+        title=u'Daily build archive',
+        description=(
+            u'If built daily, this is the archive where the package '
+            u'will be uploaded.'))
     distros = List(
         Choice(vocabulary='BuildableDistroSeries'),
-        title=u'Default Distribution series')
-    recipe_text = Text(
-        title=u'Recipe text', required=True,
-        description=u'The text of the recipe.')
+        title=u'Default distribution series',
+        description=(
+            u'If built daily, these are the distribution versions that '
+            u'the recipe will be built for.'))
+    recipe_text = has_structured_doc(
+        Text(
+            title=u'Recipe text', required=True,
+            description=u"""The text of the recipe.
+                <a href="/+help/recipe-syntax.html" target="help"
+                  >Syntax help&nbsp;
+                  <span class="sprite maybe">
+                    <span class="invisible-link">Help</span>
+                  </span></a>
+               """))
+
+
+EXISTING_PPA = 'existing-ppa'
+CREATE_NEW = 'create-new'
+
+
+USE_ARCHIVE_VOCABULARY = SimpleVocabulary((
+    SimpleTerm(EXISTING_PPA, EXISTING_PPA, _("Use an existing PPA")),
+    SimpleTerm(
+        CREATE_NEW, CREATE_NEW, _("Create a new PPA for this recipe")),
+    ))
+
+
+class ISourcePackageAddSchema(ISourcePackageEditSchema):
+
+    daily_build_archive = Choice(vocabulary='TargetPPAs',
+        title=u'Daily build archive', required=False,
+        description=(
+            u'If built daily, this is the archive where the package '
+            u'will be uploaded.'))
+
+    use_ppa = Choice(
+        title=_('Which PPA'),
+        vocabulary=USE_ARCHIVE_VOCABULARY,
+        description=_("Which PPA to use..."),
+        required=True)
+
+    ppa_name = TextLine(
+            title=_("New PPA name"), required=False,
+            constraint=name_validator,
+            description=_("A new PPA with this name will be created for "
+                          "the owner of the recipe ."))
+
+
+class ErrorHandled(Exception):
+    """A field error occured and was handled."""
 
 
 class RecipeTextValidatorMixin:
     """Class to validate that the Source Package Recipe text is valid."""
 
     def validate(self, data):
+        if data['build_daily']:
+            if len(data['distros']) == 0:
+                self.setFieldError(
+                    'distros',
+                    'You must specify at least one series for daily builds.')
         try:
             parser = RecipeParser(data['recipe_text'])
             parser.parse()
-        except RecipeParseError:
+        except RecipeParseError, error:
+            self.setFieldError('recipe_text', str(error))
+
+    def error_handler(self, callable, *args, **kwargs):
+        try:
+            return callable(*args)
+        except TooNewRecipeFormat:
             self.setFieldError(
                 'recipe_text',
-                'The recipe text is not a valid bzr-builder recipe.')
+                'The recipe format version specified is not available.')
+        except ForbiddenInstructionError, e:
+            self.setFieldError(
+                'recipe_text',
+                'The bzr-builder instruction "%s" is not permitted '
+                'here.' % e.instruction_name)
+        except NoSuchBranch, e:
+            self.setFieldError(
+                'recipe_text', '%s is not a branch on Launchpad.' % e.name)
+        except PrivateBranchRecipe, e:
+            self.setFieldError('recipe_text', str(e))
+        raise ErrorHandled()
 
 
-class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
+class RelatedBranchesWidget(Widget):
+    """A widget to render the related branches for a recipe."""
+    implements(IView)
+
+    __call__ = ViewPageTemplateFile(
+        '../templates/sourcepackagerecipe-related-branches.pt')
+
+    related_package_branch_info = []
+    related_series_branch_info = []
+
+    def hasInput(self):
+        return True
+
+    def setRenderedValue(self, value):
+        self.related_package_branch_info = (
+            value['related_package_branch_info'])
+        self.related_series_branch_info = value['related_series_branch_info']
+
+
+class RecipeRelatedBranchesMixin(LaunchpadFormView):
+    """A class to find related branches for a recipe's base branch."""
+
+    custom_widget('related-branches', RelatedBranchesWidget)
+
+    def extendFields(self):
+        """See `LaunchpadFormView`.
+
+        Adds a related branches field to the form.
+        """
+        self.form_fields += form.Fields(Field(__name__='related-branches'))
+        self.form_fields['related-branches'].custom_widget = (
+            self.custom_widgets['related-branches'])
+        self.widget_errors['related-branches'] = ''
+
+    def setUpWidgets(self, context=None):
+        # Adds a new related branches widget.
+        super(RecipeRelatedBranchesMixin, self).setUpWidgets(context)
+        self.widgets['related-branches'].display_label = False
+        self.widgets['related-branches'].setRenderedValue(dict(
+                related_package_branch_info=self.related_package_branch_info,
+                related_series_branch_info=self.related_series_branch_info))
+
+    @cachedproperty
+    def related_series_branch_info(self):
+        branch_to_check = self.getBranch()
+        return IBranchTarget(
+                branch_to_check.target).getRelatedSeriesBranchInfo(
+                                            branch_to_check,
+                                            limit_results=5)
+
+    @cachedproperty
+    def related_package_branch_info(self):
+        branch_to_check = self.getBranch()
+        return IBranchTarget(
+                branch_to_check.target).getRelatedPackageBranchInfo(
+                                            branch_to_check,
+                                            limit_results=5)
+
+
+class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
+                                 RecipeTextValidatorMixin, LaunchpadFormView):
     """View for creating Source Package Recipes."""
 
     title = label = 'Create a new source package recipe'
 
-    schema = ISourcePackageAddEditSchema
+    schema = ISourcePackageAddSchema
     custom_widget('distros', LabeledMultiCheckBoxWidget)
+    custom_widget('owner', RecipeOwnerWidget)
+    custom_widget('use_ppa', LaunchpadRadioWidget)
+
+    def initialize(self):
+        super(SourcePackageRecipeAddView, self).initialize()
+        # XXX: rockstar: This should be removed when source package recipes
+        # are put into production. spec=sourcepackagerecipes
+        self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
+        widget = self.widgets['use_ppa']
+        current_value = widget._getFormValue()
+        self.use_ppa_existing = render_radio_widget_part(
+            widget, EXISTING_PPA, current_value)
+        self.use_ppa_new = render_radio_widget_part(
+            widget, CREATE_NEW, current_value)
+        archive_widget = self.widgets['daily_build_archive']
+        self.show_ppa_chooser = len(archive_widget.vocabulary) > 0
+        if not self.show_ppa_chooser:
+            self.widgets['ppa_name'].setRenderedValue('ppa')
+        # Force there to be no '(no value)' item in the select.  We do this as
+        # the input isn't listed as 'required' otherwise the validator gets
+        # all confused when we want to create a new PPA.
+        archive_widget._displayItemForMissingValue = False
+
+    def getBranch(self):
+        """The branch on which the recipe is built."""
+        return self.context
 
     @property
     def initial_values(self):
         return {
             'recipe_text': MINIMAL_RECIPE_TEXT % self.context.bzr_identity,
-            'owner': self.user}
+            'owner': self.user,
+            'build_daily': False,
+            'use_ppa': EXISTING_PPA,
+            }
 
     @property
     def cancel_url(self):
@@ -350,11 +561,22 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
 
     @action('Create Recipe', name='create')
     def request_action(self, action, data):
-        parser = RecipeParser(data['recipe_text'])
-        recipe = parser.parse()
-        source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
-            self.user, self.user, data['distros'],
-            data['name'], recipe, data['description'])
+        owner = data['owner']
+        if data['use_ppa'] == CREATE_NEW:
+            ppa_name = data.get('ppa_name', None)
+            ppa = owner.createPPA(ppa_name)
+        else:
+            ppa = data['daily_build_archive']
+        try:
+            source_package_recipe = self.error_handler(
+                getUtility(ISourcePackageRecipeSource).new,
+                self.user, owner, data['name'],
+                data['recipe_text'], data['description'], data['distros'],
+                ppa, data['build_daily'])
+            Store.of(source_package_recipe).flush()
+        except ErrorHandled:
+            return
+
         self.next_url = canonical_url(source_package_recipe)
 
     def validate(self, data):
@@ -368,25 +590,59 @@ class SourcePackageRecipeAddView(RecipeTextValidatorMixin, LaunchpadFormView):
                     'name',
                     'There is already a recipe owned by %s with this name.' %
                         owner.displayname)
+        if data['use_ppa'] == CREATE_NEW:
+            ppa_name = data.get('ppa_name', None)
+            if ppa_name is None:
+                self.setFieldError(
+                    'ppa_name', 'You need to specify a name for the PPA.')
+            else:
+                error = Archive.validatePPA(owner, ppa_name)
+                if error is not None:
+                    self.setFieldError('ppa_name', error)
 
 
-class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
+class SourcePackageRecipeEditView(RecipeRelatedBranchesMixin,
+                                  RecipeTextValidatorMixin,
                                   LaunchpadEditFormView):
     """View for editing Source Package Recipes."""
+
+    def getBranch(self):
+        """The branch on which the recipe is built."""
+        return self.context.base_branch
 
     @property
     def title(self):
         return 'Edit %s source package recipe' % self.context.name
     label = title
 
-    schema = ISourcePackageAddEditSchema
+    schema = ISourcePackageEditSchema
     custom_widget('distros', LabeledMultiCheckBoxWidget)
+
+    def setUpFields(self):
+        super(SourcePackageRecipeEditView, self).setUpFields()
+
+        if check_permission('launchpad.Admin', self.context):
+            # Exclude the PPA archive dropdown.
+            self.form_fields = self.form_fields.omit('daily_build_archive')
+
+            owner_field = self.schema['owner']
+            any_owner_choice = Choice(
+                __name__='owner', title=owner_field.title,
+                description=(u"As an administrator you are able to reassign"
+                             u" this branch to any person or team."),
+                required=True, vocabulary='ValidPersonOrTeam')
+            any_owner_field = form.Fields(
+                any_owner_choice, render_context=self.render_context)
+            # Replace the normal owner field with a more permissive vocab.
+            self.form_fields = self.form_fields.omit('owner')
+            self.form_fields = any_owner_field + self.form_fields
 
     @property
     def initial_values(self):
         return {
             'distros': self.context.distroseries,
-            'recipe_text': str(self.context.builder_recipe),}
+            'recipe_text': self.context.recipe_text,
+            }
 
     @property
     def cancel_url(self):
@@ -402,8 +658,11 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
         parser = RecipeParser(recipe_text)
         recipe = parser.parse()
         if self.context.builder_recipe != recipe:
-            self.context.builder_recipe = recipe
-            changed = True
+            try:
+                self.error_handler(self.context.setRecipeText, recipe_text)
+                changed = True
+            except ErrorHandled:
+                return
 
         distros = data.pop('distros')
         if distros != self.context.distroseries:
@@ -429,7 +688,7 @@ class SourcePackageRecipeEditView(RecipeTextValidatorMixin,
     @property
     def adapters(self):
         """See `LaunchpadEditFormView`"""
-        return {ISourcePackageAddEditSchema: self.context}
+        return {ISourcePackageEditSchema: self.context}
 
     def validate(self, data):
         super(SourcePackageRecipeEditView, self).validate(data)

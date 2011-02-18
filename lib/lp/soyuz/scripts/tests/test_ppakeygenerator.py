@@ -1,46 +1,25 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """`PPAKeyGenerator` script class tests."""
 
 __metaclass__ = type
 
-import unittest
-
 from zope.component import getUtility
 
-from lp.soyuz.interfaces.archive import IArchiveSet
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.scripts.base import LaunchpadScriptFailure
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.scripts.ppakeygenerator import PPAKeyGenerator
 from lp.testing import TestCase
-from canonical.testing import LaunchpadZopelessLayer
+from lp.testing.faketransaction import FakeTransaction
 
 
 class TestPPAKeyGenerator(TestCase):
     layer = LaunchpadZopelessLayer
-
-    def _getFakeZTM(self):
-        """Return an instrumented `ZopeTransactionManager`-like object.
-
-        I does nothing apart counting the number of commits issued.
-
-        The result is stored in the 'number_of_commits'.
-        """
-        self.number_of_commits = 0
-
-        def commit_called():
-            self.number_of_commits += 1
-
-        class FakeZTM:
-            def commit(self):
-                commit_called()
-            def begin(self):
-                pass
-
-        return FakeZTM()
 
     def _fixArchiveForKeyGeneration(self, archive):
         """Override the given archive distribution to 'ubuntutest'.
@@ -51,12 +30,12 @@ class TestPPAKeyGenerator(TestCase):
         ubuntutest = getUtility(IDistributionSet).getByName('ubuntutest')
         archive.distribution = ubuntutest
 
-    def _getKeyGenerator(self, ppa_owner_name=None):
+    def _getKeyGenerator(self, ppa_owner_name=None, txn=None):
         """Return a `PPAKeyGenerator` instance.
 
-        Monkey-patch the script object transaction manager (see
-        `_getFakeZTM`) and also to use a alternative (fake and lighter)
-        procedure to generate keys for each PPA.
+        Monkey-patch the script object with a fake transaction manager
+        and also make it use an alternative (fake and lighter) procedure
+        to generate keys for each PPA.
         """
         test_args = []
 
@@ -66,7 +45,9 @@ class TestPPAKeyGenerator(TestCase):
         key_generator = PPAKeyGenerator(
             name='ppa-generate-keys', test_args=test_args)
 
-        key_generator.txn = self._getFakeZTM()
+        if txn is None:
+            txn = FakeTransaction()
+        key_generator.txn = txn
 
         def fake_key_generation(archive):
             a_key = getUtility(IGPGKeySet).get(1)
@@ -102,7 +83,7 @@ class TestPPAKeyGenerator(TestCase):
         self.assertRaisesWithContent(
             LaunchpadScriptFailure,
             ("PPA for Celso Providelo already has a signing_key (%s)" %
-             cprov.archive.signing_key.fingerprint) ,
+             cprov.archive.signing_key.fingerprint),
             key_generator.main)
 
     def testGenerateKeyForASinglePPA(self):
@@ -116,11 +97,12 @@ class TestPPAKeyGenerator(TestCase):
 
         self.assertTrue(cprov.archive.signing_key is None)
 
-        key_generator = self._getKeyGenerator(ppa_owner_name='cprov')
+        txn = FakeTransaction()
+        key_generator = self._getKeyGenerator(ppa_owner_name='cprov', txn=txn)
         key_generator.main()
 
         self.assertTrue(cprov.archive.signing_key is not None)
-        self.assertEquals(self.number_of_commits, 1)
+        self.assertEquals(txn.commit_count, 1)
 
     def testGenerateKeyForAllPPA(self):
         """Signing key generation for all PPAs.
@@ -134,14 +116,11 @@ class TestPPAKeyGenerator(TestCase):
             self._fixArchiveForKeyGeneration(archive)
             self.assertTrue(archive.signing_key is None)
 
-        key_generator = self._getKeyGenerator()
+        txn = FakeTransaction()
+        key_generator = self._getKeyGenerator(txn=txn)
         key_generator.main()
 
         for archive in archives:
             self.assertTrue(archive.signing_key is not None)
 
-        self.assertEquals(self.number_of_commits, len(archives))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+        self.assertEquals(txn.commit_count, len(archives))

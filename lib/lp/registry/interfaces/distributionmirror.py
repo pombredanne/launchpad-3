@@ -6,8 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'CannotTransitionToCountryMirror',
-    'CountryMirrorAlreadySet',
     'IDistributionMirror',
     'IMirrorDistroArchSeries',
     'IMirrorDistroSeriesSource',
@@ -16,78 +14,60 @@ __all__ = [
     'IMirrorCDImageDistroSeries',
     'PROBE_INTERVAL',
     'MirrorContent',
-    'MirrorFreshness',
-    'MirrorHasNoHTTPURL',
-    'MirrorNotOfficial',
-    'MirrorNotProbed',
     'MirrorSpeed',
+    'MirrorFreshness',
     'MirrorStatus',
     'UnableToFetchCDImageFileList',
     ]
 
 from cgi import escape
 
-from zope.schema import Bool, Choice, Datetime, Int, TextLine
-from zope.interface import Interface, Attribute
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    mutator_for,
+    operation_parameters,
+    )
+from lazr.restful.fields import (
+    Reference,
+    ReferenceChoice,
+    )
+from lazr.restful.interface import copy_field
+from zope.component import getUtility
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
-from zope.component import getUtility
-from lazr.enum import DBEnumeratedType, DBItem
-from lazr.restful.declarations import (
-    export_as_webservice_entry, export_read_operation,
-    export_write_operation, exported, mutator_for, operation_parameters,
-    webservice_error)
-from lazr.restful.fields import Reference, ReferenceChoice
-from lazr.restful.interface import copy_field
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    ContentNameField, PublicPersonChoice, URIField, Whiteboard)
-from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.menu import structured
+from lp.services.fields import (
+    ContentNameField,
+    PublicPersonChoice,
+    URIField,
+    Whiteboard,
+    )
 from lp.services.worlddata.interfaces.country import ICountry
-
 
 # The number of hours before we bother probing a mirror again
 PROBE_INTERVAL = 23
-
-
-class CannotTransitionToCountryMirror(Exception):
-    """Root exception for transitions to country mirrors."""
-    webservice_error(400)
-
-
-class CountryMirrorAlreadySet(CannotTransitionToCountryMirror):
-    """Distribution mirror cannot be set as a country mirror.
-
-    Raised when a user tries to change set a distribution mirror as a country
-    mirror, however there is already one set for that country.
-    """
-
-
-class MirrorNotOfficial(CannotTransitionToCountryMirror):
-    """Distribution mirror is not permitted to become a country mirror.
-
-    Raised when a user tries to change set a distribution mirror as a country
-    mirror, however the mirror in question is not official.
-    """
-
-
-class MirrorHasNoHTTPURL(CannotTransitionToCountryMirror):
-    """Distribution mirror has no HTTP URL.
-
-    Raised when a user tries to make an official mirror a country mirror,
-    however the mirror has not HTTP URL set.
-    """
-
-
-class MirrorNotProbed(CannotTransitionToCountryMirror):
-    """Distribution mirror has not been probed.
-
-    Raised when a user tries to set an official mirror as a country mirror,
-    however the mirror has not been probed yet.
-    """
 
 
 class MirrorContent(DBEnumeratedType):
@@ -168,13 +148,13 @@ class MirrorSpeed(DBEnumeratedType):
     S2G = DBItem(90, """
         2 Gbps
 
-        The upstream link of this mirror can make up to 2 gigabit per second.
+        The upstream link of this mirror can make up to 2 gigabits per second.
         """)
 
     S4G = DBItem(100, """
         4 Gbps
 
-        The upstream link of this mirror can make up to 4 gigabit per second.
+        The upstream link of this mirror can make up to 4 gigabits per second.
         """)
 
     S10G = DBItem(110, """
@@ -336,7 +316,8 @@ class IDistributionMirror(Interface):
     owner = exported(PublicPersonChoice(
         title=_('Owner'), readonly=False, vocabulary='ValidOwner',
         required=True, description=_(
-            "The person who is set as the current administrator of this mirror.")))
+            "The person who is set as the current administrator of this"
+            "mirror.")))
     distribution = exported(
         Reference(
             Interface,
@@ -402,6 +383,10 @@ class IDistributionMirror(Interface):
     all_probe_records = Attribute('All MirrorProbeRecords for this mirror.')
     has_ftp_or_rsync_base_url = Bool(
         title=_('Does this mirror have a FTP or Rsync base URL?'))
+    arch_mirror_freshness = Attribute(
+        'The freshness of this mirror\'s archive mirrors')
+    source_mirror_freshness = Attribute(
+        'The freshness of this mirror\'s source mirrors')
     base_url = Attribute('The HTTP or FTP base URL of this mirror')
     date_created = exported(Datetime(
         title=_('Date Created'), required=True, readonly=True,
@@ -438,7 +423,7 @@ class IDistributionMirror(Interface):
     @operation_parameters(country_dns_mirror=copy_field(country_dns_mirror))
     @export_write_operation()
     def transitionToCountryMirror(country_dns_mirror):
-       """Method run on changing country_dns_mirror."""
+        """Method run on changing country_dns_mirror."""
 
     @invariant
     def mirrorMustHaveHTTPOrFTPURL(mirror):
@@ -573,7 +558,6 @@ class IDistributionMirror(Interface):
         PackagePublishingPocket and the Component to which that given
         Sources.gz file refer to and the path to the file itself.
         """
-
 
 
 class UnableToFetchCDImageFileList(Exception):

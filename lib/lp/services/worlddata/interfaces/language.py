@@ -13,15 +13,31 @@ __all__ = [
     'TextDirection',
     ]
 
-from zope.schema import TextLine, Int, Choice, Bool, Field, Set
-from zope.interface import Interface, Attribute
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 from lazr.lifecycle.snapshot import doNotSnapshot
-
 from lazr.restful.declarations import (
-    collection_default_content, exported, export_as_webservice_collection,
-    export_as_webservice_entry, export_read_operation,
-    operation_returns_collection_of)
+    collection_default_content,
+    export_as_webservice_collection,
+    export_as_webservice_entry,
+    export_read_operation,
+    exported,
+    operation_returns_collection_of,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Field,
+    Int,
+    Set,
+    TextLine,
+    )
 
 
 class TextDirection(DBEnumeratedType):
@@ -67,6 +83,10 @@ class ILanguage(Interface):
             description=u'The number of plural forms this language has.',
             required=False),
         exported_as='plural_forms')
+
+    guessed_pluralforms = Int(
+        title=u"Number of plural forms, or a reasonable guess",
+        required=False, readonly=True)
 
     pluralexpression = exported(
         TextLine(
@@ -143,12 +163,6 @@ class ILanguage(Interface):
         required=True,
         readonly=True)
 
-    def getFullCode(variant=None):
-        """Compose full language code for this language."""
-
-    def getFullEnglishName(variant=None):
-        """Compose full English name for this language."""
-
 
 class ILanguageSet(Interface):
     """The collection of languages.
@@ -198,12 +212,6 @@ class ILanguageSet(Interface):
         """Convert a list of ISO language codes to language objects.
 
         Unrecognised language codes are ignored.
-        """
-
-    def getLanguageAndVariantFromString(language_string):
-        """Return the ILanguage and variant that language_string represents.
-
-        If language_string doesn't represent a know language, return None.
         """
 
     def createLanguage(code, englishname, nativename=None, pluralforms=None,

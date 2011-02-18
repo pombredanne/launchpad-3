@@ -7,11 +7,18 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import os
 import re
 import shutil
-from subprocess import Popen, PIPE, STDOUT
+from subprocess import (
+    PIPE,
+    Popen,
+    STDOUT,
+    )
 import sys
 import tempfile
 import unittest
@@ -20,13 +27,17 @@ from pytz import UTC
 import transaction
 
 from canonical.config import config
-from canonical.testing import LaunchpadZopelessLayer
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.scripts.oops import (
-        referenced_oops, old_oops_files, unwanted_oops_files,
-        path_to_oopsid, prune_empty_oops_directories
-        )
-from canonical.launchpad.webapp import errorlog
+    old_oops_files,
+    path_to_oopsid,
+    prune_empty_oops_directories,
+    referenced_oops,
+    unwanted_oops_files,
+    )
+from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.services.log import uniquefileallocator
+
 
 class TestOopsPrune(unittest.TestCase):
     layer = LaunchpadZopelessLayer
@@ -37,9 +48,11 @@ class TestOopsPrune(unittest.TestCase):
         # whole path rather than the path's basename.
         self.oops_dir = tempfile.mkdtemp('.directory.with.dots')
 
+        # TODO: This should be in the errorlog tests, and calling into errorlog
+        # methods.
         # Create some fake OOPS files
         self.today = datetime.now(tz=UTC)
-        self.ages_ago = errorlog.epoch + timedelta(days=1)
+        self.ages_ago = uniquefileallocator.epoch + timedelta(days=1)
         self.awhile_ago = self.ages_ago + timedelta(days=1)
 
         for some_date in [self.today, self.ages_ago, self.awhile_ago]:
@@ -185,7 +198,7 @@ class TestOopsPrune(unittest.TestCase):
                 found_oops_files.add(
                         path_to_oopsid(os.path.join(dirpath,filename))
                         )
-        today_day_count = (self.today - errorlog.epoch).days + 1
+        today_day_count = (self.today - uniquefileallocator.epoch).days + 1
         self.failUnlessEqual(
                 found_oops_files,
                 set([

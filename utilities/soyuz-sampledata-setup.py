@@ -52,13 +52,16 @@ from lp.registry.interfaces.codeofconduct import ISignedCodeOfConductSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
+from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.interfaces.sourcepackageformat import (
-    ISourcePackageFormatSelectionSet, SourcePackageFormat)
+    ISourcePackageFormatSelectionSet,
+    )
 from lp.soyuz.model.section import SectionSelection
 from lp.soyuz.model.component import ComponentSelection
+from lp.soyuz.scripts.initialise_distroseries import InitialiseDistroSeries
 from lp.testing.factory import LaunchpadObjectFactory
 
 
@@ -166,13 +169,6 @@ def retire_ppas(distribution):
         removeSecurityProxy(ppa).publish = False
 
 
-def set_lucille_config(distribution):
-    """Set lucilleconfig on all series of `distribution`."""
-    for series in distribution.series:
-        removeSecurityProxy(series).lucilleconfig = '''[publishing]
-components = main restricted universe multiverse'''
-
-
 def add_architecture(distroseries, architecture_name):
     """Add a DistroArchSeries for the given architecture to `distroseries`."""
     # Avoid circular import.
@@ -235,24 +231,8 @@ def create_series(parent, full_name, version, status):
     new_series.status = status
     notify(ObjectCreatedEvent(new_series))
 
-    # This bit copied from scripts/ftpmaster-tools/initialise-from-parent.py.
-    assert new_series.architectures.count() == 0, (
-        "Cannot copy distroarchseries from parent; this series already has "
-        "distroarchseries.")
-
-    store = Store.of(parent)
-    store.execute("""
-        INSERT INTO DistroArchSeries
-          (distroseries, processorfamily, architecturetag, owner, official)
-        SELECT %s, processorfamily, architecturetag, %s, official
-        FROM DistroArchSeries WHERE distroseries = %s
-        """ % sqlvalues(new_series, owner, parent))
-
-    i386 = new_series.getDistroArchSeries('i386')
-    i386.supports_virtualized = True
-    new_series.nominatedarchindep = i386
-
-    new_series.initialiseFromParent()
+    ids = InitialiseDistroSeries(new_series)
+    ids.initialise()
     return new_series
 
 
@@ -271,8 +251,9 @@ def create_sample_series(original_series, log):
         ('Hardy Heron', SeriesStatus.SUPPORTED, '8.04'),
         ('Intrepid Ibex', SeriesStatus.SUPPORTED, '8.10'),
         ('Jaunty Jackalope', SeriesStatus.SUPPORTED, '9.04'),
-        ('Karmic Koala', SeriesStatus.CURRENT, '9.10'),
-        ('Lucid Lynx', SeriesStatus.DEVELOPMENT, '10.04'),
+        ('Karmic Koala', SeriesStatus.SUPPORTED, '9.10'),
+        ('Lucid Lynx', SeriesStatus.CURRENT, '10.04'),
+        ('Maverick Meerkat', SeriesStatus.DEVELOPMENT, '10.10'),
         ]
 
     parent = original_series
@@ -311,10 +292,6 @@ def set_source_package_format(distroseries):
 def populate(distribution, parent_series_name, uploader_name, options, log):
     """Set up sample data on `distribution`."""
     parent_series = distribution.getSeries(parent_series_name)
-
-    # Set up lucilleconfig on all series.  The sample data lacks this.
-    log.info("Setting lucilleconfig...")
-    set_lucille_config(distribution)
 
     log.info("Configuring sections...")
     create_sections(parent_series)

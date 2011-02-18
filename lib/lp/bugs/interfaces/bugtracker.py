@@ -12,31 +12,62 @@ __all__ = [
     'IBugTracker',
     'IBugTrackerAlias',
     'IBugTrackerAliasSet',
+    'IBugTrackerComponent',
+    'IBugTrackerComponentGroup',
     'IBugTrackerSet',
     'IRemoteBug',
     'SINGLE_PRODUCT_BUGTRACKERTYPES',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import (
-    Bool, Choice, Int, List, Object, Text, TextLine)
-from zope.schema.interfaces import IObject
-from zope.component import getUtility
-from lazr.enum import DBEnumeratedType, DBItem
-
-from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    ContentNameField, StrippedTextLine, URIField)
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import name_validator
-
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
-    call_with, collection_default_content, export_as_webservice_collection,
-    export_as_webservice_entry, export_factory_operation,
-    export_read_operation, exported, operation_parameters,
-    operation_returns_entry, rename_parameters_as, REQUEST_USER)
-from lazr.restful.fields import CollectionField, Reference
+    call_with,
+    collection_default_content,
+    export_as_webservice_collection,
+    export_as_webservice_entry,
+    export_factory_operation,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    operation_parameters,
+    operation_returns_collection_of,
+    operation_returns_entry,
+    rename_parameters_as,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
+from zope.component import getUtility
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Int,
+    List,
+    Object,
+    Text,
+    TextLine,
+    )
+from zope.schema.interfaces import IObject
+
+from canonical.launchpad import _
+from canonical.launchpad.components.apihelpers import patch_reference_property
+from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.validators.name import name_validator
+from lp.services.fields import (
+    ContentNameField,
+    StrippedTextLine,
+    URIField,
+    )
 
 
 LOCATION_SCHEMES_ALLOWED = 'http', 'https', 'mailto'
@@ -68,7 +99,8 @@ class BugTrackerURL(URIField):
         bugtracker = getUtility(IBugTrackerSet).queryByBaseURL(input)
         if bugtracker is not None and bugtracker != self.context:
             raise LaunchpadValidationError(
-                "%s is already registered in Launchpad." % input)
+                '%s is already registered in Launchpad as "%s" (%s).'
+                % (input, bugtracker.title, bugtracker.name))
 
 
 class BugTrackerType(DBEnumeratedType):
@@ -170,7 +202,24 @@ SINGLE_PRODUCT_BUGTRACKERTYPES = [
 
 
 class IBugTracker(Interface):
-    """A remote bug system."""
+    """A remote bug system.
+
+    Launchpadlib example: What bug tracker is used for a distro source
+    package?
+
+    ::
+
+        product = source_package.upstream_product
+        if product:
+            tracker = product.bug_tracker
+            if not tracker:
+                project = product.project_group
+                if project:
+                    tracker = project.bug_tracker
+        if tracker:
+            print "%s at %s" %(tracker.bug_tracker_type, tracker.base_url)
+
+    """
     export_as_webservice_entry()
 
     id = Int(title=_('ID'))
@@ -183,7 +232,7 @@ class IBugTracker(Interface):
         BugTrackerNameField(
             title=_('Name'),
             constraint=name_validator,
-            description=_('An URL-friendly name for the bug tracker, '
+            description=_('A URL-friendly name for the bug tracker, '
                           'such as "mozilla-bugs".')))
     title = exported(
         TextLine(
@@ -317,12 +366,37 @@ class IBugTracker(Interface):
     def destroySelf():
         """Delete this bug tracker."""
 
-    def resetWatches(now=None):
+    def resetWatches(new_next_check=None):
         """Reset the next_check times of this BugTracker's `BugWatch`es.
 
-        :param now: If specified, contains the datetime to which to set
-                    the BugWatches' next_check times. Defaults to
-                    datetime.now().
+        :param new_next_check: If specified, contains the datetime to
+            which to set the BugWatches' next_check times.  If not
+            specified, the watches' next_check times will be set to a
+            point between now and 24 hours hence.
+        """
+
+    @operation_parameters(
+        component_group_name=TextLine(
+            title=u"The name of the remote component group", required=True))
+    @operation_returns_entry(Interface)
+    @export_write_operation()
+    def addRemoteComponentGroup(component_group_name):
+        """Adds a new component group to the bug tracker"""
+
+    @export_read_operation()
+    @operation_returns_collection_of(Interface)
+    def getAllRemoteComponentGroups():
+        """Return collection of all component groups for this bug tracker"""
+
+    @operation_parameters(
+        component_group_name=TextLine(
+            title=u"The name of the remote component group", required=True))
+    @operation_returns_entry(Interface)
+    @export_read_operation()
+    def getRemoteComponentGroup(component_group_name):
+        """Retrieve a given component group registered with the bug tracker.
+
+        :param component_group_name: Name of the component group to retrieve.
         """
 
 
@@ -404,6 +478,14 @@ class IBugTrackerSet(Interface):
     def getPillarsForBugtrackers(bug_trackers):
         """Return dict mapping bugtrackers to lists of pillars."""
 
+    def trackers(active=None):
+        """Return a ResultSet of bugtrackers.
+
+        :param active: If True, only active trackers are returned, if False
+            only inactive trackers are returned. All trackers are returned
+            by default.
+        """
+
 
 class IBugTrackerAlias(Interface):
     """Another URL for a remote bug system.
@@ -427,6 +509,81 @@ class IBugTrackerAliasSet(Interface):
 
     def queryByBugTracker(bugtracker):
         """Query IBugTrackerAliases by BugTracker."""
+
+
+class IBugTrackerComponent(Interface):
+    """The software component in the remote bug tracker.
+
+    Most bug trackers organize bug reports by the software 'component'
+    they affect.  This class provides a mapping of this upstream component
+    to the corresponding source package in the distro.
+    """
+    export_as_webservice_entry()
+
+    id = Int(title=_('ID'), required=True, readonly=True)
+    is_visible = exported(Bool(
+        title=_('Is Visible?'),
+        description=_("Should the component be shown in "
+                      "the Launchpad web interface?"),
+        ))
+    is_custom = Bool(
+        title=_('Is Custom?'),
+        description=_("Was the component added locally in "
+                      "Launchpad?  If it was, we must retain "
+                      "it across updates of bugtracker data."),
+        readonly=True)
+
+    name = exported(
+        Text(
+            title=_('Name'),
+            description=_("The name of a software component "
+                          "as shown in Launchpad.")))
+
+    distro_source_package = exported(
+        Reference(
+            Interface,
+            title=_("Distribution Source Package"),
+            description=_("The distribution source package object that "
+                          "should be linked to this component."),
+            required=False))
+
+    component_group = exported(
+        Reference(title=_('Component Group'), schema=Interface))
+
+
+class IBugTrackerComponentGroup(Interface):
+    """A collection of components in a remote bug tracker.
+
+    Some bug trackers organize sets of components into higher level groups,
+    such as Bugzilla's 'product'.
+    """
+    export_as_webservice_entry()
+
+    id = Int(title=_('ID'))
+    name = exported(
+        Text(
+            title=_('Name'),
+            description=_('The name of the bug tracker product.')))
+    components = exported(
+        CollectionField(
+            title=_('Components.'),
+            value_type=Reference(schema=IBugTrackerComponent)))
+    bug_tracker = exported(
+        Reference(title=_('BugTracker'), schema=IBugTracker))
+
+    @operation_parameters(
+        component_name=TextLine(
+            title=u"The name of the remote software component to be added",
+            required=True))
+    @export_write_operation()
+    def addComponent(component_name):
+        """Adds a component to be tracked as part of this component group"""
+
+
+# Patch in a mutual reference between IBugTrackerComponent and
+# IBugTrackerComponentGroup.
+patch_reference_property(
+    IBugTrackerComponent, "component_group", IBugTrackerComponentGroup)
 
 
 class IRemoteBug(Interface):

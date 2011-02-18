@@ -104,11 +104,11 @@ bug has not yet been expired, a different message will be displayed,
 detailing the amount of time that has passed since the bug's expiration
 date. We alter the date_last_updated field of bug 11 to demonstrate this.
 
-    >>> from datetime import timedelta
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from datetime import timedelta
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> login('test@canonical.com')
 
     >>> bug_11 = getUtility(IBugSet).get(11)
@@ -130,11 +130,18 @@ date. We alter the date_last_updated field of bug 11 to demonstrate this.
 
 Users can view a list of expirable bugs via a link on the project's
 bug page. To see the behaviour of the bug listing, we need another
-expirable bug. No Privileges Person marks another bug as incomplete.
+expirable bug. No Privileges Person marks another bug as Incomplete 
+and does so some time ago so it appears as expirable.
 
     >>> user_browser.open('http://bugs.launchpad.dev/jokosher/+bug/12')
     >>> user_browser.getControl('Status').value = ['Incomplete']
     >>> user_browser.getControl('Save Changes', index=0).click()
+    >>> login('test@canonical.com')
+    >>> bug_12 = getUtility(IBugSet).get(12)
+    >>> time_delta = timedelta(days=60)
+    >>> bug_12.date_last_updated = bug_12.date_last_updated - time_delta
+    >>> flush_database_updates()
+    >>> logout()
 
 The project's bug page reports the number of bugs that will expire if
 they are not confirmed. No Privileges Person sees that Jokosher has 2
@@ -180,12 +187,15 @@ The 'Report a bug' link is also not present.
 
 The listing is sorted in order of most inactive to least inactive. The
 bugs at the top of the list will expire before the ones at the bottom.
-When No Privileges Person adds a comment to the oldest bug, it is
-pushed to the bottom of the list.
+When bug 12's date_last_updated is modified to be older than bug 11's it
+appears as more inactive than bug 11 and is pushed to the top of the list. 
 
-    >>> user_browser.getLink('Make Jokosher use autoaudiosink').click()
-    >>> user_browser.getControl(name='field.comment').value = "bump"
-    >>> user_browser.getControl('Post Comment').click()
+    >>> login('test@canonical.com')
+    >>> bug_12 = getUtility(IBugSet).get(12)
+    >>> time_delta = timedelta(days=2)
+    >>> bug_12.date_last_updated = bug_12.date_last_updated - time_delta
+    >>> flush_database_updates()
+    >>> logout()
     >>> user_browser.getLink('Bugs').click()
     >>> user_browser.getLink('Incomplete bugs').click()
     >>> contents = find_main_content(user_browser.contents)
@@ -223,6 +233,16 @@ Jokosher's bug page.
 Debian does not use launchpad to track bugs, so its incomplete bugs
 cannot expire. No Privileges Person sets a Debian bug to Incomplete,
 and does not see the expiration notice.
+
+In order for this to work, the bug cannot be FIXRELEASED, which
+it is by default.  So we set the bug back to NEW.
+
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
+    >>> login('foo.bar@canonical.com')
+    >>> bug_8 = getUtility(IBugSet).get(8)
+    >>> bug_8.bugtasks[0].transitionToStatus(
+    ...     BugTaskStatus.NEW, bug_8.bugtasks[0].distribution.owner)
+    >>> logout()
 
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/8')

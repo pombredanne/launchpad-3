@@ -10,12 +10,19 @@ from unittest import TestLoader
 from zope.component import getUtility
 from zope.schema.vocabulary import getVocabularyRegistry
 
-from canonical.launchpad.ftests import ANONYMOUS, login, login_person
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    login_person,
+    )
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.testing import LaunchpadFunctionalLayer
-from lp.registry.model.person import Person
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.person import PersonVisibility
+from lp.registry.model.person import Person
 from lp.testing import TestCaseWithFactory
 
 
@@ -56,9 +63,9 @@ class TestUserTeamsParticipationPlusSelfVocabulary(TestCaseWithFactory):
         login_person(team_owner)
         team = self.factory.makeTeam(owner=team_owner)
         team.addMember(person=user, reviewer=team_owner)
-        # Launchpad admin rights are needed to set private membership.
+        # Launchpad admin rights are needed to set private.
         login('foo.bar@canonical.com')
-        team.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+        team.visibility = PersonVisibility.PRIVATE
         login_person(user)
         self.assertEqual([user], self._vocabTermValues())
 
@@ -127,7 +134,7 @@ class TestAllUserTeamsParticipationVocabulary(TestCaseWithFactory):
         login_person(team_owner)
         team = self.factory.makeTeam(owner=team_owner)
         team.addMember(person=user, reviewer=team_owner)
-        # Launchpad admin rights are needed to set private membership.
+        # Launchpad admin rights are needed to create private teams.
         login('foo.bar@canonical.com')
         team.visibility = PersonVisibility.PRIVATE
         login_person(user)

@@ -135,7 +135,7 @@ class BMPMailer(BranchMailer):
                     inline=True, filename='review-diff.txt')
 
     def _generateTemplateParams(self):
-        """For template params that don't change, calcualte just once."""
+        """For template params that don't change, calculate just once."""
         proposal = self.merge_proposal
         params = {
             'proposal_registrant': proposal.registrant.displayname,
@@ -179,7 +179,7 @@ class BMPMailer(BranchMailer):
 
         if (self.preview_diff is not None and self.preview_diff.oversized):
             params['diff_cutoff_warning'] = (
-                "The attached diff has been truncated due to its size.")
+                "The attached diff has been truncated due to its size.\n")
 
         params['reviews'] = self._getRequestedReviews()
         params['related_bugs'] = self._getRelatedBugs()

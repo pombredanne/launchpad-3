@@ -1,20 +1,29 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-from unittest import TestLoader
+from operator import methodcaller
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.translations.model.pofile import DummyPOFile
-from lp.translations.model.potemplate import get_pofiles_for, POTemplateSet
-from lp.translations.interfaces.potemplate import IPOTemplateSet
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.testing import TestCaseWithFactory
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.side import (
+    TranslationSide,
+    )
+from lp.translations.model.potemplate import (
+    get_pofiles_for,
+    POTemplate,
+    )
 
 
 class TestPOTemplate(TestCaseWithFactory):
@@ -27,6 +36,13 @@ class TestPOTemplate(TestCaseWithFactory):
         self.potemplate = removeSecurityProxy(self.factory.makePOTemplate(
             translation_domain = "testdomain"))
 
+    def assertIsDummy(self, pofile):
+        """Assert that `pofile` is actually a `DummyPOFile`."""
+        # Avoid circular imports.
+        from lp.translations.model.pofile import DummyPOFile
+
+        self.assertEquals(DummyPOFile, type(pofile))
+
     def test_composePOFilePath(self):
         esperanto = getUtility(ILanguageSet).getLanguageByCode('eo')
         self.potemplate.path = "testdir/messages.pot"
@@ -35,17 +51,17 @@ class TestPOTemplate(TestCaseWithFactory):
         self.failUnlessEqual(expected, result,
             "_composePOFilePath does not create a correct file name with "
             "directory and language code. "
-            "(Expected: '%s' Got: '%s')" % (expected, result)
-            )
+            "(Expected: '%s' Got: '%s')" % (expected, result))
 
         self.potemplate.path = "testdir/messages.pot"
-        expected = "testdir/testdomain-eo@VARIANT.po"
-        result = self.potemplate._composePOFilePath(esperanto, 'VARIANT')
+        expected = "testdir/testdomain-eo@variant.po"
+        esperanto_variant = self.factory.makeLanguage(
+            'eo@variant', 'Esperanto Variant')
+        result = self.potemplate._composePOFilePath(esperanto_variant)
         self.failUnlessEqual(expected, result,
             "_composePOFilePath does not create a correct file name with "
             "directory, language code and variant. "
-            "(Expected: '%s' Got: '%s')" % (expected, result)
-            )
+            "(Expected: '%s' Got: '%s')" % (expected, result))
 
         self.potemplate.path = "/messages.pot"
         expected = "/testdomain-eo.po"
@@ -53,8 +69,7 @@ class TestPOTemplate(TestCaseWithFactory):
         self.failUnlessEqual(expected, result,
             "_composePOFilePath does not create a correct file name with "
             "leading slash and language code. "
-            "(Expected: '%s' Got: '%s')" % (expected, result)
-            )
+            "(Expected: '%s' Got: '%s')" % (expected, result))
 
         self.potemplate.path = "messages.pot"
         expected = "testdomain-eo.po"
@@ -62,8 +77,47 @@ class TestPOTemplate(TestCaseWithFactory):
         self.failUnlessEqual(expected, result,
             "_composePOFilePath does not create a correct file name with "
             "missing directory and language code. "
-            "(Expected: '%s' Got: '%s')" % (expected, result)
-            )
+            "(Expected: '%s' Got: '%s')" % (expected, result))
+
+    def test_getDummyPOFile_no_existing_pofile(self):
+        # Test basic behaviour of getDummyPOFile.
+        language = self.factory.makeLanguage('sr@test')
+        dummy = self.potemplate.getDummyPOFile(language)
+        self.assertIsDummy(dummy)
+
+    def test_getDummyPOFile_with_existing_pofile(self):
+        # Test that getDummyPOFile fails when trying to get a DummyPOFile
+        # where a POFile already exists for that language.
+        language = self.factory.makeLanguage('sr@test')
+        pofile = self.potemplate.newPOFile(language.code)
+        self.assertRaises(
+            AssertionError, self.potemplate.getDummyPOFile, language)
+
+    def test_getDummyPOFile_with_existing_pofile_no_check(self):
+        # Test that getDummyPOFile succeeds when trying to get a DummyPOFile
+        # where a POFile already exists for that language when
+        # check_for_existing=False is passed in.
+        language = self.factory.makeLanguage('sr@test')
+        pofile = self.potemplate.newPOFile(language.code)
+        # This is just "assertNotRaises".
+        dummy = self.potemplate.getDummyPOFile(language,
+                                               check_for_existing=False)
+        self.assertIsDummy(dummy)
+
+    def test_newPOFile_owner(self):
+        # The intended owner of a new POFile can be passed to newPOFile.
+        language = self.factory.makeLanguage('nl@test')
+        person = self.factory.makePerson()
+        pofile = self.potemplate.newPOFile(language.code, owner=person)
+        self.assertEqual(person, pofile.owner)
+
+    def test_getDummyPOFile_owner(self):
+        # The intended owner of a new DummyPOFile can be passed to
+        # getDummyPOFile.
+        language = self.factory.makeLanguage('nl@test')
+        person = self.factory.makePerson()
+        pofile = self.potemplate.getDummyPOFile(language, requester=person)
+        self.assertEqual(person, pofile.owner)
 
     def test_getTranslationCredits(self):
         # getTranslationCredits returns only translation credits.
@@ -71,16 +125,44 @@ class TestPOTemplate(TestCaseWithFactory):
         gnome_credits = self.factory.makePOTMsgSet(
             self.potemplate, sequence=2, singular=u"translator-credits")
         kde_credits = self.factory.makePOTMsgSet(
-            self.potemplate, sequence=3, 
+            self.potemplate, sequence=3,
             singular=u"Your emails", context=u"EMAIL OF TRANSLATORS")
         self.factory.makePOTMsgSet(self.potemplate, sequence=4)
 
         self.assertContentEqual([gnome_credits, kde_credits],
                                 self.potemplate.getTranslationCredits())
 
+    def test_awardKarma(self):
+        person = self.factory.makePerson()
+        template = self.factory.makePOTemplate()
+        karma_listener = self.installKarmaRecorder(
+            person=person, product=template.product)
+        action = 'translationsuggestionadded'
+
+        # This is not something that browser code or scripts should do,
+        # so we go behind the proxy.
+        removeSecurityProxy(template).awardKarma(person, action)
+
+        karma_events = karma_listener.karma_events
+        self.assertEqual(1, len(karma_events))
+        self.assertEqual(action, karma_events[0].action.name)
+
+    def test_translationtarget_can_be_productseries(self):
+        productseries = self.factory.makeProductSeries()
+        template = self.factory.makePOTemplate(productseries=productseries)
+        self.assertEqual(productseries, template.translationtarget)
+
+    def test_translationtarget_can_be_sourcepackage(self):
+        package = self.factory.makeSourcePackage()
+        template = self.factory.makePOTemplate(
+            distroseries=package.distroseries,
+            sourcepackagename=package.sourcepackagename)
+        self.assertEqual(package, template.translationtarget)
+
 
 class EquivalenceClassTestMixin:
     """Helper for POTemplate equivalence class tests."""
+
     def _compareResult(self, expected, actual):
         """Compare equivalence-classes set to expectations.
 
@@ -115,7 +197,7 @@ class TestProductTemplateEquivalenceClasses(TestCaseWithFactory,
             productseries=self.stable, name='foo')
 
         classes = self.subset.groupEquivalentPOTemplates()
-        expected = { ('foo', None): [trunk_template, stable_template] }
+        expected = {('foo', None): [trunk_template, stable_template]}
         self._compareResult(expected, classes)
 
     def test_DifferentlyNamedProductTemplatesAreNotEquivalent(self):
@@ -143,13 +225,13 @@ class TestProductTemplateEquivalenceClasses(TestCaseWithFactory,
             productseries=external_series, name='foo')
 
         classes = self.subset.groupEquivalentPOTemplates()
-        expected = { ('foo', None): [template1] }
+        expected = {('foo', None): [template1]}
         self._compareResult(expected, classes)
 
         external_subset = getUtility(IPOTemplateSet).getSharingSubset(
             product=external_series.product)
         classes = external_subset.groupEquivalentPOTemplates()
-        expected = { ('foo', None): [template2] }
+        expected = {('foo', None): [template2]}
         self._compareResult(expected, classes)
 
     def test_GetSharingPOTemplates(self):
@@ -302,8 +384,8 @@ class TestTemplatePrecedence(TestCaseWithFactory):
 
     def setUp(self):
         super(TestTemplatePrecedence, self).setUp(user='mark@example.com')
-        self.product = self.factory.makeProduct()
-        self.product.official_rosetta = True
+        self.product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         self.trunk = self.product.getSeries('trunk')
         self.one_dot_oh = self.factory.makeProductSeries(
             product=self.product, name='one')
@@ -340,7 +422,7 @@ class TestTemplatePrecedence(TestCaseWithFactory):
         """Order templates by precedence."""
         if templates is None:
             templates = self.templates
-        return sorted(templates, cmp=POTemplateSet.compareSharingPrecedence)
+        return sorted(templates, key=methodcaller('sharingKey'), reverse=True)
 
     def _getPrimaryTemplate(self, templates=None):
         """Get first template in order of precedence."""
@@ -407,6 +489,75 @@ class TestTemplatePrecedence(TestCaseWithFactory):
         self.test_ageBreaksTie()
 
 
+class TestTranslationFoci(TestCaseWithFactory):
+    """Test the precedence rules for tranlation foci."""
+
+    layer = DatabaseFunctionalLayer
+
+    def assertFirst(self, expected, templates):
+        templates = sorted(
+            templates, key=methodcaller('sharingKey'), reverse=True)
+        self.assertEqual(expected, templates[0])
+
+    @staticmethod
+    def makeProductFocus(template):
+        with person_logged_in(template.productseries.product.owner):
+            template.productseries.product.translation_focus = (
+                template.productseries)
+
+    @staticmethod
+    def makePackageFocus(template):
+        distribution = template.distroseries.distribution
+        removeSecurityProxy(distribution).translation_focus = (
+        template.distroseries)
+
+    def makeProductPOTemplate(self):
+        """Create a product that is not the translation focus."""
+        # Manually creating a productseries to get one that is not the
+        # translation focus.
+        other_productseries = self.factory.makeProductSeries()
+        other_template = self.factory.makePOTemplate(
+            productseries=other_productseries)
+        product = other_productseries.product
+        productseries = self.factory.makeProductSeries(
+            product=product,
+            owner=product.owner)
+        with person_logged_in(product.owner):
+            product.translation_focus = other_productseries
+            other_productseries.product.translations_usage = (
+                ServiceUsage.LAUNCHPAD)
+            productseries.product.translations_usage = ServiceUsage.LAUNCHPAD
+        return self.factory.makePOTemplate(productseries=productseries)
+
+    def test_product_focus(self):
+        """Template priority respects product translation focus."""
+        product = self.makeProductPOTemplate()
+        package = self.factory.makePOTemplate(side=TranslationSide.UBUNTU)
+        # default ordering is database id.
+        self.assertFirst(package, [package, product])
+        self.makeProductFocus(product)
+        self.assertFirst(product, [package, product])
+
+    def test_package_focus(self):
+        """Template priority respects package translation focus."""
+        package = self.factory.makePOTemplate(side=TranslationSide.UBUNTU)
+        product = self.makeProductPOTemplate()
+        self.assertFirst(product, [package, product])
+        # default ordering is database id.
+        self.makePackageFocus(package)
+        self.assertFirst(package, [package, product])
+
+    def test_product_package_focus(self):
+        """Template priority respects product translation focus."""
+        product = self.makeProductPOTemplate()
+        package = self.factory.makePOTemplate(side=TranslationSide.UBUNTU)
+        # default ordering is database id.
+        self.assertFirst(package, [package, product])
+        self.makeProductFocus(product)
+        self.makePackageFocus(package)
+        self.assertFirst(product, [package, product])
+
+
 class TestGetPOFilesFor(TestCaseWithFactory):
     """Test `get_pofiles_for`."""
 
@@ -437,10 +588,10 @@ class TestGetPOFilesFor(TestCaseWithFactory):
     def test_get_pofiles_for_untranslated_template(self):
         # If there is no POFile for a template in a language,
         # get_pofiles_for makes up a DummyPOFile.
+
+        # Avoid circular imports.
+        from lp.translations.model.pofile import DummyPOFile
+
         pofiles = get_pofiles_for([self.potemplate], self.greek)
         pofile = pofiles[0]
-        self.assertTrue(isinstance(pofile, DummyPOFile))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+        self.assertIsInstance(pofile, DummyPOFile)

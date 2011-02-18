@@ -8,29 +8,39 @@ __metaclass__ = type
 import unittest
 
 from lazr.uri import URI
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from lp.code.interfaces.branch import NoSuchBranch
-from lp.code.interfaces.branchlookup import (
-    IBranchLookup, ILinkedBranchTraverser)
-from lp.code.interfaces.branchnamespace import (
-    get_branch_namespace, InvalidNamespace)
-from lp.code.interfaces.linkedbranch import (
-    CannotHaveLinkedBranch, ICanHasLinkedBranch, NoLinkedBranch)
-from lp.registry.interfaces.distroseries import NoSuchDistroSeries
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.interfaces.person import NoSuchPerson
-from lp.registry.interfaces.product import (
-    InvalidProductName, NoSuchProduct)
-from lp.registry.interfaces.productseries import NoSuchProductSeries
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.sourcepackagename import (
-    NoSuchSourcePackageName)
-from lp.testing import run_with_login, TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.code.errors import (
+    CannotHaveLinkedBranch,
+    InvalidNamespace,
+    NoLinkedBranch,
+    NoSuchBranch,
+    )
+from lp.code.interfaces.branchlookup import (
+    IBranchLookup,
+    ILinkedBranchTraverser,
+    )
+from lp.code.interfaces.branchnamespace import get_branch_namespace
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
+from lp.registry.errors import (
+    NoSuchDistroSeries,
+    NoSuchSourcePackageName,
+    )
+from lp.registry.interfaces.person import NoSuchPerson
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.product import (
+    InvalidProductName,
+    NoSuchProduct,
+    )
+from lp.registry.interfaces.productseries import NoSuchProductSeries
+from lp.testing import (
+    run_with_login,
+    TestCaseWithFactory,
+    )
 
 
 class TestGetByUniqueName(TestCaseWithFactory):
@@ -79,17 +89,20 @@ class TestGetIdAndTrailingPath(TestCaseWithFactory):
 
     def test_junk(self):
         branch = self.factory.makePersonalBranch()
-        result = self.branch_set.getIdAndTrailingPath('/' + branch.unique_name)
+        result = self.branch_set.getIdAndTrailingPath(
+            '/' + branch.unique_name)
         self.assertEqual((branch.id, ''), result)
 
     def test_product(self):
         branch = self.factory.makeProductBranch()
-        result = self.branch_set.getIdAndTrailingPath('/' + branch.unique_name)
+        result = self.branch_set.getIdAndTrailingPath(
+            '/' + branch.unique_name)
         self.assertEqual((branch.id, ''), result)
 
     def test_source_package(self):
         branch = self.factory.makePackageBranch()
-        result = self.branch_set.getIdAndTrailingPath('/' + branch.unique_name)
+        result = self.branch_set.getIdAndTrailingPath(
+            '/' + branch.unique_name)
         self.assertEqual((branch.id, ''), result)
 
     def test_trailing_slash(self):
@@ -297,7 +310,7 @@ class TestGetByUrl(TestCaseWithFactory):
         """test_getByURL works with production values."""
         branch_set = getUtility(IBranchLookup)
         branch = self.makeProductBranch()
-        self.pushConfig('codehosting', lp_url_hosts='edge,production,,')
+        self.pushConfig('codehosting', lp_url_hosts='production,,')
         branch2 = branch_set.getByUrl('lp://staging/~aa/b/c')
         self.assertIs(None, branch2)
         branch2 = branch_set.getByUrl('lp://asdf/~aa/b/c')
@@ -305,8 +318,6 @@ class TestGetByUrl(TestCaseWithFactory):
         branch2 = branch_set.getByUrl('lp:~aa/b/c')
         self.assertEqual(branch, branch2)
         branch2 = branch_set.getByUrl('lp://production/~aa/b/c')
-        self.assertEqual(branch, branch2)
-        branch2 = branch_set.getByUrl('lp://edge/~aa/b/c')
         self.assertEqual(branch, branch2)
 
     def test_getByUrls(self):
@@ -375,7 +386,7 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
     def test_product_series(self):
         # `traverse` resolves the path to a product series to the product
         # series itself.
-        series = self.factory.makeSeries()
+        series = self.factory.makeProductSeries()
         short_name = '%s/%s' % (series.product.name, series.name)
         self.assertTraverses(short_name, series)
 
@@ -496,7 +507,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         # getByLPPath returns the branch and the trailing path (with no
         # series) if the given path is inside an existing branch.
         branch = self.factory.makeProductBranch()
-        path = '%s/foo/bar/baz' % (branch.unique_name,)
+        path = '%s/foo/bar/baz' % (branch.unique_name)
         self.assertEqual(
             (branch, 'foo/bar/baz'), self.branch_lookup.getByLPPath(path))
 
@@ -522,7 +533,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         # getByLPPath returns the branch and the trailing path (with no
         # series) if the given path is inside an existing branch.
         branch = self.factory.makePersonalBranch()
-        path = '%s/foo/bar/baz' % (branch.unique_name,)
+        path = '%s/foo/bar/baz' % (branch.unique_name)
         self.assertEqual(
             (branch, 'foo/bar/baz'),
             self.branch_lookup.getByLPPath(path))
@@ -548,7 +559,7 @@ class TestGetByLPPath(TestCaseWithFactory):
     def test_no_product_series_branch(self):
         # getByLPPath raises `NoLinkedBranch` if there's no branch registered
         # linked to the requested series.
-        series = self.factory.makeSeries()
+        series = self.factory.makeProductSeries()
         short_name = '%s/%s' % (series.product.name, series.name)
         exception = self.assertRaises(
             NoLinkedBranch, self.branch_lookup.getByLPPath, short_name)
@@ -632,12 +643,11 @@ class TestGetByLPPath(TestCaseWithFactory):
         # linked branch but is followed by extra path segments, then we return
         # the linked branch but chop off the extra segments. We might want to
         # change this behaviour in future.
-        series = self.factory.makeSeries()
-        branch = self.factory.makeProductBranch(series.product)
-        series.branch = branch
+        branch= self.factory.makeBranch()
+        series = self.factory.makeProductSeries(branch=branch)
         result = self.branch_lookup.getByLPPath(
             '%s/%s/other/bits' % (series.product.name, series.name))
-        self.assertEqual((branch, None), result)
+        self.assertEqual((branch, u'other/bits'), result)
 
     def test_too_long_sourcepackage(self):
         # If the provided path points to an existing source package with a
@@ -655,7 +665,7 @@ class TestGetByLPPath(TestCaseWithFactory):
             ubuntu_branches.teamowner)
         result = self.branch_lookup.getByLPPath(
             '%s/other/bits' % package.path)
-        self.assertEqual((branch, None), result)
+        self.assertEqual((branch, u'other/bits'), result)
 
 
 def test_suite():

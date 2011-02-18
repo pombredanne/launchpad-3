@@ -5,10 +5,12 @@
 
 from zope.component import getUtility
 
-from canonical.testing import LaunchpadZopelessLayer
-
-from lp.soyuz.interfaces.processor import (IProcessor, IProcessorFamily,
-    IProcessorFamilySet)
+from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.soyuz.interfaces.processor import (
+    IProcessor,
+    IProcessorFamily,
+    IProcessorFamilySet,
+    )
 from lp.testing import TestCaseWithFactory
 
 
@@ -30,3 +32,13 @@ class ProcessorFamilyTests(TestCaseWithFactory):
         proc = family.addProcessor("avr2001", "The 2001 AVR", "Fast as light.")
         self.assertProvides(proc, IProcessor)
         self.assertEquals(family, proc.family)
+
+    def test_get_restricted(self):
+        """Test retrieving all restricted processors."""
+        family_set = getUtility(IProcessorFamilySet)
+        normal_family = getUtility(IProcessorFamilySet).new("avr", "Atmel AVR",
+            "The Modified Harvard architecture 8-bit RISC processors.")
+        restricted_family = getUtility(IProcessorFamilySet).new("5051", "5051",
+            "Another small processor family", restricted=True)
+        self.assertFalse(normal_family in family_set.getRestricted())
+        self.assertTrue(restricted_family in family_set.getRestricted())

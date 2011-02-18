@@ -8,66 +8,27 @@
 __metaclass__ = type
 
 __all__ = [
-    'PackageCopyStatus',
     'IPackageCopyRequest',
     'IPackageCopyRequestSet',
     ]
 
 from zope.interface import Interface
-from zope.schema import Bool, Choice, Datetime, Int, Object, Text
-from lazr.enum import DBEnumeratedType, DBItem
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    Object,
+    Text,
+    )
 
 from canonical.launchpad import _
-from lp.soyuz.interfaces.archive import IArchive
-from lp.soyuz.interfaces.component import IComponent
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-
-
-class PackageCopyStatus(DBEnumeratedType):
-    """Package copy status type.
-
-    The status may be one of the following: new, in progress, complete,
-    failed, canceling, cancelled.
-    """
-
-    NEW = DBItem(0, """
-        New
-
-        A new package copy operation was requested.
-        """)
-
-    INPROGRESS = DBItem(1, """
-        In progress
-
-        The package copy operation is in progress.
-        """)
-
-    COMPLETE = DBItem(2, """
-        Complete
-
-        The package copy operation has completed successfully.
-        """)
-
-    FAILED = DBItem(3, """
-        Failed
-
-        The package copy operation has failed.
-        """)
-
-    CANCELING = DBItem(4, """
-        Canceling
-
-        The package copy operation was cancelled by the user and the
-        cancellation is in progress.
-        """)
-
-    CANCELLED = DBItem(5, """
-        Cancelled
-
-        The package copy operation was cancelled by the user.
-        """)
+from lp.soyuz.enums import PackageCopyStatus
+from lp.soyuz.interfaces.archive import IArchive
+from lp.soyuz.interfaces.component import IComponent
 
 
 class IPackageCopyRequest(Interface):

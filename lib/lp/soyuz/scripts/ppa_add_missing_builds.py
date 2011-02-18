@@ -6,9 +6,9 @@ import sys
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.services.scripts.base import LaunchpadScript
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.enums import PackagePublishingStatus
 
 
 class PPAMissingBuilds(LaunchpadScript):
@@ -31,7 +31,7 @@ class PPAMissingBuilds(LaunchpadScript):
                 % distroseries.name)
             return
 
-        architectures_available = set(distroseries.enabled_architectures)
+        architectures_available = set(distroseries.buildable_architectures)
         if not architectures_available:
             self.logger.error(
                 "Chroots missing for %s" % distroseries.name)
@@ -53,7 +53,7 @@ class PPAMissingBuilds(LaunchpadScript):
         sources = ppa.getPublishedSources(
             distroseries=distroseries,
             status=PackagePublishingStatus.PUBLISHED)
-        if not sources.count():
+        if not bool(sources):
             self.logger.info("No sources published, nothing to do.")
             return
 

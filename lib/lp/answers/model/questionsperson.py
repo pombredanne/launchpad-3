@@ -10,15 +10,15 @@ __all__ = [
 from zope.component import adapts
 from zope.interface import implements
 
+from canonical.database.sqlbase import sqlvalues
 from lp.answers.interfaces.questioncollection import (
-    QUESTION_STATUS_DEFAULT_SEARCH)
+    QUESTION_STATUS_DEFAULT_SEARCH,
+    )
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.answers.model.answercontact import AnswerContact
 from lp.answers.model.question import QuestionPersonSearch
-
-from canonical.database.sqlbase import sqlvalues
-from lp.services.worlddata.model.language import Language
 from lp.registry.interfaces.person import IPerson
+from lp.services.worlddata.model.language import Language
 
 
 class QuestionsPerson:

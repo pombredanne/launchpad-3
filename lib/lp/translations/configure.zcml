@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -10,11 +10,19 @@
     xmlns:webservice="http://namespaces.canonical.com/webservice"
     xmlns:lp="http://namespaces.canonical.com/lp"
     i18n_domain="launchpad">
-    <include
-        package=".browser"/>
+
+  <include package=".browser"/>
+
+  <publisher
+      name="translations"
+      factory="lp.translations.publisher.translations_request_publication_factory"/>
+  <utility
+      component="lp.translations.publisher.TranslationsLayer"
+      provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
+      name="translations" />
 
     <lp:help-folder
-        folder="help" type="canonical.launchpad.layers.TranslationsLayer" />
+        folder="help" type="lp.translations.publisher.TranslationsLayer" />
 
     <class
         class="lp.translations.model.vpotexport.VPOTExport">
@@ -44,9 +52,9 @@
     </class>
     <securedutility
         class="canonical.launchpad.systemhomes.RosettaApplication"
-        provides="canonical.launchpad.interfaces.IRosettaApplication">
+        provides="canonical.launchpad.interfaces.launchpad.IRosettaApplication">
         <allow
-            interface="canonical.launchpad.interfaces.IRosettaApplication"/>
+            interface="canonical.launchpad.interfaces.launchpad.IRosettaApplication"/>
     </securedutility>
 
     <!-- TranslationsOverview -->
@@ -247,6 +255,11 @@
         factory="lp.translations.browser.translations.TranslationsVHostBreadcrumb"
         permission="zope.Public"/>
 
+    <!-- Subscribers to registry objects -->
+
+    <subscriber
+        for="lp.registry.interfaces.product.IProduct zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+        handler="lp.translations.subscribers.product_modified"/>
 
     <!-- DistroSeriesLanguage and Dummy -->
 
@@ -372,7 +385,7 @@
             interface="lp.translations.interfaces.translationtemplateitem.ITranslationTemplateItem"/>
     </class>
 
-    <!-- ProductSeriesLanguage and Dummy -->
+    <!-- ProductSeriesLanguage -->
 
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
@@ -385,11 +398,6 @@
         <allow
             interface="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"/>
     </class>
-    <class
-        class="lp.translations.model.productserieslanguage.DummyProductSeriesLanguage">
-        <allow
-            interface="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"/>
-    </class>
 
     <!-- ProductSeriesLanguageSet -->
 
@@ -399,6 +407,16 @@
         <allow
             interface="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguageSet"/>
     </securedutility>
+
+    <!-- TranslatedLanguage -->
+    <facet
+        facet="translations">
+        <class
+            class="lp.translations.model.translatedlanguage.POFilesByPOTemplates">
+            <allow
+                interface="lp.translations.interfaces.translatedlanguage.IPOFilesByPOTemplates"/>
+        </class>
+    </facet>
 
     <!-- POTemplate -->
     <facet
@@ -430,6 +448,13 @@
             for="lp.translations.interfaces.potemplate.IPOTemplate"
             provides="lp.translations.interfaces.translationcommonformat.ITranslationFileData"
             factory="lp.translations.model.potemplate.POTemplateToTranslationFileDataAdapter"/>
+
+        <!-- TranslationTemplatesCollection -->
+        <class
+            class="lp.translations.model.potemplate.TranslationTemplatesCollection">
+            <allow
+                interface="lp.translations.interfaces.potemplate.ITranslationTemplatesCollection"/>
+        </class>
 
         <!-- POTemplateSet -->
 
@@ -554,6 +579,19 @@
             <allow
                 interface="lp.translations.interfaces.translationmessage.ITranslationMessageSet"/>
         </securedutility>
+
+        <!-- TranslationSideTraits -->
+        <class class="lp.translations.model.side.TranslationSideTraits">
+          <allow interface="lp.translations.interfaces.side.ITranslationSideTraits"/>
+        </class>
+
+        <!-- TranslationSideTraitsSet -->
+        <securedutility
+            class="lp.translations.model.side.TranslationSideTraitsSet"
+            provides="lp.translations.interfaces.side.ITranslationSideTraitsSet">
+            <allow
+              interface="lp.translations.interfaces.side.ITranslationSideTraitsSet"/>
+        </securedutility>
     </facet>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
@@ -576,7 +614,7 @@
     <class
         class="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob">
         <allow
-            interface="lp.code.interfaces.branchjob.IBranchJob"/>
+            interface="lp.buildmaster.interfaces.buildfarmbranchjob.IBuildFarmBranchJob"/>
         <allow
             interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJobOld"/>
     </class>
@@ -589,6 +627,23 @@
         component="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob"
         provides="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"
         name="TRANSLATIONTEMPLATESBUILD"/>
+    <adapter
+        provides="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJob"
+        for="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"
+        factory="lp.translations.model.translationtemplatesbuild.get_translation_templates_build_for_build_farm_job"
+        name="TRANSLATIONTEMPLATESBUILD"
+        permission="zope.Public"/>
+
+    <!-- TranslationTemplatesBuild -->
+    <class
+        class="lp.translations.model.translationtemplatesbuild.TranslationTemplatesBuild">
+        <allow interface="lp.translations.interfaces.translationtemplatesbuild.ITranslationTemplatesBuild"/>
+    </class>
+    <securedutility
+        component="lp.translations.model.translationtemplatesbuild.TranslationTemplatesBuild"
+        provides="lp.translations.interfaces.translationtemplatesbuild.ITranslationTemplatesBuildSource">
+        <allow interface="lp.translations.interfaces.translationtemplatesbuild.ITranslationTemplatesBuildSource"/>
+    </securedutility>
 
     <!-- TranslationTemplateBuildBehavior -->
     <class

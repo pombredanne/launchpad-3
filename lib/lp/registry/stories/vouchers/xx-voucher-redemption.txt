@@ -1,4 +1,5 @@
-= Voucher Redemption =
+Voucher Redemption
+==================
 
 For a project to use Launchpad it must either be released under an
 approved open source license or the project administrators must buy a
@@ -11,7 +12,8 @@ The voucher belongs to a user in Launchpad so the redemption function
 is related to a person.
 
 
-== Accessing the voucher redemption page ==
+Accessing the voucher redemption page
+-------------------------------------
 
 Mark is an administrator for at least one project that does not have a
 valid open source license so he is displayed the voucher redemption
@@ -32,8 +34,8 @@ the page she is not given the option to redeem a voucher.
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
     Redeem Vouchers for Commercial Subscriptions...
-    Marilize Coetzee does not own any commercial projects. Only project owners can redeem
-    vouchers for a project.
+    Marilize Coetzee does not own any commercial projects. Only project
+    owners can redeem vouchers for a project.
 
 A user can access her voucher page but not someone else's.  Here
 Marilize tries to access '+vouchers' on another user and is not
@@ -61,11 +63,12 @@ Foo Bar has no vouchers.  Accessing the +vouchers page results in a message.
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
     Redeem Vouchers for Commercial Subscriptions
-    ...Sample Person does not have any unredeemed vouchers available.
+    ...Sample Person does not have any redeemable vouchers available.
     Here are the steps to obtain a commercial subscription:...
 
 
-== Redeeming a voucher ==
+Redeeming a voucher
+------------------
 
 Selecting a project the user owns and a valid voucher result in a
 successful voucher redemption.
@@ -125,7 +128,7 @@ viewing his +related-projects page.
     ...     'http://launchpad.dev/~commercial-member/+related-projects')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
-    Projects related to Commercial Member
+    Related projects
     ...
     Commercial Member doesn't own or drive any projects.
 
@@ -142,7 +145,8 @@ he is not responsible for it.
     Voucher redeemed successfully
 
 
-== OOPS handling ==
+OOPS handling
+-------------
 
 If an error occurs in the proxy while trying to redeem a voucher an
 OOPS is recorded but an error is not raised.  The user is shown an
@@ -150,7 +154,7 @@ error message instead.
 
 Set the canned fault.
 
-    >>> from lp.registry.tests.salesforce import (
+    >>> from lp.services.salesforce.tests.proxy import (
     ...     SalesforceXMLRPCTestTransport)
     >>> SalesforceXMLRPCTestTransport.forced_fault = (
     ...     'redeemVoucher', 'NotFound','Something was not found.')
@@ -174,8 +178,8 @@ Attempt to redeem a valid voucher and see the error message.
 The OOPS report shows the error was logged even though the OOPS was
 not shown to the user.
 
-    >>> from zope.error.interfaces import IErrorReportingUtility
     >>> from zope.component import getUtility
+    >>> from zope.error.interfaces import IErrorReportingUtility
     >>> from sys import stdout
     >>> error_utility = getUtility(IErrorReportingUtility)
     >>> report = error_utility.getLastOopsReport()
@@ -189,7 +193,9 @@ Reset the class variable to disable forced faults.
 
     >>> SalesforceXMLRPCTestTransport.forced_fault = None
 
-== Canceling the request ==
+
+Canceling the request
+---------------------
 
 If the 'Cancel' button is selected the person's overview page is shown.
 

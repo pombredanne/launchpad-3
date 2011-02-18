@@ -6,10 +6,8 @@
   <div tal:define="ppas context/ppas" tal:condition="ppas">
     <table>
       <tal:ppa_line tal:repeat="ppa ppas">
-        <tr>
-          <td tal:define="ppa_link ppa/fmt:link"
-              tal:condition="ppa_link"
-              tal:content="structure ppa_link"></td>
+        <tr tal:condition="ppa/required:launchpad.View">
+          <td tal:content="structure ppa/fmt:link"></td>
         </tr>
       </tal:ppa_line>
     </table>

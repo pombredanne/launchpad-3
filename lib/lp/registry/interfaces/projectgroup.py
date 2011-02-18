@@ -14,43 +14,80 @@ __all__ = [
     'IProjectGroupSet',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Datetime, Int, Object, Text, TextLine
+from lazr.restful.declarations import (
+    collection_default_content,
+    export_as_webservice_collection,
+    export_as_webservice_entry,
+    export_read_operation,
+    exported,
+    operation_parameters,
+    operation_returns_collection_of,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    ReferenceChoice,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Datetime,
+    Int,
+    Object,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    PublicPersonChoice, Summary, Title, URIField)
-from lp.app.interfaces.headings import IRootContext
-from lp.code.interfaces.branchvisibilitypolicy import (
-    IHasBranchVisibilityPolicy)
-from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
-from lp.bugs.interfaces.bugtarget import IHasBugs, IHasOfficialBugTags
-from lp.bugs.interfaces.bugtracker import IBugTracker
-from lp.registry.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver, IHasDrivers, IHasIcon, IHasLogo, IHasMugshot)
-from lp.registry.interfaces.role import IHasOwner
-from lp.registry.interfaces.mentoringoffer import IHasMentoringOffers
-from lp.registry.interfaces.milestone import (
-    ICanGetMilestonesDirectly, IHasMilestones)
-from lp.registry.interfaces.announcement import IMakesAnnouncements
-from lp.registry.interfaces.pillar import IPillar
-from lp.blueprints.interfaces.specificationtarget import (
-    IHasSpecifications)
-from lp.blueprints.interfaces.sprint import IHasSprints
-from lp.translations.interfaces.translationgroup import (
-    ITranslationPolicy)
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
+    IHasAppointedDriver,
+    IHasDrivers,
+    IHasIcon,
+    IHasLogo,
+    IHasMugshot,
+    )
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.fields import (
-    IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
-
-from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
-from lazr.restful.declarations import (
-    collection_default_content, export_as_webservice_collection,
-    export_as_webservice_entry, export_read_operation, exported,
-    operation_parameters, operation_returns_collection_of)
+from lp.app.interfaces.headings import IRootContext
+from lp.app.interfaces.launchpad import IServiceUsage
+from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
+from lp.blueprints.interfaces.sprint import IHasSprints
+from lp.bugs.interfaces.bugtarget import (
+    IHasBugs,
+    IHasOfficialBugTags,
+    )
+from lp.bugs.interfaces.bugtracker import IBugTracker
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
+from lp.code.interfaces.branchvisibilitypolicy import (
+    IHasBranchVisibilityPolicy,
+    )
+from lp.code.interfaces.hasbranches import (
+    IHasBranches,
+    IHasMergeProposals,
+    )
+from lp.registry.interfaces.announcement import IMakesAnnouncements
+from lp.registry.interfaces.karma import IKarmaContext
+from lp.registry.interfaces.milestone import (
+    ICanGetMilestonesDirectly,
+    IHasMilestones,
+    )
+from lp.registry.interfaces.pillar import IPillar
+from lp.registry.interfaces.role import IHasOwner
+from lp.services.fields import (
+    IconImageUpload,
+    LogoImageUpload,
+    MugshotImageUpload,
+    PillarNameField,
+    PublicPersonChoice,
+    Summary,
+    Title,
+    URIField,
+    )
+from lp.translations.interfaces.translationpolicy import ITranslationPolicy
 
 
 class ProjectNameField(PillarNameField):
@@ -60,12 +97,30 @@ class ProjectNameField(PillarNameField):
         return IProjectGroup
 
 
+class IProjectGroupModerate(IPillar):
+    """IProjectGroup attributes used with launchpad.Moderate permission."""
+    reviewed = exported(
+        Bool(
+            title=_('Reviewed'), required=False,
+            description=_("Whether or not this project group has been "
+                          "reviewed.")))
+    name = exported(
+        ProjectNameField(
+            title=_('Name'),
+            required=True,
+            description=_(
+                "A unique name, used in URLs, identifying the project "
+                "group.  All lowercase, no special characters. "
+                "Examples: apache, mozilla, gimp."),
+            constraint=name_validator))
+
+
 class IProjectGroupPublic(
     ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches, IHasBugs,
     IHasDrivers, IHasBranchVisibilityPolicy, IHasIcon, IHasLogo,
-    IHasMentoringOffers, IHasMergeProposals, IHasMilestones, IHasMugshot,
+    IHasMergeProposals, IHasMilestones, IHasMugshot,
     IHasOwner, IHasSpecifications, IHasSprints, IMakesAnnouncements,
-    IKarmaContext, IPillar, IRootContext, IHasOfficialBugTags):
+    IKarmaContext, IRootContext, IHasOfficialBugTags, IServiceUsage):
     """Public IProjectGroup properties."""
 
     id = Int(title=_('ID'), readonly=True)
@@ -86,16 +141,6 @@ class IProjectGroupPublic(
             vocabulary='ValidPersonOrTeam',
             description=_("Project group registrant. Must be a valid "
                           "Launchpad Person.")))
-
-    name = exported(
-        ProjectNameField(
-            title=_('Name'),
-            required=True,
-            description=_(
-                "A unique name, used in URLs, identifying the project "
-                "group.  All lowercase, no special characters. "
-                "Examples: apache, mozilla, gimp."),
-            constraint=name_validator))
 
     displayname = exported(
         TextLine(
@@ -230,12 +275,6 @@ class IProjectGroupPublic(
                 "displayed on this project group's home page in Launchpad. "
                 "It should be no bigger than 100kb in size. ")))
 
-    reviewed = exported(
-        Bool(
-            title=_('Reviewed'), required=False,
-            description=_("Whether or not this project group has been "
-                          "reviewed.")))
-
     bugtracker = exported(
         ReferenceChoice(title=_('Bug Tracker'), required=False,
                vocabulary='BugTracker', schema=IBugTracker,
@@ -271,13 +310,28 @@ class IProjectGroupPublic(
             required=False,
             max_length=50000))
 
+    enable_bugfiling_duplicate_search = Bool(
+        title=u"Search for possible duplicate bugs when a new bug is filed",
+        required=False, readonly=True)
+
     def getProduct(name):
         """Get a product with name `name`."""
+
+    def getConfigurableProducts():
+        """Get all products that can be edited by user."""
 
     def translatables():
         """Return an iterator over products that have resources translatables.
 
         It also should have IProduct.official_rosetta flag set.
+        """
+
+    def has_translatable():
+        """Return a boolean showing the existance of translatables products.
+        """
+
+    def has_branches():
+        """Return a boolean showing the existance of products with branches.
         """
 
     def hasProducts():
@@ -288,9 +342,13 @@ class IProjectGroupPublic(
     def getSeries(series_name):
         """Return a ProjectGroupSeries object with name `series_name`."""
 
+    product_milestones = Attribute('all the milestones for all the products.')
 
-class IProjectGroup(IProjectGroupPublic, IStructuralSubscriptionTarget,
-               ITranslationPolicy):
+
+class IProjectGroup(IProjectGroupPublic,
+                    IProjectGroupModerate,
+                    IStructuralSubscriptionTarget,
+                    ITranslationPolicy):
     """A ProjectGroup."""
 
     export_as_webservice_entry('project_group')
@@ -338,10 +396,7 @@ class IProjectGroupSet(Interface):
     @operation_parameters(text=TextLine(title=_("Search text")))
     @operation_returns_collection_of(IProjectGroup)
     @export_read_operation()
-    def search(text=None, soyuz=None,
-               rosetta=None, malone=None,
-               bazaar=None,
-               search_products=False):
+    def search(text=None, search_products=False):
         """Search through the Registry database for projects that match the
         query terms. text is a piece of text in the title / summary /
         description fields of project (and possibly product). soyuz,

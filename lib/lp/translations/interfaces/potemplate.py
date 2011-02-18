@@ -1,33 +1,51 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
 
-from zope.interface import Attribute, Interface
-from zope.schema import (
-    Bool, Bytes, Choice, Datetime, Int, Object, Text, TextLine)
-from lazr.enum import DBEnumeratedType, DBItem
-from lazr.restful.fields import CollectionField, Reference
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 from lazr.restful.declarations import (
-    exported, export_as_webservice_entry, export_read_operation,
-    operation_returns_collection_of)
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Bytes,
+    Choice,
+    Datetime,
+    Int,
+    Object,
+    Text,
+    TextLine,
+    )
 
-from canonical.launchpad.fields import ParticipatingPersonChoice
-from canonical.launchpad.interfaces.launchpad import NotFoundError
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-from lp.registry.interfaces.distribution import IDistribution
-from lp.translations.interfaces.rosettastats import IRosettaStats
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageName)
-from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from lp.app.errors import NotFoundError
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.sourcepackagename import ISourcePackageName
+from lp.services.fields import PersonChoice
+from lp.translations.interfaces.rosettastats import IRosettaStats
+from lp.translations.interfaces.translationfileformat import (
+    TranslationFileFormat,
+    )
 
 
 __metaclass__ = type
 
 __all__ = [
-    'IHasTranslationTemplates',
     'IPOTemplate',
     'IPOTemplateSet',
     'IPOTemplateSharingSubset',
@@ -117,14 +135,14 @@ class IPOTemplate(IRosettaStats):
         required=True)
 
     iscurrent = exported(Bool(
-        title=_("Accept translations?"),
+        title=_("Template is active"),
         description=_(
             "If unchecked, people can no longer change the template's "
             "translations."),
         required=True,
         default=True), exported_as='active')
 
-    owner = exported(ParticipatingPersonChoice(
+    owner = exported(PersonChoice(
         title=_("Owner"),
         required=True,
         description=_(
@@ -150,6 +168,10 @@ class IPOTemplate(IRosettaStats):
             "The source package that uses this template."),
         required=False,
         vocabulary="SourcePackageName")
+
+    sourcepackage = Reference(
+        ISourcePackage, title=u"Source package this template is for, if any.",
+        required=False, readonly=True)
 
     from_sourcepackagename = Choice(
         title=_("From Source Package Name"),
@@ -182,7 +204,7 @@ class IPOTemplate(IRosettaStats):
     path = exported(TextLine(
         title=_(
             "Path of the template in the source tree, including filename."),
-        required=False))
+        required=True))
 
     source_file = Object(
         title=_('Source file for this translation template'),
@@ -289,6 +311,9 @@ class IPOTemplate(IRosettaStats):
             gettext uses the original English strings to identify messages.
             """))
 
+    translation_side = Int(
+        title=_("Translation side"), required=True, readonly=True)
+
     def __iter__():
         """Return an iterator over current `IPOTMsgSet` in this template."""
 
@@ -360,6 +385,15 @@ class IPOTemplate(IRosettaStats):
         """Same as getPOTMsgSetByMsgIDText(), with only_current=True
         """
 
+    def sharingKey():
+        """A key for determining the sharing precedence of a template.
+
+        Active templates have precedence over inactive ones.
+        Development foci have precendence over non-development foci.
+        Product development foci have precedence over Package development
+        foci.
+        """
+
     def getPOTMsgSetByID(id):
         """Return the POTMsgSet object related to this POTemplate with the id.
 
@@ -370,9 +404,6 @@ class IPOTemplate(IRosettaStats):
     def languages():
         """This Return the set of languages for which we have POFiles for
         this POTemplate.
-
-        NOTE that variants are simply ignored, if we have three variants for
-        en_GB we will simply return the one with variant=NULL.
         """
 
     def getPOFileByPath(path):
@@ -381,10 +412,8 @@ class IPOTemplate(IRosettaStats):
         Return None if there is no such `IPOFile`.
         """
 
-    def getPOFileByLang(language_code, variant=None):
-        """Get the PO file of the given language and (potentially)
-        variant. If no variant is specified then the translation
-        without a variant is given.
+    def getPOFileByLang(language_code):
+        """Get the PO file of the given language.
 
         Return None if there is no such POFile.
         """
@@ -405,18 +434,16 @@ class IPOTemplate(IRosettaStats):
     def expireAllMessages():
         """Mark all of our message sets as not current (sequence=0)"""
 
-    def newPOFile(language_code, variant=None, create_sharing=True):
+    def newPOFile(language_code, create_sharing=True):
         """Return a new `IPOFile` for the given language.
 
         Raise LanguageNotFound if the language does not exist in the
         database.
 
-        We should not have already an `IPOFile` for the given language_code
-        and variant.
+        We should not have already an `IPOFile` for the given language_code.
 
         :param language_code: The code of the language for which to create
             the IPOFile.
-        :param variant: Optional language variant.
         :param requester: The requester person. If given and will have edit
             permissions on the IPOFile, it becomes the owner. Otherwise
             rosetta_experts own the file.
@@ -425,7 +452,7 @@ class IPOTemplate(IRosettaStats):
             loops when creating a new IPOTemplate.
         """
 
-    def getDummyPOFile(language_code, variant=None, requester=None):
+    def getDummyPOFile(language, requester=None, check_for_existing=True):
         """Return a DummyPOFile if there isn't already a persistent `IPOFile`
 
         Raise `LanguageNotFound` if the language does not exist in the
@@ -434,8 +461,8 @@ class IPOTemplate(IRosettaStats):
         This method is designed to be used by read only actions. This way you
         only create a POFile when you actually need to store data.
 
-        We should not have already a POFile for the given language_code and
-        variant.
+        We should not have already a POFile for the given language:
+        if check_for_existing is set to False, no check will be done for this.
         """
 
     def createPOTMsgSetFromMsgIDs(msgid_singular, msgid_plural=None,
@@ -470,13 +497,21 @@ class IPOTemplate(IRosettaStats):
         :return: The newly created message set.
         """
 
-    def getOrCreateSharedPOTMsgSet(singular_text, plural_text, context=None):
+    def getOrCreateSharedPOTMsgSet(singular_text, plural_text, context=None,
+                                   initial_file_references=None,
+                                   initial_source_comment=None):
         """Finds an existing shared POTMsgSet to use or creates a new one.
 
         :param singular_text: string containing singular form.
         :param plural_text: string containing plural form.
         :param context: context to differentiate between two messages with
         same singular_text and plural_text.
+        :param initial_file_references: Initializer for file_references if
+            a new POTMsgSet needs to be created.  Will not be set on an
+            existing POTMsgSet.
+        :param initial_source_comment: Initializer for source_comment if
+            a new POTMsgSet needs to be created.  Will not be set on an
+            existing POTMsgSet.
         :return: existing or new shared POTMsgSet with a sequence of 0
         in this POTemplate.
         """
@@ -497,6 +532,15 @@ class IPOTemplate(IRosettaStats):
 
     def getTranslationRows():
         """Return the `IVPOTexport` objects for this template."""
+
+    def awardKarma(person, action_name):
+        """Award karma for a translation action on this template."""
+
+    def getTranslationPolicy():
+        """Return the applicable `ITranslationPolicy` object.
+
+        The returned object is either a `Product` or a `Distribution`.
+        """
 
 
 class IPOTemplateSubset(Interface):
@@ -538,7 +582,7 @@ class IPOTemplateSubset(Interface):
     def __getitem__(name):
         """Get a POTemplate by its name."""
 
-    def new(name, translation_domain, path, owner):
+    def new(name, translation_domain, path, owner, copy_pofiles=True):
         """Create a new template for the context of this Subset."""
 
     def getPOTemplateByName(name):
@@ -632,12 +676,16 @@ class IPOTemplateSet(Interface):
         Return None if there is no such `IPOTemplate`.
         """
 
-    def compareSharingPrecedence(left, right):
-        """Sort comparison: order sharing templates by precedence.
+    def wipeSuggestivePOTemplatesCache():
+        """Erase suggestive-templates cache.
 
-        Sort using this function to order sharing templates from most
-        representative to least representative, as per the message-sharing
-        migration spec.
+        :return: Number of rows deleted.
+        """
+
+    def populateSuggestivePOTemplatesCache():
+        """Populate suggestive-templates cache.
+
+        :return: Number of rows inserted.
         """
 
 
@@ -671,6 +719,29 @@ class IPOTemplateSharingSubset(Interface):
         :return: A list of all potemplates of the same name from all series.
         """
 
+    def getSharingPOTemplatesByRegex(name_pattern=None):
+        """Find all sharing templates with names matching the given pattern.
+
+        If name_pattern is None, match is performed on the template name.
+        Use with care as it may return all templates in a distribution!
+
+        :param name_pattern: A POSIX regular expression that the template
+           is matched against.
+        :return: A list of all potemplates matching the pattern.
+        """
+
+    def getSharingPOTemplateIDs(potemplate_name):
+        """Find database ids of all sharing templates of the given name.
+
+        For distributions this method requires that sourcepackagename is set.
+        This avoids serialization of full POTemplate objects.
+
+        :param potemplate_name: The name of the template for which to find
+            sharing equivalents.
+        :return: A list of database ids of all potemplates of the same name
+            from all series.
+        """
+
     def groupEquivalentPOTemplates(name_pattern=None):
         """Within given IProduct or IDistribution, find equivalent templates.
 
@@ -700,50 +771,15 @@ class IPOTemplateWithContent(IPOTemplate):
         required=True)
 
 
-class IHasTranslationTemplates(Interface):
-    """An entity that has translation templates attached.
+class ITranslationTemplatesCollection(Interface):
+    """A `Collection` of `POTemplate`s."""
 
-    Examples include `ISourcePackage`, `IDistroSeries`, and `IProductSeries`.
-    """
+    def joinOuterPOFile(language=None):
+        """Outer-join `POFile` into the collection.
 
-    has_current_translation_templates = Bool(
-        title=_("Does this object have current translation templates?"),
-        readonly=True)
-
-    def getCurrentTranslationTemplates(just_ids=False):
-        """Return an iterator over all active translation templates.
-
-        A translation template is considered active when both
-        `IPOTemplate`.iscurrent and parent official_rosetta flags
-        are set to True.
+        :return: A `TranslationTemplatesCollection` with an added outer
+            join to `POFile`.
         """
 
-    def getCurrentTranslationFiles(just_ids=False):
-        """Return an iterator over all active translation files.
-
-        A translation file is active if it's attached to an
-        active translation template.
-        """
-
-    def getObsoleteTranslationTemplates():
-        """Return an iterator over its not active translation templates.
-
-        A translation template is considered not active when any of
-        `IPOTemplate`.iscurrent or `IDistribution`.official_rosetta flags
-        are set to False.
-        """
-
-    @export_read_operation()
-    @operation_returns_collection_of(IPOTemplate)
-    def getTranslationTemplates():
-        """Return an iterator over all its translation templates.
-
-        The returned templates are either obsolete or current.
-        """
-
-    def getTranslationTemplateFormats():
-        """A list of native formats for all current translation templates.
-        """
-
-# Monkey patch for circular import avoidance done in
-# _schema_circular_imports.py
+    def select(*args):
+        """Return a ResultSet for this collection with values set to args."""

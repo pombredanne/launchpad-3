@@ -1,6 +1,5 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
 """Browser code for the Launchpad root page."""
 
 __metaclass__ = type
@@ -14,37 +13,47 @@ import re
 import sys
 import time
 
+import feedparser
+from lazr.batchnavigator.z3batching import batch
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import getVocabularyRegistry
 
-
-from canonical.cachedproperty import cachedproperty
-from lp.registry.browser.announcement import HasAnnouncementsView
+from canonical.config import config
+from canonical.launchpad.interfaces.launchpad import (
+    ILaunchpadCelebrities,
+    ILaunchpadSearch,
+    )
 from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet)
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp.publisher import canonical_url
-from lp.code.interfaces.branchcollection import IAllBranches
-from lp.bugs.interfaces.bug import IBugSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadSearch
-from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.product import IProductSet
+    ILaunchpadStatisticSet,
+    )
 from canonical.launchpad.interfaces.searchservice import (
-    GoogleResponseError, ISearchService)
-from lp.blueprints.interfaces.specification import ISpecificationSet
+    GoogleResponseError,
+    ISearchService,
+    )
 from canonical.launchpad.validators.name import sanitize_name
-from canonical.launchpad.webapp import (
-    action, LaunchpadFormView, LaunchpadView, safe_action)
+from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import NotFoundError
-from lazr.batchnavigator.z3batching import batch
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.vhosts import allvhosts
-
+from canonical.lazr.timeout import urlfetch
 from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    safe_action,
+    )
+from lp.app.errors import NotFoundError
+from lp.blueprints.interfaces.specification import ISpecificationSet
+from lp.bugs.interfaces.bug import IBugSet
+from lp.code.interfaces.branchcollection import IAllBranches
+from lp.registry.browser.announcement import HasAnnouncementsView
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.product import IProductSet
+from lp.services.propertycache import cachedproperty
 
 
 shipit_faq_url = 'http://www.ubuntu.com/getubuntu/shipit-faq'
@@ -128,6 +137,41 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     def answer_count(self):
         """The total blueprint count in all of Launchpad."""
         return getUtility(ILaunchpadStatisticSet).value('question_count')
+
+    def getRecentBlogPosts(self):
+        """Return the parsed feed of the most recent blog posts.
+
+        It returns a list of dict with keys title, description, link and date.
+
+        The date is formatted and the description which may contain HTML is
+        sanitized.
+
+        The number of blog posts to display is controlled through
+        launchpad.homepage_recent_posts_count. The posts are fetched
+        from the feed specified in launchpad.homepage_recent_posts_feed.
+
+        Since the feed is parsed everytime, the template should cache this
+        through memcached.
+
+        FeedParser takes care of sanitizing the HTML contained in the feed.
+        """
+        # Use urlfetch which supports timeout
+        try:
+            data = urlfetch(config.launchpad.homepage_recent_posts_feed)
+        except IOError:
+            return []
+        feed = feedparser.parse(data)
+        posts = []
+        max_count = config.launchpad.homepage_recent_posts_count
+        # FeedParser takes care of HTML sanitisation.
+        for entry in feed.entries[:max_count]:
+            posts.append({
+                'title': entry.title,
+                'description': entry.description,
+                'link': entry.link,
+                'date': time.strftime('%d %b %Y', entry.updated_parsed),
+                })
+        return posts
 
 
 class LaunchpadSearchFormView(LaunchpadView):

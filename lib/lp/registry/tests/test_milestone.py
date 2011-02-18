@@ -9,12 +9,24 @@ import unittest
 
 from zope.component import getUtility
 
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    logout,
+    )
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.milestone import IMilestoneSet
+from lp.registry.interfaces.milestone import (
+    IHasMilestones,
+    IMilestoneSet,
+    )
 from lp.registry.interfaces.product import IProductSet
-from canonical.launchpad.ftests import login, logout, ANONYMOUS
-from canonical.launchpad.webapp.interfaces import NotFoundError
-from canonical.testing import LaunchpadFunctionalLayer
+from lp.testing import TestCaseWithFactory
+from lp.testing.matchers import DoesNotSnapshot
 
 
 class MilestoneTest(unittest.TestCase):
@@ -75,10 +87,32 @@ class MilestoneTest(unittest.TestCase):
             all_visible_milestones_ids,
             [1, 2, 3])
 
-def test_suite():
-    """Return the test suite for the tests in this module."""
-    return unittest.TestLoader().loadTestsFromName(__name__)
 
+class HasMilestonesSnapshotTestCase(TestCaseWithFactory):
+    """A TestCase for snapshots of pillars with milestones."""
 
-if __name__ == '__main__':
-    unittest.main()
+    layer = DatabaseFunctionalLayer
+
+    def check_skipped(self, target):
+        """Asserts that fields marked doNotSnapshot are skipped."""
+        skipped = [
+            'milestones',
+            'all_milestones',
+            ]
+        self.assertThat(target, DoesNotSnapshot(skipped, IHasMilestones))
+
+    def test_product(self):
+        product = self.factory.makeProduct()
+        self.check_skipped(product)
+
+    def test_distribution(self):
+        distribution = self.factory.makeDistribution()
+        self.check_skipped(distribution)
+
+    def test_distroseries(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.check_skipped(distroseries)
+
+    def test_projectgroup(self):
+        projectgroup = self.factory.makeProject()
+        self.check_skipped(projectgroup)

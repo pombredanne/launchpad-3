@@ -14,15 +14,21 @@ import logging
 import os
 import tempfile
 
-from twisted.conch.interfaces import ISFTPFile, ISFTPServer
-from zope.component import adapter, provideHandler
+from twisted.conch.interfaces import (
+    ISFTPFile,
+    ISFTPServer,
+    )
+from zope.component import (
+    adapter,
+    provideHandler,
+    )
 import zope.component.event
 from zope.interface import implements
 
-from lp.codehosting.sftp import FileIsADirectory
 from lp.poppy.filesystem import UploadFileSystem
 from lp.poppy.hooks import Hooks
 from lp.services.sshserver.events import SFTPClosed
+from lp.services.sshserver.sftp import FileIsADirectory
 
 
 class SFTPServer:

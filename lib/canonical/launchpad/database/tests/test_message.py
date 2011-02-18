@@ -4,28 +4,34 @@
 __metaclass__ = type
 
 from cStringIO import StringIO
+from doctest import DocTestSuite
 from email.Message import Message
-from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
-from email.Utils import formatdate, make_msgid
-import transaction
+from email.MIMEText import MIMEText
+from email.Utils import (
+    formatdate,
+    make_msgid,
+    )
 import unittest
 
-from canonical.testing import LaunchpadFunctionalLayer
 from sqlobject import SQLObjectNotFound
-from zope.testing.doctestunit import DocTestSuite
+import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.database import (
-    MessageSet, MessageJob, MessageJobAction)
-from lp.services.job.model.job import Job
+from canonical.launchpad.database.message import (
+    MessageJob,
+    MessageJobAction,
+    MessageSet,
+    )
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.message import IMessageJob
+from canonical.launchpad.webapp.testing import verifyObject
+from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.services.job.model.job import Job
 from lp.services.mail.sendmail import MailController
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.launchpad.webapp.testing import verifyObject
 
 
 class TestMessageSet(unittest.TestCase):

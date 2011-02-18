@@ -10,6 +10,10 @@
   <h2>User information</h2>
 
   <div class="first yui-u">
+    <dl id="launchpad-id">
+        <dt>Launchpad Id:</dt>
+        <dd tal:content="context/name"/>
+    </dl>
     <dl id="email-addresses">
       <dt>Email:
         <a tal:replace="structure overview_menu/editemailaddresses/fmt:icon" />
@@ -47,6 +51,7 @@
       </dd>
     </dl>
 
+
     <dl tal:condition="view/should_show_jabberids_section" id="jabber-ids">
       <dt>Jabber:
         <a tal:replace="structure overview_menu/editjabberids/fmt:icon" />
@@ -67,8 +72,8 @@
       <dd>
         <img src="/@@/private" alt="" />
         <tal:openid-login content="view/openid_identity_url" />
-        <a target="help" href="/+help/openid.html"
-           >(What&rsquo;s&nbsp;this?)</a>
+        <a target="help" href="/+help/openid.html" class="sprite maybe">&nbsp;
+          <span class="invisible-link">OpenID help</span></a>
       </dd>
     </dl>
 
@@ -83,7 +88,8 @@
       <a tal:repeat="team context/@@+restricted-membership/teams_with_icons"
          tal:attributes="href team/fmt:url"
         ><img tal:attributes="src team/icon/getURL;
-                              title string:Icon of ${team/name}"
+                              title string:Member of ${team/displayname};
+                              alt string:Icon of ${team/displayname}"
       /></a>
     </div>
 
@@ -195,11 +201,6 @@
       </dd>
     </dl>
   </div>
-  <div tal:define="link context/menu:overview/view_recipes"
-       tal:condition="link/enabled">
-    <a tal:replace="structure link/fmt:link" />
-  </div>
-
 
 </div>
 

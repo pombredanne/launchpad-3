@@ -7,8 +7,7 @@ from unittest import TestLoader
 
 import transaction
 
-from canonical.testing import DatabaseFunctionalLayer
-
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.mail import stub
 from lp.testing import TestCaseWithFactory
 
@@ -49,6 +48,19 @@ class TestSubscribedBySomeoneElseNotification(TestCaseWithFactory):
         self.assertEqual(len(stub.test_emails), 0)
         bug_subscription = bug.subscribe(
             person_subscribed, person_subscribing, suppress_notify=True)
+        transaction.commit()
+        self.assertEqual(len(stub.test_emails), 0)
+
+    def test_suppress_notify_default_does_not_notify(self):
+        """Test notifications are not sent when suppress_notify is undefined."""
+        bug = self.factory.makeBug()
+        person_subscribing = self.factory.makePerson(
+            name='foosuber', displayname='Foo Suber')
+        person_subscribed = self.factory.makePerson(
+            name='foosubed', displayname='Foo Subed')
+        self.assertEqual(len(stub.test_emails), 0)
+        bug_subscription = bug.subscribe(
+            person_subscribed, person_subscribing)
         transaction.commit()
         self.assertEqual(len(stub.test_emails), 0)
 

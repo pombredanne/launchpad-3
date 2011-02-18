@@ -3,9 +3,10 @@
 First create a copy archive for us to see:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.testing.factory import (
+    ...     remove_security_proxy_and_shout_at_engineer)
     >>> login('foo.bar@canonical.com')
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
 
@@ -13,18 +14,21 @@ First create a copy archive for us to see:
     >>> copy_location = factory.makeCopyArchiveLocation(
     ...     distribution=ubuntu, owner=joe,
     ...     name="intrepid-security-rebuild")
-    >>> copy_archive = copy_location.archive
+    >>> naked_copy_location = remove_security_proxy_and_shout_at_engineer(
+    ...     copy_location)
+    >>> copy_archive = naked_copy_location.archive
     >>> copy_archive.enabled
     True
 
     >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
-    ...     copy_location, copy_archive.owner)
+    ...     naked_copy_location, copy_archive.owner)
 
     >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
     >>> disabled_location = factory.makeCopyArchiveLocation(
     ...     distribution=ubuntu, owner=nopriv,
     ...     name="disabled-security-rebuild", enabled=False)
-    >>> disabled_archive = disabled_location.archive
+    >>> disabled_archive = remove_security_proxy_and_shout_at_engineer(
+    ...     disabled_location).archive
     >>> disabled_archive.enabled
     False
 
@@ -119,12 +123,14 @@ First, create a private copy archive:
     >>> copy_location = factory.makeCopyArchiveLocation(
     ...     distribution=ubuntu,
     ...     name="intrepid-private-security-rebuild")
-    >>> copy_archive = copy_location.archive
+    >>> naked_copy_location = remove_security_proxy_and_shout_at_engineer(
+    ...     copy_location)
+    >>> copy_archive = naked_copy_location.archive
     >>> copy_archive.buildd_secret = 'really secret'
     >>> copy_archive.private = True
     >>> copy_archive.owner.displayname = "Harry Potter"
     >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
-    ...     copy_location, copy_archive.owner)
+    ...     naked_copy_location, copy_archive.owner)
     >>> pub_src = stp.getPubSource(
     ...     archive=copy_archive, architecturehintlist='any')
     >>> pub_bins = stp.getPubBinaries(pub_source=pub_src)
@@ -193,8 +199,9 @@ it and the 'disabled' styling is gone.
     Copy archive disabled-security-rebuild for No Privileges Person : Ubuntu
 
     >>> main_content = find_main_content(nopriv_browser.contents)
-    >>> print main_content.h1
-    <h1 id="displayname">...</h1>
+    >>> print main_content.h1['class']
+    Traceback (most recent call last):
+    KeyError: 'class'
 
     >>> print first_tag_by_class(nopriv_browser.contents, 'warning message')
     None

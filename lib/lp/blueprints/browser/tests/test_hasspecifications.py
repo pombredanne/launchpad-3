@@ -3,11 +3,12 @@
 
 __metaclass__ = type
 
-import unittest
-
-from lp.testing import login_person, TestCaseWithFactory
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.views import create_initialized_view
-from canonical.testing import DatabaseFunctionalLayer
 
 
 class TestPersonSpecWorkloadView(TestCaseWithFactory):
@@ -28,7 +29,3 @@ class TestPersonSpecWorkloadView(TestCaseWithFactory):
         label = 'Blueprint workload'
         self.assertEqual(label, view.label)
         self.assertEqual(20, view.members.batch.size)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -14,9 +14,10 @@
             tal:define="lp_js string:${icingroot}/build"
             tal:attributes="src string:${lp_js}/bugs/filebug-dupefinder.js"></script>
     <script type="text/javascript">
-      LPS.use('base', 'node', 'oop', 'event', 'bugs.dupe_finder', function(Y) {
+      LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.filebug_dupefinder',
+      function(Y) {
           Y.on('domready', function() {
-              Y.bugs.setup_dupes();
+              Y.lp.bugs.filebug_dupefinder.setup_dupes();
           });
       });
     </script>

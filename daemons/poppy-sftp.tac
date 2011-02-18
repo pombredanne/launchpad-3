@@ -8,20 +8,23 @@
 import os
 
 from twisted.application import service
+from twisted.conch.interfaces import ISession
 from twisted.conch.ssh import filetransfer
 from twisted.cred.portal import IRealm, Portal
+from twisted.protocols.policies import TimeoutFactory
 from twisted.python import components
 from twisted.web.xmlrpc import Proxy
 
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.daemons import tachandler
+from canonical.launchpad.daemons import readyservice
 
 from lp.poppy.twistedsftp import SFTPServer
 from lp.services.sshserver.auth import (
     LaunchpadAvatar, PublicKeyFromLaunchpadChecker)
 from lp.services.sshserver.service import SSHService
+from lp.services.sshserver.session import DoNothingSession
 
 # XXX: Rename this file to something that doesn't mention poppy. Talk to
 # bigjools.
@@ -79,9 +82,16 @@ def poppy_sftp_adapter(avatar):
 components.registerAdapter(
     poppy_sftp_adapter, LaunchpadAvatar, filetransfer.ISFTPServer)
 
+components.registerAdapter(DoNothingSession, LaunchpadAvatar, ISession)
+
 
 # Construct an Application that has the Poppy SSH server.
 application = service.Application('poppy-sftp')
+
+def timeout_decorator(factory):
+    """Add idle timeouts to a factory."""
+    return TimeoutFactory(factory, timeoutPeriod=config.poppy.idle_timeout)
+
 svc = SSHService(
     portal=make_portal(),
     private_key_path=config.poppy.host_key_private,
@@ -91,9 +101,9 @@ svc = SSHService(
     access_log='poppy.access',
     access_log_path=config.poppy.access_log,
     strport=config.poppy.port,
-    idle_timeout=config.poppy.idle_timeout,
+    factory_decorator=timeout_decorator,
     banner=config.poppy.banner)
 svc.setServiceParent(application)
 
 # Service that announces when the daemon is ready
-tachandler.ReadyService().setServiceParent(application)
+readyservice.ReadyService().setServiceParent(application)

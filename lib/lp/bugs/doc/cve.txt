@@ -23,7 +23,7 @@ CVE references can be created with the ICveSet utility.
     >>> login("test@canonical.com")
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import CveStatus, ICveSet
+    >>> from lp.bugs.interfaces.cve import CveStatus, ICveSet
     >>> cveset = getUtility(ICveSet)
 
 To create a CVE, call ICveSet.new(sequence, description,
@@ -46,7 +46,8 @@ getBugCveCount.
 If we add another link, the count will of course increase by one.  The
 supplied user is the person linking the CVEs.
 
-    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bug_one.linkCVE(cve, user=no_priv)
@@ -67,7 +68,7 @@ And if we unlink it, the count will decrease.
 You can link a CVE to a bug. You can also see which CVEs are currently
 linked to a bug:
 
-    >>> from canonical.launchpad.database import Bug
+    >>> from lp.bugs.model.bug import Bug
     >>> b = Bug.get(1)
     >>> for c in b.cves:
     ...     print c.displayname
@@ -105,7 +106,7 @@ reports that inform on the status of bugs related to CVEs in the
 distribution. The method that drives this report is
 ICveSet.getBugCvesForBugTasks:
 
-    >>> from canonical.launchpad.interfaces import BugTaskSearchParams
+    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
     >>> from lp.registry.model.distribution import Distribution
     >>> params = BugTaskSearchParams(None)
     >>> ubuntu = Distribution.selectOneBy(name="ubuntu")

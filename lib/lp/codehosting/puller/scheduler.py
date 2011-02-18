@@ -13,26 +13,40 @@ __all__ = [
     ]
 
 import os
-from StringIO import StringIO
 import socket
+from StringIO import StringIO
 
-from twisted.internet import defer, error, reactor
-from twisted.protocols.basic import NetstringReceiver, NetstringParseError
-from twisted.python import failure, log
+from contrib.glock import (
+    GlobalLock,
+    LockAlreadyAcquired,
+    )
+from twisted.internet import (
+    defer,
+    error,
+    reactor,
+    )
+from twisted.protocols.basic import (
+    NetstringParseError,
+    NetstringReceiver,
+    )
+from twisted.python import (
+    failure,
+    log,
+    )
 
-from contrib.glock import GlobalLock, LockAlreadyAcquired
-
-from canonical.cachedproperty import cachedproperty
-from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
-from lp.codehosting.puller.worker import (
-    get_canonical_url_for_branch_name)
-from lp.codehosting.puller import get_lock_id_for_branch_id
 from canonical.config import config
 from canonical.launchpad.webapp import errorlog
+from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
+from lp.codehosting.puller import get_lock_id_for_branch_id
+from lp.codehosting.puller.worker import get_canonical_url_for_branch_name
+from lp.services.propertycache import cachedproperty
 from lp.services.twistedsupport.processmonitor import (
-    ProcessMonitorProtocolWithTimeout)
+    ProcessMonitorProtocolWithTimeout,
+    )
 from lp.services.twistedsupport.task import (
-    ParallelLimitedTaskConsumer, PollingTaskSource)
+    ParallelLimitedTaskConsumer,
+    PollingTaskSource,
+    )
 
 
 class BadMessage(Exception):
@@ -218,6 +232,12 @@ class PullerMonitorProtocol(ProcessMonitorProtocolWithTimeout,
                 lambda result: reason)
         else:
             return reason
+
+    def makeConnection(self, process):
+        """Called when the process has been created."""
+        ProcessMonitorProtocolWithTimeout.makeConnection(self, process)
+        NetstringReceiver.makeConnection(self, process)
+        self.wire_protocol.makeConnection(process)
 
     def outReceived(self, data):
         self.wire_protocol.dataReceived(data)

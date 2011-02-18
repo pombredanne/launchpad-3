@@ -8,15 +8,17 @@ __all__ = [
     'DistroSeriesPackageCache',
     ]
 
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
+from storm.locals import RawStr
 from zope.interface import implements
 
-from sqlobject import StringCol, ForeignKey
-from storm.locals import RawStr
-
 from canonical.database.sqlbase import SQLBase
-
 from lp.soyuz.interfaces.distroseriespackagecache import (
-    IDistroSeriesPackageCache)
+    IDistroSeriesPackageCache,
+    )
 
 
 class DistroSeriesPackageCache(SQLBase):

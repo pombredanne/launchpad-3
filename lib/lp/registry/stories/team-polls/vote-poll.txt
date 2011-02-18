@@ -8,7 +8,7 @@ must use to see/change his vote afterwards.
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+polls')
     >>> browser.getLink('A random poll that never closes').click()
     >>> browser.url
-    'http://launchpad.dev/~ubuntu-team/+poll/never-closes/+vote-simple'
+    'http://launchpad.dev/~ubuntu-team/+poll/never-closes/+vote'
 
     >>> print find_tag_by_id(browser.contents, 'your-vote').renderContents()
     <BLANKLINE>
@@ -22,7 +22,7 @@ must use to see/change his vote afterwards.
     >>> browser.getControl('Continue').click()
 
     >>> browser.url
-    'http://launchpad.dev/~ubuntu-team/+poll/never-closes/+vote-simple'
+    'http://launchpad.dev/~ubuntu-team/+poll/never-closes/+vote'
 
     >>> tags = find_tags_by_class(browser.contents, "informational message")
     >>> for tag in tags:
@@ -42,7 +42,7 @@ Foo Bar will now vote on a poll with public votes.
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+polls')
     >>> browser.getLink('A public poll that never closes').click()
     >>> browser.url
-    'http://launchpad.dev/~ubuntu-team/+poll/never-closes4/+vote-simple'
+    'http://launchpad.dev/~ubuntu-team/+poll/never-closes4/+vote'
 
     >>> print find_tag_by_id(browser.contents, 'your-vote').renderContents()
     <BLANKLINE>
@@ -56,7 +56,7 @@ Foo Bar will now vote on a poll with public votes.
     >>> browser.getControl('Continue').click()
 
     >>> browser.url
-    'http://launchpad.dev/~ubuntu-team/+poll/never-closes4/+vote-simple'
+    'http://launchpad.dev/~ubuntu-team/+poll/never-closes4/+vote'
 
     >>> tags = find_tags_by_class(browser.contents, "informational message")
     >>> for tag in tags:
@@ -78,7 +78,7 @@ yet.
     >>> team_admin_browser = setupBrowser(
     ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
     >>> team_admin_browser.open(
-    ...   'http://launchpad.dev/~ubuntu-team/+poll/never-closes/+vote-simple')
+    ...   'http://launchpad.dev/~ubuntu-team/+poll/never-closes/+vote')
     >>> not_yet_voted_message = 'You have not yet voted in this poll.'
     >>> not_yet_voted_message in team_admin_browser.contents
     True
@@ -107,7 +107,7 @@ even if they guess the URL for the voting page.
     >>> non_member_browser = setupBrowser(
     ...     auth='Basic test@canonical.com:test')
     >>> non_member_browser.open(
-    ...     'http://launchpad.dev/~ubuntu-team/+poll/never-closes/+vote-simple')
+    ...     'http://launchpad.dev/~ubuntu-team/+poll/never-closes/+vote')
     >>> for tag in find_tags_by_class(
     ...     non_member_browser.contents, "informational message"):
     ...     print tag.renderContents()
@@ -129,7 +129,7 @@ It's not possible to vote on closed polls, even if we manually craft the URL.
     ...
 
     >>> team_admin_browser.open(
-    ...     'http://launchpad.dev/~ubuntu-team/+poll/leader-2004/+vote-simple')
+    ...     'http://launchpad.dev/~ubuntu-team/+poll/leader-2004/+vote')
     >>> print find_tag_by_id(
     ...     team_admin_browser.contents, 'maincontent').renderContents()
     <BLANKLINE>
@@ -161,7 +161,7 @@ The same is true for condorcet polls too.
     LookupError: name 'continue'
 
     >>> team_admin_browser.open(
-    ...     'http://launchpad.dev/~ubuntu-team/+poll/director-2004/+vote-condorcet')
+    ...     'http://launchpad.dev/~ubuntu-team/+poll/director-2004/+vote')
     >>> for message in get_feedback_messages(team_admin_browser.contents):
     ...     print message
     This poll is already closed.

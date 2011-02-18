@@ -9,8 +9,8 @@ notifications and sending them.
 
     >>> from lp.registry.interfaces.personnotification import (
     ...     IPersonNotification, IPersonNotificationSet)
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> notification_set = getUtility(IPersonNotificationSet)
     >>> mark = getUtility(IPersonSet).getByName('mark')
 

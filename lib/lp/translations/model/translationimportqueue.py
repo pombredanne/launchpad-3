@@ -6,66 +6,95 @@
 __metaclass__ = type
 __all__ = [
     'collect_import_info',
-    'HasTranslationImportsMixin',
     'TranslationImportQueueEntry',
-    'TranslationImportQueue'
+    'TranslationImportQueue',
     ]
 
-import logging
-import tarfile
-import os.path
-import posixpath
-import datetime
-import re
-import pytz
 from cStringIO import StringIO
+import datetime
+import logging
+import os.path
+import re
+import tarfile
 from textwrap import dedent
-from zope.interface import implements
-from zope.component import getUtility
-from sqlobject import SQLObjectNotFound, StringCol, ForeignKey, BoolCol
-from storm.expr import And, Or
-from storm.locals import Int, Reference
 
-from canonical.database.sqlbase import (
-    cursor, quote, quote_like, SQLBase, sqlvalues)
+import posixpath
+import pytz
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Or,
+    )
+from storm.locals import (
+    Int,
+    Reference,
+    )
+from zope.component import getUtility
+from zope.interface import implements
+
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import (
+    cursor,
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities, IPersonRoles)
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.launchpad.webapp.interfaces import NotFoundError
+    ILaunchpadCelebrities,
+    IPersonRoles,
+    )
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    ISlaveStore,
+    )
+from canonical.librarian.interfaces import ILibrarianClient
+from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
-    IPerson, validate_person_not_private_membership)
+    IPerson,
+    validate_person,
+    )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.pofile import IPOFileSet
-from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.potemplate import (
+    IPOTemplate,
+    IPOTemplateSet,
+    )
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+    TranslationFileFormat,
+    )
 from lp.translations.interfaces.translationimporter import (
-    ITranslationImporter)
+    ITranslationImporter,
+    )
 from lp.translations.interfaces.translationimportqueue import (
-    IHasTranslationImports,
     ITranslationImportQueue,
     ITranslationImportQueueEntry,
-    RosettaImportStatus,
     SpecialTranslationImportTargetFilter,
-    TranslationImportQueueConflictError,
     translation_import_queue_entry_age,
-    UserCannotSetTranslationImportStatus)
-from lp.translations.interfaces.potemplate import IPOTemplate
+    TranslationImportQueueConflictError,
+    UserCannotSetTranslationImportStatus,
+    )
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.model.approver import TranslationNullApprover
-from lp.translations.utilities.gettext_po_importer import (
-    GettextPOImporter)
-from canonical.librarian.interfaces import ILibrarianClient
+from lp.translations.utilities.gettext_po_importer import GettextPOImporter
 
 
 def is_gettext_name(path):
@@ -115,7 +144,7 @@ class TranslationImportQueueEntry(SQLBase):
         notNull=False)
     importer = ForeignKey(
         dbName='importer', foreignKey='Person',
-        storm_validator=validate_person_not_private_membership,
+        storm_validator=validate_person,
         notNull=True)
     dateimported = UtcDateTimeCol(dbName='dateimported', notNull=True,
         default=DEFAULT)
@@ -126,7 +155,7 @@ class TranslationImportQueueEntry(SQLBase):
     distroseries = Reference(distroseries_id, 'DistroSeries.id')
     productseries_id = Int(name='productseries', allow_none=True)
     productseries = Reference(productseries_id, 'ProductSeries.id')
-    is_published = BoolCol(dbName='is_published', notNull=True)
+    by_maintainer = BoolCol(notNull=True)
     pofile = ForeignKey(foreignKey='POFile', dbName='pofile',
         notNull=False, default=None)
     potemplate = ForeignKey(foreignKey='POTemplate',
@@ -264,7 +293,8 @@ class TranslationImportQueueEntry(SQLBase):
         return pofile_set.getPOFilesByPathAndOrigin(
             self.path, productseries=self.productseries,
             distroseries=self.distroseries,
-            sourcepackagename=self.sourcepackagename).one()
+            sourcepackagename=self.sourcepackagename,
+            ignore_obsolete=True).one()
 
     def canAdmin(self, roles):
         """See `ITranslationImportQueueEntry`."""
@@ -354,7 +384,7 @@ class TranslationImportQueueEntry(SQLBase):
                 self.sourcepackagename)
         else:
             target = self.productseries.product
-        
+
         return target.getCustomLanguageCode(language_code)
 
     def _guessLanguage(self):
@@ -401,12 +431,11 @@ class TranslationImportQueueEntry(SQLBase):
         :arg sourcepackagename: The ISourcePackageName that uses this
             translation or None if we don't know it.
         """
-        assert (lang_code is not None and translation_domain is not None) , (
+        assert (lang_code is not None and translation_domain is not None), (
             "lang_code and translation_domain cannot be None")
 
         language_set = getUtility(ILanguageSet)
-        (language, variant) = language_set.getLanguageAndVariantFromString(
-            lang_code)
+        language = language_set.getLanguageByCode(lang_code)
 
         if language is None or not language.visible:
             # Either we don't know the language or the language is hidden by
@@ -450,18 +479,18 @@ class TranslationImportQueueEntry(SQLBase):
             return None
 
         # Get or create an IPOFile based on the info we guess.
-        pofile = potemplate.getPOFileByLang(language.code, variant=variant)
+        pofile = potemplate.getPOFileByLang(language.code)
         if pofile is None:
-            pofile = potemplate.newPOFile(language.code, variant=variant)
+            pofile = potemplate.newPOFile(language.code)
             if pofile.canEditTranslations(self.importer):
                 pofile.owner = self.importer
 
-        if self.is_published:
-            # This entry comes from upstream, which means that the path we got
-            # is exactly the right one. If it's different from what pofile
-            # has, that would mean that either the entry changed its path
-            # since previous upload or that we had to guess it and now that we
-            # got the right path, we should fix it.
+        if self.by_maintainer:
+            # This was uploaded by the maintainer, which means that the path
+            # we got is exactly the right one. If it's different from what
+            # pofile has, that would mean that either the entry changed its
+            # path since previous upload or that we had to guess it and now
+            # that we got the right path, we should fix it.
             pofile.setPathIfUnique(self.path)
 
         if (sourcepackagename is None and
@@ -617,12 +646,24 @@ class TranslationImportQueueEntry(SQLBase):
                 'engb': 'en_GB',
                 'ptbr': 'pt_BR',
                 'srlatn': 'sr@Latn',
+                'sr-latin': 'sr@latin',
                 'zhcn': 'zh_CN',
                 'zhtw': 'zh_TW',
                 }
 
             lang_code = re.sub(
                 kde_prefix_pattern, '', self.sourcepackagename.name)
+
+            path_components = os.path.normpath(self.path).split(os.path.sep)
+            # Top-level directory (path_components[0]) is something like
+            # "source" or "messages", and only then comes the
+            # language code: we generalize it so it supports language code
+            # in any part of the path.
+            for path_component in path_components:
+                if path_component.startswith(lang_code + '@'):
+                    # There are language variants inside a language pack.
+                    lang_code = path_component
+                    break
             lang_code = lang_mapping.get(lang_code, lang_code)
         elif (self.sourcepackagename.name == 'koffice-l10n' and
               self.path.startswith('koffice-i18n-')):
@@ -658,8 +699,7 @@ class TranslationImportQueueEntry(SQLBase):
 
         # Let's check if whether the filename is a valid language.
         language_set = getUtility(ILanguageSet)
-        (language, variant) = language_set.getLanguageAndVariantFromString(
-            filename)
+        language = language_set.getLanguageByCode(filename)
 
         if language is None:
             # The filename is not a valid language, so let's try it as a
@@ -863,35 +903,42 @@ class TranslationImportQueue:
 
         return entries[0]
 
-    def addOrUpdateEntry(self, path, content, is_published, importer,
-        sourcepackagename=None, distroseries=None, productseries=None,
-        potemplate=None, pofile=None, format=None):
-        """See ITranslationImportQueue."""
-        if ((sourcepackagename is not None or distroseries is not None) and
-            productseries is not None):
-            raise AssertionError(
-                'The productseries argument cannot be not None if'
-                ' sourcepackagename or distroseries is also not None.')
-        if (sourcepackagename is None and distroseries is None and
-            productseries is None):
-            raise AssertionError('Any of sourcepackagename, distroseries or'
-                ' productseries must be not None.')
+    def _getFormatAndImporter(self, filename, content, format=None):
+        """Get the appropriate format and importer for this upload.
 
-        if content is None or content == '':
-            raise AssertionError('The content cannot be empty')
-
-        if path is None or path == '':
-            raise AssertionError('The path cannot be empty')
-
-        filename = os.path.basename(path)
-        root, ext = os.path.splitext(filename)
-        translation_importer = getUtility(ITranslationImporter)
+        :param filename: Name of the uploaded file.
+        :param content: Contents of the uploaded file.
+        :param format: Optional hard choice of format.  If none is
+            given, a format will be divined from the file's name and
+            contents.
+        :return: a tuple of the selected format and its importer.
+        """
         if format is None:
-            # Get it based on the file extension and file content.
+            root, ext = os.path.splitext(filename)
+            translation_importer = getUtility(ITranslationImporter)
             format = translation_importer.getTranslationFileFormat(
                 ext, content)
-        format_importer = translation_importer.getTranslationFormatImporter(
-            format)
+
+        translation_importer = getUtility(ITranslationImporter)
+        return (
+            format, translation_importer.getTranslationFormatImporter(format))
+
+    def addOrUpdateEntry(self, path, content, by_maintainer, importer,
+                         sourcepackagename=None, distroseries=None,
+                         productseries=None, potemplate=None, pofile=None,
+                         format=None):
+        """See `ITranslationImportQueue`."""
+        assert (distroseries is None) != (productseries is None), (
+            "An upload must be for a productseries or a distroseries.  "
+            "This one has either neither or both.")
+        assert productseries is None or sourcepackagename is None, (
+            "Can't upload to a sourcepackagename in a productseries.")
+        assert content is not None and content != '', "Upload has no content."
+        assert path is not None and path != '', "Upload has no path."
+
+        filename = os.path.basename(path)
+        format, format_importer = self._getFormatAndImporter(
+            filename, content, format=format)
 
         # Upload the file into librarian.
         size = len(content)
@@ -906,18 +953,19 @@ class TranslationImportQueue:
                     pofile, sourcepackagename, distroseries, productseries)
         except TranslationImportQueueConflictError:
             return None
+
         if entry is None:
             # It's a new row.
             entry = TranslationImportQueueEntry(path=path, content=alias,
                 importer=importer, sourcepackagename=sourcepackagename,
                 distroseries=distroseries, productseries=productseries,
-                is_published=is_published, potemplate=potemplate,
+                by_maintainer=by_maintainer, potemplate=potemplate,
                 pofile=pofile, format=format)
         else:
             # It's an update.
             entry.setErrorOutput(None)
             entry.content = alias
-            entry.is_published = is_published
+            entry.by_maintainer = by_maintainer
             if potemplate is not None:
                 # Only set the linked IPOTemplate object if it's not None.
                 entry.potemplate = potemplate
@@ -956,7 +1004,7 @@ class TranslationImportQueue:
 
     def _makePath(self, name, path_filter):
         """Make the file path from the name stored in the tarball."""
-        path = posixpath.normpath(name)
+        path = posixpath.normpath(name).lstrip('/')
         if path_filter:
             path = path_filter(path)
         return path
@@ -978,7 +1026,7 @@ class TranslationImportQueue:
 
         return True
 
-    def addOrUpdateEntriesFromTarball(self, content, is_published, importer,
+    def addOrUpdateEntriesFromTarball(self, content, by_maintainer, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
         potemplate=None, filename_filter=None, approver_factory=None):
         """See ITranslationImportQueue."""
@@ -1019,7 +1067,7 @@ class TranslationImportQueue:
 
             path = upload_files[tarinfo.name]
             entry = approver.approve(self.addOrUpdateEntry(
-                path, file_content, is_published, importer,
+                path, file_content, by_maintainer, importer,
                 sourcepackagename=sourcepackagename,
                 distroseries=distroseries, productseries=productseries,
                 potemplate=potemplate))
@@ -1157,79 +1205,143 @@ class TranslationImportQueue:
 
         return distroseriess + products
 
+    def _attemptToSet(self, entry, potemplate=None, pofile=None):
+        """Set potemplate or pofile on a `TranslationImportQueueEntry`.
+
+        This will do nothing if setting potemplate or pofile would clash
+        with another entry.
+        """
+        if potemplate == entry.potemplate and pofile == entry.pofile:
+            # Nothing to do here.
+            return False
+
+        existing_entry = self._getMatchingEntry(
+            entry.path, entry.importer, potemplate, pofile,
+            entry.sourcepackagename, entry.distroseries, entry.productseries)
+
+        if existing_entry is None:
+            entry.potemplate = potemplate
+            entry.pofile = pofile
+
+    def _attemptToApprove(self, entry):
+        """Attempt to approve one queue entry."""
+        if entry.status != RosettaImportStatus.NEEDS_REVIEW:
+            return False
+
+        if entry.import_into is None:
+            # We don't have a place to import this entry. Try to guess it.
+            importer = getUtility(ITranslationImporter)
+            if importer.isTranslationName(entry.path):
+                potemplate = entry.potemplate
+                pofile = entry.getGuessedPOFile()
+            else:
+                # It's a template.
+                # Check if we can guess where it should be imported.
+                potemplate = entry.guessed_potemplate
+                pofile = entry.pofile
+
+            self._attemptToSet(entry, potemplate=potemplate, pofile=pofile)
+
+        if entry.import_into is None:
+            # Still no dice.
+            return False
+
+        # Yay!  We have a POTemplate or POFile to import this entry
+        # into.  Approve.
+        entry.setStatus(RosettaImportStatus.APPROVED,
+                        getUtility(ILaunchpadCelebrities).rosetta_experts)
+
+        return True
+
     def executeOptimisticApprovals(self, txn=None):
-        """See ITranslationImportQueue."""
-        there_are_entries_approved = False
-        importer = getUtility(ITranslationImporter)
+        """See `ITranslationImportQueue`."""
+        approved_entries = False
         for entry in self._iterNeedsReview():
-            if entry.import_into is None:
-                # We don't have a place to import this entry. Try to guess it.
-                if importer.isTranslationName(entry.path):
-                    # Check if we can guess where it should be imported.
-                    guess = entry.getGuessedPOFile()
-                    if guess is None:
-                        # We were not able to guess a place to import it,
-                        # leave the status of this entry as
-                        # RosettaImportStatus.NEEDS_REVIEW and wait for an
-                        # admin to manually review it.
-                        continue
-                    # Set the place where it should be imported.
-                    entry.pofile = guess
-
-                else:
-                    # It's a template.
-                    # Check if we can guess where it should be imported.
-                    guess = entry.guessed_potemplate
-                    if guess is None:
-                        # We were not able to guess a place to import it,
-                        # leave the status of this entry as
-                        # RosettaImportStatus.NEEDS_REVIEW and wait for an
-                        # admin to manually review it.
-                        continue
-                    # Set the place where it should be imported.
-                    entry.potemplate = guess
-
-            assert not entry.import_into is None
-
-            if entry.status != RosettaImportStatus.APPROVED:
-                there_are_entries_approved = True
-
-            # Already know where it should be imported. The entry is approved
-            # automatically.
-            entry.setStatus(RosettaImportStatus.APPROVED,
-                            getUtility(ILaunchpadCelebrities).rosetta_experts)
-
+            success = self._attemptToApprove(entry)
+            if success:
+                approved_entries = True
             if txn is not None:
                 txn.commit()
 
-        return there_are_entries_approved
+        return approved_entries
+
+    def _getSlaveStore(self):
+        """Return the slave store for the import queue.
+
+        Tests can override this to avoid unnecessary synchronization
+        issues.
+        """
+        return ISlaveStore(TranslationImportQueueEntry)
+
+    def _getBlockableDirectories(self):
+        """Describe all directories where uploads are to be blocked.
+
+        Returns a set of tuples, each containing:
+         * `DistroSeries` id
+         * `SourcePackageName` id
+         * `ProductSeries` id
+         * Directory path.
+
+        A `TranslationImportQueueEntry` should be blocked if the tuple
+        of its distroseries.id, sourcepackagename.id, productseries.id,
+        and the directory component of its path is found in the result
+        set.
+
+        See `_isBlockable`, which matches a queue entry against the set
+        returned by this method.
+        """
+        importer = getUtility(ITranslationImporter)
+        template_patterns = "(%s)" % ' OR '.join([
+            "path LIKE ('%%' || %s)" % quote_like(suffix)
+            for suffix in importer.template_suffixes])
+
+        store = self._getSlaveStore()
+        result = store.execute("""
+            SELECT
+                distroseries,
+                sourcepackagename,
+                productseries,
+                regexp_replace(
+                    regexp_replace(path, '^[^/]*$', ''),
+                    '/[^/]*$',
+                    '') AS directory
+            FROM TranslationImportQueueEntry
+            WHERE %(is_template)s
+            GROUP BY distroseries, sourcepackagename, productseries, directory
+            HAVING bool_and(status = %(blocked)s)
+            ORDER BY distroseries, sourcepackagename, productseries, directory
+            """ % {
+                'blocked': quote(RosettaImportStatus.BLOCKED),
+                'is_template': template_patterns,
+            })
+
+        return set(result)
+
+    def _isBlockable(self, entry, blocklist):
+        """Is `entry` one that should be blocked according to `blocklist`?
+
+        :param entry: A `TranslationImportQueueEntry` that may be a
+            candidate for blocking.
+        :param blocklist: A description of blockable directories as
+            returned by `_getBlockableDirectories`.
+        """
+        description = (
+            entry.distroseries_id,
+            entry.sourcepackagename_id,
+            entry.productseries_id,
+            os.path.dirname(entry.path),
+            )
+        return description in blocklist
 
     def executeOptimisticBlock(self, txn=None):
         """See ITranslationImportQueue."""
-        importer = getUtility(ITranslationImporter)
+        # Find entries where all template entries for the same
+        # translation target that are in the same directory are in the
+        # Blocked state.  Set those entries to Blocked as well.
+        blocklist = self._getBlockableDirectories()
         num_blocked = 0
         for entry in self._iterNeedsReview():
-            if importer.isTemplateName(entry.path):
-                # Templates cannot be managed automatically.  Ignore them and
-                # wait for an admin to do it.
-                continue
-            # As kiko would say... this method is crack, I know it, but we
-            # need it to save time to our poor Rosetta Experts while handling
-            # the translation import queue...
-            # We need to look for all templates that we have on the same
-            # directory for the entry we are processing, and check that all of
-            # them are blocked. If there is at least one that's not blocked,
-            # we cannot block the entry.
-            templates = entry.getTemplatesOnSameDirectory()
-            has_templates = False
-            has_templates_unblocked = False
-            for template in templates:
-                has_templates = True
-                if template.status != RosettaImportStatus.BLOCKED:
-                    # This template is not set as blocked, so we note it.
-                    has_templates_unblocked = True
-
-            if has_templates and not has_templates_unblocked:
+            if self._isBlockable(entry, blocklist):
                 # All templates on the same directory as this entry are
                 # blocked, so we can block it too.
                 entry.setStatus(
@@ -1254,6 +1366,15 @@ class TranslationImportQueue:
             deletion_clauses.append(And(
                 TranslationImportQueueEntry.status == status,
                 TranslationImportQueueEntry.date_status_changed < cutoff))
+
+        # Also clean out Blocked PO files for Ubuntu that haven't been
+        # touched for a year.  Keep blocked templates because they may
+        # determine the blocking of future translation uploads.
+        blocked_cutoff = now - datetime.timedelta(days=365)
+        deletion_clauses.append(And(
+            TranslationImportQueueEntry.distroseries_id != None,
+            TranslationImportQueueEntry.date_status_changed < blocked_cutoff,
+            TranslationImportQueueEntry.path.like(u'%.po')))
 
         entries = store.find(
             TranslationImportQueueEntry, Or(*deletion_clauses))
@@ -1314,24 +1435,3 @@ class TranslationImportQueue:
     def remove(self, entry):
         """See ITranslationImportQueue."""
         TranslationImportQueueEntry.delete(entry.id)
-
-
-class HasTranslationImportsMixin:
-    """Information related with translation import queue."""
-    implements(IHasTranslationImports)
-
-    def getFirstEntryToImport(self):
-        """See `IHasTranslationImports`."""
-        translation_import_queue = TranslationImportQueue()
-        return translation_import_queue.getFirstEntryToImport(target=self)
-
-    def getTranslationImportQueueEntries(self, import_status=None,
-                                         file_extension=None):
-        """See `IHasTranslationImports`."""
-        if file_extension is None:
-            extensions = None
-        else:
-            extensions = [file_extension]
-        translation_import_queue = TranslationImportQueue()
-        return translation_import_queue.getAllEntries(
-            self, import_status=import_status, file_extensions=extensions)

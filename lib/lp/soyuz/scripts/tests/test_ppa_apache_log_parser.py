@@ -3,20 +3,27 @@
 
 from datetime import date
 import subprocess
-import unittest
 
 from zope.component import getUtility
 
+from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageReleaseDownloadCount)
+    BinaryPackageReleaseDownloadCount,
+    )
 from lp.soyuz.scripts.ppa_apache_log_parser import get_ppa_file_key
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import TestCase, TestCaseWithFactory
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 
 
 class TestPathParsing(TestCase):
@@ -27,11 +34,10 @@ class TestPathParsing(TestCase):
         # distribution and file names.
         archive_owner, archive_name, distro_name, filename = get_ppa_file_key(
             '/cprov/ppa/ubuntu/pool/main/f/foo/foo_1.2.3-4_i386.deb')
-
-        self.assertEqual(archive_owner, 'cprov')
-        self.assertEqual(archive_name, 'ppa')
-        self.assertEqual(distro_name, 'ubuntu')
-        self.assertEqual(filename, 'foo_1.2.3-4_i386.deb')
+        self.assertEqual('cprov', archive_owner)
+        self.assertEqual('ppa', archive_name)
+        self.assertEqual('ubuntu', distro_name)
+        self.assertEqual('foo_1.2.3-4_i386.deb', filename)
 
     def test_get_ppa_file_key_ignores_bad_paths(self):
         # A path with extra path segments returns None, to indicate that
@@ -41,10 +47,26 @@ class TestPathParsing(TestCase):
         self.assertIs(None, get_ppa_file_key('/foo'))
 
     def test_get_ppa_file_key_ignores_non_binary_path(self):
-        # A path with extra path segments returns None, to indicate that
-        # it should be ignored.
+        # A path pointing to a file not from a binary package returns
+        # None to indicate that it should be ignored.
         self.assertIs(None, get_ppa_file_key(
             '/cprov/ppa/ubuntu/pool/main/f/foo/foo_1.2.3-4.dsc'))
+
+    def test_get_ppa_file_key_unquotes_path(self):
+        archive_owner, archive_name, distro_name, filename = get_ppa_file_key(
+            '/cprov/ppa/ubuntu/pool/main/f/foo/foo_1.2.3%7E4_i386.deb')
+        self.assertEqual('cprov', archive_owner)
+        self.assertEqual('ppa', archive_name)
+        self.assertEqual('ubuntu', distro_name)
+        self.assertEqual('foo_1.2.3~4_i386.deb', filename)
+
+    def test_get_ppa_file_key_normalises_path(self):
+        archive_owner, archive_name, distro_name, filename = get_ppa_file_key(
+            '/cprov/ppa/ubuntu/pool//main/f///foo/foo_1.2.3-4_i386.deb')
+        self.assertEqual('cprov', archive_owner)
+        self.assertEqual('ppa', archive_name)
+        self.assertEqual('ubuntu', distro_name)
+        self.assertEqual('foo_1.2.3-4_i386.deb', filename)
 
 
 class TestScriptRunning(TestCaseWithFactory):
@@ -79,8 +101,12 @@ class TestScriptRunning(TestCaseWithFactory):
         # After the script's run, we will check that the results in the
         # database match the sample log files we use for this test:
         # lib/lp/soyuz/scripts/tests/ppa-apache-log-files
+        # In addition to the wanted access log file, there is also an
+        # error log that will be skipped by the configured glob.
         self.assertEqual(
             0, self.store.find(BinaryPackageReleaseDownloadCount).count())
+
+        last_oops = globalErrorUtility.getLastOopsReport()
 
         process = subprocess.Popen(
             'cronscripts/parse-ppa-apache-access-logs.py', shell=True,
@@ -89,6 +115,10 @@ class TestScriptRunning(TestCaseWithFactory):
         (out, err) = process.communicate()
         self.assertEqual(
             process.returncode, 0, "stdout:%s, stderr:%s" % (out, err))
+
+        # The error log does not match the glob, so it is not processed,
+        # and no OOPS is generated.
+        self.assertNoNewOops(last_oops)
 
         # Must commit because the changes were done in another transaction.
         import transaction
@@ -128,7 +158,3 @@ class TestScriptRunning(TestCaseWithFactory):
                 [(result.binary_package_release, result.archive, result.day,
                   result.country, result.count) for result in results],
                  key=lambda r: (r[0].id, r[2], r[3].name if r[3] else None)))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -11,19 +11,31 @@ __all__ = [
     'MakesAnnouncements',
     ]
 
-import pytz, datetime
-from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
+import datetime
+
+import pytz
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    SQLObjectNotFound,
+    StringCol,
+    )
 from zope.interface import implements
 
-from lp.registry.interfaces.announcement import (
-    IAnnouncement, IAnnouncementSet)
-from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.projectgroup import IProjectGroup
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from lp.registry.interfaces.announcement import (
+    IAnnouncement,
+    IAnnouncementSet,
+    )
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.projectgroup import IProjectGroup
 
 
 class Announcement(SQLBase):

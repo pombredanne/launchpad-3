@@ -11,15 +11,20 @@ __all__ = [
     'ProductView',
     ]
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
-    LaunchpadView, Link, canonical_url, enabled_with_permission)
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import NavigationMenu
+from lp.app.enums import service_uses_launchpad
+from lp.registry.browser.product import ProductConfigureBase
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.browser.product import ProductEditView
+from lp.services.propertycache import cachedproperty
 from lp.translations.browser.translations import TranslationsMixin
 
 
@@ -36,22 +41,26 @@ class ProductTranslationsMenu(NavigationMenu):
 
     def imports(self):
         text = 'Import queue'
-        return Link('+imports', text)
+        return Link('+imports', text, site='translations')
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def settings(self):
-        text = 'Change permissions'
-        return Link('+settings', text, icon='edit')
+        text = 'Configure translations'
+        return Link(
+            '+configure-translations', text, icon='edit', site='translations')
 
     @enabled_with_permission('launchpad.AnyPerson')
     def translationdownload(self):
         text = 'Download'
         preferred_series = self.context.primary_translatable
-        enabled = (self.context.official_rosetta and
-            preferred_series is not None)
+        enabled = (service_uses_launchpad(self.context.translations_usage)
+            and preferred_series is not None)
         link = ''
         if enabled:
-            link = '%s/+export' % preferred_series.name
+            link = canonical_url(
+                preferred_series,
+                rootsite='translations',
+                view_name='+export')
             text = 'Download "%s"' % preferred_series.name
 
         return Link(link, text, icon='download', enabled=enabled)
@@ -62,47 +71,47 @@ class ProductTranslationsMenu(NavigationMenu):
         return Link(link, text, icon='translation')
 
 
-class ProductSettingsView(TranslationsMixin, ProductEditView):
-    label = "Set permissions and policies"
-    page_title = "Permissions and policies"
+class ProductSettingsView(TranslationsMixin, ProductConfigureBase):
+    label = "Configure translations"
+    page_title = "Configure translations"
+    usage_fieldname = "translations_usage"
     field_names = [
+            usage_fieldname,
+            "translation_focus",
             "translationgroup",
             "translationpermission",
-            "translation_focus",
             ]
-
-    @property
-    def cancel_url(self):
-        return canonical_url(self.context)
-
-    @property
-    def next_url(self):
-        return self.cancel_url
 
 
 class ProductView(LaunchpadView):
-
-    __used_for__ = IProduct
 
     label = "Translation overview"
 
     @cachedproperty
     def uses_translations(self):
         """Whether this product has translatable templates."""
-        return (self.context.official_rosetta and
-                self.primary_translatable is not None)
+        return (service_uses_launchpad(self.context.translations_usage)
+                and self.primary_translatable is not None)
 
     @cachedproperty
     def no_translations_available(self):
         """Has no translation templates but does support translations."""
-        return (self.context.official_rosetta and
-                self.primary_translatable is None)
+        return (service_uses_launchpad(self.context.translations_usage)
+                and self.primary_translatable is None)
 
     @cachedproperty
     def show_page_content(self):
         """Whether the main content of the page should be shown."""
-        return (self.context.official_rosetta or
-                check_permission("launchpad.TranslationsAdmin", self.context))
+        return (service_uses_launchpad(self.context.translations_usage) or
+               self.is_translations_admin)
+
+    def can_configure_translations(self):
+        """Whether or not the user can configure translations."""
+        return check_permission("launchpad.TranslationsAdmin", self.context)
+
+    def is_translations_admin(self):
+        """Whether or not the user is a translations admin."""
+        return check_permission("launchpad.TranslationsAdmin", self.context)
 
     @cachedproperty
     def primary_translatable(self):

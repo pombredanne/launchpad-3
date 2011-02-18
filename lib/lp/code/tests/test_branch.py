@@ -1,24 +1,26 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for methods of Branch and BranchSet."""
-
-import unittest
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.testing import DatabaseFunctionalLayer
-
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
+from lp.code.interfaces.codehosting import SUPPORTED_SCHEMES
 from lp.code.tests.helpers import make_official_package_branch
-from lp.code.xmlrpc.branch import PublicCodehostingAPI
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
-from lp.testing import run_with_login, TestCaseWithFactory
+from lp.testing import (
+    run_with_login,
+    TestCaseWithFactory,
+    )
 
 
 class PermissionTest(TestCaseWithFactory):
@@ -343,7 +345,7 @@ class TestComposePublicURL(TestCaseWithFactory):
 
         url_pattern = '%%s://bazaar.launchpad.dev/~%s/%s/%s' % (
             branch.owner.name, branch.product.name, branch.name)
-        for scheme in PublicCodehostingAPI.supported_schemes:
+        for scheme in SUPPORTED_SCHEMES:
             public_url = branch.composePublicURL(scheme)
             self.assertEqual(url_pattern % scheme, public_url)
 
@@ -373,7 +375,3 @@ class TestComposePublicURL(TestCaseWithFactory):
         # not work for private branches.
         branch = self.factory.makeAnyBranch()
         self.assertRaises(AssertionError, branch.composePublicURL, 'https')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

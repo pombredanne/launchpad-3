@@ -79,11 +79,11 @@
     ], 
     "../images/info-large.png": [
         0, 
-        -17176
+        -17340
     ], 
     "../images/trash-logo.png": [
         0, 
-        -20194
+        -20358
     ], 
     "../images/warning.png": [
         0, 
@@ -99,19 +99,19 @@
     ], 
     "../images/branch-large.png": [
         0, 
-        -15902
+        -16066
     ], 
     "../images/download-large.png": [
         0, 
-        -16994
+        -17158
     ], 
     "../images/private-large.png": [
         0, 
-        -18086
+        -18250
     ], 
     "../images/launchpad-large.png": [
         0, 
-        -17358
+        -17522
     ], 
     "../images/translation-file.png": [
         0, 
@@ -123,7 +123,7 @@
     ], 
     "../images/project-logo.png": [
         0, 
-        -18696
+        -18860
     ], 
     "../images/bug-medium.png": [
         0, 
@@ -132,6 +132,10 @@
     "../images/architecture.png": [
         0, 
         -12130
+    ], 
+    "../images/tour-icon": [
+        0, 
+        -15902
     ], 
     "../images/trash-icon.png": [
         0, 
@@ -175,11 +179,11 @@
     ], 
     "../images/person-logo.png": [
         0, 
-        -19124
+        -19288
     ], 
     "../images/distribution-logo.png": [
         0, 
-        -18482
+        -18646
     ], 
     "../images/retry.png": [
         0, 
@@ -219,7 +223,7 @@
     ], 
     "../images/crowd-large.png": [
         0, 
-        -16266
+        -16430
     ], 
     "../images/blueprint.png": [
         0, 
@@ -241,13 +245,9 @@
         0, 
         -6228
     ], 
-    "../images/mentoring.png": [
-        0, 
-        -7048
-    ], 
     "../images/flame-large.png": [
         0, 
-        -16812
+        -16976
     ], 
     "../images/bug-dupe-icon.png": [
         0, 
@@ -279,7 +279,7 @@
     ], 
     "../images/team-logo.png": [
         0, 
-        -19552
+        -19716
     ], 
     "../images/arrowRight.png": [
         0, 
@@ -319,7 +319,7 @@
     ], 
     "../images/error-large.png": [
         0, 
-        -16630
+        -16794
     ], 
     "../images/news.png": [
         0, 
@@ -351,7 +351,7 @@
     ], 
     "../images/product-logo.png": [
         0, 
-        -18910
+        -19074
     ], 
     "../images/blueprint-medium.png": [
         0, 
@@ -367,11 +367,11 @@
     ], 
     "../images/launchpad-logo.png": [
         0, 
-        -18268
+        -18432
     ], 
     "../images/flame-logo.png": [
         0, 
-        -19980
+        -20144
     ], 
     "../images/translation-template.png": [
         0, 
@@ -383,7 +383,7 @@
     ], 
     "../images/meeting-logo.png": [
         0, 
-        -19766
+        -19930
     ], 
     "../images/treeCollapsed.png": [
         0, 
@@ -399,7 +399,7 @@
     ], 
     "../images/trash-large.png": [
         0, 
-        -17904
+        -18068
     ], 
     "../images/red-bar.png": [
         0, 
@@ -415,7 +415,7 @@
     ], 
     "../images/person-inactive-logo.png": [
         0, 
-        -19338
+        -19502
     ], 
     "../images/edit.png": [
         0, 
@@ -427,7 +427,7 @@
     ], 
     "../images/warning-large.png": [
         0, 
-        -16084
+        -16248
     ], 
     "../images/arrowEnd.png": [
         0, 
@@ -439,7 +439,7 @@
     ], 
     "../images/merge-proposal-large.png": [
         0, 
-        -17722
+        -17886
     ], 
     "../images/branch.png": [
         0, 
@@ -448,10 +448,6 @@
     "../images/person-badge.png": [
         0, 
         -1968
-    ], 
-    "../images/mentoring-large.png": [
-        0, 
-        -17540
     ], 
     "../images/bug.png": [
         0, 

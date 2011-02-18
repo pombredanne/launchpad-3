@@ -13,18 +13,17 @@ __all__ = [
 
 from operator import attrgetter
 
+from lazr.delegates import delegates
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
-from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageRelease)
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory)
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
-    IDistroSeriesSourcePackageRelease)
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    IDistroSeriesSourcePackageRelease,
+    )
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
-from lazr.delegates import delegates
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
 
 class DistroSeriesSourcePackageRelease:
@@ -102,7 +101,7 @@ class DistroSeriesSourcePackageRelease:
 
         # Import DistributionSourcePackageRelease here to avoid circular
         # imports (and imported directly from database to avoid long line)
-        from canonical.launchpad.database import (
+        from lp.soyuz.model.distributionsourcepackagerelease import (
             DistributionSourcePackageRelease)
 
         distro_builds = DistributionSourcePackageRelease(
@@ -145,15 +144,6 @@ class DistroSeriesSourcePackageRelease:
                 query, prejoinClauseTables=['BinaryPackageBuild'],
                 orderBy=['-id'], clauseTables=clauseTables,
                 distinct=True)
-
-    @property
-    def meta_binaries(self):
-        """See `IDistroSeriesSourcePackageRelease`."""
-        binary_pkg_names = sorted(
-            set([pkg.binarypackagename for pkg in self.binaries]),
-            key=attrgetter('name'))
-        return [self.distroseries.getBinaryPackage(name)
-                for name in binary_pkg_names]
 
     @property
     def changesfile(self):
@@ -208,9 +198,10 @@ class DistroSeriesSourcePackageRelease:
         this release is or was published.
         """
         pub_hist = self.publishing_history
-        if pub_hist.count() == 0:
+        try:
+            return pub_hist[0]
+        except IndexError:
             return None
-        return pub_hist[0]
 
     @property
     def current_published(self):

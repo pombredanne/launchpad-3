@@ -30,7 +30,7 @@ All the languages known by Launchpad.
     >>> language_vocabulary = vocabulary_registry.get(
     ...     None, 'Language')
     >>> len(language_vocabulary)
-    559
+    560
 
     >>> es = language_set['es']
     >>> term = language_vocabulary.getTerm(es)
@@ -125,11 +125,11 @@ excluded from the vocabulary.
     >>> all_languages = set(l.value for l in language_vocabulary)
     >>> difference = list(all_languages - translatable_languages)
     >>> len(difference)
-    89
+    90
 
     >>> hidden_languages = [lang for lang in difference if not lang.visible]
     >>> len(hidden_languages)
-    88
+    89
 
     >>> [lang.displayname for lang in difference if lang.visible]
     [u'English (en)']

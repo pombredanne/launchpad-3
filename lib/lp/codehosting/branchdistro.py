@@ -19,21 +19,27 @@ import os
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
-from bzrlib.errors import NotBranchError, NotStacked
-
+from bzrlib.errors import (
+    NotBranchError,
+    NotStacked,
+    )
 import transaction
-
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.config import config
-
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from lp.code.enums import (
+    BranchLifecycleStatus,
+    BranchType,
+    )
+from lp.code.errors import BranchExists
 from lp.code.interfaces.branchcollection import IAllBranches
-from lp.code.interfaces.branch import BranchExists
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.seriessourcepackagebranch import (
-    IFindOfficialBranchLinks)
-from lp.code.enums import BranchType
+    IFindOfficialBranchLinks,
+    )
+from lp.code.model.branchrevision import BranchRevision
 from lp.codehosting.vfs import branch_id_to_path
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -340,6 +346,7 @@ class DistroBrancher:
         new_db_branch.sourcepackage.setBranch(
             PackagePublishingPocket.RELEASE, new_db_branch,
             getUtility(ILaunchpadCelebrities).ubuntu_branches.teamowner)
+        old_db_branch.lifecycle_status = BranchLifecycleStatus.MATURE
         # switch_branches *moves* the data to locations dependent on the
         # new_branch's id, so if the transaction was rolled back we wouldn't
         # know the branch id and thus wouldn't be able to find the branch data
@@ -348,4 +355,26 @@ class DistroBrancher:
         switch_branches(
             config.codehosting.mirrored_branches_root,
             'lp-internal', old_db_branch, new_db_branch)
+        # Directly copy the branch revisions from the old branch to the new branch.
+        store = IMasterStore(BranchRevision)
+        store.execute(
+            """
+            INSERT INTO BranchRevision (branch, revision, sequence)
+            SELECT %s, BranchRevision.revision, BranchRevision.sequence
+            FROM BranchRevision
+            WHERE branch = %s
+            """ % (new_db_branch.id, old_db_branch.id))
+
+        # Update the scanned details first, that way when hooking into
+        # branchChanged, it won't try to create a new scan job.
+        tip_revision = old_db_branch.getTipRevision()
+        new_db_branch.updateScannedDetails(
+            tip_revision, old_db_branch.revision_count)
+        new_db_branch.branchChanged(
+            '', tip_revision.revision_id,
+            old_db_branch.control_format,
+            old_db_branch.branch_format,
+            old_db_branch.repository_format)
+        old_db_branch.stacked_on = new_db_branch
+        transaction.commit()
         return new_db_branch

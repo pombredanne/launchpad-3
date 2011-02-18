@@ -6,11 +6,18 @@
 __metaclass__ = type
 __all__ = ['LaunchpadCelebrities']
 
-from zope.interface import implements
 from zope.component import getUtility
-from canonical.launchpad.interfaces import (
-    ILanguageSet, ILaunchpadCelebrities, IPersonSet, IDistributionSet,
-    IBugTrackerSet, IProductSet, NotFoundError, IDistributionMirrorSet)
+from zope.interface import implements
+
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.errors import NotFoundError
+from lp.bugs.interfaces.bugtracker import IBugTrackerSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distributionmirror import IDistributionMirrorSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
+
 
 class MutatedCelebrityError(Exception):
     """A celebrity has had its id or name changed in the database.
@@ -106,6 +113,7 @@ class LanguageCelebrityDescriptor(CelebrityDescriptor):
 
     Unlike most other celebrities, languages are retrieved by code.
     """
+
     def _getCelebrityByName(self, utility):
         """See `CelebrityDescriptor`."""
         return utility.getLanguageByCode(self.name)
@@ -121,6 +129,8 @@ class LaunchpadCelebrities:
 
     admin = PersonCelebrityDescriptor('admins')
     bazaar_experts = PersonCelebrityDescriptor('bazaar-experts')
+    software_center_agent = PersonCelebrityDescriptor(
+        'software-center-agent')
     bug_importer = PersonCelebrityDescriptor('bug-importer')
     bug_watch_updater = PersonCelebrityDescriptor('bug-watch-updater')
     buildd_admin = PersonCelebrityDescriptor('launchpad-buildd-admins')
@@ -136,8 +146,6 @@ class LaunchpadCelebrities:
     launchpad_beta_testers = PersonCelebrityDescriptor(
         'launchpad-beta-testers')
     launchpad_developers = PersonCelebrityDescriptor('launchpad')
-    lp_translations = CelebrityDescriptor(IProductSet, 'rosetta')
-    mailing_list_experts = PersonCelebrityDescriptor('mailing-list-experts')
     obsolete_junk = CelebrityDescriptor(IProductSet, 'obsolete-junk')
     ppa_key_guard = PersonCelebrityDescriptor('ppa-key-guard')
     registry_experts = PersonCelebrityDescriptor('registry')

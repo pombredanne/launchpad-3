@@ -12,11 +12,16 @@ from StringIO import StringIO
 
 from zope.component import getUtility
 
+from canonical.launchpad.webapp import (
+    canonical_url,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
 from lp.bugs.browser.bugattachment import BugAttachmentContentCheck
 from lp.bugs.interfaces.bugmessage import IBugMessageAddForm
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
-from canonical.launchpad.webapp import action, canonical_url
-from canonical.launchpad.webapp import LaunchpadFormView
 
 
 class BugMessageAddFormView(LaunchpadFormView, BugAttachmentContentCheck):

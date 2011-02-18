@@ -4,13 +4,15 @@ BugTasks are usually searched through an IBugTarget's searchTasks()
 method, but they all delegate the search to IBugTaskSet.search(). That
 method accepts a single parameter; an BugTaskSearchParams instance.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskSearchParams, IBugTaskSet)
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     BugTaskSearchParams,
+    ...     IBugTaskSet,
+    ...     )
     >>> bugtask_set = getUtility(IBugTaskSet)
     >>> all_public = BugTaskSearchParams(user=None)
     >>> found_bugtasks = bugtask_set.search(all_public)
 
-    >>> from canonical.launchpad.database import BugTask
+    >>> from lp.bugs.model.bugtask import BugTask
     >>> all_public_bugtasks = BugTask.select(
     ...     "BugTask.bug = Bug.id AND Bug.private = false",
     ...     clauseTables=['Bug'])
@@ -25,7 +27,7 @@ person is responsible for. A person can be a bug supervisor for a product,
 a distribution, or a distribution source package. No Privileges Person
 isn't a bug supervisor, so no bugs are found for him:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> no_priv_bug_supervisor = BugTaskSearchParams(
     ...     user=None, bug_supervisor=no_priv)
@@ -37,7 +39,7 @@ isn't a bug supervisor, so no bugs are found for him:
 
 Firefox has a few bugs:
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox_bugs = firefox.searchTasks(all_public)
     >>> firefox_public_bugs = firefox_bugs.count()
@@ -48,7 +50,7 @@ Firefox has a few bugs:
 
 Ubuntu does too:
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> all_public = BugTaskSearchParams(user=None)
     >>> ubuntu_bugs = ubuntu.searchTasks(all_public)
@@ -67,7 +69,7 @@ and in particular, mozilla-firefox in Ubuntu has 'em:
 To get all related tasks to a person call searchTasks() on the person
 object:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> user = getUtility(IPersonSet).getByName('name16')
     >>> user_bugs = user.searchTasks(None, user=None)
     >>> user_bugs.count() > 0
@@ -148,7 +150,7 @@ For example, no Firefox bugs are found when searching for
 If we add a comment containing the search string to bug one, that bug
 will be returned by the search only if search_comments is True.
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bug_one.newMessage(no_priv, 'No subject', 'some wordincomment')
     <Message at ...>
@@ -245,11 +247,11 @@ nominated_for parameter.
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> warty = ubuntu.getSeries('warty')
 
-    >>> from canonical.launchpad.database import BugNomination
+    >>> from lp.bugs.model.bugnomination import BugNomination
     >>> print list(BugNomination.selectBy(distroseries=warty))
     []
 
-    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> nominated_for_warty = BugTaskSearchParams(
     ...     user=None, nominated_for=warty)
     >>> list(ubuntu.searchTasks(nominated_for_warty))
@@ -293,9 +295,11 @@ series.
 
 Add an Ubuntu bugtask for a bug that is confirmed upstream.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskImportance, BugTaskStatus)
-    >>> from lp.bugs.tests.test_bugtask_1 import (
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     BugTaskImportance,
+    ...     BugTaskStatus,
+    ...     )
+    >>> from lp.bugs.model.tests.test_bugtask import (
     ...     BugTaskSearchBugsElsewhereTest)
     >>> def bugTaskInfo(bugtask):
     ...     return '%i %i %s %s' % (
@@ -381,7 +385,7 @@ of the single filters.
 
 The search filter can also return bugs that are related to CVE reports:
 
-    >>> from canonical.launchpad.interfaces import ICveSet
+    >>> from lp.bugs.interfaces.cve import ICveSet
     >>> def getCves(bugtask):
     ...     bugcve = getUtility(ICveSet).getBugCvesForBugTasks([bugtask])[0]
     ...     return bugcve.cve.sequence
@@ -400,7 +404,7 @@ The 'bug_commenter' parameter allows you to search bugtasks on which a certain
 person has commented. No Privileges Person hasn't commented on any bugs, so no
 bugs are found for him:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> import transaction
     >>> transaction.abort()
 
@@ -442,8 +446,8 @@ comments will produce eight found bug tasks (three for bug 1, five for bug 2).
 If No Privileges Person reports a bug and does not comment on it, that bug
 will not be included in the results returned by the bug commenter search.
 
-    >>> from canonical.launchpad.interfaces import CreateBugParams
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox.createBug(
@@ -543,7 +547,7 @@ Bugs may also be targeted to partner packages.  First turn "cdrkit" into
 a partner package:
 
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.interfaces import IComponentSet
+    >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> proxied_cdrkit = ubuntu.getSourcePackage("cdrkit")
     >>> cdrkit = removeSecurityProxy(proxied_cdrkit)
     >>> cdrkit.component = getUtility(IComponentSet)['partner']
@@ -558,7 +562,7 @@ It starts off with no bugs:
 
 We can file a bug against it and see that show up in a search:
 
-    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> bug = cdrkit.createBug(
     ...     CreateBugParams(owner=no_priv, title='Bug to be fixed in trunk',
     ...                     comment='Something'))
@@ -736,9 +740,12 @@ closed after a certain date.
 It's possible to search for bugs with an attachment of a certain type.
 
     >>> from StringIO import StringIO
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugAttachmentType, IBugAttachmentSet, ILibraryFileAliasSet,
-    ...     IMessageSet)
+    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.bugs.interfaces.bugattachment import (
+    ...     BugAttachmentType,
+    ...     IBugAttachmentSet,
+    ...     )
     >>> product = factory.makeProduct()
     >>> patch_bug = factory.makeBug(
     ...     product=product)
@@ -1037,7 +1044,7 @@ We mark bug #10 as a duplicate of bug #9.
 
     >>> bug_nine = getUtility(IBugSet).get(9)
     >>> bug_ten = getUtility(IBugSet).get(10)
-    >>> bug_ten.duplicateof = bug_nine
+    >>> bug_ten.markAsDuplicate(bug_nine)
     >>> flush_database_updates()
 
 Searching again reveals bug #9 at the top of the list, since it now has a duplicate.
@@ -1207,7 +1214,7 @@ structural subscriber for a product, a product series, a project, a milestone,
 a distribution, a distribution series and a distribution source package. No
 Privileges Person isn't a structural subscriber, so no bug tasks are found:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> no_priv_struct_sub = BugTaskSearchParams(
     ...     user=None, structural_subscriber=no_priv)
@@ -1223,7 +1230,7 @@ Firefox bug tasks.
     ...     name='product-struct-subber')
     >>> firefox.addBugSubscription(product_struct_subber,
     ...     product_struct_subber)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
     >>> product_struct_sub_search = BugTaskSearchParams(
     ...     user=None, structural_subscriber=product_struct_subber)
     >>> found_bugtasks = bugtask_set.search(product_struct_sub_search)
@@ -1241,7 +1248,7 @@ for the product series in which they are interested.
     ...     name='series-struct-subber')
     >>> product_series.addBugSubscription(series_struct_subber,
     ...     series_struct_subber)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
     >>> series_struct_sub_search = BugTaskSearchParams(
     ...     user=None, structural_subscriber=series_struct_subber)
     >>> found_bugtasks = bugtask_set.search(series_struct_sub_search)
@@ -1262,7 +1269,7 @@ person is subscribed.
     ...     name='project-struct-subber')
     >>> project.addBugSubscription(project_struct_subber,
     ...     project_struct_subber)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
     >>> project_struct_sub_search = BugTaskSearchParams(
     ...     user=None, structural_subscriber=project_struct_subber)
     >>> found_bugtasks = bugtask_set.search(project_struct_sub_search)
@@ -1278,7 +1285,7 @@ results.
     >>> product2.project = project
     >>> product2.addBugSubscription(project_struct_subber,
     ...     project_struct_subber)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
     >>> project_struct_sub_search = BugTaskSearchParams(
     ...     user=None, structural_subscriber=project_struct_subber)
     >>> found_bugtasks = bugtask_set.search(project_struct_sub_search)
@@ -1293,7 +1300,7 @@ bug tasks for the milestone in which they are interested.
     ...     name='milestone-struct-subber')
     >>> product_milestone.addBugSubscription(milestone_struct_subber,
     ...     milestone_struct_subber)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
     >>> milestone_struct_sub_search = BugTaskSearchParams(
     ...     user=None, structural_subscriber=milestone_struct_subber)
     >>> found_bugtasks = bugtask_set.search(milestone_struct_sub_search)
@@ -1308,7 +1315,7 @@ bugs with an Ubuntu bug task.
     ...     name='distro-struct-subber')
     >>> ubuntu.addBugSubscription(distro_struct_subber,
     ...     distro_struct_subber)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
     >>> distro_struct_sub_search = BugTaskSearchParams(
     ...     user=None, structural_subscriber=distro_struct_subber)
     >>> found_bugtasks = bugtask_set.search(distro_struct_sub_search)
@@ -1325,7 +1332,7 @@ is subscribed to all of the bug tasks about that distro series.
     ...     name='distro-series-struct-subber')
     >>> hoary.addBugSubscription(distro_series_struct_subber,
     ...     distro_series_struct_subber)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
     >>> distro_series_struct_sub_search = BugTaskSearchParams(
     ...     user=None, structural_subscriber=distro_series_struct_subber)
     >>> found_bugtasks = bugtask_set.search(distro_series_struct_sub_search)
@@ -1342,7 +1349,7 @@ subscribed to all of the Ubuntu Firefox bug tasks.
     ...     name='package-struct-subber')
     >>> ubuntu_firefox.addBugSubscription(package_struct_subber,
     ...     package_struct_subber)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
     >>> package_struct_sub_search = BugTaskSearchParams(
     ...     user=None, structural_subscriber=package_struct_subber)
     >>> found_bugtasks = bugtask_set.search(package_struct_sub_search)
@@ -1356,7 +1363,7 @@ tasks.
 
     >>> product_series.addBugSubscription(package_struct_subber,
     ...     package_struct_subber)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
     >>> package_struct_sub_search = BugTaskSearchParams(
     ...     user=None, structural_subscriber=package_struct_subber)
     >>> found_bugtasks = bugtask_set.search(package_struct_sub_search)

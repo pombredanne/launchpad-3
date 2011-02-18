@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import re
 
+
 _moin_url_re = re.compile(r'(https?://[^ \r\n]+)')
 
 def get_spec_url_from_moin_mail(moin_text):

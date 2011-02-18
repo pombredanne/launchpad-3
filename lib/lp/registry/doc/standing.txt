@@ -11,8 +11,10 @@ are not a member of, their message gets held for moderator approval.
     >>> from lp.registry.tests import mailinglists_helper
     >>> team_one, list_one = mailinglists_helper.new_team('test-one', True)
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, PersonalStanding)
+    >>> from lp.registry.interfaces.person import (
+    ...     IPersonSet,
+    ...     PersonalStanding,
+    ...     )
     >>> from canonical.launchpad.ftests import sync, syncUpdate
 
     >>> person_set = getUtility(IPersonSet)
@@ -29,9 +31,9 @@ are not a member of, their message gets held for moderator approval.
     >>> message_ids = message_id_generator()
 
     # A helper for posting messages to a list.
-    >>> from canonical.launchpad.interfaces import (
-    ...     IMailingListSet, IMessageSet)
+    >>> from canonical.launchpad.interfaces.message import IMessageSet
     >>> from email.Utils import formatdate
+    >>> from lp.registry.interfaces.mailinglist import IMailingListSet
     >>> def post_message(from_address, to_team_name):
     ...     message = getUtility(IMessageSet).fromEmail("""\
     ... From: %s
@@ -55,8 +57,8 @@ are not a member of, their message gets held for moderator approval.
     >>> from lp.registry.scripts.standing import (
     ...     UpdatePersonalStanding)
     >>> from canonical.config import config
-    >>> from canonical.testing import LaunchpadZopelessLayer
-    >>> from canonical.launchpad.ftests.logger import MockLogger
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.services.log.logger import DevNullLogger
     >>> class TestableScript(UpdatePersonalStanding):
     ...     """A testable version of `UpdatePersonalStanding`."""
     ...     def main(self):
@@ -71,8 +73,7 @@ are not a member of, their message gets held for moderator approval.
     ...         LaunchpadZopelessLayer.switchDbUser(
     ...             config.standingupdater.dbuser)
     ...         self.txn = LaunchpadZopelessLayer.txn
-    ...         self.logger = MockLogger()
-    ...         self.logger.setLevel(logging.CRITICAL)
+    ...         self.logger = DevNullLogger()
     ...         results = super(TestableScript, self).main()
     ...         LaunchpadZopelessLayer.switchDbUser(launchpad_dbuser)
     ...         return results

@@ -2,29 +2,42 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
-import unittest
 
-from zope.interface import implements
-
-from twisted.cred.error import UnauthorizedLogin
-from twisted.cred.portal import IRealm, Portal
+from testtools.deferredruntest import (
+    assert_fails_with,
+    flush_logged_errors,
+    AsynchronousDeferredRunTest,
+    )
 
 from twisted.conch.checkers import SSHPublicKeyDatabase
 from twisted.conch.error import ConchError
 from twisted.conch.ssh import userauth
-from twisted.conch.ssh.common import getNS, NS
-from twisted.conch.ssh.keys import BadKeyError, Key
-from twisted.conch.ssh.transport import SSHCiphers, SSHServerTransport
+from twisted.conch.ssh.common import (
+    getNS,
+    NS,
+    )
+from twisted.conch.ssh.keys import (
+    BadKeyError,
+    Key,
+    )
+from twisted.conch.ssh.transport import (
+    SSHCiphers,
+    SSHServerTransport,
+    )
+from twisted.cred.error import UnauthorizedLogin
+from twisted.cred.portal import (
+    IRealm,
+    Portal,
+    )
 from twisted.internet import defer
 from twisted.python import failure
 from twisted.python.util import sibpath
-
-from twisted.trial.unittest import TestCase as TrialTestCase
+from zope.interface import implements
 
 from canonical.launchpad.xmlrpc import faults
-from canonical.testing.layers import TwistedLayer
 from lp.services.sshserver import auth
 from lp.services.twistedsupport import suppress_stderr
+from lp.testing import TestCase
 
 
 class MockRealm:
@@ -76,7 +89,7 @@ class MockSSHTransport(SSHServerTransport):
         pass
 
 
-class UserAuthServerMixin:
+class UserAuthServerMixin(object):
     def setUp(self):
         self.portal = Portal(MockRealm())
         self.transport = MockSSHTransport(self.portal)
@@ -108,7 +121,11 @@ class UserAuthServerMixin:
             self.fail("No banner logged.")
 
 
-class TestUserAuthServer(UserAuthServerMixin, unittest.TestCase):
+class TestUserAuthServer(TestCase, UserAuthServerMixin):
+
+    def setUp(self):
+        TestCase.setUp(self)
+        UserAuthServerMixin.setUp(self)
 
     def test_sendBanner(self):
         # sendBanner should send an SSH 'packet' with type MSG_USERAUTH_BANNER
@@ -175,7 +192,7 @@ class MockChecker(SSHPublicKeyDatabase):
                 auth.UserDisplayedUnauthorizedLogin(self.error_message))
 
 
-class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
+class TestAuthenticationBannerDisplay(UserAuthServerMixin, TestCase):
     """Check that auth error information is passed through to the client.
 
     Normally, SSH servers provide minimal information on failed authentication.
@@ -187,16 +204,18 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
     Section 5.4 for more information.
     """
 
-    layer = TwistedLayer
+    run_tests_with = AsynchronousDeferredRunTest
 
     def setUp(self):
         UserAuthServerMixin.setUp(self)
+        TestCase.setUp(self)
         self.portal.registerChecker(MockChecker())
         self.user_auth.serviceStarted()
         self.key_data = self._makeKey()
 
     def tearDown(self):
         self.user_auth.serviceStopped()
+        TestCase.tearDown(self)
 
     def _makeKey(self):
         keydir = sibpath(__file__, 'keys')
@@ -297,7 +316,7 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
         return d.addCallback(check)
 
 
-class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
+class TestPublicKeyFromLaunchpadChecker(TestCase):
     """Tests for the SSH server authentication mechanism.
 
     PublicKeyFromLaunchpadChecker accepts the SSH authentication information
@@ -307,7 +326,7 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
     MSG_USERAUTH_BANNER message.
     """
 
-    layer = TwistedLayer
+    run_tests_with = AsynchronousDeferredRunTest
 
     class FakeAuthenticationEndpoint:
         """A fake client for enough of `IAuthServer` for this test.
@@ -365,6 +384,7 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
         return failure.Failure(UnauthorizedLogin())
 
     def setUp(self):
+        TestCase.setUp(self)
         self.authserver = self.FakeAuthenticationEndpoint()
 
     def test_successful(self):
@@ -386,10 +406,10 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
         checker = self.makeChecker(True)
         d = checker.requestAvatarId(creds)
         def flush_errback(f):
-            self.flushLoggedErrors(BadKeyError)
+            flush_logged_errors(BadKeyError)
             return f
         d.addErrback(flush_errback)
-        return self.assertFailure(d, UnauthorizedLogin)
+        return assert_fails_with(d, UnauthorizedLogin)
 
     def assertLoginError(self, checker, creds, error_message):
         """Logging in with 'creds' against 'checker' fails with 'message'.
@@ -402,7 +422,7 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
         :param error_message: String excepted to match the exception's message.
         :return: Deferred. You must return this from your test.
         """
-        d = self.assertFailure(
+        d = assert_fails_with(
             checker.requestAvatarId(creds),
             auth.UserDisplayedUnauthorizedLogin)
         d.addCallback(
@@ -440,7 +460,7 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
         # We cannot use assertLoginError because we are checking that we fail
         # with UnauthorizedLogin and not its subclass
         # UserDisplayedUnauthorizedLogin.
-        d = self.assertFailure(
+        d = assert_fails_with(
             checker.requestAvatarId(creds),
             UnauthorizedLogin)
         d.addCallback(
@@ -485,7 +505,7 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
             'invalid-user', 'invalid key 2', mind)
         d = checker.requestAvatarId(creds_1)
         def try_second_key(failure):
-            return self.assertFailure(
+            return assert_fails_with(
                 checker.requestAvatarId(creds_2),
                 UnauthorizedLogin)
         d.addErrback(try_second_key)
@@ -495,7 +515,3 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
             return r
         d.addCallback(check_one_call)
         return d
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

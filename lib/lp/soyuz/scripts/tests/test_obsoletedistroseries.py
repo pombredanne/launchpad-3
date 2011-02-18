@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -12,16 +12,19 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.scripts import FakeLogger
-from lp.soyuz.scripts.ftpmaster import (
-    ObsoleteDistroseries, SoyuzScriptError)
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory,
-    SourcePackagePublishingHistory)
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from canonical.testing import LaunchpadZopelessLayer
+from lp.services.log.logger import DevNullLogger
+from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
+from lp.soyuz.scripts.ftpmaster import (
+    ObsoleteDistroseries,
+    SoyuzScriptError,
+    )
 
 
 class TestObsoleteDistroseriesScript(unittest.TestCase):
@@ -82,8 +85,10 @@ class TestObsoleteDistroseries(unittest.TestCase):
         Allow tests to use a set of default options and pass an
         inactive logger to ObsoleteDistroseries.
         """
-        test_args = ['-s', suite,
-                     '-d', distribution,]
+        test_args = [
+            '-s', suite,
+            '-d', distribution,
+            ]
 
         if confirm_all:
             test_args.append('-y')
@@ -91,10 +96,7 @@ class TestObsoleteDistroseries(unittest.TestCase):
         obsoleter = ObsoleteDistroseries(
             name='obsolete-distroseries', test_args=test_args)
         # Swallow all log messages.
-        obsoleter.logger = FakeLogger()
-        def message(self, prefix, *stuff, **kw):
-            pass
-        obsoleter.logger.message = message
+        obsoleter.logger = DevNullLogger()
         obsoleter.setupLocation()
         return obsoleter
 
@@ -208,7 +210,3 @@ class TestObsoleteDistroseries(unittest.TestCase):
             binary = BinaryPackagePublishingHistory.get(id)
             self.assertTrue(
                 binary.status != PackagePublishingStatus.OBSOLETE)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

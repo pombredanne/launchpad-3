@@ -22,18 +22,33 @@ __all__ = [
     ]
 
 
-from zope.interface import Attribute, Interface, implements
-from zope.schema import Bool, Datetime, Int, Object, Text, TextLine
+from lazr.delegates import delegates
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
+from zope.interface import (
+    Attribute,
+    implements,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Datetime,
+    Int,
+    Object,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import NotFoundError
-from lp.services.job.interfaces.job import IJob
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-
-from lazr.delegates import delegates
-from lazr.restful.fields import CollectionField, Reference
-from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
+from lp.app.errors import NotFoundError
+from lp.services.job.interfaces.job import IJob
 
 
 class IMessage(Interface):

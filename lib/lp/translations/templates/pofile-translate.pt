@@ -36,48 +36,7 @@
       </script>
 
         <!-- Documentation links -->
-        <tal:documentation condition="view/translation_group">
-          <div class="important-notice-container"
-               tal:condition="view/has_any_documentation">
-            <div class="important-notice-balloon">
-              <div class="important-notice-buttons">
-                <img class="important-notice-cancel-button" src="/@@/no"
-                     alt="Don't show this notice anymore"
-                     title="Hide this notice for the duration of this session" />
-              </div>
-              <img src="/@@/info" alt="Information" />
-              <span class="important-notice"
-                  tal:condition="view/translation_group/translation_guide_url">
-                Before translating, be sure to go through
-                <a tal:content="string:${view/translation_group/title}
-                                instructions"
-                   tal:attributes="href
-                        view/translation_group/translation_guide_url">
-                  translation instructions</a><!--
-             --><tal:has_team
-                   condition="view/translation_team"><!--
-                  --><tal:has_guidelines
-                      tal:condition="view/translation_team/style_guide_url">
-                  and <a class="style-guide-url"
-                         tal:attributes="
-                           href view/translation_team/style_guide_url"
-                         tal:content="string:${context/language/englishname}
-                                      guidelines">Serbian guidelines</a><!--
-               --></tal:has_guidelines><!--
-             --></tal:has_team>.
-              </span>
-              <span class="important-notice"
-                  tal:condition="not:view/translation_group/translation_guide_url">
-                Before translating, be sure to go through
-                <a class="style-guide-url"
-                   tal:content="string:${view/translation_team/translator/displayname}
-                                guidelines"
-                   tal:attributes="href view/translation_team/style_guide_url">
-                  Serbian guidelines</a>.
-              </span>
-            </div>
-          </div>
-        </tal:documentation>
+        <tal:documentation replace="structure view/documentation_link_bubble" />
 
       <tal:havepluralforms condition="view/has_plural_form_information">
 
@@ -154,11 +113,11 @@
                   >
                   items with new suggestions
                 </option>
-                <option value="changed_in_launchpad"
+                <option value="changed_in_ubuntu"
                   tal:attributes="selected
-                  request/htmlform:show/selected/changed_in_launchpad"
+                  request/htmlform:show/selected/changed_in_ubuntu"
                   >
-                  items changed in Launchpad
+                  items changed in Ubuntu
                 </option>
               </select>
             </label>

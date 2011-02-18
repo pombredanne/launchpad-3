@@ -7,11 +7,9 @@
 import time
 
 from bzrlib import urlutils
-
 from zope.component import getUtility
 
 from canonical.config import config
-
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.codehosting.vfs import branch_id_to_path
 from lp.services.utils import iter_split

@@ -99,7 +99,7 @@ And to help find low-hanging fruit, there&rsquo;s a &ldquo;Bugs fixed elsewhere&
                         Manage bug reports entirely through your email client.
 <br /><br />
 						You can use email to report, subscribe, comment on, assign, prioritise and make just about any other update to bugs tracked in Launchpad. Launchpad will also mail you with updates on any bug you're interested in, whether an individual bug or all the bugs associated with a particular project or package. Read more about <a href="https://help.launchpad.net/Bugs/EmailInterface">the bug tracker's e-mail interface &gt;</a><br /><br />
-						And, if you prefer, you can also subscribe to bug information in your feed reader with our Atom feeds. <img src="https://edge.launchpad.net/@@/rss" alt="Feed logo" />
+						And, if you prefer, you can also subscribe to bug information in your feed reader with our Atom feeds. <img src="https://launchpad.net/@@/rss" alt="Feed logo" />
                         </p>
                     </div>
                     <div class="block odd">
@@ -134,7 +134,7 @@ And to help find low-hanging fruit, there&rsquo;s a &ldquo;Bugs fixed elsewhere&
                 <a href="branch-hosting-tracking" accesskey="g" tabindex="5" title="Read about code hosting and review in Launchpad">Next</a>
             </li>
             <li class="copyright">
-                &copy; 2004-2010 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="i" tabindex="7">Terms of Use</a> &#124; <a href="https://help.launchpad.net/Feedback" accesskey="j" tabindex="8">Feedback</a> &#124; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="k" tabindex="9">FAQ</a>
+                &copy; 2004-2011 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="i" tabindex="7">Terms of Use</a> &#124; <a href="https://help.launchpad.net/Feedback" accesskey="j" tabindex="8">Feedback</a> &#124; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="k" tabindex="9">FAQ</a>
             </li>
         </ul>
     </div>

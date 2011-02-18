@@ -37,8 +37,8 @@ Milestone defines several menus.
 The MilestoneView used can be adapted to a MilestoneInlineNavigationMenu
 for use with inline presentation of milestones.
 
-    >>> from canonical.lazr.canonicalurl import nearest_adapter
     >>> from canonical.launchpad.webapp.interfaces import INavigationMenu
+    >>> from canonical.lazr.canonicalurl import nearest_adapter
 
     >>> view = create_view(milestone, name='+productseries-table-row')
     >>> nearest_adapter(view, INavigationMenu, name='overview')
@@ -127,7 +127,6 @@ is used by the decorator.
     ...         print '%s: %s' % (key, badge_dict[key])
     <BugTask ...>
         has_branch: False
-        has_mentoring_offer: False
         has_patch: False
         has_specification: False
 
@@ -171,8 +170,7 @@ Bugtasks are ordered by status (fix released last), and importance
 The view provides a list of StatusCounts that summarise the targeted
 specifications and bugtasks.
 
-    >>> from lp.blueprints.interfaces.specification import (
-    ...     SpecificationImplementationStatus)
+    >>> from lp.blueprints.enums import SpecificationImplementationStatus
 
     >>> bugtask.transitionToAssignee(person)
     >>> engineer = factory.makePerson(name='engineer')
@@ -301,38 +299,6 @@ not have edit permission.
     >>> login_person(person)
 
 
-Milestone caching
------------------
-
-Active milestones cache bugtasks for 10 minutes.
-
-    >>> from canonical.testing.layers import MemcachedLayer
-    >>> MemcachedLayer.purge()
-    >>> cached_milestone = factory.makeMilestone(
-    ...     'cache-test', productseries=series)
-    >>> cached_bugtask = factory.makeBugTask(target=cached_milestone.product)
-    >>> cached_bugtask.milestone = cached_milestone
-    >>> view = create_view(cached_milestone, '+index', principal=person)
-    >>> 'Cache hit' in view.render()
-    False
-    >>> print create_view(
-    ...     cached_milestone, '+index', principal=person).render()
-    <...<!-- Cache hit: memcache expression (private, 10 minute) -->
-    <table class="listing sortable" id="milestone_bugtasks">...
-
-Inactive milestones cache bugtasks for 3 hours.
-
-    >>> MemcachedLayer.purge()
-    >>> cached_milestone.active = False
-    >>> view = create_view(cached_milestone, '+index', principal=person)
-    >>> 'Cache hit' in view.render()
-    False
-    >>> print create_view(
-    ...     cached_milestone, '+index', principal=person).render()
-    <...<!-- Cache hit: memcache expression (private, 3 hour) -->
-    <table class="listing sortable" id="milestone_bugtasks">...
-
-
 ProjectGroup milestones
 -----------------------
 
@@ -362,8 +328,8 @@ Persons with launchpad.Edit permissions for milestones may edit them.
 The MilestoneEditView is responsible for controlling the fields that the
 user may edit.
 
-    >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> login_person(firefox.owner)
@@ -613,6 +579,7 @@ release manager and can create milestones.
 
     >>> distroseries = factory.makeDistroRelease(name='pumpkin')
     >>> driver = factory.makePerson(name='a-driver')
+    >>> login_person(distroseries.distribution.owner)
     >>> distroseries.driver = driver
     >>> login_person(driver)
 
@@ -715,7 +682,7 @@ milestone.
     >>> bugtask.milestone = milestone
     >>> subscription = milestone.addSubscription(owner, owner)
     >>> [subscription for subscription in owner.structural_subscriptions]
-    [<StructuralSubscription ...>]
+    [<...StructuralSubscription ...>]
 
     >>> view = create_initialized_view(milestone, '+delete')
     >>> [bugtask.milestone.name for bugtask in view.bugtasks]

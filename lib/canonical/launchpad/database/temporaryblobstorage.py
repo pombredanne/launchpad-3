@@ -12,27 +12,33 @@ __all__ = [
 
 
 from cStringIO import StringIO
-from datetime import timedelta, datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
+import uuid
 
 from pytz import utc
-from sqlobject import StringCol, ForeignKey, SQLObjectNotFound
+from sqlobject import (
+    ForeignKey,
+    SQLObjectNotFound,
+    StringCol,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical import uuid
 from canonical.config import config
-from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.interfaces import (
+from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.database.librarian import LibraryFileAlias
+from canonical.launchpad.interfaces.temporaryblobstorage import (
+    BlobTooLarge,
     ITemporaryBlobStorage,
     ITemporaryStorageManager,
-    ILibraryFileAliasSet,
-    BlobTooLarge,
     )
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.database.librarian import LibraryFileAlias
-
 from lp.services.job.interfaces.job import JobStatus
 
 
@@ -118,13 +124,13 @@ class TemporaryStorageManager:
 
         # create the BLOB and return the UUID
 
-        new_uuid = uuid.generate_uuid()
+        new_uuid = str(uuid.uuid1())
 
         # We use a random filename, so only things that can look up the
         # secret can retrieve the original data (which is why we don't use
         # the UUID we return to the user as the filename, nor the filename
         # of the object they uploaded).
-        secret = uuid.generate_uuid()
+        secret = str(uuid.uuid1())
 
         file_alias = getUtility(ILibraryFileAliasSet).create(
                 secret, len(blob), StringIO(blob),

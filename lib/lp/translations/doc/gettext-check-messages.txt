@@ -28,7 +28,7 @@ points that would otherwise be in the output.
     >>> from canonical.database.sqlbase import quote
     >>> from lp.translations.scripts.gettext_check_messages import (
     ...     GettextCheckMessages)
-    >>> from canonical.launchpad.scripts.logger import FakeLogger
+    >>> from lp.services.log.logger import FakeLogger
     >>> from lp.testing.faketransaction import FakeTransaction
 
     >>> class InstrumentedGettextCheckMessages(GettextCheckMessages):
@@ -51,8 +51,8 @@ points that would otherwise be in the output.
 
     >>> UTC = timezone('UTC')
 
-    >>> nl_file = factory.makePOFile('nl')
-    >>> template = nl_file.potemplate
+    >>> pofile = factory.makePOFile()
+    >>> template = pofile.potemplate
 
 A sample translatable message is flagged as containing a C-style format
 string.  This means that any "%d" sequences and such are significant.
@@ -65,24 +65,23 @@ those in the original message.
     >>> potmsgset.flags
     [u'c-format']
 
-The sample message has an imported translation, and a current
-translation in Launchpad that differs from the imported one.
+The sample message has an upstream translation, and an Ubuntu
+in Launchpad that differs from the upstream one.
 
-    >>> current_message = factory.makeTranslationMessage(
-    ...     pofile=nl_file, potmsgset=potmsgset, translator=template.owner,
+    >>> ubuntu_message = factory.makeCurrentTranslationMessage(
+    ...     pofile=pofile, potmsgset=potmsgset, translator=template.owner,
     ...     reviewer=template.owner, translations=[u'%d c'])
-    >>> current_message = removeSecurityProxy(current_message)
+    >>> ubuntu_message = removeSecurityProxy(ubuntu_message)
 
-    >>> imported_message = factory.makeTranslationMessage(
-    ...     pofile=nl_file, potmsgset=potmsgset, translator=template.owner,
-    ...     reviewer=template.owner, translations=[u'%d i'],
-    ...     lock_timestamp=datetime.now(UTC))
-    >>> imported_message = removeSecurityProxy(imported_message)
+    >>> upstream_message = factory.makeCurrentTranslationMessage(
+    ...     pofile=pofile, potmsgset=potmsgset, translator=template.owner,
+    ...     reviewer=template.owner, translations=[u'%d i'])
+    >>> upstream_message = removeSecurityProxy(upstream_message)
 
-    >>> imported_message.is_current = False
-    >>> current_message.is_imported = False
-    >>> imported_message.is_imported = True
-    >>> current_message.is_current = True
+    >>> upstream_message.is_current_ubuntu = False
+    >>> ubuntu_message.is_current_upstream = False
+    >>> upstream_message.is_current_upstream = True
+    >>> ubuntu_message.is_current_ubuntu = True
 
 
 == Basic operation ==
@@ -91,7 +90,7 @@ The gettext_check_message script goes through a given set of messages
 and re-does the gettext check.  Which messages it checks is specified as
 a plain SQL WHERE clause.
 
-    >>> run_checker(['-vv', "-w id=%s" % quote(current_message.id)])
+    >>> run_checker(['-vv', "-w id=%s" % quote(ubuntu_message.id)])
     DEBUG Checking messages matching:  id=...
     DEBUG Checking message ...
     DEBUG Commit point.
@@ -100,7 +99,6 @@ a plain SQL WHERE clause.
     INFO Messages checked: 1
     INFO Validation errors: 0
     INFO Messages disabled: 0
-    INFO Messages unmasked: 0
     INFO Commit points: ...
 
 
@@ -109,69 +107,38 @@ a plain SQL WHERE clause.
 If a translation fails to validate against its potmsgset, the script
 detects the problem when it checks that message.
 
-    >>> current_message.is_current
+    >>> ubuntu_message.is_current_ubuntu
     True
 
-    >>> current_message.translations = [u'%s c']
+    >>> ubuntu_message.translations = [u'%s c']
 
-    >>> run_checker(["-w id=%s" % quote(current_message.id)])
+    >>> run_checker(["-w id=%s" % quote(ubuntu_message.id)])
     DEBUG Checking messages matching:  id=...
     DEBUG Checking message ...
-    INFO ... (current): format specifications ... are not the same
-    INFO ...: unmasked ...
+    INFO ... (ubuntu): format specifications ... are not the same
+    DEBUG Commit point.
+    COMMIT
     DEBUG Commit point.
     COMMIT
     INFO Done.
     INFO Messages checked: 1
     INFO Validation errors: 1
     INFO Messages disabled: 1
-    INFO Messages unmasked: 1
     INFO Commit points: ...
 
 The failed message is demoted to a mere suggestion.
 
-    >>> current_message.is_current
-    False
-
-In this case, there was a perfectly good imported message that was being
-masked by the invalid current translation.  So in addition to disabling
-the bad current message, the script activates the good imported one.
-
-    >>> imported_message.is_current
-    True
-
-If the imported message is also bad, this is reported and the imported
-message is not activated.
-
-    >>> imported_message.is_current = False
-    >>> current_message.is_current = True
-    >>> imported_message.translations = [u'%s %s i']
-
-    >>> run_checker(["-w id=%s" % quote(current_message.id)])
-    DEBUG Checking messages matching:  id=...
-    DEBUG Checking message ...
-    INFO ... (current): format specifications ... are not the same
-    DEBUG Commit point.
-    COMMIT
-    DEBUG Commit point.
-    COMMIT
-    INFO Done.
-    INFO Messages checked: 1
-    INFO Validation errors: 2
-    INFO Messages disabled: 1
-    INFO Messages unmasked: 0
-    INFO Commit points: ...
-
-    >>> current_message.is_current
-    False
-    >>> imported_message.is_current
+    >>> ubuntu_message.is_current_ubuntu
     False
 
 
 == Output ==
 
-Besides current messages, the script's output also distinguishes
-imported ones, and ones that are completely unused.
+Besides Ubuntu messages, the script's output also distinguishes
+upstream ones, and ones that are completely unused. The upstream message
+happens to produce validation errors.
+
+    >>> upstream_message.translations = [u'%s %s i']
 
 In this example we'd like to see a nicely predictable ordering, so we
 add a sort order using the -o option.
@@ -183,49 +150,43 @@ add a sort order using the -o option.
     DEBUG Commit point.
     COMMIT
     DEBUG Checking message ...
-    INFO ... (imported): number of format specifications ... does not match...
+    INFO ... (upstream): number of format specifications ... does not match...
     DEBUG Commit point.
     COMMIT
     INFO Done.
     INFO Messages checked: 2
-    INFO Validation errors: 3
-    INFO Messages disabled: 0
-    INFO Messages unmasked: 0
+    INFO Validation errors: 2
+    INFO Messages disabled: 1
     INFO Commit points: 2
 
-In this case the imported message is checked twice: once all by itself
-and once as a potential alternative to the current message.  That's why
-the number of validation errors is greater than the number of messages
-checked.
+The script also notes when a message is shared between upstream and Ubuntu.
 
-The script also notes when a message is both current and imported.
-
-    >>> imported_message.is_current = True
-    >>> run_checker(["-w id=%s" % quote(imported_message.id)])
+    >>> upstream_message.is_current_ubuntu = True
+    >>> upstream_message.is_current_upstream = True
+    >>> run_checker(["-w id=%s" % quote(upstream_message.id)])
     DEBUG ...
-    INFO ... (current, imported): number of format specifications ...
+    INFO ... (ubuntu, upstream): number of format specifications ...
 
 
 == Dry runs ==
 
 The --dry-run option makes the script abort all its database changes.
 
-    >>> current_message.is_current = True
+    >>> ubuntu_message.is_current_ubuntu = True
 
-    >>> run_checker(["-w id=%s" % quote(current_message.id), '--dry-run'])
+    >>> run_checker(["-w id=%s" % quote(ubuntu_message.id), '--dry-run'])
     INFO Dry run.  Not making any changes.
     DEBUG Checking messages matching:  id=...
     DEBUG Checking message ...
-    INFO ... (current): format specifications ... are not the same
+    INFO ... (ubuntu): format specifications ... are not the same
     DEBUG Commit point.
     ABORT
     DEBUG Commit point.
     ABORT
     INFO Done.
     INFO Messages checked: 1
-    INFO Validation errors: 2
+    INFO Validation errors: 1
     INFO Messages disabled: 1
-    INFO Messages unmasked: 0
     INFO Commit points: 2
 
 
@@ -251,7 +212,6 @@ to close things off neatly.
     COMMIT
     INFO Done.
     INFO Messages checked: 2
-    INFO Validation errors: 3
+    INFO Validation errors: 2
     INFO Messages disabled: 0
-    INFO Messages unmasked: 0
     INFO Commit points: 3

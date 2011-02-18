@@ -9,16 +9,26 @@ from unittest import TestLoader
 
 from zope.component import getUtility
 
+from canonical.launchpad.ftests import (
+    login,
+    logout,
+    )
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.testing.pages import setupBrowser
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    PageTestLayer,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.packaging import IPackagingUtil
+from lp.registry.interfaces.packaging import (
+    IPackagingUtil,
+    PackagingType,
+    )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.testing import TestCaseWithFactory
+from lp.testing.memcache import MemcacheTestCase
 from lp.testing.views import create_initialized_view
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.ftests import login, logout
-from canonical.launchpad.testing.pages import setupBrowser
-from canonical.testing import DatabaseFunctionalLayer, PageTestLayer
 
 
 class TestProductSeriesUbuntuPackagingView(TestCaseWithFactory):
@@ -40,13 +50,30 @@ class TestProductSeriesUbuntuPackagingView(TestCaseWithFactory):
             product=self.product, name='hotter')
         self.packaging_util = getUtility(IPackagingUtil)
 
+    def test_no_error_when_trying_to_readd_same_package(self):
+        # There is no reason to display an error when the user's action
+        # wouldn't cause a state change.
+        self.packaging_util.createPackaging(
+            productseries=self.productseries,
+            sourcepackagename=self.sourcepackagename,
+            distroseries=self.hoary, packaging=PackagingType.PRIME,
+            owner=self.product.owner)
+
+        form = {
+            'field.distroseries': self.hoary.name,
+            'field.sourcepackagename': self.sourcepackagename.name,
+            'field.actions.continue': 'Continue',
+            }
+        view = create_initialized_view(
+            self.productseries, '+ubuntupkg', form=form)
+        self.assertEqual([], view.errors)
+
     def test_cannot_link_to_linked_package(self):
         # Once a distro series sourcepackage is linked to a product series,
         # no other product series can link to it.
         form = {
             'field.distroseries': 'hoary',
             'field.sourcepackagename': 'hot',
-            'field.packaging': 'Primary Project',
             'field.actions.continue': 'Continue',
             }
         view = create_initialized_view(
@@ -57,7 +84,6 @@ class TestProductSeriesUbuntuPackagingView(TestCaseWithFactory):
         form = {
             'field.distroseries': 'hoary',
             'field.sourcepackagename': 'hot',
-            'field.packaging': 'Primary Project',
             'field.actions.continue': 'Continue',
             }
         view = create_initialized_view(
@@ -72,7 +98,6 @@ class TestProductSeriesUbuntuPackagingView(TestCaseWithFactory):
         form = {
             'field.distroseries': 'hoary',
             'field.sourcepackagename': '',
-            'field.packaging': 'Primary Project',
             'field.actions.continue': 'Continue',
             }
         view = create_initialized_view(
@@ -88,7 +113,6 @@ class TestProductSeriesUbuntuPackagingView(TestCaseWithFactory):
         form = {
             'field.distroseries': 'hoary',
             'field.sourcepackagename': 'vapor',
-            'field.packaging': 'Primary Project',
             'field.actions.continue': 'Continue',
             }
         view = create_initialized_view(
@@ -104,7 +128,6 @@ class TestProductSeriesUbuntuPackagingView(TestCaseWithFactory):
         form = {
             'field.distroseries': 'warty',
             'field.sourcepackagename': 'hot',
-            'field.packaging': 'Primary Project',
             'field.actions.continue': 'Continue',
             }
         view = create_initialized_view(
@@ -163,6 +186,40 @@ class TestBrowserDeletePackaging(TestCaseWithFactory):
             productseries=productseries,
             sourcepackagename=package_name,
             distroseries=distroseries))
+
+
+class TestDistroseriesPackagingMemcache(MemcacheTestCase):
+    """Tests distroseries packaging cache rules."""
+
+    def setUp(self):
+        super(TestDistroseriesPackagingMemcache, self).setUp()
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        self.hoary = ubuntu.getSeries('hoary')
+        self.observer = self.factory.makePerson()
+
+    def test_needs_packaging_memcache(self):
+        # Verify that the packages table is cached.
+        # Miss the cache on first render.
+        view = create_initialized_view(
+            self.hoary, name='+needs-packaging', principal=self.observer)
+        self.assertCacheMiss('<table id="packages"', view.render())
+        # Hit the cache on the second render.
+        view = create_initialized_view(
+            self.hoary, name='+needs-packaging', principal=self.observer)
+        self.assertCacheHit(
+            '<table id="packages"', 'public, 30 minute', view.render())
+
+    def test_packaging_memcache(self):
+        # Verify that the packagings table is cached.
+        # Miss the cache on first render.
+        view = create_initialized_view(
+            self.hoary, name='+packaging', principal=self.observer)
+        self.assertCacheMiss('<table id="packagings"', view.render())
+        # Hit the cache on the second render.
+        view = create_initialized_view(
+            self.hoary, name='+packaging', principal=self.observer)
+        self.assertCacheHit(
+            '<table id="packagings"', 'public, 30 minute', view.render())
 
 
 def test_suite():

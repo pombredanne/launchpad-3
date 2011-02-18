@@ -54,8 +54,8 @@ We get a nice error message
 Give up on change, nothing should have changed with Colin:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, ITeamMembershipSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.teammembership import ITeamMembershipSet
     >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
     >>> login(ANONYMOUS)
     >>> personset = getUtility(IPersonSet)
@@ -249,3 +249,11 @@ subscriptions on their own participation page.
     >>> user_browser.getLink('Change mailing list subscriptions')
     <Link ... url='http://.../~no-priv/+editemails'>
 
+Teams also have a participation page, but it does not include a mailing
+list column.
+
+    >>> admin_browser.open('http://launchpad.dev/~admins/+participation')
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'participation'))
+    Team                  Joined      Role    Via
+    Mailing List Experts  2007-10-04  Owner   &mdash;

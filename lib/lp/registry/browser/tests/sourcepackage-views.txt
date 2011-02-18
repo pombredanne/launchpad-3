@@ -119,6 +119,7 @@ The form requires a product. An error is raised if the field is left
 empty.
 
     >>> form = {
+    ...     'field.__visited_steps__': 'sourcepackage_change_upstream_step1',
     ...     'field.product': '',
     ...     'field.actions.continue': 'Continue',
     ...     }
@@ -133,12 +134,18 @@ Submitting the same product series as the current packaging is not an error,
 but there is no notification message that the upstream link was updated.
 
     >>> form = {
-    ...     'field.productseries': 'bonkers/crazy',
-    ...     'field.actions.change': 'Change',
+    ...     'field.__visited_steps__': 'sourcepackage_change_upstream_step2',
+    ...     'field.product': 'bonkers',
+    ...     'field.productseries': 'crazy',
+    ...     'field.actions.continue': 'Continue',
     ...     }
     >>> view = create_initialized_view(
     ...     package, name='+edit-packaging', form=form,
     ...     principal=product.owner)
+    >>> print view.view
+    <...SourcePackageChangeUpstreamStepTwo object...>
+    >>> print view.view.next_url
+    http://launchpad.dev/youbuntu/busy/+source/bonkers
     >>> view.view.errors
     []
 
@@ -177,6 +184,7 @@ bonkers project, the portlet will display that information.
     Bug supervisor: no
     Bug tracker: no
     Branch: no
+    There are no registered releases for the Bonkers &rArr; crazy.
 
 A new source project that is not linked to an upstream will result in
 the portlet showing the suggested project.
@@ -199,6 +207,7 @@ the portlet showing the suggested project.
     Registered upstream project:
     Lernid
     Choose another upstream project
+    Register the upstream project
 
 The form does not steal focus because it is not the primary purpose of the
 page.
@@ -229,6 +238,7 @@ item is reserved for the "Choose another upstream project" option.
     Lernid...
     Lernid Dev...
     Choose another upstream project
+    Register the upstream project
 
 Choosing the "Choose another upstream project" option redirects the user
 to the +edit-packaging page where the user can search for a project.
@@ -259,7 +269,8 @@ If the view's package has no productseries set then has_bugtracker is False.
     ...     name='stinkyseries', product=product)
     >>> distroseries = factory.makeDistroRelease(name='wonky',
     ...     distribution=distribution)
-    >>> sourcepackagename = factory.makeSourcePackageName(name='stinkypackage')
+    >>> sourcepackagename = factory.makeSourcePackageName(
+    ...     name='stinkypackage')
     >>> package = factory.makeSourcePackage(
     ...     sourcepackagename=sourcepackagename, distroseries=distroseries)
 
@@ -283,8 +294,8 @@ set then the view property is false.
     >>> view = create_initialized_view(
     ...     package, name='+upstream-connections')
 
-    >>> print product.official_malone
-    False
+    >>> print product.bug_tracking_usage.name
+    UNKNOWN
     >>> print product.bugtracker
     None
     >>> print view.has_bugtracker
@@ -360,3 +371,4 @@ to the project series.
     match for this source package. Can you help us find one?
     Registered upstream project:
     Choose another upstream project
+    Register the upstream project

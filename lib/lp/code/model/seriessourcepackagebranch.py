@@ -14,18 +14,27 @@ __all__ = [
 from datetime import datetime
 
 import pytz
-
-from storm.locals import DateTime, Int, Reference, Storm
-
+from storm.locals import (
+    DateTime,
+    Int,
+    Reference,
+    Storm,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.enumcol import DBEnum
 from canonical.launchpad.webapp.interfaces import (
-     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.code.interfaces.seriessourcepackagebranch import (
-    IFindOfficialBranchLinks, IMakeOfficialBranchLinks,
-    ISeriesSourcePackageBranch)
+    IFindOfficialBranchLinks,
+    IMakeOfficialBranchLinks,
+    ISeriesSourcePackageBranch,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 

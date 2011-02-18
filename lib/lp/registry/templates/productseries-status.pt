@@ -8,8 +8,7 @@
     is_focus context/is_development_focus;
     spec_count_status view/specification_status_counts;"
   >
-  <metal:series use-macro="series/@@+macros/detailed_display">
-    <div metal:fill-slot="extra">
+  <div tal:replace="structure context/@@+detailed-display"/>
       <div>
         <tal:not-obsolete
           condition="not: view/is_obsolete"
@@ -42,6 +41,4 @@
       <tal:summary
         condition="series/summary"
         content="structure context/summary/fmt:text-to-html" />
-    </div>
-  </metal:series>
 </div>

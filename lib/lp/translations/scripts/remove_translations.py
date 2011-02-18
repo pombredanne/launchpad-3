@@ -10,18 +10,25 @@ __all__ = [
     ]
 
 import logging
-
-from optparse import Option, OptionValueError
+from optparse import (
+    Option,
+    OptionValueError,
+    )
 
 from zope.component import getUtility
 
 from canonical.database.postgresql import drop_tables
-from canonical.database.sqlbase import cursor, sqlvalues
-from canonical.launchpad.interfaces import IPersonSet
-from lp.translations.interfaces.translationmessage import (
-    RosettaTranslationOrigin)
+from canonical.database.sqlbase import (
+    cursor,
+    sqlvalues,
+    )
 from lp.services.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
+from lp.translations.interfaces.translationmessage import (
+    RosettaTranslationOrigin,
+    )
 
 
 def check_bool_option(option, opt, value):
@@ -76,6 +83,9 @@ def get_id(identifier, lookup_function=None):
 
 def get_person_id(name):
     """`get_id` helper.  Look up person by name."""
+    # XXX sinzui 2010-10-04 bug=654537: Account and EmailAddress cause cyclic
+    # imports because they are not in the lp tree.
+    from lp.registry.interfaces.person import IPersonSet
     person = getUtility(IPersonSet).getByName(name)
     if person is None:
         return None
@@ -122,22 +132,10 @@ def check_option_type(options, option_name, option_type):
 def compose_language_match(language_code):
     """Compose SQL condition for matching a language in the deletion query.
 
-    :param: Language code to match.  May include a variant.
+    :param: Language code to match.
     :return: SQL condition in string form.
     """
-    if '@' in language_code:
-        language, variant = language_code.split('@')
-    else:
-        language = language_code
-        variant = None
-
-    language_conditions = ['Language.code = %s' % sqlvalues(language)]
-    if variant is None:
-        language_conditions.append('TranslationMessage.variant IS NULL')
-    else:
-        language_conditions.append(
-            'TranslationMessage.variant = %s' % sqlvalues(variant))
-    return ' AND '.join(language_conditions)
+    return 'Language.code = %s' % sqlvalues(language_code)
 
 
 def add_bool_match(conditions, expression, match_value):
@@ -207,11 +205,13 @@ class RemoveTranslations(LaunchpadScript):
             '-L', '--not-language', action='store_true', dest='not_language',
             help="Invert language match: spare messages in given language."),
         ExtendedOption(
-            '-C', '--is-current', dest='is_current', type='bool',
-            help="Match on is_current value (True or False)."),
+            '-C', '--is-current-ubuntu', dest='is_current_ubuntu',
+            type='bool',
+            help="Match on is_current_ubuntu value (True or False)."),
         ExtendedOption(
-            '-I', '--is-imported', dest='is_imported', type='bool',
-            help="Match on is_imported value (True or False)."),
+            '-I', '--is-current-upstream', dest='is_current_upstream',
+            type='bool',
+            help="Match on is_current_upstream value (True or False)."),
         ExtendedOption(
             '-m', '--msgid', dest='msgid',
             help="Match on (singular) msgid text."),
@@ -223,7 +223,7 @@ class RemoveTranslations(LaunchpadScript):
             help="Override safety check on moderately unsafe action."),
         ExtendedOption(
             '-d', '--dry-run', action='store_true', dest='dry_run',
-            help="Go through the motions, but don't really delete.")
+            help="Go through the motions, but don't really delete."),
         ]
 
     def add_my_options(self):
@@ -253,8 +253,8 @@ class RemoveTranslations(LaunchpadScript):
                 "template %s." % self.options.potemplate)
 
         if self.options.reject_license:
-            if self.options.is_imported == False:
-                # "Remove non-is_imported messages submitted by users
+            if self.options.is_current_upstream == False:
+                # "Remove non-is_current_upstream messages submitted by users
                 # who rejected the license."
                 return (True, None)
 
@@ -301,8 +301,8 @@ class RemoveTranslations(LaunchpadScript):
             potemplate=self.options.potemplate,
             language_code=self.options.language,
             not_language=self.options.not_language,
-            is_current=self.options.is_current,
-            is_imported=self.options.is_imported,
+            is_current_ubuntu=self.options.is_current_ubuntu,
+            is_current_upstream=self.options.is_current_upstream,
             msgid_singular=self.options.msgid,
             origin=self.options.origin)
 
@@ -313,10 +313,46 @@ class RemoveTranslations(LaunchpadScript):
             self.txn.commit()
 
 
-def remove_translations(logger=None, submitter=None, reviewer=None, 
+def warn_about_deleting_current_messages(cur, from_text, where_text, logger):
+    # Deleting currently used translations is a bit harmful. Log
+    # them so that we have a clue which messages might have to be
+    # translated again. Note that this script tries to find
+    # another translation that becomes current -- but only in one
+    # situation: If we delete a shared translation which is current
+    # in Ubuntu, a shared translation which is current in upstream
+    # becomes the current Ubuntu translation. In other cases (deleting
+    # a diverged translation, deleting a shared translation which
+    # is current upstream) we do not attempt to find another current
+    # message.
+    if logger is not None and logger.getEffectiveLevel() <= logging.WARN:
+        query = """
+            SELECT
+                TranslationMessage.id, TranslationMessage.is_current_upstream,
+                TranslationMessage.is_current_ubuntu
+            FROM %s
+            WHERE %s AND (
+                TranslationMessage.is_current_upstream OR
+                TranslationMessage.is_current_ubuntu)
+            """ % (from_text, where_text)
+        cur.execute(query)
+        rows = cur.fetchall()
+        if cur.rowcount > 0:
+            logger.warn(
+                'Deleting messages currently in use:')
+            for (id, is_current_upstream, is_current_ubuntu) in rows:
+                current = []
+                if is_current_upstream:
+                    current.append('upstream')
+                if is_current_ubuntu:
+                    current.append('Ubuntu')
+                logger.warn(
+                    'Message %i is a current translation in %s'
+                    % (id, ' and '.join(current)))
+
+def remove_translations(logger=None, submitter=None, reviewer=None,
                         reject_license=False, ids=None, potemplate=None,
                         language_code=None, not_language=False,
-                        is_current=None, is_imported=None,
+                        is_current_ubuntu=None, is_current_upstream=None,
                         msgid_singular=None, origin=None):
     """Remove specified translation messages.
 
@@ -332,8 +368,10 @@ def remove_translations(logger=None, submitter=None, reviewer=None,
         language that would otherwise be deleted.
     :param not_language: Whether to spare (True) or delete (False)
         messages in this language.
-    :param is_current: Delete only messages with this is_current value.
-    :param is_imported: Delete only messages with this is_imported value.
+    :param is_current_ubuntu: Delete only messages with this is_current_ubuntu
+        value.
+    :param is_current_upstream: Delete only messages with this
+        is_current_upstream value.
     :param msgid_singular: Delete only messages with this singular msgid.
     :param origin: Delete only messages with this `TranslationOrigin` code.
 
@@ -373,8 +411,11 @@ def remove_translations(logger=None, submitter=None, reviewer=None,
         else:
             conditions.add(language_match)
 
-    add_bool_match(conditions, 'TranslationMessage.is_current', is_current)
-    add_bool_match(conditions, 'TranslationMessage.is_imported', is_imported)
+    add_bool_match(
+        conditions, 'TranslationMessage.is_current_ubuntu', is_current_ubuntu)
+    add_bool_match(
+        conditions, 'TranslationMessage.is_current_upstream',
+        is_current_upstream)
 
     if msgid_singular is not None:
         joins.add('POTMsgSet')
@@ -400,6 +441,8 @@ def remove_translations(logger=None, submitter=None, reviewer=None,
     from_text = ', '.join(joins)
     where_text = ' AND\n    '.join(conditions)
 
+    warn_about_deleting_current_messages(cur, from_text, where_text, logger)
+
     # Keep track of messages we're going to delete.
     # Don't bother indexing this.  We'd more likely end up optimizing
     # away the operator's "oh-shit-ctrl-c" time than helping anyone.
@@ -411,10 +454,10 @@ def remove_translations(logger=None, submitter=None, reviewer=None,
         """ % (from_text, where_text)
     cur.execute(query)
 
-    # Note which messages are masked by the messages we're going to
-    # delete.  We'll be making those the current ones.
+    # Note which shared messages are masked by the messages we're
+    # going to delete.  We'll be making those the current ones.
     query = """
-        UPDATE temp_doomed_message
+         UPDATE temp_doomed_message
         SET imported_message = Imported.id
         FROM TranslationMessage Doomed, TranslationMessage Imported
         WHERE
@@ -422,12 +465,12 @@ def remove_translations(logger=None, submitter=None, reviewer=None,
             -- Is alternative for the message we're about to delete.
             Imported.potmsgset = Doomed.potmsgset AND
             Imported.language = Doomed.language AND
-            Imported.variant IS NOT DISTINCT FROM Doomed.variant AND
-            Imported.potemplate IS NOT DISTINCT FROM Doomed.potemplate AND
-            -- Came from published source.
-            Imported.is_imported IS TRUE AND
+            Imported.potemplate IS NULL AND
+            Doomed.potemplate IS NULL AND
+            -- Is used upstream.
+            Imported.is_current_upstream IS TRUE AND
             -- Was masked by the message we're about to delete.
-            Doomed.is_current IS TRUE AND
+            Doomed.is_current_ubuntu IS TRUE AND
             Imported.id <> Doomed.id
             """
     cur.execute(query)
@@ -464,7 +507,7 @@ def remove_translations(logger=None, submitter=None, reviewer=None,
 
     cur.execute("""
         UPDATE TranslationMessage
-        SET is_current = TRUE
+        SET is_current_ubuntu = TRUE
         FROM temp_doomed_message
         WHERE TranslationMessage.id = temp_doomed_message.imported_message
         """)

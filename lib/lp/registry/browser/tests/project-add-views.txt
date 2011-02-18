@@ -15,25 +15,24 @@ The first step requires all of name, summary, displayname to be given.  These
 are forwarded in the form data to the second step.  The title is also
 forwarded, but is only required by the Zope machinery, not the view.
 
-    >>> form = {'field.actions.continue': 'Continue'}
+    >>> from lp.registry.browser.product import ProjectAddStepOne
+    >>> form = {
+    ...     'field.actions.continue': 'Continue',
+    ...     'field.__visited_steps__': ProjectAddStepOne.step_name,
+    ...     'field.displayname': '',
+    ...     'field.name': '',
+    ...     'field.summary': '',
+    ... }
 
     >>> view = create_initialized_view(product_set, name='+new', form=form)
-    Traceback (most recent call last):
-    ...
-    KeyError: 'displayname'
+    >>> for error in view.view.errors:
+    ...     print error
+    ('displayname', 'Name', RequiredMissing())
+    ('name', 'URL', RequiredMissing())
+    ('summary', u'Summary', RequiredMissing())
 
     >>> form['field.displayname'] = 'Snowdog'
-    >>> view = create_initialized_view(product_set, name='+new', form=form)
-    Traceback (most recent call last):
-    ...
-    KeyError: 'name'
-
     >>> form['field.name'] = 'snowdog'
-    >>> view = create_initialized_view(product_set, name='+new', form=form)
-    Traceback (most recent call last):
-    ...
-    KeyError: 'summary'
-
     >>> form['field.summary'] = 'By-tor and the Snowdog'
     >>> view = create_initialized_view(product_set, name='+new', form=form)
 
@@ -44,7 +43,6 @@ count.  The first step has no search results.
     # steps individually.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from lp.registry.browser.product import ProjectAddStepOne
 
     >>> form['field.__visited_steps__'] = ProjectAddStepOne.step_name
     >>> request = LaunchpadTestRequest(form=form, method='POST')
@@ -63,10 +61,12 @@ information in the label.
 
     >>> from lp.registry.browser.product import ProjectAddStepTwo
     >>> form = {
-    ...     'displayname': 'Snowdog',
-    ...     'name': 'snowdog',
-    ...     'title': 'The Snowdog',
-    ...     'summary': 'By-tor and the Snowdog',
+    ...     'field.actions.continue': 'Continue',
+    ...     'field.__visited_steps__': ProjectAddStepTwo.step_name,
+    ...     'field.displayname': 'Snowdog',
+    ...     'field.name': 'snowdog',
+    ...     'field.title': 'The Snowdog',
+    ...     'field.summary': 'By-tor and the Snowdog',
     ...     }
 
     >>> request = LaunchpadTestRequest(form=form, method='POST')
@@ -90,7 +90,7 @@ The prospective project's name, displayname and summary are used to search
 existing projects for possible matches.  By tweaking the project summary, we
 can see that there are search results available.
 
-    >>> form['summary'] = 'My Snowdog ate your Firefox'
+    >>> form['field.summary'] = 'My Snowdog ate your Firefox'
 
     >>> request = LaunchpadTestRequest(form=form, method='POST')
     >>> view = ProjectAddStepTwo(product_set, request)
@@ -159,8 +159,9 @@ When an open source license is selected, the project is created.
 Feedback notification
 ---------------------
 
-When projects are created with the Other/Proprietary license, a message is
-sent to feedback@launchpad.net.
+When projects are created with the Other/Proprietary, Other/Open Source or
+I Don't Know license, a message is sent to the user explaining the licensing
+rules.
 
     >>> form = {
     ...     'field.displayname': 'Badger',
@@ -229,9 +230,9 @@ However, when a proprietary license is selected, a description is required.
     questions.
     <BLANKLINE>
     Sometimes new projects are licensed as 'Other/Open Source' because the
-    licensing decisions have not yet been made.  If that is your situation we u=
-    rge
-    you to update the licensing in Launchpad as soon as you make that choice.
+    licensing decisions have not yet been made.  If that is your situation
+    we urge you to update the licensing in Launchpad as soon as you make
+    that choice.
     <BLANKLINE>
     If the license for your project needs to be corrected you can do so by
     following the 'Change Details' link on your project's overview page.
@@ -239,30 +240,6 @@ However, when a proprietary license is selected, a description is required.
     Thanks,
     <BLANKLINE>
     The Launchpad team.
-    <BLANKLINE>
-    ----------------------------------------
-    From: Launchpad <noreply@launchpad.net>
-    To: Commercial <commercial@launchpad.net>
-    Subject: Project License Submitted for badger by name16
-    Please review this project's licenses.
-    http://launchpad.dev/badger
-    <BLANKLINE>
-    User: Foo Bar (name16)
-    <BLANKLINE>
-    <BLANKLINE>
-    Project Name: badger
-    <BLANKLINE>
-    <BLANKLINE>
-    Project Summary:
-        There's the Badger!
-    <BLANKLINE>
-    <BLANKLINE>
-    Licenses:
-        Other/Proprietary
-    <BLANKLINE>
-    <BLANKLINE>
-    License info:
-        The Badger(tm) License
     <BLANKLINE>
     ----------------------------------------
 

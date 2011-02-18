@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -16,54 +16,103 @@ __all__ = [
     ]
 
 from datetime import datetime
-import operator
-import pytz
-
 from email.Utils import make_msgid
+import operator
 
-from zope.component import getUtility
-from zope.event import notify
-from zope.interface import implements, providedBy
-from zope.security.proxy import isinstance as zope_isinstance
-
+from lazr.enum import (
+    DBItem,
+    Item,
+    )
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectModifiedEvent,
+    )
+from lazr.lifecycle.snapshot import Snapshot
+import pytz
 from sqlobject import (
-    ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin, SQLObjectNotFound)
+    ForeignKey,
+    SQLMultipleJoin,
+    SQLObjectNotFound,
+    SQLRelatedJoin,
+    StringCol,
+    )
 from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import LeftJoin
 from storm.store import Store
+from zope.component import getUtility
+from zope.event import notify
+from zope.interface import (
+    implements,
+    providedBy,
+    )
+from zope.security.proxy import isinstance as zope_isinstance
 
-from lazr.enum import DBItem, Item
-from lazr.lifecycle.event import ObjectCreatedEvent, ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
-
-from canonical.launchpad.interfaces import (
-    BugTaskStatus, IBugLinkTarget, IDistribution, IDistributionSet,
-    IDistributionSourcePackage, IFAQ, InvalidQuestionStateError, ILanguage,
-    ILaunchpadCelebrities, IMessage, IPerson, IProduct, IProductSet,
-    IQuestion, IQuestionSet, IQuestionTarget, ISourcePackage,
-    QUESTION_STATUS_DEFAULT_SEARCH, QuestionAction, QuestionParticipation,
-    QuestionPriority, QuestionSort, QuestionStatus)
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageNameSet)
-from lp.registry.interfaces.person import validate_public_person
-
-from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.nl_search import nl_phrase_search
 from canonical.database.enumcol import EnumCol
-
-from lp.answers.model.answercontact import AnswerContact
-from lp.bugs.model.buglinktarget import BugLinkTargetMixin
-from lp.services.worlddata.model.language import Language
-from canonical.launchpad.database.message import Message, MessageChunk
-from lp.coop.answersbugs.model import QuestionBug
-from lp.answers.model.questionmessage import QuestionMessage
-from lp.answers.model.questionsubscription import (
-    QuestionSubscription)
+from canonical.database.nl_search import nl_phrase_search
+from canonical.database.sqlbase import (
+    cursor,
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.database.message import (
+    Message,
+    MessageChunk,
+    )
 from canonical.launchpad.helpers import is_english_variant
-from canonical.launchpad.mailnotification import (
-    NotificationRecipientSet)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.message import IMessage
+from canonical.launchpad.mailnotification import NotificationRecipientSet
+from lp.answers.interfaces.faq import IFAQ
+from lp.answers.interfaces.question import (
+    InvalidQuestionStateError,
+    IQuestion,
+    )
+from lp.answers.interfaces.questioncollection import (
+    IQuestionSet,
+    QUESTION_STATUS_DEFAULT_SEARCH,
+    )
+from lp.answers.interfaces.questionenums import (
+    QuestionAction,
+    QuestionParticipation,
+    QuestionPriority,
+    QuestionSort,
+    QuestionStatus,
+    )
+from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.answers.model.answercontact import AnswerContact
+from lp.answers.model.questionmessage import QuestionMessage
+from lp.answers.model.questionreopening import create_questionreopening
+from lp.answers.model.questionsubscription import QuestionSubscription
+from lp.app.enums import ServiceUsage
+from lp.bugs.interfaces.buglink import IBugLinkTarget
+from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.model.buglinktarget import BugLinkTargetMixin
+from lp.coop.answersbugs.model import QuestionBug
+from lp.registry.interfaces.distribution import (
+    IDistribution,
+    IDistributionSet,
+    )
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
+from lp.registry.interfaces.person import (
+    IPerson,
+    validate_public_person,
+    )
+from lp.registry.interfaces.product import (
+    IProduct,
+    IProductSet,
+    )
+from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.worlddata.interfaces.language import ILanguage
+from lp.services.worlddata.model.language import Language
 
 
 class notify_question_modified:
@@ -83,6 +132,7 @@ class notify_question_modified:
 
     def __call__(self, func):
         """Return the ObjectModifiedEvent decorator."""
+
         def notify_question_modified(self, *args, **kwargs):
             """Create the ObjectModifiedEvent decorator."""
             old_question = Snapshot(self, providing=providedBy(self))
@@ -229,15 +279,28 @@ class Question(SQLBase, BugLinkTargetMixin):
             raise InvalidQuestionStateError(
                 "New status is same as the old one.")
 
+
         # If the previous state recorded an answer, clear those
-        # information as well.
+        # information as well, but copy it out for the reopening.
+        old_status = self.status
+        old_answerer = self.answerer
+        old_date_solved = self.date_solved
         self.answerer = None
         self.answer = None
         self.date_solved = None
 
-        return self._newMessage(
+        msg = self._newMessage(
             user, comment, datecreated=datecreated,
             action=QuestionAction.SETSTATUS, new_status=new_status)
+
+        if new_status == QuestionStatus.OPEN:
+            create_questionreopening(
+                self,
+                msg,
+                old_status,
+                old_answerer,
+                old_date_solved)
+        return msg
 
     @notify_question_modified()
     def addComment(self, user, comment, datecreated=None):
@@ -425,12 +488,24 @@ class Question(SQLBase, BugLinkTargetMixin):
     @notify_question_modified()
     def reopen(self, comment, datecreated=None):
         """See `IQuestion`."""
+        old_status = self.status
+        old_answerer = self.answerer
+        old_date_solved = self.date_solved
         if not self.can_reopen:
             raise InvalidQuestionStateError(
                 "Question status != ANSWERED, EXPIRED or SOLVED.")
         msg = self._newMessage(
-            self.owner, comment, datecreated=datecreated,
-            action=QuestionAction.REOPEN, new_status=QuestionStatus.OPEN)
+            self.owner,
+            comment,
+            datecreated=datecreated,
+            action=QuestionAction.REOPEN,
+            new_status=QuestionStatus.OPEN)
+        create_questionreopening(
+            self,
+            msg,
+            old_status,
+            old_answerer,
+            old_date_solved)
         self.answer = None
         self.answerer = None
         self.date_solved = None
@@ -509,7 +584,8 @@ class Question(SQLBase, BugLinkTargetMixin):
         When update_question_dates is True, the question's datelastquery or
         datelastresponse attribute is updated to the message creation date.
         The datelastquery attribute is updated when the message owner is the
-        same than the question owner, otherwise the datelastresponse is updated.
+        same than the question owner, otherwise the datelastresponse is
+        updated.
 
         :owner: An IPerson.
         :content: A string or an IMessage. When it's an IMessage, the owner
@@ -631,8 +707,8 @@ class QuestionSet:
                     LEFT OUTER JOIN Distribution ON (
                         Question.distribution = Distribution.id)
                 WHERE
-                    (Product.official_answers is True
-                    OR Distribution.official_answers is TRUE)
+                    (Product.answers_usage = %s
+                    OR Distribution.answers_usage = %s)
                     AND Question.datecreated > (
                         current_timestamp -interval '60 days')
                 LIMIT 5000
@@ -640,7 +716,8 @@ class QuestionSet:
             GROUP BY product, distribution
             ORDER BY question_count DESC
             LIMIT %s
-            """ % sqlvalues(limit))
+            """ % sqlvalues(
+                    ServiceUsage.LAUNCHPAD, ServiceUsage.LAUNCHPAD, limit))
 
         projects = []
         product_set = getUtility(IProductSet)
@@ -907,7 +984,7 @@ class QuestionSearch:
         elif sort is QuestionSort.RECENT_OWNER_ACTIVITY:
             return ['-Question.datelastquery']
         else:
-            raise AssertionError, "Unknown QuestionSort value: %s" % sort
+            raise AssertionError("Unknown QuestionSort value: %s" % sort)
 
     def getResults(self):
         """Return the questions that match this query."""

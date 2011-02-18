@@ -32,7 +32,7 @@ corresponding 'Build' page.
 
     >>> print anon_browser.getLink(
     ...     'i386 build of mozilla-firefox 0.9').url
-    http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+build/8
+    http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+buildjob/8
 
 The build status portlets contain the number of builds waiting
 in queue and the sum of their 'estimated_duration' for each
@@ -60,7 +60,7 @@ the corresponding portlet with their estimated duration as well.
     >>> import datetime
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('foo.bar@canonical.com')
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
@@ -80,10 +80,12 @@ the corresponding portlet with their estimated duration as well.
     386        0         1 job (a minute)
 
 If the archive for the build does not require virtual builders, then
-the pending job will appear in the 'official' queue:
+the pending job will appear in the 'official' queue. Since the build
+record already exists, we must manually set it to non-virtualized too.
 
     >>> login('foo.bar@canonical.com')
     >>> cprov.archive.require_virtualized = False
+    >>> removeSecurityProxy(bq).virtualized = False
     >>> logout()
 
     >>> anon_browser.reload()
@@ -142,12 +144,12 @@ to the builder or simply proceed with the default (i386).
     >>> admin_browser.getControl(name='field.processor').displayValue
     ['Intel 386']
 
-By default, builders are created as 'active', although the
+By default, builders are created as 'Publicly Visible', although the
 administrator can change this value during creation time.
 
-    >>> print admin_browser.getControl('Active').selected
+    >>> print admin_browser.getControl('Publicly Visible').selected
     True
-    >>> admin_browser.getControl('Active').selected = False
+    >>> admin_browser.getControl('Publicly Visible').selected = False
 
 Builder as created as 'non-virtual' by default, but the administrator
 can also modify that while creating a builder.

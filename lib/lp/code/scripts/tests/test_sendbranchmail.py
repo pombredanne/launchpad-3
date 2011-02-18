@@ -6,15 +6,21 @@
 """Test the sendbranchmail script"""
 
 import unittest
+
 import transaction
 
-from canonical.testing import ZopelessAppServerLayer
 from canonical.launchpad.scripts.tests import run_script
+from canonical.testing.layers import ZopelessAppServerLayer
 from lp.code.enums import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
 from lp.code.model.branchjob import (
-    RevisionMailJob, RevisionsAddedJob)
+    RevisionMailJob,
+    RevisionsAddedJob,
+    )
+from lp.services.osutils import override_environ
 from lp.testing import TestCaseWithFactory
 
 
@@ -33,7 +39,10 @@ class TestSendbranchmail(TestCaseWithFactory):
         transport = tree.bzrdir.root_transport
         transport.put_bytes('foo', 'bar')
         tree.add('foo')
-        tree.commit('Added foo.', rev_id='rev1')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            tree.commit('Added foo.', rev_id='rev1')
         return branch, tree
 
     def test_sendbranchmail(self):
@@ -73,7 +82,10 @@ class TestSendbranchmail(TestCaseWithFactory):
         self.useBzrBranches()
         branch, tree = self.createBranch()
         tree.bzrdir.root_transport.put_bytes('foo', 'baz')
-        tree.commit('Added foo.', rev_id='rev2')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            tree.commit('Added foo.', rev_id='rev2')
         RevisionsAddedJob.create(
             branch, 'rev1', 'rev2', 'from@example.org')
         transaction.commit()

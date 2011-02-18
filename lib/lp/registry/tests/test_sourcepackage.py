@@ -11,19 +11,28 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import login_person, logout
-from lp.registry.interfaces.distribution import NoPartnerArchive
-from lp.registry.interfaces.series import SeriesStatus
+from canonical.launchpad.ftests import (
+    login_person,
+    logout,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.code.interfaces.seriessourcepackagebranch import (
-    IMakeOfficialBranchLinks)
-from lp.testing import TestCaseWithFactory
-from lp.testing.views import create_initialized_view
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.code.interfaces.seriessourcepackagebranch import (
+    IMakeOfficialBranchLinks,
+    )
+from lp.registry.interfaces.distribution import NoPartnerArchive
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.views import create_initialized_view
 
 
 class TestSourcePackage(TestCaseWithFactory):
@@ -224,6 +233,27 @@ class TestSourcePackage(TestCaseWithFactory):
         self.assertRaises(
             NoPartnerArchive, sourcepackage.get_default_archive)
 
+    def test_source_package_summary_no_releases_returns_None(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        self.assertEqual(sourcepackage.summary, None)
+
+    def test_source_package_summary_with_releases_returns_None(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        self.factory.makeSourcePackageRelease(
+            sourcepackagename=sourcepackage.sourcepackagename)
+        self.assertEqual(sourcepackage.summary, None)
+
+    def test_source_package_summary_with_binaries_returns_list(self):
+        sp = getUtility(
+            ILaunchpadCelebrities).ubuntu['warty'].getSourcePackage(
+            'mozilla-firefox')
+
+        expected_summary = (
+            u'mozilla-firefox: Mozilla Firefox Web Browser\n'
+            u'mozilla-firefox-data: No summary available for '
+            u'mozilla-firefox-data in ubuntu warty.')
+        self.assertEqual(''.join(expected_summary), sp.summary)
+
 
 class TestSourcePackageSecurity(TestCaseWithFactory):
     """Tests for source package branch linking security."""
@@ -252,11 +282,13 @@ class TestSourcePackageViews(TestCaseWithFactory):
 
         self.obsolete_productseries = self.factory.makeProductSeries(
             name='obsolete', product=self.product)
-        self.obsolete_productseries.status = SeriesStatus.OBSOLETE
+        with person_logged_in(self.product.owner):
+            self.obsolete_productseries.status = SeriesStatus.OBSOLETE
 
         self.dev_productseries = self.factory.makeProductSeries(
             name='current', product=self.product)
-        self.dev_productseries.status = SeriesStatus.DEVELOPMENT
+        with person_logged_in(self.product.owner):
+            self.dev_productseries.status = SeriesStatus.DEVELOPMENT
 
         self.distribution = self.factory.makeDistribution(
             name='youbuntu', displayname='Youbuntu', owner=self.owner)

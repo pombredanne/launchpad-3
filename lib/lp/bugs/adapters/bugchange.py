@@ -35,10 +35,17 @@ from textwrap import dedent
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
-from lp.bugs.interfaces.bugchange import IBugChange
-from lp.bugs.interfaces.bugtask import IBugTask
-from lp.registry.interfaces.product import IProduct
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.webapp.publisher import canonical_url
+from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.interfaces.bugchange import IBugChange
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    IBugTask,
+    RESOLVED_BUGTASK_STATUSES,
+    UNRESOLVED_BUGTASK_STATUSES,
+    )
+from lp.registry.interfaces.product import IProduct
 
 
 class NoBugChangeFoundError(Exception):
@@ -108,6 +115,9 @@ class BugChangeBase:
     """An abstract base class for Bug[Task]Changes."""
 
     implements(IBugChange)
+
+    # Most changes will be at METADATA level.
+    change_level = BugNotificationLevel.METADATA
 
     def __init__(self, when, person):
         self.person = person
@@ -212,7 +222,7 @@ class BugTaskAdded(BugChangeBase):
         lines.append(u"%13s: %s" % (
             u"Status", self.bug_task.status.title))
         return {
-            'text': '\n'.join(lines)
+            'text': '\n'.join(lines),
             }
 
 
@@ -340,8 +350,49 @@ class BugDescriptionChange(AttributeChange):
         return {'text': notification_text}
 
 
+def _is_status_change_lifecycle_change(old_status, new_status):
+    """Is a status change a lifecycle change?"""
+    # Bug is moving from one of unresolved bug statuses (like
+    # 'in progress') to one of resolved ('fix released').
+    bug_is_closed = (old_status in UNRESOLVED_BUGTASK_STATUSES and
+                     new_status in RESOLVED_BUGTASK_STATUSES)
+
+    # Bug is moving back from one of resolved bug statuses (reopening).
+    bug_is_reopened = (old_status in RESOLVED_BUGTASK_STATUSES and
+                       new_status in UNRESOLVED_BUGTASK_STATUSES)
+    return bug_is_closed or bug_is_reopened
+
+
 class BugDuplicateChange(AttributeChange):
     """Describes a change to a bug's duplicate marker."""
+
+    @property
+    def change_level(self):
+        lifecycle = False
+        old_bug = self.old_value
+        new_bug = self.new_value
+        if old_bug is not None and new_bug is not None:
+            # Bug was already a duplicate of one bug,
+            # and we are changing it to be a duplicate of another bug.
+            lifecycle = _is_status_change_lifecycle_change(
+                old_bug.default_bugtask.status,
+                new_bug.default_bugtask.status)
+        elif new_bug is not None:
+            # old_bug is None here, so we are just adding a duplicate marker.
+            lifecycle = (new_bug.default_bugtask.status in
+                         RESOLVED_BUGTASK_STATUSES)
+        elif old_bug is not None:
+            # Unmarking a bug as duplicate.  This is lifecycle change
+            # only if bug has been reopened as a result.
+            lifecycle = (old_bug.default_bugtask.status in
+                         RESOLVED_BUGTASK_STATUSES)
+        else:
+            pass
+
+        if lifecycle:
+            return BugNotificationLevel.LIFECYCLE
+        else:
+            return BugNotificationLevel.METADATA
 
     def getBugActivity(self):
         if self.old_value is not None and self.new_value is not None:
@@ -380,8 +431,16 @@ class BugDuplicateChange(AttributeChange):
                     "%d" % self.new_value.id)
             else:
                 new_value_text = (
-                    "** This bug has been marked a duplicate of bug %d\n"
-                    "   %s" % (self.new_value.id, self.new_value.title))
+                    "** This bug has been marked a duplicate of bug "
+                    "%(bug_id)d\n   %(bug_title)s\n"
+                    " * You can subscribe to bug %(bug_id)d by following "
+                    "this link: %(subscribe_link)s" % {
+                        'bug_id': self.new_value.id,
+                        'bug_title': self.new_value.title,
+                        'subscribe_link': canonical_url(
+                            self.new_value.default_bugtask,
+                            view_name='+subscribe'),
+                        })
 
             text = "\n".join((old_value_text, new_value_text))
 
@@ -392,8 +451,16 @@ class BugDuplicateChange(AttributeChange):
                     "%d" % self.new_value.id)
             else:
                 text = (
-                    "** This bug has been marked a duplicate of bug %d\n"
-                    "   %s" % (self.new_value.id, self.new_value.title))
+                    "** This bug has been marked a duplicate of bug "
+                    "%(bug_id)d\n   %(bug_title)s\n"
+                    " * You can subscribe to bug %(bug_id)d by following "
+                    "this link: %(subscribe_link)s" % {
+                        'bug_id': self.new_value.id,
+                        'bug_title': self.new_value.title,
+                        'subscribe_link': canonical_url(
+                            self.new_value.default_bugtask,
+                            view_name='+subscribe'),
+                        })
 
         elif self.new_value is None:
             if self.old_value.private:
@@ -491,7 +558,7 @@ class BugSecurityChange(AttributeChange):
     def getBugNotification(self):
         return {
             'text': self.notification_mapping[
-                (self.old_value, self.new_value)]
+                (self.old_value, self.new_value)],
             }
 
 
@@ -527,6 +594,12 @@ class BugTagsChange(AttributeChange):
         return {'text': "\n".join(messages)}
 
 
+def download_url_of_bugattachment(attachment):
+    """Return the URL of the ProxiedLibraryFileAlias for the attachment."""
+    return ProxiedLibraryFileAlias(
+        attachment.libraryfile, attachment).http_url
+
+
 class BugAttachmentChange(AttributeChange):
     """Used to represent a change to an `IBug`'s attachments."""
 
@@ -535,12 +608,14 @@ class BugAttachmentChange(AttributeChange):
             what_changed = "attachment added"
             old_value = None
             new_value = "%s %s" % (
-                self.new_value.title, self.new_value.libraryfile.http_url)
+                self.new_value.title,
+                download_url_of_bugattachment(self.new_value))
         else:
             what_changed = "attachment removed"
             attachment = self.new_value
             old_value = "%s %s" % (
-                self.old_value.title, self.old_value.libraryfile.http_url)
+                self.old_value.title,
+                download_url_of_bugattachment(self.old_value))
             new_value = None
 
         return {
@@ -557,7 +632,7 @@ class BugAttachmentChange(AttributeChange):
                 attachment_str = 'Attachment'
             message = '** %s added: "%s"\n   %s' % (
                 attachment_str, self.new_value.title,
-                self.new_value.libraryfile.http_url)
+                download_url_of_bugattachment(self.new_value))
         else:
             if self.old_value.is_patch:
                 attachment_str = 'Patch'
@@ -565,7 +640,7 @@ class BugAttachmentChange(AttributeChange):
                 attachment_str = 'Attachment'
             message = '** %s removed: "%s"\n   %s' % (
                 attachment_str, self.old_value.title,
-                self.old_value.libraryfile.http_url)
+                download_url_of_bugattachment(self.old_value))
 
         return {'text': message}
 
@@ -676,9 +751,9 @@ class BugTaskAttributeChange(AttributeChange):
             u"** Changed in: %(bug_target_name)s\n"
             "%(label)13s: %(oldval)s => %(newval)s\n" % {
                 'bug_target_name': self.bug_task.bugtargetname,
-                'label' : self.display_notification_label,
-                'oldval' : self.display_old_value,
-                'newval' : self.display_new_value,
+                'label': self.display_notification_label,
+                'oldval': self.display_old_value,
+                'newval': self.display_new_value,
             })
 
         return {'text': text.rstrip()}
@@ -696,6 +771,18 @@ class BugTaskStatusChange(BugTaskAttributeChange):
 
     # Use `status.title` in activity records and notifications.
     display_attribute = 'title'
+
+    @property
+    def change_level(self):
+        """See `IBugChange`."""
+        # Is bug being closed or reopened?
+        lifecycle_change = _is_status_change_lifecycle_change(
+            self.old_value, self.new_value)
+
+        if lifecycle_change:
+            return BugNotificationLevel.LIFECYCLE
+        else:
+            return BugNotificationLevel.METADATA
 
 
 class BugTaskMilestoneChange(BugTaskAttributeChange):
@@ -727,6 +814,7 @@ class BugTaskAssigneeChange(AttributeChange):
 
     def getBugActivity(self):
         """See `IBugChange`."""
+
         def assignee_for_display(assignee):
             if assignee is None:
                 return None
@@ -741,6 +829,7 @@ class BugTaskAssigneeChange(AttributeChange):
 
     def getBugNotification(self):
         """See `IBugChange`."""
+
         def assignee_for_display(assignee):
             if assignee is None:
                 return "(unassigned)"

@@ -3,8 +3,6 @@
 
 """Classes and logic for the remote bug updater."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 __all__ = [
     'RemoteBugUpdater',
@@ -15,19 +13,32 @@ import sys
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
-
 from lp.bugs.externalbugtracker import (
-    BugNotFound, InvalidBugId, PrivateRemoteBug, UnknownRemoteStatusError)
-
+    BugNotFound,
+    InvalidBugId,
+    PrivateRemoteBug,
+    UnknownRemoteStatusError,
+    )
 from lp.bugs.interfaces.bugtask import BugTaskStatus
-from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus, IBugWatchSet
+from lp.bugs.interfaces.bugwatch import (
+    BugWatchActivityStatus,
+    IBugWatchSet,
+    )
 from lp.bugs.interfaces.externalbugtracker import (
-    ISupportsBackLinking, ISupportsCommentImport,
-    ISupportsCommentPushing, UNKNOWN_REMOTE_STATUS)
-from lp.bugs.scripts.checkwatches.base import WorkingBase, commit_before
+    ISupportsBackLinking,
+    ISupportsCommentImport,
+    ISupportsCommentPushing,
+    UNKNOWN_REMOTE_STATUS,
+    )
+from lp.bugs.scripts.checkwatches.base import (
+    commit_before,
+    WorkingBase,
+    )
 from lp.bugs.scripts.checkwatches.bugwatchupdater import BugWatchUpdater
 from lp.bugs.scripts.checkwatches.utilities import (
-    get_bugwatcherrortype_for_error, get_remote_system_oops_properties)
+    get_bugwatcherrortype_for_error,
+    get_remote_system_oops_properties,
+    )
 
 
 class RemoteBugUpdater(WorkingBase):
@@ -121,10 +132,6 @@ class RemoteBugUpdater(WorkingBase):
             error = None
             oops_id = None
 
-            # XXX: 2007-10-17 Graham Binns
-            #      This nested set of try:excepts isn't really
-            #      necessary and can be refactored out when bug
-            #      136391 is dealt with.
             try:
                 new_remote_status = (
                     self.external_bugtracker.getRemoteStatus(
@@ -168,7 +175,6 @@ class RemoteBugUpdater(WorkingBase):
                 for bug_watch in bug_watches:
                     bug_watch_updater = BugWatchUpdater(
                         self, bug_watch, self.external_bugtracker)
-
                     bug_watch_updater.updateBugWatch(
                         new_remote_status, new_malone_status,
                         new_remote_importance, new_malone_importance)
@@ -223,4 +229,3 @@ class RemoteBugUpdater(WorkingBase):
             launchpad_status = BugTaskStatus.UNKNOWN
 
         return launchpad_status
-

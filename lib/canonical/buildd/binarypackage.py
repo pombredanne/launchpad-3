@@ -19,15 +19,14 @@ class SBuildExitCodes:
 class BuildLogRegexes:
     """Build log regexes for performing actions based on regexes, and extracting dependencies for auto dep-waits"""
     GIVENBACK = [
-        (" terminated by signal 4"),
         ("^E: There are problems and -y was used without --force-yes"),
-        ("^make.* Illegal instruction"),
         ]
     DEPFAIL = [
         ("(?P<pk>[\-+.\w]+)\(inst [^ ]+ ! >> wanted (?P<v>[\-.+\w:~]+)\)","\g<pk> (>> \g<v>)"),
         ("(?P<pk>[\-+.\w]+)\(inst [^ ]+ ! >?= wanted (?P<v>[\-.+\w:~]+)\)","\g<pk> (>= \g<v>)"),
         ("(?s)^E: Couldn't find package (?P<pk>[\-+.\w]+)(?!.*^E: Couldn't find package)","\g<pk>"),
-        ("(?s)^E: Package (?P<pk>[\-+.\w]+) has no installation candidate(?!.*^E: Package)","\g<pk>"),
+        ("(?s)^E: Package '?(?P<pk>[\-+.\w]+)'? has no installation candidate(?!.*^E: Package)","\g<pk>"),
+        ("(?s)^E: Unable to locate package (?P<pk>[\-+.\w]+)(?!.*^E: Unable to locate package)", "\g<pk>"),
         ]
 
 
@@ -55,29 +54,19 @@ class BinaryPackageBuildManager(DebianBuildManager):
                 self._dscfile = f
         if self._dscfile is None:
             raise ValueError, files
-        if 'arch_indep' in extra_args:
-            self.arch_indep = extra_args['arch_indep']
-        else:
-            self.arch_indep = False
-        if 'suite' in extra_args:
-            self.suite = extra_args['suite']
-        else:
-            self.suite = False
-        if 'archive_purpose' in extra_args:
-            self.archive_purpose = extra_args['archive_purpose']
-        else:
-            self.archive_purpose = False
-        if 'build_debug_symbols' in extra_args:
-            self.build_debug_symbols = extra_args['build_debug_symbols']
-        else:
-            self.build_debug_symbols = False
+
+        self.archive_purpose = extra_args.get('archive_purpose')
+        self.suite = extra_args.get('suite')
+        self.component = extra_args['ogrecomponent']
+        self.arch_indep = extra_args.get('arch_indep', False)
+        self.build_debug_symbols = extra_args.get('build_debug_symbols', False)
 
         super(BinaryPackageBuildManager, self).initiate(
             files, chroot, extra_args)
 
     def doRunBuild(self):
         """Run the sbuild process to build the package."""
-        args = ["sbuild-package", self._buildid ]
+        args = ["sbuild-package", self._buildid, self.arch_tag]
         if self.suite:
             args.extend([self.suite])
             args.extend(self._sbuildargs)
@@ -92,7 +81,8 @@ class BinaryPackageBuildManager(DebianBuildManager):
             args.extend(["--purpose=" + self.archive_purpose])
         if self.build_debug_symbols:
             args.extend(["--build-debug-symbols"])
-        args.extend(["--comp=" + self.ogre])
+        args.extend(["--architecture=" + self.arch_tag])
+        args.extend(["--comp=" + self.component])
         args.extend([self._dscfile])
         self.runSubProcess( self._sbuildpath, args )
 

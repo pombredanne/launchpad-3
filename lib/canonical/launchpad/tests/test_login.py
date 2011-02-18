@@ -11,18 +11,28 @@ from zope.event import notify
 from zope.session.interfaces import ISession
 
 from canonical.config import config
-
-from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    )
 from canonical.launchpad.interfaces.account import (
-    AccountCreationRationale, IAccountSet)
-from lp.testing import TestCaseWithFactory
+    AccountCreationRationale,
+    IAccountSet,
+    )
 from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.webapp.interfaces import (
-    CookieAuthLoggedInEvent, ILaunchpadPrincipal, IPlacelessAuthUtility)
+    CookieAuthLoggedInEvent,
+    ILaunchpadPrincipal,
+    IPlacelessAuthUtility,
+    )
 from canonical.launchpad.webapp.login import (
-    CookieLogoutPage, logInPrincipal, logoutPerson)
+    CookieLogoutPage,
+    logInPrincipal,
+    logoutPerson,
+    )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing import TestCaseWithFactory
 
 
 class TestLoginAndLogout(TestCaseWithFactory):

@@ -21,7 +21,9 @@ import tarfile
 import tempfile
 
 from lp.archivepublisher.debversion import (
-    Version as make_version, VersionError)
+    Version as make_version,
+    VersionError,
+    )
 
 
 class CustomUploadError(Exception):

@@ -6,14 +6,12 @@
   metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
-  <body>
+<body>
 
-  <div metal:fill-slot="main">
-    <p tal:condition="view/error_message"
-       tal:content="structure view/error_message/escapedtext"
-       class="error message" />
+<div metal:fill-slot="main">
+<div metal:use-macro="context/@@launchpad_form/form">
 
-    <form name="edit_wikiname" action="" method="POST">
+  <div metal:fill-slot="widgets">
     <table id="wikinames">
 
       <tal:XXX condition="nothing">
@@ -22,27 +20,19 @@
         # there's a bug preventing us from # updating our version of storm
         # to trunk.
       </tal:XXX>
-      <tal:block condition="context/wiki_names/any">
 
-        <tr><td colspan="2"><h2>Wiki names</h2></td></tr>
+      <tal:existing_wiki condition="context/wiki_names/any">
 
         <tr>
-          <td><label>Wiki base URL:</label></td>
-          <td><label>Wiki name:</label></td>
+          <td><label>Existing wiki names</label></td>
         </tr>
 
-        <tr tal:repeat="wiki context/wiki_names">
-          <td>
-            <input type="text" style="margin-bottom: 0.5em;"
-                   tal:attributes="name string:wiki_${wiki/id};
-                                   value wiki/wiki" />
-          </td>
-          <td>
-            <input type="text" size="15"
-                   tal:attributes="name string:wikiname_${wiki/id};
-                                   value wiki/wikiname" />
-          </td>
+        <tr>
+          <td><label>Wiki URL</label></td>
+        </tr>
 
+        <tr tal:repeat="wiki context/wiki_names" class="wikiurl">
+          <td tal:content="wiki/url"></td>
           <td>
             <label>
               <input type="checkbox" value="Remove"
@@ -51,41 +41,35 @@
             </label>
           </td>
         </tr>
+        <tr style="height:2em;"><td></td></tr>
+      </tal:existing_wiki>
 
-      </tal:block>
 
-    <tr>
-      <td colspan="2"><h2>New wiki name</h2></td>
-    </tr>
+      <tr>
+        <td><label>New wiki name</label></td>
+      </tr>
 
-    <tr>
-      <td><label>Wiki Base URL:</label></td>
-      <td><label>Wiki Name:</label></td>
-    </tr>
+      <tal:widget define="widget nocall:view/widgets/wiki">
+        <metal:block use-macro="context/@@launchpad_form/widget_row" />
+      </tal:widget>
 
-    <tr>
-      <td>
-        <input name="newwiki" type="text"
-               tal:attributes="value view/newwiki|nothing" />
-      </td>
-      <td>
-        <input name="newwikiname" type="text" size="15"
-               tal:attributes="value view/newwikiname|nothing" />
-      </td>
-    </tr>
+      <tr>
+        <td class="formHelp">Example: https://wiki.ubuntu.com/</td>
+      </tr>
 
-    <tr>
-      <td class="formHelp">Example: https://wiki.ubuntu.com/</td>
-      <td class="formHelp">Example: YourName.</td>
-    </tr>
-  </table>
+      <tal:widget define="widget nocall:view/widgets/wikiname">
+        <metal:block use-macro="context/@@launchpad_form/widget_row" />
+      </tal:widget>
 
-  <div class="actions">
-    <input type="submit" value="Save Changes" name="SAVE" />
-    or&nbsp; <a tal:attributes="href view/cancel_url">Cancel</a>
+      <tr>
+        <td class="formHelp">Example: YourName.</td>
+      </tr>
+
+    </table>
   </div>
-  </form>
-  </div>
+
+</div>
+</div>
 
 </body>
 </html>

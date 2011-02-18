@@ -5,11 +5,11 @@
 
 __metaclass__ = type
 
-import transaction
 import unittest
 
-from canonical.testing import LaunchpadZopelessLayer
+import transaction
 
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.externalbugtracker.bugzilla import Bugzilla
 from lp.bugs.scripts.checkwatches.core import CheckwatchesMaster
 from lp.bugs.scripts.checkwatches.remotebugupdater import RemoteBugUpdater

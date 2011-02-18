@@ -9,14 +9,12 @@ Team Merges
 Create a member of the registry team that is not a member of the admins
 team.
 
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
     >>> person_set = getUtility(IPersonSet)
-    >>> registry_expert = factory.makePerson()
-    >>> login_person(registry_experts.teamowner)
-    >>> ignored = registry_experts.addMember(
-    ...     registry_expert, registry_experts.teamowner)
+    >>> registry_expert= factory.makeRegistryExpert()
     >>> login_person(registry_expert)
 
 A team (name21) can be merged into another (ubuntu-team).
@@ -251,31 +249,6 @@ A team with a mailing list cannot be deleted.
     >>> print find_tag_by_id(content, 'field.actions.delete')
     None
 
-The registry experts can delete a team with a new email address (from
-an import), which will be invisible, since only preferred email addresses are
-shown for teams.
-
-    >>> from canonical.launchpad.interfaces.emailaddress import (
-    ...     IEmailAddressSet, EmailAddressStatus)
-    >>> login_person(registry_expert)
-    >>> admin = getUtility(ILaunchpadCelebrities).admin
-    >>> registry_expert.inTeam(admin)
-    False
-    >>> deletable_team = factory.makeTeam()
-    >>> email = factory.makeEmail(
-    ...     "del@example.com", deletable_team,
-    ...     email_status=EmailAddressStatus.NEW)
-    >>> for email in getUtility(IEmailAddressSet).getByPerson(deletable_team):
-    ...     print email.email, email.status.title
-    del@example.com New Email Address
-    >>> form = {'field.actions.delete': 'Delete'}
-    >>> view = create_initialized_view(deletable_team, '+delete', form=form)
-    >>> view.errors
-    []
-    >>> for notification in view.request.response.notifications:
-    ...     print notification.message
-    Team deleted.
-
 Private teams can be deleted by admins.
 
     >>> from lp.registry.interfaces.person import PersonVisibility
@@ -286,21 +259,6 @@ Private teams can be deleted by admins.
     >>> login('admin@canonical.com')
     >>> form = {'field.actions.delete': 'Delete'}
     >>> view = create_initialized_view(private_team, '+delete', form=form)
-    >>> view.errors
-    []
-    >>> for notification in view.request.response.notifications:
-    ...     print notification.message
-    Team deleted.
-
-Private membership teams can be deleted by admins, and when they are all
-deleted, we can remove this visibility type.
-
-    >>> login('commercial-member@canonical.com')
-    >>> pm_team = factory.makeTeam(
-    ...     name='sekret', visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
-    >>> login('admin@canonical.com')
-    >>> form = {'field.actions.delete': 'Delete'}
-    >>> view = create_initialized_view(pm_team, '+delete', form=form)
     >>> view.errors
     []
     >>> for notification in view.request.response.notifications:

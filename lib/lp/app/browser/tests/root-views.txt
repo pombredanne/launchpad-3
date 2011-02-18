@@ -4,7 +4,7 @@ Root views
 The launchpad front page uses the LaunchpadRootIndexView to provide the
 special data needed for the layout.
 
-    # The _get_day_of_year() method must be hacked to return a predicable day
+    # The _get_day_of_year() method must be hacked to return a predictable day
     # to testing the view.
     >>> from lp.app.browser.root import LaunchpadRootIndexView
     >>> def day():

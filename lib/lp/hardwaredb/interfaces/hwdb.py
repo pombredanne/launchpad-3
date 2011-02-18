@@ -43,32 +43,55 @@ __all__ = [
     'ParameterError',
     ]
 
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    export_destructor_operation,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    operation_parameters,
+    operation_returns_collection_of,
+    operation_returns_entry,
+    REQUEST_USER,
+    webservice_error,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
+from lazr.restful.interface import copy_field
 from zope.component import getUtility
-from zope.interface import Interface, Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
-    ASCIILine, Bool, Bytes, Choice, Datetime, Int, List, TextLine)
-from lazr.enum import DBEnumeratedType, DBItem
+    ASCIILine,
+    Bool,
+    Bytes,
+    Choice,
+    Datetime,
+    Int,
+    List,
+    TextLine,
+    )
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.launchpad import IPrivacy
+from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import License
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
-from canonical.launchpad.interfaces.launchpad import IPrivacy
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
-
-from lazr.restful.fields import CollectionField, Reference
-from lazr.restful.interface import copy_field
-from lazr.restful.declarations import (
-    REQUEST_USER, call_with, export_as_webservice_entry,
-    export_destructor_operation, export_read_operation,
-    export_write_operation, exported, operation_parameters,
-    operation_returns_collection_of, operation_returns_entry,
-    webservice_error)
 
 
 def validate_new_submission_key(submission_key):
@@ -133,7 +156,7 @@ class IHWSubmission(Interface, IPrivacy):
 
     See doc/hwdb.txt for details about the attributes.
     """
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     date_created = exported(
         Datetime(
@@ -410,7 +433,7 @@ class IHWSystemFingerprintSet(Interface):
 
 class IHWDriver(Interface):
     """Information about a device driver."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     id = exported(
         Int(title=u'Driver ID', required=True, readonly=True))
@@ -537,7 +560,7 @@ class IHWDriverSet(Interface):
 class IHWDriverName(Interface):
     """A driver name as appearing in `IHWDriver`.
     """
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     name = exported(
         TextLine(
@@ -549,7 +572,7 @@ class IHWDriverName(Interface):
 class IHWDriverPackageName(Interface):
     """A driver name as appearing in `IHWDriver`.
     """
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     package_name = exported(
         TextLine(
@@ -636,7 +659,7 @@ class IHWVendorNameSet(Interface):
 class IHWVendorID(Interface):
     """A list of vendor IDs for different busses associated with vendor names.
     """
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
     id = exported(
         Int(title=u'The Database ID', required=True, readonly=True))
 
@@ -691,7 +714,7 @@ class IHWVendorIDSet(Interface):
 
 class IHWDeviceClass(Interface):
     """The capabilities of a device."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     id = Int(title=u'Device class ID', required=True, readonly=True)
     device = Reference(schema=Interface)
@@ -751,7 +774,7 @@ IDs for other buses may be arbitrary strings.
 
 class IHWDevice(Interface):
     """Core information to identify a device."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     id = exported(
         Int(title=u'Device ID', required=True, readonly=True))
@@ -1015,7 +1038,7 @@ class IHWDeviceDriverLinkSet(Interface):
 
 class IHWSubmissionDevice(Interface):
     """Link a submission to a IHWDeviceDriver row."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     id = exported(
         Int(title=u'HWSubmissionDevice ID', required=True, readonly=True))
@@ -1146,7 +1169,7 @@ class IHWSubmissionBugSet(Interface):
 class IHWDBApplication(ILaunchpadApplication):
     """Hardware database application application root."""
 
-    export_as_webservice_entry('hwdb')
+    export_as_webservice_entry('hwdb', publish_web_link=False)
 
     @operation_parameters(
         bus=Choice(

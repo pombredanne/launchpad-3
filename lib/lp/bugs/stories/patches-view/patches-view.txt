@@ -7,8 +7,11 @@ Patches View by Product
 We have a view listing patches attached to bugs that target a given
 product.  At first, the product is new and has no bugs.
 
-    >>> patchy_product = factory.doAsUser(
-    ...     'foo.bar@canonical.com', factory.makeProduct,
+    >>> from lp.testing import anonymous_logged_in, with_person_logged_in
+    >>> with anonymous_logged_in():
+    ...     anybody = factory.makePerson()
+    >>> with_anybody = with_person_logged_in(anybody)
+    >>> patchy_product = with_anybody(factory.makeProduct)(
     ...     name='patchy-product-1', displayname="Patchy 1")
     >>> transaction.commit()
 
@@ -31,7 +34,8 @@ view, because that bug has no patch attachments.
 
     >>> from lp.bugs.interfaces.bugtask import (
     ...     BugTaskImportance, BugTaskStatus)
-    >>> def make_bug(
+    >>> @with_anybody
+    ... def make_bug(
     ...     title, product, importance=BugTaskImportance.UNDECIDED,
     ...     status=BugTaskStatus.NEW):
     ...     bug = factory.makeBug(title=title, product=product)
@@ -43,9 +47,7 @@ view, because that bug has no patch attachments.
     ...     transaction.commit()
     ...     return bug
 
-    >>> bug_a = factory.doAsUser(
-    ...     'foo.bar@canonical.com', make_bug,
-    ...     title="bug_a title", product=patchy_product)
+    >>> bug_a = make_bug(title="bug_a title", product=patchy_product)
     >>> transaction.commit()
     >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev/patchy-product-1/+patches')
@@ -55,8 +57,7 @@ view, because that bug has no patch attachments.
 After we add a non-patch attachment to that bug, the patches view
 still shows no patches.
 
-    >>> factory.doAsUser('foo.bar@canonical.com', factory.makeBugAttachment,
-    ...            bug=bug_a, is_patch=False)
+    >>> with_anybody(factory.makeBugAttachment)(bug=bug_a, is_patch=False)
     <BugAttachment at...
     >>> transaction.commit()
     >>> anon_browser.open('http://bugs.launchpad.dev/patchy-product-1/+patches')
@@ -66,12 +67,10 @@ still shows no patches.
 After we add a patch attachment that's one day old, we see it in the
 patches view.
 
-    >>> patch_submitter = factory.doAsUser(
-    ...    'foo.bar@canonical.com', factory.makePerson,
+    >>> patch_submitter = with_anybody(factory.makePerson)(
     ...    name="patchy-person", displayname="Patchy Person")
     >>> transaction.commit()
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', factory.makeBugAttachment,
+    >>> with_anybody(factory.makeBugAttachment)(
     ...     comment="comment about patch a",
     ...     filename="patch_a.diff", owner=patch_submitter,
     ...     description="description of patch a", bug=bug_a, is_patch=True)
@@ -95,69 +94,58 @@ The page title and other wording in the page reflects the contents.
 After creating some more bugs, with some non-patch and some patch
 attachments, and various statuses...
 
-    >>> bug_b = factory.doAsUser(
-    ...     'foo.bar@canonical.com', make_bug,
+    >>> bug_b = make_bug(
     ...     title="bug_b title", product=patchy_product,
     ...     importance=BugTaskImportance.CRITICAL,
     ...     status=BugTaskStatus.CONFIRMED)
-    >>> bug_c = factory.doAsUser(
-    ...     'foo.bar@canonical.com', make_bug,
+    >>> bug_c = make_bug(
     ...     title="bug_c title", product=patchy_product,
     ...     importance=BugTaskImportance.WISHLIST,
     ...     status=BugTaskStatus.FIXCOMMITTED)
-    >>> bug_d = factory.doAsUser(
-    ...     'foo.bar@canonical.com', make_bug,
+    >>> bug_d = make_bug(
     ...     title="bug_d title", product=patchy_product,
     ...     importance=BugTaskImportance.WISHLIST,
     ...     status=BugTaskStatus.FIXRELEASED)
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', factory.makeBugAttachment,
+    >>> with_anybody(factory.makeBugAttachment)(
     ...     comment="comment about patch b",
     ...     filename="patch_b.diff", owner=patch_submitter,
     ...     description="description of patch b", bug=bug_b, is_patch=True)
     <BugAttachment at...
     >>> transaction.commit()
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', factory.makeBugAttachment,
+    >>> with_anybody(factory.makeBugAttachment)(
     ...     comment="comment about patch c",
     ...     filename="patch_c.diff", owner=patch_submitter,
     ...     description="description of patch c", bug=bug_b, is_patch=True)
     <BugAttachment at...
     >>> transaction.commit()
-    >>> factory.doAsUser(
-    ...    'foo.bar@canonical.com', factory.makeBugAttachment,
-    ...    bug=bug_c, is_patch=False)
+    >>> with_anybody(factory.makeBugAttachment)(bug=bug_c, is_patch=False)
     <BugAttachment at...
     >>> transaction.commit()
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', factory.makeBugAttachment,
+    >>> with_anybody(factory.makeBugAttachment)(
     ...     comment="comment about patch d",
     ...     filename="patch_d.diff", owner=patch_submitter,
     ...     description="description of patch d", bug=bug_c, is_patch=True)
     <BugAttachment at...
     >>> transaction.commit()
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', factory.makeBugAttachment,
+    >>> with_anybody(factory.makeBugAttachment)(
     ...     comment="comment about patch e",
     ...     filename="patch_e.diff", owner=patch_submitter,
     ...     description="description of patch e", bug=bug_c, is_patch=True)
     <BugAttachment at...
     >>> transaction.commit()
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', factory.makeBugAttachment,
+    >>> with_anybody(factory.makeBugAttachment)(
     ...     comment="comment about patch f",
     ...     filename="patch_f.diff", owner=patch_submitter,
     ...     description="description of patch f", bug=bug_c, is_patch=True)
     <BugAttachment at...
     >>> transaction.commit()
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', factory.makeBugAttachment,
+    >>> with_anybody(factory.makeBugAttachment)(
     ...     comment="comment about patch g",
     ...     filename="patch_g.diff", owner=patch_submitter,
     ...     description="description of patch g", bug=bug_d, is_patch=True)
     <BugAttachment at...
     >>> transaction.commit()
-    
+
 ...the youngest patch on each bug is visible in the patch report
 (except for bugs in "Fix Released" state, which aren't shown):
 
@@ -221,7 +209,8 @@ Bugs in a product series show up in the patches view for that series.
 
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> def make_bugtask(
+    >>> @with_anybody
+    ... def make_bugtask(
     ...     # Meta-factory for making bugtasks.
     ...     #
     ...     # In all instances where a distro is needed, defaults to
@@ -255,12 +244,8 @@ Bugs in a product series show up in the patches view for that series.
     ...     if status is not None:
     ...         bugtask.transitionToStatus(status, ubuntu_distro.owner)
     >>> patchy_product_series = patchy_product.getSeries('trunk')
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', make_bugtask,
-    ...     bug=bug_a, target=patchy_product_series)
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', make_bugtask,
-    ...     bug=bug_c, target=patchy_product_series)
+    >>> make_bugtask(bug=bug_a, target=patchy_product_series)
+    >>> make_bugtask(bug=bug_c, target=patchy_product_series)
     >>> anon_browser.open(
     ...     'https://bugs.launchpad.dev/patchy-product-1/trunk/+patches')
     >>> show_patches_view(anon_browser.contents)
@@ -287,13 +272,13 @@ Patches View by Distro
 The patches view also works for distributions, and it shows the target
 package when viewed via a distribution.
 
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', make_bugtask, bug=bug_a,
+    >>> make_bugtask(
+    ...     bug=bug_a,
     ...     target='evolution', target_is_spkg_name=True,
     ...     importance=BugTaskImportance.MEDIUM,
     ...     status=BugTaskStatus.FIXCOMMITTED)
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', make_bugtask, bug=bug_c,
+    >>> make_bugtask(
+    ...     bug=bug_c,
     ...     target='a52dec', target_is_spkg_name=True,
     ...     importance=BugTaskImportance.HIGH,
     ...     status=BugTaskStatus.TRIAGED)
@@ -319,20 +304,15 @@ Patches View by Distro Series
 
 The patches view works for distro series.
 
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', make_bugtask, bug=bug_a,
-    ...     target='hoary', target_is_distroseries_name=True)
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', make_bugtask, bug=bug_a,
-    ...     target='warty', target_is_distroseries_name=True)
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', make_bugtask, bug=bug_b,
-    ...     target='warty', target_is_distroseries_name=True)
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', make_bugtask, bug=bug_c,
-    ...     target='warty', target_is_distroseries_name=True,
-    ...     importance=BugTaskImportance.HIGH,
-    ...     status=BugTaskStatus.TRIAGED)
+    >>> make_bugtask(
+    ...     bug=bug_a, target='hoary', target_is_distroseries_name=True)
+    >>> make_bugtask(
+    ...     bug=bug_a, target='warty', target_is_distroseries_name=True)
+    >>> make_bugtask(
+    ...     bug=bug_b, target='warty', target_is_distroseries_name=True)
+    >>> make_bugtask(
+    ...     bug=bug_c, target='warty', target_is_distroseries_name=True,
+    ...     importance=BugTaskImportance.HIGH, status=BugTaskStatus.TRIAGED)
 
     >>> anon_browser.open('https://bugs.launchpad.dev/ubuntu/hoary/+patches')
     >>> show_patches_view(anon_browser.contents)
@@ -436,15 +416,11 @@ or team is structurally subscribed.  Structural subscription searching is
 thoroughly tested in bugtask-search.txt so here a single structural
 subscription will be tested.
 
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> project_subscriber = factory.doAsUser(
-    ...     'foo.bar@canonical.com', factory.makePerson,
+    >>> project_subscriber = with_anybody(factory.makePerson)(
     ...     name="project-subscriber", displayname="Project Subscriber")
-    >>> login('foo.bar@canonical.com')
-    >>> patchy_product.addBugSubscription(project_subscriber,
-    ...     project_subscriber)
-    <StructuralSubscription at ...>
-    >>> logout()
+    >>> add_bug_sub = lambda *args: patchy_product.addBugSubscription(*args)
+    >>> with_anybody(add_bug_sub)(project_subscriber, project_subscriber)
+    <...StructuralSubscription object at ...>
     >>> from zope.security.proxy import removeSecurityProxy
     >>> subscriber_name = removeSecurityProxy(project_subscriber).name
     >>> anon_browser.open(
@@ -471,37 +447,33 @@ show up in the +patches view.  Project-subscriber is then subscribed to the
 evolution source package for Ubuntu and it is tested that both groups of
 patches are shown.
 
-    >>> hacky_product = factory.doAsUser(
-    ...     'foo.bar@canonical.com', factory.makeProduct,
+    >>> hacky_product = with_anybody(factory.makeProduct)(
     ...     name='hacky-product', displayname="Hacky Product")
     >>> transaction.commit()
-    >>> bug_e = factory.doAsUser(
-    ...     'foo.bar@canonical.com', make_bug,
+    >>> bug_e = make_bug(
     ...     title="bug_e is for evolution", product=hacky_product,
     ...     importance=BugTaskImportance.WISHLIST,
     ...     status=BugTaskStatus.NEW)
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', factory.makeBugAttachment,
+    >>> with_anybody(factory.makeBugAttachment)(
     ...     comment="comment about patch h",
     ...     filename="patch_h.diff", owner=patch_submitter,
     ...     description="patch h is for helping", bug=bug_e, is_patch=True)
     <BugAttachment at...
-    >>> factory.doAsUser(
-    ...     'foo.bar@canonical.com', make_bugtask, bug=bug_e,
+    >>> make_bugtask(
+    ...     bug=bug_e,
     ...     target='evolution', target_is_spkg_name=True,
     ...     importance=BugTaskImportance.MEDIUM,
     ...     status=BugTaskStatus.TRIAGED)
     >>> transaction.commit()
-    >>> from canonical.launchpad.ftests import login, logout
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> login('foo.bar@canonical.com')
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu_evolution = ubuntu.getSourcePackage("evolution")
-    >>> ubuntu_evolution.addBugSubscription(project_subscriber,
-    ...     project_subscriber)
-    <StructuralSubscription at ...>
-    >>> logout()
+    >>> @with_anybody
+    ... def add_evolution_subscriber():
+    ...     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    ...     ubuntu_evolution = ubuntu.getSourcePackage("evolution")
+    ...     ubuntu_evolution.addBugSubscription(
+    ...         project_subscriber, project_subscriber)
+    >>> add_evolution_subscriber()
     >>> from zope.security.proxy import removeSecurityProxy
     >>> subscriber_name = removeSecurityProxy(project_subscriber).name
     >>> anon_browser.open(

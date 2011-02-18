@@ -7,7 +7,6 @@ archive.
 We will use a helper function for dumping publisher configurations.
 
     >>> config_attributes = [
-    ...     'stayofexecution',
     ...     'distroroot',
     ...     'archiveroot',
     ...     'poolroot',
@@ -21,14 +20,6 @@ We will use a helper function for dumping publisher configurations.
     >>> def dump_config(config):
     ...     for attr_name in config_attributes:
     ...         print '%s: %s' % (attr_name, getattr(config, attr_name))
-    ...     for distroseries_name in sorted(config.distroSeriesNames()):
-    ...         print '%s:' % distroseries_name
-    ...         sorted_arches = sorted(
-    ...             config.archTagsForSeries(distroseries_name))
-    ...         print 'Architectures:', ', '.join(sorted_arches)
-    ...         sorted_components = sorted(
-    ...             config.componentsForSeries(distroseries_name))
-    ...         print 'Components:', ', '.join(sorted_components)
 
 
 == Primary ==
@@ -40,7 +31,6 @@ We will use a helper function for dumping publisher configurations.
     >>> primary_config = getPubConfig(ubuntutest.main_archive)
 
     >>> dump_config(primary_config)
-    stayofexecution: 5.0
     distroroot:      /var/tmp/archive
     archiveroot:     /var/tmp/archive/ubuntutest
     poolroot:        /var/tmp/archive/ubuntutest/pool
@@ -49,12 +39,6 @@ We will use a helper function for dumping publisher configurations.
     cacheroot:       /var/tmp/archive/ubuntutest-cache
     miscroot:        /var/tmp/archive/ubuntutest-misc
     temproot:        /var/tmp/archive/ubuntutest-temp
-    breezy-autotest:
-      Architectures:
-      Components: main, multiverse, restricted, universe
-    hoary-test:
-      Architectures: amd64, i386
-      Components: main, multiverse, restricted, universe
 
 
 == PPAs ==
@@ -89,7 +73,6 @@ And some paths are not used for PPA workflow, so they are set to
 None, so they won't get created:
 
     >>> dump_config(ppa_config)
-    stayofexecution: 5.0
     distroroot:      /var/tmp/ppa.test/
     archiveroot:     /var/tmp/ppa.test/cprov/ppa/ubuntutest
     poolroot:        /var/tmp/ppa.test/cprov/ppa/ubuntutest/pool
@@ -98,12 +81,6 @@ None, so they won't get created:
     cacheroot:       None
     miscroot:        None
     temproot:        /var/tmp/archive/ubuntutest-temp
-    breezy-autotest:
-      Architectures:
-      Components: main, multiverse, restricted, universe
-    hoary-test:
-      Architectures: amd64, i386
-      Components: main, multiverse, restricted, universe
 
 There is a separate location for private PPAs that is used if the
 archive is marked as private:
@@ -124,7 +101,6 @@ archive is marked as private:
     True
 
     >>> dump_config(p3a_config)
-    stayofexecution: 5.0
     distroroot:      /var/tmp/ppa
     archiveroot:     /var/tmp/ppa/cprov/myprivateppa/ubuntutest
     poolroot:        /var/tmp/ppa/cprov/myprivateppa/ubuntutest/pool
@@ -133,12 +109,6 @@ archive is marked as private:
     cacheroot:       None
     miscroot:        None
     temproot:        /var/tmp/archive/ubuntutest-temp
-    breezy-autotest:
-      Architectures:
-      Components: main, multiverse, restricted, universe
-    hoary-test:
-      Architectures: amd64, i386
-      Components: main, multiverse, restricted, universe
 
 
 == Partner ==
@@ -154,7 +124,6 @@ archive.
     >>> partner_config = getPubConfig(partner_archive)
 
     >>> dump_config(partner_config)
-    stayofexecution: 5.0
     distroroot:      /var/tmp/archive
     archiveroot:     /var/tmp/archive/ubuntutest-partner
     poolroot:        /var/tmp/archive/ubuntutest-partner/pool
@@ -163,12 +132,6 @@ archive.
     cacheroot:       None
     miscroot:        None
     temproot:        /var/tmp/archive/ubuntutest-temp
-    breezy-autotest:
-      Architectures:
-      Components: partner
-    hoary-test:
-      Architectures: amd64, i386
-      Components: partner
 
 
 == DEBUG ==
@@ -177,7 +140,7 @@ The publisher configuration for DEBUG archives points to directories
 besides PRIMARY repository ones, but the distribution part is
 modified to be clearly different than the PRIMARY one.
 
-    >>> from lp.soyuz.interfaces.archive import ArchivePurpose
+    >>> from lp.soyuz.enums import ArchivePurpose
     >>> debug_archive = getUtility(IArchiveSet).new(
     ...     purpose=ArchivePurpose.DEBUG, owner=ubuntutest.owner,
     ...     distribution=ubuntutest)
@@ -185,7 +148,6 @@ modified to be clearly different than the PRIMARY one.
     >>> debug_config = getPubConfig(debug_archive)
 
     >>> dump_config(debug_config)
-    stayofexecution: 5.0
     distroroot:      /var/tmp/archive
     archiveroot:     /var/tmp/archive/ubuntutest-debug
     poolroot:        /var/tmp/archive/ubuntutest-debug/pool
@@ -194,12 +156,6 @@ modified to be clearly different than the PRIMARY one.
     cacheroot:       None
     miscroot:        None
     temproot:        /var/tmp/archive/ubuntutest-temp
-    breezy-autotest:
-      Architectures:
-      Components: main, multiverse, restricted, universe
-    hoary-test:
-      Architectures: amd64, i386
-      Components: main, multiverse, restricted, universe
 
 
 == COPY ==
@@ -214,7 +170,6 @@ is of the form distroroot/distroname-archivename/distroname
     >>> copy_config = getPubConfig(copy_archive)
 
     >>> dump_config(copy_config)
-    stayofexecution: 5.0
     distroroot:      /var/tmp/archive
     archiveroot:     /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest
     poolroot:        /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest/pool
@@ -223,9 +178,3 @@ is of the form distroroot/distroname-archivename/distroname
     cacheroot:       /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest-cache
     miscroot:        /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest-misc
     temproot:        /var/tmp/archive/ubuntutest-rebuildtest99/ubuntutest-temp
-    breezy-autotest:
-      Architectures:
-      Components: main, multiverse, restricted, universe
-    hoary-test:
-      Architectures: amd64, i386
-      Components: main, multiverse, restricted, universe

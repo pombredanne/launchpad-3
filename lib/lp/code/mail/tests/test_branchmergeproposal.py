@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchMergeProposal mailings"""
@@ -6,30 +6,41 @@
 from difflib import unified_diff
 import operator
 from textwrap import dedent
-import transaction
 from unittest import TestLoader
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
+import transaction
+from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces import IStore
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
-
-from lp.code.model.diff import PreviewDiff
-from lazr.lifecycle.event import ObjectModifiedEvent
-from lp.code.adapters.branch import BranchMergeProposalDelta
+from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.webapp import canonical_url
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.code.enums import (
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
+    BranchMergeProposalStatus,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
 from lp.code.mail.branch import RecipientReason
 from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.code.model.branch import update_trigger_modified_fields
 from lp.code.model.branchmergeproposaljob import (
-    BranchMergeProposalJob, BranchMergeProposalJobType,
-    MergeProposalUpdatedEmailJob, ReviewRequestedEmailJob)
+    BranchMergeProposalJob,
+    BranchMergeProposalJobType,
+    MergeProposalUpdatedEmailJob,
+    ReviewRequestedEmailJob,
+    )
 from lp.code.model.codereviewvote import CodeReviewVoteReference
+from lp.code.model.diff import PreviewDiff
 from lp.code.subscribers.branchmergeproposal import merge_proposal_modified
-from canonical.launchpad.webapp import canonical_url
-from lp.testing import login_person, TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -42,7 +53,10 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         super(TestMergeProposalMailing, self).setUp('admin@canonical.com')
 
     def makeProposalWithSubscriber(self, diff_text=None,
-                                   initial_comment=None, prerequisite=False):
+                                   initial_comment=None,
+                                   prerequisite=False,
+                                   needs_review=True,
+                                   reviewer=None):
         if diff_text is not None:
             preview_diff = PreviewDiff.create(
                 diff_text,
@@ -59,10 +73,16 @@ class TestMergeProposalMailing(TestCaseWithFactory):
             prerequisite_branch = self.factory.makeProductBranch(product)
         else:
             prerequisite_branch = None
+        if needs_review:
+            initial_status = BranchMergeProposalStatus.NEEDS_REVIEW
+        else:
+            initial_status = BranchMergeProposalStatus.WORK_IN_PROGRESS
         bmp = self.factory.makeBranchMergeProposal(
             registrant=registrant, product=product,
+            set_state=initial_status,
             prerequisite_branch=prerequisite_branch,
-            preview_diff=preview_diff, initial_comment=initial_comment)
+            preview_diff=preview_diff, initial_comment=initial_comment,
+            reviewer=reviewer)
         subscriber = self.factory.makePerson(displayname='Baz Quxx',
             email='baz.quxx@example.com')
         bmp.source_branch.subscribe(subscriber,
@@ -88,14 +108,25 @@ class TestMergeProposalMailing(TestCaseWithFactory):
             subscriber.preferredemail.email)[0]
         bmp.root_message_id = None
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
-        self.assertEqual("""\
-Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp://dev/~mary/super-product/bar.
+        reviewer = bmp.target_branch.owner
+        expected = dedent("""\
+        Baz Qux has proposed merging %(source)s into %(target)s.
 
+        Requested reviews:
+          %(reviewer)s
 
---\x20
-%s
-%s
-""" % (canonical_url(bmp), reason.getReason()), ctrl.body)
+        For more details, see:
+        %(bmp)s
+        --\x20
+        %(bmp)s
+        %(reason)s
+        """) % {
+            'source': bmp.source_branch.bzr_identity,
+            'target': bmp.target_branch.bzr_identity,
+            'reviewer': reviewer.unique_displayname,
+            'bmp': canonical_url(bmp),
+            'reason': reason.getReason()}
+        self.assertEqual(expected, ctrl.body)
         self.assertEqual('[Merge] '
             'lp://dev/~bob/super-product/fix-foo-for-bar into '
             'lp://dev/~mary/super-product/bar', ctrl.subject)
@@ -108,7 +139,8 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
              'Message-Id': '<foobar-example-com>'},
             ctrl.headers)
         self.assertEqual('Baz Qux <baz.qux@example.com>', ctrl.from_addr)
-        self.assertEqual([bmp.address], ctrl.to_addrs)
+        reviewer_id = mailer._format_user_address(reviewer)
+        self.assertEqual(set([reviewer_id, bmp.address]), set(ctrl.to_addrs))
         mailer.sendAll()
 
     def test_forCreation_with_bugs(self):
@@ -121,8 +153,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         expected = (
             'Related bugs:\n'
             '  #%d I am a bug\n'
-            '  %s\n' % (bug.id, canonical_url(bug))
-            )
+            '  %s\n' % (bug.id, canonical_url(bug)))
         self.assertIn(expected, ctrl.body)
 
     def test_forCreation_without_bugs(self):
@@ -134,23 +165,25 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
 
     def test_forCreation_with_review_request(self):
         """Correctly format list of reviewers."""
-        bmp, subscriber = self.makeProposalWithSubscriber()
         reviewer = self.factory.makePerson(name='review-person')
+        bmp, subscriber = self.makeProposalWithSubscriber(reviewer=reviewer)
         bmp.nominateReviewer(reviewer, bmp.registrant, None)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
         self.assertIn(
             '\nRequested reviews:'
-            '\n  Review-person (review-person)'
-            '\n\n-- \n',
+            '\n  Review-person (review-person)\n'
+            '\n'
+            'For more details, see:\n'
+            '%s\n-- \n' % canonical_url(bmp),
             ctrl.body)
 
     def test_forCreation_with_review_request_and_bug(self):
         """Correctly format list of reviewers and bug info."""
-        bmp, subscriber = self.makeProposalWithSubscriber()
+        reviewer = self.factory.makePerson(name='review-person')
+        bmp, subscriber = self.makeProposalWithSubscriber(reviewer=reviewer)
         bug = self.factory.makeBug(title='I am a bug')
         bmp.source_branch.linkBug(bug, bmp.registrant)
-        reviewer = self.factory.makePerson(name='review-person')
         bmp.nominateReviewer(reviewer, bmp.registrant, None)
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
@@ -159,7 +192,10 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
             '\n  Review-person (review-person)'
             '\nRelated bugs:'
             '\n  #%d I am a bug'
-            '\n  %s\n\n--' % (bug.id, canonical_url(bug)))
+            '\n  %s\n'
+            '\nFor more details, see:\n'
+            '%s'
+            '\n--' % (bug.id, canonical_url(bug), canonical_url(bmp)))
         self.assertIn(expected, ctrl.body)
 
     def test_forCreation_with_prerequisite_branch(self):
@@ -182,8 +218,7 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
                                     bmp.registrant.preferredemail.email)
         reviewer = request.recipient
         reviewer_id = mailer._format_user_address(reviewer)
-        self.assertEqual(set([reviewer_id, bmp.address]),
-                         set(ctrl.to_addrs))
+        self.assertEqual(set([reviewer_id, bmp.address]), set(ctrl.to_addrs))
 
     def test_to_addrs_excludes_team_reviewers(self):
         """Addresses for the to header exclude requested team reviewers."""
@@ -194,7 +229,9 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         mailer = BMPMailer.forCreation(bmp, bmp.registrant)
         ctrl = mailer.generateEmail(subscriber,
                                     subscriber.preferredemail.email)
-        self.assertEqual([bmp.address], ctrl.to_addrs)
+        reviewer = bmp.target_branch.owner
+        reviewer_id = mailer._format_user_address(reviewer)
+        self.assertEqual(set([reviewer_id, bmp.address]), set(ctrl.to_addrs))
 
     def test_to_addrs_excludes_people_with_hidden_addresses(self):
         """The to header excludes those with hidden addresses."""
@@ -277,7 +314,8 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         self.assertEqual('inline; filename="review-diff.txt"',
                          attachment['Content-Disposition'])
         self.assertEqual(diff_text[:25], attachment.get_payload(decode=True))
-        warning_text = "The attached diff has been truncated due to its size."
+        warning_text = (
+            "The attached diff has been truncated due to its size.\n")
         self.assertTrue(warning_text in ctrl.body)
 
     def getProposalUpdatedEmailJob(self, merge_proposal):
@@ -299,16 +337,44 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
     def test_no_job_created_if_no_delta(self):
         """Ensure None is returned if no change has been made."""
         merge_proposal, person = self.makeProposalWithSubscriber()
-        old_merge_proposal = BranchMergeProposalDelta.snapshot(merge_proposal)
+        old_merge_proposal = Snapshot(
+            merge_proposal, providing=providedBy(merge_proposal))
         event = ObjectModifiedEvent(
             merge_proposal, old_merge_proposal, [], merge_proposal.registrant)
         merge_proposal_modified(merge_proposal, event)
         self.assertIs(None, self.getProposalUpdatedEmailJob(merge_proposal))
 
+    def test_no_job_created_if_work_in_progress(self):
+        """Ensure None is returned if no change has been made."""
+        merge_proposal, person = self.makeProposalWithSubscriber(
+            needs_review=False)
+        old_merge_proposal = Snapshot(
+            merge_proposal, providing=providedBy(merge_proposal))
+        merge_proposal.commit_message = 'new commit message'
+        merge_proposal.description = 'change description'
+        event = ObjectModifiedEvent(
+            merge_proposal, old_merge_proposal, [], merge_proposal.registrant)
+        merge_proposal_modified(merge_proposal, event)
+        self.assertIs(None, self.getProposalUpdatedEmailJob(merge_proposal))
+
+    def test_job_created_if_work_in_progress_merged(self):
+        # If work in progress is merged, then that is email worthy.
+        merge_proposal, person = self.makeProposalWithSubscriber(
+            needs_review=False)
+        old_merge_proposal = Snapshot(
+            merge_proposal, providing=providedBy(merge_proposal))
+        merge_proposal.setStatus(BranchMergeProposalStatus.MERGED)
+        event = ObjectModifiedEvent(
+            merge_proposal, old_merge_proposal, [], merge_proposal.registrant)
+        merge_proposal_modified(merge_proposal, event)
+        job = self.getProposalUpdatedEmailJob(merge_proposal)
+        self.assertIsNot(None, job, 'Job was not created.')
+
     def makeProposalUpdatedEmailJob(self):
         """Fixture method providing a mailer for a modified merge proposal"""
         merge_proposal, subscriber = self.makeProposalWithSubscriber()
-        old_merge_proposal = BranchMergeProposalDelta.snapshot(merge_proposal)
+        old_merge_proposal = Snapshot(
+            merge_proposal, providing=providedBy(merge_proposal))
         merge_proposal.requestReview()
         merge_proposal.commit_message = 'new commit message'
         merge_proposal.description = 'change description'
@@ -324,13 +390,12 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         merge_proposal = self.factory.makeBranchMergeProposal()
         mailer = BMPMailer.forModification(
             merge_proposal, 'the diff', merge_proposal.registrant)
-        self.assertIsNot(None,  mailer.message_id, 'message_id not set')
+        self.assertIsNot(None, mailer.message_id, 'message_id not set')
 
     def test_forModificationWithModificationTextDelta(self):
         """Ensure the right delta is filled out if there is a change."""
         job, subscriber = self.makeProposalUpdatedEmailJob()
         self.assertEqual(
-            '    Status: Work in progress => Needs review\n\n'
             'Commit Message changed to:\n\nnew commit message\n\n'
             'Description changed to:\n\nchange description',
             job.delta_text)
@@ -351,10 +416,9 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         self.assertEqual('[Merge] '
             'lp://dev/~bob/super-product/fix-foo-for-bar into\n\t'
             'lp://dev/~mary/super-product/bar', email['subject'])
+        bmp = job.branch_merge_proposal
         expected = dedent("""\
-            The proposal to merge lp://dev/~bob/super-product/fix-foo-for-bar into lp://dev/~mary/super-product/bar has been updated.
-
-                Status: Work in progress => Needs review
+            The proposal to merge %(source)s into %(target)s has been updated.
 
             Commit Message changed to:
 
@@ -363,10 +427,16 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
             Description changed to:
 
             change description
+
+            For more details, see:
+            %(bmp)s
             --\x20
-            %s
+            %(bmp)s
             You are the owner of lp://dev/~bob/super-product/fix-foo-for-bar.
-            """) % canonical_url(job.branch_merge_proposal)
+            """) % {
+                'source': bmp.source_branch.bzr_identity,
+                'target': bmp.target_branch.bzr_identity,
+                'bmp': canonical_url(bmp)}
         self.assertEqual(expected, email.get_payload(decode=True))
 
     def assertRecipientsMatches(self, recipients, mailer):
@@ -376,15 +446,13 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
 
     def makeReviewRequest(self):
         diff_text = ''.join(unified_diff('', "Make a diff."))
-        merge_proposal, subscriber_ = self.makeProposalWithSubscriber(
-            diff_text=diff_text, initial_comment="Initial comment")
         candidate = self.factory.makePerson(
             displayname='Candidate', email='candidate@example.com')
+        merge_proposal, subscriber_ = self.makeProposalWithSubscriber(
+            diff_text=diff_text, initial_comment="Initial comment",
+            reviewer=candidate)
         requester = self.factory.makePerson(
             displayname='Requester', email='requester@example.com')
-        CodeReviewVoteReference(
-            branch_merge_proposal=merge_proposal, reviewer=candidate,
-            registrant=requester)
         reason = RecipientReason.forReviewer(merge_proposal, True, candidate)
         return reason, requester
 
@@ -422,82 +490,98 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        self.owner = self.factory.makePerson()
-        login_person(self.owner)
-        self.bmp = self.factory.makeBranchMergeProposal(registrant=self.owner)
+    def getReviewEmailJobs(self, bmp):
+        """Return the result set for the merge proposals review email jobs."""
+        review_job = BranchMergeProposalJobType.REVIEW_REQUEST_EMAIL
+        return IStore(BranchMergeProposalJob).find(
+            BranchMergeProposalJob,
+            BranchMergeProposalJob.branch_merge_proposal == bmp,
+            BranchMergeProposalJob.job_type == review_job)
 
-    def makePersonWithHiddenEmail(self):
-        """Make an arbitrary person with hidden email addresses."""
-        person = self.factory.makePerson()
-        login_person(person)
-        person.hide_email_addresses = True
-        login_person(self.owner)
-        return person
-
-    def getReviewNotificationEmail(self):
+    def getReviewNotificationEmail(self, bmp):
         """Return the review requested email job for the test's proposal."""
-        [job] = list(
-            IStore(BranchMergeProposalJob).find(
-                BranchMergeProposalJob,
-                BranchMergeProposalJob.branch_merge_proposal == self.bmp,
-                BranchMergeProposalJob.job_type ==
-                BranchMergeProposalJobType.REVIEW_REQUEST_EMAIL))
+        [job] = list(self.getReviewEmailJobs(bmp))
         return ReviewRequestedEmailJob(job)
+
+    def test_nominateReview_no_job_if_work_in_progress(self):
+        # When a reviewer is nominated for a proposal that is work in
+        # progress, no email job is created.
+        bmp = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
+        reviewer = self.factory.makePerson()
+        pop_notifications()
+        with person_logged_in(bmp.registrant):
+            bmp.nominateReviewer(reviewer, bmp.registrant, None)
+        # No email is sent.
+        sent_mail = pop_notifications()
+        self.assertEqual([], sent_mail)
+        # No job created.
+        job_count = self.getReviewEmailJobs(bmp).count()
+        self.assertEqual(0, job_count)
 
     def test_nominateReview_creates_job(self):
         # When a reviewer is nominated, a job is created to send out the
         # review request email.
+        bmp = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
         reviewer = self.factory.makePerson()
         pop_notifications()
-        self.bmp.nominateReviewer(reviewer, self.owner, None)
+        with person_logged_in(bmp.registrant):
+            bmp.nominateReviewer(reviewer, bmp.registrant, None)
         # No email is sent.
         sent_mail = pop_notifications()
         self.assertEqual([], sent_mail)
         # A job is created.
-        review_request_job = self.getReviewNotificationEmail()
-        self.assertEqual(self.bmp, review_request_job.branch_merge_proposal)
+        review_request_job = self.getReviewNotificationEmail(bmp)
+        self.assertEqual(bmp, review_request_job.branch_merge_proposal)
         self.assertEqual(reviewer, review_request_job.reviewer)
-        self.assertEqual(self.bmp.registrant, review_request_job.requester)
+        self.assertEqual(bmp.registrant, review_request_job.requester)
 
     def test_nominateReview_email_content(self):
         # The email that is sent contains the description of the proposal, and
         # a link to the proposal.
+        bmp = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
         reviewer = self.factory.makePerson()
-        self.bmp.description = 'This branch is awesome.'
-        self.bmp.nominateReviewer(reviewer, self.owner, None)
-        review_request_job = self.getReviewNotificationEmail()
+        with person_logged_in(bmp.registrant):
+            bmp.description = 'This branch is awesome.'
+            bmp.nominateReviewer(reviewer, bmp.registrant, None)
+        review_request_job = self.getReviewNotificationEmail(bmp)
         review_request_job.run()
         [sent_mail] = pop_notifications()
         expected = dedent("""\
-                You have been requested to review the proposed merge of %(source)s into %(target)s.
+            You have been requested to review the proposed merge of"""
+            """ %(source)s into %(target)s.
 
-                This branch is awesome.
+            For more details, see:
+            %(bmp)s
 
-                -- 
-                %(bmp)s
-                You are requested to review the proposed merge of %(source)s into %(target)s.
-                """ % {
-                    'source': self.bmp.source_branch.bzr_identity,
-                    'target': self.bmp.target_branch.bzr_identity,
-                    'bmp': canonical_url(self.bmp)})
+            This branch is awesome.
+
+            --\x20
+            %(bmp)s
+            You are requested to review the proposed merge of %(source)s"""
+            """ into %(target)s.
+            """ % {
+                'source': bmp.source_branch.bzr_identity,
+                'target': bmp.target_branch.bzr_identity,
+                'bmp': canonical_url(bmp)})
         self.assertEqual(expected, sent_mail.get_payload(decode=True))
 
     def test_nominateReview_emails_team_address(self):
         # If a review request is made for a team, the members of the team are
         # sent an email.
+        bmp = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
         eric = self.factory.makePerson(
             displayname='Eric the Viking', email='eric@vikings.example.com')
         black_beard = self.factory.makePerson(
             displayname='Black Beard', email='black@pirates.example.com')
-        review_team = self.factory.makeTeam(owner=eric)
-        login_person(eric)
-        review_team.addMember(black_beard, eric)
+        review_team = self.factory.makeTeam(owner=eric, members=[black_beard])
         pop_notifications()
-        login_person(self.owner)
-        self.bmp.nominateReviewer(review_team, self.owner, None)
-        review_request_job = self.getReviewNotificationEmail()
+        with person_logged_in(bmp.registrant):
+            bmp.nominateReviewer(review_team, bmp.registrant, None)
+        review_request_job = self.getReviewNotificationEmail(bmp)
         review_request_job.run()
         sent_mail = pop_notifications()
         self.assertEqual(
@@ -508,11 +592,14 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
     def test_requestReviewWithPrivateEmail(self):
         # We can request a review, even when one of the parties involved has a
         # private email address.
-        candidate = self.makePersonWithHiddenEmail()
+        bmp = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+        candidate = self.factory.makePerson(hide_email_addresses=True)
         # Request a review and prepare the mailer.
-        self.bmp.nominateReviewer(candidate, self.owner, None)
+        with person_logged_in(bmp.registrant):
+            bmp.nominateReviewer(candidate, bmp.registrant, None)
         # Send the mail.
-        review_request_job = self.getReviewNotificationEmail()
+        review_request_job = self.getReviewNotificationEmail(bmp)
         review_request_job.run()
         mails = pop_notifications()
         self.assertEqual(1, len(mails))

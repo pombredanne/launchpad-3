@@ -1,3 +1,8 @@
+XXX Julian 2010-08-03 bug=613096
+Most of this doctest is really a unit test in disguise.  It should get
+re-written and unit tests moved to buildmaster/tests/test_builder.py
+
+
 =============
 Builder Class
 =============
@@ -14,9 +19,6 @@ There are several builders in the sample data. Let's examine the first.
 As expected, it implements IBuilder.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from lp.buildmaster.interfaces.builder import IBuilder
-    >>> verifyObject(IBuilder, builder)
-    True
 
     >>> print builder.name
     bob
@@ -36,16 +38,6 @@ behavior is dealing with binary packages.
     ...     BinaryPackageBuildBehavior)
     >>> isinstance(
     ...     builder.current_build_behavior, BinaryPackageBuildBehavior)
-    True
-
-A builder has an XML-RPC proxy in the 'slave' attribute, which allows
-us to easily call methods on the slave machines.
-
-    >>> s = builder.slave
-
-The base URL of the proxy matches the builder's URL.
-
-    >>> s.urlbase == builder.url
     True
 
 
@@ -91,7 +83,7 @@ And also by ID.
 The 'new' method will create a new builder in the database.
 
     >>> bnew = builderset.new(1, 'http://dummy.com:8221/', 'dummy',
-    ...	                   'Dummy Title', 'eh ?', 1)
+    ...                    'Dummy Title', 'eh ?', 1)
     >>> bnew.name
     u'dummy'
 
@@ -161,149 +153,35 @@ The build for the ubuntu primary archive shows up again.
     >>> queue_sizes['nonvirt']['386']
     (1L, datetime.timedelta(0, 60))
 
+All job types are included. If we create a recipe build job, it will
+show up in the calculated queue size.
 
-Resuming buildd slaves
-======================
+    >>> recipe_bq = factory.makeSourcePackageRecipeBuildJob()
+    >>> # XXX wgrant 20100625 bug=598397: The factory erroneously creates
+    >>> # architecture-independent jobs.
+    >>> print recipe_bq.processor
+    None
 
-Virtual slaves are resumed using a command specified in the
-configuration profile. Production configuration uses a SSH trigger
-account accessed via a private key available in the builddmaster
-machine (which used ftpmaster configuration profile) as in:
+    >>> from lp.soyuz.interfaces.processor import IProcessorFamilySet
+    >>> i386_family = getUtility(IProcessorFamilySet).getByName('x86')
+    >>> recipe_bq.processor = i386_family.processors[0]
+    >>> recipe_bq.virtualized = True
+    >>> transaction.commit()
 
-{{{
-ssh ~/.ssh/ppa-reset-key ppa@%(vm_host)s
-}}}
+    >>> queue_sizes = builderset.getBuildQueueSizes()
+    >>> print queue_sizes['virt']['386']
+    (1L, datetime.timedelta(0, 64))
 
-The test configuration uses a fake command that can be performed in
-development machine and allow us to tests the important features used
-in production, as 'vm_host' variable replacement.
+Any BuildQueues with a null `virtualized` property are considered virtual
+by default.
 
-    >>> from canonical.config import config
-    >>> config.builddmaster.vm_resume_command
-    'echo %(vm_host)s'
+    >>> recipe_bq = factory.makeSourcePackageRecipeBuildJob()
+    >>> recipe_bq.virtualized = None
+    >>> recipe_bq.processor = i386_family.processors[0]
+    >>> transaction.commit()
+    >>> queue_sizes = builderset.getBuildQueueSizes()
 
-Before performing the command, it checks if the builder is indeed
-virtual and raises CannotResumeHost if it isn't.
+The virtual queue size has increased accordingly:
 
-    >>> bob = getUtility(IBuilderSet)['bob']
-    >>> bob.resumeSlaveHost()
-    Traceback (most recent call last):
-    ...
-    CannotResumeHost: Builder is not virtualized.
-
-For testing purposes resumeSlaveHost returns the stdout and stderr
-buffer resulted from the command.
-
-    >>> frog = getUtility(IBuilderSet)['frog']
-    >>> out, err = frog.resumeSlaveHost()
-    >>> print out.strip()
-    localhost-host.ppa
-
-If the specified command fails, resumeSlaveHost also raises
-CannotResumeHost exception with the results stdout and stderr.
-
-    # The command must have a vm_host dict key and when executed,
-    # have a returncode that is not 0.
-    >>> vm_resume_command = """
-    ...     [builddmaster]
-    ...     vm_resume_command: test "%(vm_host)s = 'false'"
-    ...     """
-    >>> config.push('vm_resume_command', vm_resume_command)
-    >>> frog.resumeSlaveHost()
-    Traceback (most recent call last):
-    ...
-    CannotResumeHost: Resuming failed:
-    OUT:
-    <BLANKLINE>
-    ERR:
-    <BLANKLINE>
-
-Restore default value for resume command.
-
-    >>> config_data = config.pop('vm_resume_command')
-
-
-Slave architecture checks
-=========================
-
-Builder.checkSlaveArchitecture() asks the slave for its version and tries
-to match it against a DistroArchSeries with a ProcessorFamily containing
-the Builder's Processor. If it fails, it will raise an exception so the
-builder can be marked as failed.
-
-A fictitious i386 variant is rejected, since there are no DASes with that
-tag.
-
-    >>> from lp.soyuz.tests.soyuzbuilddhelpers import OkSlave
-    >>> bob.setSlaveForTesting(OkSlave('i387'))
-    >>> bob.checkSlaveArchitecture()
-    Traceback (most recent call last):
-    ...
-    BuildDaemonError: Bad slave architecture tag: i387 (registered family: x86)
-
-hppa isn't in the x86 family, so it too is rejected.
-
-    >>> from lp.soyuz.tests.soyuzbuilddhelpers import OkSlave
-    >>> bob.setSlaveForTesting(OkSlave('hppa'))
-    >>> bob.checkSlaveArchitecture()
-    Traceback (most recent call last):
-    ...
-    BuildDaemonError: Bad slave architecture tag: hppa (registered family: x86)
-
-But i386, a real x86 variant, passes without objection.
-
-    >>> from lp.soyuz.tests.soyuzbuilddhelpers import OkSlave
-    >>> bob.setSlaveForTesting(OkSlave('i386'))
-    >>> bob.checkSlaveArchitecture()
-
-
-Rescuing lost slaves
-====================
-
-Builder.rescueIfLost() checks the build ID reported in the slave status
-against the database. If it isn't building what we think it should be,
-the current build will be aborted and the slave cleaned in preparation
-for a new task. The decision about the slave's correctness is left up
-to IBuildFarmJobBehavior.verifySlaveBuildCookie -- for these examples we
-will use a special behavior that just checks if the cookie reads 'good'.
-
-    >>> import logging
-    >>> from lp.buildmaster.interfaces.builder import CorruptBuildCookie
-    >>> from lp.soyuz.tests.soyuzbuilddhelpers import (
-    ...    BuildingSlave, MockBuilder, OkSlave, WaitingSlave)
-
-    >>> class TestBuildBehavior:
-    ...     def verifySlaveBuildCookie(self, cookie):
-    ...         if cookie != 'good':
-    ...             raise CorruptBuildCookie('Bad value')
-
-    >>> def rescue_slave_if_lost(slave):
-    ...     builder = MockBuilder('mock', slave, TestBuildBehavior())
-    ...     builder.rescueIfLost(logging.getLogger())
-
-An idle slave is not rescued.
-
-    >>> rescue_slave_if_lost(OkSlave())
-
-Slaves building or having built the correct build are not rescued
-either.
-
-    >>> rescue_slave_if_lost(BuildingSlave(build_id='good'))
-    >>> rescue_slave_if_lost(WaitingSlave(build_id='good'))
-
-But if a slave is building the wrong ID, it is declared lost and
-an abort is attempted. MockSlave prints out a message when it is aborted
-or cleaned.
-
-    >>> rescue_slave_if_lost(BuildingSlave(build_id='bad'))
-    Aborting slave
-    WARNING:root:Builder 'mock' rescued from 'bad': 'Bad value'
-
-Slaves having completed an incorrect build are also declared lost,
-but there's no need to abort a completed build. Such builders are
-instead simply cleaned, ready for the next build.
-
-    >>> rescue_slave_if_lost(WaitingSlave(build_id='bad'))
-    Cleaning slave
-    WARNING:root:Builder 'mock' rescued from 'bad': 'Bad value'
-
+    >>> print queue_sizes['virt']['386']
+    (2L, datetime.timedelta(0, 128))

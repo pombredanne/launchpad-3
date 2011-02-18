@@ -85,7 +85,7 @@ Now we enter a valid email address that's not registered in Launchpad.
 == As an administrator ==
 
 Administrators can create teams in much the same manner but they will
-also be given the ability to change the team's visibility
+also be given the ability to set the team's visibility
 
     >>> admin_browser.open('http://launchpad.dev/people/')
     >>> admin_browser.getLink('Register a team').click()
@@ -97,7 +97,7 @@ also be given the ability to change the team's visibility
     'Register a new team in Launchpad'
 
     >>> admin_browser.getControl(name='field.name').value = 'super-secret'
-    >>> admin_browser.getControl('Visibility').value = ['PRIVATE_MEMBERSHIP']
+    >>> admin_browser.getControl('Visibility').value = ['PRIVATE']
     >>> admin_browser.getControl('Display Name').value = 'Shhhh'
     >>> admin_browser.getControl(
     ...     'Team Description').value = 'my own team description'
@@ -114,12 +114,13 @@ also be given the ability to change the team's visibility
     >>> admin_browser.title
     'Shhhh in Launchpad'
 
-A team with Private Membership visibility must be Restricted.
+A team with Private visibility must be Restricted.
 
     >>> admin_browser.open('http://launchpad.dev/people/')
     >>> admin_browser.getLink('Register a team').click()
 
-    >>> admin_browser.getControl(name='field.name').value = 'super-duper-secret'
+    >>> admin_browser.getControl(name='field.name').value = (
+    ...     'super-duper-secret')
     >>> admin_browser.getControl('Display Name').value = 'Shhhh'
     >>> admin_browser.getControl(
     ...     'Team Description').value = 'my own team description'
@@ -128,7 +129,7 @@ A team with Private Membership visibility must be Restricted.
     >>> admin_browser.getControl('Open Team').selected = True
     >>> admin_browser.getControl(
     ...     name='field.subscriptionpolicy').value = ['OPEN']
-    >>> admin_browser.getControl('Visibility').value = ['PRIVATE_MEMBERSHIP']
+    >>> admin_browser.getControl('Visibility').value = ['PRIVATE']
     >>> admin_browser.getControl('Create').click()
     >>> for message in get_feedback_messages(admin_browser.contents):
     ...     print message

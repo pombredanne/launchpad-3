@@ -6,7 +6,8 @@ Under "/projects" there are several pages for various administration tasks.
 
 The pages are "+review-licenses", "+new", and "+all".
 
-== Review project licenses ==
+Review project licenses
+-----------------------
 
 The page +review-licenses is accessible from the /projects page via
 the "Review licenses" link, which is conditionally available
@@ -91,7 +92,7 @@ is provided for each product pointint to its +review-license page.
     >>> for tr in table.findAll('tr'):
     ...     td_list = tr.findAll('td')
     ...     print td_list[5].a
-    <a href="/arch-mirrors/+review-license">Review</a> ...
+    <a href="/tomcat/+review-license">Review</a> ...
 
 Now, we can click on the Review link, which will take us to the
 $project/+review-license page. Then clicking on the Change button
@@ -108,75 +109,6 @@ will take us back to the page we came from.
     >>> registry_browser.getControl(name='field.actions.change').click()
     >>> print registry_browser.url == projects_link
     True
-
-
-Project list shows license status
-=================================
-
-The project list will show (Proprietary) next to projects with a
-proprietary license, (Unspecified) next to projects without
-any license and (Unreviewed) next to projects with an unreviewed
-Other/OpenSource license.
-
-First, add a product with a Other/Open Source license.
-
-    >>> user_browser.open('http://launchpad.dev/products/+new')
-    >>> user_browser.getControl('URL').value = 'other-open-source'
-    >>> user_browser.getControl('Name').value = 'Other-Open-Source Product'
-    >>> user_browser.getControl('Title').value = 'title'
-    >>> user_browser.getControl('Summary').value = 'summary'
-    >>> user_browser.getControl('Continue').click()
-
-    >>> user_browser.getControl(name='field.description').value = 'description'
-    >>> user_browser.getControl(name='field.licenses').value = [
-    ...     'OTHER_OPEN_SOURCE']
-    >>> user_browser.getControl(name='field.license_info').value = 'foo'
-    >>> user_browser.getControl('Complete Registration').click()
-    >>> print user_browser.url
-    http://launchpad.dev/other-open-source
-
-    >>> user_browser.open('http://launchpad.dev/projects/+all')
-    >>> div = find_tag_by_id(user_browser.contents, 'product-listing')
-    >>> for subdiv in div.next.findNextSiblings('div'):
-    ...     pillar = subdiv.find()
-    ...     print ''.join(pillar.findAll(text=True))
-    ...     print '     ', pillar.get('title')
-    Other-Open-Source Product (Unreviewed)
-          This project&rsquo;s license has not been reviewed.
-    Obsolete Junk
-          None
-    Launchpad Translations (Unspecified)
-          This project&rsquo;s license has not been specified.
-    Mega Money Maker (Proprietary)
-          This project&rsquo;s license is proprietary.
-    Derby
-          None
-
-
-If an open source project adds a proprietary license then the project
-will be displayed as proprietary.
-
-    >>> user_browser.open('http://launchpad.dev/other-open-source')
-    >>> user_browser.getLink('Change details').click()
-    >>> user_browser.getControl(name='field.licenses').value = [
-    ...     'OTHER_OPEN_SOURCE', 'OTHER_PROPRIETARY']
-    >>> user_browser.getControl('Change').click()
-    >>> user_browser.open('http://launchpad.dev/projects/+all')
-    >>> div = find_tag_by_id(user_browser.contents, 'product-listing')
-    >>> for subdiv in div.next.findNextSiblings('div'):
-    ...     pillar = subdiv.find()
-    ...     print ''.join(pillar.findAll(text=True))
-    ...     print '     ', pillar.get('title')
-    Other-Open-Source Product (Proprietary)
-          This project&rsquo;s license is proprietary.
-    Obsolete Junk
-          None
-    Launchpad Translations (Unspecified)
-          This project&rsquo;s license has not been specified.
-    Mega Money Maker (Proprietary)
-          This project&rsquo;s license is proprietary.
-    Derby
-          None
 
 
 View all projects

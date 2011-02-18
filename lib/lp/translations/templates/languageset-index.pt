@@ -14,7 +14,7 @@
         tal:attributes="src string:${icingroot}/build/worlddata/languages.js">
       </script>
       <script type="text/javascript">
-          YUI().use('languages', 'event', function(Y) {
+          LPS.use('languages', 'event', function(Y) {
               Y.on('domready', function(e) {
                   Y.languages.initialize_languages_page(Y);
               });
@@ -41,7 +41,7 @@
         <dl id="preferred_languages"
             tal:condition="view/user">
           <dt>Your preferred languages:
-            <a tal:attributes="href string:${view/user/fmt:url}/+editlanguages"
+            <a tal:attributes="href view/user/fmt:url:translations/+editlanguages"
                class="edit sprite"></a>
           </dt>
           <dd tal:content="structure view/user_languages">

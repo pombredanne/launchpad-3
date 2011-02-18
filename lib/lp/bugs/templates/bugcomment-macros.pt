@@ -1,3 +1,8 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  omit-tag="">
+
 <table
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
@@ -20,7 +25,7 @@
   </tal:activity-by-target>
 </table>
 
-<div
+<div 
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   metal:define-macro="activity-box"
@@ -40,3 +45,34 @@
         metal:use-macro="context/@@bugcomment-macros/activity-table" />
   </div>
 </div>
+
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  metal:define-macro="break"
+  tal:attributes="class string:boardComment"
+  style="border-bottom: 0">
+  <div class="boardCommentDetails">
+    <table>
+      <tbody>
+        <tr>
+          <td>
+            <span class="sprite arrowRight">&nbsp;</span>
+            <span tal:replace="num_hidden">42</span> comments hidden
+          </td>
+
+          <td class="bug-comment-index">
+            <a href="?comments=all"
+               class="sprite retry"
+               style="white-space: nowrap">
+               view all <span
+               tal:replace="view/total_comments"
+               /> comments</a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</tal:root>

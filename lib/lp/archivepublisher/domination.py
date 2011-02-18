@@ -44,7 +44,7 @@ Note that:
 The 'domination' procedure is the 2nd step of the publication pipeline and
 it is performed for each suite using:
 
-  * judgeAndDominate(distroseries, pocket, pubconfig)
+  * judgeAndDominate(distroseries, pocket)
 
 """
 
@@ -52,17 +52,34 @@ __metaclass__ = type
 
 __all__ = ['Dominator']
 
-import apt_pkg
 from datetime import timedelta
+import functools
 import gc
+import operator
 
-from lp.archivepublisher import ELIGIBLE_DOMINATION_STATES
+import apt_pkg
+from storm.expr import And, Count, Select
+
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
-    sqlvalues, flush_database_updates, cursor,
-    clear_current_connection_cache)
+    clear_current_connection_cache,
+    flush_database_updates,
+    sqlvalues,
+    )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from lp.archivepublisher import ELIGIBLE_DOMINATION_STATES
+from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.soyuz.enums import (
+    BinaryPackageFormat,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
-from canonical.launchpad.interfaces import PackagePublishingStatus
+
+# Days before a package will be removed from disk.
+STAY_OF_EXECUTION = 1
 
 
 def clear_cache():
@@ -73,38 +90,23 @@ def clear_cache():
     clear_current_connection_cache()
     gc.collect()
 
-PENDING = PackagePublishingStatus.PENDING
-PUBLISHED = PackagePublishingStatus.PUBLISHED
-SUPERSEDED = PackagePublishingStatus.SUPERSEDED
-DELETED = PackagePublishingStatus.DELETED
-OBSOLETE = PackagePublishingStatus.OBSOLETE
 
 # Ugly, but works
 apt_pkg.InitSystem()
 
-def _compare_source_packages_by_version_and_date(p1, p2):
-    """Compare packages p1 and p2 by their version; using Debian rules.
 
-    If the comparison is the same sourcepackagerelease, compare by datecreated
-    instead. So later records beat earlier ones.
+def _compare_packages_by_version_and_date(get_release, p1, p2):
+    """Compare publications p1 and p2 by their version; using Debian rules.
+
+    If the publications are for the same package, compare by datecreated
+    instead. This lets newer records win.
     """
-    if p1.sourcepackagerelease.id == p2.sourcepackagerelease.id:
+    if get_release(p1).id == get_release(p2).id:
         return cmp(p1.datecreated, p2.datecreated)
 
-    return apt_pkg.VersionCompare(p1.sourcepackagerelease.version,
-                                  p2.sourcepackagerelease.version)
+    return apt_pkg.VersionCompare(get_release(p1).version,
+                                  get_release(p2).version)
 
-def _compare_binary_packages_by_version_and_date(p1, p2):
-    """Compare packages p1 and p2 by their version; using Debian rules
-
-    If the comparison is the same binarypackagerelease, compare by datecreated
-    instead. So later records beat earlier ones.
-    """
-    if p1.binarypackagerelease.id == p2.binarypackagerelease.id:
-        return cmp(p1.datecreated, p2.datecreated)
-
-    return apt_pkg.VersionCompare(p1.binarypackagerelease.version,
-                                  p2.binarypackagerelease.version)
 
 class Dominator:
     """ Manage the process of marking packages as superseded.
@@ -123,131 +125,22 @@ class Dominator:
         self.archive = archive
         self.debug = self._logger.debug
 
-    def _dominateSource(self, sourceinput):
+    def _dominatePublications(self, pubs):
+        """Perform dominations for the given publications.
+
+        :param pubs: A dict mapping names to a list of publications. Every
+            publication must be PUBLISHED or PENDING, and the first in each
+            list will be treated as dominant (so should be the latest).
         """
-        Perform dominations for source.
-        """
-        self.debug("Dominating sources...")
-        for sourcename in sourceinput.keys():
-            # source is a list of versions ordered most-recent-first
-            # basically skip the first entry because that is
-            # never dominated by us, then just set subsequent entries
-            # to SUPERSEDED unless they're already there or pending
-            # removal
-            assert sourceinput[sourcename], (
-                "Empty list of publications for %s" % sourcename)
-            super_release = sourceinput[sourcename][0].sourcepackagerelease
-            super_release_name = super_release.sourcepackagename.name
-            for pubrec in sourceinput[sourcename][1:]:
-                if pubrec.status == PUBLISHED or pubrec.status == PENDING:
-                    this_release = pubrec.sourcepackagerelease
+        self.debug("Dominating packages...")
 
-                    this_release_name = this_release.sourcepackagename.name
-                    self.debug(
-                        "%s/%s has been judged as superseded by %s/%s" %
-                        (this_release_name, this_release.version,
-                         super_release_name, super_release.version))
+        for name in pubs.keys():
+            assert pubs[name], (
+                "Empty list of publications for %s" % name)
+            for pubrec in pubs[name][1:]:
+                pubrec.supersede(pubs[name][0], self)
 
-                    pubrec.status = SUPERSEDED
-                    pubrec.datesuperseded = UTC_NOW
-                    pubrec.supersededby = super_release
-
-    def _getOtherBinaryPublications(self, dominated):
-        """Return remaining publications of the same binarypackagerelease.
-
-        It only considers binary publications in the same distroseries,
-        pocket and archive context, which is the limit where the domination
-        should happen.
-
-        Return only binaries published or pending in the same component,
-        section and priority, this way the just-made override will be
-        preserved.
-        """
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import (
-             BinaryPackagePublishingHistory)
-
-        dominated_series = dominated.distroarchseries.distroseries
-        available_architectures = [
-            das.id for das in dominated_series.architectures]
-        query = """
-            BinaryPackagePublishingHistory.status IN %s AND
-            BinaryPackagePublishingHistory.distroarchseries IN %s AND
-            BinaryPackagePublishingHistory.binarypackagerelease = %s AND
-            BinaryPackagePublishingHistory.pocket = %s AND
-            BinaryPackagePublishingHistory.archive = %s AND
-            BinaryPackagePublishingHistory.component = %s AND
-            BinaryPackagePublishingHistory.section = %s AND
-            BinaryPackagePublishingHistory.priority = %s
-        """ % sqlvalues([PUBLISHED, PENDING], available_architectures,
-                        dominated.binarypackagerelease, dominated.pocket,
-                        dominated.archive, dominated.component,
-                        dominated.section, dominated.priority)
-        return BinaryPackagePublishingHistory.select(query)
-
-    def _dominateBinary(self, dominated, dominant):
-        """Dominate the given binarypackagerelease publication."""
-        # At this point only PUBLISHED (ancient versions) or PENDING (
-        # multiple overrides/copies) publications should be given. We
-        # tolerate SUPERSEDED architecture-independent binaries, because
-        # they are dominated automatically once the first publication is
-        # processed.
-        if dominated.status not in [PUBLISHED, PENDING]:
-            arch_independent = (
-                dominated.binarypackagerelease.architecturespecific == False)
-            assert arch_independent, (
-                "Should not dominate unpublished architecture specific "
-                "binary %s (%s)" % (
-                dominated.binarypackagerelease.title,
-                dominated.distroarchseries.architecturetag))
-            return
-
-        dominant_build = dominant.binarypackagerelease.build
-        distroarchseries = dominant_build.distro_arch_series
-        self.debug(
-            "The %s build of %s has been judged as superseded by the build "
-            "of %s.  Arch-specific == %s" % (
-            distroarchseries.architecturetag,
-            dominated.binarypackagerelease.title,
-            dominant.binarypackagerelease.build.source_package_release.title,
-            dominated.binarypackagerelease.architecturespecific))
-        dominated.status = SUPERSEDED
-        dominated.datesuperseded = UTC_NOW
-        # Binary package releases are superseded by the new build,
-        # not the new binary package release. This is because
-        # there may not *be* a new matching binary package -
-        # source packages can change the binaries they build
-        # between releases.
-        dominated.supersededby = dominant_build
-
-    def _dominateBinaries(self, binaryinput):
-        """Perform dominations for binaries."""
-        self.debug("Dominating binaries...")
-        for binaryname in binaryinput.keys():
-            # binary is a list of versions ordered most-recent-first
-            # basically skip the first entry because that is
-            # never dominated by us, then just set subsequent entries
-            # to SUPERSEDED unless they're already there or pending
-            # removal
-            assert binaryinput[binaryname], (
-                "Empty list of publications for %s" % binaryname)
-            # At some future point, this code might automatically locate
-            # binaries which are no longer built from source (NBS).
-            # Currently this is done in archive cruft check.
-            dominant = binaryinput[binaryname][0]
-            for dominated in binaryinput[binaryname][1:]:
-                # Dominate all publications of architecture independent
-                # binaries altogether in this distroseries and pocket.
-                if not dominated.binarypackagerelease.architecturespecific:
-                    other_publications = self._getOtherBinaryPublications(
-                        dominated)
-                    for dominated in other_publications:
-                        self._dominateBinary(dominated, dominant)
-                else:
-                    self._dominateBinary(dominated, dominant)
-
-
-    def _sortPackages(self, pkglist, isSource=True):
+    def _sortPackages(self, pkglist, is_source=True):
         # pkglist is a list of packages with the following
         #  * sourcepackagename or packagename as appropriate
         #  * version
@@ -255,37 +148,27 @@ class Dominator:
         # Don't care about any other attributes
         outpkgs = {}
 
-        if isSource:
-            self.debug("Sorting sources...")
-        else:
-            self.debug("Sorting binaries...")
+        self.debug("Sorting packages...")
+
+        attr_prefix = 'source' if is_source else 'binary'
+        get_release = operator.attrgetter(attr_prefix + 'packagerelease')
+        get_name = operator.attrgetter(attr_prefix + 'packagename')
 
         for inpkg in pkglist:
-            if isSource:
-                L = outpkgs.setdefault(
-                    inpkg.sourcepackagerelease.sourcepackagename.name.encode(
-                    'utf-8'), [])
-            else:
-                L = outpkgs.setdefault(
-                    inpkg.binarypackagerelease.binarypackagename.name.encode(
-                    'utf-8'), [])
-
+            L = outpkgs.setdefault(
+                get_name(get_release(inpkg)).name.encode('utf-8'), [])
             L.append(inpkg)
 
         for pkgname in outpkgs:
             if len(outpkgs[pkgname]) > 1:
-                if isSource:
-                    outpkgs[pkgname].sort(
-                        _compare_source_packages_by_version_and_date)
-                else:
-                    outpkgs[pkgname].sort(
-                        _compare_binary_packages_by_version_and_date)
-
+                outpkgs[pkgname].sort(
+                    functools.partial(
+                        _compare_packages_by_version_and_date, get_release))
                 outpkgs[pkgname].reverse()
 
         return outpkgs
 
-    def _setScheduledDeletionDate(self, pub_record, conf):
+    def _setScheduledDeletionDate(self, pub_record):
         """Set the scheduleddeletiondate on a publishing record.
 
         If the status is DELETED we set the date to UTC_NOW, otherwise
@@ -295,9 +178,9 @@ class Dominator:
             pub_record.scheduleddeletiondate = UTC_NOW
         else:
             pub_record.scheduleddeletiondate = (
-                UTC_NOW + timedelta(days=conf.stayofexecution))
+                UTC_NOW + timedelta(days=STAY_OF_EXECUTION))
 
-    def _judgeSuperseded(self, source_records, binary_records, conf):
+    def _judgeSuperseded(self, source_records, binary_records):
         """Determine whether the superseded packages supplied should
         be moved to death row or not.
 
@@ -347,7 +230,7 @@ class Dominator:
                        (binpkg_release.binarypackagename.name,
                         binpkg_release.version,
                         pub_record.distroarchseries.architecturetag))
-            self._setScheduledDeletionDate(pub_record, conf)
+            self._setScheduledDeletionDate(pub_record)
             # XXX cprov 20070820: 'datemadepending' is useless, since it's
             # always equals to "scheduleddeletiondate - quarantine".
             pub_record.datemadepending = UTC_NOW
@@ -394,12 +277,12 @@ class Dominator:
                 "%s/%s (%s) source has been judged eligible for removal" %
                 (srcpkg_release.sourcepackagename.name,
                  srcpkg_release.version, pub_record.id))
-            self._setScheduledDeletionDate(pub_record, conf)
+            self._setScheduledDeletionDate(pub_record)
             # XXX cprov 20070820: 'datemadepending' is pointless, since it's
             # always equals to "scheduleddeletiondate - quarantine".
             pub_record.datemadepending = UTC_NOW
 
-    def judgeAndDominate(self, dr, pocket, config, do_clear_cache=True):
+    def judgeAndDominate(self, dr, pocket, do_clear_cache=True):
         """Perform the domination and superseding calculations
 
         It only works across the distroseries and pocket specified.
@@ -413,58 +296,69 @@ class Dominator:
             self.debug("Performing domination across %s/%s (%s)" % (
                 dr.name, pocket.title, distroarchseries.architecturetag))
 
-            # Here we go behind SQLObject's back to generate an assistance
-            # table which will seriously improve the performance of this
-            # part of the publisher.
-            # XXX: dsilvers 2006-02-04: It would be nice to not have to do
-            # this. Most of this methodology is stolen from person.py
-            # XXX: malcc 2006-08-03: This should go away when we shift to
-            # doing this one package at a time.
-            flush_database_updates()
-            cur = cursor()
-            cur.execute("""SELECT bpn.id AS name, count(bpn.id) AS count INTO
-                temporary table PubDomHelper FROM BinaryPackageRelease bpr,
-                BinaryPackageName bpn, BinaryPackagePublishingHistory
-                sbpph WHERE bpr.binarypackagename = bpn.id AND
-                sbpph.binarypackagerelease = bpr.id AND
-                sbpph.distroarchseries = %s AND sbpph.archive = %s AND
-                sbpph.status = %s AND sbpph.pocket = %s
-                GROUP BY bpn.id""" % sqlvalues(
-                distroarchseries, self.archive,
-                PackagePublishingStatus.PUBLISHED, pocket))
-
-            binaries = BinaryPackagePublishingHistory.select(
-                """
-                binarypackagepublishinghistory.distroarchseries = %s
-                AND binarypackagepublishinghistory.archive = %s
-                AND binarypackagepublishinghistory.pocket = %s
-                AND binarypackagepublishinghistory.status = %s AND
-                binarypackagepublishinghistory.binarypackagerelease =
-                    binarypackagerelease.id
-                AND binarypackagerelease.binarypackagename IN (
-                    SELECT name FROM PubDomHelper WHERE count > 1)"""
-                % sqlvalues (distroarchseries, self.archive,
-                             pocket, PackagePublishingStatus.PUBLISHED),
-                clauseTables=['BinaryPackageRelease'])
-
-            self._dominateBinaries(self._sortPackages(binaries, False))
+            bpph_location_clauses = And(
+                BinaryPackagePublishingHistory.status ==
+                    PackagePublishingStatus.PUBLISHED,
+                BinaryPackagePublishingHistory.distroarchseries ==
+                    distroarchseries,
+                BinaryPackagePublishingHistory.archive == self.archive,
+                BinaryPackagePublishingHistory.pocket == pocket,
+                )
+            candidate_binary_names = Select(
+                BinaryPackageName.id,
+                And(
+                    BinaryPackageRelease.binarypackagenameID ==
+                        BinaryPackageName.id,
+                    BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                        BinaryPackageRelease.id,
+                    bpph_location_clauses,
+                ),
+                group_by=BinaryPackageName.id,
+                having=Count(BinaryPackagePublishingHistory.id) > 1)
+            binaries = IMasterStore(BinaryPackagePublishingHistory).find(
+                BinaryPackagePublishingHistory,
+                BinaryPackageRelease.id ==
+                    BinaryPackagePublishingHistory.binarypackagereleaseID,
+                BinaryPackageRelease.binarypackagenameID.is_in(
+                    candidate_binary_names),
+                BinaryPackageRelease.binpackageformat !=
+                    BinaryPackageFormat.DDEB,
+                bpph_location_clauses)
+            self.debug("Dominating binaries...")
+            self._dominatePublications(self._sortPackages(binaries, False))
             if do_clear_cache:
                 self.debug("Flushing SQLObject cache.")
                 clear_cache()
 
-            flush_database_updates()
-            cur.execute("DROP TABLE PubDomHelper")
-
-        if do_clear_cache:
-            self.debug("Flushing SQLObject cache.")
-            clear_cache()
-
         self.debug("Performing domination across %s/%s (Source)" %
                    (dr.name, pocket.title))
-        sources = SourcePackagePublishingHistory.selectBy(
-            distroseries=dr, archive=self.archive, pocket=pocket,
-            status=PackagePublishingStatus.PUBLISHED)
-        self._dominateSource(self._sortPackages(sources))
+        spph_location_clauses = And(
+            SourcePackagePublishingHistory.status ==
+                PackagePublishingStatus.PUBLISHED,
+            SourcePackagePublishingHistory.distroseries == dr,
+            SourcePackagePublishingHistory.archive == self.archive,
+            SourcePackagePublishingHistory.pocket == pocket,
+            )
+        candidate_source_names = Select(
+            SourcePackageName.id,
+            And(
+                SourcePackageRelease.sourcepackagenameID ==
+                    SourcePackageName.id,
+                SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                    SourcePackageRelease.id,
+                spph_location_clauses,
+            ),
+            group_by=SourcePackageName.id,
+            having=Count(SourcePackagePublishingHistory.id) > 1)
+        sources = IMasterStore(SourcePackagePublishingHistory).find(
+            SourcePackagePublishingHistory,
+            SourcePackageRelease.id ==
+                SourcePackagePublishingHistory.sourcepackagereleaseID,
+            SourcePackageRelease.sourcepackagenameID.is_in(
+                candidate_source_names),
+            spph_location_clauses)
+        self.debug("Dominating sources...")
+        self._dominatePublications(self._sortPackages(sources))
         flush_database_updates()
 
         sources = SourcePackagePublishingHistory.select("""
@@ -488,8 +382,7 @@ class Dominator:
                             ELIGIBLE_DOMINATION_STATES),
             clauseTables=['DistroArchSeries'])
 
-        self._judgeSuperseded(sources, binaries, config)
+        self._judgeSuperseded(sources, binaries)
 
         self.debug("Domination for %s/%s finished" %
                    (dr.name, pocket.title))
-

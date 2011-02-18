@@ -6,29 +6,37 @@
 __metaclass__ = type
 
 from email.Message import Message
-from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
-from email.Utils import make_msgid, formatdate
+from email.MIMEText import MIMEText
+from email.Utils import (
+    formatdate,
+    make_msgid,
+    )
 from textwrap import dedent
 import unittest
 
 import gpgme
 from zope.component import getUtility
 
-from canonical.launchpad.mail import signed_message_from_string
-from canonical.launchpad.mail.incoming import (
-    authenticateEmail, canonicalise_line_endings)
 from canonical.launchpad.ftests import (
-    import_public_test_keys, import_secret_test_key)
+    import_public_test_keys,
+    import_secret_test_key,
+    )
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
+from canonical.launchpad.mail import signed_message_from_string
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.mail.incoming import (
+    authenticateEmail,
+    canonicalise_line_endings,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import GPGSigningContext
-from canonical.testing.layers import DatabaseFunctionalLayer
+
 
 class TestSignedMessage(TestCaseWithFactory):
-    """Test SignedMessage class correctly extracts the GPG signatures."""
+    "Test SignedMessage class correctly extracts and verifies GPG signatures."
 
     layer = DatabaseFunctionalLayer
 
@@ -51,17 +59,18 @@ class TestSignedMessage(TestCaseWithFactory):
             IWeaklyAuthenticatedPrincipal.providedBy(principle))
         self.assertIs(None, msg.signature)
 
-    def _get_clearsigned_for_person(self, sender):
+    def _get_clearsigned_for_person(self, sender, body=None):
         # Create a signed message for the sender specified with the test
         # secret key.
         key = import_secret_test_key()
         signing_context = GPGSigningContext(key.fingerprint, password='test')
-        body = dedent("""\
-            This is a multi-line body.
+        if body is None:
+            body = dedent("""\
+                This is a multi-line body.
 
-            Sincerely,
-            Your friendly tester.
-            """)
+                Sincerely,
+                Your friendly tester.
+                """)
         msg = self.factory.makeSignedMessage(
             email_address=sender.preferredemail.email,
             body=body, signing_context=signing_context)
@@ -83,6 +92,21 @@ class TestSignedMessage(TestCaseWithFactory):
         # The test keys belong to Sample Person.
         sender = getUtility(IPersonSet).getByEmail('test@canonical.com')
         msg = self._get_clearsigned_for_person(sender)
+        principle = authenticateEmail(msg)
+        self.assertIsNot(None, msg.signature)
+        self.assertEqual(sender, principle.person)
+        self.assertFalse(
+            IWeaklyAuthenticatedPrincipal.providedBy(principle))
+
+    def test_trailing_whitespace(self):
+        # Trailing whitespace should be ignored when verifying a message's
+        # signature.
+        sender = getUtility(IPersonSet).getByEmail('test@canonical.com')
+        body = (
+            'A message with trailing spaces.   \n'+
+            'And tabs\t\t\n'+
+            'Also mixed. \t ')
+        msg = self._get_clearsigned_for_person(sender, body)
         principle = authenticateEmail(msg)
         self.assertIsNot(None, msg.signature)
         self.assertEqual(sender, principle.person)
@@ -146,4 +170,3 @@ class TestSignedMessage(TestCaseWithFactory):
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-

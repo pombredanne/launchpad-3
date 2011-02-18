@@ -12,13 +12,13 @@ DistributionSourcePackages.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from lp.answers.interfaces.questiontarget import IQuestionTarget
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
 
     >>> firefox = getUtility(IProductSet)['firefox']
     >>> verifyObject(IQuestionTarget, firefox)
     True
-
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> verifyObject(IQuestionTarget, ubuntu)
     True
@@ -51,7 +51,8 @@ IQuestionTarget.
 SourcePackages are also QuestionTargets.
 XXX sinzui 2007-04-24. #108240 SourcePackages should not be QuestionTargets
 
-    >>> evolution_in_hoary = ubuntu.currentseries.getSourcePackage('evolution')
+    >>> evolution_in_hoary = ubuntu.currentseries.getSourcePackage(
+    ...     'evolution')
     >>> questiontarget = IQuestionTarget(evolution_in_hoary)
     >>> verifyObject(IQuestionTarget, questiontarget)
     True
@@ -59,8 +60,8 @@ XXX sinzui 2007-04-24. #108240 SourcePackages should not be QuestionTargets
 You create a new question by calling the newQuestion() method of an
 IQuestionTarget attribute.
 
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
     >>> firefox_question = firefox.newQuestion(
     ...     sample_person, "Firefox question", "Unable to use Firefox")
 
@@ -71,13 +72,13 @@ Official usage
 ==============
 
 A product or distribution may be officially supported by the community using
-the Answer Tracker.  This status is set by the official_answers attribute on
+the Answer Tracker.  This status is set by the answers_usage attribute on
 the IProduct and IDistribution.
 
-    >>> ubuntu.official_answers
-    True
-    >>> firefox.official_answers
-    True
+    >>> print ubuntu.answers_usage.name
+    LAUNCHPAD
+    >>> print firefox.answers_usage.name
+    LAUNCHPAD
 
 
 IQuestion interface
@@ -85,8 +86,8 @@ IQuestion interface
 
 Questions are manipulated through the IQuestion interface.
 
-    >>> from lp.answers.interfaces.question import IQuestion
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.answers.interfaces.question import IQuestion
 
     # The complete interface is not necessarily available to the
     # logged in user.
@@ -217,7 +218,8 @@ method.
 That method returns an INotificationRecipientSet, containing the direct
 subscribers along with the rationale for contacting them.
 
-    >>> from canonical.launchpad.interfaces import INotificationRecipientSet
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     INotificationRecipientSet)
     >>> verifyObject(INotificationRecipientSet, subscribers)
     True
     >>> def print_reason(subscribers):
@@ -348,7 +350,7 @@ Bug linking
 Question implements the IBugLinkTarget interface which makes it possible
 to link bug report to question.
 
-    >>> from canonical.launchpad.interfaces import IBugLinkTarget
+    >>> from lp.bugs.interfaces.buglink import IBugLinkTarget
     >>> verifyObject(IBugLinkTarget, firefox_question)
     True
 

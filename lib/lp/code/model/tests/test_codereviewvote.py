@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from unittest import TestLoader
@@ -6,13 +6,19 @@ from unittest import TestLoader
 from zope.security.interfaces import Unauthorized
 
 from canonical.database.constants import UTC_NOW
-from canonical.testing import DatabaseFunctionalLayer
-
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import CodeReviewVote
 from lp.code.errors import (
-    ClaimReviewFailed, ReviewNotPending, UserHasExistingReview)
+    ClaimReviewFailed,
+    ReviewNotPending,
+    UserHasExistingReview,
+    )
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
-from lp.testing import login_person, TestCaseWithFactory
+from lp.code.tests.helpers import make_merge_proposal_without_reviewers
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class TestCodeReviewVote(TestCaseWithFactory):
@@ -21,7 +27,7 @@ class TestCodeReviewVote(TestCaseWithFactory):
 
     def test_create_vote(self):
         """CodeReviewVotes can be created"""
-        merge_proposal = self.factory.makeBranchMergeProposal()
+        merge_proposal = make_merge_proposal_without_reviewers(self.factory)
         reviewer = self.factory.makePerson()
         login_person(merge_proposal.registrant)
         vote = merge_proposal.nominateReviewer(
@@ -124,7 +130,7 @@ class TestCodeReviewVoteReferenceDelete(TestCaseWithFactory):
     def test_delete_pending_by_registrant(self):
         # A pending review can be deleted by the person requesting the review.
         reviewer = self.factory.makePerson()
-        bmp = self.factory.makeBranchMergeProposal()
+        bmp = make_merge_proposal_without_reviewers(self.factory)
         login_person(bmp.registrant)
         review = bmp.nominateReviewer(
             reviewer=reviewer, registrant=bmp.registrant)
@@ -134,7 +140,7 @@ class TestCodeReviewVoteReferenceDelete(TestCaseWithFactory):
     def test_delete_pending_by_reviewer(self):
         # A pending review can be deleted by the person requesting the review.
         reviewer = self.factory.makePerson()
-        bmp = self.factory.makeBranchMergeProposal()
+        bmp = make_merge_proposal_without_reviewers(self.factory)
         login_person(bmp.registrant)
         review = bmp.nominateReviewer(
             reviewer=reviewer, registrant=bmp.registrant)
@@ -145,7 +151,7 @@ class TestCodeReviewVoteReferenceDelete(TestCaseWithFactory):
     def test_delete_pending_by_review_team_member(self):
         # A pending review can be deleted by the person requesting the review.
         review_team = self.factory.makeTeam()
-        bmp = self.factory.makeBranchMergeProposal()
+        bmp = make_merge_proposal_without_reviewers(self.factory)
         login_person(bmp.registrant)
         review = bmp.nominateReviewer(
             reviewer=review_team, registrant=bmp.registrant)
@@ -157,7 +163,7 @@ class TestCodeReviewVoteReferenceDelete(TestCaseWithFactory):
         # A pending review can be deleted by anyone with edit permissions on
         # the target branch.
         reviewer = self.factory.makePerson()
-        bmp = self.factory.makeBranchMergeProposal()
+        bmp = make_merge_proposal_without_reviewers(self.factory)
         login_person(bmp.registrant)
         review = bmp.nominateReviewer(
             reviewer=reviewer, registrant=bmp.registrant)
@@ -179,7 +185,7 @@ class TestCodeReviewVoteReferenceDelete(TestCaseWithFactory):
     def test_delete_not_pending(self):
         # A non-pending review reference cannot be deleted.
         reviewer = self.factory.makePerson()
-        bmp = self.factory.makeBranchMergeProposal()
+        bmp = make_merge_proposal_without_reviewers(self.factory)
         login_person(reviewer)
         bmp.createComment(
             reviewer, 'Message subject', 'Message content',
@@ -195,7 +201,7 @@ class TestCodeReviewVoteReferenceReassignReview(TestCaseWithFactory):
 
     def makeMergeProposalWithReview(self, completed=False):
         """Return a new merge proposal with a review."""
-        bmp = self.factory.makeBranchMergeProposal()
+        bmp = make_merge_proposal_without_reviewers(self.factory)
         reviewer = self.factory.makePerson()
         if completed:
             login_person(reviewer)

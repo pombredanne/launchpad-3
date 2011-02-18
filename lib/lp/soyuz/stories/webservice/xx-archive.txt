@@ -16,6 +16,7 @@ We publish a subset of their attributes.
 
     >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(cprov_archive)
+    commercial: False
     dependencies_collection_link: u'http://.../~cprov/+archive/ppa/dependencies'
     description: u'packages to help my friends.'
     displayname: u'PPA for Celso Providelo'
@@ -27,6 +28,7 @@ We publish a subset of their attributes.
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/ppa'
     signing_key_fingerprint: None
+    web_link: u'http://launchpad.../~cprov/+archive/ppa'
 
 While the Archive signing key is being generated its
 'signing_key_fingerprint' attribute is None.
@@ -80,6 +82,7 @@ The archive has the following attributes:
     >>> ubuntu_main_archive = webservice.get(
     ...     ubuntutest['main_archive_link']).jsonBody()
     >>> pprint_entry(ubuntu_main_archive)
+    commercial: False
     dependencies_collection_link: u'http://.../ubuntutest/+archive/primary/dependencies'
     description: None
     displayname: u'Primary Archive for Ubuntu Test'
@@ -91,6 +94,7 @@ The archive has the following attributes:
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../ubuntutest/+archive/primary'
     signing_key_fingerprint: None
+    web_link: u'http://launchpad.../ubuntutest/+archive/primary'
 
 A distribution can also provide a list of all its archives:
 
@@ -108,10 +112,7 @@ Attempting to grab a non-existent archive will result in a 404 error:
     >>> print webservice.get(bogus_archive)
     HTTP/1.1 404 Not Found
     ...
-    Traceback (most recent call last):
-    ...
-    NotFound: Object: ..., name: u'bogus'
-    <BLANKLINE>
+    Object: ..., name: u'bogus'
 
 
 = Archive Permissions =
@@ -375,8 +376,8 @@ And ``checkUpload`` now also no longer passes:
     >>> print(response)
     HTTP/1.1 403 Forbidden
     ...
-	InsufficientUploadRights: The signer of this package is lacking the upload rights for the source package, component or package set in question.
-
+    The signer of this package has no upload rights to
+    this distribution's primary archive.  Did you mean to upload to a PPA?
 
 
 Only the archive owners can add or remove component-uploaders.
@@ -414,8 +415,7 @@ the 'main' component, or an error is returned:
     >>> print response
     HTTP/1.1 400 Bad Request
     ...
-    InvalidComponent: Component for PPAs should be 'main'
-    <BLANKLINE>
+    Component for PPAs should be 'main'
 
 getQueueAdminsForComponent returns all the permissions where someone
 can administer distroseries queues in a particular component.
@@ -605,7 +605,7 @@ ubuntu primary archive.
     ...     sourcename="package1", version="1.0",
     ...     archive=ubuntu_db.main_archive)
 
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
     >>> ignore = test_publisher.getPubSource(
     ...     sourcename="package1", version="1.1",
@@ -732,8 +732,7 @@ all packages or none of them if there was a problem.
     ...     to_series="warty", include_binaries=True)
     HTTP/1.1 400 Bad Request
     ...
-    CannotCopy: package1 1.1 in hoary (source has no binaries to be copied)
-    <BLANKLINE>
+    package1 1.1 in hoary (source has no binaries to be copied)
 
 Even if the error was only when processing 'package1', the 'allowed'
 source was not synchronised to Celso's PPA.
@@ -819,6 +818,7 @@ attributes are only exposed when the requestor has View permission in
 the IArchive context, in this case only Celso has it.
 
     >>> pprint_entry(user_webservice.get("/~cprov/+archive/p3a").jsonBody())
+    commercial: False
     dependencies_collection_link: u'http://.../~cprov/+archive/p3a/dependencies'
     description: u'tag:launchpad.net:2008:redacted'
     displayname: u'PPA named p3a for Celso Providelo'
@@ -830,8 +830,10 @@ the IArchive context, in this case only Celso has it.
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/p3a'
     signing_key_fingerprint: u'tag:launchpad.net:2008:redacted'
+    web_link: u'http://launchpad.../~cprov/+archive/p3a'
 
     >>> pprint_entry(cprov_webservice.get("/~cprov/+archive/p3a").jsonBody())
+    commercial: False
     dependencies_collection_link: u'http://.../~cprov/+archive/p3a/dependencies'
     description: u'packages to help my friends.'
     displayname: u'PPA named p3a for Celso Providelo'
@@ -843,6 +845,7 @@ the IArchive context, in this case only Celso has it.
     resource_type_link: u'http://.../#archive'
     self_link: u'http://.../~cprov/+archive/p3a'
     signing_key_fingerprint: u'ABCDEF0123456789ABCDDCBA0000111112345678'
+    web_link: u'http://launchpad.../~cprov/+archive/p3a'
 
 == Creating subscriptions to a (private) archive ==
 
@@ -867,8 +870,7 @@ bad request will result:
     >>> print response
     HTTP/1.1 400 Bad Request
     ...
-    ArchiveNotPrivate: Only private archives can have subscriptions.
-    <BLANKLINE>
+    Only private archives can have subscriptions.
 
 First we'll subscribe mark to cprov's archive:
 
@@ -900,6 +902,7 @@ We publish a subset of the IArchiveSubscriber attributes.
     self_link: u'http://api.../~cprov/+archive/p3a/+subscriptions/mark'
     status: u'Active'
     subscriber_link: u'http://api.launchpad.dev/beta/~mark'
+    web_link: u'http://launchpad.../~cprov/+archive/p3a/+subscriptions/mark'
 
 Other webservice users cannot view the subscription.
 
@@ -929,7 +932,7 @@ is already a current subscription:
     >>> print response
     HTTP/1.1 400 Bad Request
     ...
-    AlreadySubscribed: Mark Shuttleworth already has a current subscription
+    Mark Shuttleworth already has a current subscription
     for 'PPA named p3a for Celso Providelo'.
 
 
@@ -943,8 +946,7 @@ admins and commercial admins.
     >>> print modify_archive(user_webservice, mark_archive)
     HTTP/1.1 401 Unauthorized
     ...
-    Unauthorized: (<Archive at ...>, 'private', 'launchpad.Commercial')
-    <BLANKLINE>
+    (<Archive at ...>, 'private', 'launchpad.Commercial')
 
 
 === Copying private file to public archives ===
@@ -991,7 +993,7 @@ error is returned.
     ...     to_series="hoary")
     HTTP/1.1 400 Bad Request
     ...
-    CannotCopy: foocomm 1.0-2 in hoary
+    foocomm 1.0-2 in hoary
     (same version already uploaded and waiting in ACCEPTED queue)
 
 
@@ -1004,8 +1006,8 @@ these IArchiveDependency records can be retrieved through the API.
 First we'll add an explicit dependency on the primary archive to
 cprov's PPA. We can't do this through the webservice yet.
 
-    >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+    >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> login('foo.bar@canonical.com')
     >>> dep = cprov.archive.addArchiveDependency(
     ...     cprov.archive.distribution.main_archive,

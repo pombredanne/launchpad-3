@@ -24,7 +24,7 @@ back from the XMLRPC call.
 
 Mailing lists are always tied -- one-to-one -- to teams.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> person_set = getUtility(IPersonSet)
     >>> no_priv = person_set.getByName('no-priv')
     >>> team_one = factory.makeTeam(no_priv, name='team-one')
@@ -34,7 +34,7 @@ Mailing lists are always tied -- one-to-one -- to teams.
 A team owner must request that a mailing list be created for their team.  When
 Mailman polls for actions, there will be mailing lists to create.
 
-    >>> from canonical.launchpad.interfaces import IMailingListSet
+    >>> from lp.registry.interfaces.mailinglist import IMailingListSet
     >>> list_set = getUtility(IMailingListSet)
     >>> list_one = list_set.new(team_one)
     >>> list_two = list_set.new(team_two)
@@ -103,7 +103,7 @@ Mailman.
     >>> mailinglist_api.getPendingActions()
     {}
 
-Launchpad supports private membership teams, which are also allowed to have
+Launchpad supports private teams, which are also allowed to have
 mailing lists.
 
     >>> from lp.registry.interfaces.person import (
@@ -111,7 +111,7 @@ mailing lists.
     >>> team_private = factory.makeTeam(
     ...     no_priv, name='team-private',
     ...     subscription_policy=TeamSubscriptionPolicy.RESTRICTED,
-    ...     visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
+    ...     visibility=PersonVisibility.PRIVATE)
     >>> list_private = list_set.new(team_private)
     >>> commit()
 
@@ -372,14 +372,14 @@ list archive is allowed.
     >>> from lp.registry.interfaces.person import PersonVisibility
     >>> team_not_public = factory.makeTeam(
     ...     no_priv, name='team-not-public',
-    ...     visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
+    ...     visibility=PersonVisibility.PRIVATE)
     >>> mailinglist_api.isTeamPublic('team-not-public')
     False
 
     # If the visibility of a public team is changed to anything other than
-    # public, it's not report as public anymore, just like if it were not
+    # public, it's not reported as public anymore, just like if it were not
     # public since its creation.
-    >>> team_public.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+    >>> team_public.visibility = PersonVisibility.PRIVATE
     >>> mailinglist_api.isTeamPublic('team-public')
     False
 

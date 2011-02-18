@@ -10,12 +10,10 @@
   <body>
 
     <tal:registering metal:fill-slot="registering">
-      <p>
         created
         <span tal:content="context/date_created/fmt:displaydate"
               tal:attributes="title context/date_created/fmt:datetime"
           >on 2005-01-01</span>
-      </p>
     </tal:registering>
 
     <div metal:fill-slot="main">
@@ -157,14 +155,16 @@
         <li tal:define="eta context/buildqueue_record/getEstimatedJobStartTime;">
           Start <tal:eta
             replace="eta/fmt:approximatedate">in 3 hours</tal:eta>
-            (<span tal:replace="view/buildqueue/lastscore"/>)
-            <tal:rescore define="link context/menu:context/rescore"
-                         condition="link/enabled"
-                         replace="structure link/fmt:icon" />
-            <a href="https://help.launchpad.net/Packaging/BuildScores"
-               target="_blank">What's this?</a>
         </li>
       </tal:pending>
+      <li tal:condition="view/buildqueue">
+        Build score:<span tal:replace="view/buildqueue/lastscore"/>
+          <tal:rescore define="link context/menu:context/rescore"
+                       condition="link/enabled"
+                       replace="structure link/fmt:icon" />
+          (<a href="https://help.launchpad.net/Packaging/BuildScores"
+             target="_blank">What's this?</a>)
+      </li>
       <tal:building condition="context/status/enumvalue:BUILDING">
         <li>
           Started
@@ -192,8 +192,7 @@
       <li tal:define="file context/log"
           tal:condition="file">
         <a class="sprite download"
-           tal:attributes="href context/log_url"
-           tal:content="string: buildlog">BUILDLOG</a>
+           tal:attributes="href context/log_url">buildlog</a>
         (<span tal:replace="file/content/filesize/fmt:bytes" />)
       </li>
       <li tal:define="file context/upload_log"
@@ -242,9 +241,9 @@
            tal:content="binpkg/displayname">foopkg 1.2-3</a>
       </li>
       <li tal:condition="not: linkify_binaries"
-          tal:repeat="binpkg context/binarypackages">
+          tal:repeat="package_title view/binarypackagetitles">
         <span class="sprite package-binary"
-              tal:content="binpkg/title">foopkg-1.2-3</span>
+              tal:content="package_title">foopkg-1.2-3</span>
       </li>
     </ul>
   </metal:macro>

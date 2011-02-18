@@ -6,7 +6,7 @@
 __all__ = [
     'AuthServerApplication',
     'BazaarApplication',
-    'CodeImportScheduler',
+    'CodeImportSchedulerApplication',
     'FeedsApplication',
     'MailingListApplication',
     'MaloneApplication',
@@ -20,37 +20,69 @@ __metaclass__ = type
 import codecs
 import os
 
+from lazr.restful import ServiceRootResource
+from lazr.restful.interfaces import ITopLevelEntryLink
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, IAuthServerApplication, IBazaarApplication,
-    IBugTaskSet, IBugTrackerSet, IBugWatchSet,
-    IDistroSeriesSet, IFeedsApplication,
-    IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
-    IMailingListApplication, IMaloneApplication,
-    IPrivateMaloneApplication, IProductSet, IRosettaApplication,
-    IWebServiceApplication)
+from canonical.launchpad.interfaces.launchpad import (
+    IAuthServerApplication,
+    IBazaarApplication,
+    IFeedsApplication,
+    IPrivateMaloneApplication,
+    IRosettaApplication,
+    IWebServiceApplication,
+    )
+from canonical.launchpad.webapp.interfaces import (
+    IAPIDocRoot,
+    ICanonicalUrlData,
+    ILaunchBag,
+    )
+from canonical.launchpad.interfaces.launchpadstatistic import (
+    ILaunchpadStatisticSet,
+    )
+from lp.bugs.errors import InvalidBugTargetType
+from lp.bugs.interfaces.bug import (
+    CreateBugParams,
+    IBugSet,
+    )
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    )
+from lp.bugs.interfaces.bugtracker import IBugTrackerSet
+from lp.bugs.interfaces.bugwatch import IBugWatchSet
+from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.code.interfaces.codehosting import ICodehostingApplication
+from lp.code.interfaces.codeimportscheduler import (
+    ICodeImportSchedulerApplication,
+    )
+from lp.hardwaredb.interfaces.hwdb import (
+    IHWDBApplication,
+    IHWDeviceSet,
+    IHWDriverSet,
+    IHWSubmissionDeviceSet,
+    IHWSubmissionSet,
+    IHWVendorIDSet,
+    ParameterError,
+    )
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
+from lp.registry.interfaces.distroseries import IDistroSeriesSet
+from lp.registry.interfaces.product import (
+    IProduct,
+    IProductSet,
+    )
+from lp.registry.interfaces.mailinglist import IMailingListApplication
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 from lp.translations.interfaces.translationsoverview import (
-    ITranslationsOverview)
-from lp.hardwaredb.interfaces.hwdb import (
-    IHWDeviceSet, IHWDriverSet, IHWSubmissionDeviceSet, IHWSubmissionSet,
-    IHWVendorIDSet, ParameterError)
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from lp.bugs.interfaces.bug import (
-    CreateBugParams, IBugSet, InvalidBugTargetType)
-from lp.code.interfaces.codehosting import ICodehostingApplication
-from lp.code.interfaces.codeimportscheduler import (
-    ICodeImportSchedulerApplication)
-from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage)
-from lazr.restful import ServiceRootResource
-from lazr.restful.interfaces import ITopLevelEntryLink
+    ITranslationsOverview,
+    )
 
 
 class AuthServerApplication:
@@ -95,9 +127,10 @@ class MaloneApplication:
     def __init__(self):
         self.title = 'Malone: the Launchpad bug tracker'
 
-    def searchTasks(self, search_params):
+    def searchTasks(self, search_params, prejoins=[]):
         """See `IMaloneApplication`."""
-        return getUtility(IBugTaskSet).search(search_params)
+        return getUtility(IBugTaskSet).search(
+            search_params, prejoins=prejoins)
 
     def createBug(self, owner, title, description, target,
                   security_related=False, private=False, tags=None):
@@ -203,8 +236,10 @@ class RosettaApplication:
         """See `IRosettaApplication`."""
         projects = getUtility(ITranslationsOverview)
         for project in projects.getMostTranslatedPillars():
-            yield { 'pillar' : project['pillar'],
-                    'font_size' : project['weight'] * 10 }
+            yield {
+                'pillar': project['pillar'],
+                'font_size': project['weight'] * 10,
+                }
 
     def translatable_distroseriess(self):
         """See `IRosettaApplication`."""
@@ -388,3 +423,11 @@ class WebServiceApplication(ServiceRootResource):
 
 class TestOpenIDApplication:
     implements(ITestOpenIDApplication)
+
+
+class APIDocRoot:
+    implements(IAPIDocRoot)
+    __parent__ = None
+    __name__ = None
+
+apidocroot = APIDocRoot()

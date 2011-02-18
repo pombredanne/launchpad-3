@@ -12,7 +12,7 @@ from paste.httpexceptions import HTTPExceptionHandler
 
 from canonical.config import config
 from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from launchpad_loggerhead.app import RootApp
 from launchpad_loggerhead.session import SessionHandler
 from lp.testing import TestCase

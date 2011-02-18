@@ -6,16 +6,22 @@
 __metaclass__ = type
 __all__ = ['BugActivity', 'BugActivitySet']
 
+import re
+
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
+from storm.store import Store
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol
-from storm.store import Store
-
-from lp.bugs.interfaces.bugactivity import IBugActivity, IBugActivitySet
-from canonical.database.sqlbase import SQLBase
 from canonical.database.datetimecol import UtcDateTimeCol
-from lp.registry.interfaces.person import (
-    validate_person_not_private_membership)
+from canonical.database.sqlbase import SQLBase
+from lp.bugs.interfaces.bugactivity import (
+    IBugActivity,
+    IBugActivitySet,
+    )
+from lp.registry.interfaces.person import validate_person
 
 
 class BugActivity(SQLBase):
@@ -28,12 +34,48 @@ class BugActivity(SQLBase):
     datechanged = UtcDateTimeCol(notNull=True)
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        storm_validator=validate_person_not_private_membership,
+        storm_validator=validate_person,
         notNull=True)
     whatchanged = StringCol(notNull=True)
     oldvalue = StringCol(default=None)
     newvalue = StringCol(default=None)
     message = StringCol(default=None)
+
+    # The regular expression we use for matching bug task changes.
+    bugtask_change_re = re.compile(
+        '(?P<target>[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?): '
+        '(?P<attribute>assignee|importance|milestone|status)')
+
+    @property
+    def target(self):
+        """Return the target of this BugActivityItem.
+
+        `target` is determined based on the `whatchanged` string.
+
+        :return: The target name of the item if `whatchanged` is of the
+        form <target_name>: <attribute>. Otherwise, return None.
+        """
+        match = self.bugtask_change_re.match(self.whatchanged)
+        if match is None:
+            return None
+        else:
+            return match.groupdict()['target']
+
+    @property
+    def attribute(self):
+        """Return the attribute changed in this BugActivityItem.
+
+        `attribute` is determined based on the `whatchanged` string.
+
+        :return: The attribute name of the item if `whatchanged` is of
+            the form <target_name>: <attribute>. Otherwise, return the
+            original `whatchanged` string.
+        """
+        match = self.bugtask_change_re.match(self.whatchanged)
+        if match is None:
+            return self.whatchanged
+        else:
+            return match.groupdict()['attribute']
 
 
 class BugActivitySet:

@@ -18,18 +18,35 @@ __all__ = [
     'UnrecognizedBugTrackerURL',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Choice, Datetime, Int, TextLine, Text
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    ReferenceChoice,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import StrippedTextLine
 from canonical.launchpad.interfaces.launchpad import IHasBug
 from lp.bugs.interfaces.bugtracker import IBugTracker
-
-from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
-from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
+from lp.services.fields import StrippedTextLine
 
 
 class BugWatchActivityStatus(DBEnumeratedType):
@@ -257,6 +274,17 @@ class IBugWatch(IHasBug):
 
         :raises: `BugWatchCannotBeRescheduled` if
                  `IBugWatch.can_be_rescheduled` is False.
+        """
+    def reset():
+        """Completely reset the watch.
+
+        When called, the following attributes are reset:
+         * last_error_type -> None
+         * lastchanged -> None
+         * lastchecked -> None
+         * nextcheck -> now
+         * remoteimportance -> None
+         * remotestatus -> None
         """
 
 

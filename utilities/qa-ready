@@ -35,7 +35,7 @@ def get_edge_revision():
     """
     t = get_transport('https://edge.launchpad.net/')
     html = t.get_bytes('index.html')
-    revision_re = re.compile(r'\(r(\d+)\)')
+    revision_re = re.compile(r' r(\d+)$')
     for line in html.splitlines():
         matches = revision_re.search(line)
         if matches:

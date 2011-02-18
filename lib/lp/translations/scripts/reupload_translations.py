@@ -11,12 +11,15 @@ __all__ = [
 
 from zope.component import getUtility
 
-from lp.services.scripts.base import LaunchpadScript, LaunchpadScriptFailure
-
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.scripts.base import (
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
 from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
+    ITranslationImportQueue,
+    )
 
 
 class ReuploadPackageTranslations(LaunchpadScript):

@@ -10,6 +10,17 @@ page on Launchpad to try to get some help. She clicks the
 find her problem there (surely playing a DVD must be common thing to do
 with a computer these days).
 
+    >>> # Kubuntu must enable answers to access questions.
+    >>> from zope.component import getUtility
+    >>> from lp.app.enums import ServiceUsage
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+
+    >>> login('admin@canonical.com')
+    >>> getUtility(IDistributionSet)['kubuntu'].answers_usage = (
+    ...     ServiceUsage.LAUNCHPAD)
+    >>> transaction.commit()
+    >>> logout()
+
     >>> browser.open('http://answers.launchpad.dev/kubuntu')
     >>> browser.getLink('All FAQs').click()
 

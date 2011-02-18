@@ -241,16 +241,44 @@ If we add them to the Registry Experts team:
     >>> admin_browser.getControl('New member').value = 'no-priv'
     >>> admin_browser.getControl('Add Member').click()
 
-They now can edit projects.
+They still cannot edit projects.
 
     >>> browser.open('http://launchpad.dev/firefox/+edit')
-
-But they still can't access +admin.
-
-    >>> browser.open('http://launchpad.dev/firefox/+admin')
     Traceback (most recent call last):
     ...
-    Unauthorized...
+    Unauthorized:...
+
+But they can access +admin, though it is more restricted than that for admins.
+
+    >>> from lp.testing import login, logout
+    >>> login('admin@canonical.com')
+    >>> product = factory.makeProduct(name='trebuche')
+    >>> logout()
+
+The registry experts do not have access to the maintainer or
+registrant fields.
+
+    >>> browser.open('http://launchpad.dev/trebuche/+admin')
+    >>> browser.getControl('Maintainer')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Maintainer'
+    >>> browser.getControl('Registrant')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Registrant'
+
+But registry experts can change a product name and set an alias.
+
+    >>> browser.getControl('Name').value = 'trebuchet'
+    >>> browser.getControl('Aliases').value = 'trebucket'
+    >>> browser.getControl('Change').click()
+
+    >>> browser.getLink('Administer').click()
+    >>> print browser.getControl('Name').value
+    trebuchet
+    >>> print browser.getControl('Aliases').value
+    trebucket
 
 
 Display error when trying to remove all licenses

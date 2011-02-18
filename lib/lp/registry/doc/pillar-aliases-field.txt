@@ -1,7 +1,7 @@
 = Field for assigning aliases to pillars =
 
-    >>> from canonical.launchpad.fields import PillarAliases
     >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.services.fields import PillarAliases
     >>> firefox = getUtility(IProductSet)['firefox']
     >>> field = PillarAliases(__name__='aliases')
     >>> bound_field = field.bind(firefox)

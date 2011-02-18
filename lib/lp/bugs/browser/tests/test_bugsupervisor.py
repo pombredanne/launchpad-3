@@ -1,18 +1,21 @@
-# Copyright10 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version (see the file LICENSE).
 
 """Unit tests for bug supervisor views."""
 
 __metaclass__ = type
 
-import unittest
-
 from zope.app.form.interfaces import ConversionError
 
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.browser.bugsupervisor import BugSupervisorEditSchema
-from lp.testing import login, login_person, TestCaseWithFactory
+from lp.registry.interfaces.person import PersonVisibility
+from lp.testing import (
+    login,
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.views import create_initialized_view
-from canonical.testing import DatabaseFunctionalLayer
 
 
 class TestBugSupervisorEditView(TestCaseWithFactory):
@@ -61,16 +64,7 @@ class TestBugSupervisorEditView(TestCaseWithFactory):
         self.assertEqual([], view.errors)
         self.assertEqual(self.product.bug_supervisor, self.owner)
         notifications = view.request.response.notifications
-        self.assertEqual(1, len(notifications))
-        expected = (
-            'Successfully changed the bug supervisor to '
-            '<a href="http://launchpad.dev/~splat">&lt;splat /&gt;</a>.'
-            '<br /><a href="http://launchpad.dev/~splat">&lt;splat /&gt;</a> '
-            'has also been subscribed to bug notifications for '
-            '&lt;boing /&gt;.<br />You can '
-            '<a href="http://launchpad.dev/boing/+subscribe">change '
-            'the subscriptions</a> for &lt;boing /&gt; at any time.')
-        self.assertEqual(expected, notifications.pop().message)
+        self.assertEqual(0, len(notifications))
 
     def test_owner_appoint_self_from_another(self):
         self.product.setBugSupervisor(self.team, self.owner)
@@ -100,6 +94,16 @@ class TestBugSupervisorEditView(TestCaseWithFactory):
             self.product, name='+bugsupervisor', form=form)
         self.assertEqual([], view.errors)
         self.assertEqual(self.team, self.product.bug_supervisor)
+
+    def test_owner_appoint_his_private_team(self):
+        private_team = self.factory.makeTeam(
+            owner=self.owner,
+            visibility=PersonVisibility.PRIVATE)
+        form = self._makeForm(private_team)
+        view = create_initialized_view(
+            self.product, name='+bugsupervisor', form=form)
+        self.assertEqual([], view.errors)
+        self.assertEqual(private_team, self.product.bug_supervisor)
 
     def test_owner_cannot_appoint_another_team(self):
         team = self.factory.makeTeam(name='smack', displayname='<smack />')
@@ -162,6 +166,12 @@ class TestBugSupervisorEditView(TestCaseWithFactory):
         self.assertEqual([], view.errors)
         self.assertEqual(another_team, self.product.bug_supervisor)
 
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    def test_admin_appoint_private_team(self):
+        private_team = self.factory.makeTeam(
+            visibility=PersonVisibility.PRIVATE)
+        login('admin@canonical.com')
+        form = self._makeForm(private_team)
+        view = create_initialized_view(
+            self.product, name='+bugsupervisor', form=form)
+        self.assertEqual([], view.errors)
+        self.assertEqual(private_team, self.product.bug_supervisor)

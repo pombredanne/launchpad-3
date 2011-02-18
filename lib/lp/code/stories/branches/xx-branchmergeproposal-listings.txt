@@ -40,8 +40,8 @@ Make two proposals for bob, one needing review, and one approved.
     >>> proposal = branch.addLandingTarget(bob, trunk)
     >>> proposal.requestReview()
     >>> # Ensure the date_created is later to ensure stable ordering.
-    >>> from datetime import timedelta
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from datetime import timedelta
     >>> removeSecurityProxy(proposal).date_created += timedelta(1)
 
     >>> branch = factory.makeProductBranch(
@@ -62,12 +62,12 @@ Below the branch counts in the main content, there is a paragraph that lists
 the number of active reviews and approved merges.
 
     >>> browser.open('http://code.launchpad.dev/fooix')
-    >>> print_tag_with_id(browser.contents, 'merge-counts')
-    3 active reviews or unmerged proposals
+    >>> print_tag_with_id(browser.contents, 'active-review-count')
+    Fooix has 3 active reviews...
 
-The 'active reviews or unmerged proposals' text links to the active reviews page.
+The 'active reviews' text links to the active reviews page.
 
-    >>> browser.getLink('active reviews or unmerged proposals').click()
+    >>> browser.getLink('active reviews').click()
     >>> print browser.title
     Active code reviews for Fooix...
 
@@ -92,9 +92,11 @@ The summary before the branch listings also shows the number of active reviews
 and approved merges.
 
     >>> browser.open('http://code.launchpad.dev/~albert')
-    >>> print_tag_with_id(browser.contents, 'page-summary')
-    1 owned branch, 1 registered branch, 1 subscribed branch
-    1 active review or unmerged proposal
+    >>> print_tag_with_id(browser.contents, 'portlet-person-codesummary')
+    1 owned branch
+    1 registered branch
+    1 subscribed branch
+    1 active review
 
 The person's active reviews also lists all of their currently requested
 reviews.

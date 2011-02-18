@@ -6,17 +6,17 @@ redirected to the login page.
       ...
     Unauthorized: ...
 
-(Even when the product has a bug supervisor:
-https://launchpad.net/malone/+bug/49891)
+Even when the product has a bug supervisor, see bug #49891.
 
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import IProductSet, IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> login("test@canonical.com")
 
-    >>> from canonical.launchpad.interfaces import IMasterObject
+    >>> from canonical.launchpad.interfaces.lpstorm import IMasterObject
     >>> firefox = IMasterObject(getUtility(IProductSet).getByName("firefox"))
     >>> sample_person = IMasterObject(
     ...     getUtility(IPersonSet).getByName("name12"))
@@ -36,4 +36,4 @@ Any logged-in user can edit a bugtask.
     >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> browser.open("http://launchpad.dev/firefox/+bug/6/+editstatus")
     >>> print browser.title
-    Bug #6 in Mozilla Firefox...
+    Edit status ...

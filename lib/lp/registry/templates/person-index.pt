@@ -19,23 +19,25 @@
     <meta tal:condition="view/is_probationary_or_invalid_user"
           name="robots" content="noindex,nofollow" />
     <tal:openid_delegation condition="view/is_delegated_identity">
-      <link rel="openid.server"
-            href="https://login.launchpad.net/"
-            tal:attributes="href view/openid_server_url" />
-      <link rel="openid.delegate"
-            href="https://login.launchpad.net/+id/xxxxxxxx"
-            tal:attributes="href view/openid_identity_url" />
-      <link rel="openid2.provider"
-            href="https://login.launchpad.net/"
-            tal:attributes="href view/openid_server_url" />
-      <link rel="openid2.local_id"
-            href="https://login.launchpad.net/+id/xxxxxxxx"
-            tal:attributes="href view/openid_identity_url" />
+      <tal:has_openid_identity_url condition="view/openid_identity_url">
+        <link rel="openid.server"
+                href="https://login.launchpad.net/"
+                tal:attributes="href view/openid_server_url" />
+        <link rel="openid.delegate"
+                href="https://login.launchpad.net/+id/xxxxxxxx"
+                tal:attributes="href view/openid_identity_url" />
+        <link rel="openid2.provider"
+                href="https://login.launchpad.net/"
+                tal:attributes="href view/openid_server_url" />
+        <link rel="openid2.local_id"
+                href="https://login.launchpad.net/+id/xxxxxxxx"
+                tal:attributes="href view/openid_identity_url" />
 
-      <meta http-equiv="X-XRDS-Location"
-        content="https://login.launchpad.net/+id/xxxxxxx/+xrds"
-        tal:attributes="content string:${view/openid_identity_url}/+xrds" />
-
+        <meta http-equiv="X-XRDS-Location"
+            content="https://login.launchpad.net/+id/xxxxxxx/+xrds"
+            tal:attributes="content string:${view/openid_identity_url}/+xrds"
+            />
+      </tal:has_openid_identity_url>
     </tal:openid_delegation>
   </tal:block>
 </head>
@@ -157,8 +159,10 @@
         </tal:block>
       </p>
 
-        <tal:person condition="not: view/context_is_probably_a_team">
-          <ul tal:condition="context/preferredemail">
+      <tal:person condition="not: view/context_is_probably_a_team">
+        <tal:admin tal:condition="context/required:launchpad.Admin">
+          <ul id="email-addresses"
+            tal:condition="context/preferredemail">
             <li>
               <img src="/@@/private" alt=""
                    tal:condition="view/email_address_visibility/are_allowed"/>
@@ -169,19 +173,18 @@
               <a tal:replace="structure overview_menu/editemailaddresses/fmt:icon" />
             </li>
           </ul>
-          <tal:editable tal:condition="context/required:launchpad.Edit">
-            <p tal:condition="not: context/preferredemail">
-              <tal:editemailaddresses
-                replace="structure overview_menu/editemailaddresses/fmt:link-icon" />
-            </p>
-          </tal:editable>
+        </tal:admin>
+
+        <p>
           <a tal:attributes="
             href string:/people/+requestmerge?field.dupe_person=${context/name}"
-          >Are you <span tal:replace="context/displayname" />?</a>
-        </tal:person>
-        <tal:team condition="view/context_is_probably_a_team">
-          <a href="+claimteam">Is this a team you run?</a>
-        </tal:team>
+            >Are you <span tal:replace="context/displayname" />?</a>
+        </p>
+      </tal:person>
+
+      <tal:team condition="view/context_is_probably_a_team">
+        <a href="+claimteam">Is this a team you run?</a>
+      </tal:team>
     </tal:noaccount>
 
     <tal:deactivated-account

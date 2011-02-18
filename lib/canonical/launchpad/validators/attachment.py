@@ -9,6 +9,7 @@ __all__ = ['attachment_size_constraint']
 from canonical.config import config
 from canonical.launchpad.validators import LaunchpadValidationError
 
+
 def attachment_size_constraint(value):
     """Constraint for an attachment's file size.
 

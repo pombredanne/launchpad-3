@@ -24,13 +24,17 @@ for the member.
 
     >>> from lp.services.mail import stub
     >>> from lp.testing.mail_helpers import (
-    ...     pop_notifications, print_distinct_emails)
+    ...     pop_notifications, print_distinct_emails, run_mail_jobs)
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, ITeamMembershipSet)
-    >>> from canonical.launchpad.interfaces import (
-    ...     TeamMembershipRenewalPolicy, TeamMembershipStatus)
+    >>> from lp.registry.interfaces.person import (
+    ...     IPersonSet,
+    ...     TeamMembershipRenewalPolicy,
+    ...     )
+    >>> from lp.registry.interfaces.teammembership import (
+    ...     ITeamMembershipSet,
+    ...     TeamMembershipStatus,
+    ...     )
     >>> personset = getUtility(IPersonSet)
     >>> membershipset = getUtility(ITeamMembershipSet)
     >>> mark = personset.getByName('mark')
@@ -49,7 +53,7 @@ generates a notification email only to Ubuntu Team administrators.
     >>> membership.status.title
     'Proposed'
 
-    >>> transaction.commit()
+    >>> run_mail_jobs()
     >>> len(stub.test_emails)
     5
     >>> print_distinct_emails(include_reply_to=True)
@@ -87,6 +91,11 @@ and each of the team's admins.
     # that team.
     >>> login('mark@example.com')
     >>> setStatus(membership, TeamMembershipStatus.DECLINED, reviewer=mark)
+
+addMember() has queued up a job to send out the emails. We'll run the
+job now.
+
+    >>> run_mail_jobs()
     >>> len(stub.test_emails)
     6
 
@@ -125,6 +134,7 @@ The same goes for approving a proposed member.
 
     >>> setStatus(daf_membership, TeamMembershipStatus.APPROVED,
     ...           reviewer=mark, comment='This is a nice guy; I like him')
+    >>> run_mail_jobs()
     >>> stub.test_emails.sort(by_to_addrs)
     >>> len(stub.test_emails)
     6
@@ -158,6 +168,7 @@ The same for deactivating a membership.
 
     >>> setStatus(daf_membership, TeamMembershipStatus.DEACTIVATED,
     ...           reviewer=mark)
+    >>> run_mail_jobs()
     >>> stub.test_emails.sort(by_to_addrs)
     >>> len(stub.test_emails)
     6
@@ -187,7 +198,7 @@ other's member) email address in the 'Reply-To' header of the message sent.
 
     >>> admins = personset.getByName('admins')
     >>> admins.join(ubuntu_team, requester=mark)
-    >>> transaction.commit()
+    >>> run_mail_jobs()
     >>> len(stub.test_emails)
     5
     >>> print_distinct_emails(include_reply_to=True)
@@ -228,7 +239,10 @@ member.
     >>> cprov = personset.getByName('cprov')
     >>> marilize = personset.getByName('marilize')
     >>> ignored = ubuntu_team.addMember(marilize, reviewer=cprov)
-    >>> transaction.commit()
+    >>> run_mail_jobs()
+
+Now, the emails have been sent.
+
     >>> len(stub.test_emails)
     6
     >>> print_distinct_emails()
@@ -277,7 +291,7 @@ only be activated if they accept the invitation.
     >>> mirror_admins.getTeamAdminsEmailAddresses()
     ['mark@example.com']
     >>> ignored = ubuntu_team.addMember(mirror_admins, reviewer=cprov)
-    >>> transaction.commit()
+    >>> run_mail_jobs()
     >>> len(stub.test_emails)
     1
     >>> print_distinct_emails()
@@ -304,7 +318,7 @@ team which just became a member and to the admins of the hosting team.
     >>> comment = "Of course I want to be part of ubuntu!"
     >>> mirror_admins.acceptInvitationToBeMemberOf(ubuntu_team, comment)
     >>> flush_database_updates()
-    >>> transaction.commit()
+    >>> run_mail_jobs()
 
     >>> len(stub.test_emails)
     6
@@ -337,7 +351,7 @@ Similarly, a notification is sent if the invitation is declined.
     >>> comment = "Landscape has nothing to do with ubuntu, unfortunately."
     >>> landscape.declineInvitationToBeMemberOf(ubuntu_team, comment)
     >>> flush_database_updates()
-    >>> transaction.commit()
+    >>> run_mail_jobs()
 
     >>> len(stub.test_emails)
     7
@@ -363,7 +377,7 @@ passing force_team_add=True to the addMember() method.
     >>> ignored = ubuntu_team.addMember(
     ...     launchpad, reviewer=cprov, force_team_add=True)
     >>> flush_database_updates()
-    >>> transaction.commit()
+    >>> run_mail_jobs()
     >>> len(stub.test_emails)
     5
     >>> print_distinct_emails()
@@ -606,11 +620,11 @@ is automatically renewed.
     >>> removeSecurityProxy(jdub_on_ubuntu_team).dateexpires = utc_now
     >>> flush_database_updates()
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
     >>> membershipset.handleMembershipsExpiringToday(
     ...     reviewer=getUtility(ILaunchpadCelebrities).janitor)
     >>> flush_database_updates()
-    >>> transaction.commit()
+    >>> run_mail_jobs()
 
     >>> len(stub.test_emails)
     8
@@ -690,7 +704,7 @@ sent to all team admins.
 
     >>> login_person(karl)
     >>> karl.renewTeamMembership(mirror_admins)
-    >>> transaction.commit()
+    >>> run_mail_jobs()
     >>> len(stub.test_emails)
     1
 
@@ -713,7 +727,7 @@ When creating a new team, the owner has his membership's status changed from
 approved to admin, but he won't get a notification of that.
 
     >>> team = personset.newTeam(mark, 'testteam', 'Test')
-    >>> transaction.commit()
+    >>> run_mail_jobs()
     >>> len(stub.test_emails)
     0
 
@@ -730,6 +744,7 @@ notification.
     >>> login('mark@example.com')
     >>> setStatus(
     ...     cprov_membership, TeamMembershipStatus.ADMIN, reviewer=mark)
+    >>> run_mail_jobs()
     >>> len(stub.test_emails)
     6
     >>> print_distinct_emails()
@@ -760,6 +775,7 @@ sent to the team administrators.
     >>> jdub_membership = membershipset.getByPersonAndTeam(jdub, ubuntu_team)
     >>> setStatus(jdub_membership, TeamMembershipStatus.APPROVED,
     ...           reviewer=jdub)
+    >>> run_mail_jobs()
     >>> len(stub.test_emails)
     5
     >>> print_distinct_emails()
@@ -784,6 +800,7 @@ sense to the members of the team reading it.
     ...     mirror_admins, ubuntu_team)
     >>> setStatus(mirror_admins_membership, TeamMembershipStatus.DEACTIVATED,
     ...           reviewer=mark, silent=False)
+    >>> run_mail_jobs()
     >>> len(stub.test_emails)
     6
 
@@ -811,6 +828,7 @@ sent) by Launchpad Administrators.
     Approved
     >>> setStatus(dumper_hwdb_membership,
     ...     TeamMembershipStatus.DEACTIVATED, reviewer=mark, silent=True)
+    >>> run_mail_jobs()
     >>> len(stub.test_emails)
     0
     >>> print dumper_hwdb_membership.status.title

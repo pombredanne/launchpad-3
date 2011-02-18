@@ -31,6 +31,7 @@
         </ul>
       </div>
 
+      <tal:cache content="cache:public, 30 minute">
       <div tal:condition="packagings/batch">
         <h2>All upstream links</h2>
 
@@ -56,7 +57,7 @@
               <tr tal:define="series packaging/productseries;
                               product series/product;
                               package packaging/sourcepackage;
-                              translations package/getTranslationTemplates;">
+                              translations package/has_translation_templates;">
                 <td>
                   <a class="sprite package-source"
                     tal:attributes="href package/fmt:url"
@@ -81,6 +82,7 @@
         <div class="results"
           tal:content="structure packagings/@@+navigation-links-lower" />
       </div>
+      </tal:cache>
     </div>
   </body>
 </html>

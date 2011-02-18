@@ -14,7 +14,7 @@
        IQuestionCollection. -->
   <browser:defaultView
     for="lp.answers.interfaces.questioncollection.IQuestionCollection"
-    layer="canonical.launchpad.layers.AnswersLayer"
+    layer="lp.answers.publisher.AnswersLayer"
     name="+tickets"
     />
   <browser:page
@@ -199,7 +199,7 @@
     name="+reject"
     for="lp.answers.interfaces.question.IQuestion"
     class=".question.QuestionRejectView"
-    permission="launchpad.Moderate"
+    permission="launchpad.Append"
     template="../templates/question-reject.pt"
     />
 
@@ -239,7 +239,7 @@
     name="+createfaq"
     for="lp.answers.interfaces.question.IQuestion"
     class=".question.QuestionCreateFAQView"
-    permission="launchpad.Moderate"
+    permission="launchpad.Append"
     template="../../app/templates/generic-edit.pt"
     />
 
@@ -260,7 +260,7 @@
   <browser:url
     for="lp.answers.interfaces.questioncollection.IQuestionSet"
     path_expression="string:questions"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
     rootsite="answers"
     />
 
@@ -308,7 +308,7 @@
     name="+createfaq"
     for="lp.answers.interfaces.faqtarget.IFAQTarget"
     class=".faqtarget.FAQCreateView"
-    permission="launchpad.Moderate"
+    permission="launchpad.Append"
     template="../../app/templates/generic-edit.pt"
     />
 
@@ -350,13 +350,13 @@
     permission="zope.Public"/>
 
   <browser:defaultView
-    for="canonical.launchpad.interfaces.IPerson"
-    layer="canonical.launchpad.layers.AnswersLayer"
+    for="lp.registry.interfaces.person.IPerson"
+    layer="lp.answers.publisher.AnswersLayer"
     name="+questions"
     />
 
     <browser:page
-        for="canonical.launchpad.interfaces.IPerson"
+        for="lp.registry.interfaces.person.IPerson"
         name="+ask-a-question-button"
         template="../templates/null.pt"
         permission="zope.Public"

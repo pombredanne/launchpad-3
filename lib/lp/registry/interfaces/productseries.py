@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -13,42 +13,78 @@ __all__ = [
     'IProductSeriesPublic',
     'IProductSeriesSet',
     'NoSuchProductSeries',
+    'ITimelineProductSeries',
     ]
 
-from zope.schema import Bool, Choice, Datetime, Int, TextLine
-from zope.interface import Interface, Attribute
+from lazr.lifecycle.snapshot import doNotSnapshot
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    export_factory_operation,
+    export_operation_as,
+    export_read_operation,
+    exported,
+    operation_parameters,
+    rename_parameters_as,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    ReferenceChoice,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Field,
+    Int,
+    TextLine,
+    )
 
-from canonical.launchpad.fields import (
-    ContentNameField, ParticipatingPersonChoice, Title)
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
-from lp.code.interfaces.branch import IBranch
-from lp.bugs.interfaces.bugtarget import IBugTarget, IHasOfficialBugTags
-from lp.registry.interfaces.series import ISeriesMixin, SeriesStatus
+from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IHasAppointedDriver
-from lp.registry.interfaces.role import IHasOwner
-from lp.registry.interfaces.milestone import (
-    IHasMilestones, IMilestone)
-from lp.registry.interfaces.productrelease import IProductRelease
-from lp.blueprints.interfaces.specificationtarget import (
-    ISpecificationGoal)
-from lp.translations.interfaces.potemplate import IHasTranslationTemplates
-from lp.translations.interfaces.translations import (
-    TranslationsBranchImportMode)
 from canonical.launchpad.interfaces.validation import validate_url
 from canonical.launchpad.validators import LaunchpadValidationError
-
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.launchpad.webapp.url import urlparse
-from canonical.launchpad import _
-
-from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
-
-from lazr.restful.declarations import (
-    export_as_webservice_entry, export_factory_operation, export_operation_as,
-    export_read_operation, exported, operation_parameters,
-    rename_parameters_as)
+from lp.app.errors import NameLookupFailed
+from lp.app.interfaces.launchpad import IServiceUsage
+from lp.blueprints.interfaces.specificationtarget import ISpecificationGoal
+from lp.bugs.interfaces.bugtarget import (
+    IBugTarget,
+    IHasOfficialBugTags,
+    )
+from lp.code.interfaces.branch import IBranch
+from lp.registry.interfaces.milestone import (
+    IHasMilestones,
+    IMilestone,
+    )
+from lp.registry.interfaces.productrelease import IProductRelease
+from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.series import (
+    ISeriesMixin,
+    SeriesStatus,
+    )
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
+from lp.services.fields import (
+    ContentNameField,
+    PersonChoice,
+    Title,
+    )
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
+    )
+from lp.translations.interfaces.hastranslationtemplates import (
+    IHasTranslationTemplates,
+    )
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode,
+    )
 
 
 class ProductSeriesNameField(ContentNameField):
@@ -93,7 +129,7 @@ class IProductSeriesEditRestricted(Interface):
 class IProductSeriesPublic(
     ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
     ISpecificationGoal, IHasMilestones, IHasOfficialBugTags,
-    IHasTranslationTemplates):
+    IHasTranslationImports, IHasTranslationTemplates, IServiceUsage):
     """Public IProductSeries properties."""
     # XXX Mark Shuttleworth 2004-10-14: Would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly
@@ -129,12 +165,12 @@ class IProductSeriesPublic(
         exported_as='date_created')
 
     owner = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_('Owner'), required=True, vocabulary='ValidOwner',
             description=_('Project owner, either a valid Person or Team')))
 
     driver = exported(
-        ParticipatingPersonChoice(
+        PersonChoice(
             title=_("Release manager"),
             description=_(
                 "The person or team responsible for decisions about features "
@@ -177,20 +213,20 @@ class IProductSeriesPublic(
     sourcepackages = Attribute(_("List of distribution packages for this "
         "product series"))
 
-    milestones = exported(
+    milestones = exported(doNotSnapshot(
         CollectionField(
             title=_("The visible milestones associated with this "
                     "project series, ordered by date expected."),
             readonly=True,
-            value_type=Reference(schema=IMilestone)),
+            value_type=Reference(schema=IMilestone))),
         exported_as='active_milestones')
 
-    all_milestones = exported(
+    all_milestones = exported(doNotSnapshot(
         CollectionField(
             title=_("All milestones associated with this project series, "
                     "ordered by date expected."),
             readonly=True,
-            value_type=Reference(schema=IMilestone)))
+            value_type=Reference(schema=IMilestone))))
 
     branch = exported(
         ReferenceChoice(
@@ -221,17 +257,13 @@ class IProductSeriesPublic(
         schema=IBranch,
         required=False,
         description=_(
-            "A Bazaar branch to commit translation snapshots to. "
-            "Leave blank to disable."))
-
-    translations_branch = ReferenceChoice(
-        title=_("Translations export branch"),
-        vocabulary='HostedBranchRestrictedOnOwner',
-        schema=IBranch,
-        required=False,
-        description=_(
             "A Bazaar branch to commit translation snapshots to.  "
             "Leave blank to disable."))
+
+    def getLatestRelease():
+        """Gets the most recent release in the series.
+
+        Returns None if there is no release."""
 
     def getRelease(version):
         """Get the release in this series that has the specified version.
@@ -260,12 +292,15 @@ class IProductSeriesPublic(
         """Return the POTemplate with this name for the series."""
 
     # where are the tarballs released from this branch placed?
-    releasefileglob = TextLine(title=_("Release URL pattern"),
+    releasefileglob = exported(
+        TextLine(title=_("Release URL pattern"),
         required=False, constraint=validate_release_glob,
         description=_('A URL pattern that matches releases that are part '
                       'of this series.  Launchpad automatically scans this '
                       'site to import new releases.  Example: '
-                      'http://ftp.gnu.org/gnu/emacs/emacs-21.*.tar.gz'))
+                      'http://ftp.gnu.org/gnu/emacs/emacs-21.*.tar.gz')),
+        exported_as='release_finder_url_pattern')
+
     releaseverstyle = Attribute("The version numbering style for this "
         "series of releases.")
 
@@ -278,13 +313,42 @@ class IProductSeriesPublic(
     @export_read_operation()
     @export_operation_as('get_timeline')
     def getTimeline(include_inactive):
-        """Return basic timeline data useful for creating a diagram."""
+        """Return basic timeline data useful for creating a diagram.
+
+        The number of milestones returned is limited.
+        """
 
 
 class IProductSeries(IProductSeriesEditRestricted, IProductSeriesPublic,
                      IStructuralSubscriptionTarget):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
     export_as_webservice_entry('project_series')
+
+
+class ITimelineProductSeries(Interface):
+    """Minimal product series info for the timeline."""
+
+    # XXX: EdwinGrubbs 2010-11-18 bug=677671
+    # lazr.restful can't batch a DecoratedResultSet returning basic
+    # python types such as dicts, so this interface is necessary.
+    export_as_webservice_entry('timeline_project_series')
+
+    name = IProductSeries['name']
+
+    status = IProductSeries['status']
+
+    product = IProductSeries['product']
+
+    is_development_focus = exported(
+        Bool(title=_("Is series the development focus of the project"),
+             required=True))
+
+    uri = exported(
+        TextLine(title=_("Series URI"), required=False,
+            description=_('foo')))
+
+    landmarks = exported(
+        Field(title=_("List of milestones and releases")))
 
 
 class IProductSeriesSet(Interface):

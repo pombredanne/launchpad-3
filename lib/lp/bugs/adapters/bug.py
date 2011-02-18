@@ -9,8 +9,8 @@ __all__ = [
     'bugtask_to_privacy',
     ]
 
-from zope.component import getMultiAdapter
 from lazr.restful.interfaces import IEntry
+from zope.component import getMultiAdapter
 
 
 def bugcomment_to_entry(comment, version):

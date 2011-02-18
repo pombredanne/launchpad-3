@@ -16,12 +16,16 @@ __all__ = [
 
 import logging
 
-from twisted.internet import defer
+from twisted.internet import (
+    defer,
+    reactor,
+    )
 from twisted.internet.task import LoopingCall
-from twisted.internet import reactor
 from twisted.python import log
-
-from zope.interface import implements, Interface
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
 
 class ITaskSource(Interface):

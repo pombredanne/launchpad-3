@@ -41,7 +41,7 @@ approve or reject.
 This message is now in Launchpad's librarian and accessible through the
 IMessageApprovalSet interface.
 
-    >>> from canonical.launchpad.interfaces import IMessageApprovalSet
+    >>> from lp.registry.interfaces.mailinglist import IMessageApprovalSet
     >>> message_set = getUtility(IMessageApprovalSet)
     >>> held_message_anne = message_set.getMessageByMessageID('<first-post>')
     >>> print held_message_anne.message_id
@@ -176,11 +176,11 @@ transitioned to their permanent states.
     <DBItem PostedMessageStatus.DISCARDED, (70) Discarded>
 
 
-Private membership teams
-========================
+Private teams
+=============
 
-When a private membership team has a mailing list, its messages can also be
-held for moderator approval.
+When a private team has a mailing list, its messages can also be held
+for moderator approval.
 
     >>> from lp.registry.interfaces.person import (
     ...     IPersonSet, PersonVisibility, TeamSubscriptionPolicy)
@@ -188,7 +188,7 @@ held for moderator approval.
     >>> team_private = factory.makeTeam(
     ...     no_priv, name='team-private',
     ...     subscription_policy=TeamSubscriptionPolicy.RESTRICTED,
-    ...     visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
+    ...     visibility=PersonVisibility.PRIVATE)
 
     >>> from lp.registry.interfaces.mailinglist import IMailingListSet
     >>> list_private = getUtility(IMailingListSet).new(team_private)
@@ -226,18 +226,20 @@ to the mailing list.
 Non-ascii messages
 ==================
 
-Messages with non-ascii in their headers or bodies are not exactly legal (they
-should be encoded) but do occur especially in spam.  These messages can be
-held for moderator approval too.
+Messages with non-ascii in their headers are not exactly legal
+(they should be encoded) but do occur especially in spam.  These
+messages can be held for moderator approval too. To avoid blowing up
+later if the string is converted to a unicode object, the non-ascii
+characters are replaced.
 
     >>> spam_message = message_from_string("""\
     ... From: Anne \xa9 Person <anne.person@example.com>
     ... To: team-one@lists.launchpad.dev
     ... Subject: \xa9 Badgers!
-    ... Message-ID: <fifth-post>
+    ... Message-ID: <fifth-post\xa9>
     ... Date: Fri, 01 Aug 2000 01:08:59 -0000
     ...
-    ... Watch out for badgers! \xa9
+    ... Don't escape non-ascii characters in the body! \xa9
     ... """)
 
     >>> import xmlrpclib
@@ -247,9 +249,10 @@ held for moderator approval too.
     True
     >>> commit()
 
-    >>> held_message_spam = message_set.getMessageByMessageID('<fifth-post>')
+    >>> held_message_spam = message_set.getMessageByMessageID(
+    ...     '<fifth-post\\xa9>')
     >>> print held_message_spam.message_id
-    <fifth-post>
+    <fifth-post\xa9>
     >>> print held_message_spam.posted_by.displayname
     Anne Person
 
@@ -258,14 +261,14 @@ held for moderator approval too.
     ...     message_content = held_message_spam.posted_message.read()
     ... finally:
     ...     held_message_spam.posted_message.close()
-    >>> message_content.splitlines()
-    ['From: Anne \xa9 Person <anne.person@example.com>',
+    >>> print pretty(message_content.splitlines())
+    ['From: Anne \\xa9 Person <anne.person@example.com>',
      'To: team-one@lists.launchpad.dev',
-     'Subject: \xa9 Badgers!',
-     'Message-ID: <fifth-post>',
+     'Subject: \\xa9 Badgers!',
+     'Message-ID: <fifth-post\\xa9>',
      'Date: Fri, 01 Aug 2000 01:08:59 -0000',
      '',
-     'Watch out for badgers! \xa9']
+     "Don't escape non-ascii characters in the body! \xa9"]
 
     >>> held_message_spam.status
      <DBItem PostedMessageStatus.NEW, (0) New status>

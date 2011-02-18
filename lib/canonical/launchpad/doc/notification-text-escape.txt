@@ -41,8 +41,8 @@ If the object passed to addNotification() publishes the
 IStructuredString interface, then a string will be returned with the
 appropriate sections escaped and unescaped.
 
-    >>> from canonical.launchpad.webapp.menu import structured
     >>> from canonical.launchpad.webapp.interfaces import IStructuredString
+    >>> from canonical.launchpad.webapp.menu import structured
     >>> msg = u'<b>%(escaped)s</b>'
     >>> structured_text = structured(msg, escaped=u'<br/>foo')
     >>> IStructuredString.providedBy(structured_text)

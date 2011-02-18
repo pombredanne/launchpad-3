@@ -7,53 +7,86 @@ __metaclass__ = type
 
 import datetime
 import os
-import pytz
 import shutil
 import tempfile
 from unittest import TestLoader
 
 from bzrlib import errors as bzr_errors
-from bzrlib.branch import Branch, BzrBranchFormat7
+from bzrlib.branch import (
+    Branch,
+    BzrBranchFormat7,
+    )
 from bzrlib.bzrdir import BzrDirMetaFormat1
 from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack6
 from bzrlib.revision import NULL_REVISION
 from bzrlib.transport import get_transport
-from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
+import pytz
 from sqlobject import SQLObjectNotFound
+from storm.locals import Store
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.testing.librarianhelpers import (
+    get_newest_librarian_file,
+    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
-from lp.translations.interfaces.translations import (
-    TranslationsBranchImportMode)
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue, RosettaImportStatus)
-from lp.testing import TestCaseWithFactory
-from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-from canonical.launchpad.testing.librarianhelpers import (
-    get_newest_librarian_file)
-from lp.testing.mail_helpers import pop_notifications
-from lp.services.job.interfaces.job import JobStatus
-from lp.services.job.model.job import Job
-from lp.code.bzr import BranchFormat, RepositoryFormat
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.code.bzr import (
+    BranchFormat,
+    RepositoryFormat,
+    )
 from lp.code.enums import (
-    BranchMergeProposalStatus, BranchSubscriptionDiffSize,
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
+    BranchMergeProposalStatus,
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
 from lp.code.interfaces.branchjob import (
-    IBranchDiffJob, IBranchJob, IBranchScanJob, IBranchUpgradeJob,
-    IReclaimBranchSpaceJob, IReclaimBranchSpaceJobSource, IRevisionMailJob,
-    IRosettaUploadJob)
+    IBranchDiffJob,
+    IBranchJob,
+    IBranchScanJob,
+    IBranchUpgradeJob,
+    IReclaimBranchSpaceJob,
+    IReclaimBranchSpaceJobSource,
+    IRevisionMailJob,
+    IRosettaUploadJob,
+    )
 from lp.code.model.branchjob import (
-    BranchDiffJob, BranchJob, BranchJobDerived, BranchJobType,
-    BranchScanJob, BranchUpgradeJob, ReclaimBranchSpaceJob, RevisionMailJob,
-    RevisionsAddedJob, RosettaUploadJob)
+    BranchDiffJob,
+    BranchJob,
+    BranchJobDerived,
+    BranchJobType,
+    BranchScanJob,
+    BranchUpgradeJob,
+    ReclaimBranchSpaceJob,
+    RevisionMailJob,
+    RevisionsAddedJob,
+    RosettaUploadJob,
+    )
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.revision import RevisionSet
 from lp.codehosting.vfs import branch_id_to_path
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.model.job import Job
+from lp.services.osutils import override_environ
+from lp.testing import TestCaseWithFactory
+from lp.testing.mail_helpers import pop_notifications
+from lp.translations.enums import RosettaImportStatus
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue,
+    )
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode,
+    )
 
 
 class TestBranchJob(TestCaseWithFactory):
@@ -102,7 +135,10 @@ class TestBranchDiffJob(TestCaseWithFactory):
         """Ensure that run calculates revision ids."""
         self.useBzrBranches(direct_database=True)
         branch, tree = self.create_branch_and_tree()
-        tree.commit('First commit', rev_id='rev1')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            tree.commit('First commit', rev_id='rev1')
         job = BranchDiffJob.create(branch, '0', '1')
         static_diff = job.run()
         self.assertEqual('null:', static_diff.from_revision_id)
@@ -113,16 +149,19 @@ class TestBranchDiffJob(TestCaseWithFactory):
         self.useBzrBranches(direct_database=True)
 
         tree_location = tempfile.mkdtemp()
-        self.addCleanup(lambda: shutil.rmtree(tree_location)) 
+        self.addCleanup(lambda: shutil.rmtree(tree_location))
 
         branch, tree = self.create_branch_and_tree(
             tree_location=tree_location)
         tree_file = os.path.join(tree_location, 'file')
         open(tree_file, 'wb').write('foo\n')
         tree.add('file')
-        tree.commit('First commit')
-        open(tree_file, 'wb').write('bar\n')
-        tree.commit('Next commit')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            tree.commit('First commit')
+            open(tree_file, 'wb').write('bar\n')
+            tree.commit('Next commit')
         job = BranchDiffJob.create(branch, '1', '2')
         static_diff = job.run()
         transaction.commit()
@@ -136,7 +175,10 @@ class TestBranchDiffJob(TestCaseWithFactory):
         """Ensure running an equivalent job emits the same diff."""
         self.useBzrBranches(direct_database=True)
         branch, tree = self.create_branch_and_tree()
-        tree.commit('First commit')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            tree.commit('First commit')
         job1 = BranchDiffJob.create(branch, '0', '1')
         static_diff1 = job1.run()
         job2 = BranchDiffJob.create(branch, '0', '1')
@@ -155,7 +197,10 @@ class TestBranchDiffJob(TestCaseWithFactory):
         tree_transport = tree.bzrdir.root_transport
         tree_transport.put_bytes("hello.txt", "Hello World\n")
         tree.add('hello.txt')
-        tree.commit('rev1', timestamp=1e9, timezone=0)
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            tree.commit('rev1', timestamp=1e9, timezone=0)
         job = BranchDiffJob.create(branch, '0', '1')
         diff = job.run()
         transaction.commit()
@@ -200,20 +245,23 @@ class TestBranchScanJob(TestCaseWithFactory):
         self.useBzrBranches(direct_database=True)
 
         db_branch, bzr_tree = self.create_branch_and_tree()
-        bzr_tree.commit('First commit', rev_id='rev1')
-        bzr_tree.commit('Second commit', rev_id='rev2')
-        bzr_tree.commit('Third commit', rev_id='rev3')
-        LaunchpadZopelessLayer.commit()
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            bzr_tree.commit('First commit', rev_id='rev1')
+            bzr_tree.commit('Second commit', rev_id='rev2')
+            bzr_tree.commit('Third commit', rev_id='rev3')
+            LaunchpadZopelessLayer.commit()
 
-        job = BranchScanJob.create(db_branch)
-        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
-        job.run()
-        LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)
+            job = BranchScanJob.create(db_branch)
+            LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+            job.run()
+            LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)
 
-        self.assertEqual(db_branch.revision_count, 3)
+            self.assertEqual(db_branch.revision_count, 3)
 
-        bzr_tree.commit('Fourth commit', rev_id='rev4')
-        bzr_tree.commit('Fifth commit', rev_id='rev5')
+            bzr_tree.commit('Fourth commit', rev_id='rev4')
+            bzr_tree.commit('Fifth commit', rev_id='rev5')
 
         job = BranchScanJob.create(db_branch)
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
@@ -258,13 +306,14 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
             'Bazaar-NG Knit Repository Format 1')
 
         job = BranchUpgradeJob.create(db_branch)
+        self.becomeDbUser(config.upgrade_branches.dbuser)
         job.run()
         new_branch = Branch.open(tree.branch.base)
         self.assertEqual(
             new_branch.repository._format.get_format_string(),
             'Bazaar repository format 2a (needs bzr 1.16 or later)\n')
 
-        self.assertTrue(db_branch.pending_writes)
+        self.assertFalse(db_branch.needs_upgrading)
 
     def test_needs_no_upgrading(self):
         # Branch upgrade job creation should raise an AssertionError if the
@@ -289,12 +338,22 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
             source_branch_transport.clone('backup.bzr'))
 
         job = BranchUpgradeJob.create(db_branch)
+        self.becomeDbUser(config.upgrade_branches.dbuser)
         job.run()
 
         new_branch = Branch.open(tree.branch.base)
         self.assertEqual(
             new_branch.repository._format.get_format_string(),
             'Bazaar repository format 2a (needs bzr 1.16 or later)\n')
+
+    def test_db_user_can_request_scan(self):
+        # The database user that does the upgrade needs to be able to request
+        # a scan of the branch.
+        branch = self.factory.makeAnyBranch()
+        self.becomeDbUser(config.upgrade_branches.dbuser)
+        # Scan jobs are created by the branchChanged method.
+        branch.branchChanged('', 'new-id', None, None, None)
+        Store.of(branch).flush()
 
 
 class TestRevisionMailJob(TestCaseWithFactory):
@@ -331,7 +390,7 @@ class TestRevisionMailJob(TestCaseWithFactory):
         job = RevisionMailJob.create(
             branch, 0, 'from@example.com', 'hello', False, 'subject')
         job.run()
-        (mail,) = pop_notifications()
+        (mail, ) = pop_notifications()
         self.assertEqual('0', mail['X-Launchpad-Branch-Revision-Number'])
         self.assertEqual('from@example.com', mail['from'])
         self.assertEqual('subject', mail['subject'])
@@ -344,7 +403,7 @@ class TestRevisionMailJob(TestCaseWithFactory):
             'To unsubscribe from this branch go to'
             ' %(url)s/+edit-subscription\n' % {
                 'url': canonical_url(branch),
-                'identity': branch.bzr_identity
+                'identity': branch.bzr_identity,
                 },
             mail.get_payload(decode=True))
 
@@ -368,7 +427,10 @@ class TestRevisionMailJob(TestCaseWithFactory):
         branch, tree = self.create_branch_and_tree()
         tree.bzrdir.root_transport.put_bytes('foo', 'bar\n')
         tree.add('foo')
-        tree.commit('First commit')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            tree.commit('First commit')
         job = RevisionMailJob.create(
             branch, 1, 'from@example.com', 'hello', True, 'subject')
         mailer = job.getMailer()
@@ -454,7 +516,11 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
             except bzr_errors.NoSuchRevision:
                 revno = None
             if existing is not None:
-                BranchRevision.delete(existing.id)
+                branchrevision = IMasterStore(branch).find(
+                    BranchRevision,
+                    BranchRevision.branch_id == branch.id,
+                    BranchRevision.revision_id == revision.id)
+                branchrevision.remove()
             branch.createBranchRevision(revno, revision)
 
     def create3CommitsBranch(self):
@@ -462,9 +528,12 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         branch, tree = self.create_branch_and_tree()
         tree.lock_write()
         try:
-            tree.commit('rev1', rev_id='rev1')
-            tree.commit('rev2', rev_id='rev2')
-            tree.commit('rev3', rev_id='rev3')
+            # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+            # required to generate the revision-id.
+            with override_environ(BZR_EMAIL='me@example.com'):
+                tree.commit('rev1', rev_id='rev1')
+                tree.commit('rev2', rev_id='rev2')
+                tree.commit('rev3', rev_id='rev3')
             transaction.commit()
             self.layer.switchDbUser('branchscanner')
             self.updateDBRevisions(
@@ -489,7 +558,10 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         branch, tree = self.create3CommitsBranch()
         tree.pull(tree.branch, overwrite=True, stop_revision='rev2')
         tree.add_parent_tree_id('rev3')
-        tree.commit('rev3a', rev_id='rev3a')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            tree.commit('rev3a', rev_id='rev3a')
         self.updateDBRevisions(branch, tree.branch, ['rev3', 'rev3a'])
         job = RevisionsAddedJob.create(branch, 'rev1', 'rev3', '')
         job.bzr_branch.lock_read()
@@ -527,9 +599,12 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         tree.branch.nick = 'nicholas'
         tree.lock_write()
         self.addCleanup(tree.unlock)
-        tree.commit(
-            'rev1', rev_id='rev1', timestamp=1000, timezone=0,
-            committer='J. Random Hacker <jrandom@example.org>')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            tree.commit(
+                'rev1', rev_id='rev1', timestamp=1000, timezone=0,
+                committer='J. Random Hacker <jrandom@example.org>')
         return branch, tree
 
     def makeRevisionsAddedWithMergeCommit(self, authors=None,
@@ -543,20 +618,23 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         self.useBzrBranches(direct_database=True)
         branch, tree = self.create_branch_and_tree()
         tree.branch.nick = 'nicholas'
-        tree.commit('rev1')
-        tree2 = tree.bzrdir.sprout('tree2').open_workingtree()
-        tree2.commit('rev2a', rev_id='rev2a-id', committer='foo@')
-        tree2.commit('rev3', rev_id='rev3-id',
-                     authors=['bar@', 'baz@blaine.com'])
-        tree.merge_from_branch(tree2.branch)
-        tree3 = tree.bzrdir.sprout('tree3').open_workingtree()
-        tree3.commit('rev2b', rev_id='rev2b-id', committer='qux@')
-        tree.merge_from_branch(tree3.branch, force=True)
-        if include_ghost:
-            tree.add_parent_tree_id('rev2c-id')
-        tree.commit('rev2d', rev_id='rev2d-id', timestamp=1000, timezone=0,
-            committer='J. Random Hacker <jrandom@example.org>',
-            authors=authors)
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            tree.commit('rev1')
+            tree2 = tree.bzrdir.sprout('tree2').open_workingtree()
+            tree2.commit('rev2a', rev_id='rev2a-id', committer='foo@')
+            tree2.commit('rev3', rev_id='rev3-id',
+                         authors=['bar@', 'baz@blaine.com'])
+            tree.merge_from_branch(tree2.branch)
+            tree3 = tree.bzrdir.sprout('tree3').open_workingtree()
+            tree3.commit('rev2b', rev_id='rev2b-id', committer='qux@')
+            tree.merge_from_branch(tree3.branch, force=True)
+            if include_ghost:
+                tree.add_parent_tree_id('rev2c-id')
+            tree.commit('rev2d', rev_id='rev2d-id', timestamp=1000, timezone=0,
+                committer='J. Random Hacker <jrandom@example.org>',
+                authors=authors)
         return RevisionsAddedJob.create(branch, 'rev2d-id', 'rev2d-id', '')
 
     def test_getMergedRevisionIDs(self):
@@ -802,17 +880,20 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         first_revision = 'rev-1'
         tree.bzrdir.root_transport.put_bytes('hello.txt', 'Hello World\n')
         tree.add('hello.txt')
-        tree.commit(
-            rev_id=first_revision, message="Log message",
-            committer="Joe Bloggs <joe@example.com>", timestamp=1000000000.0,
-            timezone=0)
-        tree.bzrdir.root_transport.put_bytes(
-            'hello.txt', 'Hello World\n\nFoo Bar\n')
-        second_revision = 'rev-2'
-        tree.commit(
-            rev_id=second_revision, message="Extended contents",
-            committer="Joe Bloggs <joe@example.com>", timestamp=1000100000.0,
-            timezone=0)
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            tree.commit(
+                rev_id=first_revision, message="Log message",
+                committer="Joe Bloggs <joe@example.com>",
+                timestamp=1000000000.0, timezone=0)
+            tree.bzrdir.root_transport.put_bytes(
+                'hello.txt', 'Hello World\n\nFoo Bar\n')
+            second_revision = 'rev-2'
+            tree.commit(
+                rev_id=second_revision, message="Extended contents",
+                committer="Joe Bloggs <joe@example.com>",
+                timestamp=1000100000.0, timezone=0)
         transaction.commit()
         self.layer.switchDbUser('branchscanner')
         self.updateDBRevisions(db_branch, tree.branch)
@@ -859,9 +940,13 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         self.useBzrBranches(direct_database=True)
         db_branch, tree = self.create_branch_and_tree()
         rev_id = 'rev-1'
-        tree.commit(
-            rev_id=rev_id, message=u"Non ASCII: \xe9",
-            committer=u"Non ASCII: \xed", timestamp=1000000000.0, timezone=0)
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            tree.commit(
+                rev_id=rev_id, message=u"Non ASCII: \xe9",
+                committer=u"Non ASCII: \xed", timestamp=1000000000.0,
+                timezone=0)
         transaction.commit()
         self.layer.switchDbUser('branchscanner')
         self.updateDBRevisions(db_branch, tree.branch)
@@ -913,7 +998,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self.series = None
 
     def _makeBranchWithTreeAndFile(self, file_name, file_content = None):
-        return self._makeBranchWithTreeAndFiles(((file_name, file_content),))
+        return self._makeBranchWithTreeAndFiles(((file_name, file_content), ))
 
     def _makeBranchWithTreeAndFiles(self, files):
         """Create a branch with a tree that contains the given files.
@@ -971,7 +1056,10 @@ class TestRosettaUploadJob(TestCaseWithFactory):
                 [self.tree.abspath(file_pair[0]) for file_pair in files])
         if commit_message is None:
             commit_message = self.factory.getUniqueString('commit')
-        revision_id = self.tree.commit(commit_message)
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            revision_id = self.tree.commit(commit_message)
         self.branch.last_scanned_id = revision_id
         self.branch.last_mirrored_id = revision_id
         return revision_id
@@ -984,7 +1072,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
 
     def _runJobWithFile(self, import_mode, file_name, file_content = None):
         return self._runJobWithFiles(
-            import_mode, ((file_name, file_content),))
+            import_mode, ((file_name, file_content), ))
 
     def _runJobWithFiles(self, import_mode, files,
                          do_upload_translations=False):
@@ -1018,8 +1106,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         pot_name = "foo.pot"
         entries = self._runJobWithFiles(
             TranslationsBranchImportMode.IMPORT_TEMPLATES,
-            ((pot_name,), ('eo.po',), ('README',))
-            )
+            ((pot_name,), ('eo.po',), ('README',)))
         self.assertEqual(len(entries), 1)
         entry = entries[0]
         self.assertEqual(pot_name, entry.path)
@@ -1058,8 +1145,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         pot_name = "en-US.xpi"
         entries = self._runJobWithFiles(
             TranslationsBranchImportMode.IMPORT_TEMPLATES,
-            ((pot_name,), ('eo.xpi',), ('README',))
-            )
+            ((pot_name,), ('eo.xpi',), ('README',)))
         self.assertEqual(len(entries), 1)
         entry = entries[0]
         self.assertEqual(pot_name, entry.path)
@@ -1108,7 +1194,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         pot_name = "foo.pot"
         revision_id = self._makeBranchWithTreeAndFiles(
             ((pot_name,), ('eo.po',), ('README',)))
-        self._commitFilesToTree(((pot_name,),))
+        self._commitFilesToTree(((pot_name, ), ))
         entries = self._runJob(
             TranslationsBranchImportMode.IMPORT_TEMPLATES, revision_id)
         self.assertEqual(len(entries), 1)
@@ -1120,8 +1206,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         # not configured to do so.
         entries = self._runJobWithFiles(
             TranslationsBranchImportMode.NO_IMPORT,
-            (('foo.pot',), ('eo.po',), ('README',))
-            )
+            (('foo.pot',), ('eo.po',), ('README',)))
         self.assertEqual([], entries)
 
     def test_upload_translations(self):
@@ -1183,7 +1268,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         # only POTemplate object in the database, if there is only one such
         # object for this product series.
         self._makeBranchWithTreeAndFiles(
-            [('foo.pot', None),('bar.pot', None)])
+            [('foo.pot', None), ('bar.pot', None)])
         self._makeProductSeries(TranslationsBranchImportMode.IMPORT_TEMPLATES)
         self.factory.makePOTemplate(self.series, path='foo.pot')
         self.factory.makePOTemplate(self.series, path='bar.pot')
@@ -1352,7 +1437,6 @@ class TestReclaimBranchSpaceJob(TestCaseWithFactory):
         os.makedirs(branch_path)
         self.runReadyJobs()
         self.assertFalse(os.path.exists(branch_path))
-
 
 
 def test_suite():

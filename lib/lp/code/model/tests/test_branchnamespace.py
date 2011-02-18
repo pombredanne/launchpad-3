@@ -12,26 +12,41 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.testing import DatabaseFunctionalLayer
-
-from lp.code.model.branchnamespace import (
-    PackageNamespace, PersonalNamespace, ProductNamespace)
-from lp.registry.model.sourcepackage import SourcePackage
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import (
-    BranchLifecycleStatus, BranchType, BranchVisibilityRule)
-from lp.code.interfaces.branch import (
-    BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
-    BranchCreatorNotOwner, BranchExists, NoSuchBranch)
+    BranchLifecycleStatus,
+    BranchType,
+    BranchVisibilityRule,
+    )
+from lp.code.errors import (
+    BranchCreationForbidden,
+    BranchCreatorNotMemberOfOwnerTeam,
+    BranchCreatorNotOwner,
+    BranchExists,
+    InvalidNamespace,
+    NoSuchBranch,
+    )
 from lp.code.interfaces.branchnamespace import (
-    get_branch_namespace, IBranchNamespacePolicy, IBranchNamespace,
-    IBranchNamespaceSet, lookup_branch_namespace, InvalidNamespace)
+    get_branch_namespace,
+    IBranchNamespace,
+    IBranchNamespacePolicy,
+    IBranchNamespaceSet,
+    lookup_branch_namespace,
+    )
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.model.branchnamespace import (
+    PackageNamespace,
+    PersonalNamespace,
+    ProductNamespace,
+    )
+from lp.registry.errors import (
+    NoSuchDistroSeries,
+    NoSuchSourcePackageName,
+    )
 from lp.registry.interfaces.distribution import NoSuchDistribution
-from lp.registry.interfaces.distroseries import NoSuchDistroSeries
 from lp.registry.interfaces.person import NoSuchPerson
 from lp.registry.interfaces.product import NoSuchProduct
-from lp.registry.interfaces.sourcepackagename import (
-    NoSuchSourcePackageName)
+from lp.registry.model.sourcepackage import SourcePackage
 from lp.testing import TestCaseWithFactory
 
 
@@ -85,6 +100,15 @@ class NamespaceMixin:
         self.assertEqual(
             BranchLifecycleStatus.EXPERIMENTAL, branch.lifecycle_status)
         self.assertEqual(whiteboard, branch.whiteboard)
+
+    def test_createBranch_subscribes_owner(self):
+        owner = self.factory.makeTeam()
+        namespace = self.getNamespace(owner)
+        branch_name = self.factory.getUniqueString()
+        registrant = owner.teamowner
+        branch = namespace.createBranch(
+            BranchType.HOSTED, branch_name, registrant)
+        self.assertEqual([owner], list(branch.subscribers))
 
     def test_getBranches_no_branches(self):
         # getBranches on an IBranchNamespace returns a result set of branches
@@ -1451,8 +1475,8 @@ class NoPolicies(BranchVisibilityPolicyTestCase):
 
 
 class PolicySimple(BranchVisibilityPolicyTestCase):
-    """Test the visibility policy where the base visibility rule is PUBLIC with
-    one team specified to have PRIVATE branches.
+    """Test the visibility policy where the base visibility rule is PUBLIC
+    with one team specified to have PRIVATE branches.
     """
 
     def setUp(self):
@@ -1496,8 +1520,8 @@ class PolicySimple(BranchVisibilityPolicyTestCase):
 
 
 class PolicyPrivateOnly(BranchVisibilityPolicyTestCase):
-    """Test the visibility policy where the base visibility rule is PUBLIC with
-    one team specified to have the PRIVATE_ONLY rule.
+    """Test the visibility policy where the base visibility rule is PUBLIC
+    with one team specified to have the PRIVATE_ONLY rule.
 
     PRIVATE_ONLY only stops the user from changing the branch from private to
     public and for branch creation behaves in the same maner as the PRIVATE

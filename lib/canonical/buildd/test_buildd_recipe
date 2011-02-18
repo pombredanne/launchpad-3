@@ -5,25 +5,43 @@
 # This is a script to do end-to-end testing of the buildd with a bzr-builder
 # recipe, without involving the BuilderBehaviour.
 
+country_code = 'us'
+apt_cacher_ng_host = 'stumpy'
+distroseries_name = 'maverick'
+recipe_text = """# bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
+http://bazaar.launchpad.dev/~ppa-user/+junk/wakeonlan"""
+
+def deb_line(host, suites):
+    prefix = 'deb http://'
+    if apt_cacher_ng_host != None:
+        prefix += '%s:3142/' % apt_cacher_ng_host
+    return '%s%s %s %s' % (prefix, host, distroseries_name, suites)
+
+import sys
 from xmlrpclib import ServerProxy
+
 proxy = ServerProxy('http://localhost:8221/rpc')
 print proxy.echo('Hello World')
 print proxy.info()
-print proxy.status()
-recipe_text = """# bzr-builder format 0.2 deb-version something
-http://bazaar.launchpad.net/~james-w/bzr-builder/trunk/
-merge packaging http://bazaar.launchpad.net/~james-w/bzr-builder/packaging"""
+status = proxy.status()
+print status
+if status[0] != 'BuilderStatus.IDLE':
+    print "Aborting due to non-IDLE builder."
+    sys.exit(1)
 print proxy.build(
-    '1-2', 'sourcepackagerecipe', 'f2afc3c0507dffba181638d70ae55ac675679460',
-    {}, {'author_name': 'Steve',
+    '1-2', 'sourcepackagerecipe', '1ef177161c3cb073e66bf1550931c6fbaa0a94b0',
+    {}, {'author_name': u'Steve\u1234',
          'author_email': 'stevea@example.org',
-         'package_name': 'bzr-builder',
-         'suite': 'lucid',
+         'suite': distroseries_name,
+         'distroseries_name': distroseries_name,
          'ogrecomponent': 'universe',
          'archive_purpose': 'puppies',
          'recipe_text': recipe_text,
          'archives': [
-            'deb http://nz.archive.ubuntu.com/ubuntu lucid main universe']})
+            deb_line('%s.archive.ubuntu.com/ubuntu' % country_code,
+                     'main universe'),
+            deb_line('ppa.launchpad.net/launchpad/bzr-builder-dev/ubuntu',
+                     'main'),]})
 #status = proxy.status()
 #for filename, sha1 in status[3].iteritems():
 #    print filename

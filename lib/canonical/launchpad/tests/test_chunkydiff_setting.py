@@ -9,7 +9,9 @@ this option turned off to rocketfuel.
 __metaclass__ = type
 
 import unittest
+
 from canonical.config import config
+
 
 class TestChunkydiffSetting(unittest.TestCase):
 

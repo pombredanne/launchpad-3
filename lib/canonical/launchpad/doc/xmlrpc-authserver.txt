@@ -3,8 +3,10 @@
 The AuthServer interface is available on the authserver attribute
 of our private XMLRPC instance.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IAuthServerApplication, IPrivateApplication)
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     IAuthServerApplication,
+    ...     IPrivateApplication,
+    ...     )
     >>> from canonical.launchpad.webapp.testing import verifyObject
 
     >>> private_root = getUtility(IPrivateApplication)

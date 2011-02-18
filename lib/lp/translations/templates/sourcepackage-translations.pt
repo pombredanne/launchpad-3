@@ -39,10 +39,10 @@
               <a tal:attributes="href context/menu:navigation/download/url">
                 download a full tarball</a> with translations.
             </p>
-            <p tal:condition="context/required:launchpad.Admin"
+            <p tal:condition="context/distribution_sourcepackage/required:launchpad.TranslationsAdmin"
                id="custom-language-codes">
               If necessary, you may
-              <a tal:attributes="href context/distribution_sourcepackage/fmt:url/+custom-language-codes"
+              <a tal:attributes="href context/distribution_sourcepackage/fmt:url:translations/+custom-language-codes"
                  class="edit sprite">
                 define custom language codes
               </a>

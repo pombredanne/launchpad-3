@@ -16,20 +16,21 @@ __all__ = [
 import sys
 import traceback
 
-from zope.interface import implements
-from zope.exceptions.exceptionformatter import format_exception
-from zope.component import getUtility
-from zope.app.exception.interfaces import ISystemErrorView
-
 from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.exception.interfaces import ISystemErrorView
+from zope.component import getUtility
+from zope.exceptions.exceptionformatter import format_exception
+from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 import canonical.launchpad.layers
-from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.adapter import (
-    clear_request_started, set_request_started)
+    clear_request_started,
+    set_request_started,
+    )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.services.propertycache import cachedproperty
 
 
 class SystemErrorView(LaunchpadView):
@@ -114,8 +115,9 @@ class SystemErrorView(LaunchpadView):
     def inside_div(self, html):
         """Returns the given HTML inside a div of an appropriate class."""
 
-        return ('<div class="highlighted" '
-                'style="font-family: monospace; font-size: smaller;">'
+        return ('<div class="highlight" style="'
+                "font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;"
+                ' font-size: smaller;">'
                 '%s'
                 '</div>') % html
 

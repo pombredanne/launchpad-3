@@ -12,8 +12,9 @@ records.
 
 Auxiliary functions exposed for testing purposes:
 
- * get_components_for_building: return the corresponding component
-       dependencies for a build, this result is known as 'ogre_components';
+ * get_components_for_context: return the corresponding component
+       dependencies for a component and pocket, this result is known as
+       'ogre_components';
  * get_primary_current_component: return the component name where the
        building source is published in the primary archive.
 
@@ -30,7 +31,8 @@ __all__ = [
     'component_dependencies',
     'default_component_dependency_name',
     'default_pocket_dependency',
-    'get_components_for_building',
+    'expand_dependencies',
+    'get_components_for_context',
     'get_primary_current_component',
     'get_sources_list_for_building',
     'pocket_dependencies',
@@ -39,11 +41,19 @@ __all__ = [
 import logging
 import traceback
 
-from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket, pocketsuffix)
-from lp.soyuz.interfaces.archive import ArchivePurpose, ALLOW_RELEASE_BUILDS
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lazr.uri import URI
+
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket,
+    pocketsuffix,
+    )
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.archive import (
+    ALLOW_RELEASE_BUILDS,
+    )
 
 
 component_dependencies = {
@@ -86,19 +96,20 @@ default_pocket_dependency = PackagePublishingPocket.UPDATES
 default_component_dependency_name = 'multiverse'
 
 
-def get_components_for_building(build):
+def get_components_for_context(component, pocket):
     """Return the components allowed to be used in the build context.
 
-    :param build: a context `IBuild`.
+    :param component: the context `IComponent`.
+    :param pocket: the context `IPocket`.
     :return: a list of component names.
     """
     # BACKPORTS should be able to fetch build dependencies from any
     # component in order to cope with component changes occurring
-    # accross distroseries. See bug #198936 for further information.
-    if build.pocket == PackagePublishingPocket.BACKPORTS:
+    # across distroseries. See bug #198936 for further information.
+    if pocket == PackagePublishingPocket.BACKPORTS:
         return component_dependencies['multiverse']
 
-    return component_dependencies[build.current_component.name]
+    return component_dependencies[component.name]
 
 
 def get_primary_current_component(archive, distroseries, sourcepackagename):
@@ -111,12 +122,58 @@ def get_primary_current_component(archive, distroseries, sourcepackagename):
         name=sourcepackagename,
         distroseries=distroseries, exact_match=True)
 
-    # XXX cprov 20080923 bug=246200: This count should be replaced
-    # by bool() (__non_zero__) when storm implementation gets fixed.
-    if ancestries.count() > 0:
+    try:
         return ancestries[0].component.name
+    except IndexError:
+        return 'universe'
 
-    return 'universe'
+
+def expand_dependencies(archive, distro_series, pocket, component,
+                        source_package_name):
+    """Return the set of dependency archives, pockets and components.
+
+    :param archive: the context `IArchive`.
+    :param distro_series: the context `IDistroSeries`.
+    :param pocket: the context `PackagePublishingPocket`.
+    :param component: the context `IComponent`.
+    :param source_package_name: A source package name (as text)
+    :return: a list of (archive, pocket, [component]), representing the
+        dependencies defined by the given build context.
+    """
+    deps = []
+
+    # Add implicit self-dependency for non-primary contexts.
+    if archive.purpose in ALLOW_RELEASE_BUILDS:
+        deps.append((
+            archive, PackagePublishingPocket.RELEASE,
+            get_components_for_context(component, pocket)))
+
+    primary_component = get_primary_current_component(
+        archive, distro_series, source_package_name)
+    # Consider user-selected archive dependencies.
+    for archive_dependency in archive.dependencies:
+        # When the dependency component is undefined, we should use
+        # the component where the source is published in the primary
+        # archive.
+        if archive_dependency.component is None:
+            components = component_dependencies[primary_component]
+        else:
+            components = component_dependencies[
+                archive_dependency.component.name]
+        # Follow pocket dependencies.
+        for pocket in pocket_dependencies[archive_dependency.pocket]:
+            deps.append(
+                (archive_dependency.dependency, pocket, components))
+
+    # Consider primary archive dependency override. Add the default
+    # primary archive dependencies if it's not present.
+    if archive.getArchiveDependency(
+        archive.distribution.main_archive) is None:
+        primary_dependencies = _get_default_primary_dependencies(
+            archive, component, pocket)
+        deps.extend(primary_dependencies)
+
+    return deps
 
 
 def get_sources_list_for_building(build, distroarchseries, sourcepackagename):
@@ -133,17 +190,13 @@ def get_sources_list_for_building(build, distroarchseries, sourcepackagename):
     :param sourcepackagename: A source package name (as text)
     :return: a deb sources_list entries (lines).
     """
-    deps = []
-    sources_list_lines = []
+    deps = expand_dependencies(
+        build.archive, distroarchseries.distroseries, build.pocket,
+        build.current_component, sourcepackagename)
+    sources_list_lines = \
+        _get_sources_list_for_dependencies(deps, distroarchseries)
 
-    # Add implicit self-dependency for non-primary contexts.
-    if build.archive.purpose in ALLOW_RELEASE_BUILDS:
-        self_dep = [(
-            build.archive, PackagePublishingPocket.RELEASE,
-            get_components_for_building(build))]
-        sources_list_lines = _get_sources_list_for_dependencies(
-            self_dep, distroarchseries)
-
+    external_dep_lines = []
     # Append external sources_list lines for this archive if it's
     # specified in the configuration.
     try:
@@ -152,7 +205,7 @@ def get_sources_list_for_building(build, distroarchseries, sourcepackagename):
             for archive_dep in dependencies.splitlines():
                 line = archive_dep % (
                     {'series': distroarchseries.distroseries.name})
-                sources_list_lines.append(line)
+                external_dep_lines.append(line)
     except StandardError, e:
         # Malformed external dependencies can incapacitate the build farm
         # manager (lp:516169). That's obviously not acceptable.
@@ -166,34 +219,13 @@ def get_sources_list_for_building(build, distroarchseries, sourcepackagename):
         if build.archive.enabled == True:
             build.archive.disable()
 
-    # Consider user-selected archive dependencies.
-    primary_component = get_primary_current_component(
-        build.archive, build.distro_series, sourcepackagename)
-    for archive_dependency in build.archive.dependencies:
-        # When the dependency component is undefined, we should use
-        # the component where the source is published in the primary
-        # archive.
-        if archive_dependency.component is None:
-            components = component_dependencies[primary_component]
-        else:
-            components = component_dependencies[
-                archive_dependency.component.name]
-        # Follow pocket dependencies.
-        for pocket in pocket_dependencies[archive_dependency.pocket]:
-            deps.append(
-                (archive_dependency.dependency, pocket, components)
-                )
+    # For an unknown reason (perhaps because OEM has archives with
+    # binaries that need to override primary binaries of the same
+    # version), we want the external dependency lines to show up second:
+    # after the archive itself, but before any other dependencies.
+    return [sources_list_lines[0]] + external_dep_lines + \
+           sources_list_lines[1:]
 
-    # Consider primary archive dependency override. Add the default
-    # primary archive dependencies if it's not present.
-    if build.archive.getArchiveDependency(
-        build.archive.distribution.main_archive) is None:
-        primary_dependencies = _get_default_primary_dependencies(build)
-        deps.extend(primary_dependencies)
-
-    sources_list_lines.extend(
-        _get_sources_list_for_dependencies(deps, distroarchseries))
-    return sources_list_lines
 
 def _has_published_binaries(archive, distroarchseries, pocket):
     """Whether or not the archive dependency has published binaries."""
@@ -252,27 +284,29 @@ def _get_sources_list_for_dependencies(dependencies, distroarchseries):
     return sources_list_lines
 
 
-def _get_default_primary_dependencies(build):
-    """Return the default primary dependencies for a given build.
+def _get_default_primary_dependencies(archive, component, pocket):
+    """Return the default primary dependencies for a given context.
 
-    :param build: the `IBuild` context;
+    :param archive: the context `IArchive`.
+    :param component: the context `IComponent`.
+    :param pocket: the context `PackagePublishingPocket`.
 
     :return: a list containing the default dependencies to primary
         archive.
     """
-    if build.archive.purpose in ALLOW_RELEASE_BUILDS:
+    if archive.purpose in ALLOW_RELEASE_BUILDS:
         primary_pockets = pocket_dependencies[
             default_pocket_dependency]
         primary_components = component_dependencies[
             default_component_dependency_name]
     else:
-        primary_pockets = pocket_dependencies[build.pocket]
-        primary_components = get_components_for_building(build)
+        primary_pockets = pocket_dependencies[pocket]
+        primary_components = get_components_for_context(component, pocket)
 
     primary_dependencies = []
     for pocket in primary_pockets:
         primary_dependencies.append(
-            (build.distro_series.distribution.main_archive, pocket,
+            (archive.distribution.main_archive, pocket,
              primary_components))
 
     return primary_dependencies

@@ -2,6 +2,11 @@ When a bug is targeted to the current development series, the general
 product task is no longer editable. Instead the status is tracked
 in the series task.
 
+    >>> admin_browser.open(
+    ...     "http://launchpad.dev/products/firefox/+bug/4/+nominate")
+    >>> admin_browser.getControl("Trunk").selected = True
+    >>> admin_browser.getControl("Target").click()
+
     >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/4')
     >>> firefox_edit_url = (
     ...     'http://bugs.launchpad.dev/firefox/+bug/4/+editstatus')
@@ -25,7 +30,11 @@ for Firefox:
 
     >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
     ...     print tag.renderContents()
-    Successfully changed the bug supervisor to...No Privileges Person...
+
+    >>> print extract_text(find_tag_by_id(admin_browser.contents,
+    ...     'bug-supervisor'))
+    Bug supervisor:
+    No Privileges Person
 
     >>> user_browser.reload()
 

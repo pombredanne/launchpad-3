@@ -18,13 +18,15 @@ __all__ = [
     'IHasBranchTarget',
     ]
 
-from zope.interface import Attribute, Interface
+from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.security.interfaces import Unauthorized
 
-from lp.code.enums import BranchType
 from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from lazr.restful.fields import Reference
+from lp.code.enums import BranchType
 
 
 def check_default_stacked_on(branch):
@@ -60,12 +62,14 @@ class IHasBranchTarget(Interface):
     target = Attribute("The branch target, as an `IBranchTarget`.")
 
 
-class IBranchTarget(IPrimaryContext):
+class IBranchTarget(Interface):
     """A target of branches.
 
     A product contains branches, a source package on a distroseries contains
     branches, and a person contains 'junk' branches.
     """
+
+    context = Attribute('The primary context.')
 
     name = Attribute("The name of the target.")
 
@@ -137,4 +141,34 @@ class IBranchTarget(IPrimaryContext):
             use registrant.
         :returns: an `ICodeImport`.
         :raises AssertionError: if supports_code_imports is False.
+        """
+
+    def getRelatedSeriesBranchInfo(parent_branch, limit_results=None):
+        """Find development branch info related to this parent branch.
+
+        The result is a list of tuples:
+            (branch, product_series)
+        where:
+            branch: the related branch.
+            product_series: the product series associated with the branch.
+
+        The development focus is first in the list.
+
+        :param parent_branch: `IBranch` we are finding related branches for.
+        :param limit_results: if not None, limit the number of results to the
+            specified value.
+        """
+
+    def getRelatedPackageBranchInfo(parent_branch, limit_results=None):
+        """Find package branch info related to this parent branch.
+
+        The result is a list of tuples:
+            (branch, distro_series)
+        where:
+            branch: the related branch.
+            distro_series: the distro series associated with the branch.
+
+        :param parent_branch: `IBranch` we are finding related branches for.
+        :param limit_results: if not None, limit the number of results to the
+            specified value.
         """

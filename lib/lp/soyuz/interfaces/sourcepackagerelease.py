@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -14,8 +14,14 @@ __all__ = [
 
 
 from lazr.restful.fields import Reference
-from zope.schema import TextLine
-from zope.interface import Interface, Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    List,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 
@@ -92,11 +98,20 @@ class ISourcePackageRelease(Interface):
     files = Attribute("IBinaryPackageFile entries for this "
         "sourcepackagerelease")
     sourcepackagename = Attribute("SourcePackageName table reference")
+    sourcepackagenameID = Attribute("SourcePackageName id.")
     upload_distroseries = Attribute("The distroseries in which this package "
         "was first uploaded in Launchpad")
     publishings = Attribute("MultipleJoin on SourcepackagePublishing")
 
+    user_defined_fields = List(
+        title=_("Sequence of user-defined fields as key-value pairs."))
 
+    homepage = TextLine(
+        title=_("Homepage"),
+        description=_(
+        "Upstream project homepage as set in the package. This URL is not "
+        "sanitized."),
+        required=False)
 
     # read-only properties
     name = Attribute('The sourcepackagename for this release, as text')
@@ -137,6 +152,8 @@ class ISourcePackageRelease(Interface):
         "The `PackageUpload` record corresponding to original upload of "
         "this source package release. It's 'None' if it is a source "
         "imported by Gina.")
+    uploader = Attribute(
+        "The user who uploaded the package.")
 
     # Really ISourcePackageRecipeBuild -- see _schema_circular_imports.
     source_package_recipe_build = Reference(
@@ -178,13 +195,13 @@ class ISourcePackageRelease(Interface):
         argument remains untouched.
         """
 
-    def attachTranslationFiles(tarball_alias, is_published, importer=None):
+    def attachTranslationFiles(tarball_alias, by_maintainer, importer=None):
         """Attach a tarball with translations to be imported into Rosetta.
 
         :tarball_alias: is a Librarian alias that references to a tarball with
             translations.
-        :is_published: indicates if the imported files are already published by
-            upstream.
+        :by_maintainer: indicates if the imported files where uploaded by
+            the maintainer of the project or package.
         :importer: is the person that did the import.
 
         raise DownloadFailed if we are not able to fetch the file from

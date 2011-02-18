@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The view classes for handling branch visibility policies."""
@@ -8,24 +8,43 @@ __metaclass__ = type
 __all__ = [
     'AddBranchVisibilityTeamPolicyView',
     'RemoveBranchVisibilityTeamPolicyView',
+    'BranchVisibilityPolicyMixin',
     'BranchVisibilityPolicyView',
     ]
 
 from zope.app.form import CustomWidgetFactory
 from zope.formlib import form
-from zope.schema import Choice, List
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
-
-from canonical.cachedproperty import cachedproperty
+from zope.schema import (
+    Choice,
+    List,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
 from canonical.launchpad import _
-from lp.code.enums import BranchVisibilityRule, TeamBranchVisibilityRule
-from lp.code.interfaces.branchvisibilitypolicy import (
-    IBranchVisibilityTeamPolicy)
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
-from canonical.widgets.itemswidgets import (
-    LabeledMultiCheckBoxWidget, LaunchpadRadioWidgetWithDescription)
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
+from lp.app.widgets.itemswidgets import (
+    LabeledMultiCheckBoxWidget,
+    LaunchpadRadioWidgetWithDescription,
+    )
+from lp.code.enums import (
+    BranchVisibilityRule,
+    TeamBranchVisibilityRule,
+    )
+from lp.code.interfaces.branchvisibilitypolicy import (
+    IBranchVisibilityTeamPolicy,
+    )
+from lp.services.propertycache import cachedproperty
 
 
 class BaseBranchVisibilityTeamPolicyView(LaunchpadFormView):
@@ -39,7 +58,7 @@ class BaseBranchVisibilityTeamPolicyView(LaunchpadFormView):
 
     @property
     def next_url(self):
-        return canonical_url(self.context) + '/+branchvisibility'
+        return canonical_url(self.context, view_name='+branchvisibility')
 
     cancel_url = next_url
 
@@ -139,21 +158,30 @@ class RemoveBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
             self.context.removeTeamFromBranchVisibilityPolicy(item.team)
 
 
-class BranchVisibilityPolicyView(LaunchpadView):
+class BranchVisibilityPolicyMixin:
+    """Mixin class providing visibility rules."""
+    @property
+    def base_visibility_rule(self):
+        return self.context.getBaseBranchVisibilityRule()
+
+    @property
+    def team_policies(self):
+        """The policy items that have a valid team."""
+        return [item for item in self.items if item.team is not None]
+
+    @cachedproperty
+    def items(self):
+        return self.context.getBranchVisibilityTeamPolicies()
+
+
+class BranchVisibilityPolicyView(LaunchpadView,
+                                 BranchVisibilityPolicyMixin):
     """Simple view for displaying branch visibility policies."""
 
     @property
     def page_title(self):
         name = self.context.displayname
         return 'Set branch visibility policy for %s' % name
-
-    @cachedproperty
-    def items(self):
-        return self.context.getBranchVisibilityTeamPolicies()
-
-    @property
-    def base_visibility_rule(self):
-        return self.context.getBaseBranchVisibilityRule()
 
     @property
     def can_remove_items(self):
@@ -162,8 +190,3 @@ class BranchVisibilityPolicyView(LaunchpadView):
         """
         return (len(self.items) > 0 and
                 not self.context.isUsingInheritedBranchVisibilityPolicy())
-
-    @property
-    def team_policies(self):
-        """The policy items that have a valid team."""
-        return [item for item in self.items if item.team is not None]

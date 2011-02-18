@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0702
@@ -7,21 +7,32 @@
 
 __metaclass__ = type
 
-import unittest
+from testtools.deferredruntest import (
+    AsynchronousDeferredRunTest,
+    )
 
-from twisted.trial.unittest import TestCase
-
-from lp.codehosting.vfs.branchfsclient import (
-    BranchFileSystemClient, NotInCache)
-from lp.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from lp.code.interfaces.codehosting import BRANCH_TRANSPORT
-from lp.testing import FakeTime
+from lp.codehosting.inmemory import (
+    InMemoryFrontend,
+    XMLRPCWrapper,
+    )
+from lp.codehosting.vfs.branchfsclient import (
+    BranchFileSystemClient,
+    NotInCache,
+    )
+from lp.testing import (
+    FakeTime,
+    TestCase,
+    )
 
 
 class TestBranchFileSystemClient(TestCase):
     """Tests for `BranchFileSystemClient`."""
 
+    run_tests_with = AsynchronousDeferredRunTest
+
     def setUp(self):
+        super(TestBranchFileSystemClient, self).setUp()
         frontend = InMemoryFrontend()
         self.factory = frontend.getLaunchpadObjectFactory()
         self.user = self.factory.makePerson()
@@ -245,8 +256,3 @@ class TestBranchFileSystemClient(TestCase):
         client.translatePath('/' + branch1.unique_name + '/different')
         self.assertEqual(
             [branch1.unique_name, branch2.unique_name], seen_branches)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

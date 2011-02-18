@@ -14,10 +14,10 @@ __metaclass__ = type
 import _pythonpath
 
 from distutils.version import LooseVersion
-import sys
 import os.path
 from optparse import OptionParser
-import popen2
+import subprocess
+import sys
 from tempfile import NamedTemporaryFile
 from textwrap import dedent
 import time
@@ -314,23 +314,20 @@ def setup(con, configuration=DEFAULT_CONFIG):
             """
 
         log.debug('Installing tsearch2')
-        cmd = 'psql -f - -d %s' % lp.dbname
+        cmd = 'psql -f - -d %s' % lp.get_dbname()
         if lp.dbhost:
             cmd += ' -h %s' % lp.dbhost
         if options.dbuser:
             cmd += ' -U %s' % options.dbuser
-        p = popen2.Popen4(cmd)
-        c = p.tochild
-        print >> c, "SET client_min_messages=ERROR;"
-        print >> c, "CREATE SCHEMA ts2;"
-        print >> c, open(tsearch2_sql_path).read().replace(
-                'public;','ts2, public;'
-                )
-        p.tochild.close()
-        rv = p.wait()
-        if rv != 0:
+        p = subprocess.Popen(
+            cmd.split(' '), stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        out, err = p.communicate(
+            "SET client_min_messages=ERROR; CREATE SCHEMA ts2;"
+            + open(tsearch2_sql_path).read().replace('public;','ts2, public;'))
+        if p.returncode != 0:
             log.fatal('Error executing %s:', cmd)
-            log.debug(p.fromchild.read())
+            log.debug(out)
             sys.exit(rv)
 
     # Create ftq helper and its sibling _ftq.

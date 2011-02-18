@@ -15,142 +15,122 @@ __metaclass__ = type
 
 # Don't import stuff from this module. Import it from canonical.scripts
 __all__ = [
+    'DEBUG2',
+    'DEBUG3',
+    'DEBUG4',
+    'DEBUG5',
+    'DEBUG6',
+    'DEBUG7',
+    'DEBUG8',
+    'DEBUG9',
+    'LaunchpadFormatter',
     'log',
     'logger',
     'logger_options',
-    'BufferLogger',
-    'FakeLogger',
-    'QuietFakeLogger',
-    'DEBUG2', 'DEBUG3', 'DEBUG4', 'DEBUG5',
-    'DEBUG6', 'DEBUG7', 'DEBUG8', 'DEBUG9'
+    'OopsHandler',
     ]
 
 
+from cStringIO import StringIO
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import hashlib
 import logging
+from logging.handlers import WatchedFileHandler
+from optparse import OptionParser
+import os.path
 import re
 import sys
-import traceback
 import time
+from traceback import format_exception_only
 
-from optparse import OptionParser
-from cStringIO import StringIO
-from datetime import datetime, timedelta
 from pytz import utc
-
 from zope.component import getUtility
+from zope.exceptions.log import Formatter
 
 from canonical.base import base
 from canonical.config import config
-from canonical.librarian.interfaces import ILibrarianClient, UploadFailed
+from canonical.launchpad.webapp.errorlog import (
+    globalErrorUtility,
+    ScriptRequest,
+    )
+from canonical.librarian.interfaces import (
+    ILibrarianClient,
+    UploadFailed,
+    )
+from lp.services.log import loglevels
 
-# Custom log levels. logging.debug is 10.
-DEBUG2 = 9
-DEBUG3 = 8
-DEBUG4 = 7
-DEBUG5 = 6
-DEBUG6 = 5
-DEBUG7 = 4
-DEBUG8 = 3
-DEBUG9 = 2
-
-logging.addLevelName(DEBUG2, 'DEBUG2')
-logging.addLevelName(DEBUG3, 'DEBUG3')
-logging.addLevelName(DEBUG4, 'DEBUG4')
-logging.addLevelName(DEBUG5, 'DEBUG5')
-logging.addLevelName(DEBUG6, 'DEBUG6')
-logging.addLevelName(DEBUG7, 'DEBUG7')
-logging.addLevelName(DEBUG8, 'DEBUG8')
-logging.addLevelName(DEBUG9, 'DEBUG9')
-
-
-class FakeLogger:
-    """Emulates a proper logger, just printing everything out the given file.
-    """
-    def __init__(self, output_file=None):
-        """The default output_file is sys.stdout."""
-        self.output_file = output_file
-
-    def message(self, prefix, msg, *stuff, **kw):
-        # We handle the default output file here because sys.stdout
-        # might have been reassigned. Between now and when this object
-        # was instantiated.
-        if self.output_file is None:
-            output_file = sys.stdout
-        else:
-            output_file = self.output_file
-        print >> output_file, prefix, msg % stuff
-
-        if 'exc_info' in kw:
-            exception = traceback.format_exception(*sys.exc_info())
-            for thing in exception:
-                for line in thing.splitlines():
-                    self.log(line)
-
-    def log(self, *stuff, **kw):
-        self.message('log>', *stuff, **kw)
-
-    def warning(self, *stuff, **kw):
-        self.message('WARNING', *stuff, **kw)
-
-    warn = warning
-
-    def error(self, *stuff, **kw):
-        self.message('ERROR', *stuff, **kw)
-
-    exception = error
-
-    def critical(self, *stuff, **kw):
-        self.message('CRITICAL', *stuff, **kw)
-
-    fatal = critical
-
-    def info(self, *stuff, **kw):
-        self.message('INFO', *stuff, **kw)
-
-    def debug(self, *stuff, **kw):
-        self.message('DEBUG', *stuff, **kw)
+# Reexport our custom loglevels for old callsites. These callsites
+# should be importing the symbols from lp.services.log.loglevels
+DEBUG2 = loglevels.DEBUG2
+DEBUG3 = loglevels.DEBUG3
+DEBUG4 = loglevels.DEBUG4
+DEBUG5 = loglevels.DEBUG5
+DEBUG6 = loglevels.DEBUG6
+DEBUG7 = loglevels.DEBUG7
+DEBUG8 = loglevels.DEBUG8
+DEBUG9 = loglevels.DEBUG9
 
 
-class QuietFakeLogger(FakeLogger):
-    """Extra quiet FakeLogger.
+class OopsHandler(logging.Handler):
+    """Handler to log to the OOPS system."""
 
-    Does not print any message. Messages can be retrieved from
-    logger.output_file, which is a StringIO instance.
-    """
-    def __init__(self):
-        self.output_file = StringIO()
+    def __init__(self, script_name, level=logging.WARN):
+        logging.Handler.__init__(self, level)
+        # Context for OOPS reports.
+        self.request = ScriptRequest(
+            [('script_name', script_name), ('path', sys.argv[0])])
+        self.setFormatter(LaunchpadFormatter())
 
-
-class BufferLogger(FakeLogger):
-    """A logger that logs to a StringIO object."""
-    def __init__(self):
-        self.buffer = StringIO()
-
-    def message(self, prefix, msg, *stuff, **kw):
-        self.buffer.write('%s: %s\n' % (prefix, msg % stuff))
-
-        if 'exc_info' in kw:
-            exception = traceback.format_exception(*sys.exc_info())
-            for thing in exception:
-                for line in thing.splitlines():
-                    self.log(line)
+    def emit(self, record):
+        """Emit a record as an OOPS."""
+        try:
+            msg = record.getMessage()
+            # Warnings and less are informational OOPS reports.
+            informational = (record.levelno <= logging.WARN)
+            with globalErrorUtility.oopsMessage(msg):
+                globalErrorUtility._raising(
+                    sys.exc_info(), self.request, informational=informational)
+        except Exception:
+            self.handleError(record)
 
 
-class LibrarianFormatter(logging.Formatter):
+class LaunchpadFormatter(Formatter):
+    """logging.Formatter encoding our preferred output format."""
+
+    def __init__(self, fmt=None, datefmt=None):
+        if fmt is None:
+            if config.isTestRunner():
+                # Don't output timestamps in the test environment
+                fmt = '%(levelname)-7s %(message)s'
+            else:
+                fmt = '%(asctime)s %(levelname)-7s %(message)s'
+        if datefmt is None:
+            datefmt = "%Y-%m-%d %H:%M:%S"
+        logging.Formatter.__init__(self, fmt, datefmt)
+        self.converter = time.gmtime # Output should be UTC
+
+
+class LibrarianFormatter(LaunchpadFormatter):
     """A logging.Formatter that stores tracebacks in the Librarian and emits
     a URL rather than emitting the traceback directly.
 
     The traceback will be emitted as a fallback if the Librarian cannot be
     contacted.
+
+    XXX bug=641103 StuartBishop -- This class should die. Remove it and
+    replace with LaunchpadFormatter, fixing the test fallout.
     """
+
     def formatException(self, ei):
         """Format the exception and store it in the Librian.
 
         Returns the URL, or the formatted exception if the Librarian is
         not available.
         """
-        traceback = logging.Formatter.formatException(self, ei)
+        traceback = LaunchpadFormatter.formatException(self, ei)
         # Uncomment this line to stop exception storage in the librarian.
         # Useful for debugging tests.
         # return traceback
@@ -169,25 +149,22 @@ class LibrarianFormatter(logging.Formatter):
 
         expiry = datetime.now().replace(tzinfo=utc) + timedelta(days=90)
         try:
-            filename = base(
-                    long(hashlib.sha1(traceback).hexdigest(),16), 62
-                    ) + '.txt'
+            filename = base(long(
+                hashlib.sha1(traceback).hexdigest(), 16), 62) + '.txt'
             url = librarian.remoteAddFile(
                     filename, len(traceback), StringIO(traceback),
                     'text/plain;charset=%s' % sys.getdefaultencoding(),
-                    expires=expiry
-                    )
+                    expires=expiry)
             return ' -> %s (%s)' % (url, exception_string)
         except UploadFailed:
             return traceback
-        except:
+        except Exception:
             # Exceptions raised by the Formatter get swallowed, but we want
             # to know about them. Since we are already spitting out exception
             # information, we can stuff our own problems in there too.
             return '%s\n\nException raised in formatter:\n%s\n' % (
                     traceback,
-                    logging.Formatter.formatException(self, sys.exc_info())
-                    )
+                    LaunchpadFormatter.formatException(self, sys.exc_info()))
 
 
 def logger_options(parser, default=logging.INFO):
@@ -264,18 +241,52 @@ def logger_options(parser, default=logging.INFO):
         log._log = _logger(parser.values.loglevel, out_stream=sys.stderr)
 
     parser.add_option(
-            "-v", "--verbose", dest="loglevel", default=default,
-            action="callback", callback=dec_loglevel,
-            help="Increase verbosity. May be specified multiple times."
-            )
+        "-v", "--verbose", dest="loglevel", default=default,
+        action="callback", callback=dec_loglevel,
+        help="Increase stderr verbosity. May be specified multiple times.")
     parser.add_option(
-            "-q", "--quiet", action="callback", callback=inc_loglevel,
-            help="Decrease verbosity. May be specified multiple times."
-            )
+        "-q", "--quiet", action="callback", callback=inc_loglevel,
+        help="Decrease stderr verbosity. May be specified multiple times.")
+
+    debug_levels = ', '.join([
+        v for k, v in sorted(logging._levelNames.items(), reverse=True)
+            if isinstance(k, int)])
+
+    def log_file(option, opt_str, value, parser):
+        try:
+            level, path = value.split(':', 1)
+        except ValueError:
+            level, path = logging.INFO, value
+
+        if isinstance(level, int):
+            pass
+        elif level.upper() not in logging._levelNames:
+            parser.error(
+                "'%s' is not a valid logging level. Must be one of %s" % (
+                    level, debug_levels))
+        else:
+            level = logging._levelNames[level.upper()]
+
+        if not path:
+            parser.error("Path to log file not specified")
+
+        path = os.path.abspath(path)
+        try:
+            open(path, 'a')
+        except Exception:
+            parser.error("Unable to open log file %s" % path)
+
+        parser.values.log_file = path
+        parser.values.log_file_level = level
+
+        # Reset the global log.
+        log._log = _logger(parser.values.loglevel, out_stream=sys.stderr)
+
     parser.add_option(
-            "--log-file", action="store", type="string",
-            help="Send log to the given file, rather than stderr."
-            )
+        "--log-file", type="string", action="callback", callback=log_file,
+        metavar="LVL:FILE", default=None,
+        help="Send log messages to FILE. LVL is one of %s" % debug_levels)
+    parser.set_default('log_file_level', None)
 
     # Set the global log
     log._log = _logger(default, out_stream=sys.stderr)
@@ -304,12 +315,12 @@ def logger(options=None, name=None):
         logger_options(parser)
         options, args = parser.parse_args()
 
-    if options.log_file:
-        out_stream = open(options.log_file, 'a')
-    else:
-        out_stream = sys.stderr
+    log_file = getattr(options, 'log_file', None)
+    log_file_level = getattr(options, 'log_file_level', None)
 
-    return _logger(options.loglevel, out_stream=out_stream, name=name)
+    return _logger(
+        options.loglevel, out_stream=sys.stderr, name=name,
+        log_file=log_file, log_file_level=log_file_level)
 
 
 def reset_root_logger():
@@ -323,7 +334,9 @@ def reset_root_logger():
         root_logger.removeHandler(hdlr)
 
 
-def _logger(level, out_stream, name=None):
+def _logger(
+    level, out_stream, name=None,
+    log_file=None, log_file_level=logging.DEBUG):
     """Create the actual logger instance, logging at the given level
 
     if name is None, it will get args[0] without the extension (e.g. gina).
@@ -345,27 +358,34 @@ def _logger(level, out_stream, name=None):
     # Make it print output in a standard format, suitable for
     # both command line tools and cron jobs (command line tools often end
     # up being run from inside cron, so this is a good thing).
-    hdlr = logging.StreamHandler(strm=out_stream)
-    if config.instance_name == 'testrunner':
-        # Don't output timestamps in the test environment
-        fmt = '%(levelname)-7s %(message)s'
-    else:
-        fmt = '%(asctime)s %(levelname)-7s %(message)s'
-    formatter = LibrarianFormatter(
-        fmt=fmt,
-        datefmt="%Y-%m-%d %H:%M:%S",
-        )
-    formatter.converter = time.gmtime # Output should be UTC
+    hdlr = logging.StreamHandler(out_stream)
+    # We set the level on the handler rather than the logger, so other
+    # handlers with different levels can be added for things like debug
+    # logs.
+    root_logger.setLevel(0)
+    hdlr.setLevel(level)
+    formatter = LibrarianFormatter()
     hdlr.setFormatter(formatter)
     root_logger.addHandler(hdlr)
+
+    # Add an optional aditional log file.
+    if log_file is not None:
+        handler = WatchedFileHandler(log_file, encoding="UTF8")
+        handler.setFormatter(formatter)
+        handler.setLevel(log_file_level)
+        root_logger.addHandler(handler)
 
     # Create our logger
     logger = logging.getLogger(name)
 
-    logger.setLevel(level)
-
     # Set the global log
     log._log = logger
+
+    # Inform the user the extra log file is in operation.
+    if log_file is not None:
+        log.info(
+            "Logging %s and higher messages to %s" % (
+                logging.getLevelName(log_file_level), log_file))
 
     return logger
 
@@ -394,12 +414,10 @@ class _LogWrapper:
     def shortException(self, msg, *args):
         """Like Logger.exception, but does not print a traceback."""
         exctype, value = sys.exc_info()[:2]
-        report = ''.join(traceback.format_exception_only(exctype, value))
+        report = ''.join(format_exception_only(exctype, value))
         # _log.error interpolates msg, so we need to escape % chars
         msg += '\n' + report.rstrip('\n').replace('%', '%%')
         self._log.error(msg, *args)
 
 
 log = _LogWrapper(logging.getLogger())
-
-

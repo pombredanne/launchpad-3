@@ -7,6 +7,17 @@
   i18n:domain="launchpad"
 >
 
+<metal:block fill-slot="head_epilogue">
+  <style type="text/css">
+    .binary-build .indent {
+      padding-left: 2em;
+    }
+    div#edit-recipe_text, div#edit-description {
+      font-family: "UbuntuBeta Mono","Ubuntu Mono",monospace;
+      margin-top: -15px;
+    }
+  </style>
+</metal:block>
 
 <body>
 
@@ -28,17 +39,26 @@
   <div class="yui-g first">
     <div class="yui-u first">
       <div class="portlet">
-        <h2>Description</h2>
-        <tal:description replace="context/description" />
+        <h2 class="lazr-multiline-edit-header">Description</h2>
+        <tal:description replace="structure view/description_widget"/>
       </div>
     </div>
     <div class="yui-u">
       <div class="portlet">
         <h2>Recipe information</h2>
         <div class="two-column-list">
+          <dl id="build_daily">
+            <dt>Build schedule:
+              <a href="/+help/recipe-build-frequency.html" target="help" class="sprite maybe">
+                &nbsp;<span class="invisible-link">Tag help</span>
+              </a>
+            </dt>
+            <dd tal:content="structure view/daily_build_widget"/>
+          </dl>
+
           <dl id="owner">
             <dt>Owner:</dt>
-            <dd tal:content="structure context/owner/fmt:link" />
+            <dd tal:content="structure view/person_picker"/>
           </dl>
           <dl id="base-branch">
             <dt>Base branch:</dt>
@@ -48,6 +68,11 @@
             <dt>Debian version:</dt>
             <dd tal:content="context/deb_version_template" />
           </dl>
+          <dl id="daily_build_archive">
+            <dt>Daily build archive:</dt>
+            <dd tal:content="structure view/archive_picker"/>
+          </dl>
+
           <dl id="distros">
             <dt>Distribution series:</dt>
             <dd>
@@ -63,27 +88,37 @@
   </div>
   <div class="yui-g">
     <div class="portlet">
-      <h2>Build records</h2>
-        <table class="listing narrow-listing" style='margin-bottom: 1em;'>
+      <h2>Latest builds</h2>
+        <table class="listing" style='margin-bottom: 1em;'>
           <thead>
             <tr>
               <th>Status</th>
-              <th>Time</th>
+              <th>When complete</th>
               <th>Distribution series</th>
               <th>Archive</th>
             </tr>
           </thead>
           <tbody>
-            <tr tal:repeat="build view/builds">
+            <tal:recipe-builds repeat="build view/builds">
+              <tal:build-view define="buildview nocall:build/@@+index">
+            <tr>
               <td>
-                <a tal:content="build/@@+index/status"
+                <span tal:replace="structure build/image:icon" />
+                <a tal:content="buildview/status"
                    tal:attributes="href build/fmt:url"></a>
               </td>
               <td>
-                <tal:date replace="build/@@+index/date/fmt:displaydate" />
-                <tal:estimate condition="build/@@+index/estimate">
-                (estimated)
+                <tal:date replace="buildview/date/fmt:displaydate" />
+                <tal:estimate condition="buildview/estimate">
+                  (estimated)
                 </tal:estimate>
+
+                <tal:build-log define="file build/log"
+                               tal:condition="file">
+                  <a class="sprite download"
+                     tal:attributes="href build/log_url">buildlog</a>
+                  (<span tal:replace="file/content/filesize/fmt:bytes" />)
+                </tal:build-log>
               </td>
               <td>
                 <tal:distro
@@ -93,6 +128,37 @@
                 <tal:archive replace="structure build/archive/fmt:link"/>
               </td>
             </tr>
+            <tal:binary-builds repeat="binary buildview/binary_builds">
+              <tr tal:define="binaryview nocall:binary/@@+index"
+                  class="binary-build">
+                <td class="indent">
+                  <span tal:replace="structure binary/image:icon"/>
+                  <a tal:content="binary/source_package_release/title"
+                     tal:attributes="href binary/fmt:url">package - version</a>
+                </td>
+                <td>
+                  <tal:date replace="binaryview/date/fmt:displaydate" />
+                  <tal:estimate condition="binaryview/estimate">
+                    (estimated)
+                  </tal:estimate>
+
+                  <tal:build-log define="file binary/log"
+                                 tal:condition="file">
+                    <a class="sprite download"
+                       tal:attributes="href binary/log_url">buildlog</a>
+                    (<span tal:replace="file/content/filesize/fmt:bytes" />)
+                  </tal:build-log>
+                </td>
+                <td class="indent">
+                  <a class="sprite distribution"
+                     tal:define="archseries binary/distro_arch_series"
+                     tal:attributes="href archseries/fmt:url"
+                     tal:content="archseries/architecturetag">i386</a>
+                </td>
+              </tr>
+            </tal:binary-builds>
+            </tal:build-view>
+            </tal:recipe-builds>
           </tbody>
         </table>
         <p tal:condition="not: view/builds">
@@ -102,7 +168,7 @@
       </div>
       <div class='portlet'>
         <h2>Recipe contents</h2>
-        <pre tal:content="context/builder_recipe" />
+        <tal:widget replace="structure view/recipe_text_widget"/>
       </div>
     </div>
   </div>

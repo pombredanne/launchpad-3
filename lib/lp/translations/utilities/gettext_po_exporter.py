@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Export module for gettext's .po file format.
@@ -20,14 +20,15 @@ import os
 from zope.interface import implements
 
 from lp.translations.interfaces.translationexporter import (
-    ITranslationFormatExporter)
-from lp.translations.interfaces.translations import TranslationConstants
+    ITranslationFormatExporter,
+    )
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+    TranslationFileFormat,
+    )
+from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.utilities.translation_common_format import (
-    TranslationMessageData)
-from lp.translations.utilities.translation_export import (
-    ExportFileStorage)
+    TranslationMessageData,
+    )
 
 
 def strip_last_newline(text):
@@ -38,6 +39,7 @@ def strip_last_newline(text):
         return text[:-1]
     else:
         return text
+
 
 def comments_text_representation(translation_message):
     """Return text representation of the comments.
@@ -103,6 +105,7 @@ def wrap_text(text, prefix, wrap_width):
         it.
     :param wrap_width: The width where the text should be wrapped.
     """
+
     def local_escape(text):
         ret = text.replace(u'\\', u'\\\\')
         ret = ret.replace(ur'"', ur'\"')
@@ -268,6 +271,7 @@ class GettextPOExporterBase:
 
     format = None
     supported_source_formats = []
+    mime_type = 'application/x-po'
 
     # Does the format we're exporting allow messages to be distinguished
     # by just their msgid_plural?
@@ -294,92 +298,86 @@ class GettextPOExporterBase:
             translation_file.header.charset)
         return encoded_file_content
 
-    def exportTranslationFiles(self, translation_files, ignore_obsolete=False,
-                               force_utf8=False):
+    def exportTranslationFile(self, translation_file, storage,
+                              ignore_obsolete=False, force_utf8=False):
         """See `ITranslationFormatExporter`."""
-        storage = ExportFileStorage('application/x-po')
+        mime_type = 'application/x-po'
 
-        for translation_file in translation_files:
-            dirname = os.path.dirname(translation_file.path)
-            if dirname == '':
-                # There is no directory in the path. Use
-                # translation_domain as its directory.
-                dirname = translation_file.translation_domain
+        dirname = os.path.dirname(translation_file.path)
+        if dirname == '':
+            # There is no directory in the path. Use translation_domain
+            # as its directory.
+            dirname = translation_file.translation_domain
 
-            if translation_file.is_template:
-                file_extension = 'pot'
-                file_path = os.path.join(
-                    dirname, '%s.%s' % (
-                        translation_file.translation_domain,
-                        file_extension))
-            else:
-                file_extension = 'po'
-                file_path = os.path.join(
-                    dirname, '%s-%s.%s' % (
-                        translation_file.translation_domain,
-                        translation_file.language_code,
-                        file_extension))
+        if translation_file.is_template:
+            file_extension = 'pot'
+            file_path = os.path.join(
+                dirname, '%s.%s' % (
+                    translation_file.translation_domain,
+                    file_extension))
+        else:
+            file_extension = 'po'
+            file_path = os.path.join(
+                dirname, '%s-%s.%s' % (
+                    translation_file.translation_domain,
+                    translation_file.language_code,
+                    file_extension))
 
-            chunks = []
-            seen_keys = {}
+        chunks = []
+        seen_keys = {}
 
-            for message in translation_file.messages:
-                key = (message.context, message.msgid_singular)
-                if key in seen_keys:
-                    # Launchpad can deal with messages that are
-                    # identical to gettext, but differ in plural msgid.
-                    plural = message.msgid_plural
-                    previous_plural = seen_keys[key].msgid_plural
-
-                    if not self.msgid_plural_distinguishes_messages:
-                        # Suppress messages that are duplicative to
-                        # gettext so that gettext doesn't choke on the
-                        # resulting file.
-                        continue
-                else:
-                    seen_keys[key] = message
-
-                if (message.is_obsolete and
-                    (ignore_obsolete or len(message.translations) == 0)):
+        for message in translation_file.messages:
+            key = (message.context, message.msgid_singular)
+            if key in seen_keys:
+                # Launchpad can deal with messages that are
+                # identical to gettext, but differ in plural msgid.
+                if not self.msgid_plural_distinguishes_messages:
+                    # Suppress messages that are duplicative to
+                    # gettext so that gettext doesn't choke on the
+                    # resulting file.
                     continue
-                chunks.append(self.exportTranslationMessageData(message))
+            else:
+                seen_keys[key] = message
 
+            if (message.is_obsolete and
+                (ignore_obsolete or len(message.translations) == 0)):
+                continue
+            chunks.append(self.exportTranslationMessageData(message))
 
-            # Gettext .po files are supposed to end with a new line.
-            exported_file_content = u'\n\n'.join(chunks) + u'\n'
+        # Gettext .po files are supposed to end with a new line.
+        exported_file_content = u'\n\n'.join(chunks) + u'\n'
 
-            # Try to encode the file
-            if force_utf8:
-                translation_file.header.charset = 'UTF-8'
-            try:
-                encoded_file_content = self._encode_file_content(
-                    translation_file, exported_file_content)
-            except UnicodeEncodeError:
-                if translation_file.header.charset.upper() == 'UTF-8':
-                    # It's already UTF-8, we cannot do anything.
-                    raise
-                # This file content cannot be represented in the current
-                # encoding.
-                if translation_file.path:
-                    file_description = translation_file.path
-                elif translation_file.language_code:
-                    file_description = (
-                        "%s translation" % translation_file.language_code)
-                else:
-                    file_description = "template"
-                logging.info(
-                    "Can't represent %s as %s; using UTF-8 instead." % (
-                        file_description,
-                        translation_file.header.charset.upper()))
-                # Use UTF-8 instead.
-                translation_file.header.charset = 'UTF-8'
-                # This either succeeds or raises UnicodeError.
-                encoded_file_content = self._encode_file_content(
-                    translation_file, exported_file_content)
+        # Try to encode the file
+        if force_utf8:
+            translation_file.header.charset = 'UTF-8'
+        try:
+            encoded_file_content = self._encode_file_content(
+                translation_file, exported_file_content)
+        except UnicodeEncodeError:
+            if translation_file.header.charset.upper() == 'UTF-8':
+                # It's already UTF-8, we cannot do anything.
+                raise
+            # This file content cannot be represented in the current
+            # encoding.
+            if translation_file.path:
+                file_description = translation_file.path
+            elif translation_file.language_code:
+                file_description = (
+                    "%s translation" % translation_file.language_code)
+            else:
+                file_description = "template"
+            logging.info(
+                "Can't represent %s as %s; using UTF-8 instead." % (
+                    file_description,
+                    translation_file.header.charset.upper()))
+            # Use UTF-8 instead.
+            translation_file.header.charset = 'UTF-8'
+            # This either succeeds or raises UnicodeError.
+            encoded_file_content = self._encode_file_content(
+                translation_file, exported_file_content)
 
-            storage.addFile(file_path, file_extension, encoded_file_content)
-
-        return storage.export()
+        storage.addFile(
+            file_path, file_extension, encoded_file_content, mime_type)
 
     def acceptSingularClash(self, previous_message, current_message):
         """Handle clash of (singular) msgid and context with other message.

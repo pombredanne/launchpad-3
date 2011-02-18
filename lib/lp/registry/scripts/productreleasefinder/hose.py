@@ -15,7 +15,9 @@ __all__ = [
 from lp.registry.scripts.productreleasefinder import log
 from lp.registry.scripts.productreleasefinder.filter import Filter
 from lp.registry.scripts.productreleasefinder.walker import (
-    walk, combine_url)
+    combine_url,
+    walk,
+    )
 
 
 class Hose:

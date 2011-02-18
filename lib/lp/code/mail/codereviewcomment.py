@@ -11,12 +11,15 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
-
 from lp.code.enums import CodeReviewNotificationLevel
-from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.code.interfaces.branchmergeproposal import (
-    ICodeReviewCommentEmailJobSource)
-from lp.services.mail.sendmail import append_footer, format_address
+    ICodeReviewCommentEmailJobSource,
+    )
+from lp.code.mail.branchmergeproposal import BMPMailer
+from lp.services.mail.sendmail import (
+    append_footer,
+    format_address,
+    )
 
 
 def send(comment, event):

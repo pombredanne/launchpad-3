@@ -12,6 +12,7 @@ from xmlrpclib import Fault
 
 from twisted.python.util import mergeFunctionMetadata
 
+
 def return_fault(function):
     """Catch any Faults raised by 'function' and return them instead."""
 

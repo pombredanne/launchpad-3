@@ -8,7 +8,10 @@ __all__ = [
     'ITranslationsPerson',
     ]
 
-from zope.interface import Attribute, Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import Bool
 
 from canonical.launchpad import _
@@ -41,6 +44,9 @@ class ITranslationsPerson(Interface):
             `POFileTranslator` entries are ignored.
         :return: a Storm query result.
         """
+
+    def hasTranslated():
+        """Has this user done any translation work?"""
 
     def getReviewableTranslationFiles(no_older_than=None):
         """List `POFile`s this person should be able to review.

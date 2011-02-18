@@ -1,18 +1,22 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-import unittest
+from zope.interface.verify import verifyObject
 
-from canonical.testing import ZopelessDatabaseLayer
-from lp.translations.interfaces.potemplate import IHasTranslationTemplates
+from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.app.enums import ServiceUsage
+from lp.testing import TestCaseWithFactory
+from lp.translations.interfaces.hastranslationtemplates import (
+    IHasTranslationTemplates,
+    )
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
-from lp.testing import TestCaseWithFactory, verifyObject
+    TranslationFileFormat,
+    )
 
 
-class HasTranslationTemplatesTestMixin(TestCaseWithFactory):
+class HasTranslationTemplatesTestMixin:
     """Test behaviour of objects with translation templates."""
 
     layer = ZopelessDatabaseLayer
@@ -24,6 +28,11 @@ class HasTranslationTemplatesTestMixin(TestCaseWithFactory):
 
     def createTranslationTemplate(self, name, priority=0):
         """Attaches a template to appropriate container."""
+        raise NotImplementedError(
+            'This must be provided by an executable test.')
+
+    def createTranslationFile(self, name, priority=0):
+        """Attaches a pofile to appropriate container."""
         raise NotImplementedError(
             'This must be provided by an executable test.')
 
@@ -151,8 +160,15 @@ class HasTranslationTemplatesTestMixin(TestCaseWithFactory):
 
         # A product or distribution that doesn't use Launchpad for
         # translations has no current templates.
-        self.product_or_distro.official_rosetta = False
+        self.product_or_distro.translations_usage = ServiceUsage.EXTERNAL
         self.assertFalse(self.container.has_current_translation_templates)
+
+    def test_has_translation_files(self):
+        # has_translations_files should only return true if the object has
+        # pofiles.
+        self.assertFalse(self.container.has_translation_files)
+        self.createTranslationFile("one")
+        self.assertTrue(self.container.has_translation_files)
 
     def test_getTranslationTemplateFormats(self):
         # Check that translation_template_formats works properly.
@@ -191,7 +207,7 @@ class HasTranslationTemplatesTestMixin(TestCaseWithFactory):
 
 
 class TestProductSeriesHasTranslationTemplates(
-    HasTranslationTemplatesTestMixin):
+    HasTranslationTemplatesTestMixin, TestCaseWithFactory):
     """Test implementation of IHasTranslationTemplates on ProductSeries."""
 
     def createTranslationTemplate(self, name, priority=0):
@@ -200,15 +216,22 @@ class TestProductSeriesHasTranslationTemplates(
         potemplate.priority = priority
         return potemplate
 
+    def createTranslationFile(self, name, priority=0):
+        potemplate = self.createTranslationTemplate(name, priority)
+        pofile = self.factory.makePOFile(
+            language_code='es',
+            potemplate=potemplate)
+        return pofile
+
     def setUp(self):
         super(TestProductSeriesHasTranslationTemplates, self).setUp()
         self.container = self.factory.makeProductSeries()
         self.product_or_distro = self.container.product
-        self.product_or_distro.official_rosetta = True
+        self.product_or_distro.translations_usage = ServiceUsage.LAUNCHPAD
 
 
 class TestSourcePackageHasTranslationTemplates(
-    HasTranslationTemplatesTestMixin):
+    HasTranslationTemplatesTestMixin, TestCaseWithFactory):
     """Test implementation of IHasTranslationTemplates on ProductSeries."""
 
     def createTranslationTemplate(self, name, priority=0):
@@ -218,15 +241,22 @@ class TestSourcePackageHasTranslationTemplates(
         potemplate.priority = priority
         return potemplate
 
+    def createTranslationFile(self, name, priority=0):
+        potemplate = self.createTranslationTemplate(name, priority)
+        pofile = self.factory.makePOFile(
+            language_code='es',
+            potemplate=potemplate)
+        return pofile
+
     def setUp(self):
         super(TestSourcePackageHasTranslationTemplates, self).setUp()
         self.container = self.factory.makeSourcePackage()
         self.product_or_distro = self.container.distroseries.distribution
-        self.product_or_distro.official_rosetta = True
+        self.product_or_distro.translations_usage = ServiceUsage.LAUNCHPAD
 
 
 class TestDistroSeriesHasTranslationTemplates(
-    HasTranslationTemplatesTestMixin):
+    HasTranslationTemplatesTestMixin, TestCaseWithFactory):
     """Test implementation of IHasTranslationTemplates on ProductSeries."""
 
     def createTranslationTemplate(self, name, priority=0):
@@ -238,20 +268,15 @@ class TestDistroSeriesHasTranslationTemplates(
         potemplate.priority = priority
         return potemplate
 
+    def createTranslationFile(self, name, priority=0):
+        potemplate = self.createTranslationTemplate(name, priority)
+        pofile = self.factory.makePOFile(
+            language_code='es',
+            potemplate=potemplate)
+        return pofile
+
     def setUp(self):
         super(TestDistroSeriesHasTranslationTemplates, self).setUp()
         self.container = self.factory.makeDistroRelease()
         self.product_or_distro = self.container.distribution
-        self.product_or_distro.official_rosetta = True
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    loader = unittest.TestLoader()
-    suite.addTest(loader.loadTestsFromTestCase(
-        TestProductSeriesHasTranslationTemplates))
-    suite.addTest(loader.loadTestsFromTestCase(
-        TestSourcePackageHasTranslationTemplates))
-    suite.addTest(loader.loadTestsFromTestCase(
-        TestDistroSeriesHasTranslationTemplates))
-    return suite
+        self.product_or_distro.translations_usage = ServiceUsage.LAUNCHPAD
