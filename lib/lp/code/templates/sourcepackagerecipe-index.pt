@@ -12,6 +12,10 @@
     .binary-build .indent {
       padding-left: 2em;
     }
+    div#edit-recipe_text, div#edit-description {
+      font-family: "UbuntuBeta Mono","Ubuntu Mono",monospace;
+      margin-top: -15px;
+    }
   </style>
 </metal:block>
 
@@ -35,8 +39,8 @@
   <div class="yui-g first">
     <div class="yui-u first">
       <div class="portlet">
-        <h2>Description</h2>
-        <tal:description replace="context/description" />
+        <h2 class="lazr-multiline-edit-header">Description</h2>
+        <tal:description replace="structure view/description_widget"/>
       </div>
     </div>
     <div class="yui-u">
@@ -164,7 +168,7 @@
       </div>
       <div class='portlet'>
         <h2>Recipe contents</h2>
-        <pre tal:content="context/recipe_text" />
+        <tal:widget replace="structure view/recipe_text_widget"/>
       </div>
     </div>
   </div>

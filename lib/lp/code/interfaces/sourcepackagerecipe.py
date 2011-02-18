@@ -14,7 +14,8 @@ __all__ = [
     'ISourcePackageRecipeData',
     'ISourcePackageRecipeSource',
     'MINIMAL_RECIPE_TEXT',
-    'recipes_enabled',
+    'RECIPE_BETA_FLAG',
+    'RECIPE_ENABLED_FLAG',
     ]
 
 
@@ -25,13 +26,17 @@ from lazr.restful.declarations import (
     export_as_webservice_entry,
     export_write_operation,
     exported,
+    mutator_for,
+    operation_for_version,
     operation_parameters,
+    operation_removed_in_version,
     REQUEST_USER,
     )
 from lazr.restful.fields import (
     CollectionField,
     Reference,
     )
+from lazr.restful.interface import copy_field
 from zope.interface import (
     Attribute,
     Interface,
@@ -53,7 +58,6 @@ from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
-from lp.services import features
 from lp.services.fields import (
     Description,
     PersonChoice,
@@ -61,6 +65,9 @@ from lp.services.fields import (
     )
 from lp.soyuz.interfaces.archive import IArchive
 
+
+RECIPE_ENABLED_FLAG = u'code.recipes_enabled'
+RECIPE_BETA_FLAG = u'code.recipes.beta'
 
 MINIMAL_RECIPE_TEXT = dedent(u'''\
     # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
@@ -97,7 +104,7 @@ class ISourcePackageRecipeView(Interface):
             required=True, readonly=True,
             vocabulary='ValidPersonOrTeam'))
 
-    recipe_text = exported(Text())
+    recipe_text = exported(Text(readonly=True))
 
     def isOverQuota(requester, distroseries):
         """True if the recipe/requester/distroseries combo is >= quota.
@@ -135,7 +142,11 @@ class ISourcePackageRecipeView(Interface):
 class ISourcePackageRecipeEdit(Interface):
     """ISourcePackageRecipe methods that require launchpad.Edit permission."""
 
-    @operation_parameters(recipe_text=Text())
+    @mutator_for(ISourcePackageRecipeView['recipe_text'])
+    @operation_for_version("devel")
+    @operation_parameters(
+        recipe_text=copy_field(
+            ISourcePackageRecipeView['recipe_text']))
     @export_write_operation()
     def setRecipeText(recipe_text):
         """Set the text of the recipe."""
@@ -179,11 +190,12 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
             constraint=name_validator,
             description=_("The name of this recipe.")))
 
-    description = Description(
+    description = exported(Description(
         title=_('Description'), required=True,
-        description=_('A short description of the recipe.'))
+        description=_('A short description of the recipe.')))
 
-    date_last_modified = Datetime(required=True, readonly=True)
+    date_last_modified = exported(
+        Datetime(required=True, readonly=True))
 
     is_stale = Bool(title=_('Recipe is stale.'))
 
@@ -212,13 +224,3 @@ class ISourcePackageRecipeSource(Interface):
 
     def exists(owner, name):
         """Check to see if a recipe by the same name and owner exists."""
-
-
-def recipes_enabled():
-    """Return True if recipes are enabled."""
-    # Features win:
-    if features.getFeatureFlag(u'code.recipes_enabled'):
-        return True
-    if not config.build_from_branch.enabled:
-        return False
-    return True
