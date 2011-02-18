@@ -9,6 +9,15 @@ ALTER TABLE BranchRevision SET (fillfactor=100);
 ALTER TABLE MessageChunk SET (fillfactor=100);
 ALTER TABLE Message SET (fillfactor=100);
 ALTER TABLE BugActivity SET (fillfactor=100);
+ALTER TABLE LibraryFileContent SET (fillfactor=100);
+ALTER TABLE Karma SET (fillfactor=100);
+ALTER TABLE BugWatchActivity SET (fillfactor=100);
+ALTER TABLE Country SET (fillfactor=100);
+ALTER TABLE Continent SET (fillfactor=100);
+ALTER TABLE DatabaseCPUStats SET (fillfactor=100);
+ALTER TABLE DatabaseTableStats SET (fillfactor=100);
+ALTER TABLE POTranslation SET (fillfactor=100);
+
 
 -- Unwanted indexes
 DROP INDEX archive__commercial__idx;
