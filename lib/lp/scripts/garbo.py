@@ -81,6 +81,98 @@ from lp.translations.model.potranslation import POTranslation
 ONE_DAY_IN_SECONDS = 24*60*60
 
 
+class BulkPruner(TunableLoop):
+    """A abstract ITunableLoop base class for simple pruners."""
+
+    # The Storm database class for the table we are removing records
+    # from. Must be overridden.
+    target_table_class = None
+
+    # The column name in target_table we use as the integer key. May be
+    # overridden.
+    target_table_key = 'id'
+
+    # An SQL query returning a list of ids to remove from target_table.
+    # The query must return a single column named 'id' and should not
+    # contain duplicates. Must be overridden.
+    ids_to_prune_query = None
+
+    # See `TunableLoop`. May be overridden.
+    maximum_chunk_size = 10000
+
+    def __init__(self, log, abort_time=None):
+        super(BulkPruner, self).__init__(log, abort_time)
+        self.store = IMasterStore(self.target_table_class)
+        self.target_table_name = self.target_table_class.__storm_table__
+        self.store.execute(
+            "DROP TABLE IF EXISTS BulkPrunerId",
+            noresult=True)
+        self.store.execute(
+            "CREATE TEMPORARY TABLE BulkPrunerId (id integer)",
+            noresult=True)
+        result = self.store.execute(
+            "INSERT INTO BulkPrunerId (id) %s" % self.ids_to_prune_query)
+        self.log.debug(
+            "%d records to remove from %s",
+            result.rowcount, self.target_table_name)
+        self.store.execute(
+            "CREATE INDEX bulkprunerid_idx ON BulkPrunerId(id)",
+            noresult=True)
+        self._offset = 0
+
+    _num_removed = None
+
+    def isDone(self):
+        """See `TunableLoop`."""
+        return self._num_removed == 0
+
+    def __call__(self, chunk_size):
+        result = self.store.execute("""
+            DELETE FROM %s
+            USING (
+                SELECT id FROM BulkPrunerId
+                OFFSET %d LIMIT %d
+                ) AS LimitedBulkPrunerId
+            WHERE %s.%s = LimitedBulkPrunerId.id
+            """ % (
+                self.target_table_name, self._offset, chunk_size,
+                self.target_table_name, self.target_table_key))
+        self._num_removed = result.rowcount
+        transaction.commit()
+        self._offset += chunk_size
+
+
+class POTranslationPruner(BulkPruner):
+    """Remove unlinked POTranslation entries."""
+
+    target_table_class = POTranslation
+
+    ids_to_prune_query = """
+        SELECT POTranslation.id AS id FROM POTranslation
+        EXCEPT (
+            SELECT potranslation FROM POComment
+
+            UNION ALL SELECT msgstr0 FROM TranslationMessage
+                WHERE msgstr0 IS NOT NULL
+
+            UNION ALL SELECT msgstr1 FROM TranslationMessage
+                WHERE msgstr1 IS NOT NULL
+
+            UNION ALL SELECT msgstr2 FROM TranslationMessage
+                WHERE msgstr2 IS NOT NULL
+
+            UNION ALL SELECT msgstr3 FROM TranslationMessage
+                WHERE msgstr3 IS NOT NULL
+
+            UNION ALL SELECT msgstr4 FROM TranslationMessage
+                WHERE msgstr4 IS NOT NULL
+
+            UNION ALL SELECT msgstr5 FROM TranslationMessage
+                WHERE msgstr5 IS NOT NULL
+            )
+        """
+
+
 class OAuthNoncePruner(TunableLoop):
     """An ITunableLoop to prune old OAuthNonce records.
 
@@ -786,66 +878,6 @@ class SuggestiveTemplatesCacheUpdater(TunableLoop):
         utility.populateSuggestivePOTemplatesCache()
         transaction.commit()
         self.done = True
-
-
-class POTranslationPruner(TunableLoop):
-    """Remove unlinked POTranslation entries."""
-
-    maximum_chunk_size = 0
-
-    def __init__(self, log, abort_time=None):
-        super(POTranslationPruner, self).__init__(log, abort_time)
-        self.store = IMasterStore(POTranslation)
-        self.store.execute("DROP TABLE IF EXISTS GarbagePOTranslation")
-        self.store.execute("""
-            CREATE TEMPORARY TABLE GarbagePOTranslation AS
-            SELECT POTranslation.id AS potranslation FROM POTranslation
-            EXCEPT (
-                SELECT potranslation FROM POComment
-
-                UNION ALL SELECT msgstr0 FROM TranslationMessage
-                    WHERE msgstr0 IS NOT NULL
-
-                UNION ALL SELECT msgstr1 FROM TranslationMessage
-                    WHERE msgstr1 IS NOT NULL
-
-                UNION ALL SELECT msgstr2 FROM TranslationMessage
-                    WHERE msgstr2 IS NOT NULL
-
-                UNION ALL SELECT msgstr3 FROM TranslationMessage
-                    WHERE msgstr3 IS NOT NULL
-
-                UNION ALL SELECT msgstr4 FROM TranslationMessage
-                    WHERE msgstr4 IS NOT NULL
-
-                UNION ALL SELECT msgstr5 FROM TranslationMessage
-                    WHERE msgstr5 IS NOT NULL
-                )
-            """, noresult=True)
-        self.store.execute("""
-            CREATE INDEX garbagepotranslation__potranslation__idx
-            ON GarbagePOTranslation(potranslation)
-            """, noresult=True)
-        self.offset = 0
-
-    num_removed = None
-
-    def isDone(self):
-        """See `TunableLoop`."""
-        return self.num_removed == 0
-
-    def __call__(self, chunk_size):
-        result = self.store.execute("""
-            DELETE FROM POTranslation
-            USING (
-                SELECT potranslation FROM GarbagePOTranslation
-                OFFSET %d LIMIT %d
-                ) AS LimitedGarbagePOTranslation
-            WHERE POTranslation.id = LimitedGarbagePOTranslation.potranslation
-            """ % (self.offset, chunk_size))
-        self.num_removed = result.rowcount
-        transaction.commit()
-        self.offset += chunk_size
 
 
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
