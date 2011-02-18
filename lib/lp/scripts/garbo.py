@@ -107,9 +107,10 @@ class BulkPruner(TunableLoop):
         self.store.execute(
             "DROP TABLE IF EXISTS BulkPrunerId",
             noresult=True)
-        self.store.execute(
-            "CREATE TEMPORARY TABLE BulkPrunerId (id integer)",
-            noresult=True)
+        self.store.execute("""
+            CREATE TEMPORARY TABLE BulkPrunerId (id integer)
+            WITH (fillfactor=100)
+            """, noresult=True)
         result = self.store.execute(
             "INSERT INTO BulkPrunerId (id) %s" % self.ids_to_prune_query)
         self.log.debug(
@@ -131,6 +132,7 @@ class BulkPruner(TunableLoop):
             DELETE FROM %s
             USING (
                 SELECT id FROM BulkPrunerId
+                ORDER BY id
                 OFFSET %d LIMIT %d
                 ) AS LimitedBulkPrunerId
             WHERE %s.%s = LimitedBulkPrunerId.id
