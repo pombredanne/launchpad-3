@@ -2720,13 +2720,25 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return potemplate.newPOFile(language_code,
                                     create_sharing=create_sharing)
 
-    def makePOTMsgSet(self, potemplate, singular=None, plural=None,
-                      context=None, sequence=0):
+    def makePOTMsgSet(self, potemplate=None, singular=None, plural=None,
+                      context=None, sequence=0, commenttext=None,
+                      filereferences=None, sourcecomment=None,
+                      flagscomment=None):
         """Make a new `POTMsgSet` in the given template."""
+        if potemplate is None:
+            potemplate = self.makePOTemplate()
         if singular is None and plural is None:
             singular = self.getUniqueString()
         potmsgset = potemplate.createMessageSetFromText(
             singular, plural, context, sequence)
+        if commenttext is not None:
+            potmsgset.commenttext = commenttext
+        if filereferences is not None:
+            potmsgset.filereferences = filereferences
+        if sourcecomment is not None:
+            potmsgset.sourcecomment = sourcecomment
+        if flagscomment is not None:
+            potmsgset.flagscomment = flagscomment
         removeSecurityProxy(potmsgset).sync()
         return potmsgset
 

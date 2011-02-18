@@ -1861,3 +1861,32 @@ class TestFindTranslationMessage(TestCaseWithFactory):
         found = potmsgset.findTranslationMessage(
             pofile, translations=translations, prefer_shared=True)
         self.assertEqual(shared, found)
+
+
+class TestClone(TestCaseWithFactory):
+    """Test the clone() method."""
+
+    layer = ZopelessDatabaseLayer
+
+    def test_clone(self):
+        msgset = self.factory.makePOTMsgSet(
+            context=self.factory.getUniqueString('context'),
+            plural=self.factory.getUniqueString('plural'),
+            singular=self.factory.getUniqueString('singular'),
+            commenttext=self.factory.getUniqueString('comment'),
+            filereferences=self.factory.getUniqueString('filereferences'),
+            sourcecomment=self.factory.getUniqueString('sourcecomment'),
+            flagscomment=self.factory.getUniqueString('flagscomment'),
+        )
+        new_msgset = msgset.clone()
+        naked_msgset = removeSecurityProxy(msgset)
+        naked_new_msgset = removeSecurityProxy(new_msgset)
+        self.assertNotEqual(msgset.id, new_msgset.id)
+        self.assertEqual(msgset.context, new_msgset.context)
+        self.assertEqual(msgset.msgid_singular, new_msgset.msgid_singular)
+        self.assertEqual(msgset.msgid_plural, new_msgset.msgid_plural)
+        self.assertEqual(
+            msgset.commenttext, new_msgset.commenttext)
+        self.assertEqual(msgset.filereferences, new_msgset.filereferences)
+        self.assertEqual(msgset.sourcecomment, new_msgset.sourcecomment)
+        self.assertEqual(msgset.flagscomment, new_msgset.flagscomment)

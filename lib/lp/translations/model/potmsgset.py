@@ -148,6 +148,17 @@ class POTMsgSet(SQLBase):
 
     credits_message_ids = credits_message_info.keys()
 
+    def clone(self):
+        return POTMsgSet(
+            context=self.context,
+            msgid_singular=self.msgid_singular,
+            msgid_plural=self.msgid_plural,
+            commenttext=self.commenttext,
+            filereferences=self.filereferences,
+            sourcecomment=self.sourcecomment,
+            flagscomment=self.flagscomment,
+        )
+
     def _conflictsExistingSourceFileFormats(self, source_file_format=None):
         """Return whether `source_file_format` conflicts with existing ones
         for this `POTMsgSet`.
