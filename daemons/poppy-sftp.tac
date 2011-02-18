@@ -90,9 +90,6 @@ class FTPRealm:
     def requestAvatar(self, avatarId, mind, *interfaces):
         for iface in interfaces:
             if iface is ftp.IFTPShell:
-                # If you wanted to check credentials here you could, but
-                # we don't care about that in poppy.
-                print self.root
                 avatar = PoppyAnonymousShell(filepath.FilePath(self.root))
                 return ftp.IFTPShell, avatar, getattr(
                     avatar, 'logout', lambda: None)
