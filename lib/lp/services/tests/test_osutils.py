@@ -12,6 +12,7 @@ import tempfile
 import unittest
 
 from lp.services.osutils import (
+    ensure_directory_exists,
     remove_tree,
     until_no_eintr,
     )
@@ -44,6 +45,19 @@ class TestRemoveTree(TestCase):
         fd.write('data')
         fd.close()
         self.assertRaises(OSError, remove_tree, filename)
+
+
+class TestEnsureDirectoryExists(TestCase):
+    """Tests for 'ensure_directory_exists'."""
+
+    def test_directory_exists(self):
+        directory = self.makeTemporaryDirectory()
+        self.assertFalse(ensure_directory_exists(directory))
+
+    def test_directory_doesnt_exist(self):
+        directory = os.path.join(self.makeTemporaryDirectory(), 'foo/bar/baz')
+        self.assertTrue(ensure_directory_exists(directory))
+        self.assertTrue(os.path.isdir(directory))
 
 
 class TestUntilNoEINTR(TestCase):

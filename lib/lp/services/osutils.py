@@ -89,3 +89,17 @@ def until_no_eintr(retries, function, *args, **kwargs):
             raise
     else:
         raise
+
+
+def ensure_directory_exists(directory, mode=0777):
+    """Create 'directory' if it doesn't exist.
+
+    :return: True if the directory had to be created, False otherwise.
+    """
+    try:
+        os.makedirs(directory, mode=mode)
+    except OSError, e:
+        if e.errno == errno.EEXIST:
+            return False
+        raise
+    return True
