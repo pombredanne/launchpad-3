@@ -82,7 +82,26 @@ ONE_DAY_IN_SECONDS = 24*60*60
 
 
 class BulkPruner(TunableLoop):
-    """A abstract ITunableLoop base class for simple pruners."""
+    """A abstract ITunableLoop base class for simple pruners.
+
+    This is designed for the case where calculating the list of items
+    is expensive, and this list may be huge. For this use case, it
+    is impractical to calculate a batch of ids to remove each
+    iteration.
+
+    One approach is using a temporary table, populating it
+    with the set of items to remove at the start. However, this
+    approach can perform badly as you either need to prune the
+    temporary table as you go, or using OFFSET to skip to the next
+    batch to remove which gets slower as we progress further through
+    the list.
+
+    Instead, this implementation declares a CURSOR that can be used
+    across multiple transactions, allowing us to calculate the set
+    of items to remove just once and iterate over it (avoiding the
+    seek-to-batch issues with a temporary table and OFFSET), whilst
+    deleting batches of rows in separate transactions.
+    """
 
     # The Storm database class for the table we are removing records
     # from. Must be overridden.
@@ -102,24 +121,18 @@ class BulkPruner(TunableLoop):
 
     def __init__(self, log, abort_time=None):
         super(BulkPruner, self).__init__(log, abort_time)
+
         self.store = IMasterStore(self.target_table_class)
         self.target_table_name = self.target_table_class.__storm_table__
+
+        # Close all open cursors, in case a previous BulkPruner run was
+        # aborted.
+        self.store.execute("CLOSE ALL", noresult=True)
+
+        # Open the cursor.
         self.store.execute(
-            "DROP TABLE IF EXISTS BulkPrunerId",
-            noresult=True)
-        self.store.execute("""
-            CREATE TEMPORARY TABLE BulkPrunerId (id integer)
-            WITH (fillfactor=100)
-            """, noresult=True)
-        result = self.store.execute(
-            "INSERT INTO BulkPrunerId (id) %s" % self.ids_to_prune_query)
-        self.log.debug(
-            "%d records to remove from %s",
-            result.rowcount, self.target_table_name)
-        self.store.execute(
-            "CREATE INDEX bulkprunerid_idx ON BulkPrunerId(id)",
-            noresult=True)
-        self._offset = 0
+            "DECLARE bulkprunerid NO SCROLL CURSOR WITH HOLD FOR %s"
+            % self.ids_to_prune_query)
 
     _num_removed = None
 
@@ -129,19 +142,13 @@ class BulkPruner(TunableLoop):
 
     def __call__(self, chunk_size):
         result = self.store.execute("""
-            DELETE FROM %s
-            USING (
-                SELECT id FROM BulkPrunerId
-                ORDER BY id
-                OFFSET %d LIMIT %d
-                ) AS LimitedBulkPrunerId
-            WHERE %s.%s = LimitedBulkPrunerId.id
-            """ % (
-                self.target_table_name, self._offset, chunk_size,
-                self.target_table_name, self.target_table_key))
+            DELETE FROM %s WHERE %s IN (
+                SELECT id FROM
+                cursor_fetch('bulkprunerid', %d) AS f(id integer))
+            """
+            % (self.target_table_name, self.target_table_key, chunk_size))
         self._num_removed = result.rowcount
         transaction.commit()
-        self._offset += chunk_size
 
 
 class POTranslationPruner(BulkPruner):
