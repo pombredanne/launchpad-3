@@ -44,6 +44,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.person import Person
+from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
@@ -754,6 +755,25 @@ class ProjectGroupTarget(BugTargetTestBase, BugTargetWithBugSuperVisor,
             self.bugtasks[0].target.addSubscription(
                 subscriber, subscribed_by=subscriber)
         return subscriber
+
+    def test_disable_targetnames_search(self):
+        # searching in the target name is contentious and arguably a bug. To
+        # permit incremental changes we allow it to be disabled via a feature
+        # flag.
+        with person_logged_in(self.owner):
+            product1 = self.factory.makeProduct(name='product-foo',
+                owner=self.owner, project=self.searchtarget)
+            product2 = self.factory.makeProduct(name='product-bar',
+                owner=self.owner, project=self.searchtarget)
+            bug1 = self.factory.makeBug(product=product1)
+            bug1.default_bugtask.updateTargetNameCache()
+            bug2 = self.factory.makeBug(product=product2)
+        params = self.getBugTaskSearchParams(user=None, searchtext='uct-fo')
+        # With no flag, we find the first bug.
+        self.assertSearchFinds(params, [bug1.default_bugtask])
+        with FeatureFixture({'malone.disable_targetnamesearch': u'on'}):
+            # With a flag set, no bugs are found.
+            self.assertSearchFinds(params, [])
 
 
 class MilestoneTarget(BugTargetTestBase):

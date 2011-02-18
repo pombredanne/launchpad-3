@@ -266,3 +266,14 @@ class BugPortletSubcribersIdsTests(TestCaseWithFactory):
         self.assertEqual(
             harness.request.response.getHeader('content-type'),
             'application/json')
+
+
+class BugSubscriptionsListViewTestCase(TestCaseWithFactory):
+    """Tests for the BugSubscriptionsListView."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(BugSubscriptionsListViewTestCase, self).setUp()
+        self.bug = self.factory.makeBug()
+        self.subscriber = self.factory.makePerson()

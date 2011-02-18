@@ -4,6 +4,7 @@
 __metaclass__ = type
 __all__ = [
     'Contains',
+    'DocTestMatches',
     'DoesNotCorrectlyProvide',
     'DoesNotProvide',
     'HasQueryCount',
@@ -18,6 +19,7 @@ from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
 from testtools.matchers import (
     Equals,
+    DocTestMatches as OriginalDocTestMatches,
     Matcher,
     Mismatch,
     MismatchesAll,
@@ -302,3 +304,12 @@ class DoesNotSnapshot(Matcher):
             return None
         else:
             return MismatchesAll(mismatches)
+
+
+def DocTestMatches(example):
+    """See if a string matches a doctest example.
+
+    Uses the default doctest flags used across Launchpad.
+    """
+    from canonical.launchpad.testing.systemdocs import default_optionflags
+    return OriginalDocTestMatches(example, default_optionflags)

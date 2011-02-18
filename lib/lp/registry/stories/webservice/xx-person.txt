@@ -637,7 +637,7 @@ returned.
     ...     mark['self_link'], 'getPPAByName', name='boing')
     HTTP/1.1 400 Bad Request
     ...
-    NoSuchPPA: No such ppa: 'boing'.
+    No such ppa: 'boing'.
 
 The method doesn't even bother to execute the lookup if the given
 'name' doesn't match the constraints for PPA names. An error message

@@ -71,7 +71,11 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     render_radio_widget_part,
     )
-from lp.app.browser.lazrjs import InlineEditPickerWidget
+from lp.app.browser.lazrjs import (
+    BooleanChoiceWidget,
+    InlineEditPickerWidget,
+    TextAreaEditorWidget,
+    )
 from lp.app.browser.tales import format_link
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
@@ -246,6 +250,28 @@ class SourcePackageRecipeView(LaunchpadView):
             self.context, field, initial_html,
             header='Change daily build archive',
             step_title='Select a PPA')
+
+    @property
+    def recipe_text_widget(self):
+        """The recipe text as widget HTML."""
+        recipe_text = ISourcePackageRecipe['recipe_text']
+        return TextAreaEditorWidget(self.context, recipe_text, title="")
+
+    @property
+    def daily_build_widget(self):
+        return BooleanChoiceWidget(
+            self.context, ISourcePackageRecipe['build_daily'],
+            tag='span',
+            false_text='Built on request',
+            true_text='Built daily',
+            header='Change build schedule')
+
+    @property
+    def description_widget(self):
+        """The description as a widget."""
+        description = ISourcePackageRecipe['description']
+        return TextAreaEditorWidget(
+            self.context, description, title="")
 
 
 def builds_for_recipe(recipe):
@@ -454,6 +480,10 @@ class ISourcePackageAddSchema(ISourcePackageEditSchema):
                           "the owner of the recipe ."))
 
 
+class ErrorHandled(Exception):
+    """A field error occured and was handled."""
+
+
 class RecipeTextValidatorMixin:
     """Class to validate that the Source Package Recipe text is valid."""
 
@@ -468,6 +498,25 @@ class RecipeTextValidatorMixin:
             parser.parse()
         except RecipeParseError, error:
             self.setFieldError('recipe_text', str(error))
+
+    def error_handler(self, callable, *args, **kwargs):
+        try:
+            return callable(*args)
+        except TooNewRecipeFormat:
+            self.setFieldError(
+                'recipe_text',
+                'The recipe format version specified is not available.')
+        except ForbiddenInstructionError, e:
+            self.setFieldError(
+                'recipe_text',
+                'The bzr-builder instruction "%s" is not permitted '
+                'here.' % e.instruction_name)
+        except NoSuchBranch, e:
+            self.setFieldError(
+                'recipe_text', '%s is not a branch on Launchpad.' % e.name)
+        except PrivateBranchRecipe, e:
+            self.setFieldError('recipe_text', str(e))
+        raise ErrorHandled()
 
 
 class RelatedBranchesWidget(Widget):
@@ -579,36 +628,20 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
 
     @action('Create Recipe', name='create')
     def request_action(self, action, data):
+        owner = data['owner']
+        if data['use_ppa'] == CREATE_NEW:
+            ppa_name = data.get('ppa_name', None)
+            ppa = owner.createPPA(ppa_name)
+        else:
+            ppa = data['daily_build_archive']
         try:
-            owner = data['owner']
-            if data['use_ppa'] == CREATE_NEW:
-                ppa_name = data.get('ppa_name', None)
-                ppa = owner.createPPA(ppa_name)
-            else:
-                ppa = data['daily_build_archive']
-            source_package_recipe = getUtility(
-                ISourcePackageRecipeSource).new(
-                    self.user, owner, data['name'],
-                    data['recipe_text'], data['description'], data['distros'],
-                    ppa, data['build_daily'])
+            source_package_recipe = self.error_handler(
+                getUtility(ISourcePackageRecipeSource).new,
+                self.user, owner, data['name'],
+                data['recipe_text'], data['description'], data['distros'],
+                ppa, data['build_daily'])
             Store.of(source_package_recipe).flush()
-        except TooNewRecipeFormat:
-            self.setFieldError(
-                'recipe_text',
-                'The recipe format version specified is not available.')
-            return
-        except ForbiddenInstructionError:
-            # XXX: bug=592513 We shouldn't be hardcoding "run" here.
-            self.setFieldError(
-                'recipe_text',
-                'The bzr-builder instruction "run" is not permitted here.')
-            return
-        except NoSuchBranch, e:
-            self.setFieldError(
-                'recipe_text', '%s is not a branch on Launchpad.' % e.name)
-            return
-        except PrivateBranchRecipe, e:
-            self.setFieldError('recipe_text', str(e))
+        except ErrorHandled:
             return
 
         self.next_url = canonical_url(source_package_recipe)
@@ -693,24 +726,10 @@ class SourcePackageRecipeEditView(RecipeRelatedBranchesMixin,
         recipe = parser.parse()
         if self.context.builder_recipe != recipe:
             try:
-                self.context.setRecipeText(recipe_text)
+                self.error_handler(self.context.setRecipeText, recipe_text)
                 changed = True
-            except TooNewRecipeFormat:
-                self.setFieldError(
-                    'recipe_text',
-                    'The recipe format version specified is not available.')
+            except ErrorHandled:
                 return
-            except ForbiddenInstructionError:
-                # XXX: bug=592513 We shouldn't be hardcoding "run" here.
-                self.setFieldError(
-                    'recipe_text',
-                    'The bzr-builder instruction "run" is not permitted'
-                    ' here.')
-                return
-            except PrivateBranchRecipe, e:
-                self.setFieldError('recipe_text', str(e))
-                return
-
 
         distros = data.pop('distros')
         if distros != self.context.distroseries:

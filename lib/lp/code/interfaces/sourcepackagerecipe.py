@@ -25,13 +25,17 @@ from lazr.restful.declarations import (
     export_as_webservice_entry,
     export_write_operation,
     exported,
+    mutator_for,
+    operation_for_version,
     operation_parameters,
+    operation_removed_in_version,
     REQUEST_USER,
     )
 from lazr.restful.fields import (
     CollectionField,
     Reference,
     )
+from lazr.restful.interface import copy_field
 from zope.interface import (
     Attribute,
     Interface,
@@ -97,7 +101,7 @@ class ISourcePackageRecipeView(Interface):
             required=True, readonly=True,
             vocabulary='ValidPersonOrTeam'))
 
-    recipe_text = exported(Text())
+    recipe_text = exported(Text(readonly=True))
 
     def isOverQuota(requester, distroseries):
         """True if the recipe/requester/distroseries combo is >= quota.
@@ -135,7 +139,11 @@ class ISourcePackageRecipeView(Interface):
 class ISourcePackageRecipeEdit(Interface):
     """ISourcePackageRecipe methods that require launchpad.Edit permission."""
 
-    @operation_parameters(recipe_text=Text())
+    @mutator_for(ISourcePackageRecipeView['recipe_text'])
+    @operation_for_version("devel")
+    @operation_parameters(
+        recipe_text=copy_field(
+            ISourcePackageRecipeView['recipe_text']))
     @export_write_operation()
     def setRecipeText(recipe_text):
         """Set the text of the recipe."""
@@ -171,19 +179,20 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
             " build a source package for"),
         readonly=False)
     build_daily = exported(Bool(
-        title=_("Automatically build each day, if the source has changed"),
-        description=_("You can manually request a build at any time.")))
+        title=_("Built daily"),
+        description=_("Automatically build each day, if the source has changed.")))
 
     name = exported(TextLine(
             title=_("Name"), required=True,
             constraint=name_validator,
             description=_("The name of this recipe.")))
 
-    description = Description(
+    description = exported(Description(
         title=_('Description'), required=True,
-        description=_('A short description of the recipe.'))
+        description=_('A short description of the recipe.')))
 
-    date_last_modified = Datetime(required=True, readonly=True)
+    date_last_modified = exported(
+        Datetime(required=True, readonly=True))
 
     is_stale = Bool(title=_('Recipe is stale.'))
 
