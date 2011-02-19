@@ -62,7 +62,6 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
     ISourcePackageRecipeData,
     ISourcePackageRecipeSource,
-    recipes_enabled,
     )
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
@@ -250,8 +249,6 @@ class SourcePackageRecipe(Storm):
                      pocket=PackagePublishingPocket.RELEASE,
                      manual=False):
         """See `ISourcePackageRecipe`."""
-        if not recipes_enabled():
-            raise ValueError('Source package recipe builds disabled.')
         if not archive.is_ppa:
             raise NonPPABuildRequest
 
