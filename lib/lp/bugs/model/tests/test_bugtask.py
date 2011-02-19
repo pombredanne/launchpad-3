@@ -1342,6 +1342,69 @@ class TestBugTaskStatuses(TestCase):
         self.assertNotIn(BugTaskStatus.UNKNOWN, UNRESOLVED_BUGTASK_STATUSES)
 
 
+class TestGetStructuralSubscriptionTargets(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def getStructuralSubscriptionTargets(self, bugtasks):
+        # Call IBugTaskSet.getStructuralSubscribers() and check that the
+        # result is security proxied.
+        result = getUtility(IBugTaskSet).getStructuralSubscriptionTargets(
+            bugtasks)
+        self.assertTrue(is_security_proxied_or_harmless(result))
+        return result
+
+    def test_product_target(self):
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+        bugtask = bug.bugtasks[0]
+        result = self.getStructuralSubscriptionTargets(bug.bugtasks)
+        self.assertEqual(list(result), [(bugtask, product)])
+
+    def test_milestone_target(self):
+        actor = self.factory.makePerson()
+        login_person(actor)
+        product = self.factory.makeProduct()
+        milestone = self.factory.makeMilestone(product=product)
+        bug = self.factory.makeBug(product=product, milestone=milestone)
+        bugtask = bug.bugtasks[0]
+        result = self.getStructuralSubscriptionTargets(bug.bugtasks)
+        self.assertEqual(set(result), set(
+            ((bugtask, product), (bugtask, milestone))))
+
+    def test_sourcepackage_target(self):
+        actor = self.factory.makePerson()
+        login_person(actor)
+        distroseries = self.factory.makeDistroSeries()
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=distroseries)
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+        bug.addTask(actor, sourcepackage)
+        product_bugtask = bug.bugtasks[0]
+        sourcepackage_bugtask = bug.bugtasks[1]
+        result = self.getStructuralSubscriptionTargets(bug.bugtasks)
+        self.assertEqual(set(result), set(
+            ((product_bugtask, product),
+             (sourcepackage_bugtask, distroseries))))
+
+    def test_distribution_source_package_target(self):
+        actor = self.factory.makePerson()
+        login_person(actor)
+        distribution = self.factory.makeDistribution()
+        dist_sourcepackage = self.factory.makeDistributionSourcePackage(
+            distribution=distribution)
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+        bug.addTask(actor, dist_sourcepackage)
+        product_bugtask = bug.bugtasks[0]
+        dist_sourcepackage_bugtask = bug.bugtasks[1]
+        result = self.getStructuralSubscriptionTargets(bug.bugtasks)
+        self.assertEqual(set(result), set(
+            ((product_bugtask, product),
+             (dist_sourcepackage_bugtask, dist_sourcepackage),
+             (dist_sourcepackage_bugtask, distribution))))
+
 class TestGetStructuralSubscribers(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
