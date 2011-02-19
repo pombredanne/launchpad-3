@@ -18,7 +18,7 @@ from lp.testing.windmill.lpuser import login_person
 from lp.app.browser.tales import PPAFormatterAPI
 from lp.code.windmill.testing import CodeWindmillLayer
 from lp.soyuz.model.processor import ProcessorFamily
-from lp.testing import WindmillTestCase
+from lp.testing import WindmillTestCase, quote_jquery_expression
 
 
 class TestRecipeBuild(WindmillTestCase):
@@ -73,11 +73,9 @@ class TestRecipeBuild(WindmillTestCase):
 
         # Ensure it shows up.
         client.waits.forElement(
-            jquery=(u'a[href="%s"]') %  PPAFormatterAPI(self.ppa).url(),
+            jquery=u"('tr.package-build a[href$=\"%s\"]')"
+            % quote_jquery_expression(PPAFormatterAPI(self.ppa).url()),
             timeout=FOR_ELEMENT)
-#            xpath = (u'//tr[contains(@class, "package-build")]/td[4]'
-#                     '/a[@href="%s"]') % PPAFormatterAPI(self.ppa).url(),
-
 
         # And try the same one again.
         client.click(id=u'request-builds')
@@ -86,13 +84,11 @@ class TestRecipeBuild(WindmillTestCase):
 
         # And check that there's an error.
         client.waits.forElement(
-            xpath = (
-                u'//div[contains(@class, "yui3-lazr-formoverlay-errors")]'
-                '/ul/li'), timeout=FOR_ELEMENT)
-        client.asserts.assertText(
-            xpath = (
-                u'//div[contains(@class, "yui3-lazr-formoverlay-errors")]'
-                '/ul/li'),
+            jquery=u"('div.yui3-lazr-formoverlay-errors ul li')",
+            timeout=FOR_ELEMENT)
+
+        client.asserts.assertTextIn(
+            jquery=u"('div.yui3-lazr-formoverlay-errors ul li')[0]",
             validator=u'An identical build is already pending for %s %s.'
                         % (self.ppa.distribution.name, self.squirrel.name))
 
@@ -109,6 +105,6 @@ class TestRecipeBuild(WindmillTestCase):
 
         # Ensure it shows up.
         client.waits.forElement(
-            xpath = (u'//tr[contains(@class, "package-build")]/td[4]'
-                     '/a[@href="%s"]') % PPAFormatterAPI(self.ppa).url(),
+            jquery=u"('tr.package-build a[href$=\"%s\"]')"
+            % quote_jquery_expression(PPAFormatterAPI(self.ppa).url()),
             timeout=FOR_ELEMENT)
