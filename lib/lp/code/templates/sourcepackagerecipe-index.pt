@@ -101,7 +101,7 @@
   </div>
   <div class='portlet'>
     <h2>Recipe contents</h2>
-    <pre tal:content="context/recipe_text" />
+        <tal:widget replace="structure view/recipe_text_widget"/>
   </div>
 
   <tal:script>
