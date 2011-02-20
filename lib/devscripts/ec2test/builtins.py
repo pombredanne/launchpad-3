@@ -14,13 +14,20 @@ import subprocess
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.commands import Command
-from bzrlib.errors import BzrCommandError
+from bzrlib.errors import (
+    BzrCommandError,
+    ConnectionError,
+    NoSuchFile,
+    )
 from bzrlib.help import help_commands
 from bzrlib.option import (
     ListOption,
     Option,
     )
+from bzrlib.transport import get_transport
 from pytz import UTC
+import simplejson
+
 from devscripts import get_launchpad_root
 from devscripts.ec2test.account import VALID_AMI_OWNERS
 from devscripts.ec2test.credentials import EC2Credentials
@@ -665,21 +672,43 @@ class cmd_list(EC2Command):
             datetime.utcnow().replace(tzinfo=UTC)
             - launch_time.replace(tzinfo=UTC))
 
+    def get_ec2test_info(self, instance):
+        """Load the ec2test-specific information published by 'instance'."""
+        hostname = instance.public_dns_name
+        if not hostname:
+            return
+        url = 'http://%s/' % (hostname,)
+        try:
+            json = get_transport(url).get_bytes('info.json')
+        except (ConnectionError, NoSuchFile):
+            # Probably not an ec2test instance, or not ready yet.
+            return None
+        return simplejson.loads(json)
+
+    def format_summary(self, by_state):
+        return ', '.join(
+            ': '.join((state, str(num)))
+            for (state, num) in sorted(list(by_state.items())))
+
     def run(self):
         credentials = EC2Credentials.load_from_file()
         session_name = EC2SessionName.make(EC2TestRunner.name)
         account = credentials.connect(session_name)
+        by_state = {}
         for reservation in account.conn.get_all_instances():
             for instance in reservation.instances:
-                print (
-                    instance.id, instance.state, instance.public_dns_name,
-                    self.get_uptime(instance))
-    # XXX: Add a command that lists test instances:
-    #  - list all ec2 instances (based on the given image?)
-    #  - filter out ones that don't have the published JSON file based on
-    #    remote.Request.
-    #  - turn the JSON file into useful information (branch, start time, success)
-    #  - print it out nicely.
+                by_state[instance.state] = by_state.get(instance.state, 0) + 1
+                data = self.get_ec2test_info(instance)
+                if data is None:
+                    continue
+                uptime = self.get_uptime(instance)
+                if data['successful']:
+                    current_status = '[OK]    '
+                else:
+                    current_status = '[FAILED]'
+                print '%s   %s (up for %s)' % (
+                    data['description'], current_status, uptime)
+        print self.format_summary(by_state)
 
 
 class cmd_help(EC2Command):
