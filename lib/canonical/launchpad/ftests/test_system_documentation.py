@@ -194,10 +194,6 @@ special = {
     'old-testing.txt': LayeredDocFileSuite(
         '../doc/old-testing.txt', layer=FunctionalLayer),
 
-    'autodecorate.txt':
-        LayeredDocFileSuite('../doc/autodecorate.txt', layer=BaseLayer),
-
-
     # And this test want minimal environment too.
     'package-relationship.txt': LayeredDocFileSuite(
         '../doc/package-relationship.txt',

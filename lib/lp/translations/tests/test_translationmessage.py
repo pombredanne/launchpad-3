@@ -810,11 +810,9 @@ class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):
         self.other_template = self.factory.makePOTemplate(
             productseries=self.trunk, name="other")
         self.potmsgset = self.factory.makePOTMsgSet(
-            potemplate=self.template, singular='foo', plural='foos',
-            sequence=1)
+            potemplate=self.template, singular='foo', plural='foos')
         self.other_potmsgset = self.factory.makePOTMsgSet(
-            potemplate=self.other_template, singular='bar', plural='bars',
-            sequence=1)
+            potemplate=self.other_template, singular='bar', plural='bars')
         self.pofile = self.factory.makePOFile(
             potemplate=self.template, language_code='nl')
         self.other_pofile = self.factory.makePOFile(

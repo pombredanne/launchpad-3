@@ -15,7 +15,10 @@ from datetime import (
     datetime,
     timedelta,
     )
+
+from bzrlib.plugins.builder.recipe import RecipeParseError
 from lazr.delegates import delegates
+from lazr.restful.error import expose
 from pytz import utc
 from storm.expr import (
     And,
@@ -50,13 +53,15 @@ from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.code.errors import (
     BuildAlreadyPending,
     BuildNotAllowedForDistro,
+    NoSuchBranch,
+    PrivateBranchRecipe,
     TooManyBuilds,
+    TooNewRecipeFormat,
     )
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
     ISourcePackageRecipeData,
     ISourcePackageRecipeSource,
-    recipes_enabled,
     )
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
@@ -67,6 +72,7 @@ from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.model.distroseries import DistroSeries
 from lp.services.database.stormexpr import Greatest
 from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.model.archive import Archive
 
 
 def get_buildable_distroseries_set(user):
@@ -159,8 +165,13 @@ class SourcePackageRecipe(Storm):
         return self._recipe_data.base_branch
 
     def setRecipeText(self, recipe_text):
-        parsed = SourcePackageRecipeData.getParsedRecipe(recipe_text)
-        self._recipe_data.setRecipe(parsed)
+        try:
+            parsed = SourcePackageRecipeData.getParsedRecipe(recipe_text)
+            self._recipe_data.setRecipe(parsed)
+        except (RecipeParseError, NoSuchBranch, PrivateBranchRecipe,
+                TooNewRecipeFormat) as e:
+            expose(e)
+            raise
 
     @property
     def recipe_text(self):
@@ -236,8 +247,6 @@ class SourcePackageRecipe(Storm):
     def requestBuild(self, archive, requester, distroseries, pocket,
                      manual=False):
         """See `ISourcePackageRecipe`."""
-        if not recipes_enabled():
-            raise ValueError('Source package recipe builds disabled.')
         if not archive.is_ppa:
             raise NonPPABuildRequest
 
@@ -291,6 +300,8 @@ class SourcePackageRecipe(Storm):
             SourcePackageRecipeBuild.recipe==self,
             SourcePackageRecipeBuild.package_build_id == PackageBuild.id,
             PackageBuild.build_farm_job_id == BuildFarmJob.id,
+            And(PackageBuild.archive_id == Archive.id,
+                Archive._enabled == True),
             where_clause)
         result.order_by(order_by)
         return result
