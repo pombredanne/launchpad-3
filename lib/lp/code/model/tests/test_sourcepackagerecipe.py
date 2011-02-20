@@ -374,15 +374,6 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         queue_record.score()
         self.assertEqual(2705, queue_record.lastscore)
 
-    def test_requestBuildHonoursConfig(self):
-        recipe = self.factory.makeSourcePackageRecipe()
-        (distroseries,) = list(recipe.distroseries)
-        ppa = self.factory.makeArchive()
-        self.pushConfig('build_from_branch', enabled=False)
-        self.assertRaises(
-            ValueError, recipe.requestBuild, ppa, ppa.owner, distroseries,
-            PackagePublishingPocket.RELEASE)
-
     def test_requestBuildRejectsOverQuota(self):
         """Build requests that exceed quota raise an exception."""
         requester = self.factory.makePerson(name='requester')

@@ -1161,7 +1161,7 @@ class TestSetCurrentTranslation_Ubuntu(SetCurrentTranslationTestMixin,
             language_code=self.pofile.language.code)
 
         self.potmsgset = self.factory.makePOTMsgSet(
-            potemplate=potemplate, sequence=1)
+            potemplate=potemplate)
 
     def selectUpstreamTranslation(self, tm, tm_other):
         # See `SetCurrentTranslationTestMixin`
@@ -1201,7 +1201,7 @@ class TestSetCurrentTranslation_Upstream(SetCurrentTranslationTestMixin,
             language_code=self.pofile.language.code)
 
         self.potmsgset = self.factory.makePOTMsgSet(
-            potemplate=potemplate, sequence=1)
+            potemplate=potemplate)
 
     def selectUpstreamTranslation(self, tm, tm_other):
         # See `SetCurrentTranslationTestMixin`
