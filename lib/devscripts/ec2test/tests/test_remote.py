@@ -526,8 +526,8 @@ class TestRequest(TestCaseWithTransport, RequestHelpers):
         [body, attachment] = email.get_payload()
         self.assertIsInstance(body, MIMEText)
         self.assertEqual('inline', body['Content-Disposition'])
-        self.assertEqual('text/plain; charset="utf-8"', body['Content-Type'])
-        self.assertEqual("foo", body.get_payload())
+        self.assertEqual('text/plain; charset="utf8"', body['Content-Type'])
+        self.assertEqual("foo", body.get_payload(decode=True))
 
     def test_report_email_attachment(self):
         req = self.make_request(emails=['foo@example.com'])
@@ -540,7 +540,7 @@ class TestRequest(TestCaseWithTransport, RequestHelpers):
                 req.get_nick(), req.get_revno()),
             attachment['Content-Disposition'])
         self.assertEqual(
-            "gobbledygook", attachment.get_payload().decode('base64'))
+            "gobbledygook", attachment.get_payload(decode=True))
 
     def test_send_report_email_sends_email(self):
         log = []
@@ -769,7 +769,7 @@ class TestWebTestLogger(TestCaseWithTransport, RequestHelpers):
         [body, attachment] = email.get_payload()
         self.assertIsInstance(body, MIMEText)
         self.assertEqual('inline', body['Content-Disposition'])
-        self.assertEqual('text/plain; charset="utf-8"', body['Content-Type'])
+        self.assertEqual('text/plain; charset="utf8"', body['Content-Type'])
         self.assertEqual(
             logger.get_summary_contents(), body.get_payload(decode=True))
         self.assertIsInstance(attachment, MIMEApplication)
@@ -838,7 +838,9 @@ class TestEC2Runner(TestCaseWithTransport, RequestHelpers):
         self.assertNotEqual([], email_log)
         [tester_msg] = email_log
         self.assertEqual('foo@example.com', tester_msg['To'])
-        self.assertIn('ZeroDivisionError', str(tester_msg))
+        self.assertIn(
+            'ZeroDivisionError',
+            tester_msg.get_payload()[0].get_payload(decode=True))
 
 
 class TestDaemonizationInteraction(TestCaseWithTransport, RequestHelpers):
@@ -888,7 +890,7 @@ class TestResultHandling(TestCaseWithTransport, RequestHelpers):
     """Tests for how we handle the result at the end of the test suite."""
 
     def get_body_text(self, email):
-        return email.get_payload()[0].get_payload()
+        return email.get_payload()[0].get_payload(decode=True)
 
     def make_empty_result(self):
         return TestResult()
@@ -989,7 +991,7 @@ class TestResultHandling(TestCaseWithTransport, RequestHelpers):
         self.assertEqual(
             request.format_result(
                 result, logger._start_time, logger._end_time),
-            self.get_body_text(user_message).decode('quoted-printable'))
+            self.get_body_text(user_message))
 
     def test_gzip_of_full_log_attached(self):
         # The full log is attached to the email.
