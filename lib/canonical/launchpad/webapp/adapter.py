@@ -183,9 +183,8 @@ def set_request_started(
         set_request_timeline(request, Timeline())
     _local.current_statement_timeout = None
     _local.enable_timeout = enable_timeout
-    if txn is not None:
-        _local.commit_logger = CommitLogger(txn)
-        txn.registerSynch(_local.commit_logger)
+    _local.commit_logger = CommitLogger(transaction)
+    transaction.manager.registerSynch(_local.commit_logger)
     set_permit_timeout_from_features(False)
 
 
@@ -199,10 +198,8 @@ def clear_request_started():
     _local.request_start_time = None
     request = get_current_browser_request()
     set_request_timeline(request, Timeline())
-    commit_logger = getattr(_local, 'commit_logger', None)
-    if commit_logger is not None:
-        _local.commit_logger.txn.unregisterSynch(_local.commit_logger)
-        del _local.commit_logger
+    transaction.manager.unregisterSynch(_local.commit_logger)
+    del _local.commit_logger
 
 
 def summarize_requests():
