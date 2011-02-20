@@ -34,8 +34,9 @@ import textwrap
 import time
 import traceback
 import unittest
-
 from xml.sax.saxutils import escape
+
+import simplejson
 
 import bzrlib.branch
 import bzrlib.config
@@ -525,6 +526,8 @@ class WebTestLogger:
         self._full_log_filename = full_log_filename
         self._summary_filename = summary_filename
         self._index_filename = index_filename
+        self._info_json = os.path.join(
+            os.path.dirname(index_filename), 'info.json')
         self._request = request
         self._echo_to_stdout = echo_to_stdout
         # Actually set by prepare(), but setting to a dummy value to make
@@ -635,12 +638,21 @@ class WebTestLogger:
         """Write to the summary and full log file with a newline."""
         self._write(msg + '\n')
 
+    def _prepare_json(self):
+        self._write_to_filename(
+            self._info_json,
+            simplejson.dumps(
+                {'description': self._request.get_merge_description(),
+                 'successful': True,
+                 }))
+
     def prepare(self):
         """Prepares the log files on disk.
 
         Writes three log files: the raw output log, the filtered "summary"
         log file, and a HTML index page summarizing the test run paramters.
         """
+        self._prepare_json()
         # XXX: JonathanLange 2010-07-18: Mostly untested.
         log = self.write_line
 

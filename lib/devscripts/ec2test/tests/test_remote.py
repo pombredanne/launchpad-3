@@ -20,6 +20,8 @@ import time
 import traceback
 import unittest
 
+import simplejson
+
 from bzrlib.config import GlobalConfig
 from bzrlib.tests import TestCaseWithTransport
 
@@ -672,6 +674,17 @@ class TestWebTestLogger(TestCaseWithTransport, RequestHelpers):
         # Initially, the summary log has nothing in it.
         logger = self.make_logger()
         self.assertEqual('', logger.get_summary_contents())
+
+    def test_initial_json(self):
+        self.build_tree(['www/'])
+        request = self.make_request()
+        logger = WebTestLogger.make_in_directory('www', request, False)
+        logger.prepare()
+        self.assertEqual(
+            {'description': request.get_merge_description(),
+             'successful': True,
+             },
+            simplejson.loads(open('www/info.json').read()))
 
     def test_got_line_no_echo(self):
         # got_line forwards the line to the full log, but does not forward to
