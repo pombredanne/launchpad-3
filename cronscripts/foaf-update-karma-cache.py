@@ -33,13 +33,6 @@ class KarmaCacheUpdater(LaunchpadCronScript):
         """
         self.logger.info("Updating Launchpad karma caches")
 
-        # We use the autocommit transaction isolation level to minimize
-        # contention. It also allows us to not bother explicitly calling
-        # COMMIT all the time. However, if we interrupt this script mid-run
-        # it will need to be re-run as the data will be inconsistent (only
-        # part of the caches will have been recalculated).
-        self.txn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-
         self.cur = self.txn.conn().cursor()
         self.karmacachemanager = getUtility(IKarmaCacheManager)
 
@@ -291,7 +284,14 @@ class KarmaCacheUpdater(LaunchpadCronScript):
 
 
 if __name__ == '__main__':
-    script = KarmaCacheUpdater('karma-update',
+    script = KarmaCacheUpdater(
+        'karma-update',
         dbuser=config.karmacacheupdater.dbuser)
-    script.lock_and_run(implicit_begin=True)
-
+    # We use the autocommit transaction isolation level to minimize
+    # contention. It also allows us to not bother explicitly calling
+    # COMMIT all the time. However, if we interrupt this script mid-run
+    # it will need to be re-run as the data will be inconsistent (only
+    # part of the caches will have been recalculated).
+    script.lock_and_run(
+        implicit_begin=True,
+        isolation=ISOLATION_LEVEL_AUTOCOMMIT)
