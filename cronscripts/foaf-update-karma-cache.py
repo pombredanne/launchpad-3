@@ -11,7 +11,10 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import (
-    ISOLATION_LEVEL_AUTOCOMMIT, flush_database_updates)
+    cursor,
+    ISOLATION_LEVEL_AUTOCOMMIT,
+    flush_database_updates,
+    )
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.services.scripts.base import LaunchpadCronScript
@@ -33,7 +36,7 @@ class KarmaCacheUpdater(LaunchpadCronScript):
         """
         self.logger.info("Updating Launchpad karma caches")
 
-        self.cur = self.txn.conn().cursor()
+        self.cur = cursor()
         self.karmacachemanager = getUtility(IKarmaCacheManager)
 
         # This method ordering needs to be preserved. In particular,
