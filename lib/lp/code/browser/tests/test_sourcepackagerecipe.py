@@ -1304,9 +1304,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertEqual(
             [build1, build2, build3, build4, build5], view.builds)
 
-    def test_request_daily_builds_button(self):
-        """The Build now button should only be rendered when applicable."""
-
+    def test_request_daily_builds_button_stale(self):
         # Recipes that are stale and are built daily have a build now link
         recipe = self.factory.makeSourcePackageRecipe(
             owner=self.chef, daily_build_archive=self.ppa,
@@ -1315,6 +1313,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build_button = find_tag_by_id(browser.contents, 'field.actions.build')
         self.assertIsNot(None, build_button)
 
+    def test_request_daily_builds_button_not_stale(self):
         # Recipes that are not stale do not have a build now link
         login(ANONYMOUS)
         recipe = self.factory.makeSourcePackageRecipe(
@@ -1324,6 +1323,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build_button = find_tag_by_id(browser.contents, 'field.actions.build')
         self.assertIs(None, build_button)
 
+    def test_request_daily_builds_button_not_daily(self):
         # Recipes that are not built daily do not have a build now link
         login(ANONYMOUS)
         recipe = self.factory.makeSourcePackageRecipe(
@@ -1333,6 +1333,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build_button = find_tag_by_id(browser.contents, 'field.actions.build')
         self.assertIs(None, build_button)
 
+    def test_request_daily_builds_button_no_daily_ppa(self):
         # Recipes that have no daily build ppa do not have a build now link
         login(ANONYMOUS)
         recipe = self.factory.makeSourcePackageRecipe(
@@ -1343,6 +1344,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build_button = find_tag_by_id(browser.contents, 'field.actions.build')
         self.assertIs(None, build_button)
 
+    def test_request_daily_builds_button_ppa_with_no_permissions(self):
         # Recipes that have a daily build ppa without upload permissions
         # do not have a build now link
         login(ANONYMOUS)
@@ -1358,9 +1360,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertIs(None, build_button)
 
     def test_request_daily_builds_ajax_link_not_rendered(self):
-        """The Build now link should not be rendered without javascript."""
-
-        # Recipes that are stale and are built daily have a build now link
+        #The Build now link should not be rendered without javascript.
         recipe = self.factory.makeSourcePackageRecipe(
             owner=self.chef, daily_build_archive=self.ppa,
             is_stale=True, build_daily=True)
@@ -1369,8 +1369,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertIs(None, build_link)
 
     def test_request_daily_builds_action(self):
-        """Daily builds should be triggered when requested."""
-
+        #Daily builds should be triggered when requested.
         recipe = self.factory.makeSourcePackageRecipe(
             owner=self.chef, daily_build_archive=self.ppa,
             is_stale=True, build_daily=True)
