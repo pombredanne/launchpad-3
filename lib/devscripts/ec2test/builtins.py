@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = []
 
+from datetime import datetime
 import os
 import pdb
 import socket
@@ -19,6 +20,7 @@ from bzrlib.option import (
     ListOption,
     Option,
     )
+from pytz import UTC
 from devscripts import get_launchpad_root
 from devscripts.ec2test.account import VALID_AMI_OWNERS
 from devscripts.ec2test.credentials import EC2Credentials
@@ -651,12 +653,34 @@ class cmd_images(EC2Command):
                         revision, image.id, image.ownerId,
                         VALID_AMI_OWNERS.get(image.ownerId, "unknown")))
 
-# XXX: Add a command that lists test instances:
-#  - list all ec2 instances (based on the given image?)
-#  - filter out ones that don't have the published JSON file based on
-#    remote.Request.
-#  - turn the JSON file into useful information (branch, start time, success)
-#  - print it out nicely.
+
+class cmd_list(EC2Command):
+    """List all your current EC2 test runs."""
+
+    def get_uptime(self, instance):
+        """How long has 'instance' been running?"""
+        expected_format = '%Y-%m-%dT%H:%M:%S.000Z'
+        launch_time = datetime.strptime(instance.launch_time, expected_format)
+        return (
+            datetime.utcnow().replace(tzinfo=UTC)
+            - launch_time.replace(tzinfo=UTC))
+
+    def run(self):
+        credentials = EC2Credentials.load_from_file()
+        session_name = EC2SessionName.make(EC2TestRunner.name)
+        account = credentials.connect(session_name)
+        for reservation in account.conn.get_all_instances():
+            for instance in reservation.instances:
+                print (
+                    instance.id, instance.state, instance.public_dns_name,
+                    self.get_uptime(instance))
+    # XXX: Add a command that lists test instances:
+    #  - list all ec2 instances (based on the given image?)
+    #  - filter out ones that don't have the published JSON file based on
+    #    remote.Request.
+    #  - turn the JSON file into useful information (branch, start time, success)
+    #  - print it out nicely.
+
 
 class cmd_help(EC2Command):
     """Show general help or help for a command."""
