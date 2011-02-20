@@ -32,6 +32,7 @@ from testtools.matchers import DocTestMatches
 
 from devscripts.ec2test.remote import (
     EC2Runner,
+    FailureUpdateResult,
     gunzip_data,
     gzip_data,
     LaunchpadTester,
@@ -175,6 +176,29 @@ class TestSummaryResult(TestCase):
         self.assertEqual(1, len(flush_calls))
 
 
+class TestFailureUpdateResult(TestCaseWithTransport, RequestHelpers):
+
+    def makeException(self, factory=None, *args, **kwargs):
+        if factory is None:
+            factory = RuntimeError
+        try:
+            raise factory(*args, **kwargs)
+        except:
+            return sys.exc_info()
+
+    def test_addError_is_unsuccessful(self):
+        logger = self.make_logger()
+        result = FailureUpdateResult(logger)
+        result.addError(self, self.makeException())
+        self.assertEqual(False, logger.successful)
+
+    def test_addFailure_is_unsuccessful(self):
+        logger = self.make_logger()
+        result = FailureUpdateResult(logger)
+        result.addFailure(self, self.makeException(AssertionError))
+        self.assertEqual(False, logger.successful)
+
+
 class FakePopen:
     """Fake Popen object so we don't have to spawn processes in tests."""
 
@@ -234,6 +258,16 @@ class TestLaunchpadTester(TestCaseWithTransport, RequestHelpers):
         tester.test()
         # Message being sent implies got_result thought it got a success.
         self.assertEqual([message], log)
+
+    def test_failing_test(self):
+        # If LaunchpadTester gets a failing test, then it records that on the
+        # logger.
+        logger = self.make_logger()
+        tester = self.make_tester(logger=logger)
+        output = "test: foo\nerror: foo\n"
+        tester._spawn_test_process = lambda: FakePopen(output, 0)
+        tester.test()
+        self.assertEqual(False, logger.successful)
 
     def test_error_in_testrunner(self):
         # Any exception is raised within LaunchpadTester.test() is an error in
@@ -683,6 +717,32 @@ class TestWebTestLogger(TestCaseWithTransport, RequestHelpers):
         self.assertEqual(
             {'description': request.get_merge_description(),
              'successful': True,
+             },
+            simplejson.loads(open('www/info.json').read()))
+
+    def test_initial_success(self):
+        # The Logger initially thinks it is successful because there have been
+        # no failures yet.
+        logger = self.make_logger()
+        self.assertEqual(True, logger.successful)
+
+    def test_got_failure_changes_success(self):
+        # Logger.got_failure() tells the logger it is no longer successful.
+        logger = self.make_logger()
+        logger.got_failure()
+        self.assertEqual(False, logger.successful)
+
+    def test_got_failure_updates_json(self):
+        # Logger.got_failure() updates JSON so that interested parties can
+        # determine that it is unsuccessful.
+        self.build_tree(['www/'])
+        request = self.make_request()
+        logger = WebTestLogger.make_in_directory('www', request, False)
+        logger.prepare()
+        logger.got_failure()
+        self.assertEqual(
+            {'description': request.get_merge_description(),
+             'successful': False,
              },
             simplejson.loads(open('www/info.json').read()))
 

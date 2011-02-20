@@ -48,6 +48,8 @@ from bzrlib.smtp_connection import SMTPConnection
 
 import subunit
 
+from testtools import MultiTestResult
+
 
 class NonZeroExitCode(Exception):
     """Raised when the child process exits with a non-zero exit code."""
@@ -93,6 +95,21 @@ class SummaryResult(unittest.TestResult):
         # At the very least, we should be sure that a test's output has been
         # completely displayed once it has stopped.
         self.stream.flush()
+
+
+class FailureUpdateResult(unittest.TestResult):
+
+    def __init__(self, logger):
+        super(FailureUpdateResult, self).__init__()
+        self._logger = logger
+
+    def addError(self, *args, **kwargs):
+        super(FailureUpdateResult, self).addError(*args, **kwargs)
+        self._logger.got_failure()
+
+    def addFailure(self, *args, **kwargs):
+        super(FailureUpdateResult, self).addFailure(*args, **kwargs)
+        self._logger.got_failure()
 
 
 class EC2Runner:
@@ -264,7 +281,9 @@ class LaunchpadTester:
     def _gather_test_output(self, input_stream, logger):
         """Write the testrunner output to the logs."""
         summary_stream = logger.get_summary_stream()
-        result = SummaryResult(summary_stream)
+        result = MultiTestResult(
+            SummaryResult(summary_stream),
+            FailureUpdateResult(logger))
         subunit_server = subunit.TestProtocolServer(result, summary_stream)
         for line in input_stream:
             subunit_server.lineReceived(line)
@@ -502,7 +521,11 @@ class Request:
 
 
 class WebTestLogger:
-    """Logs test output to disk and a simple web page."""
+    """Logs test output to disk and a simple web page.
+
+    :ivar successful: Whether the logger has received only successful input up
+        until now.
+    """
 
     def __init__(self, full_log_filename, summary_filename, index_filename,
                  request, echo_to_stdout):
@@ -533,6 +556,7 @@ class WebTestLogger:
         # Actually set by prepare(), but setting to a dummy value to make
         # testing easier.
         self._start_time = datetime.datetime.utcnow()
+        self.successful = True
 
     @classmethod
     def make_in_directory(cls, www_dir, request, echo_to_stdout):
@@ -600,6 +624,11 @@ class WebTestLogger:
             if e.errno == errno.ENOENT:
                 return ''
 
+    def got_failure(self):
+        """Called when we receive word that a test has failed."""
+        self.successful = False
+        self._dump_json()
+
     def got_result(self, result):
         """The tests are done and the results are known."""
         self._end_time = datetime.datetime.utcnow()
@@ -638,13 +667,13 @@ class WebTestLogger:
         """Write to the summary and full log file with a newline."""
         self._write(msg + '\n')
 
-    def _prepare_json(self):
-        self._write_to_filename(
-            self._info_json,
-            simplejson.dumps(
-                {'description': self._request.get_merge_description(),
-                 'successful': True,
-                 }))
+    def _dump_json(self):
+        fd = open(self._info_json, 'w')
+        simplejson.dump(
+            {'description': self._request.get_merge_description(),
+             'successful': self.successful,
+             }, fd)
+        fd.close()
 
     def prepare(self):
         """Prepares the log files on disk.
@@ -652,7 +681,7 @@ class WebTestLogger:
         Writes three log files: the raw output log, the filtered "summary"
         log file, and a HTML index page summarizing the test run paramters.
         """
-        self._prepare_json()
+        self._dump_json()
         # XXX: JonathanLange 2010-07-18: Mostly untested.
         log = self.write_line
 
