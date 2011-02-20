@@ -651,6 +651,12 @@ class cmd_images(EC2Command):
                         revision, image.id, image.ownerId,
                         VALID_AMI_OWNERS.get(image.ownerId, "unknown")))
 
+# XXX: Add a command that lists test instances:
+#  - list all ec2 instances (based on the given image?)
+#  - filter out ones that don't have the published JSON file based on
+#    remote.Request.
+#  - turn the JSON file into useful information (branch, start time, success)
+#  - print it out nicely.
 
 class cmd_help(EC2Command):
     """Show general help or help for a command."""

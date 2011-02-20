@@ -302,6 +302,8 @@ class LaunchpadTester:
         return result
 
 
+# XXX: Publish a JSON file that includes the relevant details from this
+# request.
 class Request:
     """A request to have a branch tested and maybe landed."""
 
