@@ -30,7 +30,6 @@ from testtools.matchers import DocTestMatches
 
 from devscripts.ec2test.remote import (
     EC2Runner,
-    FlagFallStream,
     gunzip_data,
     gzip_data,
     LaunchpadTester,
@@ -120,39 +119,6 @@ class RequestHelpers:
             request = self.make_request()
         return WebTestLogger(
             'full.log', 'summary.log', 'index.html', request, echo_to_stdout)
-
-
-class TestFlagFallStream(TestCase):
-    """Tests for `FlagFallStream`."""
-
-    def test_doesnt_write_before_flag(self):
-        # A FlagFallStream does not forward any writes before it sees the
-        # 'flag'.
-        stream = StringIO()
-        flag = self.getUniqueString('flag')
-        flagfall = FlagFallStream(stream, flag)
-        flagfall.write('foo')
-        flagfall.flush()
-        self.assertEqual('', stream.getvalue())
-
-    def test_writes_after_flag(self):
-        # After a FlagFallStream sees the flag, it forwards all writes.
-        stream = StringIO()
-        flag = self.getUniqueString('flag')
-        flagfall = FlagFallStream(stream, flag)
-        flagfall.write('foo')
-        flagfall.write(flag)
-        flagfall.write('bar')
-        self.assertEqual('%sbar' % (flag,), stream.getvalue())
-
-    def test_mixed_write(self):
-        # If a single call to write has pre-flagfall and post-flagfall data in
-        # it, then only the post-flagfall data is forwarded to the stream.
-        stream = StringIO()
-        flag = self.getUniqueString('flag')
-        flagfall = FlagFallStream(stream, flag)
-        flagfall.write('foo%sbar' % (flag,))
-        self.assertEqual('%sbar' % (flag,), stream.getvalue())
 
 
 class TestSummaryResult(TestCase):

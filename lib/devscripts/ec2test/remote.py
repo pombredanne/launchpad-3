@@ -10,7 +10,7 @@
    "test merging foo-bar-bug-12345 into db-devel").
 
  * `LaunchpadTester` knows how to actually run the tests and gather the
-   results. It uses `SummaryResult` and `FlagFallStream` to do so.
+   results. It uses `SummaryResult` to do so.
 
  * `WebTestLogger` knows how to display the results to the user, and is given
    the responsibility of handling the results that `LaunchpadTester` gathers.
@@ -92,36 +92,6 @@ class SummaryResult(unittest.TestResult):
         # At the very least, we should be sure that a test's output has been
         # completely displayed once it has stopped.
         self.stream.flush()
-
-
-class FlagFallStream:
-    """Wrapper around a stream that only starts forwarding after a flagfall.
-    """
-
-    def __init__(self, stream, flag):
-        """Construct a `FlagFallStream` that wraps 'stream'.
-
-        :param stream: A stream, a file-like object.
-        :param flag: A string that needs to be written to this stream before
-            we start forwarding the output.
-        """
-        self._stream = stream
-        self._flag = flag
-        self._flag_fallen = False
-
-    def write(self, bytes):
-        if self._flag_fallen:
-            self._stream.write(bytes)
-        else:
-            index = bytes.find(self._flag)
-            if index == -1:
-                return
-            else:
-                self._stream.write(bytes[index:])
-                self._flag_fallen = True
-
-    def flush(self):
-        self._stream.flush()
 
 
 class EC2Runner:
@@ -435,9 +405,6 @@ class Request:
         we're just running tests for a trunk branch without merging return
         '$TRUNK_NICK'.
         """
-        # XXX: JonathanLange 2010-08-17: Not actually used yet. I think it
-        # would be a great thing to have in the subject of the emails we
-        # receive.
         source = self.get_source_details()
         if not source:
             return '%s r%s' % (self.get_nick(), self.get_revno())
