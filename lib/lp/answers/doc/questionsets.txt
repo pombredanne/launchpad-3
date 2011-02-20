@@ -48,7 +48,7 @@ The search_text parameter will return questions matching the query using the
 regular full text algorithm.
 
     # Because not everyone uses a real editor <wink>
-    >>> from canonical.encoding import ascii_smash
+    >>> from lp.services.encoding import ascii_smash
     >>> for question in question_set.searchQuestions(search_text='firefox'):
     ...     print ascii_smash(question.title), question.target.displayname
     Problemas de Impressao no Firefox                Mozilla Firefox
