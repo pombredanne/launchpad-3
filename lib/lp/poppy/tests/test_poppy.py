@@ -1,14 +1,12 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for poppy FTP daemon."""
 
 __metaclass__ = type
 
-import ftplib
 import os
 import shutil
-import socket
 import StringIO
 import tempfile
 import time
@@ -33,7 +31,6 @@ from canonical.testing.layers import (
     ZopelessAppServerLayer,
     ZopelessDatabaseLayer,
     )
-from lp.poppy.tests.helpers import PoppyTestSetup
 from lp.registry.interfaces.ssh import (
     ISSHKeySet,
     )
@@ -45,38 +42,21 @@ class FTPServer(Fixture):
 
     def __init__(self, root_dir, factory):
         self.root_dir = root_dir
-        self.port = 3421
+        self.port = 2121
 
     def setUp(self):
         super(FTPServer, self).setUp()
-        self.poppy = PoppyTestSetup(
-            self.root_dir, port=self.port, cmd='echo CLOSED')
-        self.poppy.startPoppy()
-        self.addCleanup(self.poppy.killPoppy)
+        self.useFixture(PoppyTac(self.root_dir))
 
     def getTransport(self):
         return get_transport('ftp://ubuntu:@localhost:%s/' % (self.port,))
 
     def disconnect(self, transport):
-        transport._get_connection().quit()
-
-    def _getFTPConnection(self):
-        # poppy usually takes sometime to come up, we need to wait, or insist.
-        conn = ftplib.FTP()
-        while True:
-            try:
-                conn.connect("localhost", self.port)
-            except socket.error:
-                if not self.poppy.alive:
-                    raise
-            else:
-                break
-        return conn
+        transport._get_connection().close()
 
     def waitForStartUp(self):
         """Wait for the FTP server to start up."""
-        conn = self._getFTPConnection()
-        conn.quit()
+        pass
 
     def waitForClose(self):
         """Wait for an FTP connection to close.
@@ -86,7 +66,8 @@ class FTPServer(Fixture):
         output as a way to tell that the server has finished with the
         connection.
         """
-        self.poppy.verify_output(['CLOSED'])
+        #time.sleep(5)
+        #self.poppy.verify_output(['CLOSED'])
 
 
 class SFTPServer(Fixture):
@@ -269,7 +250,11 @@ class TestPoppy(TestCaseWithFactory):
         wanted_path = self._uploadPath('foo/bar/baz')
         fs_content = open(os.path.join(wanted_path)).read()
         self.assertEqual(fs_content, "fake contents")
-        self.assertEqual(os.stat(wanted_path).st_mode, 0102674)
+        # This is a magic and very opaque number.  It corresponds to
+        # the following stat.S_* masks:
+        # S_IROTH, S_ISGID, S_IRGRP, S_IWGRP, S_IWUSR, S_IWUSR
+        # which in readable terms is: -rw-rwSr--
+        self.assertEqual(os.stat(wanted_path).st_mode, 0102664)
 
     def test_full_source_upload(self):
         """Check that the connection will deal with multiple files being
@@ -298,13 +283,17 @@ class TestPoppy(TestCaseWithFactory):
         if transport._user == 'joe':
             self.assertEqual(dir_name.startswith('upload-sftp-2'), True)
         elif transport._user == 'ubuntu':
-            self.assertEqual(dir_name.startswith('upload-2'), True)
+            self.assertEqual(dir_name.startswith('upload-ftp-2'), True)
         for upload in files:
             wanted_path = self._uploadPath(
                 "~ppa-user/ppa/ubuntu/%s" % upload)
             fs_content = open(os.path.join(wanted_path)).read()
             self.assertEqual(fs_content, upload)
-            self.assertEqual(os.stat(wanted_path).st_mode, 0102674)
+            # This is a magic and very opaque number.  It corresponds to
+            # the following stat.S_* masks:
+            # S_IROTH, S_ISGID, S_IRGRP, S_IWGRP, S_IWUSR, S_IWUSR
+            # which in readable terms is: -rw-rwSr--
+            self.assertEqual(os.stat(wanted_path).st_mode, 0102664)
 
     def test_upload_isolation(self):
         """Check if poppy isolates the uploads properly.

@@ -50,7 +50,7 @@ class PoppyAnonymousShell(ftp.FTPShell):
         self._log = logging.getLogger("poppy-sftp")
         self.hook = Hooks(
             self._fs_root, self._log, "ubuntu", perms='g+rws',
-            prefix='-twftp')
+            prefix='-ftp')
         self.hook.new_client_hook(self._current_upload, 0, 0)
         self.hook.auth_verify_hook(self._current_upload, None, None)
         super(PoppyAnonymousShell, self).__init__(
