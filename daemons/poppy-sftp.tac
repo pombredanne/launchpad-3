@@ -100,14 +100,14 @@ class FTPServiceFactory(service.Service):
         factory.tld = get_poppy_root()
         factory.portal = portal
         factory.protocol = ftp.FTP
+        factory.welcomeMessage = "Launchpad upload server"
         # Setting this works around the fact that the twistd FTP server
         # invokes a special restricted shell when someone logs in as
         # "anonymous" which is the default for 'dput'.
         factory.userAnonymous = "userthatwillneverhappen"
         self.ftpfactory = factory
         self.portno = port
-        # XXX self.timeOut = ?
-        # XXX self.welcomeMessage = ?
+        # XXX factory.timeOut = ?
 
     @staticmethod
     def makeFTPService(port=2121):
