@@ -172,10 +172,9 @@ class StructuralSubscription(Storm):
 
     def delete(self):
         store = Store.of(self)
-        store.find(
-            BugSubscriptionFilter,
-            BugSubscriptionFilter.structural_subscription == self).remove()
+        self.bug_filters.remove()
         store.remove(self)
+
 
 class DistroSeriesTargetHelper:
     """A helper for `IDistroSeries`s."""
@@ -353,10 +352,11 @@ class StructuralSubscriptionTargetMixin:
             if subscribed_by.inTeam(self.distribution.owner):
                 return True
 
-        admins = getUtility(ILaunchpadCelebrities).admin
+        celebrities = getUtility(ILaunchpadCelebrities)
         return (subscriber == subscribed_by or
                 subscriber in subscribed_by.getAdministratedTeams() or
-                subscribed_by.inTeam(admins))
+                subscribed_by.inTeam(celebrities.registry_experts) or
+                subscribed_by.inTeam(celebrities.admins))
 
     def addSubscription(self, subscriber, subscribed_by):
         """See `IStructuralSubscriptionTarget`."""
