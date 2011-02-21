@@ -16,6 +16,17 @@
       font-family: "UbuntuBeta Mono","Ubuntu Mono",monospace;
       margin-top: -15px;
     }
+    .build-informational {
+        background: #d4e8ff url('/+icing/blue-fade-to-grey');
+        border: solid #666;
+        border-width: 1px 2px 2px 1px;
+        color: black;
+        padding: 5px 2px 5px 2px;
+        margin-right: 40px
+        }
+    .build-informational::before {
+        content: url('/@@/info');
+        }
   </style>
 </metal:block>
 

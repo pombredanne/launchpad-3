@@ -310,11 +310,13 @@ def builds_for_recipe(recipe):
 
 def new_builds_notification_text(builds):
     nr_builds = len(builds)
-    if nr_builds == 1:
-        builds_text = "%d new recipe build has been queued."
+    if not nr_builds:
+        builds_text = "All requested recipe builds are already queued."
+    elif nr_builds == 1:
+        builds_text = "1 new recipe build has been queued."
     else:
-        builds_text = "%d new recipe builds have been queued."
-    return builds_text % nr_builds
+        builds_text = "%d new recipe builds have been queued." % nr_builds
+    return builds_text
 
 
 class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
