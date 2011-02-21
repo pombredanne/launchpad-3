@@ -5,8 +5,8 @@
 
 __metaclass__ = type
 __all__ = [
-    'SFTPFile',
-    'SFTPServer',
+    'FTPRealm',
+    'PoppyAnonymousShell',
     ]
 
 import logging
