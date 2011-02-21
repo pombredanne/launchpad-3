@@ -117,13 +117,13 @@ class RequestExpired(RuntimeError):
 
 def _get_dirty_commit_flags():
     """Return the current dirty commit status"""
-    from canonical.ftests.pgsql import ConnectionWrapper
+    from lp.testing.pgsql import ConnectionWrapper
     return (ConnectionWrapper.committed, ConnectionWrapper.dirty)
 
 
 def _reset_dirty_commit_flags(previous_committed, previous_dirty):
     """Set the dirty commit status to False unless previous is True"""
-    from canonical.ftests.pgsql import ConnectionWrapper
+    from lp.testing.pgsql import ConnectionWrapper
     if not previous_committed:
         ConnectionWrapper.committed = False
     if not previous_dirty:
