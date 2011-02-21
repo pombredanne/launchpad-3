@@ -24,7 +24,10 @@ __all__ = [
 import cgi
 from cStringIO import StringIO
 from datetime import datetime
-from operator import itemgetter
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
 import urllib
 
 from lazr.restful.interface import copy_field
@@ -1218,16 +1221,22 @@ class BugTargetBugListingView:
     def milestone_buglistings(self):
         """Return a buglisting for each milestone."""
         milestone_buglistings = []
-        for series in self.series_list:
-            for milestone in series.milestones:
-                milestone_bug_count = milestone.open_bugtasks.count()
-                if milestone_bug_count > 0:
-                    milestone_buglistings.append(
-                        dict(
-                            title=milestone.name,
-                            url=canonical_url(milestone),
-                            count=milestone_bug_count,
-                            ))
+        bug_task_set = getUtility(IBugTaskSet)
+        milestones = []
+        reduce(lambda _, series:milestones.extend(series.milestones),
+            self.series_list, [])
+        open_bugs = bug_task_set.open_bugtask_search
+        open_bugs.setTarget(any(*milestones))
+        counts = bug_task_set.countBugs(open_bugs, (BugTask.milestoneID,))
+        for milestone in milestones:
+            milestone_bug_count = counts.get((milestone.id,), 0)
+            if milestone_bug_count > 0:
+                milestone_buglistings.append(
+                    dict(
+                        title=milestone.name,
+                        url=canonical_url(milestone),
+                        count=milestone_bug_count,
+                        ))
         return milestone_buglistings
 
 
