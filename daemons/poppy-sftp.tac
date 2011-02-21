@@ -62,7 +62,6 @@ class PoppyAnonymousShell(ftp.FTPShell):
         self._current_upload = self.uploadfilesystem.rootpath
         os.chmod(self._current_upload, 0770)
         self._log = logging.getLogger("poppy-sftp")
-        # XXX fix hooks
         self.hook = Hooks(
             self._fs_root, self._log, "ubuntu", perms='g+rws',
             prefix='-twftp')
@@ -84,23 +83,17 @@ class PoppyAnonymousShell(ftp.FTPShell):
         self._create_missing_directories(filename)
         return super(PoppyAnonymousShell, self).openForWriting(file_segments)
 
-    def removeFile(self, path):
-        # Same as SFTPServer
-        pass
-
-    def rename(self, old_path, new_path):
-        # Same as SFTPServer
-        abs_old = self._translate_path(old_path)
-        abs_new = self._translate_path(new_path)
-        os.rename(abs_old, abs_new)
-
     def makeDirectory(self, path):
+        """Make a directory using the secure `UploadFileSystem`."""
         path = os.sep.join(path)
         return defer.maybeDeferred(self.uploadfilesystem.mkdir, path)
 
-    def removeDirectory(self, path):
-        path = os.sep.join(path)
-        return defer.maybeDeferred(self.uploadfilesystem.rmdir(path))
+    def access(self, segments):
+        """Permissive CWD that auto-creates target directories."""
+        if segments:
+            path = self._path(segments)
+            path.makedirs()
+        return super(PoppyAnonymousShell, self).access(segments)
 
     def logout(self):
         """Called when the client disconnects.
