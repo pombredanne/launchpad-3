@@ -232,7 +232,7 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         logout()
 
     def test_bugtasks_queries(self):
-        # The view.bugtasks attribute will make four queries:
+        # The view.bugtasks attribute will make several queries:
         #  1. Load bugtasks and bugs.
         #  2. Loads the target (sourcepackagename / product)
         #  3. Load assignees (Person, Account, and EmailAddress).
