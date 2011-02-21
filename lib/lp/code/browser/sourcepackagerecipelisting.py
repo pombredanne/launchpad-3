@@ -19,7 +19,8 @@ from canonical.launchpad.webapp import (
     LaunchpadView,
     Link,
     )
-from lp.code.interfaces.sourcepackagerecipe import recipes_enabled
+from lp.code.interfaces.sourcepackagerecipe import RECIPE_ENABLED_FLAG
+from lp.services.features import getFeatureFlag
 
 
 class HasRecipesMenuMixin:
@@ -30,7 +31,7 @@ class HasRecipesMenuMixin:
         enabled = False
         if self.context.getRecipes().count():
             enabled = True
-        if not recipes_enabled():
+        if not getFeatureFlag(RECIPE_ENABLED_FLAG):
             enabled = False
         return Link(
             '+recipes', text, icon='info', enabled=enabled, site='code')

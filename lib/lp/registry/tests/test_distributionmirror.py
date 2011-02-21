@@ -23,6 +23,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distributionmirror import DistributionMirror
 from lp.services.mail import stub
 from lp.services.worlddata.interfaces.country import ICountrySet
+from lp.testing import login_as
 from lp.testing.factory import LaunchpadObjectFactory
 
 
@@ -207,6 +208,25 @@ class TestDistributionMirror(unittest.TestCase):
         transaction.commit()
         self.failUnlessEqual(len(stub.test_emails), 0)
         stub.test_emails = []
+
+    def test_no_email_sent_to_uncontactable_owner(self):
+        # If the owner has no contact address, only the mirror admins are
+        # notified.
+        mirror = self.cdimage_mirror
+        login_as(mirror.owner)
+        # Deactivate the mirror owner to remove the contact address.
+        mirror.owner.deactivateAccount("I hate mirror spam.")
+        login_as(mirror.distribution.mirror_admin)
+        # Clear out notifications about the new team member.
+        transaction.commit()
+        stub.test_emails = []
+
+        # Disabling the mirror results in a single notification to the
+        # mirror admins.
+        self.factory.makeMirrorProbeRecord(mirror)
+        mirror.disable(notify_owner=True, log="It broke.")
+        transaction.commit()
+        self.failUnlessEqual(len(stub.test_emails), 1)
 
 
 class TestDistributionMirrorSet(unittest.TestCase):
