@@ -6,18 +6,14 @@
 # or similar.  Refer to the twistd(1) man page for details.
 
 import os
-import logging
-import tempfile
 
 from twisted.application import service, strports
 from twisted.conch.interfaces import ISession
 from twisted.conch.ssh import filetransfer
-from twisted.cred import checkers, credentials
 from twisted.cred.portal import IRealm, Portal
-from twisted.internet import defer
 from twisted.protocols import ftp
 from twisted.protocols.policies import TimeoutFactory
-from twisted.python import components, filepath
+from twisted.python import components
 from twisted.web.xmlrpc import Proxy
 
 from zope.interface import implements
@@ -25,8 +21,10 @@ from zope.interface import implements
 from canonical.config import config
 from canonical.launchpad.daemons import readyservice
 
-from lp.poppy.filesystem import UploadFileSystem
-from lp.poppy.hooks import Hooks
+from lp.poppy.twistedftp import (
+    FTPRealm,
+    PoppyAccessCheck,
+    )
 from lp.poppy.twistedsftp import SFTPServer
 from lp.services.sshserver.auth import (
     LaunchpadAvatar, PublicKeyFromLaunchpadChecker)
@@ -51,81 +49,6 @@ def make_portal():
     return portal
 
 
-class PoppyAnonymousShell(ftp.FTPShell):
-    """The 'command' interface for sessions.
-
-    Roughly equivalent to the SFTPServer in the sftp side of things.
-    """
-    def __init__(self, fsroot):
-        self._fs_root = fsroot
-        self.uploadfilesystem = UploadFileSystem(tempfile.mkdtemp())
-        self._current_upload = self.uploadfilesystem.rootpath
-        os.chmod(self._current_upload, 0770)
-        self._log = logging.getLogger("poppy-sftp")
-        self.hook = Hooks(
-            self._fs_root, self._log, "ubuntu", perms='g+rws',
-            prefix='-twftp')
-        self.hook.new_client_hook(self._current_upload, 0, 0)
-        self.hook.auth_verify_hook(self._current_upload, None, None)
-        super(PoppyAnonymousShell, self).__init__(
-            filepath.FilePath(self._current_upload))
-
-    def openForWriting(self, file_segments):
-        """Write the uploaded file to disk, safely.
-
-        :param file_segments: A list containing string items, one for each
-            path component of the file being uploaded.  The file referenced
-            is relative to the temporary root for this session.
-
-        If the file path contains directories, we create them.
-        """
-        filename = os.sep.join(file_segments)
-        self._create_missing_directories(filename)
-        return super(PoppyAnonymousShell, self).openForWriting(file_segments)
-
-    def makeDirectory(self, path):
-        """Make a directory using the secure `UploadFileSystem`."""
-        path = os.sep.join(path)
-        return defer.maybeDeferred(self.uploadfilesystem.mkdir, path)
-
-    def access(self, segments):
-        """Permissive CWD that auto-creates target directories."""
-        if segments:
-            path = self._path(segments)
-            path.makedirs()
-        return super(PoppyAnonymousShell, self).access(segments)
-
-    def logout(self):
-        """Called when the client disconnects.
-
-        We need to post-process the upload.
-        """
-        self.hook.client_done_hook(self._current_upload, 0, 0)
-
-    def _create_missing_directories(self, filename):
-        # Same as SFTPServer
-        new_dir, new_file = os.path.split(
-            self.uploadfilesystem._sanitize(filename))
-        if new_dir != '':
-            if not os.path.exists(
-                os.path.join(self._current_upload, new_dir)):
-                self.uploadfilesystem.mkdir(new_dir)
-
-    def list(self, path_segments, attrs):
-        return defer.fail(ftp.CmdNotImplementedError("LIST"))
-
-
-class PoppyAccessCheck:
-    implements(checkers.ICredentialsChecker)
-    credentialInterfaces = credentials.IUsernamePassword,
-
-    def requestAvatarId(self, credentials):
-        # Poppy allows any credentials.  People can use "anonymous" if
-        # they want but anything goes.  Returning "poppy" here is
-        # a totally arbitrary avatar.
-        return "poppy"
-
-
 class Realm:
     implements(IRealm)
 
@@ -143,23 +66,6 @@ class Realm:
             return interfaces[0], avatar, avatar.logout
 
         return deferred.addCallback(got_user_dict)
-
-
-class FTPRealm:
-    """FTP Realm that lets anyone in."""
-    implements(IRealm)
-
-    def __init__(self, root):
-        self.root = root
-
-    def requestAvatar(self, avatarId, mind, *interfaces):
-        for iface in interfaces:
-            if iface is ftp.IFTPShell:
-                avatar = PoppyAnonymousShell(self.root)
-                return ftp.IFTPShell, avatar, getattr(
-                    avatar, 'logout', lambda: None)
-        raise NotImplementedError(
-            "Only IFTPShell interface is supported by this realm")
 
 
 def get_poppy_root():
@@ -189,8 +95,7 @@ class FTPServiceFactory(service.Service):
         factory = ftp.FTPFactory()
         realm = FTPRealm(get_poppy_root())
         portal = Portal(realm)
-        portal.registerChecker(
-            PoppyAccessCheck())#, IAnonymous)
+        portal.registerChecker(PoppyAccessCheck())
 
         factory.tld = get_poppy_root()
         factory.portal = portal
