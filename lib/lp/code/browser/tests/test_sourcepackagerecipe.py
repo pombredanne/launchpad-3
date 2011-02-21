@@ -12,17 +12,11 @@ from datetime import (
     datetime,
     timedelta,
     )
-import doctest
 from textwrap import dedent
 
 from mechanize import LinkNotFoundError
 from pytz import utc
-from testtools.matchers import (
-    DocTestMatches,
-    Equals,
-    Matcher,
-    Mismatch,
-    )
+from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -73,6 +67,10 @@ from lp.testing import (
     time_counter,
     )
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
+from lp.testing.matchers import (
+    MatchesTagText,
+    MatchesPickerText,
+    )
 from lp.testing.views import create_initialized_view
 
 
@@ -202,73 +200,6 @@ def get_message_text(browser, index):
     return extract_text(tags)
 
 
-class SoupMismatch(Mismatch):
-
-    def __init__(self, widget_id, soup_content):
-        self.widget_id = widget_id
-        self.soup_content = soup_content
-
-    def get_details(self):
-        return {'content': self.soup_content}
-
-
-class MissingElement(SoupMismatch):
-
-    def describe(self):
-        return 'No HTML element found with id %r' % self.widget_id
-
-
-class MultipleElements(SoupMismatch):
-
-    def describe(self):
-        return 'HTML id %r found multiple times in document' % self.widget_id
-
-
-class MatchesTagText(Matcher):
-    """Match against the extracted text of the tag."""
-
-    def __init__(self, soup_content, tag_id):
-        """Construct the matcher with the soup content."""
-        self.soup_content = soup_content
-        self.tag_id = tag_id
-
-    def __str__(self):
-        return "matches widget %r text" % self.tag_id
-
-    def match(self, matchee):
-        widgets = self.soup_content.findAll(id=self.tag_id)
-        if len(widgets) == 0:
-            return MissingElement(self.tag_id, self.soup_content)
-        elif len(widgets) > 1:
-            return MultipleElements(self.tag_id, self.soup_content)
-        widget = widgets[0]
-        text_matcher = DocTestMatches(
-            extract_text(widget), doctest.NORMALIZE_WHITESPACE)
-        return text_matcher.match(matchee)
-
-
-class MatchesPickerText(Matcher):
-    """Match against the text in a widget."""
-
-    def __init__(self, soup_content, widget_id):
-        """Construct the matcher with the soup content."""
-        self.soup_content = soup_content
-        self.widget_id = widget_id
-
-    def __str__(self):
-        return "matches widget %r text" % self.widget_id
-
-    def match(self, matchee):
-        widgets = self.soup_content.findAll(id=self.widget_id)
-        if len(widgets) == 0:
-            return MissingElement(self.widget_id, self.soup_content)
-        elif len(widgets) > 1:
-            return MultipleElements(self.widget_id, self.soup_content)
-        widget = widgets[0]
-        text = widget.findAll(attrs={'class': 'yui3-activator-data-box'})[0]
-        text_matcher = DocTestMatches(
-            extract_text(text), doctest.NORMALIZE_WHITESPACE)
-        return text_matcher.match(matchee)
 
 
 class TestSourcePackageRecipeAddViewInitalValues(TestCaseWithFactory):
