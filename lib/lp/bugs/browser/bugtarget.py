@@ -1181,6 +1181,13 @@ class BugTargetBugListingView:
         return list(series)
 
     @property
+    def milestones_list(self):
+        milestones = []
+        reduce(lambda _, series:milestones.extend(series.milestones),
+            self.series_list, [])
+        return milestones
+
+    @property
     def series_buglistings(self):
         """Return a buglisting for each series.
 
@@ -1222,9 +1229,7 @@ class BugTargetBugListingView:
         """Return a buglisting for each milestone."""
         milestone_buglistings = []
         bug_task_set = getUtility(IBugTaskSet)
-        milestones = []
-        reduce(lambda _, series:milestones.extend(series.milestones),
-            self.series_list, [])
+        milestones = self.milestones_list
         open_bugs = bug_task_set.open_bugtask_search
         open_bugs.setTarget(any(*milestones))
         counts = bug_task_set.countBugs(open_bugs, (BugTask.milestoneID,))
