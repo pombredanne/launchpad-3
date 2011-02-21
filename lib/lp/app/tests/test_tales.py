@@ -3,9 +3,6 @@
 
 """tales.py doctests."""
 
-import unittest
-
-from doctest import DocTestSuite
 from lxml import html
 
 from zope.component import getAdapter
@@ -18,8 +15,14 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     FunctionalLayer,
     )
-from lp.app.browser.tales import format_link
-from lp.testing import test_tales, TestCase, TestCaseWithFactory
+from lp.app.browser.tales import (
+    format_link,
+    PersonFormatterAPI,
+    )
+from lp.testing import (
+    test_tales,
+    TestCaseWithFactory,
+    )
 
 
 def test_requestapi():
@@ -129,7 +132,24 @@ class TestPersonFormatterAPI(TestCaseWithFactory):
         self.assertEqual(expected, result)
 
 
-class TestFormattersAPI(TestCase):
+class TestObjectFormatterAPI(TestCaseWithFactory):
+    """Tests for ObjectFormatterAPI"""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_object_link_ignores_default(self):
+        # The rendering of an object's link ignores any specified default
+        # value which would be used in the case where the object were None.
+        person = self.factory.makePerson()
+        person_link = test_tales('person/fmt:link::default', person=person)
+        self.assertEqual(PersonFormatterAPI(person).link(None), person_link)
+        person_link = test_tales(
+            'person/fmt:link:bugs:default', person=person)
+        self.assertEqual(PersonFormatterAPI(person).link(
+            None, rootsite='bugs'), person_link)
+
+
+class TestFormattersAPI(TestCaseWithFactory):
     """Tests for FormattersAPI."""
 
     layer = DatabaseFunctionalLayer
@@ -194,15 +214,8 @@ class TestNoneFormatterAPI(TestCaseWithFactory):
         self.assertEqual(format_link(None), 'None')
         self.assertEqual(format_link(None, empty_value=''), '')
 
-    def test_linkification_with_none(self):
-        # The linkification of None works as expected.
-        linkified_text = test_tales('foo/fmt:link', foo=None)
-        self.assertEqual("None", linkified_text)
-
     def test_valid_traversal(self):
         # Traversal of allowed names works as expected.
-        adapter = getAdapter(None, IPathAdapter, 'fmt')
-        traverse = getattr(adapter, 'traverse', None)
 
         allowed_names = set([
             'approximatedate',
@@ -222,22 +235,24 @@ class TestNoneFormatterAPI(TestCaseWithFactory):
             'text-to-html',
             'time',
             'url',
+            'link',
             ])
 
         for name in allowed_names:
-            self.assertEqual('', traverse(name, []))
+            self.assertEqual('', test_tales('foo/fmt:%s' % name, foo=None))
+
+    def test_value_override(self):
+        # Override of rendered value works as expected.
+        self.assertEqual(
+            'default', test_tales('foo/fmt:link::default', foo=None))
+        self.assertEqual(
+            'default', test_tales('foo/fmt:link:rootsite:default', foo=None))
 
     def test_invalid_traversal(self):
         # Traversal of invalid names raises an exception.
         adapter = getAdapter(None, IPathAdapter, 'fmt')
         traverse = getattr(adapter, 'traverse', None)
         self.failUnlessRaises(TraversalError, traverse, "foo", [])
-
-    def test_link(self):
-        # Traversal of 'link' works as expected.
-        adapter = getAdapter(None, IPathAdapter, 'fmt')
-        traverse = getattr(adapter, 'traverse', None)
-        self.assertEqual('None', traverse('link', []))
 
     def test_shorten_traversal(self):
         # Traversal of 'shorten' works as expected.
@@ -247,15 +262,3 @@ class TestNoneFormatterAPI(TestCaseWithFactory):
         extra = ['1', '2']
         self.assertEqual('', traverse('shorten', extra))
         self.assertEqual(['1'], extra)
-
-
-def test_suite():
-    """Return this module's doctest Suite. Unit tests are also run."""
-    suite = unittest.TestSuite()
-    suite.addTests(DocTestSuite())
-    suite.addTests(unittest.TestLoader().loadTestsFromName(__name__))
-    return suite
-
-
-if __name__ == '__main__':
-    unittest.main()
