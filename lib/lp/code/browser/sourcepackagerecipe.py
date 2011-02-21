@@ -567,8 +567,8 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
 
     @property
     def initial_values(self):
-        distros = get_buildable_distroseries_set(self.user)
-        series = [series for series in distros if series.status in (
+        distroseries = get_buildable_distroseries_set(self.user)
+        series = [series for series in distroseries if series.status in (
                 SeriesStatus.CURRENT, SeriesStatus.DEVELOPMENT)]
         return {
             'name' : self._find_unused_name(self.user),
