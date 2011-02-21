@@ -109,16 +109,7 @@ class DateTimeWidget(TextWidget):
     """
 
     timeformat = '%Y-%m-%d %H:%M:%S'
-    supported_input_formats = [
-        '%Y-%m-%d %H:%M:%S%z',
-        '%Y-%m-%d %H:%M:%S',
-        '%Y-%m-%d %H:%M',
-        '%Y-%m-%d',
-        '%m-%d-%Y %H:%M:%S%z',
-        '%m-%d-%Y %H:%M:%S',
-        '%m-%d-%Y %H:%M',
-        '%m-%d-%Y',
-        ]
+    
 
     required_time_zone = None
     display_zone = True
@@ -134,6 +125,26 @@ class DateTimeWidget(TextWidget):
         super(DateTimeWidget, self).__init__(context, request)
         launchbag = getUtility(ILaunchBag)
         self.system_time_zone = launchbag.time_zone
+
+    @property
+    def supported_input_formats(self):
+        date_formats = [
+            '%Y-%m-%d', '%m-%d-%Y', '%m-%d-%y',
+            '%m/%d/%Y', '%m/%d/%y',
+            '%d %b, %Y', '%d %b %Y', '%b %d, %Y', '%b %d %Y',
+            '%d %B, %Y', '%d %B %Y', '%B %d, %Y', 'B% %d %Y',
+            ]
+
+        time_formats = [
+            '%H:%M:%S',
+            '%H:%M',
+            '',
+            ]
+        outputs = []
+        for fmt in time_formats:
+           outputs.extend(['%s %s'.strip() % (d, fmt) for d in date_formats])
+
+        return outputs
 
     #@property  XXX: do as a property when we have python2.5 for tests of
     #properties
