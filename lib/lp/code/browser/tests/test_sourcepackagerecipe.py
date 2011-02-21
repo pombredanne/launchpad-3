@@ -60,6 +60,7 @@ from lp.registry.interfaces.person import (
     TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import clear_property_cache
 from lp.soyuz.model.processor import ProcessorFamily
@@ -302,7 +303,39 @@ class TestSourcePackageRecipeAddViewInitalValues(TestCaseWithFactory):
             view = create_initialized_view(branch, '+new-recipe')
         self.assertThat('widget-daily-1', Equals(view.initial_values['name']))
 
-
+    def test_initial_series(self):
+        # The initial series are those that are current or in development.
+        archive = self.factory.makeArchive()
+        experimental = self.factory.makeDistroSeries(
+            distribution=archive.distribution,
+            status=SeriesStatus.EXPERIMENTAL)
+        development = self.factory.makeDistroSeries(
+            distribution=archive.distribution,
+            status=SeriesStatus.DEVELOPMENT)
+        frozen = self.factory.makeDistroSeries(
+            distribution=archive.distribution,
+            status=SeriesStatus.FROZEN)
+        current = self.factory.makeDistroSeries(
+            distribution=archive.distribution,
+            status=SeriesStatus.CURRENT)
+        supported = self.factory.makeDistroSeries(
+            distribution=archive.distribution,
+            status=SeriesStatus.SUPPORTED)
+        obsolete = self.factory.makeDistroSeries(
+            distribution=archive.distribution,
+            status=SeriesStatus.OBSOLETE)
+        future = self.factory.makeDistroSeries(
+            distribution=archive.distribution,
+            status=SeriesStatus.FUTURE)
+        branch = self.factory.makeAnyBranch()
+        with person_logged_in(archive.owner):
+            view = create_initialized_view(branch, '+new-recipe')
+        series = set(view.initial_values['distros'])
+        initial_series = set([development, current])
+        self.assertEqual(initial_series, series.intersection(initial_series))
+        other_series = set(
+            [experimental, frozen, supported, obsolete, future])
+        self.assertEqual(set(), series.intersection(other_series))
 
 
 class TestSourcePackageRecipeAddView(TestCaseForRecipe):
