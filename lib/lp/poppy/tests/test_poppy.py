@@ -66,8 +66,7 @@ class FTPServer(Fixture):
         output as a way to tell that the server has finished with the
         connection.
         """
-        #time.sleep(5)
-        #self.poppy.verify_output(['CLOSED'])
+        time.sleep(5)
 
 
 class SFTPServer(Fixture):
