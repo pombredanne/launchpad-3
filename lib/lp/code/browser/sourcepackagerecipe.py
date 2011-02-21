@@ -91,8 +91,10 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
     ISourcePackageRecipeSource,
     MINIMAL_RECIPE_TEXT,
+    RECIPE_BETA_FLAG,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.model.archive import Archive
 
@@ -185,10 +187,9 @@ class SourcePackageRecipeView(LaunchpadView):
     """Default view of a SourcePackageRecipe."""
 
     def initialize(self):
-        # XXX: rockstar: This should be removed when source package recipes
-        # are put into production. spec=sourcepackagerecipes
         super(SourcePackageRecipeView, self).initialize()
-        self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
+        if getFeatureFlag(RECIPE_BETA_FLAG):
+            self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
         recipe = self.context
         if recipe.build_daily and recipe.daily_build_archive is None:
             self.request.response.addWarningNotification(
@@ -524,9 +525,8 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
 
     def initialize(self):
         super(SourcePackageRecipeAddView, self).initialize()
-        # XXX: rockstar: This should be removed when source package recipes
-        # are put into production. spec=sourcepackagerecipes
-        self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
+        if getFeatureFlag(RECIPE_BETA_FLAG):
+           self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
         widget = self.widgets['use_ppa']
         current_value = widget._getFormValue()
         self.use_ppa_existing = render_radio_widget_part(

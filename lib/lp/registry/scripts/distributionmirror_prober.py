@@ -565,6 +565,7 @@ class MirrorCDImageProberCallbacks(LoggingMixin):
         BadResponseCode,
         ConnectionSkipped,
         ProberTimeout,
+        RedirectToDifferentFile,
         UnknownURLSchemeAfterRedirect,
         )
 
@@ -848,7 +849,7 @@ class DistroMirrorProber:
             # Some people registered mirrors on distros other than Ubuntu back
             # in the old times, so now we need to do this small hack here.
             if not mirror.distribution.full_functionality:
-                self.logger.info(
+                self.logger.debug(
                     "Mirror '%s' of distribution '%s' can't be probed --we "
                     "only probe Ubuntu mirrors."
                     % (mirror.name, mirror.distribution.name))
