@@ -17,7 +17,12 @@ from textwrap import dedent
 
 from mechanize import LinkNotFoundError
 from pytz import utc
-from testtools.matchers import DocTestMatches, Matcher, Mismatch
+from testtools.matchers import (
+    DocTestMatches,
+    Equals,
+    Matcher,
+    Mismatch,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -263,6 +268,41 @@ class MatchesPickerText(Matcher):
         text_matcher = DocTestMatches(
             extract_text(text), doctest.NORMALIZE_WHITESPACE)
         return text_matcher.match(matchee)
+
+
+class TestSourcePackageRecipeAddViewInitalValues(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_project_branch_initial_name(self):
+        # When a project branch is used, the initial name is the name of the
+        # project followed by "-daily"
+        widget = self.factory.makeProduct(name='widget')
+        branch = self.factory.makeProductBranch(widget)
+        with person_logged_in(branch.owner):
+            view = create_initialized_view(branch, '+new-recipe')
+        self.assertThat('widget-daily', Equals(view.initial_values['name']))
+
+    def test_package_branch_initial_name(self):
+        # When a package branch is used, the initial name is the name of the
+        # source package followed by "-daily"
+        branch = self.factory.makePackageBranch(sourcepackagename='widget')
+        with person_logged_in(branch.owner):
+            view = create_initialized_view(branch, '+new-recipe')
+        self.assertThat('widget-daily', Equals(view.initial_values['name']))
+
+    def test_initial_name_exists(self):
+        # If the initial name exists, a generator is used to find an unused
+        # name by appending a numbered suffix on the end.
+        owner = self.factory.makePerson()
+        self.factory.makeSourcePackageRecipe(owner=owner, name=u'widget-daily')
+        widget = self.factory.makeProduct(name='widget')
+        branch = self.factory.makeProductBranch(widget)
+        with person_logged_in(owner):
+            view = create_initialized_view(branch, '+new-recipe')
+        self.assertThat('widget-daily-1', Equals(view.initial_values['name']))
+
+
 
 
 class TestSourcePackageRecipeAddView(TestCaseForRecipe):
