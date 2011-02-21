@@ -12,11 +12,12 @@ from datetime import (
     datetime,
     timedelta,
     )
+import doctest
 from textwrap import dedent
 
 from mechanize import LinkNotFoundError
 from pytz import utc
-from testtools.matchers import Equals, Matcher, Mismatch
+from testtools.matchers import DocTestMatches, Matcher, Mismatch
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -235,7 +236,9 @@ class MatchesTagText(Matcher):
         elif len(widgets) > 1:
             return MultipleElements(self.tag_id, self.soup_content)
         widget = widgets[0]
-        return Equals(extract_text(widget)).match(matchee)
+        text_matcher = DocTestMatches(
+            extract_text(widget), doctest.NORMALIZE_WHITESPACE)
+        return text_matcher.match(matchee)
 
 
 class MatchesPickerText(Matcher):
@@ -257,7 +260,9 @@ class MatchesPickerText(Matcher):
             return MultipleElements(self.widget_id, self.soup_content)
         widget = widgets[0]
         text = widget.findAll(attrs={'class': 'yui3-activator-data-box'})[0]
-        return Equals(extract_text(text)).match(matchee)
+        text_matcher = DocTestMatches(
+            extract_text(text), doctest.NORMALIZE_WHITESPACE)
+        return text_matcher.match(matchee)
 
 
 class TestSourcePackageRecipeAddView(TestCaseForRecipe):
@@ -752,29 +757,18 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         browser.getControl('PPA 2').click()
         browser.getControl('Update Recipe').click()
 
-        pattern = """\
-            Master Chef's fings recipe
-            .*
-
-            Description
-            This is stuff
-
-            Recipe information
-            Build schedule: Tag help Built on request
-            Owner: Master Chef Edit
-            Base branch: lp://dev/~chef/ratatouille/meat
-            Debian version: {debupstream}-0~{revno}
-            Daily build archive:
-            PPA 2 Edit
-            Distribution series: Mumbly Midget
-            .*
-
-            Recipe contents
-            # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
-            lp://dev/~chef/ratatouille/meat"""
-        main_text = extract_text(find_main_content(browser.contents))
-        self.assertTextMatchesExpressionIgnoreWhitespace(
-            pattern, main_text)
+        content = find_main_content(browser.contents)
+        self.assertThat(
+            'This is stuff', MatchesTagText(content, 'edit-description'))
+        self.assertThat(
+            '# bzr-builder format 0.3 deb-version {debupstream}-0~{revno}\n'
+            'lp://dev/~chef/ratatouille/meat',
+            MatchesTagText(content, 'edit-recipe_text'))
+        self.assertThat(
+            'Distribution series: Mumbly Midget',
+            MatchesTagText(content, 'distros'))
+        self.assertThat(
+            'PPA 2', MatchesPickerText(content, 'edit-daily_build_archive'))
 
     def test_admin_edit(self):
         self.factory.makeDistroSeries(
@@ -812,29 +806,17 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         browser.getControl('Mumbly Midget').click()
         browser.getControl('Update Recipe').click()
 
-        pattern = """\
-            Master Chef's fings recipe
-            .*
-
-            Description
-            This is stuff
-
-            Recipe information
-            Build schedule: Tag help Built on request
-            Owner: Master Chef Edit
-            Base branch: lp://dev/~chef/ratatouille/meat
-            Debian version: {debupstream}-0~{revno}
-            Daily build archive:
-            Secret PPA Edit
-            Distribution series: Mumbly Midget
-            .*
-
-            Recipe contents
-            # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
-            lp://dev/~chef/ratatouille/meat"""
-        main_text = extract_text(find_main_content(browser.contents))
-        self.assertTextMatchesExpressionIgnoreWhitespace(
-            pattern, main_text)
+        content = find_main_content(browser.contents)
+        self.assertEqual('fings', content.h1.string)
+        self.assertThat(
+            'This is stuff', MatchesTagText(content, 'edit-description'))
+        self.assertThat(
+            '# bzr-builder format 0.3 deb-version {debupstream}-0~{revno}\n'
+            'lp://dev/~chef/ratatouille/meat',
+            MatchesTagText(content, 'edit-recipe_text'))
+        self.assertThat(
+            'Distribution series: Mumbly Midget',
+            MatchesTagText(content, 'distros'))
 
     def test_edit_recipe_forbidden_instruction(self):
         self.factory.makeDistroSeries(
@@ -923,58 +905,6 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         self.assertEqual(
             extract_text(find_tags_by_class(browser.contents, 'message')[1]),
             'There is already a recipe owned by Master Chef with this name.')
-
-    def test_edit_recipe_but_not_name(self):
-        self.factory.makeDistroSeries(
-            displayname='Mumbly Midget', name='mumbly',
-            distribution=self.ppa.distribution)
-        product = self.factory.makeProduct(
-            name='ratatouille', displayname='Ratatouille')
-        veggie_branch = self.factory.makeBranch(
-            owner=self.chef, product=product, name='veggies')
-        meat_branch = self.factory.makeBranch(
-            owner=self.chef, product=product, name='meat')
-        ppa = self.factory.makeArchive(name='ppa')
-        recipe = self.factory.makeSourcePackageRecipe(
-            owner=self.chef, registrant=self.chef,
-            name=u'things', description=u'This is a recipe',
-            distroseries=self.squirrel, branches=[veggie_branch],
-            daily_build_archive=ppa)
-
-        meat_path = meat_branch.bzr_identity
-
-        browser = self.getUserBrowser(canonical_url(recipe), user=self.chef)
-        browser.getLink('Edit recipe').click()
-        browser.getControl('Description').value = 'This is stuff'
-        browser.getControl('Recipe text').value = (
-            MINIMAL_RECIPE_TEXT % meat_path)
-        browser.getControl('Secret Squirrel').click()
-        browser.getControl('Mumbly Midget').click()
-        browser.getControl('Update Recipe').click()
-
-        pattern = """\
-            Master Chef's things recipe
-            .*
-
-            Description
-            This is stuff
-
-            Recipe information
-            Build schedule: Tag help Built on request
-            Owner: Master Chef Edit
-            Base branch: lp://dev/~chef/ratatouille/meat
-            Debian version: {debupstream}-0~{revno}
-            Daily build archive:
-            Secret PPA Edit
-            Distribution series: Mumbly Midget
-            .*
-
-            Recipe contents
-            # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
-            lp://dev/~chef/ratatouille/meat"""
-        main_text = extract_text(find_main_content(browser.contents))
-        self.assertTextMatchesExpressionIgnoreWhitespace(
-            pattern, main_text)
 
     def test_edit_recipe_private_branch(self):
         # If a user tries to set source package recipe to use a private
