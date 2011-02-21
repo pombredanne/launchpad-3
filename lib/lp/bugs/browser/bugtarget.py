@@ -1182,10 +1182,17 @@ class BugTargetBugListingView:
 
     @property
     def milestones_list(self):
-        milestones = []
-        reduce(lambda _, series:milestones.extend(series.milestones),
-            self.series_list, [])
-        return milestones
+        if IDistribution(self.context, None):
+            milestone_resultset = self.context.milestones
+        elif IProduct(self.context, None):
+            milestone_resultset = self.context.milestones
+        elif IDistroSeries(self.context, None):
+            milestone_resultset = self.context.distribution.milestones
+        elif IProductSeries(self.context, None):
+            milestone_resultset = self.context.product.milestones
+        else:
+            raise AssertionError("series_list called with illegal context")
+        return list(milestone_resultset)
 
     @property
     def series_buglistings(self):
