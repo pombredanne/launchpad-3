@@ -18,12 +18,6 @@ and hide errors (eg. if this object is supposed to be usable outside of
 zope, we should not be testing it with the full Z3 functional test
 harness).
 
-canonical.functional.FunctionalTestCase
----------------------------------------
-
-This is a customised zope3 FunctionalTestCase and should be used when you
-simply need the zope3 utilities etc available.
-
 PgTestSetup
 -----------
 
