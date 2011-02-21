@@ -39,7 +39,7 @@ class TestTranslatableMessageBase:
         self.potemplate = self.factory.makePOTemplate(
             productseries=self.trunk)
         self.potmsgset = self.factory.makePOTMsgSet(
-            potemplate=self.potemplate, sequence=1)
+            potemplate=self.potemplate)
         self.pofile = self.factory.makePOFile(
             potemplate=self.potemplate, language_code='eo')
 
@@ -76,6 +76,7 @@ class TestTranslatableMessage(TestTranslatableMessageBase,
     def test_sequence(self):
         # After instantiation, the sequence number from the potmsgset is
         # available.
+        self.potmsgset.setSequence(self.potemplate, 1)
         message = TranslatableMessage(self.potmsgset, self.pofile)
         self.assertEqual(1, message.sequence)
 
@@ -156,7 +157,7 @@ class TestTranslatableMessageExternal(TestTranslatableMessageBase,
         product.translations_usage = ServiceUsage.LAUNCHPAD
         self.external_potmsgset = self.factory.makePOTMsgSet(
             potemplate=self.external_potemplate,
-            singular=common_msgid, sequence=1)
+            singular=common_msgid)
         self.external_pofile = self.factory.makePOFile(
             potemplate=self.external_potemplate, language_code='eo')
 

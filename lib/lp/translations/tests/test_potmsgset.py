@@ -69,7 +69,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # Create a single POTMsgSet that is used across all tests,
         # and add it to only one of the POTemplates.
         self.potmsgset = self.factory.makePOTMsgSet(
-            self.devel_potemplate, sequence=1)
+            self.devel_potemplate)
 
     def _refreshSuggestiveTemplatesCache(self):
         """Refresh the `SuggestivePOTemplate` cache."""
@@ -351,8 +351,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         product = external_template.productseries.product
         product.translations_usage = ServiceUsage.LAUNCHPAD
         external_potmsgset = self.factory.makePOTMsgSet(
-            external_template, singular=self.potmsgset.singular_text,
-            sequence=1)
+            external_template, singular=self.potmsgset.singular_text)
         external_pofile = self.factory.makePOFile(
             potemplate=external_template)
         language = external_pofile.language
@@ -409,8 +408,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         product = external_template.productseries.product
         product.translations_usage = ServiceUsage.LAUNCHPAD
         external_potmsgset = self.factory.makePOTMsgSet(
-            external_template, singular=self.potmsgset.singular_text,
-            sequence=1)
+            external_template, singular=self.potmsgset.singular_text)
         external_pofile = self.factory.makePOFile(
             potemplate=external_template)
         language = external_pofile.language
@@ -631,8 +629,7 @@ class TestPOTMsgSetSuggestions(TestCaseWithFactory):
 
         self.potemplate = self.factory.makePOTemplate(
             productseries=self.foo_main, name="messages")
-        self.potmsgset = self.factory.makePOTMsgSet(self.potemplate,
-                                                    sequence=1)
+        self.potmsgset = self.factory.makePOTMsgSet(self.potemplate)
         self.pofile = self.factory.makePOFile('eo', self.potemplate)
         # Set up some translation messages with dummy timestamps that will be
         # changed in the tests.
@@ -830,7 +827,7 @@ class TestPOTMsgSetResetTranslation(TestCaseWithFactory):
 
         template = self.potemplate = self.factory.makePOTemplate(
             productseries=self.foo_main, name="messages")
-        self.potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
+        self.potmsgset = self.factory.makePOTMsgSet(template)
         self.pofile = self.factory.makePOFile('eo', template)
 
     def test_resetCurrentTranslation_shared(self):
@@ -960,8 +957,7 @@ class TestPOTMsgSetText(TestCaseWithFactory):
         """
         potemplate = self.factory.makePOTemplate(productseries=productseries)
         potemplate.source_file_format = format
-        potmsgset = self.factory.makePOTMsgSet(
-            potemplate, msgid_text, sequence=1)
+        potmsgset = self.factory.makePOTMsgSet(potemplate, msgid_text)
         return (potmsgset, potemplate)
 
     def _makePOTMsgSet(self, msgid_text, format, productseries=None):
@@ -1101,7 +1097,7 @@ class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
         sr_pofile = self.factory.makePOFile('sr', potemplate=self.potemplate)
 
         credits = self.factory.makePOTMsgSet(
-            self.potemplate, u'translator-credits', sequence=1)
+            self.potemplate, u'translator-credits')
 
         eo_translation = credits.getCurrentTranslation(
             self.potemplate, eo_pofile.language,
@@ -1120,7 +1116,7 @@ class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
         # Normal messages do not receive a dummy translation.
         eo_pofile = self.factory.makePOFile('eo', potemplate=self.potemplate)
 
-        potmsgset = self.factory.makePOTMsgSet(self.potemplate, sequence=1)
+        potmsgset = self.factory.makePOTMsgSet(self.potemplate)
         eo_translation = potmsgset.getCurrentTranslation(
             self.potemplate, eo_pofile.language,
             self.potemplate.translation_side)
@@ -1133,7 +1129,7 @@ class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
         imported_credits = u'Imported credits.'
 
         credits = self.factory.makePOTMsgSet(
-            self.potemplate, u'translator-credits', sequence=1)
+            self.potemplate, u'translator-credits')
         self.factory.makeCurrentTranslationMessage(
             eo_pofile, credits, translations=[imported_credits],
             current_other=True)
@@ -1149,7 +1145,7 @@ class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
         # all translation credits messages.
 
         credits = self.factory.makePOTMsgSet(
-            self.potemplate, u'translator-credits', sequence=1)
+            self.potemplate, u'translator-credits')
         eo_pofile = self.factory.makePOFile('eo', potemplate=self.potemplate)
 
         eo_translation = credits.getCurrentTranslation(
@@ -1727,7 +1723,7 @@ class TestCheckForConflict(TestCaseWithFactory):
         # If there is no current translation, _checkForConflict accepts
         # that as conflict-free.
         potemplate = self.factory.makePOTemplate()
-        potmsgset = self.factory.makePOTMsgSet(potemplate, sequence=1)
+        potmsgset = self.factory.makePOTMsgSet(potemplate)
         old = datetime.now(pytz.UTC) - timedelta(days=366)
 
         removeSecurityProxy(potmsgset)._checkForConflict(None, old)
