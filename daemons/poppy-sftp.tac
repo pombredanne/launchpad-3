@@ -99,8 +99,8 @@ class PoppyAnonymousShell(ftp.FTPShell):
         return defer.maybeDeferred(self.uploadfilesystem.mkdir, path)
 
     def removeDirectory(self, path):
-        # Same as SFTPServer
-        self.uploadfilesystem.rmdir(path)
+        path = os.sep.join(path)
+        return defer.maybeDeferred(self.uploadfilesystem.rmdir(path))
 
     def logout(self):
         """Called when the client disconnects.
