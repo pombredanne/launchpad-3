@@ -1823,7 +1823,8 @@ BugMessage""" % sqlvalues(self.id))
                 if user.inTeam(subscription.person):
                     self._known_viewers.add(user.id)
                     return True
-            # Pillar owners can view it.
+            # Pillar owners can view it. Note that this is contentious and
+            # possibly incorrect: see bug 702429.
             for pillar_owner in [bt.pillar.owner for bt in self.bugtasks]:
                 if user.inTeam(pillar_owner):
                     self._known_viewers.add(user.id)
