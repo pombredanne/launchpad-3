@@ -664,6 +664,13 @@ class cmd_images(EC2Command):
 class cmd_list(EC2Command):
     """List all your current EC2 test runs."""
 
+    aliases = ["ls"]
+
+    takes_options = [
+        Option('verbose', short_name='v',
+               help="Include more information about each instance"),
+        ]
+
     def iter_instances(self, account):
         """Iterate through all instances in 'account'."""
         for reservation in account.conn.get_all_instances():
@@ -691,29 +698,42 @@ class cmd_list(EC2Command):
             return None
         return simplejson.loads(json)
 
+    def format_instance(self, instance, data, verbose):
+        """Format 'instance' for display.
+
+        :param instance: The EC2 instance to display.
+        :param data: Launchpad-specific data.
+        :param verbose: Whether we want verbose output.
+        """
+        uptime = self.get_uptime(instance)
+        if data['successful']:
+            current_status = '[OK]    '
+        else:
+            current_status = '[FAILED]'
+        return '%s   %s (up for %s)' % (
+            data['description'], current_status, uptime)
+
     def format_summary(self, by_state):
         return ', '.join(
             ': '.join((state, str(num)))
             for (state, num) in sorted(list(by_state.items())))
 
-    def run(self):
+    def run(self, verbose=False):
         credentials = EC2Credentials.load_from_file()
         session_name = EC2SessionName.make(EC2TestRunner.name)
         account = credentials.connect(session_name)
         instances = list(self.iter_instances(account))
+        if len(instances) == 0:
+            print "No instances running."
+            return
+
         by_state = {}
         for instance in instances:
             by_state[instance.state] = by_state.get(instance.state, 0) + 1
             data = self.get_ec2test_info(instance)
             if data is None:
                 continue
-            uptime = self.get_uptime(instance)
-            if data['successful']:
-                current_status = '[OK]    '
-            else:
-                current_status = '[FAILED]'
-            print '%s   %s (up for %s)' % (
-                data['description'], current_status, uptime)
+            print self.format_instance(instance, data, verbose)
         print self.format_summary(by_state)
 
 
