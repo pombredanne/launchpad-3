@@ -234,12 +234,14 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
     def test_bugtasks_queries(self):
         # The view.bugtasks attribute will make four queries:
         #  1. Load bugtasks and bugs.
-        #  2. Load assignees (Person, Account, and EmailAddress).
-        #  3. Load links to specifications.
-        #  4. Load links to branches.
+        #  2. Loads the target (sourcepackagename / product)
+        #  3. Load assignees (Person, Account, and EmailAddress).
+        #  4. Load links to specifications.
+        #  5. Load links to branches.
+        #  6. Loads milestones
         bugtask_count = 10
         self.assert_bugtasks_query_count(
-            self.milestone, bugtask_count, query_limit=6)
+            self.milestone, bugtask_count, query_limit=7)
 
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more
@@ -260,7 +262,7 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         # is very large already, if the test fails due to such a change,
         # please cut some more of the existing fat out of it rather than
         # increasing the cap.
-        page_query_limit = 34
+        page_query_limit = 35
         product = self.factory.makeProduct()
         login_person(product.owner)
         milestone = self.factory.makeMilestone(
@@ -359,9 +361,10 @@ class TestProjectGroupMilestoneIndexQueryCount(TestQueryCountBase):
         #  3. Load assignees (Person, Account, and EmailAddress).
         #  4. Load links to specifications.
         #  5. Load links to branches.
+        #  6. Loads milestones.
         bugtask_count = 10
         self.assert_bugtasks_query_count(
-            self.milestone, bugtask_count, query_limit=6)
+            self.milestone, bugtask_count, query_limit=7)
 
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more
@@ -419,17 +422,19 @@ class TestDistributionMilestoneIndexQueryCount(TestQueryCountBase):
         #  2. Check if the user is in the admin team.
         #  3. Check if the user is in the owner of the admin team.
         #  4. Load bugtasks and bugs.
-        #  5. Load assignees (Person, Account, and EmailAddress).
-        #  6. Load links to specifications.
-        #  7. Load links to branches.
+        #  5. load the source package names.
+        #  6. Load assignees (Person, Account, and EmailAddress).
+        #  7. Load links to specifications.
+        #  8. Load links to branches.
+        #  9. Load links to milestones.
         bugtask_count = 10
         self.assert_bugtasks_query_count(
-            self.milestone, bugtask_count, query_limit=9)
+            self.milestone, bugtask_count, query_limit=10)
 
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more
         # bugs with different assignees.
-        query_limit = 33
+        query_limit = 34
         self.add_bug(3)
         self.assert_milestone_page_query_count(
             self.milestone, query_limit=query_limit)

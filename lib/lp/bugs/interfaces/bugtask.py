@@ -477,6 +477,7 @@ class IBugTask(IHasDateCreated, IHasBug):
         readonly=True,
         vocabulary='Milestone',
         schema=Interface)) # IMilestone
+    milestoneID = Attribute('The id of the milestone.')
 
     # XXX kiko 2006-03-23:
     # The status and importance's vocabularies do not
