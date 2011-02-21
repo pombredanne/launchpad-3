@@ -667,8 +667,10 @@ class cmd_list(EC2Command):
     aliases = ["ls"]
 
     takes_options = [
-        Option('verbose', short_name='v',
+        Option('show-urls',
                help="Include more information about each instance"),
+        Option('all', short_name='a',
+               help="Show all instances, not just ones with ec2test data."),
         ]
 
     def iter_instances(self, account):
@@ -685,12 +687,17 @@ class cmd_list(EC2Command):
             datetime.utcnow().replace(tzinfo=UTC)
             - launch_time.replace(tzinfo=UTC))
 
-    def get_ec2test_info(self, instance):
-        """Load the ec2test-specific information published by 'instance'."""
+    def get_http_url(self, instance):
         hostname = instance.public_dns_name
         if not hostname:
             return
-        url = 'http://%s/' % (hostname,)
+        return 'http://%s/' % (hostname,)
+
+    def get_ec2test_info(self, instance):
+        """Load the ec2test-specific information published by 'instance'."""
+        url = self.get_http_url(instance)
+        if url is None:
+            return
         try:
             json = get_transport(url).get_bytes('info.json')
         except (ConnectionError, NoSuchFile):
@@ -706,19 +713,29 @@ class cmd_list(EC2Command):
         :param verbose: Whether we want verbose output.
         """
         uptime = self.get_uptime(instance)
-        if data['successful']:
-            current_status = '[OK]    '
+        if data is None:
+            description = instance.id
+            current_status =     'unknown '
         else:
-            current_status = '[FAILED]'
-        return '%s   %s (up for %s)' % (
-            data['description'], current_status, uptime)
+            description = data['description']
+            if data['successful']:
+                current_status = '[OK]    '
+            else:
+                current_status = '[FAILED]'
+        output = '%s  %s (up for %s)' % (description, current_status, uptime)
+        if verbose:
+            url = self.get_http_url(instance)
+            if url is None:
+                url = "No web service"
+            output += '\n  %s' % (url,)
+        return output
 
     def format_summary(self, by_state):
         return ', '.join(
             ': '.join((state, str(num)))
             for (state, num) in sorted(list(by_state.items())))
 
-    def run(self, verbose=False):
+    def run(self, show_urls=False, all=False):
         credentials = EC2Credentials.load_from_file()
         session_name = EC2SessionName.make(EC2TestRunner.name)
         account = credentials.connect(session_name)
@@ -731,10 +748,10 @@ class cmd_list(EC2Command):
         for instance in instances:
             by_state[instance.state] = by_state.get(instance.state, 0) + 1
             data = self.get_ec2test_info(instance)
-            if data is None:
+            if data is None and not all:
                 continue
-            print self.format_instance(instance, data, verbose)
-        print self.format_summary(by_state)
+            print self.format_instance(instance, data, show_urls)
+        print 'Summary: %s' % (self.format_summary(by_state),)
 
 
 class cmd_help(EC2Command):
