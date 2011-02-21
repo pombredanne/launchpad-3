@@ -294,6 +294,9 @@ from lp.translations.interfaces.translator import ITranslatorSet
 from lp.translations.model.translationimportqueue import (
     TranslationImportQueueEntry,
     )
+from lp.translations.model.translationtemplateitem import (
+    TranslationTemplateItem,
+    )
 from lp.translations.utilities.sanitize import (
     sanitize_translations_from_webui,
     )
@@ -2814,6 +2817,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             pofile = self.makePOFile(language=language, side=side)
         if potmsgset is None:
             potmsgset = self.makePOTMsgSet(pofile.potemplate, sequence=1)
+        tti_for_message_in_template = TranslationTemplateItem.selectOneBy(
+            potmsgset=potmsgset, potemplate=pofile.potemplate)
+        assert tti_for_message_in_template is not None
         if translator is None:
             translator = self.makePerson()
         if reviewer is None:

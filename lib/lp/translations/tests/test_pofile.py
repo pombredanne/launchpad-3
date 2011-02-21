@@ -1825,6 +1825,44 @@ class TestPOFileStatistics(TestCaseWithFactory):
         self.assertEquals(self.pofile.newCount(), 0)
         self.assertEquals(self.pofile.updatesCount(), 1)
 
+    def makeDivergedTranslationForOtherTarget(self, for_sourcepackage):
+        """Create a translation message that is diverged for another target.
+        """
+        if for_sourcepackage:
+            ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+            distroseries = self.factory.makeDistroSeries(distribution=ubuntu)
+            sourcepackage = self.factory.makeSourcePackage(
+                distroseries=distroseries)
+            sourcepackagename = sourcepackage.sourcepackagename
+        else:
+            distroseries = None
+            sourcepackagename = None
+        other_potemplate = self.factory.makePOTemplate(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+        other_pofile = self.factory.makePOFile(
+            language_code=self.pofile.language.code,
+            potemplate=other_potemplate)
+        self.potmsgset.setSequence(
+            other_potemplate, self.factory.getUniqueInteger())
+        self.factory.makeCurrentTranslationMessage(
+            pofile=other_pofile, potmsgset=self.potmsgset, diverged=True)
+
+    def test_POFile_updateStatistics_diverged_message_this_side(self):
+        # Translations that are diverged for a given target do not
+        # appear in the statistical data for another target.
+        self.makeDivergedTranslationForOtherTarget(for_sourcepackage=False)
+        self.pofile.updateStatistics()
+        self.assertEqual(self.pofile.rosettaCount(), 0)
+        self.assertEqual(self.pofile.unreviewedCount(), 0)
+
+    def test_POFile_updateStatistics_diverged_message_other_side(self):
+        # Translations that are diverged for a given target do not
+        # appear in the statistical data for another target.
+        self.makeDivergedTranslationForOtherTarget(for_sourcepackage=True)
+        self.pofile.updateStatistics()
+        self.assertEqual(self.pofile.rosettaCount(), 0)
+        self.assertEqual(self.pofile.unreviewedCount(), 0)
+
 
 class TestPOFile(TestCaseWithFactory):
     """Test PO file methods."""

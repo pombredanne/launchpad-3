@@ -857,7 +857,6 @@ class POFile(SQLBase, POFileMixIn):
                     Other.potmsgset = TTI.potmsgset AND
                     Other.language = %(language)s AND
                     Other.%(other_flag)s IS TRUE AND
-                    Other.potemplate IS NULL AND
                     Other.potemplate IS NULL
                 WHERE
                     TTI.potemplate = %(potemplate)s AND
@@ -927,7 +926,9 @@ class POFile(SQLBase, POFileMixIn):
                             Suggestion.date_created > COALESCE(
                                 Current.date_reviewed,
                                 Current.date_created,
-                                TIMESTAMP 'epoch')
+                                TIMESTAMP 'epoch') AND
+                            COALESCE(Suggestion.potemplate, %(potemplate)s) =
+                                %(potemplate)s
                     )
                 ORDER BY TTI.potmsgset, Current.potemplate NULLS LAST
             ) AS messages_with_suggestions
