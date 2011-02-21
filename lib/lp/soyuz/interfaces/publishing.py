@@ -631,6 +631,13 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         :return: A URL to the librarian file containing the diff.
         """
 
+    def builtByRecipe():
+        """Return the SourcePackageRecipe that caused this publishing
+        record to be created, or None if one wasn't.
+
+        :return: A `SourcePackageRecipe` or None.
+        """
+
 
 class ISourcePackagePublishingHistory(ISourcePackagePublishingHistoryPublic,
                                       IPublishingEdit):

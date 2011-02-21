@@ -33,6 +33,9 @@
       <span tal:attributes="title context/datepublished/fmt:datetime"
             tal:content="context/datepublished/fmt:displaydate" />
     </li>
+    <li tal:condition="context/builtByRecipe">
+    Built by recipe <a tal:attributes="href context/builtByRecipe/fmt:url"><span tal:replace="context/builtByRecipe/name" /></a> for <span tal:replace="context/builtByRecipe/owner/displayname" />
+    </li>
     <li tal:condition="view/wasCopied">
       <strong>Copied from</strong>
       <tal:source_original_location condition="view/is_source">

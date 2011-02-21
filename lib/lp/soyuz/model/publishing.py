@@ -854,6 +854,13 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         getUtility(IPublishingSet).requestDeletion(
             [self], removed_by, removal_comment)
 
+    @property
+    def builtByRecipe(self):
+        """See `ISourcePackagePublishingHistory`."""
+        if self.sourcepackagerelease.source_package_recipe_build is None:
+            return None
+        return self.sourcepackagerelease.source_package_recipe_build.recipe
+
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A binary package publishing record."""
