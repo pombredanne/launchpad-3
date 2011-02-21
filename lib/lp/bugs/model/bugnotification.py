@@ -38,6 +38,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.bugs.enum import BugNotificationStatus
 from lp.bugs.interfaces.bugnotification import (
     IBugNotification,
@@ -45,6 +46,7 @@ from lp.bugs.interfaces.bugnotification import (
     IBugNotificationRecipient,
     IBugNotificationSet,
     )
+from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
 from lp.services.database.stormbase import StormBase
 
 
@@ -68,6 +70,15 @@ class BugNotification(SQLBase):
         """See `IBugNotification`."""
         return BugNotificationRecipient.selectBy(
             bug_notification=self, orderBy='id')
+
+    @property
+    def bug_filters(self):
+        """See `IStructuralSubscription`."""
+        return IStore(BugSubscriptionFilter).find(
+            BugSubscriptionFilter,
+            BugSubscriptionFilter.id ==
+            BugNotificationFilter.bug_subscription_filter_id,
+            self.id == BugNotificationFilter.bug_notification_id)
 
 
 class BugNotificationSet:
