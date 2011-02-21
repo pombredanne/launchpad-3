@@ -25,9 +25,9 @@ PgTestSetup is used for tests that require access to a PostgreSQL backend.
 For example, we would use this for testing SQLObject or our custom
 extentions to it.
 
-The class is defined in canonical.ftests.pgsql
+The class is defined in lp.testing.pgsql
 
->>> from canonical.ftests.pgsql import PgTestSetup
+>>> from lp.testing.pgsql import PgTestSetup
 
 The setup procedure builds us a fresh, empty database
 
