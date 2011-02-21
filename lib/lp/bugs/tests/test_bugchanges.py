@@ -63,7 +63,7 @@ class TestBugChanges(TestCaseWithFactory):
         subscriber = self.factory.makePerson(name=name)
         subscription = target.addBugSubscription(subscriber, subscriber)
         with person_logged_in(subscriber):
-            filter = subscription.newBugFilter()
+            filter = subscription.bug_filters.one()
             filter.bug_notification_level = level
         return subscriber
 
