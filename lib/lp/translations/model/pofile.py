@@ -843,6 +843,8 @@ class POFile(SQLBase, POFileMixIn):
             'language': quote(self.language),
             'flag': side_traits.flag_name,
             'other_flag': side_traits.other_side_traits.flag_name,
+            'has_msgstrs':
+                compose_sql_translationmessage_has_translations("Current"),
             'has_other_msgstrs':
                 compose_sql_translationmessage_has_translations("Other"),
         }
@@ -869,7 +871,8 @@ class POFile(SQLBase, POFileMixIn):
                     Other.potemplate IS NULL
                 WHERE
                     TTI.potemplate = %(potemplate)s AND
-                    TTI.sequence > 0
+                    TTI.sequence > 0 AND
+                    %(has_msgstrs)s
                 ORDER BY
                     TTI.potmsgset,
                     Current.potemplate NULLS LAST
