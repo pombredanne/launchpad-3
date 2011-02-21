@@ -116,7 +116,8 @@ class FTPServiceFactory(service.Service):
         factory = FTPServiceFactory(port)
         return strports.service(strport, factory.ftpfactory)
 
-ftpservice = FTPServiceFactory.makeFTPService()
+# ftpport defaults to 2121 in schema-lazr.conf
+ftpservice = FTPServiceFactory.makeFTPService(port=config.poppy.ftpport)
 
 # Construct an Application that has the Poppy SSH server,
 # and the Poppy FTP server.
