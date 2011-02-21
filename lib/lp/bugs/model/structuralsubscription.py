@@ -352,11 +352,10 @@ class StructuralSubscriptionTargetMixin:
             if subscribed_by.inTeam(self.distribution.owner):
                 return True
 
-        celebrities = getUtility(ILaunchpadCelebrities)
+        admins = getUtility(ILaunchpadCelebrities).admin
         return (subscriber == subscribed_by or
                 subscriber in subscribed_by.getAdministratedTeams() or
-                subscribed_by.inTeam(celebrities.registry_experts) or
-                subscribed_by.inTeam(celebrities.admins))
+                subscribed_by.inTeam(admins))
 
     def addSubscription(self, subscriber, subscribed_by):
         """See `IStructuralSubscriptionTarget`."""
