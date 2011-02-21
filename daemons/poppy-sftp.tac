@@ -80,11 +80,8 @@ class PoppyAnonymousShell(ftp.FTPShell):
 
         If the file path contains directories, we create them.
         """
-        # XXX this code is currently using internal sanitisation and
-        # file ops, it should be converted to use FilePath exclusively.
         filename = os.sep.join(file_segments)
         self._create_missing_directories(filename)
-        #absfile = self._translate_path(filename)
         return super(PoppyAnonymousShell, self).openForWriting(file_segments)
 
     def removeFile(self, path):
