@@ -295,7 +295,7 @@ COMMENT ON COLUMN BugNotificationAttachment.bug_notification IS 'The bug notific
 
 COMMENT ON TABLE BugNotificationFilter IS 'BugSubscriptionFilters that caused BugNotification to be generated.';
 COMMENT ON COLUMN BugNotificationFilter.bug_subscription_filter IS 'A BugSubscriptionFilter that caused a notification to go off.';
-COMMENT ON COLUMN BugNotificationAttachment.bug_notification IS 'The bug notification which a filter caused to be emitted.';
+COMMENT ON COLUMN BugNotificationFilter.bug_notification IS 'The bug notification which a filter caused to be emitted.';
 
 
 -- BugNotificationRecipient
