@@ -13,9 +13,9 @@ __all__ = []
 
 import subprocess
 
-from canonical.ftests.pgsql import PgTestSetup
 from canonical.testing.layers import DatabaseLayer
 from lp.testing import TestCase
+from lp.testing.pgsql import PgTestSetup
 
 
 class SampleDataTestCase(TestCase):
