@@ -1360,7 +1360,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertIs(None, build_button)
 
     def test_request_daily_builds_ajax_link_not_rendered(self):
-        #The Build now link should not be rendered without javascript.
+        # The Build now link should not be rendered without javascript.
         recipe = self.factory.makeSourcePackageRecipe(
             owner=self.chef, daily_build_archive=self.ppa,
             is_stale=True, build_daily=True)
@@ -1369,7 +1369,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertIs(None, build_link)
 
     def test_request_daily_builds_action(self):
-        #Daily builds should be triggered when requested.
+        # Daily builds should be triggered when requested.
         recipe = self.factory.makeSourcePackageRecipe(
             owner=self.chef, daily_build_archive=self.ppa,
             is_stale=True, build_daily=True)
