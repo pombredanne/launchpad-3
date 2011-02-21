@@ -111,10 +111,6 @@ class PoppyAnonymousShell(ftp.FTPShell):
                 os.path.join(self._current_upload, new_dir)):
                 self.uploadfilesystem.mkdir(new_dir)
 
-    def _translate_path(self, filename):
-        return self.uploadfilesystem._full(
-            self.uploadfilesystem._sanitize(filename))
-
     def list(self, path_segments, attrs):
         return defer.fail(ftp.CmdNotImplementedError("LIST"))
 
