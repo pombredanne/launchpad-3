@@ -66,7 +66,9 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
     )
+from lp.registry.model.person import IrcID
 from lp.scripts.garbo import (
+    BulkPruner,
     DailyDatabaseGarbageCollector,
     HourlyDatabaseGarbageCollector,
     OpenIDConsumerAssociationPruner,
@@ -96,6 +98,59 @@ class TestGarboScript(TestCase):
             "cronscripts/garbo-hourly.py", ["-q"], expect_returncode=0)
         self.failIf(out.strip(), "Output to stdout: %s" % out)
         self.failIf(err.strip(), "Output to stderr: %s" % err)
+
+
+class IrcIDPruner(BulkPruner):
+    target_table_class = IrcID
+    ids_to_prune_query = "SELECT id FROM IrcID WHERE id < 5"
+    maximum_chunk_size = 2
+
+
+class TestBulkPruner(TestCase):
+    layer = LaunchpadZopelessLayer
+
+    def test_bulkpruner(self):
+        log = BufferLogger()
+        pruner = IrcIDPruner(log)
+
+        # The loop thinks there is stuff to do.
+        self.assertFalse(pruner.isDone())
+
+        # Determine how many items to prune and to leave.
+        store = IMasterStore(IrcID)
+        num_to_prune = store.find(
+            IrcID, IrcID.id < 5).count()
+        num_to_leave = store.find(
+            IrcID, IrcID.id >= 5).count()
+        self.assertTrue(num_to_prune > 0)
+        self.assertTrue(num_to_leave > 0)
+
+        # Run one loop with a known chunk size.
+        chunk_size = 2
+        pruner(chunk_size)
+        # Make sure it committed by throwing away uncommitted changes.
+        transaction.abort()
+
+        num_remaining = store.find(IrcID).count()
+        expected_num_remaining = num_to_leave + num_to_prune - chunk_size
+        self.assertEqual(num_remaining, expected_num_remaining)
+
+        # The loop thinks there is stuff to do.
+        self.assertFalse(pruner.isDone())
+
+        while not pruner.isDone():
+            pruner(chunk_size)
+        # Make sure it committed by throwing away uncommitted changes.
+        transaction.abort()
+
+        self.assertEqual(store.find(IrcID, IrcID.id < 5).count(), 0)
+        self.assertEqual(
+            store.find(IrcID, IrcID.id >= 5).count(), num_to_leave)
+
+        # We can run it again - temporary objects cleaned up.
+        pruner = IrcIDPruner(log)
+        while not pruner.isDone():
+            pruner(chunk_size)
 
 
 class TestGarbo(TestCaseWithFactory):

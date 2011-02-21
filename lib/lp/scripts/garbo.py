@@ -98,8 +98,8 @@ class BulkPruner(TunableLoop):
 
     Instead, this implementation declares a CURSOR that can be used
     across multiple transactions, allowing us to calculate the set
-    of items to remove just once and iterate over it (avoiding the
-    seek-to-batch issues with a temporary table and OFFSET), whilst
+    of items to remove just once and iterate over it, avoiding the
+    seek-to-batch issues with a temporary table and OFFSET yet
     deleting batches of rows in separate transactions.
     """
 
