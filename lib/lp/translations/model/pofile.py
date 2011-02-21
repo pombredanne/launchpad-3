@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212,W0231
@@ -114,6 +114,17 @@ from lp.translations.utilities.sanitize import MixedNewlineMarkersError
 from lp.translations.utilities.translation_common_format import (
     TranslationMessageData,
     )
+
+
+def compose_sql_translationmessage_has_translations(tm_sql_identifier):
+    """Compose SQL for "`TranslationMessage` is nonempty.".
+
+    :param tm_sql_identifier: The SQL identifier for the
+        `TranslationMessage` in the query that's to be tested.
+    """
+    return "COALESCE(%s) IS NOT NULL" % ", ".join([
+        "%s.msgstr%d" % (tm_sql_identifier, form)
+        for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)])
 
 
 class POFileMixIn(RosettaStats):
@@ -827,15 +838,15 @@ class POFile(SQLBase, POFileMixIn):
         """Count `currentcount`, `updatescount`, and `rosettacount`."""
         side_traits = getUtility(ITranslationSideTraitsSet).getForTemplate(
             self.potemplate)
-        has_other_msgstrs = "COALESCE(%s) IS NOT NULL" % ", ".join([
-            "Other.msgstr%d" % form
-            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)])
         params = {
             'potemplate': quote(self.potemplate),
             'language': quote(self.language),
             'flag': side_traits.flag_name,
             'other_flag': side_traits.other_side_traits.flag_name,
-            'has_other_msgstrs': has_other_msgstrs,
+            'has_msgstrs':
+                compose_sql_translationmessage_has_translations("Current"),
+            'has_other_msgstrs':
+                compose_sql_translationmessage_has_translations("Other"),
         }
         # The "distinct on" combined with the "order by potemplate nulls
         # last" makes diverged messages mask their shared equivalents.
@@ -857,11 +868,11 @@ class POFile(SQLBase, POFileMixIn):
                     Other.potmsgset = TTI.potmsgset AND
                     Other.language = %(language)s AND
                     Other.%(other_flag)s IS TRUE AND
-                    Other.potemplate IS NULL AND
                     Other.potemplate IS NULL
                 WHERE
                     TTI.potemplate = %(potemplate)s AND
-                    TTI.sequence > 0
+                    TTI.sequence > 0 AND
+                    %(has_msgstrs)s
                 ORDER BY
                     TTI.potmsgset,
                     Current.potemplate NULLS LAST
