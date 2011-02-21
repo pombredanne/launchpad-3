@@ -101,24 +101,25 @@ class FTPServiceFactory(service.Service):
         factory.portal = portal
         factory.protocol = ftp.FTP
         factory.welcomeMessage = "Launchpad upload server"
+        factory.timeOut = config.poppy.idle_timeout
+
         # Setting this works around the fact that the twistd FTP server
         # invokes a special restricted shell when someone logs in as
         # "anonymous" which is the default for 'dput'.
         factory.userAnonymous = "userthatwillneverhappen"
         self.ftpfactory = factory
         self.portno = port
-        # XXX factory.timeOut = ?
 
     @staticmethod
     def makeFTPService(port=2121):
         strport = "tcp:%s" % port
         factory = FTPServiceFactory(port)
         return strports.service(strport, factory.ftpfactory)
-        #return reactor.listenTCP(0, self.factory, interface="127.0.0.1")
 
 ftpservice = FTPServiceFactory.makeFTPService()
 
-# Construct an Application that has the Poppy SSH server.
+# Construct an Application that has the Poppy SSH server,
+# and the Poppy FTP server.
 application = service.Application('poppy-sftp')
 
 ftpservice.setServiceParent(application)
