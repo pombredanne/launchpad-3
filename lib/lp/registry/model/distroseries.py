@@ -2002,10 +2002,7 @@ class DistroSeriesSet:
             distroseries_lookup[distroseries.id] = distroseries
         if not len(series_clauses):
             return {}
-        if len(series_clauses) > 1:
-            combined_clause = series_clauses[0]
-        else:
-            combined_clause = "(" + " OR ".join(series_clauses) + ")"
+        combined_clause = "(" + " OR ".join(series_clauses) + ")"
         # The complex join constructs a table of just current releases for the
         # desired SPNs.
         origin = SQL("""
