@@ -16,6 +16,7 @@ from textwrap import dedent
 
 from mechanize import LinkNotFoundError
 from pytz import utc
+from testtools.matchers import Equals, Matcher, Mismatch
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -50,7 +51,6 @@ from lp.code.interfaces.sourcepackagerecipe import (
     )
 from lp.code.tests.helpers import recipe_parser_newest_version
 from lp.registry.interfaces.person import (
-    IPersonSet,
     TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -195,6 +195,71 @@ def get_message_text(browser, index):
     return extract_text(tags)
 
 
+class SoupMismatch(Mismatch):
+
+    def __init__(self, widget_id, soup_content):
+        self.widget_id = widget_id
+        self.soup_content = soup_content
+
+    def get_details(self):
+        return {'content': self.soup_content}
+
+
+class MissingElement(SoupMismatch):
+
+    def describe(self):
+        return 'No HTML element found with id %r' % self.widget_id
+
+
+class MultipleElements(SoupMismatch):
+
+    def describe(self):
+        return 'HTML id %r found multiple times in document' % self.widget_id
+
+
+class MatchesTagText(Matcher):
+    """Match against the extracted text of the tag."""
+
+    def __init__(self, soup_content, tag_id):
+        """Construct the matcher with the soup content."""
+        self.soup_content = soup_content
+        self.tag_id = tag_id
+
+    def __str__(self):
+        return "matches widget %r text" % self.tag_id
+
+    def match(self, matchee):
+        widgets = self.soup_content.findAll(id=self.tag_id)
+        if len(widgets) == 0:
+            return MissingElement(self.tag_id, self.soup_content)
+        elif len(widgets) > 1:
+            return MultipleElements(self.tag_id, self.soup_content)
+        widget = widgets[0]
+        return Equals(extract_text(widget)).match(matchee)
+
+
+class MatchesPickerText(Matcher):
+    """Match against the text in a widget."""
+
+    def __init__(self, soup_content, widget_id):
+        """Construct the matcher with the soup content."""
+        self.soup_content = soup_content
+        self.widget_id = widget_id
+
+    def __str__(self):
+        return "matches widget %r text" % self.widget_id
+
+    def match(self, matchee):
+        widgets = self.soup_content.findAll(id=self.widget_id)
+        if len(widgets) == 0:
+            return MissingElement(self.widget_id, self.soup_content)
+        elif len(widgets) > 1:
+            return MultipleElements(self.widget_id, self.soup_content)
+        widget = widgets[0]
+        text = widget.findAll(attrs={'class': 'yui3-activator-data-box'})[0]
+        return Equals(extract_text(text)).match(matchee)
+
+
 class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
     layer = DatabaseFunctionalLayer
@@ -232,32 +297,17 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
-        browser.getControl('Secret Squirrel').click()
-        browser.getControl('Built daily').click()
         browser.getControl('Create Recipe').click()
 
-        pattern = """\
-            Master Chef's daily recipe
-            .*
-
-            Description
-            Make some food!
-
-            Recipe information
-            Build schedule: Tag help Built daily
-            Owner: Master Chef Edit
-            Base branch: lp://dev/~chef/ratatouille/veggies
-            Debian version: {debupstream}-0~{revno}
-            Daily build archive: Secret PPA Edit
-            Distribution series: Secret Squirrel
-            .*
-
-            Recipe contents
-            # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
-            lp://dev/~chef/ratatouille/veggies"""
-        main_text = extract_text(find_main_content(browser.contents))
-        self.assertTextMatchesExpressionIgnoreWhitespace(
-            pattern, main_text)
+        content = find_main_content(browser.contents)
+        self.assertEqual('daily', content.h1.string)
+        self.assertThat(
+            'Make some food!', MatchesTagText(content, 'edit-description'))
+        self.assertThat(
+            'Master Chef', MatchesPickerText(content, 'edit-owner'))
+        self.assertThat(
+            'Secret PPA',
+            MatchesPickerText(content, 'edit-daily_build_archive'))
 
     def test_create_new_recipe_private_branch(self):
         # Recipes can't be created on private branches.
@@ -275,10 +325,8 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         # Teams that the user is in are options for the recipe owner.
         self.factory.makeTeam(
             name='good-chefs', displayname='Good Chefs', members=[self.chef])
-        branch = self.makeBranch()
-        browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
-        browser.getLink('Create packaging recipe').click()
-
+        browser = self.getViewBrowser(
+            self.makeBranch(), '+new-recipe', user=self.chef)
         # The options for the owner include the Good Chefs team.
         options = browser.getControl(name='field.owner.owner').displayOptions
         self.assertEquals(
@@ -289,14 +337,10 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         # New recipes can be owned by teams that the user is a member of.
         team = self.factory.makeTeam(
             name='good-chefs', displayname='Good Chefs', members=[self.chef])
-        branch = self.makeBranch()
-        browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
-        browser.getLink('Create packaging recipe').click()
-
+        browser = self.getViewBrowser(
+            self.makeBranch(), '+new-recipe', user=self.chef)
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
-        browser.getControl('Secret Squirrel').click()
-        browser.getControl('Built daily').click()
         browser.getControl('Other').click()
         browser.getControl(name='field.owner.owner').displayValue = [
             'Good Chefs']
@@ -341,42 +385,14 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             name='ratatouille', displayname='Ratatouille')
         branch = self.factory.makeBranch(
             owner=self.chef, product=product, name='veggies')
-
-        # A new recipe can be created from the branch page.
-        browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
-        browser.getLink('Create packaging recipe').click()
-
-        browser.getControl(name='field.name').value = 'daily'
+        browser = self.getViewBrowser(branch, '+new-recipe', user=self.chef)
         browser.getControl('Description').value = 'Make some food!'
-        browser.getControl('Secret Squirrel').click()
-
         browser.getControl('Recipe text').value = (
             browser.getControl('Recipe text').value + 'run cat /etc/passwd')
-
         browser.getControl('Create Recipe').click()
-
         self.assertEqual(
             get_message_text(browser, 2),
             'The bzr-builder instruction "run" is not permitted here.')
-
-    def test_create_new_recipe_empty_name(self):
-        # Leave off the name and make sure that the widgets validate before
-        # the content validates.
-        product = self.factory.makeProduct(
-            name='ratatouille', displayname='Ratatouille')
-        branch = self.factory.makeBranch(
-            owner=self.chef, product=product, name='veggies')
-
-        # A new recipe can be created from the branch page.
-        browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
-        browser.getLink('Create packaging recipe').click()
-
-        browser.getControl('Description').value = 'Make some food!'
-        browser.getControl('Secret Squirrel').click()
-        browser.getControl('Create Recipe').click()
-
-        self.assertEqual(
-            get_message_text(browser, 2), 'Required input is missing.')
 
     def createRecipe(self, recipe_text, branch=None):
         if branch is None:
@@ -384,37 +400,12 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
                 name='ratatouille', displayname='Ratatouille')
             branch = self.factory.makeBranch(
                 owner=self.chef, product=product, name='veggies')
-
-        # A new recipe can be created from the branch page.
-        browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
-        browser.getLink('Create packaging recipe').click()
-
+        browser = self.getViewBrowser(branch, '+new-recipe', user=self.chef)
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
         browser.getControl('Recipe text').value = recipe_text
         browser.getControl('Create Recipe').click()
         return browser
-
-    def test_create_recipe_bad_text(self):
-        # If a user tries to create source package recipe with bad text, they
-        # should get an error.
-        branch = self.factory.makeBranch(name='veggies')
-        package_branch = self.factory.makeBranch(name='packaging')
-
-        browser = self.createRecipe(
-            dedent('''
-                # bzr-builder format 0.3 deb-version {debupstream}-0~{revno}
-                %(branch)s
-                merge %(package_branch)s
-                ''' % {
-                    'branch': branch.bzr_identity,
-                    'package_branch': package_branch.bzr_identity,
-                }),
-            branch=branch)
-        self.assertEqual(
-            get_message_text(browser, 2),
-            "Error parsing recipe:1:1:"
-            " End of line while looking for '#'.")
 
     def test_create_recipe_usage(self):
         # The error for a recipe with invalid instruction parameters should
@@ -441,8 +432,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser = self.getViewBrowser(self.makeBranch(), '+new-recipe')
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
-
-        browser.getControl('Built daily').click()
+        browser.getControl(name='field.distros').value = []
         browser.getControl('Create Recipe').click()
         self.assertEqual(
             'You must specify at least one series for daily builds.',
