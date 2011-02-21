@@ -664,6 +664,12 @@ class cmd_images(EC2Command):
 class cmd_list(EC2Command):
     """List all your current EC2 test runs."""
 
+    def iter_instances(self, account):
+        """Iterate through all instances in 'account'."""
+        for reservation in account.conn.get_all_instances():
+            for instance in reservation.instances:
+                yield instance
+
     def get_uptime(self, instance):
         """How long has 'instance' been running?"""
         expected_format = '%Y-%m-%dT%H:%M:%S.000Z'
@@ -694,20 +700,20 @@ class cmd_list(EC2Command):
         credentials = EC2Credentials.load_from_file()
         session_name = EC2SessionName.make(EC2TestRunner.name)
         account = credentials.connect(session_name)
+        instances = list(self.iter_instances(account))
         by_state = {}
-        for reservation in account.conn.get_all_instances():
-            for instance in reservation.instances:
-                by_state[instance.state] = by_state.get(instance.state, 0) + 1
-                data = self.get_ec2test_info(instance)
-                if data is None:
-                    continue
-                uptime = self.get_uptime(instance)
-                if data['successful']:
-                    current_status = '[OK]    '
-                else:
-                    current_status = '[FAILED]'
-                print '%s   %s (up for %s)' % (
-                    data['description'], current_status, uptime)
+        for instance in instances:
+            by_state[instance.state] = by_state.get(instance.state, 0) + 1
+            data = self.get_ec2test_info(instance)
+            if data is None:
+                continue
+            uptime = self.get_uptime(instance)
+            if data['successful']:
+                current_status = '[OK]    '
+            else:
+                current_status = '[FAILED]'
+            print '%s   %s (up for %s)' % (
+                data['description'], current_status, uptime)
         print self.format_summary(by_state)
 
 
