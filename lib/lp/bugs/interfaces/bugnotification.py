@@ -8,10 +8,12 @@
 __metaclass__ = type
 __all__ = [
     'IBugNotification',
-    'IBugNotificationSet',
+    'IBugNotificationFilter',
     'IBugNotificationRecipient',
+    'IBugNotificationSet',
     ]
 
+from lazr.restful.fields import Reference
 from zope.interface import (
     Attribute,
     Interface,
@@ -20,11 +22,13 @@ from zope.schema import (
     Bool,
     Choice,
     Datetime,
+    Int,
     TextLine,
     )
 
 from canonical.launchpad import _
 from lp.bugs.enum import BugNotificationStatus
+from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import BugField
 
@@ -90,3 +94,18 @@ class IBugNotificationRecipient(Interface):
     reason_body = TextLine(
         title=_('Reason body'),
         description=_("The reason for this notification."))
+
+
+class IBugNotificationFilter(Interface):
+    """`BugSubscriptionFilter` that generated a bug notification."""
+    id = Int(required=True, readonly=True)
+
+    bug_notification = Reference(
+        IBugNotification,
+        title=_("Bug notification"),
+        required=True, readonly=True)
+
+    bug_subscription_filter = Reference(
+        IBugSubscriptionFilter,
+        title=_("Bug subscription filter"),
+        required=True, readonly=True)
