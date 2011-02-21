@@ -43,10 +43,18 @@ from lp.code.browser.sourcepackagerecipe import (
 from lp.code.browser.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildView,
     )
-from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
+from lp.code.interfaces.sourcepackagerecipe import (
+    MINIMAL_RECIPE_TEXT,
+    RECIPE_BETA_FLAG,
+    RECIPE_ENABLED_FLAG,
+    )
 from lp.code.tests.helpers import recipe_parser_newest_version
-from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    TeamSubscriptionPolicy,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import clear_property_cache
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import (
@@ -191,6 +199,13 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestSourcePackageRecipeAddView, self).setUp()
+        self.useFixture(
+            FeatureFixture(
+                {RECIPE_ENABLED_FLAG: 'on',
+                 RECIPE_BETA_FLAG: 'true'}))
+
     def makeBranch(self):
         product = self.factory.makeProduct(
             name='ratatouille', displayname='Ratatouille')
@@ -218,7 +233,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
         browser.getControl('Secret Squirrel').click()
-        browser.getControl('Automatically build each day').click()
+        browser.getControl('Built daily').click()
         browser.getControl('Create Recipe').click()
 
         pattern = """\
@@ -229,7 +244,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             Make some food!
 
             Recipe information
-            Build schedule: Built daily
+            Build schedule: Tag help Built daily
             Owner: Master Chef Edit
             Base branch: lp://dev/~chef/ratatouille/veggies
             Debian version: {debupstream}-0~{revno}
@@ -281,7 +296,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
         browser.getControl('Secret Squirrel').click()
-        browser.getControl('Automatically build each day').click()
+        browser.getControl('Built daily').click()
         browser.getControl('Other').click()
         browser.getControl(name='field.owner.owner').displayValue = [
             'Good Chefs']
@@ -405,7 +420,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         # The error for a recipe with invalid instruction parameters should
         # include instruction usage.
         branch = self.factory.makeBranch(name='veggies')
-        package_branch = self.factory.makeBranch(name='packaging')
+        self.factory.makeBranch(name='packaging')
 
         browser = self.createRecipe(
             dedent('''\
@@ -427,7 +442,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
 
-        browser.getControl('Automatically build each day').click()
+        browser.getControl('Built daily').click()
         browser.getControl('Create Recipe').click()
         self.assertEqual(
             'You must specify at least one series for daily builds.',
@@ -755,7 +770,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             This is stuff
 
             Recipe information
-            Build schedule: Built on request
+            Build schedule: Tag help Built on request
             Owner: Master Chef Edit
             Base branch: lp://dev/~chef/ratatouille/meat
             Debian version: {debupstream}-0~{revno}
@@ -815,7 +830,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             This is stuff
 
             Recipe information
-            Build schedule: Built on request
+            Build schedule: Tag help Built on request
             Owner: Master Chef Edit
             Base branch: lp://dev/~chef/ratatouille/meat
             Debian version: {debupstream}-0~{revno}
@@ -955,7 +970,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             This is stuff
 
             Recipe information
-            Build schedule: Built on request
+            Build schedule: Tag help Built on request
             Owner: Master Chef Edit
             Base branch: lp://dev/~chef/ratatouille/meat
             Debian version: {debupstream}-0~{revno}
@@ -985,6 +1000,19 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         self.assertEqual(
             get_message_text(browser, 1),
             'Recipe may not refer to private branch: %s' % bzr_identity)
+
+    def test_edit_recipe_no_branch(self):
+        # If a user tries to set a source package recipe to use a branch
+        # that isn't registred, they will get an error.
+        recipe = self.factory.makeSourcePackageRecipe(owner=self.user)
+        no_branch_recipe_text = recipe.recipe_text[:-4]
+        expected_name = recipe.base_branch.unique_name[:-3]
+        browser = self.getViewBrowser(recipe, '+edit')
+        browser.getControl('Recipe text').value = no_branch_recipe_text
+        browser.getControl('Update Recipe').click()
+        self.assertEqual(
+            get_message_text(browser, 1),
+            'lp://dev/%s is not a branch on Launchpad.' % expected_name)
 
     def _test_edit_recipe_with_no_related_branches(self, recipe):
         # The Related Branches section should not appear if there are no
@@ -1098,7 +1126,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             This recipe .*changes.
 
             Recipe information
-            Build schedule: Built on request
+            Build schedule: Tag help Built on request
             Owner: Master Chef Edit
             Base branch: lp://dev/~chef/chocolate/cake
             Debian version: {debupstream}-0~{revno}
@@ -1144,7 +1172,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             archive=self.ppa, sourcepackagename=package_name,
             distroseries=self.squirrel, source_package_recipe_build=build,
             version='0+r42')
-        spph = self.factory.makeSourcePackagePublishingHistory(
+        self.factory.makeSourcePackagePublishingHistory(
             sourcepackagerelease=source_package_release, archive=self.ppa,
             distroseries=self.squirrel)
         builder = self.factory.makeBuilder()
@@ -1175,7 +1203,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             archive=self.ppa, sourcepackagename=package_name,
             distroseries=self.squirrel, source_package_recipe_build=build,
             version='0+r42')
-        spph = self.factory.makeSourcePackagePublishingHistory(
+        self.factory.makeSourcePackagePublishingHistory(
             sourcepackagerelease=source_package_release, archive=self.ppa,
             distroseries=self.squirrel)
         builder = self.factory.makeBuilder()
@@ -1425,6 +1453,21 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             "The owner of the recipe (Team1) does not have permission to "
             "upload packages into the daily build PPA (PPA for Team2)",
             messages[-1])
+
+    def test_view_with_disabled_archive(self):
+        # When a PPA is disabled, it is only viewable to the owner. This
+        # case is handled with the view not showing builds into a disabled
+        # archive, rather than giving an Unauthorized error to the user.
+        recipe = self.factory.makeSourcePackageRecipe(build_daily=True)
+        recipe.requestBuild(
+            recipe.daily_build_archive, recipe.owner, self.squirrel,
+            PackagePublishingPocket.RELEASE)
+        with person_logged_in(recipe.owner):
+            recipe.daily_build_archive.disable()
+        browser = self.getUserBrowser(canonical_url(recipe))
+        self.assertIn(
+            "This recipe has not been built yet.",
+            extract_text(find_main_content(browser.contents)))
 
 
 class TestSourcePackageRecipeBuildView(BrowserTestCase):

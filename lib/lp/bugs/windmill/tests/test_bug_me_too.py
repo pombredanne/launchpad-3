@@ -6,12 +6,12 @@ import unittest
 
 from windmill.authoring import WindmillTestClientException
 
-from canonical.launchpad.windmill.testing import (
+from lp.bugs.windmill.testing import BugsWindmillLayer
+from lp.testing import WindmillTestCase
+from lp.testing.windmill import (
     constants,
     lpuser,
     )
-from lp.bugs.windmill.testing import BugsWindmillLayer
-from lp.testing import WindmillTestCase
 
 
 AFFECTS_ME_TOO_XPATH = u"//span[@id='affectsmetoo']"

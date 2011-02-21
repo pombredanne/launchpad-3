@@ -5,7 +5,7 @@ IBranchSetAPI
     >>> from datetime import datetime
     >>> import pytz
     >>> import xmlrpclib
-    >>> from canonical.functional import XMLRPCTestTransport
+    >>> from lp.testing.xmlrpc import XMLRPCTestTransport
     >>> branchset_api = xmlrpclib.ServerProxy(
     ...     'http://foo.bar@canonical.com:test@xmlrpc.launchpad.dev/bazaar/',
     ...     transport=XMLRPCTestTransport())

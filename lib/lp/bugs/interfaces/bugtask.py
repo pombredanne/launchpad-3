@@ -1236,6 +1236,29 @@ class BugTaskSearchParams:
         # Import this here to avoid circular dependencies
         from lp.registry.interfaces.sourcepackage import (
             ISourcePackage)
+        if isinstance(sourcepackage, any):
+            # Unwrap the source package.
+            self.sourcepackagename = any(*[
+                pkg.sourcepackagename for pkg in sourcepackage.query_values])
+            distroseries = any(*[pkg.distroseries for pkg in
+                sourcepackage.query_values if ISourcePackage.providedBy(pkg)])
+            distributions = any(*[pkg.distribution for pkg in
+                sourcepackage.query_values
+                if not ISourcePackage.providedBy(pkg)])
+            if distroseries.query_values and not distributions.query_values:
+                self.distroseries = distroseries
+            elif not distroseries.query_values and distributions.query_values:
+                self.distributions = distributions
+            else:
+                # Either we have both distroseries and distributions or neither
+                # of them: set both, which will give us the cross product
+                # due to the search of source packages being sourcepackagename
+                # specific rather than actually context specific. This is not
+                # ideal but is tolerable given no actual use of mixed type
+                # any() exists today.
+                self.distroseries = distroseries
+                self.distributions = distributions
+            return
         if ISourcePackage.providedBy(sourcepackage):
             # This is a sourcepackage in a distro series.
             self.distroseries = sourcepackage.distroseries
@@ -1243,6 +1266,33 @@ class BugTaskSearchParams:
             # This is a sourcepackage in a distribution.
             self.distribution = sourcepackage.distribution
         self.sourcepackagename = sourcepackage.sourcepackagename
+
+    def setTarget(self, target):
+        """Constrain the search to only return items in target.
+
+        This is equivalent to calling setProduct etc but the type of target
+        does not need to be known to the caller.
+
+        :param target: A `IHasBug`, or some search term like all/any/none on
+            `IHasBug`. If using all/any all the targets must be of the same
+            type due to implementation limitations. Currently only distroseries
+            and productseries `IHasBug` implementations are supported.
+        """
+        # Yay circular deps.
+        from lp.registry.interfaces.distroseries import IDistroSeries
+        from lp.registry.interfaces.productseries import IProductSeries
+        if isinstance(target, (any, all)):
+            assert len(target.query_values), \
+                'cannot determine target with no targets'
+            instance = target.query_values[0]
+        else:
+            instance = target
+        if IDistroSeries.providedBy(instance):
+            self.setDistroSeries(target)
+        elif IProductSeries.providedBy(instance):
+            self.setProductSeries(target)
+        else:
+            raise AssertionError("unknown target type %r" % target)
 
     @classmethod
     def _anyfy(cls, value):
@@ -1434,6 +1484,16 @@ class IBugTaskSet(Interface):
         :param params: the BugTaskSearchParams to search on.
         """
 
+    def countBugs(params, group_on):
+        """Count bugs that match params, grouping by group_on.
+
+        :param param: A BugTaskSearchParams object.
+        :param group_on: The column(s) group on - .e.g (
+            Bugtask.distroseriesID, BugTask.milestoneID) will cause grouping by
+            distro series and then milestone.
+        :return: A dict {group_instance: count, ...}
+        """
+
     def getStatusCountsForProductSeries(user, product_series):
         """Returns status counts for a product series' bugs.
 
@@ -1512,19 +1572,6 @@ class IBugTaskSet(Interface):
         If the col_name is unrecognized, a KeyError is raised.
         """
 
-    # XXX kiko 2006-03-23:
-    # get rid of this kludge when we have proper security for scripts.
-    def dangerousGetAllTasks():
-        """DO NOT USE THIS METHOD UNLESS YOU KNOW WHAT YOU ARE DOING
-
-        Returns ALL BugTasks. YES, THAT INCLUDES PRIVATE ONES. Do not
-        use this method. DO NOT USE IT. I REPEAT: DO NOT USE IT.
-
-        This method exists solely for the purpose of scripts that need
-        to do gardening over all bug tasks; the current example is
-        update-bugtask-targetnamecaches.
-        """
-
     def getBugCountsForPackages(user, packages):
         """Return open bug counts for the list of packages.
 
@@ -1555,6 +1602,8 @@ class IBugTaskSet(Interface):
 
         The assignee and the assignee's validity are precached.
         """
+
+    open_bugtask_search = Attribute("A search returning open bugTasks.")
 
 
 def valid_remote_bug_url(value):
