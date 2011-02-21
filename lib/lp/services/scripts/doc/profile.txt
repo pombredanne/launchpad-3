@@ -14,7 +14,7 @@ The profile data is saved in the argument when the program exits.
     ...         pass
     ...     def _init_zca(self, use_web_security):
     ...         pass
-    ...     def _init_db(self, implicit_begin, isolation):
+    ...     def _init_db(self, isolation):
     ...         pass
 
     >>> profile_file = os.path.join(profile_dir, 'myscript.prof')
