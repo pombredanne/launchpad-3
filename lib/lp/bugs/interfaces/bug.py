@@ -18,12 +18,11 @@ __all__ = [
     'IFileBugData',
     'IFrontPageBugAddForm',
     'IProjectGroupBugAddForm',
-    'InvalidBugTargetType',
-    'InvalidDuplicateValue',
     ]
 
 from textwrap import dedent
 
+from lazr.enum import DBEnumeratedType
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     call_with,
@@ -39,7 +38,6 @@ from lazr.restful.declarations import (
     operation_returns_entry,
     rename_parameters_as,
     REQUEST_USER,
-    webservice_error,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -87,6 +85,7 @@ from lp.registry.interfaces.person import IPerson
 from lp.services.fields import (
     BugField,
     ContentNameField,
+    Description,
     DuplicateBug,
     PublicPersonChoice,
     Tag,
@@ -214,10 +213,11 @@ class IBug(IPrivacy, IHasLinkedBranches):
         Title(title=_('Summary'), required=True,
               description=_("""A one-line summary of the problem.""")))
     description = exported(
-        Text(title=_('Description'), required=True,
+        Description(title=_('Description'), required=True,
              description=_("""A detailed description of the problem,
                  including the steps required to reproduce it."""),
-             max_length=50000))
+             strip_text=True, trailing_only=True,
+             min_length=1, max_length=50000))
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = exported(
         Reference(IPerson, title=_("The owner's IPerson"), readonly=True))
@@ -432,10 +432,14 @@ class IBug(IPrivacy, IHasLinkedBranches):
     def newMessage(owner, subject, content):
         """Create a new message, and link it to this object."""
 
-    # subscription-related methods
-
     @operation_parameters(
-        person=Reference(IPerson, title=_('Person'), required=True))
+        person=Reference(IPerson, title=_('Person'), required=True),
+        # level actually uses BugNotificationLevel as its vocabulary,
+        # but due to circular import problems we fix that in
+        # _schema_circular_imports.py rather than here.
+        level=Choice(
+            vocabulary=DBEnumeratedType, required=False,
+            title=_('Level')))
     @call_with(subscribed_by=REQUEST_USER, suppress_notify=False)
     @export_write_operation()
     def subscribe(person, subscribed_by, suppress_notify=True, level=None):
@@ -522,6 +526,12 @@ class IBug(IPrivacy, IHasLinkedBranches):
         If no such `BugSubscription` exists, return None.
         """
 
+    def getSubscriptionInfo(level):
+        """Return a `BugSubscriptionInfo` at the given `level`.
+
+        :param level: A member of `BugNotificationLevel`.
+        """
+
     def getBugNotificationRecipients(duplicateof=None, old_bug=None,
                                      include_master_dupe_subscribers=False):
         """Return a complete INotificationRecipientSet instance.
@@ -535,9 +545,6 @@ class IBug(IPrivacy, IHasLinkedBranches):
         If this bug is a dupe, set include_master_dupe_subscribers to
         True to include the master bug's subscribers as recipients.
         """
-
-    def addChangeNotification(text, person, recipients=None, when=None):
-        """Add a bug change notification."""
 
     def addCommentNotification(message, recipients=None):
         """Add a bug comment notification."""
@@ -688,8 +695,15 @@ class IBug(IPrivacy, IHasLinkedBranches):
                 remote bug tracker, if it's an imported comment.
         """
 
-    def getMessageChunks():
-        """Return MessageChunks corresponding to comments made on this bug"""
+    def getMessagesForView(slice_info):
+        """Return BugMessage,Message,MessageChunks for renderinger.
+        
+        This eager loads message.owner validity associated with the
+        bugmessages.
+
+        :param slice_info: Either None or a list of slices to constraint the
+            returned rows. The step parameter in each slice is ignored.
+        """
 
     def getNullBugTask(product=None, productseries=None,
                     sourcepackagename=None, distribution=None,
@@ -908,11 +922,6 @@ class IBug(IPrivacy, IHasLinkedBranches):
         """
 
 
-class InvalidDuplicateValue(Exception):
-    """A bug cannot be set as the duplicate of another."""
-    webservice_error(417)
-
-
 # We are forced to define these now to avoid circular import problems.
 IBugAttachment['bug'].schema = IBug
 IBugWatch['bug'].schema = IBug
@@ -989,9 +998,10 @@ class IBugAddForm(IBug):
                 "tracker."),
             vocabulary="DistributionUsingMalone")
     owner = Int(title=_("Owner"), required=True)
-    comment = Text(
+    comment = Description(
         title=_('Further information'),
-        required=False)
+        strip_text=True, trailing_only=True,
+        min_length=1, max_length=50000, required=False)
     bug_already_reported_as = Choice(
         title=_("This bug has already been reported as ..."), required=False,
         vocabulary="Bug")
@@ -1174,8 +1184,3 @@ class IFileBugData(Interface):
     comments = Attribute("Comments to add to the bug.")
     attachments = Attribute("Attachments to add to the bug.")
     hwdb_submission_keys = Attribute("HWDB submission keys for the bug.")
-
-
-class InvalidBugTargetType(Exception):
-    """Bug target's type is not valid."""
-    webservice_error(400)

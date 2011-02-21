@@ -635,6 +635,26 @@
           <td>
           </td>
         </tr>
+        <tr>
+          <td style="white-space: nowrap">
+            <span tal:content="structure view/widgets/has_blueprints" />
+            <label style="font-weight: normal" for="field.has_blueprints">
+              Show bugs with linked blueprints
+            </label>
+          </td>
+          <td>
+          </td>
+        </tr>
+        <tr>
+          <td style="white-space: nowrap">
+            <span tal:content="structure view/widgets/has_no_blueprints" />
+            <label style="font-weight: normal" for="field.has_no_blueprints">
+              Show bugs without linked blueprints
+            </label>
+          </td>
+          <td>
+          </td>
+        </tr>
       </table>
 
     </fieldset>

@@ -228,7 +228,8 @@ publicly visible. If Bug.private is True, only people who are directly
 subscribed to the bug can see it. Launchpad admins can always view and
 modify private bugs.
 
-=== Marking Bugs Private ===
+Marking Bugs Private
+....................
 
 For the purposes of demonstration, we'll make the firefox crashing bug
 private. A bug cannot be made private by an anonymous user.
@@ -298,7 +299,8 @@ indicator that it modified the bug.
     >>> firefox_crashes.setPrivate(True, current_user())
     False
 
-=== How Privacy Affects Access to a Bug ===
+How Privacy Affects Access to a Bug
+...................................
 
 Once a bug is made private, it can only be accessed by the users that
 are directly subscribed to the bug and Launchpad admins.
@@ -323,6 +325,7 @@ private:
     ...             user=current_user()))
     ...     return sorted(all_bugs - found_bugs)
 
+    >>> login("test@canonical.com")
     >>> hidden_bugs()
     [14]
 
@@ -341,6 +344,16 @@ Likewise Foo Bar, an admin, can access the bug.
 Bug 14, which is private, is returned by the search results for an
 admin as well:
 
+    >>> hidden_bugs()
+    []
+
+If a bug is private, bugtask assignees can see the bug.  Previously
+sample person could not see bug 14.  But after making him the
+assignee it is visible.
+
+    >>> bug14 = bugset.get(14)
+    >>> bug14.default_bugtask.transitionToAssignee(sample_person)
+    >>> login("test@canonical.com")
     >>> hidden_bugs()
     []
 
@@ -409,20 +422,9 @@ addition to bugs #6 and #14:
     >>> hidden_bugs()
     [2, 6, 14]
 
-IBug.userCanView() offers a quick means by which to verify that a
-given user can see a given bug.
 
-    >>> no_priv = personset.getByEmail('no-priv@canonical.com')
-    >>> bug_6 = getUtility(IBugSet).get(6)
-    >>> bug_6.userCanView(no_priv)
-    False
-
-    >>> foobar = personset.getByEmail('foo.bar@canonical.com')
-    >>> bug_6.userCanView(foobar)
-    True
-
-
-=== Filing Public vs. Private Bugs ===
+Filing Public vs. Private Bugs
+..............................
 
 Let's log back in as Foo Bar to continue our examples:
 
@@ -430,6 +432,7 @@ Let's log back in as Foo Bar to continue our examples:
 
 When a public bug is filed:
 
+    >>> foobar = personset.getByEmail('foo.bar@canonical.com')
     >>> params = CreateBugParams(
     ...     title="test firefox bug", comment="blah blah blah", owner=foobar)
     >>> params.setBugTarget(product=firefox)
@@ -1113,16 +1116,17 @@ Bug Comments
 ------------
 
 A bug comment is actually made up of a number of chunks. The
-IBug.getMessageChunks() method allows you to retreive these chunks in a
-single shot.
+IBug.getMessagesForView() method allows you to get all the data needed to
+show messages in the bugtask index template in one shot.
 
     >>> from canonical.ftests.pgsql import CursorWrapper
     >>> CursorWrapper.record_sql = True
     >>> queries = len(CursorWrapper.last_executed_sql)
 
-    >>> chunks = bug_two.getMessageChunks()
-    >>> for chunk in sorted(chunks, key=lambda x:x.id):
-    ...    chunk.id, chunk.message.id, chunk.message.owner.id, chunk.content[:30]
+    >>> chunks = bug_two.getMessagesForView(None)
+    >>> for _, _1, chunk in sorted(chunks, key=lambda x:x[2].id):
+    ...    (chunk.id, chunk.message.id, chunk.message.owner.id,
+    ...     chunk.content[:30])
     (4, 1, 16, u'Problem exists between chair a')
     (7, 5, 12, u'This would be a real killer fe')
     (8, 6, 12, u'Oddly enough the bug system se')
@@ -1131,11 +1135,29 @@ It's done in a way that we only issue two queries to fetch all this
 information, too:
 
 XXX: bug=https://bugs.launchpad.net/storm/+bug/619017 means that this sometimes
-does 3 queries, depending on the precise state of the storm cache. To avoid 
+does 3 queries, depending on the precise state of the storm cache. To avoid
 spurious failures it has been changed to tolerate this additional query.
 
     >>> len(CursorWrapper.last_executed_sql) - queries <= 3
     True
+
+getMessagesForView supports slicing operations:
+
+    >>> def message_ids(slices):
+    ...     chunks = bug_two.getMessagesForView(slices)
+    ...     return sorted(set(
+    ...         bugmessage.index for bugmessage, _, _1 in chunks))
+    >>> message_ids([slice(1, 2)])
+    [1]
+
+We use this to get the first N and last M messages in big bugs:
+    >>> message_ids([slice(None, 1), slice(2, None)])
+    [0, 2]
+
+We also support a negative lookup though the bug view does not use that at the
+moment:
+    >>> message_ids([slice(None, 1), slice(-1, None)])
+    [0, 2]
 
 Bugs have a special attribute, `indexed_messages` which returns the collection
 of messages, each decorated with the index of that message in its context
@@ -1276,7 +1298,8 @@ user, of course.
 If there is another dup of the master bug, filed by someone else, the
 master bug's affected count with dups increases.
 
-    >>> dupe_affected_other_user = factory.makePerson(name='napoleon-bonaparte')
+    >>> dupe_affected_other_user = factory.makePerson(
+    ...     name='napoleon-bonaparte')
     >>> dupe_three = factory.makeBug(owner=dupe_affected_other_user)
     >>> dupe_three.markAsDuplicate(test_bug)
     >>> test_bug.users_affected_count_with_dupes
@@ -1425,6 +1448,7 @@ private and the user wouldn't be able to see it, it won't be returned.
     >>> new_bug_2.setPrivate(True, foobar)
     True
 
+    >>> no_priv = personset.getByEmail('no-priv@canonical.com')
     >>> matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
     ...     bug_tasks, user=no_priv)
 

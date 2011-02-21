@@ -2,15 +2,16 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import unittest
+
 import transaction
 
-from canonical.launchpad.windmill.testing import (
-    constants,
-    lpuser,
-    )
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.testing import WindmillTestCase
 from lp.testing.service_usage_helpers import set_service_usage
+from lp.testing.windmill import (
+    constants,
+    lpuser,
+    )
 
 
 class TestProductHiddenConfiguration(WindmillTestCase):

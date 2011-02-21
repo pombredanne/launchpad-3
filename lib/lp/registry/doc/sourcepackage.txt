@@ -321,7 +321,7 @@ to a product series, the source package does have a product series.
 
     >>> user = factory.makePerson()
     >>> a52dec_series = factory.makeProductSeries(name='ratty')
-    >>> PackagingUtil().createPackaging(
+    >>> packaging = PackagingUtil().createPackaging(
     ...     productseries=a52dec_series,
     ...     sourcepackagename=a52dec,
     ...     distroseries=hoary,

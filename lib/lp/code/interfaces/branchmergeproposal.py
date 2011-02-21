@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -107,13 +107,13 @@ class IBranchMergeProposal(IPrivacy):
 
     id = Int(
         title=_('DB ID'), required=True, readonly=True,
-        description=_("The tracking number for this question."))
+        description=_("The tracking number for this merge proposal."))
 
     registrant = exported(
         PublicPersonChoice(
             title=_('Person'), required=True,
             vocabulary='ValidPersonOrTeam', readonly=True,
-            description=_('The person who registered the landing target.')))
+            description=_('The person who registered the merge proposal.')))
 
     source_branch = exported(
         ReferenceChoice(

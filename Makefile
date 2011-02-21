@@ -1,7 +1,7 @@
 # This file modified from Zope3/Makefile
 # Licensed under the ZPL, (c) Zope Corporation and contributors.
 
-PYTHON=python
+PYTHON=python2.6
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
 PYTHONPATH:=$(WD)/lib:$(WD)/lib/mailman:${PYTHONPATH}
@@ -70,6 +70,10 @@ $(API_INDEX): $(BZR_VERSION_INFO) $(PY)
 	mv $(APIDOC_DIR).tmp $(APIDOC_DIR)
 
 apidoc: compile $(API_INDEX)
+
+# Used to generate HTML developer documentation for Launchpad.
+doc:
+	$(MAKE) -C doc/ html
 
 # Run by PQM.
 check_merge: $(BUILDOUT_BIN)
@@ -383,14 +387,14 @@ clean: clean_js clean_buildout
 			  /var/tmp/bzrsync \
 			  /var/tmp/codehosting.test \
 			  /var/tmp/codeimport \
-			  /var/tmp/fatsam.appserver \
+			  /var/tmp/fatsam.test \
 			  /var/tmp/lperr \
 			  /var/tmp/lperr.test \
 			  /var/tmp/mailman \
 			  /var/tmp/mailman-xmlrpc.test \
 			  /var/tmp/ppa \
 			  /var/tmp/ppa.test \
-			  /var/tmp/zeca
+			  /var/tmp/testkeyserver
 	# /var/tmp/launchpad_mailqueue is created read-only on ec2test
 	# instances.
 	if [ -w /var/tmp/launchpad_mailqueue ]; then $(RM) -rf /var/tmp/launchpad_mailqueue; fi
@@ -485,7 +489,7 @@ pydoctor:
 		--docformat restructuredtext --verbose-about epytext-summary \
 		$(PYDOCTOR_OPTIONS)
 
-.PHONY: apidoc buildout_bin check tags TAGS zcmldocs realclean clean debug \
+.PHONY: apidoc buildout_bin check doc tags TAGS zcmldocs realclean clean debug \
 	stop start run ftest_build ftest_inplace test_build test_inplace \
 	pagetests check check_merge schema default launchpad.pot \
 	check_merge_ui pull scan sync_branches reload-apache hosted_branches \

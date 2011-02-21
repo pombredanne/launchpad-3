@@ -7,7 +7,6 @@
 
 __metaclass__ = type
 
-from datetime import datetime
 import logging
 from optparse import (
     OptionParser,
@@ -15,15 +14,19 @@ from optparse import (
     )
 from unittest import TestLoader
 
-from pytz import timezone
 from storm.store import Store
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
+from zope.testing.loghandler import Handler
 
 from canonical.launchpad.ftests import sync
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.scripts.base import LaunchpadScriptFailure
-from lp.testing import TestCase
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin,
@@ -67,8 +70,8 @@ class TestRemoveTranslationsConstraints(TestCase):
         opts = [
             '--language=pa',
             '--not-language',
-            '--is-current=False',
-            '--is-imported=true',
+            '--is-current-ubuntu=False',
+            '--is-current-upstream=true',
             '--msgid=foo',
             '--origin=1',
             '--force',
@@ -115,14 +118,14 @@ class TestRemoveTranslationsConstraints(TestCase):
         approval, message = self._check_options(['--reject-license'])
         self.assertFalse(approval)
 
-        # We can do that for the non-imported ones, however...
+        # We can do that for the non-upstream ones, however...
         approval, message = self._check_options([
-            '--reject-license', '--is-imported=False'])
+            '--reject-license', '--is-current-upstream=False'])
         self.assertTrue(approval)
 
-        # ...though not for the imported ones.
+        # ...though not for the upstream ones.
         approval, message = self._check_options([
-            '--reject-license', '--is-imported=True'])
+            '--reject-license', '--is-current-upstream=True'])
         self.assertFalse(approval)
 
         # Similar for ones submitted directly in Launchpad.
@@ -177,8 +180,8 @@ class TestRemoveTranslationsOptionsHandling(TestCase):
             '--potemplate=5',
             '--language=te',
             '--not-language',
-            '--is-current=True',
-            '--is-imported=False',
+            '--is-current-ubuntu=True',
+            '--is-current-upstream=False',
             '--msgid=Hello',
             '--origin=1',
             '--force',
@@ -189,9 +192,9 @@ class TestRemoveTranslationsOptionsHandling(TestCase):
         self.assertEqual(options.potemplate, 5)
         self.assertEqual(options.language, 'te')
         self.assertEqual(options.not_language, True)
-        self.assertEqual(options.is_current, True)
-        self.assertEqual(options.is_imported, False)
-        self.assertEqual(options.is_imported, False)
+        self.assertEqual(options.is_current_ubuntu, True)
+        self.assertEqual(options.is_current_upstream, False)
+        self.assertEqual(options.is_current_upstream, False)
         self.assertEqual(options.origin, 1)
         self.assertEqual(options.force, True)
 
@@ -205,18 +208,18 @@ class TestRemoveTranslationsOptionsHandling(TestCase):
         options = parse_opts([
             '--submitter=%s' % submitter.name,
             '--reviewer=%s' % reviewer.name,
-            '--is-current=0',
-            '--is-imported=true',
+            '--is-current-ubuntu=0',
+            '--is-current-upstream=true',
             '--origin=SCM',
             ])
         self.assertEqual(options.submitter, submitter.id)
         self.assertEqual(options.reviewer, reviewer.id)
-        self.assertEqual(options.is_current, False)
-        self.assertEqual(options.is_imported, True)
+        self.assertEqual(options.is_current_ubuntu, False)
+        self.assertEqual(options.is_current_upstream, True)
         self.assertEqual(options.origin, RosettaTranslationOrigin.SCM.value)
 
     def test_BadBool(self):
-        self.assertRaises(Exception, parse_opts, '--is-current=None')
+        self.assertRaises(Exception, parse_opts, '--is-current-ubuntu=None')
 
     def test_UnknownPerson(self):
         self.assertRaises(
@@ -261,27 +264,26 @@ class TestRemoveTranslations(TestCase):
         self._checkInvariant()
 
     def _setTranslation(self, potmsgset, pofile, text, submitter=None,
-                        is_imported=False):
+                        is_current_upstream=False):
         """Set translation for potmsgset in pofile to text."""
         if submitter is None:
             submitter = self.potemplate.owner
-        return potmsgset.updateTranslation(
-            pofile, submitter, {0: text},
-            is_imported=is_imported,
-            lock_timestamp=datetime.now(timezone('UTC')))
+        return self.factory.makeCurrentTranslationMessage(
+            pofile, potmsgset, translator=submitter,
+            translations={0: text}, current_other=is_current_upstream)
 
     def _makeMessages(self, template_text, nl_text, de_text,
-                      submitter=None, is_imported=False):
+                      submitter=None, is_current_upstream=False):
         """Create message, and translate it to Dutch & German."""
         message = self.factory.makePOTMsgSet(self.potemplate, template_text,
                                              sequence=0)
         owner = self.potemplate.owner
         new_nl_message = self._setTranslation(
             message, self.nl_pofile, nl_text, submitter=submitter,
-            is_imported=is_imported)
+            is_current_upstream=is_current_upstream)
         new_de_message = self._setTranslation(
             message, self.de_pofile, de_text, submitter=submitter,
-            is_imported=is_imported)
+            is_current_upstream=is_current_upstream)
         return new_nl_message, new_de_message
 
     def _getContents(self, pofile):
@@ -387,10 +389,10 @@ class TestRemoveTranslations(TestCase):
         potmsgset = self.factory.makePOTMsgSet(
             unrelated_nl_pofile.potemplate, 'Foo',
             sequence=0)
-        unrelated_nl_message = potmsgset.updateTranslation(
-            unrelated_nl_pofile, unrelated_nl_pofile.potemplate.owner,
-            {0: "Foe"}, is_imported=False,
-            lock_timestamp=datetime.now(timezone('UTC')))
+        unrelated_nl_message = self.factory.makeCurrentTranslationMessage(
+            unrelated_nl_pofile, potmsgset,
+            translator=unrelated_nl_pofile.potemplate.owner,
+            translations={0: "Foe"})
 
         ids = [new_nl_message.id, new_de_message.id, unrelated_nl_message.id]
         rowcount = self._removeMessages(
@@ -429,23 +431,40 @@ class TestRemoveTranslations(TestCase):
         # Remove current messages, but not non-current messages.
         (new_nl_message, new_de_message) = self._makeMessages(
             "translate", "vertalen", "uebersetzen")
-        self.nl_message.is_current = False
+        self.nl_message.is_current_upstream = False
 
-        ids = [self.nl_message.id, new_nl_message.id, new_de_message.id]
-        self._removeMessages(ids=ids, is_current=True)
+        messages_to_delete = [self.nl_message, new_nl_message, new_de_message]
+        current_upstream_messages = [
+            message for message in messages_to_delete
+            if message.is_current_upstream]
+        ids = [message.id for message in messages_to_delete]
+        logger = logging.getLogger('test_remove_translations')
+        logger.setLevel(logging.WARN)
+        loghandler = Handler(self)
+        loghandler.add(logger.name)
+        self._removeMessages(ids=ids, is_current_upstream=True, logger=logger)
 
-        self.nl_message.is_current = True
+        self.nl_message.is_current_upstream = True
         self._checkInvariant()
+        loghandler.assertLogsMessage(
+            'Deleting messages currently in use:', level=logging.WARN)
+        for message in current_upstream_messages:
+            loghandler.assertLogsMessage(
+                'Message %i is a current translation in upstream'
+                % message.id,
+                level=logging.WARN)
+        self.assertEqual(
+            1 + len(current_upstream_messages), len(loghandler.records))
 
     def test_RemoveNotCurrent(self):
         # Remove current messages, but not non-current messages.
         (new_nl_message, new_de_message) = self._makeMessages(
             "write", "schrijven", "schreiben")
-        new_nl_message.is_current = False
-        new_de_message.is_current = False
+        new_nl_message.is_current_upstream = False
+        new_de_message.is_current_upstream = False
 
         ids = [self.nl_message.id, new_nl_message.id, new_de_message.id]
-        self._removeMessages(ids=ids, is_current=False)
+        self._removeMessages(ids=ids, is_current_upstream=False)
 
         self._checkInvariant()
 
@@ -453,11 +472,11 @@ class TestRemoveTranslations(TestCase):
         # Remove current messages, but not non-current messages.
         (new_nl_message, new_de_message) = self._makeMessages(
             "book", "boek", "Buch")
-        new_nl_message.is_imported = True
-        new_de_message.is_imported = True
+        new_nl_message.is_current_ubuntu = True
+        new_de_message.is_current_ubuntu = True
 
         ids = [self.nl_message.id, new_nl_message.id, new_de_message.id]
-        self._removeMessages(ids=ids, is_imported=True)
+        self._removeMessages(ids=ids, is_current_ubuntu=True)
 
         self._checkInvariant()
 
@@ -465,12 +484,12 @@ class TestRemoveTranslations(TestCase):
         # Remove current messages, but not non-current messages.
         (new_nl_message, new_de_message) = self._makeMessages(
             "helicopter", "helikopter", "Hubschauber")
-        self.nl_message.is_imported = True
+        self.nl_message.is_current_ubuntu = True
 
         ids = [self.nl_message.id, new_nl_message.id, new_de_message.id]
-        self._removeMessages(ids=ids, is_imported=False)
+        self._removeMessages(ids=ids, is_current_ubuntu=False)
 
-        self.nl_message.is_imported = False
+        self.nl_message.is_current_ubuntu = False
         self._checkInvariant()
 
     def test_RemoveMsgId(self):
@@ -487,9 +506,11 @@ class TestRemoveTranslations(TestCase):
         self.assertEqual(
             self.nl_message.origin, RosettaTranslationOrigin.ROSETTAWEB)
         (new_nl_message, new_de_message) = self._makeMessages(
-            "new", "nieuw", "neu", is_imported=True)
-        self.assertEqual(new_nl_message.origin, RosettaTranslationOrigin.SCM)
-        self.assertEqual(new_de_message.origin, RosettaTranslationOrigin.SCM)
+            "new", "nieuw", "neu", is_current_upstream=True)
+        removeSecurityProxy(new_nl_message).origin = (
+            RosettaTranslationOrigin.SCM)
+        removeSecurityProxy(new_de_message).origin = (
+            RosettaTranslationOrigin.SCM)
 
         self._removeMessages(
             potemplate=self.potemplate, origin=RosettaTranslationOrigin.SCM)
@@ -537,27 +558,28 @@ class TestRemoveTranslations(TestCase):
     def test_remove_unlicensed_restriction(self):
         # When removing unlicensed translations, other restrictions
         # still apply.
-        self.nl_message.is_imported = True
-        self.de_message.is_imported = True
+        self.nl_message.is_current_upstream = True
+        self.de_message.is_current_upstream = True
         answer = TranslationRelicensingAgreement(
             person=self.nl_message.submitter, allow_relicensing=False)
 
         try:
-            self._removeMessages(reject_license=True, is_imported=False)
+            self._removeMessages(
+                reject_license=True, is_current_upstream=False)
             self._checkInvariant()
         finally:
             # Clean up.
             answer.destroySelf()
 
 
-class TestRemoveTranslationsUnmasking(TestCase):
-    """Test that `remove_translations` "unmasks" imported messages.
+class TestRemoveTranslationsUnmasking(TestCaseWithFactory):
+    """Test that `remove_translations` "unmasks" upstream messages.
 
-    When a current, non-imported message is deleted, the deletion code
-    checks whether there is also an imported translation.  If there was,
-    it makes sense to make the imported message the current one (as it
-    would have been if the deleted message had never been there in the
-    first place).
+    When a shared current Ubuntu message is deleted, the deletion
+    code checks whether there is also an upstream translation.  If there
+    was, it makes sense to make the upstream message the current Ubuntu
+    message (as it would have been if the deleted message had never been
+    there in the first place).
     """
     layer = LaunchpadZopelessLayer
 
@@ -567,64 +589,40 @@ class TestRemoveTranslationsUnmasking(TestCase):
 
         # Set up a template with a Laotian translation file.  There's
         # one message to be translated.
-        factory = LaunchpadObjectFactory()
-        self.pofile = factory.makePOFile('lo')
-        potemplate = self.pofile.potemplate
-        self.potmsgset = factory.makePOTMsgSet(potemplate, 'foo',
-                                               sequence=0)
+        potemplate = self.factory.makePOTemplate()
+        self.potmsgset = self.factory.makePOTMsgSet(
+            potemplate, 'foo', sequence=0)
+        self.pofile = self.factory.makePOFile('lo', potemplate=potemplate)
 
-    def _setTranslation(self, text, is_imported=False):
-        return self.potmsgset.updateTranslation(
-            self.pofile, self.pofile.owner, {0: text},
-            is_imported=is_imported,
-            lock_timestamp=datetime.now(timezone('UTC')))
+        self.ubuntu = self.factory.makeCurrentTranslationMessage(
+            self.pofile, self.potmsgset, current_other=True)
+        self.upstream = self.factory.makeCurrentTranslationMessage(
+            self.pofile, self.potmsgset, current_other=False)
+        Store.of(self.upstream).flush()
+        self.assertFalse(
+            self.upstream.is_current_ubuntu, "Broken test setup.")
+        self.assertTrue(
+            self.upstream.is_current_upstream, "Broken test setup.")
+        self.assertTrue(self.ubuntu.is_current_ubuntu, "Broken test setup.")
+        self.assertFalse(
+            self.ubuntu.is_current_upstream, "Broken test setup.")
 
-    def test_unmask_imported_message(self):
-        # Basic use case: imported message is unmasked.
-        cleanups = []
-        try:
-            imported = self._setTranslation('imported', is_imported=True)
-            cleanups.append(imported)
-            current = self._setTranslation('current', is_imported=False)
-            cleanups.append(current)
-            self.assertFalse(imported.is_current, "Broken test setup.")
-            self.assertTrue(imported.is_imported, "Broken test setup.")
-            self.assertTrue(current.is_current, "Broken test setup.")
-            self.assertFalse(current.is_imported, "Broken test setup.")
-            Store.of(current).flush()
-
-            remove_translations(ids=[current.id])
-
-            sync(imported)
-            self.assertTrue(imported.is_imported)
-            self.assertTrue(imported.is_current)
-        finally:
-            # Clean up.
-            remove_translations(ids=[message.id for message in cleanups])
+    def test_unmask_upstream_message(self):
+        # Basic use case: upstream message is unmasked.
+        remove_translations(ids=[self.ubuntu.id])
+        sync(self.upstream)
+        self.assertTrue(self.upstream.is_current_upstream)
+        self.assertTrue(self.upstream.is_current_ubuntu)
 
     def test_unmask_right_message(self):
         # Unmasking picks the right message, and doesn't try to violate
-        # the unique constraint on is_imported.
-        cleanups = []
-        try:
-            inactive = self._setTranslation('inactive')
-            cleanups.append(inactive)
-            imported = self._setTranslation('imported', is_imported=True)
-            cleanups.append(imported)
-            current = self._setTranslation('current', is_imported=False)
-            self.assertFalse(inactive.is_current, "Broken test setup.")
-            self.assertFalse(inactive.is_imported, "Broken test setup.")
-            Store.of(current).flush()
-
-            remove_translations(ids=[current.id])
-
-            sync(imported)
-            sync(inactive)
-            self.assertTrue(imported.is_current)
-            self.assertFalse(inactive.is_current)
-        finally:
-            # Clean up.
-            remove_translations(ids=[message.id for message in cleanups])
+        # the unique constraint on is_current_upstream.
+        inactive = self.factory.makeSuggestion(self.pofile, self.potmsgset)
+        remove_translations(ids=[self.ubuntu.id])
+        sync(self.upstream)
+        sync(inactive)
+        self.assertTrue(self.upstream.is_current_ubuntu)
+        self.assertFalse(inactive.is_current_ubuntu)
 
 
 def test_suite():

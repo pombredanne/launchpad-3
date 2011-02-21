@@ -6,18 +6,23 @@
 __metaclass__ = type
 __all__ = [
     'LibraryBackedByteStorage',
-    'RestrictedLibraryBackedByteStorage',
 ]
 
 
 from cStringIO import StringIO
 
 from lazr.restful.interfaces import IByteStorage
-from zope.component import getUtility
+from zope.component import (
+    getMultiAdapter,
+    getUtility,
+    )
+
 from zope.interface import implements
 
-from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.librarian import (
+    ILibraryFileAliasSet,
+    ILibraryFileAliasWithParent,
+    )
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 
@@ -49,6 +54,12 @@ class LibraryBackedByteStorage:
     @property
     def alias_url(self):
         """See `IByteStorage`."""
+        if self.file_alias.restricted:
+            lfa_with_parent = getMultiAdapter(
+                (self.file_alias, self.entry.context),
+                ILibraryFileAliasWithParent)
+            token = lfa_with_parent.createToken()
+            return self.file_alias.private_url + '?token=%s' % token
         return self.file_alias.getURL()
 
     @property
@@ -75,29 +86,3 @@ class LibraryBackedByteStorage:
     def deleteStored(self):
         """See `IByteStorage`."""
         setattr(self.entry, self.field.__name__, None)
-
-
-class RestrictedLibraryBackedByteStorage(LibraryBackedByteStorage):
-    """See `IByteStorage`.
-
-    This variant of LibraryBackedByteStorage provides an alias_url
-    which points to a StreamOrRedirectLibraryFileAliasView for
-    restricted Librarian files.
-    """
-
-    @property
-    def alias_url(self):
-        """See `IByteStorage`."""
-        if self.file_alias.restricted:
-            # XXX Abel Deuring 2010-09-03, bug=629804
-            # This is a bad hack: We can't give ordinary users API access to
-            # restricted files at present. But we can allow access to
-            # some machines in the data center (and should do that).
-            # We need here an HTTP URL, not an HTTPS URL, so we don't
-            # use getUrl(). Since http_url uses not an official domain
-            # name, all we do is expose an unaccessible HTTP URL also
-            # users outside of the data center, instead of the HTTPS URL
-            # returned by getURL().
-            return self.file_alias.http_url
-        else:
-            return self.file_alias.getURL()

@@ -8,7 +8,6 @@ __all__ = ['BugSubscriptionFilter']
 
 from itertools import chain
 
-from storm.base import Storm
 from storm.locals import (
     Bool,
     Int,
@@ -18,8 +17,10 @@ from storm.locals import (
     )
 from zope.interface import implements
 
+from canonical.database.enumcol import DBEnum
 from canonical.launchpad import searchbuilder
 from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
 from lp.bugs.model.bugsubscriptionfilterimportance import (
     BugSubscriptionFilterImportance,
@@ -28,9 +29,10 @@ from lp.bugs.model.bugsubscriptionfilterstatus import (
     BugSubscriptionFilterStatus,
     )
 from lp.bugs.model.bugsubscriptionfiltertag import BugSubscriptionFilterTag
+from lp.services.database.stormbase import StormBase
 
 
-class BugSubscriptionFilter(Storm):
+class BugSubscriptionFilter(StormBase):
     """A filter to specialize a *structural* subscription."""
 
     implements(IBugSubscriptionFilter)
@@ -44,6 +46,10 @@ class BugSubscriptionFilter(Storm):
     structural_subscription = Reference(
         structural_subscription_id, "StructuralSubscription.id")
 
+    bug_notification_level = DBEnum(
+        enum=BugNotificationLevel,
+        default=BugNotificationLevel.COMMENTS,
+        allow_none=False)
     find_all_tags = Bool(allow_none=False, default=False)
     include_any_tags = Bool(allow_none=False, default=False)
     exclude_any_tags = Bool(allow_none=False, default=False)

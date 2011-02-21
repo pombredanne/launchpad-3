@@ -75,6 +75,15 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 SEPARATOR = ' : '
 
 
+def format_link(obj, view_name=None):
+    """Return the equivalent of obj/fmt:link as a string."""
+    adapter = queryAdapter(obj, IPathAdapter, 'fmt')
+    link = getattr(adapter, 'link', None)
+    if link is None:
+        raise NotImplementedError("Missing link function on adapter.")
+    return link(view_name)
+
+
 class MenuLinksDict(dict):
     """A dict class to construct menu links when asked for and not before.
 
@@ -1642,17 +1651,6 @@ class SourcePackageRecipeFormatterAPI(CustomizableFormatter):
                 'owner': self._context.owner.displayname}
 
 
-class SourcePackageRecipeBuildFormatterAPI(CustomizableFormatter):
-    """Adapter providing fmt support for ISourcePackageRecipe objects."""
-
-    _link_summary_template = '%(name)s recipe build [%(owner)s/%(archive)s]'
-
-    def _link_summary_values(self):
-        return {'name': self._context.recipe.base_branch.unique_name,
-                'owner': self._context.archive.owner.name,
-                'archive': self._context.archive.name}
-
-
 class SpecificationFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for Specification objects"""
 
@@ -2253,6 +2251,28 @@ class LinkFormatterAPI(ObjectFormatterAPI):
             return self._context.url
         else:
             return u''
+
+
+class RevisionAuthorFormatterAPI(ObjectFormatterAPI):
+    """Adapter for `IRevisionAuthor` links."""
+
+    traversable_names = {'link': 'link'}
+
+    def link(self, view_name=None, rootsite='mainsite'):
+        """See `ObjectFormatterAPI`."""
+        context = self._context
+        if context.person is not None:
+            return PersonFormatterAPI(self._context.person).link(
+                view_name, rootsite)
+        elif context.name_without_email:
+            return cgi.escape(context.name_without_email)
+        elif context.email and getUtility(ILaunchBag).user is not None:
+            return cgi.escape(context.email)
+        elif context.email:
+            return "&lt;email address hidden&gt;"
+        else:
+            # The RevisionAuthor name and email is None.
+            return ''
 
 
 def clean_path_segments(request):

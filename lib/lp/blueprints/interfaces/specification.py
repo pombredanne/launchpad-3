@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -399,8 +399,13 @@ class ISpecificationPublic(
         "All the dependencies, including dependencies of dependencies.")
     all_blocked = Attribute(
         "All specs blocked on this, and those blocked on the blocked ones.")
-    linked_branches = Attribute(
-        'The entries that link the branches to the spec.')
+    linked_branches = exported(
+        CollectionField(
+            title=_("Branches associated with this spec, usually "
+            "branches on which this spec is being implemented."),
+            value_type=Reference(schema=Interface), # ISpecificationBranch
+            readonly=True),
+        ('devel', dict(exported=True)), exported=False)
 
     # emergent properties
     informational = Attribute('Is True if this spec is purely informational '

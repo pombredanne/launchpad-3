@@ -212,10 +212,10 @@
         <!-- IStructuralSubscriptionTarget -->
 
         <allow
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
+            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
             permission="launchpad.AnyPerson"
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
+            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
     </class>
     <securedutility
@@ -233,9 +233,6 @@
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         factory="lp.registry.browser.distroseries.DistroSeriesBreadcrumb"
-        permission="zope.Public"/>
-    <adapter
-        factory=".model.structuralsubscription.DistroSeriesTargetHelper"
         permission="zope.Public"/>
 
     <facet
@@ -339,21 +336,21 @@
         <allow
             interface="lp.answers.interfaces.questioncollection.IQuestionCollection"/>
         <allow
-            interface="lp.translations.interfaces.translationgroup.ITranslationPolicy"/>
+            interface="lp.translations.interfaces.translationpolicy.ITranslationPolicy"/>
         <require
             permission="launchpad.Edit"
             set_schema="lp.registry.interfaces.projectgroup.IProjectGroupPublic"/>
         <require
             permission="launchpad.TranslationsAdmin"
-            set_schema="lp.translations.interfaces.translationgroup.ITranslationPolicy"/>
+            set_schema="lp.translations.interfaces.translationpolicy.ITranslationPolicy"/>
 
         <!-- IStructuralSubscriptionTarget -->
 
         <allow
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
+            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
             permission="launchpad.AnyPerson"
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
+            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
         <require
             permission="launchpad.Admin"
@@ -389,9 +386,6 @@
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.projectgroup.IProjectGroupSet"
         factory="lp.registry.browser.project.ProjectSetBreadcrumb"
-        permission="zope.Public"/>
-    <adapter
-        factory=".model.structuralsubscription.ProjectGroupTargetHelper"
         permission="zope.Public"/>
 
     <facet
@@ -484,10 +478,10 @@
         <!-- IStructuralSubscriptionTarget -->
 
         <allow
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
+            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
             permission="launchpad.AnyPerson"
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
+            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
         <!-- IQuestionTarget -->
 
@@ -523,9 +517,6 @@
         factory="canonical.launchpad.components.launchpadcontainer.LaunchpadDistributionSourcePackageContainer"/>
     <adapter
         factory="lp.registry.browser.distributionsourcepackage.distribution_from_distributionsourcepackage"/>
-    <adapter
-        factory=".model.structuralsubscription.DistributionSourcePackageTargetHelper"
-        permission="zope.Public"/>
     <adapter
         factory="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageBreadcrumb"/>
 
@@ -986,15 +977,12 @@
         <!-- IStructuralSubscriptionTarget -->
 
         <allow
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
+            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
             permission="launchpad.AnyPerson"
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
+            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
     </class>
-    <adapter
-        factory=".model.structuralsubscription.MilestoneTargetHelper"
-        permission="zope.Public"/>
 
     <!-- IMilestoneSet -->
 
@@ -1273,10 +1261,10 @@
         <!-- IStructuralSubscriptionTarget -->
 
         <allow
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
+            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
             permission="launchpad.AnyPerson"
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
+            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
         <!-- IHasBugSupervisor -->
 
@@ -1288,9 +1276,6 @@
             attributes="
                 setBugSupervisor"/>
     </class>
-    <adapter
-        factory=".model.structuralsubscription.ProductTargetHelper"
-        permission="zope.Public"/>
 
     <!-- ProductWithLicenses
                                 This is a decorator for IProduct that eliminates an additional query
@@ -1415,10 +1400,10 @@
         <!-- IStructuralSubscriptionTarget -->
 
         <allow
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
+            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
             permission="launchpad.AnyPerson"
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
+            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
     </class>
     <adapter
@@ -1435,9 +1420,6 @@
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.productseries.IProductSeries"
         factory="lp.registry.browser.productseries.ProductSeriesBreadcrumb"
-        permission="zope.Public"/>
-    <adapter
-        factory=".model.structuralsubscription.ProductSeriesTargetHelper"
         permission="zope.Public"/>
 
     <!-- This is class TimelineProductSeries -->
@@ -1559,10 +1541,10 @@
         <!-- IStructuralSubscriptionTarget -->
 
         <allow
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
+            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetRead" />
         <require
             permission="launchpad.AnyPerson"
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
+            interface="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTargetWrite" />
 
         <!-- IHasBugSupervisor -->
 
@@ -1587,9 +1569,6 @@
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distribution.IDistributionSet"
         factory="lp.registry.browser.distribution.DistributionSetBreadcrumb"
-        permission="zope.Public"/>
-    <adapter
-        factory=".model.structuralsubscription.DistributionTargetHelper"
         permission="zope.Public"/>
 
     <!-- DistributionSet -->
@@ -1856,17 +1835,6 @@
         <allow
             interface="lp.registry.interfaces.packaging.IPackagingUtil"/>
     </securedutility>
-
-    <!-- StructuralSubscription -->
-
-    <class
-        class="lp.registry.model.structuralsubscription.StructuralSubscription">
-        <allow
-            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"/>
-        <require
-            permission="zope.Public"
-            set_schema="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"/>
-    </class>
 
     <!-- PersonNotification -->
 

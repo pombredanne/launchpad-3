@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,F0401
@@ -25,13 +25,17 @@ from lazr.restful.declarations import (
     export_as_webservice_entry,
     export_write_operation,
     exported,
+    mutator_for,
+    operation_for_version,
     operation_parameters,
+    operation_removed_in_version,
     REQUEST_USER,
     )
 from lazr.restful.fields import (
     CollectionField,
     Reference,
     )
+from lazr.restful.interface import copy_field
 from zope.interface import (
     Attribute,
     Interface,
@@ -97,7 +101,7 @@ class ISourcePackageRecipeView(Interface):
             required=True, readonly=True,
             vocabulary='ValidPersonOrTeam'))
 
-    recipe_text = exported(Text())
+    recipe_text = exported(Text(readonly=True))
 
     def isOverQuota(requester, distroseries):
         """True if the recipe/requester/distroseries combo is >= quota.
@@ -106,12 +110,11 @@ class ISourcePackageRecipeView(Interface):
         :param distroseries: The distroseries to build for.
         """
 
-    def getBuilds(pending=False):
-        """Return a ResultSet of all the builds in the given state.
+    def getBuilds():
+        """Return a ResultSet of all the non-pending builds."""
 
-        :param pending: If True, select all builds that are pending.  If
-            False, select all builds that are not pending.
-        """
+    def getPendingBuilds():
+        """Return a ResultSet of all the pending builds."""
 
     def getLastBuild():
         """Return the the most recent build of this recipe."""
@@ -136,7 +139,11 @@ class ISourcePackageRecipeView(Interface):
 class ISourcePackageRecipeEdit(Interface):
     """ISourcePackageRecipe methods that require launchpad.Edit permission."""
 
-    @operation_parameters(recipe_text=Text())
+    @mutator_for(ISourcePackageRecipeView['recipe_text'])
+    @operation_for_version("devel")
+    @operation_parameters(
+        recipe_text=copy_field(
+            ISourcePackageRecipeView['recipe_text']))
     @export_write_operation()
     def setRecipeText(recipe_text):
         """Set the text of the recipe."""
@@ -172,19 +179,20 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
             " build a source package for"),
         readonly=False)
     build_daily = exported(Bool(
-        title=_("Automatically build each day, if the source has changed"),
-        description=_("You can manually request a build at any time.")))
+        title=_("Built daily"),
+        description=_("Automatically build each day, if the source has changed.")))
 
     name = exported(TextLine(
             title=_("Name"), required=True,
             constraint=name_validator,
             description=_("The name of this recipe.")))
 
-    description = Description(
+    description = exported(Description(
         title=_('Description'), required=True,
-        description=_('A short description of the recipe.'))
+        description=_('A short description of the recipe.')))
 
-    date_last_modified = Datetime(required=True, readonly=True)
+    date_last_modified = exported(
+        Datetime(required=True, readonly=True))
 
     is_stale = Bool(title=_('Recipe is stale.'))
 

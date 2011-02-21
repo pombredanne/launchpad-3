@@ -59,6 +59,9 @@ from lp.bugs.interfaces.bugtarget import (
     IHasOfficialBugTags,
     )
 from lp.bugs.interfaces.bugtracker import IBugTracker
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
 from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy,
     )
@@ -74,9 +77,6 @@ from lp.registry.interfaces.milestone import (
     )
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.role import IHasOwner
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
-    )
 from lp.services.fields import (
     IconImageUpload,
     LogoImageUpload,
@@ -87,7 +87,7 @@ from lp.services.fields import (
     Title,
     URIField,
     )
-from lp.translations.interfaces.translationgroup import ITranslationPolicy
+from lp.translations.interfaces.translationpolicy import ITranslationPolicy
 
 
 class ProjectNameField(PillarNameField):

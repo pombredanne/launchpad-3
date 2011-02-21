@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,E0602
@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'BUG_SUPERVISOR_BUGTASK_STATUSES',
+    'BugBlueprintSearch',
     'BugBranchSearch',
     'BugTagsSearchCombinator',
     'BugTaskImportance',
@@ -28,8 +29,6 @@ __all__ = [
     'IDistroBugTask',
     'IDistroSeriesBugTask',
     'IFrontPageBugTaskSearch',
-    'IllegalRelatedBugTasksParams',
-    'IllegalTarget',
     'INominationsReviewTableBatchNavigator',
     'INullBugTask',
     'IPersonBugTaskSearch',
@@ -37,13 +36,16 @@ __all__ = [
     'IRemoveQuestionFromBugTaskForm',
     'IUpstreamBugTask',
     'IUpstreamProductBugTaskSearch',
+    'IllegalRelatedBugTasksParams',
+    'IllegalTarget',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES',
     'UserCannotEditBugTaskAssignee',
     'UserCannotEditBugTaskImportance',
     'UserCannotEditBugTaskMilestone',
     'UserCannotEditBugTaskStatus',
-    'valid_remote_bug_url']
+    'valid_remote_bug_url',
+    ]
 
 from lazr.enum import (
     DBEnumeratedType,
@@ -340,7 +342,7 @@ class BugBranchSearch(EnumeratedType):
     """Bug branch search option.
 
     The possible values to search for bugs having branches attached
-    or not having branches attched.
+    or not having branches attached.
     """
 
     ALL = Item("Show all bugs")
@@ -350,13 +352,20 @@ class BugBranchSearch(EnumeratedType):
     BUGS_WITHOUT_BRANCHES = Item("Show only Bugs without linked Branches")
 
 
-# XXX: Brad Bollenbach 2005-12-02 bugs=5320:
-# In theory, INCOMPLETE belongs in UNRESOLVED_BUGTASK_STATUSES, but the
-# semantics of our current reports would break if it were added to the
-# list below.
+class BugBlueprintSearch(EnumeratedType):
+    """Bug blueprint search option.
 
-# XXX: matsubara 2006-02-02 bug=4201:
-# I added the INCOMPLETE as a short-term solution.
+    The possible values to search for bugs having blueprints attached
+    or not having blueprints attached.
+    """
+
+    ALL = Item("Show all bugs")
+
+    BUGS_WITH_BLUEPRINTS = Item("Show only Bugs with linked Blueprints")
+
+    BUGS_WITHOUT_BLUEPRINTS = Item("Show only Bugs without linked Blueprints")
+
+
 UNRESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.NEW,
     BugTaskStatus.INCOMPLETE,
@@ -488,6 +497,7 @@ class IBugTask(IHasDateCreated, IHasBug):
             title=_('Assigned to'), required=False,
             vocabulary='ValidAssignee',
             readonly=True))
+    assigneeID = Attribute('The assignee ID (for eager loading)')
     bugtargetdisplayname = exported(
         Text(title=_("The short, descriptive name of the target"),
              readonly=True),
@@ -950,6 +960,12 @@ class IBugTaskSearchBase(Interface):
     has_no_branches = Bool(
         title=_('Show bugs without linked branches'), required=False,
         default=True)
+    has_blueprints = Bool(
+        title=_('Show bugs with linked blueprints'), required=False,
+        default=True)
+    has_no_blueprints = Bool(
+        title=_('Show bugs without linked blueprints'), required=False,
+        default=True)
 
 
 class IBugTaskSearch(IBugTaskSearchBase):
@@ -1144,9 +1160,9 @@ class BugTaskSearchParams:
                  hardware_owner_is_affected_by_bug=False,
                  hardware_owner_is_subscribed_to_bug=False,
                  hardware_is_linked_to_bug=False,
-                 linked_branches=None, structural_subscriber=None,
-                 modified_since=None, created_since=None,
-                 exclude_conjoined_tasks=False):
+                 linked_branches=None, linked_blueprints=None,
+                 structural_subscriber=None, modified_since=None,
+                 created_since=None, exclude_conjoined_tasks=False):
 
         self.bug = bug
         self.searchtext = searchtext
@@ -1189,6 +1205,7 @@ class BugTaskSearchParams:
             hardware_owner_is_subscribed_to_bug)
         self.hardware_is_linked_to_bug = hardware_is_linked_to_bug
         self.linked_branches = linked_branches
+        self.linked_blueprints = linked_blueprints
         self.structural_subscriber = structural_subscriber
         self.modified_since = modified_since
         self.created_since = created_since
@@ -1219,6 +1236,29 @@ class BugTaskSearchParams:
         # Import this here to avoid circular dependencies
         from lp.registry.interfaces.sourcepackage import (
             ISourcePackage)
+        if isinstance(sourcepackage, any):
+            # Unwrap the source package.
+            self.sourcepackagename = any(*[
+                pkg.sourcepackagename for pkg in sourcepackage.query_values])
+            distroseries = any(*[pkg.distroseries for pkg in
+                sourcepackage.query_values if ISourcePackage.providedBy(pkg)])
+            distributions = any(*[pkg.distribution for pkg in
+                sourcepackage.query_values
+                if not ISourcePackage.providedBy(pkg)])
+            if distroseries.query_values and not distributions.query_values:
+                self.distroseries = distroseries
+            elif not distroseries.query_values and distributions.query_values:
+                self.distributions = distributions
+            else:
+                # Either we have both distroseries and distributions or neither
+                # of them: set both, which will give us the cross product
+                # due to the search of source packages being sourcepackagename
+                # specific rather than actually context specific. This is not
+                # ideal but is tolerable given no actual use of mixed type
+                # any() exists today.
+                self.distroseries = distroseries
+                self.distributions = distributions
+            return
         if ISourcePackage.providedBy(sourcepackage):
             # This is a sourcepackage in a distro series.
             self.distroseries = sourcepackage.distroseries
@@ -1226,6 +1266,33 @@ class BugTaskSearchParams:
             # This is a sourcepackage in a distribution.
             self.distribution = sourcepackage.distribution
         self.sourcepackagename = sourcepackage.sourcepackagename
+
+    def setTarget(self, target):
+        """Constrain the search to only return items in target.
+
+        This is equivalent to calling setProduct etc but the type of target
+        does not need to be known to the caller.
+
+        :param target: A `IHasBug`, or some search term like all/any/none on
+            `IHasBug`. If using all/any all the targets must be of the same
+            type due to implementation limitations. Currently only distroseries
+            and productseries `IHasBug` implementations are supported.
+        """
+        # Yay circular deps.
+        from lp.registry.interfaces.distroseries import IDistroSeries
+        from lp.registry.interfaces.productseries import IProductSeries
+        if isinstance(target, (any, all)):
+            assert len(target.query_values), \
+                'cannot determine target with no targets'
+            instance = target.query_values[0]
+        else:
+            instance = target
+        if IDistroSeries.providedBy(instance):
+            self.setDistroSeries(target)
+        elif IProductSeries.providedBy(instance):
+            self.setProductSeries(target)
+        else:
+            raise AssertionError("unknown target type %r" % target)
 
     @classmethod
     def _anyfy(cls, value):
@@ -1265,8 +1332,8 @@ class BugTaskSearchParams:
                        hardware_owner_is_affected_by_bug=False,
                        hardware_owner_is_subscribed_to_bug=False,
                        hardware_is_linked_to_bug=False, linked_branches=None,
-                       structural_subscriber=None, modified_since=None,
-                       created_since=None):
+                       linked_blueprints=None, structural_subscriber=None,
+                       modified_since=None, created_since=None):
         """Create and return a new instance using the parameter list."""
         search_params = cls(user=user, orderby=order_by)
 
@@ -1332,7 +1399,8 @@ class BugTaskSearchParams:
             hardware_owner_is_subscribed_to_bug)
         search_params.hardware_is_linked_to_bug = (
             hardware_is_linked_to_bug)
-        search_params.linked_branches=linked_branches
+        search_params.linked_branches = linked_branches
+        search_params.linked_blueprints = linked_blueprints
         search_params.structural_subscriber = structural_subscriber
         search_params.modified_since = modified_since
         search_params.created_since = created_since
@@ -1416,6 +1484,16 @@ class IBugTaskSet(Interface):
         :param params: the BugTaskSearchParams to search on.
         """
 
+    def countBugs(params, group_on):
+        """Count bugs that match params, grouping by group_on.
+
+        :param param: A BugTaskSearchParams object.
+        :param group_on: The column(s) group on - .e.g (
+            Bugtask.distroseriesID, BugTask.milestoneID) will cause grouping by
+            distro series and then milestone.
+        :return: A dict {group_instance: count, ...}
+        """
+
     def getStatusCountsForProductSeries(user, product_series):
         """Returns status counts for a product series' bugs.
 
@@ -1494,19 +1572,6 @@ class IBugTaskSet(Interface):
         If the col_name is unrecognized, a KeyError is raised.
         """
 
-    # XXX kiko 2006-03-23:
-    # get rid of this kludge when we have proper security for scripts.
-    def dangerousGetAllTasks():
-        """DO NOT USE THIS METHOD UNLESS YOU KNOW WHAT YOU ARE DOING
-
-        Returns ALL BugTasks. YES, THAT INCLUDES PRIVATE ONES. Do not
-        use this method. DO NOT USE IT. I REPEAT: DO NOT USE IT.
-
-        This method exists solely for the purpose of scripts that need
-        to do gardening over all bug tasks; the current example is
-        update-bugtask-targetnamecaches.
-        """
-
     def getBugCountsForPackages(user, packages):
         """Return open bug counts for the list of packages.
 
@@ -1537,6 +1602,8 @@ class IBugTaskSet(Interface):
 
         The assignee and the assignee's validity are precached.
         """
+
+    open_bugtask_search = Attribute("A search returning open bugTasks.")
 
 
 def valid_remote_bug_url(value):

@@ -4,6 +4,7 @@
 __metaclass__ = type
 __all__ = [
     'Contains',
+    'DocTestMatches',
     'DoesNotCorrectlyProvide',
     'DoesNotProvide',
     'HasQueryCount',
@@ -13,10 +14,12 @@ __all__ = [
     'ProvidesAndIsProxied',
     ]
 
+from lazr.lifecycle.snapshot import Snapshot
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
 from testtools.matchers import (
     Equals,
+    DocTestMatches as OriginalDocTestMatches,
     Matcher,
     Mismatch,
     MismatchesAll,
@@ -141,7 +144,7 @@ class _MismatchedQueryCount(Mismatch):
         result = []
         for query in self.query_collector.queries:
             result.append(unicode(query).encode('utf8'))
-        return {'queries': Content(UTF8_TEXT, lambda:['\n'.join(result)])}
+        return {'queries': Content(UTF8_TEXT, lambda: ['\n'.join(result)])}
 
 
 class IsNotProxied(Mismatch):
@@ -265,3 +268,48 @@ class IsConfiguredBatchNavigator(Matcher):
                 mismatches.append(mismatch)
         if mismatches:
             return MismatchesAll(mismatches)
+
+
+class WasSnapshotted(Mismatch):
+
+    def __init__(self, matchee, attribute):
+        self.matchee = matchee
+        self.attribute = attribute
+
+    def describe(self):
+        return "Snapshot of %s should not include %s" % (
+            self.matchee, self.attribute)
+
+
+class DoesNotSnapshot(Matcher):
+    """Checks that certain fields are skipped on Snapshots."""
+
+    def __init__(self, attr_list, interface, error_msg=None):
+        self.attr_list = attr_list
+        self.interface = interface
+        self.error_msg = error_msg
+
+    def __str__(self):
+        return "Does not include %s when Snapshot is provided %s." % (
+            ', '.join(self.attr_list), self.interface)
+
+    def match(self, matchee):
+        snapshot = Snapshot(matchee, providing=self.interface)
+        mismatches = []
+        for attribute in self.attr_list:
+            if hasattr(snapshot, attribute):
+                mismatches.append(WasSnapshotted(matchee, attribute))
+
+        if len(mismatches) == 0:
+            return None
+        else:
+            return MismatchesAll(mismatches)
+
+
+def DocTestMatches(example):
+    """See if a string matches a doctest example.
+
+    Uses the default doctest flags used across Launchpad.
+    """
+    from canonical.launchpad.testing.systemdocs import default_optionflags
+    return OriginalDocTestMatches(example, default_optionflags)

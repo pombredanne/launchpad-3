@@ -16,6 +16,7 @@ from collections import namedtuple
 
 from storm.locals import Desc
 
+from canonical.launchpad.webapp import adapter
 from lp.services.features.model import (
     FeatureFlag,
     getFeatureStore,
@@ -90,10 +91,26 @@ class StormFeatureRuleSource(FeatureRuleSource):
     """
 
     def getAllRulesAsTuples(self):
+        try:
+            # This LBYL may look odd but it is needed. Rendering OOPSes and
+            # timeouts also looks up flags, but doing such a lookup can
+            # will cause a doom if the db request is not executed or is
+            # canceled by the DB - and then results in a failure in
+            # zope.app.publications.ZopePublication.handleError when it
+            # calls transaction.commit.
+            # By Looking this up first, we avoid this and also permit
+            # code using flags to work in timed out requests (by appearing to
+            # have no rules).
+            adapter.get_request_remaining_seconds()
+        except adapter.RequestExpired:
+            return 
         store = getFeatureStore()
         rs = (store
                 .find(FeatureFlag)
-                .order_by(FeatureFlag.flag, Desc(FeatureFlag.priority)))
+                .order_by(
+                    FeatureFlag.flag,
+                    FeatureFlag.scope,
+                    Desc(FeatureFlag.priority)))
         for r in rs:
             yield Rule(str(r.flag), str(r.scope), r.priority, r.value)
 

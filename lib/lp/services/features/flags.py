@@ -3,7 +3,9 @@
 
 __all__ = [
     'FeatureController',
+    'flag_info',
     'NullFeatureController',
+    'undocumented_flags',
     ]
 
 
@@ -15,8 +17,47 @@ from lp.services.features.rulesource import (
 
 __metaclass__ = type
 
+# This table of flag name, value domain, and prose documentation is used to
+# generate the web-visible feature flag documentation.
+flag_info = sorted([
+    ('code.recipes_enabled',
+     '[on|off]',
+     'enable recipes',
+     'off'),
+    ('hard_timeout',
+     'float',
+     'sets the hard timeout in seconds',
+     ''),
+    ('malone.advanced-subscriptions.enabled',
+     '[on|off]',
+     'enables advanced subscriptions features',
+     'off'),
+    ('malone.disable_targetnamesearch',
+     '[empty|nonempty]',
+     'If nonempty targetnames are not consulted during text search.',
+     ''),
+    ('memcache',
+     '[enabled|disabled]',
+     'enables/disables memcache',
+     'enabled'),
+    ('publicrestrictedlibrarian',
+     '[on|off]',
+     'redirect to private URLs instead of proxying',
+     'off'),
+    ('visible_render_time',
+     'empty|nonempty',
+     'enables showing the page render overheads in the login widget',
+     ''),
+    ])
 
-class Memoize(object):
+# The set of all flag names that are documented.
+documented_flags = set(info[0] for info in flag_info)
+# The set of all the flags names that have been used during the process
+# lifetime, but were not documented in flag_info.
+undocumented_flags = set()
+
+
+class Memoize():
 
     def __init__(self, calc):
         self._known = {}
@@ -30,7 +71,7 @@ class Memoize(object):
         return v
 
 
-class ScopeDict(object):
+class ScopeDict():
     """Allow scopes to be looked up by getitem"""
 
     def __init__(self, features):
@@ -40,7 +81,7 @@ class ScopeDict(object):
         return self.features.isInScope(scope_name)
 
 
-class FeatureController(object):
+class FeatureController():
     """A FeatureController tells application code what features are active.
 
     It does this by meshing together two sources of data:
@@ -94,12 +135,15 @@ class FeatureController(object):
 
     def getFlag(self, flag):
         """Get the value of a specific flag.
-        
+
         :param flag: A name to lookup. e.g. 'recipes.enabled'
 
         :return: The value of the flag determined by the highest priority rule
         that matched.
         """
+        # If this is an undocumented flag, record it.
+        if flag not in documented_flags:
+            undocumented_flags.add(flag)
         return self._known_flags.lookup(flag)
 
     def _checkFlag(self, flag):

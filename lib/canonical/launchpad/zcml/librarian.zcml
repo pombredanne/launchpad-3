@@ -13,7 +13,10 @@
   </class>
 
   <class class="canonical.launchpad.database.librarian.LibraryFileAliasWithParent">
-    <allow interface="canonical.launchpad.interfaces.librarian.ILibraryFileAliasWithParent" />
+    <allow interface="canonical.launchpad.interfaces.librarian.ILibraryFileAlias" />
+    <require
+      permission="launchpad.View"
+      attributes="createToken" />
     <require
       permission="launchpad.Edit"
       set_attributes="mimetype restricted" />

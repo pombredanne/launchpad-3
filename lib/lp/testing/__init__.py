@@ -3,6 +3,8 @@
 
 # pylint: disable-msg=W0401,C0301,F0401
 
+from __future__ import absolute_import
+
 __metaclass__ = type
 __all__ = [
     'ANONYMOUS',
@@ -87,10 +89,6 @@ import testtools
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
 import transaction
-# zope.exception demands more of frame objects than twisted.python.failure
-# provides in its fake frames.  This is enough to make it work with them
-# as of 2009-09-16.  See https://bugs.launchpad.net/bugs/425113.
-from twisted.python.failure import _Frame
 from windmill.authoring import WindmillTestClient
 from zope.component import (
     adapter,
@@ -118,7 +116,6 @@ from canonical.launchpad.webapp.servers import (
     LaunchpadTestRequest,
     WebServiceTestRequest,
     )
-from canonical.launchpad.windmill.testing import constants
 from lp.codehosting.vfs import (
     branch_id_to_path,
     get_rw_server,
@@ -159,10 +156,9 @@ from lp.testing._webservice import (
     oauth_access_token_for,
     )
 from lp.testing.fixture import ZopeEventHandlerFixture
+from lp.testing.karma import KarmaRecorder
 from lp.testing.matchers import Provides
-
-
-_Frame.f_locals = property(lambda self: {})
+from lp.testing.windmill import constants, lpuser
 
 
 class FakeTime:
@@ -352,6 +348,17 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         """Create a temporary directory, and return its path."""
         return self.useContext(temp_dir())
 
+    def installKarmaRecorder(self, *args, **kwargs):
+        """Set up and return a `KarmaRecorder`.
+
+        Registers the karma recorder immediately, and ensures that it is
+        unregistered after the test.
+        """
+        recorder = KarmaRecorder(*args, **kwargs)
+        recorder.register_listener()
+        self.addCleanup(recorder.unregister_listener)
+        return recorder
+
     def assertProvides(self, obj, interface):
         """Assert 'obj' correctly provides 'interface'."""
         self.assertThat(obj, Provides(interface))
@@ -500,12 +507,13 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         """Include the logChunks from fixture in the test details."""
         # Evaluate the log when called, not later, to permit the librarian to
         # be shutdown before the detail is rendered.
-        chunks = fixture.logChunks()
-        content = Content(UTF8_TEXT, lambda:chunks)
+        chunks = fixture.getLogChunks()
+        content = Content(UTF8_TEXT, lambda: chunks)
         self.addDetail('librarian-log', content)
 
     def setUp(self):
         super(TestCase, self).setUp()
+        # Circular imports.
         from lp.testing.factory import ObjectFactory
         from canonical.testing.layers import LibrarianLayer
         self.factory = ObjectFactory()
@@ -711,9 +719,13 @@ class BrowserTestCase(TestCaseWithFactory):
         self.user = self.factory.makePerson(password='test')
 
     def getViewBrowser(self, context, view_name=None, no_login=False,
-                       rootsite=None):
+                       rootsite=None, user=None):
+        if user is None:
+            user = self.user
+        # Make sure that there is a user interaction in order to generate the
+        # canonical url for the context object.
         login(ANONYMOUS)
-        url = canonical_url(context, view_name=view_name ,rootsite=rootsite)
+        url = canonical_url(context, view_name=view_name, rootsite=rootsite)
         logout()
         if no_login:
             from canonical.launchpad.testing.pages import setupBrowser
@@ -721,22 +733,23 @@ class BrowserTestCase(TestCaseWithFactory):
             browser.open(url)
             return browser
         else:
-            return self.getUserBrowser(url, self.user)
+            return self.getUserBrowser(url, user)
 
     def getMainContent(self, context, view_name=None, rootsite=None,
-                       no_login=False):
+                       no_login=False, user=None):
         """Beautiful soup of the main content area of context's page."""
         from canonical.launchpad.testing.pages import find_main_content
         browser = self.getViewBrowser(
-            context, view_name, rootsite=rootsite, no_login=no_login)
+            context, view_name, rootsite=rootsite, no_login=no_login,
+            user=user)
         return find_main_content(browser.contents)
 
     def getMainText(self, context, view_name=None, rootsite=None,
-                    no_login=False):
+                    no_login=False, user=None):
         """Return the main text of a context's page."""
         from canonical.launchpad.testing.pages import extract_text
         return extract_text(
-            self.getMainContent(context, view_name, rootsite, no_login))
+            self.getMainContent(context, view_name, rootsite, no_login, user))
 
 
 class WindmillTestCase(TestCaseWithFactory):
@@ -758,6 +771,23 @@ class WindmillTestCase(TestCaseWithFactory):
         # page that was last accessed by the previous test, which is the cause
         # of things like https://launchpad.net/bugs/515494)
         self.client.open(url=self.layer.appserver_root_url())
+
+    def getClientFor(self, obj, user=None, password='test', view_name=None):
+        """Return a new client, and the url that it has loaded."""
+        client = WindmillTestClient(self.suite_name)
+        if user is not None:
+            email = removeSecurityProxy(user).preferredemail.email
+            client.open(url=lpuser.get_basic_login_url(email, password))
+            client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        if isinstance(obj, basestring):
+            url = obj
+        else:
+            url = canonical_url(
+                obj, view_name=view_name, force_local_path=True)
+        obj_url = self.layer.base_url + url
+        client.open(url=obj_url)
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        return client, obj_url
 
 
 class YUIUnitTestCase(WindmillTestCase):
@@ -924,13 +954,13 @@ def feature_flags():
         features.per_thread.features = old_features
 
 
-# XXX: This doesn't seem like a generically-useful testing function. Perhaps
-# it should go in a sub-module or something? -- jml
 def get_lsb_information():
     """Returns a dictionary with the LSB host information.
 
     Code stolen form /usr/bin/lsb-release
     """
+    # XXX: This doesn't seem like a generically-useful testing function.
+    # Perhaps it should go in a sub-module or something? -- jml
     distinfo = {}
     if os.path.exists('/etc/lsb-release'):
         for line in open('/etc/lsb-release'):
@@ -1000,8 +1030,6 @@ def normalize_whitespace(string):
     return " ".join(string.split())
 
 
-# XXX: This doesn't seem to be a generically useful testing function. Perhaps
-# it should go into a sub-module? -- jml
 def map_branch_contents(branch):
     """Return all files in branch at `branch_url`.
 
@@ -1009,6 +1037,8 @@ def map_branch_contents(branch):
     :return: a dict mapping file paths to file contents.  Only regular
         files are included.
     """
+    # XXX: This doesn't seem to be a generically useful testing function.
+    # Perhaps it should go into a sub-module? -- jml
     contents = {}
     tree = branch.basis_tree()
     tree.lock_read()

@@ -198,9 +198,10 @@ class DistroSeriesSourcePackageRelease:
         this release is or was published.
         """
         pub_hist = self.publishing_history
-        if pub_hist.count() == 0:
+        try:
+            return pub_hist[0]
+        except IndexError:
             return None
-        return pub_hist[0]
 
     @property
     def current_published(self):

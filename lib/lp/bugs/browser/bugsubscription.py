@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views for BugSubscription."""
@@ -9,6 +9,7 @@ __all__ = [
     'BugPortletDuplicateSubcribersContents',
     'BugPortletSubcribersContents',
     'BugSubscriptionAddView',
+    'BugSubscriptionListView',
     ]
 
 import cgi
@@ -37,8 +38,8 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.bugs.browser.bug import BugViewMixin
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
-from lp.registry.enum import BugNotificationLevel
 from lp.services import features
 from lp.services.propertycache import cachedproperty
 
@@ -109,7 +110,7 @@ class AdvancedSubscriptionMixin:
         # form. The BugNotificationLevel descriptions are too generic.
         bug_notification_level_terms = [
             SimpleTerm(
-                level, level.name,
+                level, level.title,
                 self._bug_notification_level_descriptions[level])
             # We reorder the items so that COMMENTS comes first. We also
             # drop the NOTHING option since it just makes the UI
@@ -542,3 +543,14 @@ class SubscriptionAttrDecorator:
     @property
     def css_name(self):
         return 'subscriber-%s' % self.subscription.person.id
+
+
+class BugSubscriptionListView(LaunchpadView):
+    """A view to show all a person's subscriptions to a bug."""
+
+    @property
+    def label(self):
+        return "%s's subscriptions to bug %d" % (
+            self.user.displayname, self.context.bug.id)
+
+    page_title = label

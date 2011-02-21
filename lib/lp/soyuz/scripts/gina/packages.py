@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0631
@@ -19,7 +19,6 @@ __all__ = [
     'PoolFileNotFound',
     'prioritymap',
     'SourcePackageData',
-    'urgencymap',
     ]
 
 import glob
@@ -34,12 +33,12 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.scripts import log
 from canonical.launchpad.validators.version import valid_debian_version
 from lp.archivepublisher.diskpool import poolify
+from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.utils import (
     DpkgSourceError,
     extract_dpkg_source,
     )
 from lp.registry.interfaces.gpg import GPGKeyAlgorithm
-from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.soyuz.enums import PackagePublishingPriority
 from lp.soyuz.scripts.gina import (
     call,
@@ -50,13 +49,6 @@ from lp.soyuz.scripts.gina.changelog import parse_changelog
 #
 # Data setup
 #
-
-urgencymap = {
-    "low": SourcePackageUrgency.LOW,
-    "medium": SourcePackageUrgency.MEDIUM,
-    "high": SourcePackageUrgency.HIGH,
-    "emergency": SourcePackageUrgency.EMERGENCY,
-    }
 
 prioritymap = {
     "required": PackagePublishingPriority.REQUIRED,
@@ -430,7 +422,7 @@ class SourcePackageData(AbstractPackageData):
                      (self.package, "1.0"))
             self.format = "1.0"
 
-        if self.urgency not in urgencymap:
+        if self.urgency not in ChangesFile.urgency_map:
             log.warn("Invalid urgency in %s, %r, assumed %r" %
                      (self.package, self.urgency, "low"))
             self.urgency = "low"

@@ -5,4 +5,6 @@
 %(bug_url)s
 
 Title:
-  %(bug_title)s
+%(bug_title)s
+
+%(unsubscribe_notice)s

@@ -309,12 +309,15 @@ they were published. We include any relevant builds for failures.
     ...             )
     >>> print_latest_updates(view.latest_updates)
     cdrkit - Failed to build: i386
-    pmount - Successfully built
     iceweasel - Successfully built
+    pmount - Successfully built
 
 Let's now update the datepublished for iceweasel to show that the ordering
-is from most recent.
+is from most recent.  The view's latest_updates property is cached so we need
+to reload the view.
 
+    >>> login('celso.providelo@canonical.com')
+    >>> view = create_initialized_view(cprov.archive, name="+index")
     >>> from canonical.database.constants import UTC_NOW
     >>> login('foo.bar@canonical.com')
     >>> view.filtered_sources[1].datepublished = UTC_NOW
@@ -749,7 +752,7 @@ dependency. Each element has:
     >>> print dependency.token
     mark/ppa
 
-    >>> print dependency.title
+    >>> print dependency.title.escapedtext
     <a href="http://launchpad.dev/~mark/+archive/ppa">PPA for Mark Shuttleworth</a>
 
 The form focus, now that we have a recorded dependencies, is set to the

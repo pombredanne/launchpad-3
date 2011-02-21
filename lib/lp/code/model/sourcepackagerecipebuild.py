@@ -10,7 +10,11 @@ __all__ = [
     'SourcePackageRecipeBuild',
     ]
 
-import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
+import logging
 import sys
 
 from psycopg2 import ProgrammingError
@@ -61,7 +65,6 @@ from lp.code.mail.sourcepackagerecipebuild import (
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
-from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
@@ -93,10 +96,11 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     @property
     def current_component(self):
-        # Since recipes only build into PPAs, they should always build
-        # in main. This will need to change once other archives are
-        # supported.
-        return getUtility(IComponentSet)['main']
+        # Only PPAs currently have a sane default component at the
+        # moment, but we only support recipes for PPAs.
+        component = self.archive.default_component
+        assert component is not None
+        return component
 
     distroseries_id = Int(name='distroseries', allow_none=True)
     distroseries = Reference(distroseries_id, 'DistroSeries.id')
@@ -152,7 +156,11 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
 
     @property
     def title(self):
-        return '%s recipe build' % self.recipe.base_branch.unique_name
+        if self.recipe is None:
+            return 'build for deleted recipe'
+        else:
+            branch_name = self.recipe.base_branch.unique_name
+            return '%s recipe build' % branch_name
 
     def __init__(self, package_build, distroseries, recipe, requester):
         """Construct a SourcePackageRecipeBuild."""
@@ -185,27 +193,35 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
     def makeDailyBuilds(logger=None):
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         recipes = SourcePackageRecipe.findStaleDailyBuilds()
+        if logger is None:
+            logger = logging.getLogger()
         builds = []
         for recipe in recipes:
+            recipe.is_stale = False
+            logger.debug(
+                'Recipe %s/%s is stale', recipe.owner.name, recipe.name)
+            if recipe.daily_build_archive is None:
+                logger.debug(' - No daily build archive specified.')
+                continue
             for distroseries in recipe.distroseries:
+                series_name = distroseries.named_version
                 try:
                     build = recipe.requestBuild(
                         recipe.daily_build_archive, recipe.owner,
                         distroseries, PackagePublishingPocket.RELEASE)
                 except BuildAlreadyPending:
+                    logger.debug(
+                        ' - build already pending for %s', series_name)
                     continue
                 except ProgrammingError:
                     raise
                 except:
+                    logger.exception(' - problem with %s', series_name)
                     info = sys.exc_info()
                     errorlog.globalErrorUtility.raising(info)
                 else:
-                    if logger is not None:
-                        logger.debug(
-                            'Build for %s/%s requested',
-                            recipe.owner.name, recipe.name)
+                    logger.debug(' - build requested for %s', series_name)
                     builds.append(build)
-            recipe.is_stale = False
         return builds
 
     def _unqueueBuild(self):
@@ -246,9 +262,9 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
     def getRecentBuilds(cls, requester, recipe, distroseries, _now=None):
         from lp.buildmaster.model.buildfarmjob import BuildFarmJob
         if _now is None:
-            _now = datetime.datetime.now(utc)
+            _now = datetime.now(utc)
         store = IMasterStore(SourcePackageRecipeBuild)
-        old_threshold = _now - datetime.timedelta(days=1)
+        old_threshold = _now - timedelta(days=1)
         return store.find(cls, cls.distroseries_id == distroseries.id,
             cls.requester_id == requester.id, cls.recipe_id == recipe.id,
             BuildFarmJob.date_created > old_threshold,
@@ -269,13 +285,16 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         median = self.recipe.getMedianBuildDuration()
         if median is not None:
             return median
-        return datetime.timedelta(minutes=10)
+        return timedelta(minutes=10)
 
     def verifySuccessfulUpload(self):
         return self.source_package_release is not None
 
     def notify(self, extra_info=None):
         """See `IPackageBuild`."""
+        # If our recipe has been deleted, any notification will fail.
+        if self.recipe is None:
+            return
         mailer = SourcePackageRecipeBuildMailer.forStatus(self)
         mailer.sendAll()
 
@@ -318,6 +337,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         """See `IPackageBuild`."""
         d = super(SourcePackageRecipeBuild, self)._handleStatus_OK(
             librarian, slave_status, logger)
+
         def uploaded_build(ignored):
             # Base implementation doesn't notify on success.
             if self.status == BuildStatus.FULLYBUILT:

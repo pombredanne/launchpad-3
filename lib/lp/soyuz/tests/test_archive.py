@@ -27,6 +27,7 @@ from lp.registry.interfaces.person import TeamSubscriptionPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.propertycache import clear_property_cache
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -1156,19 +1157,19 @@ class TestGetBinaryPackageReleaseByFileName(TestCaseWithFactory):
             self.archive.getBinaryPackageReleaseByFileName(
                 "this-is-not-real_1.2.3-4_all.deb"))
 
-    def test_returns_none_for_duplicate_file(self):
+    def test_returns_latest_for_duplicate_file(self):
         # In the unlikely case of multiple BPRs in this archive with the same
         # name (hopefully impossible, but it still happens occasionally due
-        # to bugs), None is returned.
+        # to bugs), the latest is returned.
 
         # Publish the same binaries again. Evil.
-        self.publisher.getPubBinaries(
+        new_pubs = self.publisher.getPubBinaries(
             version="1.2.3-4", archive=self.archive, binaryname="foo-bin",
             status=PackagePublishingStatus.PUBLISHED,
             architecturespecific=True)
 
-        self.assertIs(
-            None,
+        self.assertEquals(
+            new_pubs[0].binarypackagerelease,
             self.archive.getBinaryPackageReleaseByFileName(
                 "foo-bin_1.2.3-4_i386.deb"))
 
@@ -1474,10 +1475,11 @@ class TestGetComponentsForSeries(TestCaseWithFactory):
         # The primary archive uses the series' defined components.
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         self.assertEquals(
-            0, archive.getComponentsForSeries(self.series).count())
+            0, len(archive.getComponentsForSeries(self.series)))
 
         ComponentSelection(distroseries=self.series, component=self.comp1)
         ComponentSelection(distroseries=self.series, component=self.comp2)
+        clear_property_cache(self.series)
 
         self.assertEquals(
             set((self.comp1, self.comp2)),
@@ -1499,6 +1501,26 @@ class TestGetComponentsForSeries(TestCaseWithFactory):
         main_comp = getUtility(IComponentSet)['main']
         self.assertEquals(
             [main_comp], list(archive.getComponentsForSeries(self.series)))
+
+
+class TestDefaultComponent(TestCaseWithFactory):
+    """Tests for Archive.default_component."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_default_component_for_other_archives(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        self.assertIs(None, archive.default_component)
+
+    def test_default_component_for_partner(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
+        self.assertEquals(
+            getUtility(IComponentSet)['partner'], archive.default_component)
+
+    def test_default_component_for_ppas(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertEquals(
+            getUtility(IComponentSet)['main'], archive.default_component)
 
 
 class TestGetPockets(TestCaseWithFactory):

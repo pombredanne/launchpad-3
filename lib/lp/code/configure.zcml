@@ -283,12 +283,6 @@
         attributes="createComment
                     createCommentFromMessage"/>
   </class>
-  <adapter
-      factory="lp.code.browser.branchmergeproposal.text_xhtml_representation"
-      name="commit_message"/>
-  <adapter
-      factory="lp.code.browser.branchmergeproposal.text_xhtml_representation"
-      name="description"/>
 
   <!-- Branch Merge Proposal Jobs -->
 
