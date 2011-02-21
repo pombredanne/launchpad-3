@@ -141,10 +141,10 @@ class TestObjectFormatterAPI(TestCaseWithFactory):
         # The rendering of an object's link ignores any specified default
         # value which would be used in the case where the object were None.
         person = self.factory.makePerson()
-        person_link = test_tales('person/fmt:link::default', person=person)
+        person_link = test_tales('person/fmt:link::default value', person=person)
         self.assertEqual(PersonFormatterAPI(person).link(None), person_link)
         person_link = test_tales(
-            'person/fmt:link:bugs:default', person=person)
+            'person/fmt:link:bugs:default value', person=person)
         self.assertEqual(PersonFormatterAPI(person).link(
             None, rootsite='bugs'), person_link)
 
@@ -244,9 +244,11 @@ class TestNoneFormatterAPI(TestCaseWithFactory):
     def test_value_override(self):
         # Override of rendered value works as expected.
         self.assertEqual(
-            'default', test_tales('foo/fmt:link::default', foo=None))
+            'default value',
+            test_tales('foo/fmt:link::default value', foo=None))
         self.assertEqual(
-            'default', test_tales('foo/fmt:link:rootsite:default', foo=None))
+            'default value',
+            test_tales('foo/fmt:link:rootsite:default value', foo=None))
 
     def test_invalid_traversal(self):
         # Traversal of invalid names raises an exception.
