@@ -178,10 +178,11 @@
   </script>
 
   <script tal:content='structure string:
-  LPS.use("event", function(Y) {
-    Y.Global.on("lp:context:changed", function(context) {
+  LPS.use("event-custom", function(Y) {
+    Y.Global.on("lp:context:changed", function(entry, fields_changed) {
       Y.log("lp:context:changed");
-      Y.log(context);
+      Y.log(entry);
+      Y.log(fields_changed);
       //if (fields_changed.indexOf("web_link") >= 0) {
       // / window.location = entry.get("web_link");
       //}
