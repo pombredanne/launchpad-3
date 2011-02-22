@@ -241,14 +241,10 @@ class SourcePackageRecipeView(LaunchpadView):
 
     @property
     def archive_picker(self):
-        ppa = self.context.daily_build_archive
-        if ppa is None:
-            initial_html = 'None'
-        else:
-            initial_html = format_link(ppa)
         field = ISourcePackageEditSchema['daily_build_archive']
         return InlineEditPickerWidget(
-            self.context, field, initial_html,
+            self.context, field,
+            format_link(self.context.daily_build_archive),
             header='Change daily build archive',
             step_title='Select a PPA')
 
