@@ -142,9 +142,9 @@ class DateTimeWidget(TextWidget):
             ]
         outputs = []
         for fmt in time_formats:
-           outputs.extend(['%s %s'.strip() % (d, fmt) for d in date_formats])
+           outputs.extend(['%s %s' % (d, fmt) for d in date_formats])
 
-        return outputs
+        return [o.strip() for o in outputs]
 
     #@property  XXX: do as a property when we have python2.5 for tests of
     #properties
