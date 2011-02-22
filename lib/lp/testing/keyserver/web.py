@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """GPG Key Information Server Prototype.
@@ -12,7 +12,7 @@ It implements the operations:
  - 'add': adds a key to the collection (does not update the index)
 
 It only depends on GPG for key submission; for retrieval and searching
-it just looks for files in the root (eg. /var/tmp/zeca). The files
+it just looks for files in the root (eg. /var/tmp/testkeyserver). The files
 are named like this:
 
 0x<keyid|fingerprint>.<operation>
@@ -24,16 +24,12 @@ $ gpg --list-key cprov > 0x681B6469.index
 note: remove the lines containing 'sub' or 'secret' keys
 
 $ gpg --export -a cprov > 0x681B6469.get
-
 """
 
 __metaclass__ = type
 
 __all__ = [
-    'KeyServer',
-    'LookUp',
-    'SubmitKey',
-    'Zeca',
+    'KeyServerResource',
     ]
 
 import glob
@@ -45,8 +41,11 @@ from twisted.web.resource import Resource
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.gpghandler import (
-    GPGKeyNotFoundError, IGPGHandler, MoreThanOneGPGKeyFound,
-    SecretGPGKeyImportDetected)
+    GPGKeyNotFoundError,
+    IGPGHandler,
+    MoreThanOneGPGKeyFound,
+    SecretGPGKeyImportDetected,
+    )
 
 
 GREETING = 'Copyright 2004-2009 Canonical Ltd.\n'
@@ -79,23 +78,40 @@ def locate_key(root, suffix):
     return path
 
 
-class Zeca(Resource):
+class _BaseResource(Resource):
+
     def getChild(self, name, request):
+        """Redirect trailing slash correctly."""
         if name == '':
             return self
         return Resource.getChild(
             self, name, request)
 
+
+class KeyServerResource(_BaseResource):
+    """Root resource for the test keyserver."""
+
+    def __init__(self, root):
+        _BaseResource.__init__(self)
+        self.putChild('pks', PksResource(root))
+
     def render_GET(self, request):
         return GREETING
 
 
-class KeyServer(Zeca):
+class PksResource(_BaseResource):
+
+    def __init__(self, root):
+        _BaseResource.__init__(self)
+        self.putChild('lookup', LookUp(root))
+        self.putChild('add', SubmitKey(root))
+
     def render_GET(self, request):
         return 'Welcome To Fake SKS service.\n'
 
 
 class LookUp(Resource):
+
     isLeaf = True
     permitted_actions = ['index', 'get']
 

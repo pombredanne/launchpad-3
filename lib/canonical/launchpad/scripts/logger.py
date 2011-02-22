@@ -50,7 +50,6 @@ from pytz import utc
 from zope.component import getUtility
 from zope.exceptions.log import Formatter
 
-from canonical.base import base
 from canonical.config import config
 from canonical.launchpad.webapp.errorlog import (
     globalErrorUtility,
@@ -61,6 +60,7 @@ from canonical.librarian.interfaces import (
     UploadFailed,
     )
 from lp.services.log import loglevels
+from lp.services.utils import compress_hash
 
 # Reexport our custom loglevels for old callsites. These callsites
 # should be importing the symbols from lp.services.log.loglevels
@@ -149,8 +149,7 @@ class LibrarianFormatter(LaunchpadFormatter):
 
         expiry = datetime.now().replace(tzinfo=utc) + timedelta(days=90)
         try:
-            filename = base(long(
-                hashlib.sha1(traceback).hexdigest(), 16), 62) + '.txt'
+            filename = compress_hash(hashlib.sha1(traceback)) + '.txt'
             url = librarian.remoteAddFile(
                     filename, len(traceback), StringIO(traceback),
                     'text/plain;charset=%s' % sys.getdefaultencoding(),

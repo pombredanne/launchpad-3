@@ -38,7 +38,9 @@ class TestBugChanges(TestCaseWithFactory):
     def setUp(self):
         super(TestBugChanges, self).setUp('foo.bar@canonical.com')
         self.admin_user = getUtility(ILaunchBag).user
-        self.user = self.factory.makePerson(displayname='Arthur Dent')
+        self.user = self.factory.makePerson(
+            displayname='Arthur Dent',
+            selfgenerated_bugnotifications=True)
         self.product = self.factory.makeProduct(
             owner=self.user, official_malone=True)
         self.bug = self.factory.makeBug(product=self.product, owner=self.user)
@@ -60,7 +62,7 @@ class TestBugChanges(TestCaseWithFactory):
         subscriber = self.factory.makePerson(name=name)
         subscription = target.addBugSubscription(subscriber, subscriber)
         with person_logged_in(subscriber):
-            filter = subscription.newBugFilter()
+            filter = subscription.bug_filters.one()
             filter.bug_notification_level = level
         return subscriber
 

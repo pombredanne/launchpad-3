@@ -545,7 +545,8 @@ class FileImporter(object):
         # The message is first stored as a suggestion and only made
         # current if it validates.
         new_message = potmsgset.submitSuggestion(
-            self.pofile, self.last_translator, sanitized_translations)
+            self.pofile, self.last_translator, sanitized_translations,
+            from_import=True)
 
         validation_ok = self._validateMessage(
             potmsgset, new_message, sanitized_translations, message_data)
