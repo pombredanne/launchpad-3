@@ -857,9 +857,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     @property
     def builtByRecipe(self):
         """See `ISourcePackagePublishingHistory`."""
-        if self.sourcepackagerelease.source_package_recipe_build is None:
-            return None
-        return self.sourcepackagerelease.source_package_recipe_build.recipe
+        return self.sourcepackagerelease.source_package_recipe_build
 
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):

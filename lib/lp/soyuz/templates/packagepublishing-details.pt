@@ -28,13 +28,13 @@
             tal:content="context/datesuperseded/fmt:displaydate"/>
       by <span tal:replace="context/supersededby/title" />
     </li>
+    <li tal:condition="context/builtByRecipe">
+    Built by recipe <a tal:attributes="href context/builtByRecipe/recipe/fmt:url"><span tal:replace="context/builtByRecipe/recipe/name" /></a> for <span tal:replace="context/builtByRecipe/requester/displayname" />
+    </li>
     <li tal:condition="context/datepublished">
       <strong>Published</strong>
       <span tal:attributes="title context/datepublished/fmt:datetime"
             tal:content="context/datepublished/fmt:displaydate" />
-    </li>
-    <li tal:condition="context/builtByRecipe">
-    Built by recipe <a tal:attributes="href context/builtByRecipe/fmt:url"><span tal:replace="context/builtByRecipe/name" /></a> for <span tal:replace="context/builtByRecipe/owner/displayname" />
     </li>
     <li tal:condition="view/wasCopied">
       <strong>Copied from</strong>

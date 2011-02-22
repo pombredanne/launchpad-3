@@ -632,10 +632,10 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         """
 
     def builtByRecipe():
-        """Return the SourcePackageRecipe that caused this publishing
+        """Return the SourcePackageRecipeBuild that caused this publishing
         record to be created, or None if one wasn't.
 
-        :return: A `SourcePackageRecipe` or None.
+        :return: A `SourcePackageRecipeBuild` or None.
         """
 
 

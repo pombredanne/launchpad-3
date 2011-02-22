@@ -55,7 +55,7 @@ class TestArchivePackagesViewSourcePackageRecipe(BrowserTestCase):
             archive=self.archive, status=PackagePublishingStatus.PUBLISHED)
         spph.sourcepackagerelease.source_package_recipe_build = sprb
         expected_contents = 'Built by recipe <a href="%s">%s</a> for %s' % (
-            canonical_url(recipe), recipe.name, recipe.owner.displayname)
+            canonical_url(recipe), recipe.name, sprb.requester.displayname)
         browser = self.getViewBrowser(self.archive, '+packages')
         browser.getLink('Show details').click()
         self.assertIn(expected_contents, browser.contents)
