@@ -15,7 +15,12 @@
 
     <div id="maincontent">
       <div id="nonportlets" class="readable">
-
+        <!-- This demo content shows use of view/structural_subscriptions. -->
+        <div tal:repeat="subscription view/structural_subscriptions">
+          <span tal:replace="string:
+            ${subscription/target/displayname} (${subscription/target/name})"
+            />
+        </div>
       </div>
     </div>
 

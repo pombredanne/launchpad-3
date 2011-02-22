@@ -3060,8 +3060,12 @@ class BugTaskSet:
 
         return counts
 
-    def getStructuralSubscriptionTargets(self, bugtasks):
-        """See `IBugTaskSet`."""
+    def _getStructuralSubscriptionTargets(self, bugtasks):
+        """Return (bugtask, target) pairs for each target of the bugtasks.
+        
+        Each bugtask may be responsible theoretically for 0 or more targets.
+        In practice, each generates one, two or three.
+        """
         for bugtask in bugtasks:
             if IStructuralSubscriptionTarget.providedBy(bugtask.target):
                 yield (bugtask, bugtask.target)
@@ -3075,10 +3079,23 @@ class BugTaskSet:
             if bugtask.milestone is not None:
                 yield (bugtask, bugtask.milestone)
 
+    def getAllStructuralSubscriptions(self, bugtasks, recipient):
+        """See `IBugTaskSet`."""
+        targets = [target for bugtask, target
+                   in self._getStructuralSubscriptionTargets(bugtasks)]
+        if len(targets) == 0:
+            return EmptyResultSet()
+        union = lambda left, right: (
+            removeSecurityProxy(left).union(
+                removeSecurityProxy(right)))
+        queries = (
+            target.getSubscriptions(recipient) for target in targets)
+        return reduce(union, queries)
+
     def getStructuralSubscribers(self, bugtasks, recipients=None, level=None):
         """See `IBugTaskSet`."""
         query_arguments = list(
-            self.getStructuralSubscriptionTargets(bugtasks))
+            self._getStructuralSubscriptionTargets(bugtasks))
 
         if len(query_arguments) == 0:
             return EmptyResultSet()
