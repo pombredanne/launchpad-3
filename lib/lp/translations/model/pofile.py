@@ -836,6 +836,12 @@ class POFile(SQLBase, POFileMixIn):
 
     def _countTranslations(self):
         """Count `currentcount`, `updatescount`, and `rosettacount`."""
+        if self.potemplate.messageCount() == 0:
+            # Shortcut: if the template is empty, as it is when it is
+            # first created, we know the answers without querying the
+            # database.
+            return 0, 0, 0
+
         side_traits = getUtility(ITranslationSideTraitsSet).getForTemplate(
             self.potemplate)
         params = {
@@ -900,6 +906,12 @@ class POFile(SQLBase, POFileMixIn):
 
     def _countNewSuggestions(self):
         """Count messages with new suggestions."""
+        if self.potemplate.messageCount() == 0:
+            # Shortcut: if the template is empty, as it is when it is
+            # first created, we know the answers without querying the
+            # database.
+            return 0
+
         flag_name = getUtility(ITranslationSideTraitsSet).getForTemplate(
             self.potemplate).flag_name
         suggestion_nonempty = "COALESCE(%s) IS NOT NULL" % ', '.join([
