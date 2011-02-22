@@ -179,13 +179,12 @@
 
   <script tal:content='structure string:
   LPS.use("event", function(Y) {
-    Y.on("lp:context:changed", function(fields_changed, entry) {
+    Y.Global.on("lp:context:changed", function(context) {
       Y.log("lp:context:changed");
-      Y.log(fields_changed);
-      Y.log(entry);
-      if (fields_changed.indexOf("web_link") >= 0) {
-        window.location = entry.get("web_link");
-      }
+      Y.log(context);
+      //if (fields_changed.indexOf("web_link") >= 0) {
+      // / window.location = entry.get("web_link");
+      //}
     });
   });'/>
 
