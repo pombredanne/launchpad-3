@@ -428,6 +428,22 @@ class FilteredStructuralSubscriptionTestBase:
             BugTaskStatus.INPROGRESS, self.ordinary_subscriber)
         self.assertSubscriptions([self.subscription])
 
+    def test_getSubscriptionFiltersForBugTask(self):
+        # If a subscription has multiple filters, they are all returned
+        # as long as they match.
+        subscription_filter1 = self.initial_filter
+        subscription_filter1.tags = [u"foo"]
+        subscription_filter2 = self.subscription.newBugFilter()
+        subscription_filter2.tags = [u"bar"]
+
+        # If the filter is adjusted to also match the criteria of the second
+        # filter, the subscription is still found.
+        self.bugtask.bug.tags = [u"foo", u"bar"]
+        self.assertContentEqual(
+            [subscription_filter1, subscription_filter2],
+            self.target.getSubscriptionFiltersForBugTask(
+                self.bugtask, BugNotificationLevel.NOTHING))
+
 
 class TestStructuralSubscriptionForDistro(
     RestrictedStructuralSubscriptionTestBase, TestCaseWithFactory):

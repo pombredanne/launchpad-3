@@ -152,6 +152,9 @@ class IStructuralSubscriptionTargetRead(Interface):
     def getSubscriptionsForBugTask(bug, level):
         """Return subscriptions for a given `IBugTask` at `level`."""
 
+    def getSubscriptionFiltersForBugTask(bug, level):
+        """Return subscription filters for a given `IBugTask` at `level`."""
+
 
 class IStructuralSubscriptionTargetWrite(Interface):
     """A Launchpad Structure allowing users to subscribe to it.

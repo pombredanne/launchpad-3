@@ -480,6 +480,14 @@ class StructuralSubscriptionTargetMixin:
             In(BugSubscriptionFilter.id,
                set_builder.subscriptions)).config(distinct=True)
 
+    def getSubscriptionFiltersForBugTask(self, bugtask, level):
+        """See `IStructuralSubscriptionTarget`."""
+        set_builder = BugFilterSetBuilder(
+            bugtask, level, self.__helper.join)
+        return Store.of(self.__helper.pillar).find(
+            BugSubscriptionFilter,
+            In(BugSubscriptionFilter.id, set_builder.subscriptions))
+
 
 class ArrayAgg(NamedFunc):
     __slots__ = ()
@@ -539,13 +547,7 @@ class BugFilterSetBuilder:
         subscription, the set operations are unaffected.
         """
         return Select(
-            columns=(
-                # Alias this column so it can be selected in
-                # subscriptions_matching.
-                Alias(
-                    BugSubscriptionFilter.structural_subscription_id,
-                    "structural_subscription_id"),
-                BugSubscriptionFilter.id),
+            BugSubscriptionFilter.id,
             tables=(
                 StructuralSubscription, BugSubscriptionFilter, join),
             where=And(
@@ -688,7 +690,4 @@ class BugFilterSetBuilder:
     @property
     def subscriptions(self):
         """Subscriptions with one or more filters matching the bug."""
-        return Select(
-            # I don't know of a more Storm-like way of doing this.
-            SQL("filters_matching.id"),
-            tables=Alias(self.filters_matching, "filters_matching"))
+        return self.filters_matching
