@@ -59,6 +59,7 @@ class TestTranslationSplitter(TestCaseWithFactory):
         return upstream_item, ubuntu_item
 
     def test_findSharedGroupsPOTMsgSet(self):
+        """POTMsgSets are correctly grouped."""
         splitter = self.makeTranslationSplitter()
         self.makeSharedPOTMsgSet(splitter)
         self.makeSharedPOTMsgSet(splitter)
@@ -76,6 +77,7 @@ class TestTranslationSplitter(TestCaseWithFactory):
         self.assertEqual(new_potmsgset, ubuntu_item.potmsgset)
 
     def test_migrateTranslations_diverged_upstream(self):
+        """Diverged upstream translation stays put."""
         splitter = self.makeTranslationSplitter()
         upstream_item, ubuntu_item = self.makeSharedPOTMsgSet(splitter)
         upstream_message = self.factory.makeCurrentTranslationMessage(
@@ -91,6 +93,7 @@ class TestTranslationSplitter(TestCaseWithFactory):
             None, ubuntu_item.potmsgset.getAllTranslationMessages().one())
 
     def test_migrateTranslations_diverged_ubuntu(self):
+        """Diverged ubuntu translation moves."""
         splitter = self.makeTranslationSplitter()
         upstream_item, ubuntu_item = self.makeSharedPOTMsgSet(splitter)
         ubuntu_message = self.factory.makeCurrentTranslationMessage(
@@ -107,6 +110,7 @@ class TestTranslationSplitter(TestCaseWithFactory):
             upstream_item.potmsgset.getAllTranslationMessages().one())
 
     def test_migrateTranslations_shared(self):
+        """Shared translation is copied."""
         splitter = self.makeTranslationSplitter()
         upstream_item, ubuntu_item = self.makeSharedPOTMsgSet(splitter)
         self.factory.makeCurrentTranslationMessage(
@@ -122,6 +126,7 @@ class TestTranslationSplitter(TestCaseWithFactory):
             upstream_translation.translations)
 
     def test_split_translations(self):
+        """Split translations splits POTMsgSet and TranslationMessage."""
         splitter = self.makeTranslationSplitter()
         upstream_item, ubuntu_item = self.makeSharedPOTMsgSet(splitter)
         upstream_message = self.factory.makeCurrentTranslationMessage(

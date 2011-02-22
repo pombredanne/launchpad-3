@@ -787,6 +787,7 @@ class TestTranslationMessage(TestCaseWithFactory):
         self.assertEquals(None, tm.getOnePOFile())
 
     def test_clone(self):
+        """Cloning a translation should produce a near-identical copy."""
         translations = [self.factory.getUniqueString() for x in range(6)]
         tm = self.factory.makeCurrentTranslationMessage(
             date_created=self.factory.getUniqueDate(),

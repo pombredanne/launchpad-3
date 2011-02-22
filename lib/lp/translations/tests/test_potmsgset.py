@@ -1888,6 +1888,7 @@ class TestClone(TestCaseWithFactory):
     layer = ZopelessDatabaseLayer
 
     def test_clone(self):
+        """Cloning a POTMsgSet should produce a near-identical copy."""
         msgset = self.factory.makePOTMsgSet(
             context=self.factory.getUniqueString('context'),
             plural=self.factory.getUniqueString('plural'),
