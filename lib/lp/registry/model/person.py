@@ -235,6 +235,7 @@ from lp.registry.interfaces.person import (
     validate_public_person,
     )
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
+from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
@@ -3858,6 +3859,11 @@ class PersonSet:
                 WHERE id in (%(to_id)d, %(from_id)d) LIMIT 1)
             WHERE id = %(to_id)d
             ''' % vars())
+
+    def mergeAsync(self, from_person, to_person):
+        """See `IPersonSet`."""
+        return getUtility(IPersonMergeJobSource).create(
+            from_person=from_person, to_person=to_person)
 
     def merge(self, from_person, to_person):
         """See `IPersonSet`."""

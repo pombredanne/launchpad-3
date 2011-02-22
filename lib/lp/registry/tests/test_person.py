@@ -38,10 +38,10 @@ from canonical.testing.layers import (
     )
 from lp.answers.model.answercontact import AnswerContact
 from lp.blueprints.model.specification import Specification
-from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtask import get_related_bugtasks_search_params
+from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.registry.errors import (
     NameAlreadyTaken,
     PrivatePersonLinkageError,
@@ -752,6 +752,15 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         descriptions = [r.description for r in recipes]
         self.assertEqual([u'TO', u'FROM'], descriptions)
         self.assertEqual(u'foo-1', recipes[1].name)
+
+    def test_mergeAsync(self):
+        # mergeAsync() creates a new `PersonMergeJob`.
+        from_person = self.factory.makePerson()
+        to_person = self.factory.makePerson()
+        login_person(from_person)
+        job = self.person_set.mergeAsync(from_person, to_person)
+        self.assertEqual(from_person, job.from_person)
+        self.assertEqual(to_person, job.to_person)
 
 
 class TestPersonSetCreateByOpenId(TestCaseWithFactory):

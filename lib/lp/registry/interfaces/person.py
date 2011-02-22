@@ -2150,6 +2150,17 @@ class IPersonSet(Interface):
     def latest_teams(limit=5):
         """Return the latest teams registered, up to the limit specified."""
 
+    def mergeAsync(from_person, to_person):
+        """Merge a person/team into another asynchronously.
+
+        This schedules a call to `merge()` to happen outside of the current
+        context/request. The intention is that it is called soon after this
+        method is called but there is no guarantee, nor is it not guaranteed
+        to succeed.
+
+        :return: A `PersonMergeJob`.
+        """
+
     def merge(from_person, to_person):
         """Merge a person/team into another.
 
