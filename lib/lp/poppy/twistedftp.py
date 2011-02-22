@@ -37,7 +37,7 @@ class PoppyAccessCheck:
         # Poppy allows any credentials.  People can use "anonymous" if
         # they want but anything goes.  Returning "poppy" here is
         # a totally arbitrary avatar.
-        return "poppy"
+        return credentials.username
 
 
 class PoppyAnonymousShell(ftp.FTPShell):
@@ -129,23 +129,23 @@ class FTPRealm:
 
 class FTPServiceFactory(service.Service):
     def __init__(self, port):
-        factory = ftp.FTPFactory()
         realm = FTPRealm(get_poppy_root())
         portal = Portal(realm)
         portal.registerChecker(PoppyAccessCheck())
+        factory = ftp.FTPFactory(portal)
 
         factory.tld = get_poppy_root()
-        factory.portal = portal
         factory.protocol = ftp.FTP
         factory.welcomeMessage = "Launchpad upload server"
         factory.timeOut = config.poppy.idle_timeout
 
+        self.ftpfactory = factory
+        self.portno = port
+
         # Setting this works around the fact that the twistd FTP server
         # invokes a special restricted shell when someone logs in as
         # "anonymous" which is the default for 'dput'.
-        #factory.userAnonymous = "userthatwillneverhappen"
-        self.ftpfactory = factory
-        self.portno = port
+        factory.userAnonymous = "userthatwillneverhappen"
 
     @staticmethod
     def makeFTPService(port=2121):

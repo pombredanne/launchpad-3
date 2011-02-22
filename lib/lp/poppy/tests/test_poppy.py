@@ -48,6 +48,9 @@ class FTPServer(Fixture):
         super(FTPServer, self).setUp()
         self.useFixture(PoppyTac(self.root_dir))
 
+    def getAnonTransport(self):
+        return get_transport('ftp://anonymous:me@example.com@localhost:%s/' % (self.port,))
+
     def getTransport(self):
         return get_transport('ftp://ubuntu:@localhost:%s/' % (self.port,))
 
@@ -184,14 +187,20 @@ class TestPoppy(TestCaseWithFactory):
         upload_dir = contents[1]
         return os.path.join(self.root_dir, upload_dir, path)
 
-    def test_change_directory(self):
+    def test_change_directory_anonymous(self):
+        # Check that FTP access with an anonymous user works.
+        transport = self.server.getAnonTransport()
+        self.test_change_directory(transport)
+
+    def test_change_directory(self, transport=None):
         """Check automatic creation of directories 'cwd'ed in.
 
         Also ensure they are created with proper permission (g+rwxs)
         """
         self.server.waitForStartUp()
 
-        transport = self.server.getTransport()
+        if transport is None:
+            transport = self.server.getTransport()
         transport.stat('foo/bar') # .stat will implicity chdir for us
 
         self.server.disconnect(transport)
@@ -360,4 +369,4 @@ def test_suite():
     # SFTP doesn't have the concept of the server changing directories, since
     # clients will only send absolute paths, so drop that test.
     return exclude_tests_by_condition(
-        suite, condition_id_re(r'test_change_directory\(sftp\)$'))
+        suite, condition_id_re(r'test_change_directory.*\(sftp\)$'))
