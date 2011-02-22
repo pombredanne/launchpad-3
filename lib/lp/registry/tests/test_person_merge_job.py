@@ -15,6 +15,7 @@ from lp.registry.interfaces.persontransferjob import (
     IPersonMergeJob,
     IPersonMergeJobSource,
     )
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.log.logger import BufferLogger
 from lp.testing import TestCaseWithFactory
 
@@ -64,3 +65,29 @@ class TestPersonMergeJob(TestCaseWithFactory):
             ["DEBUG PersonMergeJob is about to merge ~void into ~gestalt",
              "DEBUG PersonMergeJob has merged ~void into ~gestalt"],
             logger.getLogBuffer().splitlines())
+
+    def find(self, **kwargs):
+        return list(self.job_source.find(**kwargs))
+
+    def test_find(self):
+        # find() looks for merge jobs.
+        self.assertEqual([self.job], self.find())
+        self.assertEqual(
+            [self.job], self.find(from_person=self.from_person))
+        self.assertEqual(
+            [self.job], self.find(to_person=self.to_person))
+        self.assertEqual(
+            [self.job], self.find(
+                from_person=self.from_person,
+                to_person=self.to_person))
+        self.assertEqual(
+            [], self.find(from_person=self.to_person))
+
+    def test_find_only_pending_or_running(self):
+        # find() only returns jobs that are pending or running.
+        for status in JobStatus.items:
+            removeSecurityProxy(self.job.job)._status = status
+            if status in (JobStatus.WAITING, JobStatus.RUNNING):
+                self.assertEqual([self.job], self.find())
+            else:
+                self.assertEqual([], self.find())
