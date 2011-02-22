@@ -194,7 +194,7 @@
     define="render_time modules/canonical.launchpad.webapp.adapter/summarize_requests;"
     replace='structure string:&lt;script type="text/javascript"&gt;
   var render_time = "${render_time} &amp;bull;";
-  LPS.use("node", function(Y) {
+  LPS.use("node", "event-custom", function(Y) {
     Y.on("domready", function() {
       var node = Y.one("#rendertime");
       node.set("innerHTML", render_time);
