@@ -339,6 +339,7 @@ portion do.
     >>> series_specification.proposeGoal(productseries, owner)
     >>> series_bugtask = factory.makeBugTask(bug=bug, target=productseries)
     >>> subscription = productseries.addSubscription(owner, owner)
+    >>> filter = subscription.newBugFilter()
     >>> productseries.branch = factory.makeBranch()
 
     >>> view = create_view(productseries, name='+delete')

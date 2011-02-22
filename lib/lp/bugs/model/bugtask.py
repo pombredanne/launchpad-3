@@ -2502,7 +2502,7 @@ class BugTaskSet:
     def countBugs(self, params, group_on):
         """See `IBugTaskSet`."""
         resultset = self._search(
-            group_on + (Count(BugTask.bugID),), [], None, params).result_set
+            group_on + (SQL("COUNT(Distinct BugTask.bug)"),), [], None, params).result_set
         # We group on the related field:
         resultset.group_by(*group_on)
         resultset.order_by()

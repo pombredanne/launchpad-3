@@ -3078,12 +3078,11 @@ class TextualBugTaskSearchListingView(BugTaskSearchListingView):
 
         # XXX flacoste 2008/04/24 This should be moved to a
         # BugTaskSearchParams.setTarget().
-        if IDistroSeries.providedBy(self.context):
-            search_params.setDistroSeries(self.context)
+        if (IDistroSeries.providedBy(self.context) or
+            IProductSeries.providedBy(self.context)):
+            search_params.setTarget(self.context)
         elif IDistribution.providedBy(self.context):
             search_params.setDistribution(self.context)
-        elif IProductSeries.providedBy(self.context):
-            search_params.setProductSeries(self.context)
         elif IProduct.providedBy(self.context):
             search_params.setProduct(self.context)
         elif IProjectGroup.providedBy(self.context):
