@@ -27,6 +27,7 @@ class TestStructuralSubscription(TestCaseWithFactory):
         with person_logged_in(self.product.owner):
             self.subscription = self.product.addSubscription(
                 self.product.owner, self.product.owner)
+        self.original_filter = self.subscription.bug_filters[0]
 
     def test_delete_requires_Edit_permission(self):
         # delete() is only available to the subscriber.
@@ -62,21 +63,22 @@ class TestStructuralSubscription(TestCaseWithFactory):
                 store.find(
                     BugSubscriptionFilter,
                     BugSubscriptionFilter.structural_subscription_id ==
-                        subscription_id
-                    ).one(),
+                        subscription_id).one(),
                 None)
 
-    def test_bug_filters_empty(self):
-        # The bug_filters attribute is empty to begin with.
-        self.assertEqual([], list(self.subscription.bug_filters))
+    def test_bug_filters_default(self):
+        # The bug_filters attribute has a default non-filtering bug filter
+        # to begin with.
+        self.assertEqual([self.original_filter],
+                         list(self.subscription.bug_filters))
 
     def test_bug_filters(self):
         # The bug_filters attribute returns the BugSubscriptionFilter records
         # associated with this subscription.
         subscription_filter = BugSubscriptionFilter()
         subscription_filter.structural_subscription = self.subscription
-        self.assertEqual(
-            [subscription_filter],
+        self.assertContentEqual(
+            [subscription_filter, self.original_filter],
             list(self.subscription.bug_filters))
 
     def test_newBugFilter(self):
@@ -87,8 +89,8 @@ class TestStructuralSubscription(TestCaseWithFactory):
         self.assertEqual(
             self.subscription,
             subscription_filter.structural_subscription)
-        self.assertEqual(
-            [subscription_filter],
+        self.assertContentEqual(
+            [subscription_filter, self.original_filter],
             list(self.subscription.bug_filters))
 
     def test_newBugFilter_by_anonymous(self):

@@ -1281,6 +1281,7 @@ class BugTaskSearchParams:
         # Yay circular deps.
         from lp.registry.interfaces.distroseries import IDistroSeries
         from lp.registry.interfaces.productseries import IProductSeries
+        from lp.registry.interfaces.milestone import IMilestone
         if isinstance(target, (any, all)):
             assert len(target.query_values), \
                 'cannot determine target with no targets'
@@ -1291,6 +1292,8 @@ class BugTaskSearchParams:
             self.setDistroSeries(target)
         elif IProductSeries.providedBy(instance):
             self.setProductSeries(target)
+        elif IMilestone.providedBy(instance):
+            self.milestone = target
         else:
             raise AssertionError("unknown target type %r" % target)
 
