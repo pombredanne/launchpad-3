@@ -51,8 +51,8 @@ class TranslationSplitter:
         return new_potmsgset
 
     @staticmethod
-    def migrateTranslations(upstream_item, ubuntu_item):
-        for message in upstream_item.potmsgset.getAllTranslationMessages():
+    def migrateTranslations(upstream_msgset, ubuntu_item):
+        for message in upstream_msgset.getAllTranslationMessages():
             if message.potemplate == ubuntu_item.potemplate:
                 naked_message = removeSecurityProxy(message)
                 naked_message.potmsgset = ubuntu_item.potmsgset
