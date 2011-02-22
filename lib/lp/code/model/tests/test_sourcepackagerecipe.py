@@ -10,7 +10,6 @@ from datetime import (
     timedelta,
     )
 import textwrap
-import unittest
 
 from bzrlib.plugins.builder.recipe import ForbiddenInstructionError
 from pytz import UTC
