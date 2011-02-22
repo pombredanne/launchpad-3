@@ -17,11 +17,10 @@ class RosettaExportQueue(LaunchpadCronScript):
     """Translation exports."""
 
     def main(self):
-        self.txn.set_isolation_level(ISOLATION_LEVEL_READ_COMMITTED)
         with SlaveDatabasePolicy():
             process_queue(self.txn, self.logger)
 
 
 if __name__ == '__main__':
     script = RosettaExportQueue('rosetta-export-queue', dbuser='poexport')
-    script.lock_and_run()
+    script.lock_and_run(isolation=ISOLATION_LEVEL_READ_COMMITTED)

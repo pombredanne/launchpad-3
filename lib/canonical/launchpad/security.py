@@ -56,6 +56,8 @@ from lp.blueprints.interfaces.specificationsubscription import (
 from lp.blueprints.interfaces.sprint import ISprint
 from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.bugs.interfaces.bugtarget import IOfficialBugTagTargetRestricted
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscription)
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
@@ -1089,6 +1091,27 @@ class EditAnnouncement(AuthorizationBase):
         return (user.isOneOfDrivers(self.obj.target) or
                 user.isOwner(self.obj.target) or
                 user.in_admin)
+
+
+class EditStructuralSubscription(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IStructuralSubscription
+
+    def checkAuthenticated(self, user):
+        """Who can edit StructuralSubscriptions."""
+
+        assert self.obj.target
+
+        # Removal of a target cascades removals to StructuralSubscriptions,
+        # so we need to allow editing to those who can edit the target itself.
+        can_edit_target = check_permission('launchpad.Edit', self.obj.target)
+
+        # Who is actually allowed to edit a subscription is determined by
+        # a helper method on the model.
+        can_edit_subscription = self.obj.target.userCanAlterSubscription(
+            self.obj.subscriber, user.person)
+
+        return (can_edit_target or can_edit_subscription)
 
 
 class UseApiDoc(AuthorizationBase):
