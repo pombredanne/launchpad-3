@@ -64,6 +64,8 @@ class IBugNotification(IHasOwner):
             description=_(
                 "The status of this bug notification."),
             )
+    bug_filters = Attribute(
+        "List of bug filters that caused this notification.")
 
 
 class IBugNotificationSet(Interface):

@@ -76,9 +76,9 @@ class BugNotification(SQLBase):
         """See `IStructuralSubscription`."""
         return IStore(BugSubscriptionFilter).find(
             BugSubscriptionFilter,
-            BugSubscriptionFilter.id ==
-            BugNotificationFilter.bug_subscription_filter_id,
-            self.id == BugNotificationFilter.bug_notification_id)
+            (BugSubscriptionFilter.id ==
+             BugNotificationFilter.bug_subscription_filter_id),
+            BugNotificationFilter.bug_notification == self)
 
 
 class BugNotificationSet:
@@ -163,14 +163,18 @@ class BugNotificationFilter(StormBase):
 
     __storm_table__ = "BugNotificationFilter"
 
+    def __init__(self, bug_notification, bug_subscription_filter):
+        self.bug_notification = bug_notification
+        self.bug_subscription_filter = bug_subscription_filter
+
     id = Int(primary=True)
 
     bug_notification_id = Int(
-        "bug_notification_id", allow_none=False)
+        "bug_notification", allow_none=False)
     bug_notification = Reference(
         bug_notification_id, "BugNotification.id")
 
     bug_subscription_filter_id = Int(
-        "bug_subscription_filter_id", allow_none=False)
+        "bug_subscription_filter", allow_none=False)
     bug_subscription_filter = Reference(
         bug_subscription_filter_id, "BugSubscriptionFilter.id")
