@@ -191,7 +191,7 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
             description=_("The name of this recipe.")))
 
     description = exported(Description(
-        title=_('Description'), required=True,
+        title=_('Description'),
         description=_('A short description of the recipe.')))
 
     date_last_modified = exported(
