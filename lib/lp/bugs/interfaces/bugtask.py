@@ -1594,6 +1594,12 @@ class IBugTaskSet(Interface):
     def getOpenBugTasksPerProduct(user, products):
         """Return open bugtask count for multiple products."""
 
+    def getAllStructuralSubscriptions(bugtasks):
+        """Return all potential structural subscriptions for the bugtasks.
+
+        This method ignores subscription filters.
+        """
+
     def getStructuralSubscribers(bugtasks, recipients=None, level=None):
         """Return `IPerson`s subscribed to the given bug tasks.
 

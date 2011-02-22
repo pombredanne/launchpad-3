@@ -11,6 +11,7 @@ from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.bugs.browser.bugsubscription import (
     BugPortletSubcribersIds,
     BugSubscriptionAddView,
+    BugSubscriptionListView,
     BugSubscriptionSubscribeSelfView,
     )
 from lp.bugs.enum import BugNotificationLevel
@@ -275,5 +276,18 @@ class BugSubscriptionsListViewTestCase(TestCaseWithFactory):
 
     def setUp(self):
         super(BugSubscriptionsListViewTestCase, self).setUp()
-        self.bug = self.factory.makeBug()
+        self.product = self.factory.makeProduct(
+            name='widgetsrus', displayname='Widgets R Us')
+        self.bug = self.factory.makeBug(product=self.product)
         self.subscriber = self.factory.makePerson()
+
+    def test_identify_structural_subscriptions(self):
+        # This shows simply that we can identify the structural
+        # subscriptions for the page.  The content will come later.
+        with person_logged_in(self.subscriber):
+            sub = self.product.addBugSubscription(
+                self.subscriber, self.subscriber)
+            harness = LaunchpadFormHarness(
+                self.bug.default_bugtask, BugSubscriptionListView)
+            self.assertEqual(
+                list(harness.view.structural_subscriptions), [sub])
