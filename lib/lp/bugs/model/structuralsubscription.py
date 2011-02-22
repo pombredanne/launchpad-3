@@ -474,9 +474,11 @@ class StructuralSubscriptionTargetMixin:
         set_builder = BugFilterSetBuilder(
             bugtask, level, self.__helper.join)
         return Store.of(self.__helper.pillar).find(
-            StructuralSubscription, In(
-                StructuralSubscription.id,
-                set_builder.subscriptions))
+            StructuralSubscription,
+            (BugSubscriptionFilter.structural_subscription_id ==
+             StructuralSubscription.id),
+            In(BugSubscriptionFilter.id,
+               set_builder.subscriptions)).config(distinct=True)
 
 
 class ArrayAgg(NamedFunc):
@@ -524,21 +526,6 @@ class BugFilterSetBuilder:
                 # never match.
                 Not(BugSubscriptionFilter.exclude_any_tags),
                 self.filter_conditions)
-
-    @property
-    def subscriptions_without_filters(self):
-        """Subscriptions without filters."""
-        return Select(
-            StructuralSubscription.id,
-            tables=(
-                StructuralSubscription,
-                LeftJoin(
-                    BugSubscriptionFilter,
-                    BugSubscriptionFilter.structural_subscription_id == (
-                        StructuralSubscription.id))),
-            where=And(
-                BugSubscriptionFilter.id == None,
-                self.base_conditions))
 
     def _filters_matching_x(self, join, where_condition, **extra):
         """Return an expression yielding `(subscription_id, filter_id)` rows.
@@ -699,15 +686,9 @@ class BugFilterSetBuilder:
             self.filters_matching_tags)
 
     @property
-    def subscriptions_with_matching_filters(self):
+    def subscriptions(self):
         """Subscriptions with one or more filters matching the bug."""
         return Select(
             # I don't know of a more Storm-like way of doing this.
-            SQL("filters_matching.structural_subscription_id"),
+            SQL("filters_matching.id"),
             tables=Alias(self.filters_matching, "filters_matching"))
-
-    @property
-    def subscriptions(self):
-        return Union(
-            self.subscriptions_without_filters,
-            self.subscriptions_with_matching_filters)
