@@ -1994,37 +1994,36 @@ class DistroSeriesSet:
             # wrapped anyway - and sqlvalues goes boom.
             archives = removeSecurityProxy(
                 distroseries.distribution.all_distro_archive_ids)
-            clause = """(SourcePackageRelease.sourcepackagename IN %s AND
-                SourcePackagePublishingHistory.archive IN %s AND
-                SourcePackagePublishingHistory.distroseries = %s)
+            clause = """(spr.sourcepackagename IN %s AND
+                spph.archive IN %s AND
+                spph.distroseries = %s)
                 """ % sqlvalues(source_package_ids, archives, distroseries.id)
             series_clauses.append(clause)
             distroseries_lookup[distroseries.id] = distroseries
         if not len(series_clauses):
             return {}
         combined_clause = "(" + " OR ".join(series_clauses) + ")"
-        # XXX: RobertCollins 2011-02-21 bug=374777: This SQL(...) is a
-        # hack; it does not seem to be possible to express DISTINCT ON
-        # with Storm.
-        origin = SQL("""
-    SourcePackageRelease,
-    SourcePackagePublishingHistory
-WHERE
-    SourcePackagePublishingHistory.sourcepackagerelease = SourcePackageRelease.id AND
-    
-    SourcePackagePublishingHistory.status IN %s AND
-    %s
-            """ % (sqlvalues(active_publishing_status)+ (combined_clause,)))
-        releases = IStore(DistroSeries).using(origin).find(
-            (SQL("DISTINCT ON (SourcePackageRelease.sourcepackagename, "
-                "SourcePackagePublishingHistory.distroseries) 0 as ignore"),
-                SourcePackageRelease,
-                SourcePackagePublishingHistory.distroseriesID))
-        releases.order_by(SourcePackageRelease.sourcepackagenameID,
-            SourcePackagePublishingHistory.distroseriesID,
-            Desc(SourcePackagePublishingHistory.id))
+
+        releases = IStore(SourcePackageRelease).find(
+            (SourcePackageRelease, DistroSeries.id), SQL("""
+                (SourcePackageRelease.id, DistroSeries.id) IN (
+                    SELECT
+                        DISTINCT ON (spr.sourcepackagename, spph.distroseries)
+                        spr.id, spph.distroseries
+                    FROM
+                        SourcePackageRelease AS spr,
+                        SourcePackagePublishingHistory AS spph
+                    WHERE
+                        spph.sourcepackagerelease = spr.id
+                        AND spph.status IN %s
+                        AND %s
+                    ORDER BY
+                        spr.sourcepackagename, spph.distroseries, spph.id DESC
+                    )
+                """
+                % (sqlvalues(active_publishing_status) + (combined_clause,))))
         result = {}
-        for _, sp_release, distroseries_id in releases:
+        for sp_release, distroseries_id in releases:
             distroseries = distroseries_lookup[distroseries_id]
             sourcepackage = distroseries.getSourcePackage(
                 sp_release.sourcepackagename)
