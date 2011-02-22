@@ -1827,6 +1827,14 @@ it is simply a record of who told us about this packaging relationship. Note
 that we do not keep a history of these, so if someone sets it correctly,
 then someone else sets it incorrectly, we lose the first setting.';
 
+COMMENT ON TABLE PackagingJob IS 'A Job related to a Packaging entry.';
+COMMENT ON COLUMN PackagingJob.id IS '';
+COMMENT ON COLUMN PackagingJob.job IS 'The Job related to this PackagingJob.';
+COMMENT ON COLUMN PackagingJob.job_type IS 'An enumeration specifying the type of job to perform.';
+COMMENT ON COLUMN PackagingJob.productseries IS 'The productseries of the Packaging.';
+COMMENT ON COLUMN PackagingJob.sourcepackagename IS 'The sourcepackage of the Packaging.';
+COMMENT ON COLUMN PackagingJob.distroseries IS 'The distroseries of the Packaging.';
+
 -- Translator / TranslationGroup
 
 COMMENT ON TABLE TranslationGroup IS 'This represents an organised translation group that spans multiple languages. Effectively it consists of a list of people (pointers to Person), and each Person is associated with a Language. So, for each TranslationGroup we can ask the question "in this TranslationGroup, who is responsible for translating into Arabic?", for example.';

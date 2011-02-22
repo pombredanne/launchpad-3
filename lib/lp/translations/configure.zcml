@@ -150,6 +150,10 @@
         for="lp.translations.interfaces.translationexporter.ITranslationExporter"
         provides="lp.translations.interfaces.translationexporter.ITranslationFormatExporter"
         factory="lp.translations.utilities.gettext_po_exporter.GettextPOChangedExporter"/>
+    <subscriber
+        for="lp.registry.interfaces.packaging.IPackaging
+             lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        handler="lp.translations.model.translationmergejob.schedule_merge" />
     <facet
         facet="translations">
 
@@ -623,6 +627,16 @@
         provides="lp.translations.interfaces.translationtemplatesbuildjob.ITranslationTemplatesBuildJobSource">
         <allow interface="lp.translations.interfaces.translationtemplatesbuildjob.ITranslationTemplatesBuildJobSource"/>
     </securedutility>
+    <securedutility
+        component='lp.translations.model.translationmergejob.TranslationMergeJob'
+        provides='lp.translations.interfaces.translationmergejob.ITranslationMergeJobSource'
+    >
+        <allow interface='lp.translations.interfaces.translationmergejob.ITranslationMergeJobSource'/>
+    </securedutility>
+    <class
+        class="lp.translations.model.translationmergejob.TranslationMergeJob">
+        <allow interface='lp.services.job.interfaces.job.IRunnableJob'/>
+    </class>
     <utility
         component="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob"
         provides="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"

@@ -7,7 +7,9 @@ __metaclass__ = type
 __all__ = ['Packaging', 'PackagingUtil']
 
 from sqlobject import ForeignKey
+from zope.event import notify
 from zope.interface import implements
+from lazr.lifecycle.event import ObjectCreatedEvent
 
 from canonical.database.constants import (
     DEFAULT,
@@ -54,6 +56,10 @@ class Packaging(SQLBase):
         from lp.registry.model.sourcepackage import SourcePackage
         return SourcePackage(distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename)
+
+    def __init__(self, **kwargs):
+        super(Packaging, self).__init__(**kwargs)
+        notify(ObjectCreatedEvent(self))
 
 
 class PackagingUtil:
