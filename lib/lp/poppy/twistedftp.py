@@ -31,13 +31,14 @@ from lp.poppy.hooks import Hooks
 class PoppyAccessCheck:
     """An `ICredentialsChecker` for Poppy FTP sessions."""
     implements(checkers.ICredentialsChecker)
-    credentialInterfaces = credentials.IUsernamePassword,
+    credentialInterfaces = (
+        credentials.IUsernamePassword, credentials.IAnonymous)
 
     def requestAvatarId(self, credentials):
         # Poppy allows any credentials.  People can use "anonymous" if
-        # they want but anything goes.  Returning "poppy" here is
-        # a totally arbitrary avatar.
-        return credentials.username
+        # they want but anything goes.  Thus, we don't actually *check* the
+        # credentials, and we return the standard avatarId for 'anonymous'.
+        return checkers.ANONYMOUS
 
 
 class PoppyAnonymousShell(ftp.FTPShell):
@@ -145,7 +146,7 @@ class FTPServiceFactory(service.Service):
         # Setting this works around the fact that the twistd FTP server
         # invokes a special restricted shell when someone logs in as
         # "anonymous" which is the default for 'dput'.
-        factory.userAnonymous = "userthatwillneverhappen"
+        #factory.userAnonymous = "userthatwillneverhappen"
 
     @staticmethod
     def makeFTPService(port=2121):
