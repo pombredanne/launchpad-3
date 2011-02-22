@@ -47,6 +47,12 @@
   <div tal:replace="structure context/@@+global-actions" />
 </metal:side>
 
+<metal:heading fill-slot="heading">
+  <h1 tal:content="context/name">
+    recipe name
+  </h1>
+</metal:heading>
+
 <div metal:fill-slot="main">
   <div class="yui-g first">
     <div class="yui-u first">

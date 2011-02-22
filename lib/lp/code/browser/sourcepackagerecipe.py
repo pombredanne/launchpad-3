@@ -14,6 +14,7 @@ __all__ = [
     'SourcePackageRecipeView',
     ]
 
+import itertools
 import simplejson
 
 from bzrlib.plugins.builder.recipe import (
@@ -95,6 +96,8 @@ from lp.code.interfaces.sourcepackagerecipe import (
     MINIMAL_RECIPE_TEXT,
     RECIPE_BETA_FLAG,
     )
+from lp.code.model.sourcepackagerecipe import get_buildable_distroseries_set
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.model.archive import Archive
@@ -713,12 +716,32 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
         """The branch on which the recipe is built."""
         return self.context
 
+    def _recipe_names(self):
+        """A generator of recipe names."""
+        branch_target_name = self.context.target.name.split('/')[-1]
+        yield "%s-daily" % branch_target_name
+        counter = itertools.count(1)
+        while True:
+            yield "%s-daily-%s" % (branch_target_name, counter.next())
+
+    def _find_unused_name(self, owner):
+        # Grab the last path element of the branch target path.
+        source = getUtility(ISourcePackageRecipeSource)
+        for recipe_name in self._recipe_names():
+             if not source.exists(owner, recipe_name):
+                 return recipe_name
+
     @property
     def initial_values(self):
+        distroseries = get_buildable_distroseries_set(self.user)
+        series = [series for series in distroseries if series.status in (
+                SeriesStatus.CURRENT, SeriesStatus.DEVELOPMENT)]
         return {
+            'name' : self._find_unused_name(self.user),
             'recipe_text': MINIMAL_RECIPE_TEXT % self.context.bzr_identity,
             'owner': self.user,
-            'build_daily': False,
+            'distros': series,
+            'build_daily': True,
             'use_ppa': EXISTING_PPA,
             }
 

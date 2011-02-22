@@ -1181,6 +1181,20 @@ class BugTargetBugListingView:
         return list(series)
 
     @property
+    def milestones_list(self):
+        if IDistribution(self.context, None):
+            milestone_resultset = self.context.milestones
+        elif IProduct(self.context, None):
+            milestone_resultset = self.context.milestones
+        elif IDistroSeries(self.context, None):
+            milestone_resultset = self.context.distribution.milestones
+        elif IProductSeries(self.context, None):
+            milestone_resultset = self.context.product.milestones
+        else:
+            raise AssertionError("series_list called with illegal context")
+        return list(milestone_resultset)
+
+    @property
     def series_buglistings(self):
         """Return a buglisting for each series.
 
@@ -1224,9 +1238,7 @@ class BugTargetBugListingView:
         """Return a buglisting for each milestone."""
         milestone_buglistings = []
         bug_task_set = getUtility(IBugTaskSet)
-        milestones = []
-        reduce(lambda _, series:milestones.extend(series.milestones),
-            self.series_list, [])
+        milestones = self.milestones_list
         if not milestones:
             return milestone_buglistings
         open_bugs = bug_task_set.open_bugtask_search
