@@ -172,10 +172,9 @@ class StructuralSubscription(Storm):
 
     def delete(self):
         store = Store.of(self)
-        store.find(
-            BugSubscriptionFilter,
-            BugSubscriptionFilter.structural_subscription == self).remove()
+        self.bug_filters.remove()
         store.remove(self)
+
 
 class DistroSeriesTargetHelper:
     """A helper for `IDistroSeries`s."""

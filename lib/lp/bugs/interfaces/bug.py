@@ -411,6 +411,16 @@ class IBug(IPrivacy, IHasLinkedBranches):
             value_type=Reference(schema=IMessage)),
         exported_as='messages')
 
+    def _indexed_messages(include_content=False, include_parents=False):
+        """Low level query for getting bug messages.
+
+        :param include_content: If True retrieve the content for the messages
+            too.
+        :param include_parents: If True retrieve the object for parent
+            messages too. If False the parent attribute will be *forced* to
+            None to prevent lazy evaluation triggering database lookups.
+        """
+
     followup_subject = Attribute("The likely subject of the next message.")
 
     has_patches = Attribute("Does this bug have any patches?")
@@ -695,8 +705,15 @@ class IBug(IPrivacy, IHasLinkedBranches):
                 remote bug tracker, if it's an imported comment.
         """
 
-    def getMessageChunks():
-        """Return MessageChunks corresponding to comments made on this bug"""
+    def getMessagesForView(slice_info):
+        """Return BugMessage,Message,MessageChunks for renderinger.
+        
+        This eager loads message.owner validity associated with the
+        bugmessages.
+
+        :param slice_info: Either None or a list of slices to constraint the
+            returned rows. The step parameter in each slice is ignored.
+        """
 
     def getNullBugTask(product=None, productseries=None,
                     sourcepackagename=None, distribution=None,

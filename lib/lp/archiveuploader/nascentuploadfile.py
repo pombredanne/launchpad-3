@@ -30,7 +30,6 @@ import time
 
 from zope.component import getUtility
 
-from canonical.encoding import guess as guess_encoding
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import filechunks
 from lp.app.errors import NotFoundError
@@ -47,10 +46,10 @@ from lp.archiveuploader.utils import (
     re_valid_version,
     )
 from lp.buildmaster.enums import BuildStatus
+from lp.services.encoding import guess as guess_encoding
 from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackagePublishingPriority,
-    PackagePublishingStatus,
     PackageUploadCustomFormat,
     )
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
