@@ -39,7 +39,7 @@ class SanitizeDb(LaunchpadScript):
             "-n", "--dry-run", action="store_true", default=False,
             help="Don't commit changes.")
 
-    def _init_db(self, implicit_begin, isolation):
+    def _init_db(self, isolation):
         if len(self.args) == 0:
             self.parser.error("PostgreSQL connection string required.")
         elif len(self.args) > 1:
@@ -59,7 +59,6 @@ class SanitizeDb(LaunchpadScript):
             dbname=self.pg_connection_string.dbname,
             dbhost=self.pg_connection_string.host,
             dbuser=self.pg_connection_string.user,
-            implicitBegin=implicit_begin,
             isolation=isolation)
 
         self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -759,6 +759,18 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
     def test_initial_statistics_consistency(self):
         # A `POFile` starts out with consistent statistics.
         self.assertTrue(self.factory.makePOFile().testStatistics())
+
+    def test_updateStatistics_counts_zero_for_empty_template(self):
+        # Statistics for an empty template are all calculated as zero.
+        pofile = self.factory.makePOFile()
+        pofile.updateStatistics()
+        self.assertEquals(0, self.devel_pofile.messageCount())
+        self.assertEquals(0, self.devel_pofile.translatedCount())
+        self.assertEquals(0, self.devel_pofile.untranslatedCount())
+        self.assertEquals(0, self.devel_pofile.currentCount())
+        self.assertEquals(0, self.devel_pofile.rosettaCount())
+        self.assertEquals(0, self.devel_pofile.updatesCount())
+        self.assertEquals(0, self.devel_pofile.unreviewedCount())
 
     def test_updateStatistics(self):
         # Test that updating statistics keeps working.
@@ -1823,6 +1835,65 @@ class TestPOFileStatistics(TestCaseWithFactory):
         self.pofile.updateStatistics()
         self.assertEquals(self.pofile.newCount(), 0)
         self.assertEquals(self.pofile.updatesCount(), 1)
+
+    def test_empty_messages_count_as_untranslated(self):
+        # A message with all its msgstr* set to None counts as if
+        # there's no message at all.  It doesn't show up in any of the
+        # counts except as untranslated.
+        self.factory.makeCurrentTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset, translations=[])
+        self.pofile.updateStatistics()
+        self.assertEqual(0, self.pofile.translatedCount())
+        self.assertEqual(1, self.pofile.untranslatedCount())
+        self.assertEqual(0, self.pofile.newCount())
+        self.assertEqual(0, self.pofile.updatesCount())
+
+    def test_empty_messages_on_this_side_count_as_untranslated(self):
+        # A POTMsgSet whose current TranslationMessage on this side is
+        # empty is counted only as untranslated, regardless of any
+        # translations it may have on the other side.
+        self.factory.makeCurrentTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset, translations=[])
+        other_message = self.factory.makeSuggestion(
+            pofile=self.pofile, potmsgset=self.potmsgset)
+        other_message.is_current_ubuntu = True
+        self.pofile.updateStatistics()
+        self.assertEqual(0, self.pofile.translatedCount())
+        self.assertEqual(1, self.pofile.untranslatedCount())
+        self.assertEqual(0, self.pofile.newCount())
+        self.assertEqual(0, self.pofile.updatesCount())
+
+    def test_empty_messages_on_other_side_count_as_untranslated(self):
+        # A POTMsgSet that's translated on this side but has an empty
+        # translation on the other side counts as translated on this
+        # side, but not equal between both sides (currentCount) or
+        # translated differently between the two sides (updatesCount).
+        # Instead, it's counted as translated on this side but not on
+        # the other (newCount).
+        self.factory.makeCurrentTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset)
+        other_message = self.factory.makeSuggestion(
+            pofile=self.pofile, potmsgset=self.potmsgset, translations=[])
+        other_message.is_current_ubuntu = True
+        self.pofile.updateStatistics()
+        self.assertEqual(1, self.pofile.translatedCount())
+        self.assertEqual(0, self.pofile.untranslatedCount())
+        self.assertEqual(1, self.pofile.newCount())
+        self.assertEqual(0, self.pofile.updatesCount())
+        self.assertEqual(0, self.pofile.currentCount())
+
+    def test_tracking_empty_messages_count_as_untranslated(self):
+        # An empty TranslationMessage that's current on both sides
+        # counts as untranslated.
+        self.factory.makeCurrentTranslationMessage(
+            pofile=self.pofile, potmsgset=self.potmsgset, translations=[],
+            current_other=True)
+        self.pofile.updateStatistics()
+        self.assertEqual(0, self.pofile.translatedCount())
+        self.assertEqual(1, self.pofile.untranslatedCount())
+        self.assertEqual(0, self.pofile.newCount())
+        self.assertEqual(0, self.pofile.updatesCount())
+        self.assertEqual(0, self.pofile.currentCount())
 
 
 class TestPOFile(TestCaseWithFactory):
