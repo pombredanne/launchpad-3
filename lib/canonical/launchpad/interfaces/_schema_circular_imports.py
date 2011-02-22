@@ -61,6 +61,7 @@ from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
+from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchsubscription import IBranchSubscription
@@ -262,6 +263,10 @@ patch_plain_parameter_type(IPerson, 'getArchiveSubscriptionURL', 'archive',
 
 patch_entry_return_type(IPerson, 'getRecipe', ISourcePackageRecipe)
 
+# IHasRecipe
+patch_collection_return_type(
+    IHasRecipes, 'getRecipes', ISourcePackageRecipe)
+
 IPerson['hardware_submissions'].value_type.schema = IHWSubmission
 
 # publishing.py
@@ -439,6 +444,16 @@ patch_reference_property(
 patch_reference_property(
     ISourcePackageRelease, 'source_package_recipe_build',
     ISourcePackageRecipeBuild)
+
+# ISourcePackageRecipeView
+patch_entry_return_type(
+    ISourcePackageRecipe, 'requestBuild', ISourcePackageRecipeBuild)
+patch_entry_return_type(
+    ISourcePackageRecipe, 'getLastBuild', ISourcePackageRecipeBuild)
+patch_collection_return_type(
+    ISourcePackageRecipe, 'getPendingBuilds', ISourcePackageRecipeBuild)
+patch_collection_return_type(
+    ISourcePackageRecipe, 'getBuilds', ISourcePackageRecipeBuild)
 
 # IHasBugs
 patch_plain_parameter_type(

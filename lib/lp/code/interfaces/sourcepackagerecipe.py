@@ -23,9 +23,12 @@ from textwrap import dedent
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
+    export_read_operation,
     export_write_operation,
     exported,
     operation_parameters,
+    operation_returns_collection_of,
+    operation_returns_entry,
     REQUEST_USER,
     )
 from lazr.restful.fields import (
@@ -106,12 +109,18 @@ class ISourcePackageRecipeView(Interface):
         :param distroseries: The distroseries to build for.
         """
 
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
     def getBuilds():
         """Return a ResultSet of all the non-pending builds."""
 
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
     def getPendingBuilds():
         """Return a ResultSet of all the pending builds."""
 
+    @operation_returns_entry(Interface)
+    @export_read_operation()
     def getLastBuild():
         """Return the the most recent build of this recipe."""
 
@@ -120,6 +129,7 @@ class ISourcePackageRecipeView(Interface):
         archive=Reference(schema=IArchive),
         distroseries=Reference(schema=IDistroSeries),
         pocket=Choice(vocabulary=PackagePublishingPocket,))
+    @operation_returns_entry(Interface)
     @export_write_operation()
     def requestBuild(archive, distroseries, requester, pocket):
         """Request that the recipe be built in to the specified archive.

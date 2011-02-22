@@ -10,13 +10,18 @@ __all__ = [
 
 
 from zope.interface import (
-    Attribute,
     Interface,
     )
 
+from lazr.restful.declarations import (
+    export_read_operation,
+    operation_returns_collection_of,
+    )
 
 class IHasRecipes(Interface):
     """An object that has recipes."""
 
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
     def getRecipes():
         """Returns all recipes associated with the object."""

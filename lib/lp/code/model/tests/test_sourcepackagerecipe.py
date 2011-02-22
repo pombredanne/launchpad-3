@@ -897,8 +897,14 @@ class TestWebservice(TestCaseWithFactory):
         recipe, user = self.makeRecipe()[:-1]
         self.assertEqual(recipe, user.getRecipe(name=recipe.name))
 
+    def test_getRecipes(self):
+        """Person.getRecipes works as expected."""
+        recipe, user = self.makeRecipe()[:-1]
+        [ws_recipe] = user.getRecipes()
+        self.assertEqual(recipe, ws_recipe)
+
     def test_requestBuild(self):
-        """Build requests can be performed."""
+        """Build requests can be performed and getLastBuild() works."""
         person = self.factory.makePerson()
         archive = self.factory.makeArchive(owner=person)
         distroseries = self.factory.makeSourcePackageRecipeDistroseries()
@@ -906,9 +912,10 @@ class TestWebservice(TestCaseWithFactory):
         recipe, user, launchpad = self.makeRecipe(person)
         distroseries = ws_object(launchpad, distroseries)
         archive = ws_object(launchpad, archive)
-        recipe.requestBuild(
+        build = recipe.requestBuild(
             archive=archive, distroseries=distroseries,
             pocket=PackagePublishingPocket.RELEASE.title)
+        self.assertEqual(build, recipe.getLastBuild())
 
     def test_requestBuildRejectRepeat(self):
         """Build requests are rejected if already pending."""
@@ -963,6 +970,21 @@ class TestWebservice(TestCaseWithFactory):
             pocket=PackagePublishingPocket.RELEASE.title)
         self.assertIn('BuildNotAllowedForDistro', str(e))
 
+    def test_getBuilds(self):
+        """SourcePackageRecipe.get[Pending]Builds works as expected."""
+        person = self.factory.makePerson()
+        archives = [self.factory.makeArchive(owner=person) for x in range(4)]
+        distroseries= self.factory.makeSourcePackageRecipeDistroseries()
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+        recipe, user, launchpad = self.makeRecipe(person)
+        distroseries = ws_object(launchpad, distroseries)
+
+        builds = []
+        for archive in archives:
+            archive = ws_object(launchpad, archive)
+            build = recipe.requestBuild(
+                archive=archive, distroseries=distroseries,
+                pocket=PackagePublishingPocket.RELEASE.title)
+            builds.insert(0, build)
+        self.assertEqual(builds, list(recipe.getPendingBuilds()))
+        self.assertEqual([], list(recipe.getBuilds()))
