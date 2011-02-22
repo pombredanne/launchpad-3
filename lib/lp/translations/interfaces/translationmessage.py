@@ -260,6 +260,13 @@ class ITranslationMessage(Interface):
         It must not be referenced by any other object.
         """
 
+    def clone(potmsgset):
+        """Create a copy of this message associated with a different MsgSet.
+
+        potemplate of the clone is always None.  Aside from this, all values
+        should be the same.
+        """
+
     def approve(pofile, reviewer, share_with_other_side=False,
                 lock_timestamp=None):
         """Approve this suggestion, making it a current translation."""

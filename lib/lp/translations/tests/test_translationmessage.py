@@ -786,6 +786,37 @@ class TestTranslationMessage(TestCaseWithFactory):
         tm.potmsgset.setSequence(pofile.potemplate, 0)
         self.assertEquals(None, tm.getOnePOFile())
 
+    def test_clone(self):
+        translations = [self.factory.getUniqueString() for x in range(6)]
+        tm = self.factory.makeCurrentTranslationMessage(
+            date_created=self.factory.getUniqueDate(),
+            translations=translations, current_other=True)
+        tm.comment = self.factory.getUniqueString()
+        tm.was_obsolete_in_last_import = True
+        potmsgset = self.factory.makePOTMsgSet()
+        clone = tm.clone(potmsgset)
+        self.assertNotEqual(tm.id, clone.id)
+        self.assertIs(None, clone.potemplate)
+        self.assertEqual(potmsgset, clone.potmsgset)
+        self.assertEqual(tm.submitter, clone.submitter)
+        self.assertEqual(tm.language, clone.language)
+        self.assertEqual(tm.origin, clone.origin)
+        self.assertEqual(tm.date_created, clone.date_created)
+        self.assertEqual(tm.reviewer, clone.reviewer)
+        self.assertEqual(tm.date_reviewed, clone.date_reviewed)
+        self.assertEqual(tm.msgstr0, clone.msgstr0)
+        self.assertEqual(tm.msgstr1, clone.msgstr1)
+        self.assertEqual(tm.msgstr2, clone.msgstr2)
+        self.assertEqual(tm.msgstr3, clone.msgstr3)
+        self.assertEqual(tm.msgstr4, clone.msgstr4)
+        self.assertEqual(tm.msgstr5, clone.msgstr5)
+        self.assertEqual(tm.comment, clone.comment)
+        self.assertEqual(tm.validation_status, clone.validation_status)
+        self.assertEqual(tm.is_current_ubuntu, clone.is_current_ubuntu)
+        self.assertEqual(tm.is_current_upstream, clone.is_current_upstream)
+        self.assertEqual(
+            tm.was_obsolete_in_last_import, clone.was_obsolete_in_last_import)
+
 
 class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):
     """Tests for `TranslationMessage.findIdenticalMessage`."""
