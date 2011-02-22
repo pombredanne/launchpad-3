@@ -447,6 +447,9 @@ class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
         """Whether or not the user is a translations admin."""
         return check_permission("launchpad.TranslationsAdmin", self.context)
 
+    def is_sharing(self):
+        return False
+
 
 class SettingsRadioWidget(LaunchpadRadioWidgetWithDescription):
     """Remove the confusing hint under the widget."""

@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.testing.pages import (
@@ -12,11 +13,15 @@ from canonical.launchpad.testing.pages import (
     find_main_content,
     find_tag_by_id,
     )
+from lp.app.enums import ServiceUsage
 from lp.services.features.testing import FeatureFixture
 from lp.testing import BrowserTestCase
-from lp.translations.model.potemplate import POTemplate
 
 
+def set_translations_usage(obj):
+    """Set the translations_usage to LAUNCHPAD."""
+    naked_obj = removeSecurityProxy(obj)
+    naked_obj.translations_usage = ServiceUsage.LAUNCHPAD
 
 
 class TestSharingInfoMixin:
@@ -81,13 +86,16 @@ class TestUpstreamSharingInfo(BrowserTestCase, TestSharingInfoMixin):
     layer = DatabaseFunctionalLayer
 
     def makeNotSharingObject(self):
-        return self.factory.makeProductSeries()
+        productseries = self.factory.makeProductSeries()
+        set_translations_usage(productseries.product)
+        return productseries
 
     NOT_SHARING_TEXT = """
        This project series is not sharing translations with an Ubuntu source package."""
 
     def makeSharingObject(self):
         productseries = self.factory.makeProductSeries()
+        set_translations_usage(productseries.product)
         self.factory.makePackagingLink(
             productseries=productseries, in_ubuntu=True)
         return productseries
