@@ -256,14 +256,10 @@ class SourcePackageRecipeView(LaunchpadView):
 
     @property
     def archive_picker(self):
-        ppa = self.context.daily_build_archive
-        if ppa is None:
-            initial_html = 'None'
-        else:
-            initial_html = format_link(ppa)
         field = ISourcePackageEditSchema['daily_build_archive']
         return InlineEditPickerWidget(
-            self.context, field, initial_html,
+            self.context, field,
+            format_link(self.context.daily_build_archive),
             header='Change daily build archive',
             step_title='Select a PPA')
 
@@ -474,6 +470,47 @@ class SourcePackageRecipeRequestDailyBuildView(LaunchpadFormView):
             self.next_url = canonical_url(recipe)
             self.request.response.addNotification(
                     new_builds_notification_text(builds))
+
+    @property
+    def builds(self):
+        return builds_for_recipe(self.context)
+
+
+class SourcePackageRecipeRequestBuildsAjaxView(
+        SourcePackageRecipeRequestBuildsView):
+    """Supports AJAX form recipe build requests."""
+
+    def _process_error(self, data, errors, reason):
+        """Set up the response and json data to return to the caller."""
+        self.request.response.setStatus(400, reason)
+        self.request.response.setHeader('Content-type', 'application/json')
+        return simplejson.dumps(errors)
+
+    def failure(self, action, data, errors):
+        """Called by the form if validate() finds any errors.
+
+           We simply convert the errors to json and return that data to the
+           caller for display to the user.
+        """
+        return self._process_error(data, self.widget_errors, "Validation")
+
+    @action('Request builds', name='request', failure=failure)
+    def request_action(self, action, data):
+        """User action for requesting a number of builds.
+
+        The failure handler will handle any validation errors. We still need
+        to handle errors which may occur when invoking the business logic.
+        These "expected" errors are ones which result in a predefined message
+        being displayed to the user. If the business method raises an
+        unexpected exception, that will be handled using the form's standard
+        exception processing mechanism (using response code 500).
+        """
+        errors = self.requestBuild(data)
+        # If there are errors we return a json data snippet containing the
+        # errors instead of rendering the form. These errors are processed
+        # by the caller's response handler and displayed to the user.
+        if errors:
+            return self._process_error(data, errors, "Request Build")
 
     @property
     def builds(self):

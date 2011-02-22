@@ -292,13 +292,12 @@ class LaunchpadScript:
         self.lock.release(skip_delete=skip_delete)
 
     @log_unhandled_exception_and_exit
-    def run(self, use_web_security=False, implicit_begin=True,
-            isolation=None):
+    def run(self, use_web_security=False, isolation=None):
         """Actually run the script, executing zcml and initZopeless."""
         if isolation is None:
             isolation = ISOLATION_LEVEL_DEFAULT
         self._init_zca(use_web_security=use_web_security)
-        self._init_db(implicit_begin=implicit_begin, isolation=isolation)
+        self._init_db(isolation=isolation)
 
         date_started = datetime.datetime.now(UTC)
         profiler = None
@@ -324,14 +323,12 @@ class LaunchpadScript:
         """Initialize the ZCA, this can be overriden for testing purpose."""
         scripts.execute_zcml_for_scripts(use_web_security=use_web_security)
 
-    def _init_db(self, implicit_begin, isolation):
+    def _init_db(self, isolation):
         """Initialize the database transaction.
 
         Can be overriden for testing purpose.
         """
-        self.txn = initZopeless(
-            dbuser=self.dbuser, implicitBegin=implicit_begin,
-            isolation=isolation)
+        self.txn = initZopeless(dbuser=self.dbuser, isolation=isolation)
 
     def record_activity(self, date_started, date_completed):
         """Hook to record script activity."""
@@ -341,7 +338,7 @@ class LaunchpadScript:
     #
     @log_unhandled_exception_and_exit
     def lock_and_run(self, blocking=False, skip_delete=False,
-                     use_web_security=False, implicit_begin=True,
+                     use_web_security=False,
                      isolation=ISOLATION_LEVEL_DEFAULT):
         """Call lock_or_die(), and then run() the script.
 
@@ -349,8 +346,8 @@ class LaunchpadScript:
         """
         self.lock_or_die(blocking=blocking)
         try:
-            self.run(use_web_security=use_web_security,
-                     implicit_begin=implicit_begin, isolation=isolation)
+            self.run(
+                use_web_security=use_web_security, isolation=isolation)
         finally:
             self.unlock(skip_delete=skip_delete)
 
