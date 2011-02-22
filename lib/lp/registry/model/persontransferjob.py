@@ -394,3 +394,9 @@ class PersonMergeJob(PersonTransferJobDerived):
         log.debug(
             "%s has merged ~%s into ~%s", self.log_name,
             from_person_name, to_person_name)
+
+    def __repr__(self):
+        return (
+            "<{self.__class__.__name__} to merge "
+            "~{self.from_person.name} into ~{self.to_person.name}; "
+            "status={self.job.status}>").format(self=self)

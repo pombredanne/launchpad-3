@@ -66,6 +66,12 @@ class TestPersonMergeJob(TestCaseWithFactory):
              "DEBUG PersonMergeJob has merged ~void into ~gestalt"],
             logger.getLogBuffer().splitlines())
 
+    def test_repr(self):
+        # A useful representation is available for PersonMergeJob instances.
+        self.assertEqual(
+            "<PersonMergeJob to merge ~void into ~gestalt; status=Waiting>",
+            repr(self.job))
+
     def find(self, **kwargs):
         return list(self.job_source.find(**kwargs))
 
