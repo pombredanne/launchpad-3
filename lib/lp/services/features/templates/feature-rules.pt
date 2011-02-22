@@ -18,6 +18,7 @@
         </p>
         <tal:diff replace="structure view/diff"/>
       </div>
+
       <p>
         For more information about the available feature flags and scopes see
         <a class="sprite info" href="+feature-info">feature flag info</a>.
@@ -25,6 +26,12 @@
         <a class="sprite info" href="+feature-changelog">Changelog</a> to see
         previous rule changes.
       </p>
+
+      <div id="feature-rules"
+        tal:condition="not: view/change_action/available">
+        <h3>Feature rules</h3>
+        <pre tal:content="view/initial_values/feature_rules" />
+      </div>
     </div>
   </div>
 </div>

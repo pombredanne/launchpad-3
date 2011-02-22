@@ -14,11 +14,14 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.launchpad.testing.pages import (
+    find_main_content,
+    find_tag_by_id,
+    )
 from lp.services.features.browser.edit import FeatureControlView
 from lp.services.features.changelog import ChangeLog
 from lp.services.features.rulesource import StormFeatureRuleSource
 from lp.testing.matchers import Contains
-
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
@@ -97,6 +100,19 @@ class TestFeatureControlPage(BrowserTestCase):
         self.assertRaises(Unauthorized,
             browser.open,
             self.getFeatureRulesViewURL())
+
+    def test_feature_page_can_view(self):
+        """User that can only view the rules do not see the form."""
+        browser = self.getUserBrowserAsTeamMember(
+            [getUtility(ILaunchpadCelebrities).registry_experts])
+        browser.open(self.getFeatureRulesViewURL())
+        content = find_main_content(browser.contents)
+        self.assertEqual(
+            None, find_tag_by_id(content, 'field.feature_rules'))
+        self.assertEqual(
+            None, find_tag_by_id(content, 'field.actions.change'))
+        self.assertTrue(
+            find_tag_by_id(content, 'feature-rules'))
 
     def test_feature_page_submit_changes(self):
         """Submitted changes show up in the db."""
@@ -186,10 +202,6 @@ class TestFeatureControlPage(BrowserTestCase):
 
     def test_feature_page_submit_change_when_unauthorized(self):
         """Correctly handling attempted value changes when not authorized."""
-        # When a change is submitted but the user is unauthorized, an
-        # exception is raised.
-
+        # The action is not available to unauthorized users.
         view = FeatureControlView(None, None)
-        self.assertRaises(
-            Unauthorized,
-            view.change_action.success_handler, FauxForm(), None, None)
+        self.assertFalse(view.change_action.available())

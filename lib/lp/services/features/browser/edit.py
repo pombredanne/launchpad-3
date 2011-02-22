@@ -16,7 +16,6 @@ import logging
 from zope.app.form.browser import TextAreaWidget
 from zope.interface import Interface
 from zope.schema import Text
-from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.webapp.authorization import check_permission
 from lp.app.browser.launchpadform import (
@@ -57,15 +56,23 @@ class FeatureControlView(LaunchpadFormView):
 
     schema = IFeatureControlForm
     page_title = label = 'Feature control'
-    field_names = ['feature_rules', 'comment']
     diff = None
     logger_name = 'lp.services.features'
     custom_widget('comment', TextAreaWidget, height=2)
 
-    @action(u"Change", name="change")
+    @property
+    def field_names(self):
+        if self.canSubmit(None):
+            return ['feature_rules', 'comment']
+        else:
+            return []
+
+    def canSubmit(self, action):
+        """Is the user authorized to change the rules?"""
+        return check_permission('launchpad.Admin', self.context)
+
+    @action(u"Change", name="change", condition=canSubmit)
     def change_action(self, action, data):
-        if not check_permission('launchpad.Admin', self.context):
-            raise Unauthorized()
         original_rules = self.request.features.rule_source.getAllRulesAsText()
         rules_text = data.get('feature_rules') or ''
         logger = logging.getLogger(self.logger_name)
