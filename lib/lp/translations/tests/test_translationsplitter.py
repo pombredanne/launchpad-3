@@ -44,7 +44,8 @@ class TestTranslationSplitter(TestCaseWithFactory):
 
     def makeTranslationSplitter(self):
         return TranslationSplitter(
-            self.factory.makeProductSeries(), self.factory.makeSourcePackage())
+            self.factory.makeProductSeries(),
+            self.factory.makeSourcePackage())
 
     def makeSharedPOTMsgSet(self, splitter):
         upstream_template = self.factory.makePOTemplate(
