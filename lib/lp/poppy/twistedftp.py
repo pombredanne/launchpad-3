@@ -13,14 +13,17 @@ import logging
 import os
 import tempfile
 
+from twisted.application import service, strports
 from twisted.cred import checkers, credentials
-from twisted.cred.portal import IRealm
+from twisted.cred.portal import IRealm, Portal
 from twisted.internet import defer
 from twisted.protocols import ftp
 from twisted.python import filepath
 
 from zope.interface import implements
 
+from canonical.config import config
+from lp.poppy import get_poppy_root
 from lp.poppy.filesystem import UploadFileSystem
 from lp.poppy.hooks import Hooks
 
@@ -122,3 +125,31 @@ class FTPRealm:
                     avatar, 'logout', lambda: None)
         raise NotImplementedError(
             "Only IFTPShell interface is supported by this realm")
+
+
+class FTPServiceFactory(service.Service):
+    def __init__(self, port):
+        factory = ftp.FTPFactory()
+        realm = FTPRealm(get_poppy_root())
+        portal = Portal(realm)
+        portal.registerChecker(PoppyAccessCheck())
+
+        factory.tld = get_poppy_root()
+        factory.portal = portal
+        factory.protocol = ftp.FTP
+        factory.welcomeMessage = "Launchpad upload server"
+        factory.timeOut = config.poppy.idle_timeout
+
+        # Setting this works around the fact that the twistd FTP server
+        # invokes a special restricted shell when someone logs in as
+        # "anonymous" which is the default for 'dput'.
+        #factory.userAnonymous = "userthatwillneverhappen"
+        self.ftpfactory = factory
+        self.portno = port
+
+    @staticmethod
+    def makeFTPService(port=2121):
+        strport = "tcp:%s" % port
+        factory = FTPServiceFactory(port)
+        return strports.service(strport, factory.ftpfactory)
+
