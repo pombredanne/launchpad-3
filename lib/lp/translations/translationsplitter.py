@@ -5,6 +5,7 @@ __metaclass__ = type
 
 
 from storm.locals import ClassAlias, Store
+from zope.security.proxy import removeSecurityProxy
 
 from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.translationtemplateitem import (
@@ -46,6 +47,12 @@ class TranslationSplitter:
     @staticmethod
     def splitPOTMsgSet(ubuntu_item):
         new_potmsgset = ubuntu_item.potmsgset.clone()
-        from zope.security.proxy import removeSecurityProxy
         removeSecurityProxy(ubuntu_item).potmsgset = new_potmsgset
         return new_potmsgset
+
+    @staticmethod
+    def migrateTranslations(upstream_item, ubuntu_item):
+        for message in upstream_item.potmsgset.getAllTranslationMessages():
+            if message.potemplate == ubuntu_item.potemplate:
+                naked_message = removeSecurityProxy(message)
+                naked_message.potmsgset = ubuntu_item.potmsgset

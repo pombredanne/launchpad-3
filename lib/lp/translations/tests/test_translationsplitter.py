@@ -73,3 +73,34 @@ class TestTranslationSplitter(TestCaseWithFactory):
         ubuntu_sequence = ubuntu_item.sequence
         new_potmsgset = splitter.splitPOTMsgSet(ubuntu_item)
         self.assertEqual(new_potmsgset, ubuntu_item.potmsgset)
+
+    def test_migrateTranslations_diverged_upstream(self):
+        splitter = self.makeTranslationSplitter()
+        upstream_item, ubuntu_item = self.makeSharedPOTMsgSet(splitter)
+        upstream_message = self.factory.makeCurrentTranslationMessage(
+            potmsgset=upstream_item.potmsgset,
+            potemplate=upstream_item.potemplate, diverged=True)
+        splitter.splitPOTMsgSet(ubuntu_item)
+        upstream_translation = splitter.migrateTranslations(
+            upstream_item, ubuntu_item)
+        self.assertEqual(
+            upstream_message,
+            upstream_item.potmsgset.getAllTranslationMessages().one())
+        self.assertIs(
+            None, ubuntu_item.potmsgset.getAllTranslationMessages().one())
+
+    def test_migrateTranslations_diverged_ubuntu(self):
+        splitter = self.makeTranslationSplitter()
+        upstream_item, ubuntu_item = self.makeSharedPOTMsgSet(splitter)
+        ubuntu_message = self.factory.makeCurrentTranslationMessage(
+            potmsgset=ubuntu_item.potmsgset,
+            potemplate=ubuntu_item.potemplate, diverged=True)
+        splitter.splitPOTMsgSet(ubuntu_item)
+        upstream_translation = splitter.migrateTranslations(
+            upstream_item, ubuntu_item)
+        self.assertEqual(
+            ubuntu_message,
+            ubuntu_item.potmsgset.getAllTranslationMessages().one())
+        self.assertIs(
+            None,
+            upstream_item.potmsgset.getAllTranslationMessages().one())
