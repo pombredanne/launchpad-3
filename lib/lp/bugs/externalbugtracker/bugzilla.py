@@ -21,7 +21,6 @@ import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical import encoding
 from canonical.config import config
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.webapp.url import (
@@ -52,6 +51,7 @@ from lp.bugs.interfaces.externalbugtracker import (
     ISupportsCommentPushing,
     UNKNOWN_REMOTE_IMPORTANCE,
     )
+from lp.services import encoding
 
 
 class Bugzilla(ExternalBugTracker):

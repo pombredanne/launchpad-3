@@ -26,7 +26,7 @@ from zope.traversing.namespace import view
 from canonical.config import config
 import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.interfaces import IStartRequestEvent
-from canonical.mem import (
+from lp.services.profile.mem import (
     memory,
     resident,
     )
