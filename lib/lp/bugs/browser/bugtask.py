@@ -957,7 +957,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
 
     def wasDescriptionModified(self):
         """Return a boolean indicating whether the description was modified"""
-        return (self.context.bug.indexed_messages[0].text_contents !=
+        return (self.context.bug._indexed_messages(
+            include_content=True, include_parents=False)[0].text_contents !=
             self.context.bug.description)
 
     @cachedproperty
