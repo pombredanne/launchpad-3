@@ -44,7 +44,7 @@
     </tbody>
   </table>
 
-  <p>
+  <p/>
   <h2>Undocumented flags</h2>
   These flags were referenced during this process' lifetime but are not
   documented:
@@ -53,7 +53,24 @@
   </strong>
   <strong tal:content="view/undocumented_flags">list of flags</strong>
 
-  <p>
+  <p/>
+  <h2>Value domains</h2>
+  <table class="listing">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="info view/value_domain_info">
+        <td tal:content="info/name">name here</td>
+        <td tal:content="info/description">description here</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p/>
   <h2>Scopes</h2>
 
   The table below describes the currently available scopes.  The first column
@@ -61,7 +78,7 @@
   "pageid:foo" scopes match the regex "pageid:") and the second gives a
   description of when the scope is active.
 
-  <p>
+  <p/>
   <table class="listing">
     <thead>
       <tr>
@@ -77,7 +94,7 @@
     </tbody>
   </table>
 
-  <p>
+  <p/>
   <h2>Undocumented scopes</h2>
   These scopes were referenced during this process' lifetime but are not
   documented:

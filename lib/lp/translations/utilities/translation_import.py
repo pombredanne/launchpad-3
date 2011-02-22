@@ -432,6 +432,23 @@ class FileImporter(object):
             purportedly_upstream=from_upstream)
 
     @cachedproperty
+    def is_upstream_import_on_sourcepackage(self):
+        """Use TranslationMessage.acceptFromUpstreamImportOnPackage`."""
+        if self.pofile is None:
+            return False
+        if not self.translation_import_queue_entry.by_maintainer:
+            return False
+        if self.translation_import_queue_entry.sourcepackagename is None:
+            return False
+        distroseries = self.translation_import_queue_entry.distroseries
+        sourcepackagename = (
+            self.translation_import_queue_entry.sourcepackagename)
+        from lp.translations.utilities.translationsharinginfo import (
+            has_upstream_template)
+        return not has_upstream_template(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+
+    @cachedproperty
     def translations_are_msgids(self):
         """Are these English strings instead of translations?
 
@@ -466,12 +483,16 @@ class FileImporter(object):
         message.validation_status = TranslationValidationStatus.OK
         return True
 
-    def _approveMessage(self, potmsgset, message, message_data):
+    def _acceptMessage(self, potmsgset, message, message_data):
         """Try to approve the message, return None on TranslationConflict."""
         try:
-            message.approve(
-                self.pofile, self.last_translator,
-                self.share_with_other_side, self.lock_timestamp)
+            if self.is_upstream_import_on_sourcepackage:
+                message.acceptFromUpstreamImportOnPackage(
+                    self.pofile, self.lock_timestamp)
+            else:
+                message.acceptFromImport(
+                    self.pofile, self.share_with_other_side,
+                    self.lock_timestamp)
         except TranslationConflict:
             self._addConflictError(message_data, potmsgset)
             if self.logger is not None:
@@ -524,12 +545,13 @@ class FileImporter(object):
         # The message is first stored as a suggestion and only made
         # current if it validates.
         new_message = potmsgset.submitSuggestion(
-            self.pofile, self.last_translator, sanitized_translations)
+            self.pofile, self.last_translator, sanitized_translations,
+            from_import=True)
 
         validation_ok = self._validateMessage(
             potmsgset, new_message, sanitized_translations, message_data)
         if validation_ok and self.is_editor:
-            return self._approveMessage(potmsgset, new_message, message_data)
+            return self._acceptMessage(potmsgset, new_message, message_data)
 
         return new_message
 

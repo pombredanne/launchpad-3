@@ -69,7 +69,7 @@ actions.
     >>> self_generated_control = browser.getControl(
     ...     "Send me bug notifications for changes I make.")
     >>> self_generated_control.selected
-    True
+    False
     >>> self_generated_control.click()
 
     >>> browser.getControl('Save').click()
@@ -85,4 +85,4 @@ self-generated bug notification option were changed:
     False
     >>> browser.getControl(
     ...     "Send me bug notifications for changes I make.").selected
-    False
+    True

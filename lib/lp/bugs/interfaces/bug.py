@@ -411,6 +411,16 @@ class IBug(IPrivacy, IHasLinkedBranches):
             value_type=Reference(schema=IMessage)),
         exported_as='messages')
 
+    def _indexed_messages(include_content=False, include_parents=False):
+        """Low level query for getting bug messages.
+
+        :param include_content: If True retrieve the content for the messages
+            too.
+        :param include_parents: If True retrieve the object for parent
+            messages too. If False the parent attribute will be *forced* to
+            None to prevent lazy evaluation triggering database lookups.
+        """
+
     followup_subject = Attribute("The likely subject of the next message.")
 
     has_patches = Attribute("Does this bug have any patches?")
@@ -465,9 +475,6 @@ class IBug(IPrivacy, IHasLinkedBranches):
     @export_write_operation()
     def unsubscribeFromDupes(person, unsubscribed_by):
         """Remove this person's subscription from all dupes of this bug."""
-
-    def reindexMessages():
-        """Fill in the `BugMessage`.index column for this bugs messages."""
 
     def isSubscribed(person):
         """Is person subscribed to this bug?
@@ -549,8 +556,11 @@ class IBug(IPrivacy, IHasLinkedBranches):
         True to include the master bug's subscribers as recipients.
         """
 
-    def addCommentNotification(message, recipients=None):
-        """Add a bug comment notification."""
+    def addCommentNotification(message, recipients=None, activity=None):
+        """Add a bug comment notification.
+        
+        If a BugActivity instance is provided as an `activity`, it is linked
+        to the notification."""
 
     def addChange(change, recipients=None):
         """Record a change to the bug.
@@ -698,8 +708,15 @@ class IBug(IPrivacy, IHasLinkedBranches):
                 remote bug tracker, if it's an imported comment.
         """
 
-    def getMessageChunks():
-        """Return MessageChunks corresponding to comments made on this bug"""
+    def getMessagesForView(slice_info):
+        """Return BugMessage,Message,MessageChunks for renderinger.
+        
+        This eager loads message.owner validity associated with the
+        bugmessages.
+
+        :param slice_info: Either None or a list of slices to constraint the
+            returned rows. The step parameter in each slice is ignored.
+        """
 
     def getNullBugTask(product=None, productseries=None,
                     sourcepackagename=None, distribution=None,

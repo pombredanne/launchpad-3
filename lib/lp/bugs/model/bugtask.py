@@ -37,6 +37,7 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
     Alias,
     And,
+    Count,
     Desc,
     In,
     Join,
@@ -1511,6 +1512,14 @@ class BugTaskSet:
 
     title = "A set of bug tasks"
 
+    @property
+    def open_bugtask_search(self):
+        """See `IBugTaskSet`."""
+        return BugTaskSearchParams(
+            user=getUtility(ILaunchBag).user,
+            status=any(*UNRESOLVED_BUGTASK_STATUSES),
+            omit_dupes=True)
+
     def get(self, task_id):
         """See `IBugTaskSet`."""
         # XXX: JSK: 2007-12-19: This method should probably return
@@ -1737,7 +1746,11 @@ class BugTaskSet:
         :return: A query, the tables to query, ordering expression and a
             decorator to call on each returned row.
         """
-        assert isinstance(params, BugTaskSearchParams)
+        assert zope_isinstance(params, BugTaskSearchParams)
+        if not isinstance(params, BugTaskSearchParams):
+            # Browser code let this get wrapped, unwrap it here as its just a
+            # dumb data store that has no security implications.
+            params = removeSecurityProxy(params)
         from lp.bugs.model.bug import Bug
         extra_clauses = ['Bug.id = BugTask.bug']
         clauseTables = [BugTask, Bug]
@@ -2485,6 +2498,18 @@ class BugTaskSet:
     def searchBugIds(self, params):
         """See `IBugTaskSet`."""
         return self._search(BugTask.bugID, [], None, params).result_set
+
+    def countBugs(self, params, group_on):
+        """See `IBugTaskSet`."""
+        resultset = self._search(
+            group_on + (SQL("COUNT(Distinct BugTask.bug)"),), [], None, params).result_set
+        # We group on the related field:
+        resultset.group_by(*group_on)
+        resultset.order_by()
+        result = {}
+        for row in resultset:
+            result[row[:-1]] = row[-1]
+        return result
 
     def getPrecachedNonConjoinedBugTasks(self, user, milestone):
         """See `IBugTaskSet`."""

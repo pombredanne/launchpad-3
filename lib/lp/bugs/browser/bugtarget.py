@@ -24,7 +24,10 @@ __all__ = [
 import cgi
 from cStringIO import StringIO
 from datetime import datetime
-from operator import itemgetter
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
 import urllib
 
 from lazr.restful.interface import copy_field
@@ -125,6 +128,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.bugs.interfaces.securitycontact import IHasSecurityContact
+from lp.bugs.model.bugtask import BugTask
 from lp.bugs.utilities.filebugdataparser import FileBugData
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
 from lp.registry.browser.product import ProductConfigureBase
@@ -1174,7 +1178,7 @@ class BugTargetBugListingView:
             series = self.context.product.series
         else:
             raise AssertionError("series_list called with illegal context")
-        return series
+        return list(series)
 
     @property
     def series_buglistings(self):
@@ -1186,8 +1190,26 @@ class BugTargetBugListingView:
         able to see in a listing.
         """
         series_buglistings = []
-        for series in self.series_list:
-            series_bug_count = series.open_bugtasks.count()
+        bug_task_set = getUtility(IBugTaskSet)
+        series_list = self.series_list
+        if not series_list:
+            return series_buglistings
+        open_bugs = bug_task_set.open_bugtask_search
+        open_bugs.setTarget(any(*series_list))
+        # This would be better as delegation not a case statement.
+        if IDistribution(self.context, None):
+            backlink = BugTask.distroseriesID
+        elif IProduct(self.context, None):
+            backlink = BugTask.productseriesID
+        elif IDistroSeries(self.context, None):
+            backlink = BugTask.distroseriesID
+        elif IProductSeries(self.context, None):
+            backlink = BugTask.productseriesID
+        else:
+            raise AssertionError("illegal context %r" % self.context)
+        counts = bug_task_set.countBugs(open_bugs, (backlink,))
+        for series in series_list:
+            series_bug_count = counts.get((series.id,), 0)
             if series_bug_count > 0:
                 series_buglistings.append(
                     dict(
@@ -1195,23 +1217,30 @@ class BugTargetBugListingView:
                         url=canonical_url(series) + "/+bugs",
                         count=series_bug_count,
                         ))
-
         return series_buglistings
 
     @property
     def milestone_buglistings(self):
         """Return a buglisting for each milestone."""
         milestone_buglistings = []
-        for series in self.series_list:
-            for milestone in series.milestones:
-                milestone_bug_count = milestone.open_bugtasks.count()
-                if milestone_bug_count > 0:
-                    milestone_buglistings.append(
-                        dict(
-                            title=milestone.name,
-                            url=canonical_url(milestone),
-                            count=milestone_bug_count,
-                            ))
+        bug_task_set = getUtility(IBugTaskSet)
+        milestones = []
+        reduce(lambda _, series:milestones.extend(series.milestones),
+            self.series_list, [])
+        if not milestones:
+            return milestone_buglistings
+        open_bugs = bug_task_set.open_bugtask_search
+        open_bugs.setTarget(any(*milestones))
+        counts = bug_task_set.countBugs(open_bugs, (BugTask.milestoneID,))
+        for milestone in milestones:
+            milestone_bug_count = counts.get((milestone.id,), 0)
+            if milestone_bug_count > 0:
+                milestone_buglistings.append(
+                    dict(
+                        title=milestone.name,
+                        url=canonical_url(milestone),
+                        count=milestone_bug_count,
+                        ))
         return milestone_buglistings
 
 
