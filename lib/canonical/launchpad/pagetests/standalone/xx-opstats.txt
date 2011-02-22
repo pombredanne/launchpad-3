@@ -4,7 +4,7 @@ We make Zope 3 give us real time statistics about Launchpad's operation.
 We can access them via XML-RPC:
 
     >>> import xmlrpclib
-    >>> from canonical.functional import XMLRPCTestTransport
+    >>> from lp.testing.xmlrpc import XMLRPCTestTransport
     >>> lp_xmlrpc = xmlrpclib.ServerProxy(
     ...     'http://xmlrpc.launchpad.dev/+opstats',
     ...     transport=XMLRPCTestTransport()

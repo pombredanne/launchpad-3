@@ -748,6 +748,7 @@
                     getSubscriptionForPerson
                     getSubscriptionInfo
                     indexed_messages
+                    _indexed_messages
                     getAlsoNotifiedSubscribers
                     getBugWatch
                     canBeNominatedFor
