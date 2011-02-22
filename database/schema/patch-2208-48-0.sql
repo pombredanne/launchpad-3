@@ -8,5 +8,7 @@ CREATE TABLE FeatureFlagChangelogEntry (
     "comment" text NOT NULL,
     person INTEGER NOT NULL REFERENCES person (id));
 
+CREATE INDEX featureflagchangelogentry__person__idx
+    ON FeatureFlagChangelogEntry(person);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 97, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 48, 0);
