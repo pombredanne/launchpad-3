@@ -42,6 +42,7 @@ class PoppyAnonymousShell(ftp.FTPShell):
 
     Roughly equivalent to the SFTPServer in the sftp side of things.
     """
+
     def __init__(self, fsroot):
         self._fs_root = fsroot
         self.uploadfilesystem = UploadFileSystem(tempfile.mkdtemp())
@@ -121,6 +122,3 @@ class FTPRealm:
                     avatar, 'logout', lambda: None)
         raise NotImplementedError(
             "Only IFTPShell interface is supported by this realm")
-
-
-
