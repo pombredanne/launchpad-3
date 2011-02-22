@@ -58,3 +58,8 @@ class TranslationSplitter:
                 naked_message.potmsgset = ubuntu_item.potmsgset
             elif not message.is_diverged:
                 message.clone(ubuntu_item.potmsgset)
+
+    def split(self):
+        for upstream_item, ubuntu_item in self.findShared():
+            self.splitPOTMsgSet(ubuntu_item)
+            self.migrateTranslations(upstream_item.potmsgset, ubuntu_item)
