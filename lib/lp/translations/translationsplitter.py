@@ -56,3 +56,5 @@ class TranslationSplitter:
             if message.potemplate == ubuntu_item.potemplate:
                 naked_message = removeSecurityProxy(message)
                 naked_message.potmsgset = ubuntu_item.potmsgset
+            elif not message.is_diverged:
+                message.clone(ubuntu_item.potmsgset)

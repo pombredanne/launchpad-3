@@ -104,3 +104,18 @@ class TestTranslationSplitter(TestCaseWithFactory):
         self.assertIs(
             None,
             upstream_item.potmsgset.getAllTranslationMessages().one())
+
+    def test_migrateTranslations_shared(self):
+        splitter = self.makeTranslationSplitter()
+        upstream_item, ubuntu_item = self.makeSharedPOTMsgSet(splitter)
+        self.factory.makeCurrentTranslationMessage(
+            potmsgset=upstream_item.potmsgset)
+        splitter.splitPOTMsgSet(ubuntu_item)
+        splitter.migrateTranslations(upstream_item, ubuntu_item)
+        (upstream_translation,) = (
+            upstream_item.potmsgset.getAllTranslationMessages())
+        (ubuntu_translation,) = (
+            ubuntu_item.potmsgset.getAllTranslationMessages())
+        self.assertEqual(
+            ubuntu_translation.translations,
+            upstream_translation.translations)
