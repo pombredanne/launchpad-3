@@ -32,7 +32,7 @@ import re
 import signal
 import subprocess
 
-from canonical.encoding import (
+from lp.services.encoding import (
     ascii_smash,
     guess as guess_encoding,
     )

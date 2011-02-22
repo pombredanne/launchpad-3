@@ -9,13 +9,14 @@ from fixtures import (
     )
 import testtools
 
-from canonical.config import config, dbconfig
+from canonical.config import dbconfig
 from canonical.config.fixture import ConfigUseFixture
-from canonical.ftests.pgsql import (
+from canonical.testing.layers import BaseLayer
+
+from lp.testing.pgsql import (
     ConnectionWrapper,
     PgTestSetup,
     )
-from canonical.testing.layers import BaseLayer
 
 
 class TestPgTestSetup(testtools.TestCase, TestWithFixtures):

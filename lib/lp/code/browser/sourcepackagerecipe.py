@@ -14,6 +14,8 @@ __all__ = [
     'SourcePackageRecipeView',
     ]
 
+import simplejson
+
 from bzrlib.plugins.builder.recipe import (
     ForbiddenInstructionError,
     RecipeParseError,
@@ -91,8 +93,9 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
     ISourcePackageRecipeSource,
     MINIMAL_RECIPE_TEXT,
+    RECIPE_BETA_FLAG,
     )
-from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.model.archive import Archive
 
@@ -185,10 +188,9 @@ class SourcePackageRecipeView(LaunchpadView):
     """Default view of a SourcePackageRecipe."""
 
     def initialize(self):
-        # XXX: rockstar: This should be removed when source package recipes
-        # are put into production. spec=sourcepackagerecipes
         super(SourcePackageRecipeView, self).initialize()
-        self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
+        if getFeatureFlag(RECIPE_BETA_FLAG):
+            self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
         recipe = self.context
         if recipe.build_daily and recipe.daily_build_archive is None:
             self.request.response.addWarningNotification(
@@ -215,21 +217,7 @@ class SourcePackageRecipeView(LaunchpadView):
 
     @property
     def builds(self):
-        """A list of interesting builds.
-
-        All pending builds are shown, as well as 1-5 recent builds.
-        Recent builds are ordered by date finished (if completed) or
-        date_started (if date finished is not set due to an error building or
-        other circumstance which resulted in the build not being completed).
-        This allows started but unfinished builds to show up in the view but
-        be discarded as more recent builds become available.
-        """
-        builds = list(self.context.getPendingBuilds())
-        for build in self.context.getBuilds():
-            builds.append(build)
-            if len(builds) >= 5:
-                break
-        return builds
+        return builds_for_recipe(self.context)
 
     def dailyBuildWithoutUploadPermission(self):
         """Returns true if there are upload permissions to the daily archive.
@@ -253,14 +241,10 @@ class SourcePackageRecipeView(LaunchpadView):
 
     @property
     def archive_picker(self):
-        ppa = self.context.daily_build_archive
-        if ppa is None:
-            initial_html = 'None'
-        else:
-            initial_html = format_link(ppa)
         field = ISourcePackageEditSchema['daily_build_archive']
         return InlineEditPickerWidget(
-            self.context, field, initial_html,
+            self.context, field,
+            format_link(self.context.daily_build_archive),
             header='Change daily build archive',
             step_title='Select a PPA')
 
@@ -287,6 +271,24 @@ class SourcePackageRecipeView(LaunchpadView):
             self.context, description, title="")
 
 
+def builds_for_recipe(recipe):
+        """A list of interesting builds.
+
+        All pending builds are shown, as well as 1-5 recent builds.
+        Recent builds are ordered by date finished (if completed) or
+        date_started (if date finished is not set due to an error building or
+        other circumstance which resulted in the build not being completed).
+        This allows started but unfinished builds to show up in the view but
+        be discarded as more recent builds become available.
+        """
+        builds = list(recipe.getPendingBuilds())
+        for build in recipe.getBuilds():
+            builds.append(build)
+            if len(builds) >= 5:
+                break
+        return builds
+
+
 class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
     """A view for requesting builds of a SourcePackageRecipe."""
 
@@ -304,12 +306,51 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
 
     class schema(Interface):
         """Schema for requesting a build."""
+        archive = Choice(vocabulary='TargetPPAs', title=u'Archive')
         distros = List(
             Choice(vocabulary='BuildableDistroSeries'),
             title=u'Distribution series')
-        archive = Choice(vocabulary='TargetPPAs', title=u'Archive')
 
     custom_widget('distros', LabeledMultiCheckBoxWidget)
+
+    def validate(self, data):
+        distros = data.get('distros', [])
+        if not len(distros):
+            self.setFieldError('distros',
+                "You need to specify at least one distro series for which "
+                "to build.")
+            return
+        over_quota_distroseries = []
+        for distroseries in data['distros']:
+            if self.context.isOverQuota(self.user, distroseries):
+                over_quota_distroseries.append(str(distroseries))
+        if len(over_quota_distroseries) > 0:
+            self.setFieldError(
+                'distros',
+                "You have exceeded today's quota for %s." %
+                ', '.join(over_quota_distroseries))
+
+    def requestBuild(self, data):
+        """User action for requesting a number of builds.
+
+        We raise exceptions for most errors but if there's already a pending
+        build for a particular distroseries, we simply record that so that
+        other builds can ne queued and a message be displayed to the caller.
+        """
+        errors = {}
+        for distroseries in data['distros']:
+            try:
+                self.context.requestBuild(
+                    data['archive'], self.user, distroseries, manual=True)
+            except BuildAlreadyPending, e:
+                errors['distros'] = ("An identical build is already pending "
+                    "for %s." % e.distroseries)
+        return errors
+
+
+class SourcePackageRecipeRequestBuildsHtmlView(
+        SourcePackageRecipeRequestBuildsView):
+    """Supports HTML form recipe build requests."""
 
     @property
     def title(self):
@@ -321,32 +362,55 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
     def cancel_url(self):
         return canonical_url(self.context)
 
-    def validate(self, data):
-        over_quota_distroseries = []
-        for distroseries in data['distros']:
-            if self.context.isOverQuota(self.user, distroseries):
-                over_quota_distroseries.append(str(distroseries))
-        if len(over_quota_distroseries) > 0:
-            self.setFieldError(
-                'distros',
-                "You have exceeded today's quota for %s." %
-                ', '.join(over_quota_distroseries))
-
     @action('Request builds', name='request')
     def request_action(self, action, data):
-        """User action for requesting a number of builds."""
-        for distroseries in data['distros']:
-            try:
-                self.context.requestBuild(
-                    data['archive'], self.user, distroseries,
-                    PackagePublishingPocket.RELEASE, manual=True)
-            except BuildAlreadyPending, e:
-                self.setFieldError(
-                    'distros',
-                    'An identical build is already pending for %s.' %
-                    e.distroseries)
-                return
+        errors = self.requestBuild(data)
+        if errors:
+            [self.setFieldError(field, message)
+                for (field, message) in errors.items()]
+            return
         self.next_url = self.cancel_url
+
+
+class SourcePackageRecipeRequestBuildsAjaxView(
+        SourcePackageRecipeRequestBuildsView):
+    """Supports AJAX form recipe build requests."""
+
+    def _process_error(self, data, errors, reason):
+        """Set up the response and json data to return to the caller."""
+        self.request.response.setStatus(400, reason)
+        self.request.response.setHeader('Content-type', 'application/json')
+        return simplejson.dumps(errors)
+
+    def failure(self, action, data, errors):
+        """Called by the form if validate() finds any errors.
+
+           We simply convert the errors to json and return that data to the
+           caller for display to the user.
+        """
+        return self._process_error(data, self.widget_errors, "Validation")
+
+    @action('Request builds', name='request', failure=failure)
+    def request_action(self, action, data):
+        """User action for requesting a number of builds.
+
+        The failure handler will handle any validation errors. We still need
+        to handle errors which may occur when invoking the business logic.
+        These "expected" errors are ones which result in a predefined message
+        being displayed to the user. If the business method raises an
+        unexpected exception, that will be handled using the form's standard
+        exception processing mechanism (using response code 500).
+        """
+        errors = self.requestBuild(data)
+        # If there are errors we return a json data snippet containing the
+        # errors instead of rendering the form. These errors are processed
+        # by the caller's response handler and displayed to the user.
+        if errors:
+            return self._process_error(data, errors, "Request Build")
+
+    @property
+    def builds(self):
+        return builds_for_recipe(self.context)
 
 
 class ISourcePackageEditSchema(Interface):
@@ -524,9 +588,8 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
 
     def initialize(self):
         super(SourcePackageRecipeAddView, self).initialize()
-        # XXX: rockstar: This should be removed when source package recipes
-        # are put into production. spec=sourcepackagerecipes
-        self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
+        if getFeatureFlag(RECIPE_BETA_FLAG):
+           self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
         widget = self.widgets['use_ppa']
         current_value = widget._getFormValue()
         self.use_ppa_existing = render_radio_widget_part(

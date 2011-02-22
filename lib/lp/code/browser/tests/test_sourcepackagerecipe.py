@@ -43,13 +43,18 @@ from lp.code.browser.sourcepackagerecipe import (
 from lp.code.browser.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildView,
     )
-from lp.code.interfaces.sourcepackagerecipe import MINIMAL_RECIPE_TEXT
+from lp.code.interfaces.sourcepackagerecipe import (
+    MINIMAL_RECIPE_TEXT,
+    RECIPE_BETA_FLAG,
+    RECIPE_ENABLED_FLAG,
+    )
 from lp.code.tests.helpers import recipe_parser_newest_version
 from lp.registry.interfaces.person import (
     IPersonSet,
     TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import clear_property_cache
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import (
@@ -193,6 +198,13 @@ def get_message_text(browser, index):
 class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestSourcePackageRecipeAddView, self).setUp()
+        self.useFixture(
+            FeatureFixture(
+                {RECIPE_ENABLED_FLAG: 'on',
+                 RECIPE_BETA_FLAG: 'true'}))
 
     def makeBranch(self):
         product = self.factory.makeProduct(

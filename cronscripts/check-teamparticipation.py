@@ -37,7 +37,7 @@ if __name__ == '__main__':
     log = logger(options, 'check-teamparticipation')
 
     execute_zcml_for_scripts()
-    ztm = initZopeless(implicitBegin=False)
+    ztm = initZopeless()
 
     # Check self-participation.
     query = """
