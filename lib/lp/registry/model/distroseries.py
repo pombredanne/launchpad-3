@@ -1994,9 +1994,9 @@ class DistroSeriesSet:
             # wrapped anyway - and sqlvalues goes boom.
             archives = removeSecurityProxy(
                 distroseries.distribution.all_distro_archive_ids)
-            clause = """(SourcePackageRelease.sourcepackagename IN %s AND
-                SourcePackagePublishingHistory.archive IN %s AND
-                SourcePackagePublishingHistory.distroseries = %s)
+            clause = """(spr.sourcepackagename IN %s AND
+                spph.archive IN %s AND
+                spph.distroseries = %s)
                 """ % sqlvalues(source_package_ids, archives, distroseries.id)
             series_clauses.append(clause)
             distroseries_lookup[distroseries.id] = distroseries
@@ -2018,7 +2018,8 @@ class DistroSeriesSet:
                         AND spph.status IN %s
                         AND %s
                     ORDER BY
-                        spr.sourcepackagename, spph.distroseries, spph.id DESC)
+                        spr.sourcepackagename, spph.distroseries, spph.id DESC
+                    )
                 """
                 % (sqlvalues(active_publishing_status) + (combined_clause,))))
         result = {}
