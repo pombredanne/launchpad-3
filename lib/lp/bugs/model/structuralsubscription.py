@@ -172,10 +172,9 @@ class StructuralSubscription(Storm):
 
     def delete(self):
         store = Store.of(self)
-        store.find(
-            BugSubscriptionFilter,
-            BugSubscriptionFilter.structural_subscription == self).remove()
+        self.bug_filters.remove()
         store.remove(self)
+
 
 class DistroSeriesTargetHelper:
     """A helper for `IDistroSeries`s."""
@@ -373,10 +372,12 @@ class StructuralSubscriptionTargetMixin:
         if existing_subscription is not None:
             return existing_subscription
         else:
-            return StructuralSubscription(
+            new_subscription = StructuralSubscription(
                 subscriber=subscriber,
                 subscribed_by=subscribed_by,
                 **self._target_args)
+            subscription_filter = new_subscription.newBugFilter()
+            return new_subscription
 
     def userCanAlterBugSubscription(self, subscriber, subscribed_by):
         """See `IStructuralSubscriptionTarget`."""

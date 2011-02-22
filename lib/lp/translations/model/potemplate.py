@@ -1155,8 +1155,7 @@ class POTemplateSubset:
             if shared_template is template:
                 continue
             for pofile in shared_template.pofiles:
-                template.newPOFile(
-                    pofile.language.code, False)
+                template.newPOFile(pofile.language.code, create_sharing=False)
             # Do not continue, else it would trigger an existingpo assertion.
             return
 

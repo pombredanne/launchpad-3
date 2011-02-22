@@ -1,7 +1,11 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Alter the standard functional testing environment for Launchpad."""
+"""Tools for testing XML-RPC services."""
+
+__all__ = [
+    'XMLRPCTestTransport',
+    ]
 
 from cStringIO import StringIO
 import httplib

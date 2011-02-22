@@ -1119,7 +1119,7 @@ A bug comment is actually made up of a number of chunks. The
 IBug.getMessagesForView() method allows you to get all the data needed to
 show messages in the bugtask index template in one shot.
 
-    >>> from canonical.ftests.pgsql import CursorWrapper
+    >>> from lp.testing.pgsql import CursorWrapper
     >>> CursorWrapper.record_sql = True
     >>> queries = len(CursorWrapper.last_executed_sql)
 
