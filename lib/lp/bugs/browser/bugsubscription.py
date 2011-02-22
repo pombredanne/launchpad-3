@@ -118,8 +118,7 @@ class AdvancedSubscriptionMixin:
             # drop the NOTHING option since it just makes the UI
             # confusing.
             for level in sorted(BugNotificationLevel.items, reverse=True)
-                if level != BugNotificationLevel.NOTHING
-            ]
+                if level != BugNotificationLevel.NOTHING]
         bug_notification_vocabulary = SimpleVocabulary(
             bug_notification_level_terms)
 
@@ -517,8 +516,7 @@ class BugPortletDuplicateSubcribersContents(LaunchpadView, BugViewMixin):
             SubscriptionAttrDecorator(subscription)
             for subscription in sorted(
                 self.context.getSubscriptionsFromDuplicates(),
-                key=(lambda subscription: subscription.person.displayname))
-            ]
+                key=(lambda subscription: subscription.person.displayname))]
 
 
 class BugPortletSubcribersIds(LaunchpadView, BugViewMixin):

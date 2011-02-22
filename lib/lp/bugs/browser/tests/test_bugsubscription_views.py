@@ -10,7 +10,6 @@ from canonical.testing.layers import LaunchpadFunctionalLayer
 
 from lp.bugs.browser.bugsubscription import (
     BugPortletSubcribersIds,
-    BugSubscriptionAddView,
     BugSubscriptionListView,
     BugSubscriptionSubscribeSelfView,
     )
@@ -64,7 +63,8 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     level, subscription.bug_notification_level,
                     "Bug notification level of subscription should be %s, is "
                     "actually %s." % (
-                        level.title, subscription.bug_notification_level.title))
+                        level.title,
+                        subscription.bug_notification_level.title))
 
     def test_nothing_is_not_a_valid_level(self):
         # BugNotificationLevel.NOTHING isn't considered valid when

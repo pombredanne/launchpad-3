@@ -1250,12 +1250,12 @@ class BugTaskSearchParams:
             elif not distroseries.query_values and distributions.query_values:
                 self.distributions = distributions
             else:
-                # Either we have both distroseries and distributions or neither
-                # of them: set both, which will give us the cross product
-                # due to the search of source packages being sourcepackagename
-                # specific rather than actually context specific. This is not
-                # ideal but is tolerable given no actual use of mixed type
-                # any() exists today.
+                # Either we have both distroseries and distributions or
+                # neither of them: set both, which will give us the
+                # cross product due to the search of source packages
+                # being sourcepackagename specific rather than actually
+                # context specific. This is not ideal but is tolerable
+                # given no actual use of mixed type any() exists today.
                 self.distroseries = distroseries
                 self.distributions = distributions
             return
@@ -1274,9 +1274,10 @@ class BugTaskSearchParams:
         does not need to be known to the caller.
 
         :param target: A `IHasBug`, or some search term like all/any/none on
-            `IHasBug`. If using all/any all the targets must be of the same
-            type due to implementation limitations. Currently only distroseries
-            and productseries `IHasBug` implementations are supported.
+            `IHasBug`. If using all/any all the targets must be of the
+            same type due to implementation limitations. Currently only
+            distroseries and productseries `IHasBug` implementations are
+            supported.
         """
         # Yay circular deps.
         from lp.registry.interfaces.distroseries import IDistroSeries
@@ -1492,8 +1493,8 @@ class IBugTaskSet(Interface):
 
         :param param: A BugTaskSearchParams object.
         :param group_on: The column(s) group on - .e.g (
-            Bugtask.distroseriesID, BugTask.milestoneID) will cause grouping by
-            distro series and then milestone.
+            Bugtask.distroseriesID, BugTask.milestoneID) will cause
+            grouping by distro series and then milestone.
         :return: A dict {group_instance: count, ...}
         """
 
