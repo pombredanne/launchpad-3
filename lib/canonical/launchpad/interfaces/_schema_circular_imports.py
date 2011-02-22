@@ -453,6 +453,8 @@ patch_entry_return_type(
 patch_collection_return_type(
     ISourcePackageRecipe, 'getPendingBuilds', ISourcePackageRecipeBuild)
 patch_collection_return_type(
+    ISourcePackageRecipe, 'getCompletedBuilds', ISourcePackageRecipeBuild)
+patch_collection_return_type(
     ISourcePackageRecipe, 'getBuilds', ISourcePackageRecipeBuild)
 
 # IHasBugs

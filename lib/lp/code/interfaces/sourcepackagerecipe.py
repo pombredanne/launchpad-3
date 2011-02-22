@@ -118,12 +118,17 @@ class ISourcePackageRecipeView(Interface):
     @operation_returns_collection_of(Interface)
     @export_read_operation()
     def getBuilds():
-        """Return a ResultSet of all the non-pending builds."""
+        """Return a ResultSet of all the builds."""
 
     @operation_returns_collection_of(Interface)
     @export_read_operation()
     def getPendingBuilds():
         """Return a ResultSet of all the pending builds."""
+
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getCompletedBuilds():
+        """Return a ResultSet of all the non-pending builds."""
 
     @operation_returns_entry(Interface)
     @export_read_operation()

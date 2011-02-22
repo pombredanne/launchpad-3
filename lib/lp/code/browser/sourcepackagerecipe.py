@@ -282,7 +282,7 @@ def builds_for_recipe(recipe):
         be discarded as more recent builds become available.
         """
         builds = list(recipe.getPendingBuilds())
-        for build in recipe.getBuilds():
+        for build in recipe.getCompletedBuilds():
             builds.append(build)
             if len(builds) >= 5:
                 break

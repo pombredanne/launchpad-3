@@ -583,9 +583,16 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
     def test_getBuilds(self):
         # Builds that need building are pending.
         recipe = self.factory.makeSourcePackageRecipe()
-        build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
-        self.assertEqual([], list(recipe.getBuilds()))
-        self.assertEqual([build], list(recipe.getPendingBuilds()))
+        builds = [
+                self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+                for x in range(3)]
+        self.assertEqual([], list(recipe.getCompletedBuilds()))
+        self.assertEqual(builds, list(recipe.getPendingBuilds()))
+        self.assertEqual(builds, list(recipe.getBuilds()))
+        removeSecurityProxy(builds[0]).status = BuildStatus.FULLYBUILT
+        self.assertEqual([builds[0]], list(recipe.getCompletedBuilds()))
+        self.assertEqual(builds[1:], list(recipe.getPendingBuilds()))
+        self.assertEqual(builds, list(recipe.getBuilds()))
 
     def test_getBuilds_cancelled(self):
         # Cancelled builds are not considered pending.
@@ -593,6 +600,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
         build.cancelBuild()
         self.assertEqual([build], list(recipe.getBuilds()))
+        self.assertEqual([build], list(recipe.getCompletedBuilds()))
         self.assertEqual([], list(recipe.getPendingBuilds()))
 
     def test_setRecipeText_private_base_branch(self):
@@ -633,6 +641,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         with person_logged_in(archive.owner):
             archive.disable()
         self.assertEqual([], list(recipe.getBuilds()))
+        self.assertEqual([], list(recipe.getCompletedBuilds()))
         self.assertEqual([], list(recipe.getPendingBuilds()))
 
 
@@ -990,4 +999,5 @@ class TestWebservice(TestCaseWithFactory):
                 pocket=PackagePublishingPocket.RELEASE.title)
             builds.insert(0, build)
         self.assertEqual(builds, list(recipe.getPendingBuilds()))
-        self.assertEqual([], list(recipe.getBuilds()))
+        self.assertEqual(builds, list(recipe.getBuilds()))
+        self.assertEqual([], list(recipe.getCompletedBuilds()))
