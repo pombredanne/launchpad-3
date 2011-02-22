@@ -12,7 +12,16 @@
         can be audited.
       </p>
 
-      <div style="max-width:45em;">
+      <ul class="horizontal" style="margin-bottom:1em;">
+        <li>
+          <a class="sprite edit" href="+feature-rules">Feature control</a>
+        </li>
+        <li>
+          <a class="sprite info" href="+feature-info">Feature flag info</a>
+        </li>
+      </ul>
+
+      <div style="margin-top: 1em">
         <div class="results"
           tal:content="structure view/changes/@@+navigation-links-upper" />
 

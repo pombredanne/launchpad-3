@@ -9,7 +9,22 @@
 
 <body metal:fill-slot="main">
 
+  <p>
+    Feature flags and feature scopes are self-documenting. Report bugs
+    about feature or scopes that are missing documentation.
+  </p>
+
+  <ul class="horizontal" style="margin-bottom:1em;">
+    <li>
+      <a class="sprite edit" href="+feature-rules">Feature control</a>
+    </li>
+    <li>
+      <a class="sprite info" href="+feature-changelog">Feature flag changelog</a>
+    </li>
+  </ul>
+
   <h2>Documented flags</h2>
+
   <table class="listing">
     <thead>
       <tr>
