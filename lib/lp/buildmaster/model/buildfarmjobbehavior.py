@@ -22,7 +22,6 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical import encoding
 from canonical.librarian.interfaces import ILibrarianClient
 from lp.buildmaster.interfaces.builder import (
     BuildSlaveFailure,
@@ -32,6 +31,7 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch,
     IBuildFarmJobBehavior,
     )
+from lp.services import encoding
 from lp.services.job.interfaces.job import JobStatus
 
 

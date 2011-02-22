@@ -67,6 +67,13 @@ class TestRevisionAuthorFormatterAPI(TestCaseWithFactory):
         self.assertNotIn(account, self._formatAuthorLink(revision))
         self.assertNotIn('@', self._formatAuthorLink(revision))
 
+    def test_empty_string_when_name_and_email_are_none(self):
+        # When the RevisionAuthor name and email attrs are None, an
+        # empty string is returned.
+        revision = self.factory.makeRevision(author='')
+        login(USER_EMAIL)
+        self.assertEqual('', self._formatAuthorLink(revision))
+
     def test_name_is_escaped(self):
         # The author's name is HTML-escaped.
         revision = self.factory.makeRevision(author="apples & pears")

@@ -75,8 +75,10 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 SEPARATOR = ' : '
 
 
-def format_link(obj, view_name=None):
+def format_link(obj, view_name=None, empty_value='None'):
     """Return the equivalent of obj/fmt:link as a string."""
+    if obj is None:
+        return empty_value
     adapter = queryAdapter(obj, IPathAdapter, 'fmt')
     link = getattr(adapter, 'link', None)
     if link is None:
@@ -473,6 +475,7 @@ class NoneFormatter:
         'text-to-html',
         'time',
         'url',
+        'link',
         ])
 
     def __init__(self, context):
@@ -480,15 +483,28 @@ class NoneFormatter:
 
     def traverse(self, name, furtherPath):
         if name == 'shorten':
-            if len(furtherPath) == 0:
+            if not len(furtherPath):
                 raise TraversalError(
                     "you need to traverse a number after fmt:shorten")
             # Remove the maxlength from the path as it is a parameter
             # and not another traversal command.
             furtherPath.pop()
             return ''
-        elif name in self.allowed_names:
-            return ''
+        # We need to check to see if the name has been augmented with optional
+        # evaluation parameters, delimited by ":". These parameters are:
+        #  param1 = rootsite (used with link and url)
+        #  param2 = default value (in case of context being None)
+        # We are interested in the default value (param2).
+        result = ''
+        for nm in self.allowed_names:
+            if name.startswith(nm+":"):
+                name_parts = name.split(":")
+                name = name_parts[0]
+                if len(name_parts) > 2:
+                    result = name_parts[2]
+                break
+        if name in self.allowed_names:
+            return result
         else:
             raise TraversalError(name)
 
@@ -548,25 +564,40 @@ class ObjectFormatterAPI:
         return url
 
     def traverse(self, name, furtherPath):
+        """Traverse the specified path, processing any optional parameters.
+
+        Up to 2 parameters are currently supported, and the path name will be
+        of the form:
+            name:param1:param2
+        where
+            param1 = rootsite (only used for link and url paths).
+            param2 = default (used when self.context is None). The context
+                     is not None here so this parameter is ignored.
+        """
         if name.startswith('link:') or name.startswith('url:'):
-            rootsite = name.split(':')[1]
-            extra_path = None
-            if len(furtherPath) > 0:
-                extra_path = '/'.join(reversed(furtherPath))
-            # Remove remaining entries in furtherPath so that traversal
-            # stops here.
-            del furtherPath[:]
-            if name.startswith('link:'):
-                if rootsite is None:
-                    return self.link(extra_path)
+            name_parts = name.split(':')
+            name = name_parts[0]
+            rootsite = name_parts[1]
+            if rootsite != '':
+                extra_path = None
+                if len(furtherPath) > 0:
+                    extra_path = '/'.join(reversed(furtherPath))
+                # Remove remaining entries in furtherPath so that traversal
+                # stops here.
+                del furtherPath[:]
+                if name == 'link':
+                    if rootsite is None:
+                        return self.link(extra_path)
+                    else:
+                        return self.link(extra_path, rootsite=rootsite)
                 else:
-                    return self.link(extra_path, rootsite=rootsite)
-            else:
-                if rootsite is None:
-                    self.url(extra_path)
-                else:
-                    return self.url(extra_path, rootsite=rootsite)
-        elif name in self.traversable_names:
+                    if rootsite is None:
+                        self.url(extra_path)
+                    else:
+                        return self.url(extra_path, rootsite=rootsite)
+        if '::' in name:
+            name = name.split(':')[0]
+        if name in self.traversable_names:
             if len(furtherPath) >= 1:
                 extra_path = '/'.join(reversed(furtherPath))
                 del furtherPath[:]
@@ -2266,10 +2297,13 @@ class RevisionAuthorFormatterAPI(ObjectFormatterAPI):
                 view_name, rootsite)
         elif context.name_without_email:
             return cgi.escape(context.name_without_email)
-        elif getUtility(ILaunchBag).user is not None:
+        elif context.email and getUtility(ILaunchBag).user is not None:
             return cgi.escape(context.email)
-        else:
+        elif context.email:
             return "&lt;email address hidden&gt;"
+        else:
+            # The RevisionAuthor name and email is None.
+            return ''
 
 
 def clean_path_segments(request):
