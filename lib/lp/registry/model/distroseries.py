@@ -2004,22 +2004,23 @@ class DistroSeriesSet:
             return {}
         combined_clause = "(" + " OR ".join(series_clauses) + ")"
 
-        releases = store.find(
+        releases = IStore(SourcePackageRelease).find(
             (SourcePackageRelease, DistroSeries.id), SQL("""
-            (SourcePackageRelease.id, DistroSeries.id) IN (
-                SELECT
-                    DISTINCT ON (spr.sourcepackagename, spph.distroseries)
-                    spr.id, spph.distroseries
-                FROM
-                    SourcePackageRelease AS spr,
-                    SourcePackagePublishingHistory AS spph
-                WHERE
-                    spph.sourcepackagerelease = spr.id
-                    AND spph.status IN %s
-                    AND %s
-                ORDER BY
-                    spr.sourcepackagename, spph.distroseries, spph.id DESC
-            """ % (sqlvalues(active_publishing_status) + (combined_clause,))))
+                (SourcePackageRelease.id, DistroSeries.id) IN (
+                    SELECT
+                        DISTINCT ON (spr.sourcepackagename, spph.distroseries)
+                        spr.id, spph.distroseries
+                    FROM
+                        SourcePackageRelease AS spr,
+                        SourcePackagePublishingHistory AS spph
+                    WHERE
+                        spph.sourcepackagerelease = spr.id
+                        AND spph.status IN %s
+                        AND %s
+                    ORDER BY
+                        spr.sourcepackagename, spph.distroseries, spph.id DESC)
+                """
+                % (sqlvalues(active_publishing_status) + (combined_clause,))))
         result = {}
         for sp_release, distroseries_id in releases:
             distroseries = distroseries_lookup[distroseries_id]
