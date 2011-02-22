@@ -563,7 +563,7 @@ class DeactivatedProductBugTaskTestCase(TestCaseWithFactory):
         # not see bugtasks for deactivated projects.
         nopriv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
         bugtask_set = getUtility(IBugTaskSet)
-        param = BugTaskSearchParams(user=None, fast_searchtext='Monkeys', assignee=self.person)
+        param = BugTaskSearchParams(user=None, fast_searchtext='Monkeys')
         results = bugtask_set.search(param, _noprejoins=True)
         self.assertEqual([self.active_bugtask], list(results))
 

@@ -1794,28 +1794,6 @@ class BugTaskSet:
             if where_cond is not None:
                 extra_clauses.append("BugTask.%s %s" % (arg_name, where_cond))
 
-        # Remove bugtasks from deactivated products, if necessary.
-        # We don't have to do this if
-        # 1) We're searching on bugtasks for a specific product
-        # 2) We're searching on bugtasks for a specific productseries
-        # 3) We're searching on bugtasks for a distribution
-        # 4) We're searching for bugtasks for a distroseries
-        # because in those instances we don't have arbitrary products which
-        # may be deactivated showing up in our search.
-        if (params.product is None and
-            params.distribution is None and
-            params.productseries is None and
-            params.distroseries is None):
-            # Prevent circular import problems.
-            from lp.registry.model.product import Product
-            extra_clauses.append(
-                "(Bugtask.product IS NULL OR Product.active)")
-            join_tables.append(
-                (Product, LeftJoin(Product, And(
-                                BugTask.productID == Product.id,
-                                Product.active == True))))
-
-
         if params.status is not None:
             extra_clauses.append(self._buildStatusClause(params.status))
 
@@ -1938,7 +1916,7 @@ class BugTaskSet:
             join_tables.append(
                 (Product, LeftJoin(Product, And(
                                 BugTask.productID == Product.id,
-                                Product.active == True))))
+                                Product.active))))
             join_tables.append(
                 (StructuralSubscription,
                  Join(StructuralSubscription, join_clause)))
@@ -1946,6 +1924,28 @@ class BugTaskSet:
                 'StructuralSubscription.subscriber = %s'
                 % sqlvalues(params.structural_subscriber))
             has_duplicate_results = True
+
+
+        # Remove bugtasks from deactivated products, if necessary.
+        # We don't have to do this if
+        # 1) We're searching on bugtasks for a specific product
+        # 2) We're searching on bugtasks for a specific productseries
+        # 3) We're searching on bugtasks for a distribution
+        # 4) We're searching for bugtasks for a distroseries
+        # because in those instances we don't have arbitrary products which
+        # may be deactivated showing up in our search.
+        if (params.product is None and
+            params.distribution is None and
+            params.productseries is None and
+            params.distroseries is None):
+            # Prevent circular import problems.
+            from lp.registry.model.product import Product
+            extra_clauses.append(
+                "(Bugtask.product IS NULL OR Product.active = TRUE)")
+            join_tables.append(
+                (Product, LeftJoin(Product, And(
+                                BugTask.productID == Product.id,
+                                Product.active))))
 
         if params.component:
             clauseTables += [SourcePackagePublishingHistory,
@@ -2114,7 +2114,6 @@ class BugTaskSet:
         if not decorators:
             decorator = lambda x: x
         else:
-
             def decorator(obj):
                 for decor in decorators:
                     obj = decor(obj)
