@@ -1,8 +1,7 @@
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Tests for ArchivePackagesView, with relation to source package
-recipes."""
+"""Tests for source package publication listing."""
 
 __metaclass__ = type
 
@@ -21,11 +20,11 @@ from lp.testing import (
 from lp.testing.sampledata import ADMIN_EMAIL
 
 
-class TestArchivePackagesViewSourcePackageRecipe(BrowserTestCase):
+class TestSourcePublicationListingExtra(BrowserTestCase):
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        super(TestArchivePackagesViewSourcePackageRecipe, self).setUp()
+        super(TestSourcePublicationListingExtra, self).setUp()
         self.admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
         # Create everything we need to create builds, such as a
         # DistroArchSeries and a builder.
@@ -54,19 +53,20 @@ class TestArchivePackagesViewSourcePackageRecipe(BrowserTestCase):
         spph = self.publisher.getPubSource(
             archive=self.archive, status=PackagePublishingStatus.PUBLISHED)
         spph.sourcepackagerelease.source_package_recipe_build = sprb
-        expected_contents = 'Built by recipe <a href="%s">%s</a> for %s' % (
-            canonical_url(recipe), recipe.name, sprb.requester.displayname)
-        browser = self.getViewBrowser(self.archive, '+packages')
-        browser.getLink('Show details').click()
+        # XXX: soupmatchers
+        # soupmatchers.Tag('link to build', 'a', attrs={'href': 'recipebuildjob'}, text='blah')
+        expected_contents = (
+            '<a href="%s">Built</a> by recipe <a href="%s">%s</a> for '
+            '<a href="%s">%s</a>.' % (
+                canonical_url(sprb), canonical_url(recipe), recipe.name,
+                canonical_url(sprb.requester), sprb.requester.displayname))
+        browser = self.getViewBrowser(spph, '+listing-archive-extra')
         self.assertIn(expected_contents, browser.contents)
 
     def test_view_without_source_package_recipe(self):
         # And if a SourcePackageRelease is not linked, there is no sign of it
         # in the view.
-        with person_logged_in(self.admin):
-            self.publisher.getPubBinaries(
-                archive=self.archive,
-                status=PackagePublishingStatus.PUBLISHED)
-        browser = self.getViewBrowser(self.archive, '+packages')
-        browser.getLink('Show details').click()
+        spph = self.publisher.getPubSource(
+            archive=self.archive, status=PackagePublishingStatus.PUBLISHED)
+        browser = self.getViewBrowser(spph, '+listing-archive-extra')
         self.assertNotIn('Built by recipe', browser.contents)

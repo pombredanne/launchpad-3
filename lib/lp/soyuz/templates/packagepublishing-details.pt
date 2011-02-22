@@ -28,8 +28,8 @@
             tal:content="context/datesuperseded/fmt:displaydate"/>
       by <span tal:replace="context/supersededby/title" />
     </li>
-    <li tal:condition="context/builtByRecipe">
-    Built by recipe <a tal:attributes="href context/builtByRecipe/recipe/fmt:url"><span tal:replace="context/builtByRecipe/recipe/name" /></a> for <span tal:replace="context/builtByRecipe/requester/displayname" />
+    <li tal:define="sprb context/sourcepackagerelease/source_package_recipe_build" tal:condition="sprb">
+    <a tal:attributes="href sprb/fmt:url">Built</a> by recipe <a tal:attributes="href sprb/recipe/fmt:url"><span tal:replace="sprb/recipe/name" /></a> for <a tal:attributes="href sprb/requester/fmt:url"><span tal:replace="sprb/requester/displayname" /></a>.
     </li>
     <li tal:condition="context/datepublished">
       <strong>Published</strong>
