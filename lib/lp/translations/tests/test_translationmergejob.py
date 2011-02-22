@@ -28,7 +28,7 @@ def make_translation_merge_job(factory, not_ubuntu=False):
     singular = factory.getUniqueString()
     upstream_pofile = factory.makePOFile(side=TranslationSide.UPSTREAM)
     upstream_potmsgset = factory.makePOTMsgSet(
-        upstream_pofile.potemplate, singular, sequence=1)
+        upstream_pofile.potemplate, singular)
     upstream = factory.makeCurrentTranslationMessage(
         pofile=upstream_pofile, potmsgset=upstream_potmsgset)
     if not_ubuntu:
@@ -40,7 +40,7 @@ def make_translation_merge_job(factory, not_ubuntu=False):
     package_pofile = factory.makePOFile(
         potemplate=package_potemplate, language=upstream_pofile.language)
     package_potmsgset = factory.makePOTMsgSet(
-        package_pofile.potemplate, singular, sequence=1)
+        package_pofile.potemplate, singular)
     package = factory.makeCurrentTranslationMessage(
         pofile=package_pofile, potmsgset=package_potmsgset,
         translations=upstream.translations)
