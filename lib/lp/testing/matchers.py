@@ -40,7 +40,6 @@ from zope.security.proxy import (
     Proxy,
     )
 
-from canonical.launchpad.testing.pages import extract_text
 from canonical.launchpad.webapp.batching import BatchNavigator
 
 
@@ -354,6 +353,8 @@ class MatchesTagText(Matcher):
         return "matches widget %r text" % self.tag_id
 
     def match(self, matchee):
+        # Here to avoid circular dependancies.
+        from canonical.launchpad.testing.pages import extract_text
         widgets = self.soup_content.findAll(id=self.tag_id)
         if len(widgets) == 0:
             return MissingElement(self.tag_id, self.soup_content)
@@ -376,6 +377,8 @@ class MatchesPickerText(Matcher):
         return "matches widget %r text" % self.widget_id
 
     def match(self, matchee):
+        # Here to avoid circular dependancies.
+        from canonical.launchpad.testing.pages import extract_text
         widgets = self.soup_content.findAll(id=self.widget_id)
         if len(widgets) == 0:
             return MissingElement(self.widget_id, self.soup_content)
