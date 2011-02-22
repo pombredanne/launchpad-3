@@ -947,27 +947,33 @@ h1 .edit {
     top: -3px;
     margin-left: 0.5em;
     }
-.yui-ieditor {
+.yui3-ieditor {
     padding-right: 288px;
     }
-.lazr-multiline-edit .yui-ieditor {
+h1 .yui3-ieditor-errors {
+    font-size: 0.5em;
+    }
+.lazr-multiline-edit .yui3-ieditor {
     padding-right: 0;
     }
 .lazr-multiline-edit textarea {
     max-width: inherit;
     }
-.lazr-multiline-edit .yui-ieditor-input {
-    padding-right: 5px !important;
-    }
 .widget-hd.js-action {
     /* The js-action class is also used for non-links, for example, with
        expand/collapse sections. */
     color: #093;
-    cursor:pointer;
+    cursor: pointer;
     }
 .widget-hd.js-action:hover {
     text-decoration: underline;
     }
+
+.yui3-ichoicesource-content .value:hover {
+    text-decoration: underline;
+    cursor: pointer;
+    }
+
 .error.message, .warning.message, .informational.message {
     border: solid #666;
     border-width: 1px 2px 2px 1px;
@@ -1819,8 +1825,8 @@ div#edit-commit_message {
     font-size: 93%;
     margin: 1em 0;
     }
-div#edit-description .yui-ieditor-input,
-div#edit-commit_message .yui-ieditor-input {
+
+.yui3-ieditor-multiline .yui3-ieditor-input {
     top: 0;
     }
 

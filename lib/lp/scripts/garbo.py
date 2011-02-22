@@ -53,7 +53,6 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
-from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.scripts.checkwatches.scheduler import (
@@ -531,31 +530,6 @@ class PersonPruner(TunableLoop):
                 % chunk_size)
 
 
-class BugMessageIndexer(TunableLoop):
-    """Index `BugMessage` in the DB to allow smarter queries in future.
-
-    We find bugs with unindexed messages, and ask the bug to index them.
-    """
-    maximum_chunk_size = 10000
-
-    def _to_process(self):
-        return IMasterStore(BugMessage).find(
-            BugMessage.bugID,
-            BugMessage.index==None).config(distinct=True)
-
-    def isDone(self):
-        return self._to_process().any() is None
-
-    def __call__(self, chunk_size):
-        chunk_size = int(chunk_size)
-        bugs_to_index = list(self._to_process()[:chunk_size])
-        bugs = IMasterStore(Bug).find(Bug, Bug.id.is_in(bugs_to_index))
-        for bug in bugs:
-            bug.reindexMessages()
-        transaction.commit()
-        self.log.debug("Indexed %d bugs" % len(bugs_to_index))
-
-
 class BugNotificationPruner(TunableLoop):
     """Prune `BugNotificationRecipient` records no longer of interest.
 
@@ -897,7 +871,6 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         RevisionCachePruner,
         BugHeatUpdater,
         BugWatchScheduler,
-        BugMessageIndexer,
         ]
     experimental_tunable_loops = []
 

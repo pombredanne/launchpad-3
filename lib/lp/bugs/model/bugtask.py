@@ -15,6 +15,7 @@ __all__ = [
     'BugTaskSet',
     'NullBugTask',
     'bugtask_sort_key',
+    'determine_target',
     'get_bug_privacy_filter',
     'get_related_bugtasks_search_params',
     'search_value_to_where_condition',
@@ -36,6 +37,7 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
     Alias,
     And,
+    Count,
     Desc,
     In,
     Join,
@@ -146,7 +148,6 @@ from lp.registry.interfaces.distroseries import (
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from lp.registry.interfaces.person import (
     IPerson,
-    IPersonSet,
     validate_person,
     validate_public_person,
     )
@@ -268,6 +269,29 @@ def get_related_bugtasks_search_params(user, context, **kwargs):
     return search_params
 
 
+def determine_target(product, productseries, distribution, distroseries,
+                     sourcepackagename):
+    """Returns the IBugTarget defined by the given arguments."""
+    if product:
+        return product
+    elif productseries:
+        return productseries
+    elif distribution:
+        if sourcepackagename:
+            return distribution.getSourcePackage(
+                sourcepackagename)
+        else:
+            return distribution
+    elif distroseries:
+        if sourcepackagename:
+            return distroseries.getSourcePackage(
+                sourcepackagename)
+        else:
+            return distroseries
+    else:
+        raise AssertionError("Unable to determine bugtask target.")
+
+
 class BugTaskDelta:
     """See `IBugTaskDelta`."""
 
@@ -313,24 +337,9 @@ class BugTaskMixin:
         # We explicitly reference attributes here (rather than, say,
         # IDistroBugTask.providedBy(self)), because we can't assume this
         # task has yet been marked with the correct interface.
-        if self.product:
-            return self.product
-        elif self.productseries:
-            return self.productseries
-        elif self.distribution:
-            if self.sourcepackagename:
-                return self.distribution.getSourcePackage(
-                    self.sourcepackagename)
-            else:
-                return self.distribution
-        elif self.distroseries:
-            if self.sourcepackagename:
-                return self.distroseries.getSourcePackage(
-                    self.sourcepackagename)
-            else:
-                return self.distroseries
-        else:
-            raise AssertionError("Unable to determine bugtask target.")
+        return determine_target(
+            self.product, self.productseries, self.distribution,
+            self.distroseries, self.sourcepackagename)
 
     @property
     def related_tasks(self):
@@ -1503,6 +1512,14 @@ class BugTaskSet:
 
     title = "A set of bug tasks"
 
+    @property
+    def open_bugtask_search(self):
+        """See `IBugTaskSet`."""
+        return BugTaskSearchParams(
+            user=getUtility(ILaunchBag).user,
+            status=any(*UNRESOLVED_BUGTASK_STATUSES),
+            omit_dupes=True)
+
     def get(self, task_id):
         """See `IBugTaskSet`."""
         # XXX: JSK: 2007-12-19: This method should probably return
@@ -1729,7 +1746,11 @@ class BugTaskSet:
         :return: A query, the tables to query, ordering expression and a
             decorator to call on each returned row.
         """
-        assert isinstance(params, BugTaskSearchParams)
+        assert zope_isinstance(params, BugTaskSearchParams)
+        if not isinstance(params, BugTaskSearchParams):
+            # Browser code let this get wrapped, unwrap it here as its just a
+            # dumb data store that has no security implications.
+            params = removeSecurityProxy(params)
         from lp.bugs.model.bug import Bug
         extra_clauses = ['Bug.id = BugTask.bug']
         clauseTables = [BugTask, Bug]
@@ -2478,6 +2499,18 @@ class BugTaskSet:
         """See `IBugTaskSet`."""
         return self._search(BugTask.bugID, [], None, params).result_set
 
+    def countBugs(self, params, group_on):
+        """See `IBugTaskSet`."""
+        resultset = self._search(
+            group_on + (SQL("COUNT(Distinct BugTask.bug)"),), [], None, params).result_set
+        # We group on the related field:
+        resultset.group_by(*group_on)
+        resultset.order_by()
+        result = {}
+        for row in resultset:
+            result[row[:-1]] = row[-1]
+        return result
+
     def getPrecachedNonConjoinedBugTasks(self, user, milestone):
         """See `IBugTaskSet`."""
         params = BugTaskSearchParams(
@@ -2923,10 +2956,6 @@ class BugTaskSet:
                 orderby_arg.append(BugTask.id)
 
         return tuple(orderby_arg)
-
-    def dangerousGetAllTasks(self):
-        """DO NOT USE THIS METHOD. For details, see `IBugTaskSet`"""
-        return BugTask.select(orderBy='id')
 
     def getBugCountsForPackages(self, user, packages):
         """See `IBugTaskSet`."""

@@ -264,6 +264,27 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
             has_upstream_template(
                 distroseries, sourcepackagename, different_templatename))
 
+    def test_has_upstream_template_any_template(self):
+        # There is one template on the upstream project, not specifying
+        # a template name still indicates that there is a template.
+        distroseries, sourcepackagename = self._makeSourcePackage()
+        productseries = self._makeUpstreamProductSeries(
+            distroseries, sourcepackagename)
+        self.factory.makePOTemplate(
+            productseries=productseries)
+
+        self.assertTrue(
+            has_upstream_template(distroseries, sourcepackagename))
+
+    def test_has_upstream_template_any_template_none(self):
+        # There is no template on the upstream project.
+        distroseries, sourcepackagename = self._makeSourcePackage()
+        productseries = self._makeUpstreamProductSeries(
+            distroseries, sourcepackagename)
+
+        self.assertFalse(
+            has_upstream_template(distroseries, sourcepackagename))
+
     def test_has_ubuntu_template_no_sourcepackage(self):
         # There is no Ubuntu source package, so no Ubuntu template can be
         # found.
@@ -308,3 +329,22 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
 
         self.assertFalse(
             has_ubuntu_template(productseries, different_templatename))
+
+    def test_has_ubuntu_template_any_template(self):
+        # There is one template on the Ubuntu source package, not specifying
+        # a template name still indicates that there is a template.
+        distroseries, sourcepackagename = self._makeSourcePackage()
+        productseries = self._makeUpstreamProductSeries(
+            distroseries, sourcepackagename)
+        self.factory.makePOTemplate(
+            distroseries=distroseries, sourcepackagename=sourcepackagename)
+
+        self.assertTrue(has_ubuntu_template(productseries))
+
+    def test_has_ubuntu_template_any_template_none(self):
+        # There is no template on the Ubuntu source package.
+        distroseries, sourcepackagename = self._makeSourcePackage()
+        productseries = self._makeUpstreamProductSeries(
+            distroseries, sourcepackagename)
+
+        self.assertFalse(has_ubuntu_template(productseries))
