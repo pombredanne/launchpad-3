@@ -283,17 +283,19 @@ class SourcePackageRecipe(Storm):
 
     def getBuilds(self):
         """See `ISourcePackageRecipe`."""
-        order_by = Desc(Greatest(
-                BuildFarmJob.date_started,
-                BuildFarmJob.date_finished)), Desc(BuildFarmJob.id)
+        order_by = (Desc(Greatest(
+                            BuildFarmJob.date_started,
+                            BuildFarmJob.date_finished)),
+                   Desc(BuildFarmJob.date_created), Desc(BuildFarmJob.id))
         return self._getBuilds(None, order_by)
 
     def getCompletedBuilds(self):
         """See `ISourcePackageRecipe`."""
         filter_term = BuildFarmJob.status != BuildStatus.NEEDSBUILD
-        order_by = Desc(Greatest(
-                BuildFarmJob.date_started,
-                BuildFarmJob.date_finished)), Desc(BuildFarmJob.id)
+        order_by = (Desc(Greatest(
+                            BuildFarmJob.date_started,
+                            BuildFarmJob.date_finished)),
+                   Desc(BuildFarmJob.id))
         return self._getBuilds(filter_term, order_by)
 
     def getPendingBuilds(self):

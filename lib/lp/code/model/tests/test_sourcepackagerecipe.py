@@ -581,14 +581,19 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             timedelta(minutes=11), recipe.getMedianBuildDuration())
 
     def test_getBuilds(self):
-        # Builds that need building are pending.
+        # Test the various getBuilds methods.
         recipe = self.factory.makeSourcePackageRecipe()
         builds = [
                 self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
                 for x in range(3)]
+        # We want the latest builds first.
+        builds.reverse()
+
         self.assertEqual([], list(recipe.getCompletedBuilds()))
         self.assertEqual(builds, list(recipe.getPendingBuilds()))
         self.assertEqual(builds, list(recipe.getBuilds()))
+
+        # Change the status of one of the builds and retest.
         removeSecurityProxy(builds[0]).status = BuildStatus.FULLYBUILT
         self.assertEqual([builds[0]], list(recipe.getCompletedBuilds()))
         self.assertEqual(builds[1:], list(recipe.getPendingBuilds()))
