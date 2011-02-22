@@ -1250,12 +1250,13 @@ class BugTaskSearchParams:
             elif not distroseries.query_values and distributions.query_values:
                 self.distributions = distributions
             else:
-                # Either we have both distroseries and distributions or
-                # neither of them: set both, which will give us the
-                # cross product due to the search of source packages
-                # being sourcepackagename specific rather than actually
-                # context specific. This is not ideal but is tolerable
-                # given no actual use of mixed type any() exists today.
+                # At this point we have determined that either we have both
+                # distroseries and distributions, or we have neither of them.
+                # We will set both.  Doing so will give us the cross-product,
+                # because searching source packages is
+                # sourcepackagename-specific rather than actually
+                # context-specific. This is not ideal but is tolerable given
+                # no actual use of mixed-type any() exists today.
                 self.distroseries = distroseries
                 self.distributions = distributions
             return
