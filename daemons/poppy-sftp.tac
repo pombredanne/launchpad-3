@@ -76,7 +76,7 @@ components.registerAdapter(DoNothingSession, LaunchpadAvatar, ISession)
 
 
 # ftpport defaults to 2121 in schema-lazr.conf
-ftpservice = FTPServiceFactory.makeFTPService(port=config.poppy.ftpport)
+ftpservice = FTPServiceFactory.makeFTPService(port=config.poppy.ftp_port)
 
 # Construct an Application that has the Poppy SSH server,
 # and the Poppy FTP server.
