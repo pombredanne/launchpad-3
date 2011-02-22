@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import os
 import shutil
+import stat
 import StringIO
 import tempfile
 import time
@@ -258,11 +259,11 @@ class TestPoppy(TestCaseWithFactory):
         wanted_path = self._uploadPath('foo/bar/baz')
         fs_content = open(os.path.join(wanted_path)).read()
         self.assertEqual(fs_content, "fake contents")
-        # This is a magic and very opaque number.  It corresponds to
-        # the following stat.S_* masks:
-        # S_IROTH, S_ISGID, S_IRGRP, S_IWGRP, S_IWUSR, S_IWUSR
-        # which in readable terms is: -rw-rwSr--
-        self.assertEqual(os.stat(wanted_path).st_mode, 0102664)
+        # Expected mode is -rw-rwSr--.
+        self.assertEqual(
+            os.stat(wanted_path).st_mode,
+            stat.S_IROTH | stat.S_ISGID | stat.S_IRGRP | stat.S_IWGRP
+            | stat.S_IWUSR | stat.S_IRUSR | stat.S_IFREG )
 
     def test_full_source_upload(self):
         """Check that the connection will deal with multiple files being
@@ -297,11 +298,11 @@ class TestPoppy(TestCaseWithFactory):
                 "~ppa-user/ppa/ubuntu/%s" % upload)
             fs_content = open(os.path.join(wanted_path)).read()
             self.assertEqual(fs_content, upload)
-            # This is a magic and very opaque number.  It corresponds to
-            # the following stat.S_* masks:
-            # S_IROTH, S_ISGID, S_IRGRP, S_IWGRP, S_IWUSR, S_IWUSR
-            # which in readable terms is: -rw-rwSr--
-            self.assertEqual(os.stat(wanted_path).st_mode, 0102664)
+            # Expected mode is -rw-rwSr--.
+            self.assertEqual(
+                os.stat(wanted_path).st_mode,
+                stat.S_IROTH | stat.S_ISGID | stat.S_IRGRP | stat.S_IWGRP
+                | stat.S_IWUSR | stat.S_IRUSR | stat.S_IFREG )
 
     def test_upload_isolation(self):
         """Check if poppy isolates the uploads properly.
