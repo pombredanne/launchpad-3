@@ -245,7 +245,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
             Make some food!
 
             Recipe information
-            Build schedule: Tag help Built daily
+            Build schedule: Tag help Built daily Build now
             Owner: Master Chef Edit
             Base branch: lp://dev/~chef/ratatouille/veggies
             Debian version: {debupstream}-0~{revno}
