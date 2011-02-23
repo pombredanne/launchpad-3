@@ -381,7 +381,7 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
                 else:
                     new_error = ("An identical build is "
                                 "already pending for %s." % e.distroseries)
-                errors["distros"] =  new_error
+                errors["distros"] = new_error
         return builds, errors
 
 
@@ -707,7 +707,7 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
     def initialize(self):
         super(SourcePackageRecipeAddView, self).initialize()
         if getFeatureFlag(RECIPE_BETA_FLAG):
-           self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
+            self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
         widget = self.widgets['use_ppa']
         current_value = widget._getFormValue()
         self.use_ppa_existing = render_radio_widget_part(
@@ -739,8 +739,8 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
         # Grab the last path element of the branch target path.
         source = getUtility(ISourcePackageRecipeSource)
         for recipe_name in self._recipe_names():
-             if not source.exists(owner, recipe_name):
-                 return recipe_name
+            if not source.exists(owner, recipe_name):
+                return recipe_name
 
     @property
     def initial_values(self):
@@ -748,7 +748,7 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
         series = [series for series in distroseries if series.status in (
                 SeriesStatus.CURRENT, SeriesStatus.DEVELOPMENT)]
         return {
-            'name' : self._find_unused_name(self.user),
+            'name': self._find_unused_name(self.user),
             'recipe_text': MINIMAL_RECIPE_TEXT % self.context.bzr_identity,
             'owner': self.user,
             'distros': series,
