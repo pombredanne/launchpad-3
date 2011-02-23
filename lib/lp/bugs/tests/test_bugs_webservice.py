@@ -9,6 +9,7 @@ import re
 
 from BeautifulSoup import BeautifulSoup
 from lazr.lifecycle.interfaces import IDoNotSnapshot
+from lazr.restfulclient.errors import HTTPError
 from simplejson import dumps
 from storm.store import Store
 from testtools.matchers import (
@@ -31,7 +32,10 @@ from canonical.testing.layers import (
     )
 from lp.bugs.browser.bugtask import get_comments_for_bugtask
 from lp.bugs.interfaces.bug import IBug
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    launchpadlib_for,
+    TestCaseWithFactory,
+    )
 from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import (
     ADMIN_EMAIL,
@@ -40,8 +44,36 @@ from lp.testing.sampledata import (
 from lp.testing._webservice import QueryCollector
 
 
+class TestBugConstraints(TestCaseWithFactory):
+    """Test constrainsts on bug inputs over the API."""
+    
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugConstraints, self).setUp()
+        product = self.factory.makeProduct(name='foo') 
+        bug = self.factory.makeBug(product=product)
+        lp = launchpadlib_for('testing', product.owner) 
+        self.bug = lp.bugs[bug.id]
+
+
+    def _update_bug(self, nick):
+        self.bug.name = nick
+        self.bug.lp_save()
+
+    def test_numeric_nicknames_fail(self):
+        self.assertRaises(
+            HTTPError,
+            self._update_bug,
+            '1.1')
+
+    def test_non_numeric_nicknames_pass(self):
+        self._update_bug('bunny')
+        self.assertEqual('bunny', self.bug.name)
+
 class TestBugDescriptionRepresentation(TestCaseWithFactory):
     """Test ways of interacting with Bug webservice representations."""
+
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
