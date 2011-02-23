@@ -18,6 +18,7 @@ __all__ = [
     'UnknownBugTrackerTypeError',
     'UnknownRemoteImportanceError',
     'UnknownRemoteStatusError',
+    'UnknownRemoteValueError',
     'UnparsableBugData',
     'UnparsableBugTrackerVersion',
     'UnsupportedBugTrackerVersion',
@@ -122,12 +123,18 @@ class BugNotFound(BugWatchUpdateWarning):
     """The bug was not found in the external bug tracker."""
 
 
-class UnknownRemoteImportanceError(BugWatchUpdateWarning):
+class UnknownRemoteValueError(BugWatchUpdateWarning):
+    """A matching Launchpad value could not be found for the remote value."""
+
+
+class UnknownRemoteImportanceError(UnknownRemoteValueError):
     """The remote bug's importance isn't mapped to a `BugTaskImportance`."""
+    field_name = 'importance'
 
 
-class UnknownRemoteStatusError(BugWatchUpdateWarning):
+class UnknownRemoteStatusError(UnknownRemoteValueError):
     """The remote bug's status isn't mapped to a `BugTaskStatus`."""
+    field_name = 'status'
 
 
 class PrivateRemoteBug(BugWatchUpdateWarning):
