@@ -61,7 +61,7 @@ class FTPServer(Fixture):
         transport._get_connection().close()
 
     def waitForStartUp(self):
-        """Wait for the FT Pserve start up."""
+        """Wait for the FTP server to start up."""
         pass
 
     def waitForClose(self, number=1):
