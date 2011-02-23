@@ -707,7 +707,7 @@ class IBug(IPrivacy, IHasLinkedBranches):
 
     def getMessagesForView(slice_info):
         """Return BugMessage,Message,MessageChunks for renderinger.
-        
+
         This eager loads message.owner validity associated with the
         bugmessages.
 

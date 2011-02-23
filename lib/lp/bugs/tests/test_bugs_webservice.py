@@ -15,7 +15,6 @@ from storm.store import Store
 from testtools.matchers import (
     Equals,
     LessThan,
-    MatchesAny,
     )
 from zope.component import getMultiAdapter
 
@@ -46,16 +45,15 @@ from lp.testing._webservice import QueryCollector
 
 class TestBugConstraints(TestCaseWithFactory):
     """Test constrainsts on bug inputs over the API."""
-    
+
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestBugConstraints, self).setUp()
-        product = self.factory.makeProduct(name='foo') 
+        product = self.factory.makeProduct(name='foo')
         bug = self.factory.makeBug(product=product)
-        lp = launchpadlib_for('testing', product.owner) 
+        lp = launchpadlib_for('testing', product.owner)
         self.bug = lp.bugs[bug.id]
-
 
     def _update_bug(self, nick):
         self.bug.name = nick
@@ -70,6 +68,7 @@ class TestBugConstraints(TestCaseWithFactory):
     def test_non_numeric_nicknames_pass(self):
         self._update_bug('bunny')
         self.assertEqual('bunny', self.bug.name)
+
 
 class TestBugDescriptionRepresentation(TestCaseWithFactory):
     """Test ways of interacting with Bug webservice representations."""
