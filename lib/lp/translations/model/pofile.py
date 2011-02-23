@@ -844,15 +844,19 @@ class POFile(SQLBase, POFileMixIn):
 
         side_traits = getUtility(ITranslationSideTraitsSet).getForTemplate(
             self.potemplate)
+        complete_plural_clause_this_side = ' AND '.join(
+            self._appendCompletePluralFormsConditions(
+                [], table_name='Current'))
+        complete_plural_clause_other_side = ' AND '.join(
+            self._appendCompletePluralFormsConditions(
+                [], table_name='Other'))
         params = {
             'potemplate': quote(self.potemplate),
             'language': quote(self.language),
             'flag': side_traits.flag_name,
             'other_flag': side_traits.other_side_traits.flag_name,
-            'has_msgstrs':
-                compose_sql_translationmessage_has_translations("Current"),
-            'has_other_msgstrs':
-                compose_sql_translationmessage_has_translations("Other"),
+            'has_msgstrs': complete_plural_clause_this_side,
+            'has_other_msgstrs': complete_plural_clause_other_side,
         }
         # The "distinct on" combined with the "order by potemplate nulls
         # last" makes diverged messages mask their shared equivalents.
@@ -864,6 +868,7 @@ class POFile(SQLBase, POFileMixIn):
                     %(has_other_msgstrs)s AS has_other_msgstrs,
                     (Other.id = Current.id) AS same_on_both_sides
                 FROM TranslationTemplateItem AS TTI
+                JOIN POTMsgSet ON POTMsgSet.id = TTI.potmsgset
                 JOIN TranslationMessage AS Current ON
                     Current.potmsgset = TTI.potmsgset AND
                     Current.language = %(language)s AND

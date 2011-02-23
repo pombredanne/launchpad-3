@@ -1848,6 +1848,35 @@ class TestPOFileStatistics(TestCaseWithFactory):
         self.assertEqual(0, self.pofile.newCount())
         self.assertEqual(0, self.pofile.updatesCount())
 
+    def test_partial_translations_count_as_untranslated(self):
+        # A translation requiring plural forms is considered to be
+        # untranslated if at least one plural translation required
+        # for the given language is missing.
+        plural_potmsgset = self.factory.makePOTMsgSet(
+            self.potemplate, singular='singular-en', plural='plural-en')
+        self.factory.makeCurrentTranslationMessage(
+            pofile=self.pofile, potmsgset=plural_potmsgset,
+            translations=['sr-singular', 'sr-plural-1'])
+        self.pofile.updateStatistics()
+        self.assertEqual(0, self.pofile.translatedCount())
+        self.assertEqual(2, self.pofile.untranslatedCount())
+        self.assertEqual(0, self.pofile.newCount())
+        self.assertEqual(0, self.pofile.updatesCount())
+
+    def test_complete_translations_count_as_translated(self):
+        # A translation requiring plural forms is considered to be
+        # translated if all variants are translated.
+        plural_potmsgset = self.factory.makePOTMsgSet(
+            self.potemplate, singular='singular-en', plural='plural-en')
+        self.factory.makeCurrentTranslationMessage(
+            pofile=self.pofile, potmsgset=plural_potmsgset,
+            translations=['sr-singular', 'sr-plural-1', 'sr-plural-2'])
+        self.pofile.updateStatistics()
+        self.assertEqual(1, self.pofile.translatedCount())
+        self.assertEqual(1, self.pofile.untranslatedCount())
+        self.assertEqual(1, self.pofile.newCount())
+        self.assertEqual(0, self.pofile.updatesCount())
+
     def test_empty_messages_on_this_side_count_as_untranslated(self):
         # A POTMsgSet whose current TranslationMessage on this side is
         # empty is counted only as untranslated, regardless of any
@@ -1860,6 +1889,25 @@ class TestPOFileStatistics(TestCaseWithFactory):
         self.pofile.updateStatistics()
         self.assertEqual(0, self.pofile.translatedCount())
         self.assertEqual(1, self.pofile.untranslatedCount())
+        self.assertEqual(0, self.pofile.newCount())
+        self.assertEqual(0, self.pofile.updatesCount())
+
+    def test_partial_messages_on_this_side_count_as_untranslated(self):
+        # A POTMsgSet whose current TranslationMessage on this side is
+        # partially translated is considered to be untranslated, regardless
+        # of any translations it may have on the other side.
+        plural_potmsgset = self.factory.makePOTMsgSet(
+            self.potemplate, singular='singular-en', plural='plural-en')
+        self.factory.makeCurrentTranslationMessage(
+            pofile=self.pofile, potmsgset=plural_potmsgset,
+            translations=['sr-singular', 'sr-plural-1'])
+        other_message = self.factory.makeSuggestion(
+            pofile=self.pofile, potmsgset=plural_potmsgset,
+            translations=['sr-ubuntu', 'sr-ubuntu-2', 'sr-ubuntu-3'])
+        other_message.is_current_ubuntu = True
+        self.pofile.updateStatistics()
+        self.assertEqual(0, self.pofile.translatedCount())
+        self.assertEqual(2, self.pofile.untranslatedCount())
         self.assertEqual(0, self.pofile.newCount())
         self.assertEqual(0, self.pofile.updatesCount())
 
@@ -1882,6 +1930,29 @@ class TestPOFileStatistics(TestCaseWithFactory):
         self.assertEqual(0, self.pofile.updatesCount())
         self.assertEqual(0, self.pofile.currentCount())
 
+    def test_partial_messages_on_other_side_count_as_untranslated(self):
+        # A POTMsgSet that's translated on this side and has a different
+        # partial translation on the other side counts as translated on
+        # this side, but not equal between both sides (currentCount) or
+        # translated differently between the two sides (updatesCount).
+        # Instead, it's counted as translated on this side but not on
+        # the other (newCount).
+        plural_potmsgset = self.factory.makePOTMsgSet(
+            self.potemplate, singular='singular-en', plural='plural-en')
+        self.factory.makeCurrentTranslationMessage(
+            pofile=self.pofile, potmsgset=plural_potmsgset,
+            translations=['sr-singular', 'sr-plural1', 'sr-plural2'])
+        other_message = self.factory.makeSuggestion(
+            pofile=self.pofile, potmsgset=plural_potmsgset,
+            translations=['sr-ubuntu'])
+        other_message.is_current_ubuntu = True
+        self.pofile.updateStatistics()
+        self.assertEqual(1, self.pofile.translatedCount())
+        self.assertEqual(1, self.pofile.untranslatedCount())
+        self.assertEqual(1, self.pofile.newCount())
+        self.assertEqual(0, self.pofile.updatesCount())
+        self.assertEqual(0, self.pofile.currentCount())
+
     def test_tracking_empty_messages_count_as_untranslated(self):
         # An empty TranslationMessage that's current on both sides
         # counts as untranslated.
@@ -1891,6 +1962,21 @@ class TestPOFileStatistics(TestCaseWithFactory):
         self.pofile.updateStatistics()
         self.assertEqual(0, self.pofile.translatedCount())
         self.assertEqual(1, self.pofile.untranslatedCount())
+        self.assertEqual(0, self.pofile.newCount())
+        self.assertEqual(0, self.pofile.updatesCount())
+        self.assertEqual(0, self.pofile.currentCount())
+
+    def test_tracking_partial_translations_count_as_untranslated(self):
+        # A partial Translations that's current on both sides
+        # counts as untranslated.
+        plural_potmsgset = self.factory.makePOTMsgSet(
+            self.potemplate, singular='singular-en', plural='plural-en')
+        self.factory.makeCurrentTranslationMessage(
+            pofile=self.pofile, potmsgset=plural_potmsgset,
+            translations=['sr-singular', 'sr-plural1'], current_other=True)
+        self.pofile.updateStatistics()
+        self.assertEqual(0, self.pofile.translatedCount())
+        self.assertEqual(2, self.pofile.untranslatedCount())
         self.assertEqual(0, self.pofile.newCount())
         self.assertEqual(0, self.pofile.updatesCount())
         self.assertEqual(0, self.pofile.currentCount())
