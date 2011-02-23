@@ -48,9 +48,6 @@ class RemoteBugUpdaterTestCase(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def setUp(self):
-        super(RemoteBugUpdaterTestCase, self).setUp()
-
     def makeUpdater(self, remote_system=None, remote_bug_id=None,
                     bug_watch_ids=None, unmodified_remote_ids=None,
                     logger=None):
