@@ -166,6 +166,9 @@ class TestBulkPruner(TestCase):
         self.assertEqual(
             store.find(IrcID, IrcID.id >= 5).count(), num_to_leave)
 
+        # Cleanup clears up our resources.
+        pruner.cleanUp()
+
         # We can run it again - temporary objects cleaned up.
         pruner = IrcIDPruner(log)
         while not pruner.isDone():

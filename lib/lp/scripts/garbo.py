@@ -125,10 +125,6 @@ class BulkPruner(TunableLoop):
         self.store = IMasterStore(self.target_table_class)
         self.target_table_name = self.target_table_class.__storm_table__
 
-        # Close all open cursors, in case a previous BulkPruner run was
-        # aborted.
-        self.store.execute("CLOSE ALL", noresult=True)
-
         # Open the cursor.
         self.store.execute(
             "DECLARE bulkprunerid NO SCROLL CURSOR WITH HOLD FOR %s"
@@ -137,10 +133,11 @@ class BulkPruner(TunableLoop):
     _num_removed = None
 
     def isDone(self):
-        """See `TunableLoop`."""
+        """See `ITunableLoop`."""
         return self._num_removed == 0
 
     def __call__(self, chunk_size):
+        """See `ITunableLoop`."""
         result = self.store.execute("""
             DELETE FROM %s WHERE %s IN (
                 SELECT id FROM
@@ -149,6 +146,10 @@ class BulkPruner(TunableLoop):
             % (self.target_table_name, self.target_table_key, chunk_size))
         self._num_removed = result.rowcount
         transaction.commit()
+
+    def cleanUp(self):
+        """See `ITunableLoop`."""
+        self.store.execute("CLOSE bulkprunerid")
 
 
 class POTranslationPruner(BulkPruner):
