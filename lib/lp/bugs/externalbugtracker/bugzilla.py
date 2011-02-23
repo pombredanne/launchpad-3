@@ -279,7 +279,7 @@ class Bugzilla(ExternalBugTracker):
                 ('OBSOLETE', 'INSUFFICIENT_DATA', 'INCOMPLETE', 'EXPIRED',
                  BugTaskStatus.EXPIRED),
                 ('INVALID', 'WORKSFORME', 'NOTABUG', 'CANTFIX',
-                 'UNREPRODUCIBLE',
+                 'UNREPRODUCIBLE', 'DUPLICATE',
                  BugTaskStatus.INVALID),
                 (BugTaskStatus.UNKNOWN,))),
         ('REOPENED', 'NEW', 'UPSTREAM', 'DEFERRED',
