@@ -170,6 +170,13 @@
         <h2>Recipe contents</h2>
         <tal:widget replace="structure view/recipe_text_widget"/>
       </div>
+
+      <script type="text/javascript">
+        LPS.use('lp.code.sourcepackagerecipe.index', function(Y) {
+          Y.on('domready', Y.lp.code.sourcepackagerecipe.index.setup);
+        });
+      </script>
+
     </div>
   </div>
 </body>
