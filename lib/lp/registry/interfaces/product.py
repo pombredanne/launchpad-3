@@ -77,8 +77,8 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasLogo,
     IHasMugshot,
     )
-from lp.services.validators import LaunchpadValidationError
-from lp.services.validators.name import name_validator
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.name import name_validator
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import (

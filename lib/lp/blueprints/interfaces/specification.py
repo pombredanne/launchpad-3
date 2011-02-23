@@ -46,7 +46,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.validation import valid_webref
-from lp.services.validators import LaunchpadValidationError
+from lp.app.validators import LaunchpadValidationError
 from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationGoalStatus,

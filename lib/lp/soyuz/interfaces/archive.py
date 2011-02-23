@@ -84,7 +84,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IPrivacy
-from lp.services.validators.name import name_validator
+from lp.app.validators.name import name_validator
 from lp.app.errors import NameLookupFailed
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.person import IPerson

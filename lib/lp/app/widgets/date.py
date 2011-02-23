@@ -32,7 +32,7 @@ from zope.component import getUtility
 from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.services.validators import LaunchpadValidationError
+from lp.app.validators import LaunchpadValidationError
 
 
 class DateTimeWidget(TextWidget):

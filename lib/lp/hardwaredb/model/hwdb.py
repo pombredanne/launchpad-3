@@ -65,7 +65,7 @@ from canonical.database.sqlbase import (
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.services.validators.name import valid_name
+from lp.app.validators.name import valid_name
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,

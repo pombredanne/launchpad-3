@@ -24,7 +24,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.validators import LaunchpadValidationError
+from lp.app.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interaction import setupInteractionForPerson

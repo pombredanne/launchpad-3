@@ -24,7 +24,7 @@ from zope.schema.vocabulary import (
     )
 
 from canonical.launchpad import _
-from lp.services.validators.name import valid_name
+from lp.app.validators.name import valid_name
 from canonical.launchpad.webapp import canonical_url
 from lp.app.browser.launchpadform import (
     action,

@@ -25,7 +25,7 @@ from zope.schema.vocabulary import (
     )
 
 from canonical.database.constants import UTC_NOW
-from lp.services.validators.name import valid_name
+from lp.app.validators.name import valid_name
 from canonical.launchpad.webapp import (
     canonical_url,
     GetitemNavigation,

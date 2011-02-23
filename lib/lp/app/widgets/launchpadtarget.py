@@ -24,7 +24,7 @@ from zope.interface import implements
 from zope.schema import Choice
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.services.validators import LaunchpadValidationError
+from lp.app.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
     IAlwaysSubmittedWidget,
     IMultiLineWidgetLayout,

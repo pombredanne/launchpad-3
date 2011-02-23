@@ -30,7 +30,7 @@ import tempfile
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.scripts import log
-from lp.services.validators.version import valid_debian_version
+from lp.app.validators.version import valid_debian_version
 from lp.archivepublisher.diskpool import poolify
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.utils import (

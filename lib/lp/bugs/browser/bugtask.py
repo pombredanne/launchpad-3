@@ -144,7 +144,7 @@ from canonical.launchpad.searchbuilder import (
     any,
     NULL,
     )
-from lp.services.validators import LaunchpadValidationError
+from lp.app.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
     canonical_url,
     enabled_with_permission,

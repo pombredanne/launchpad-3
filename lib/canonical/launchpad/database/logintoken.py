@@ -43,7 +43,7 @@ from canonical.launchpad.mail import (
     format_address,
     simple_sendmail,
     )
-from lp.services.validators.email import valid_email
+from lp.app.validators.email import valid_email
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,

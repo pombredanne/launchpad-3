@@ -45,7 +45,7 @@ from canonical.launchpad.testing.systemdocs import (
     setUp as sd_setUp,
     tearDown as sd_tearDown,
     )
-from lp.services.validators import LaunchpadValidationError
+from lp.app.validators import LaunchpadValidationError
 from lp.app import versioninfo
 from lp.app.versioninfo import revno
 from canonical.launchpad.webapp import (

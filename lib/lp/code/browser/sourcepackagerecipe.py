@@ -52,7 +52,7 @@ from zope.schema.vocabulary import (
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad.browser.launchpad import Hierarchy
-from lp.services.validators.name import name_validator
+from lp.app.validators.name import name_validator
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,
