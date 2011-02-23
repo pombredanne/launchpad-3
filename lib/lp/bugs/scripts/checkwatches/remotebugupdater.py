@@ -148,8 +148,16 @@ class RemoteBugUpdater(WorkingBase):
                 new_malone_importance = self._convertRemoteImportance(
                     new_remote_importance)
             except (InvalidBugId, BugNotFound, PrivateRemoteBug), ex:
-                # Set the error and activity on all bug watches
                 error = get_bugwatcherrortype_for_error(ex)
+                message = self.error_type_messages.get(
+                    error, self.error_type_message_default)
+                self.logger.info(
+                    message % {
+                        'bug_id': self.remote_bug,
+                        'base_url': self.external_bugtracker.baseurl,
+                        'local_ids': local_ids,
+                        })
+                # Set the error and activity on all bug watches
                 with self.transaction:
                     getUtility(IBugWatchSet).bulkSetError(
                         bug_watches, error)
