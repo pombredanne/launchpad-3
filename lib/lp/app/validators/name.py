@@ -81,7 +81,7 @@ def name_validator(name):
     return True
 
 
-def name_validator(name):
+def bug_name_validator(name):
     """Return True if the name is valid, or raise a
     LaunchpadValidationError.
     """
