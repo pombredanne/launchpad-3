@@ -228,6 +228,8 @@ class Bugzilla(ExternalBugTracker):
         'critical': BugTaskImportance.CRITICAL,
         'immediate': BugTaskImportance.CRITICAL,
         'urgent': BugTaskImportance.CRITICAL,
+        'crash': BugTaskImportance.HIGH,
+        'grave': BugTaskImportance.HIGH,
         'major': BugTaskImportance.HIGH,
         'high': BugTaskImportance.HIGH,
         'normal': BugTaskImportance.MEDIUM,
@@ -236,6 +238,7 @@ class Bugzilla(ExternalBugTracker):
         'low': BugTaskImportance.LOW,
         'trivial': BugTaskImportance.LOW,
         'enhancement': BugTaskImportance.WISHLIST,
+        'wishlist': BugTaskImportance.WISHLIST,
         }
 
     def convertRemoteImportance(self, remote_importance):
