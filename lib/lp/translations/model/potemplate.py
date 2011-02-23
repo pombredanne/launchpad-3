@@ -1023,7 +1023,7 @@ class POTemplate(SQLBase, RosettaStats):
     @property
     def translation_side(self):
         """See `IPOTemplate`."""
-        if self.productseries is not None:
+        if self.productseriesID is not None:
             return TranslationSide.UPSTREAM
         else:
             return TranslationSide.UBUNTU
@@ -1155,8 +1155,7 @@ class POTemplateSubset:
             if shared_template is template:
                 continue
             for pofile in shared_template.pofiles:
-                template.newPOFile(
-                    pofile.language.code, False)
+                template.newPOFile(pofile.language.code, create_sharing=False)
             # Do not continue, else it would trigger an existingpo assertion.
             return
 

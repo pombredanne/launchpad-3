@@ -1251,12 +1251,13 @@ class BugTaskSearchParams:
             elif not distroseries.query_values and distributions.query_values:
                 self.distributions = distributions
             else:
-                # Either we have both distroseries and distributions or neither
-                # of them: set both, which will give us the cross product
-                # due to the search of source packages being sourcepackagename
-                # specific rather than actually context specific. This is not
-                # ideal but is tolerable given no actual use of mixed type
-                # any() exists today.
+                # At this point we have determined that either we have both
+                # distroseries and distributions, or we have neither of them.
+                # We will set both.  Doing so will give us the cross-product,
+                # because searching source packages is
+                # sourcepackagename-specific rather than actually
+                # context-specific. This is not ideal but is tolerable given
+                # no actual use of mixed-type any() exists today.
                 self.distroseries = distroseries
                 self.distributions = distributions
             return
@@ -1275,9 +1276,10 @@ class BugTaskSearchParams:
         does not need to be known to the caller.
 
         :param target: A `IHasBug`, or some search term like all/any/none on
-            `IHasBug`. If using all/any all the targets must be of the same
-            type due to implementation limitations. Currently only distroseries
-            and productseries `IHasBug` implementations are supported.
+            `IHasBug`. If using all/any all the targets must be of the
+            same type due to implementation limitations. Currently only
+            distroseries and productseries `IHasBug` implementations are
+            supported.
         """
         # Yay circular deps.
         from lp.registry.interfaces.distroseries import IDistroSeries
@@ -1493,8 +1495,8 @@ class IBugTaskSet(Interface):
 
         :param param: A BugTaskSearchParams object.
         :param group_on: The column(s) group on - .e.g (
-            Bugtask.distroseriesID, BugTask.milestoneID) will cause grouping by
-            distro series and then milestone.
+            Bugtask.distroseriesID, BugTask.milestoneID) will cause
+            grouping by distro series and then milestone.
         :return: A dict {group_instance: count, ...}
         """
 
@@ -1594,6 +1596,12 @@ class IBugTaskSet(Interface):
 
     def getOpenBugTasksPerProduct(user, products):
         """Return open bugtask count for multiple products."""
+
+    def getAllStructuralSubscriptions(bugtasks):
+        """Return all potential structural subscriptions for the bugtasks.
+
+        This method ignores subscription filters.
+        """
 
     def getStructuralSubscribers(bugtasks, recipients=None, level=None):
         """Return `IPerson`s subscribed to the given bug tasks.

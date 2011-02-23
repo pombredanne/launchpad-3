@@ -70,6 +70,7 @@ from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.model.distroseries import DistroSeries
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.stormexpr import Greatest
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.model.archive import Archive
@@ -244,7 +245,8 @@ class SourcePackageRecipe(Storm):
         return SourcePackageRecipeBuild.getRecentBuilds(
             requester, self, distroseries).count() >= 5
 
-    def requestBuild(self, archive, requester, distroseries, pocket,
+    def requestBuild(self, archive, requester, distroseries,
+                     pocket=PackagePublishingPocket.RELEASE,
                      manual=False):
         """See `ISourcePackageRecipe`."""
         if not archive.is_ppa:
@@ -278,6 +280,20 @@ class SourcePackageRecipe(Storm):
         if manual:
             queue_record.manualScore(queue_record.lastscore + 100)
         return build
+
+    def performDailyBuild(self):
+        """See `ISourcePackageRecipe`."""
+        builds = []
+        self.is_stale = False
+        for distroseries in self.distroseries:
+            try:
+                build = self.requestBuild(
+                    self.daily_build_archive, self.owner,
+                    distroseries, PackagePublishingPocket.RELEASE)
+                builds.append(build)
+            except BuildAlreadyPending:
+                continue
+        return builds
 
     def getBuilds(self):
         """See `ISourcePackageRecipe`."""

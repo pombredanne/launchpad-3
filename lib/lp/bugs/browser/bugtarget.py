@@ -1205,9 +1205,11 @@ class BugTargetBugListingView:
         """
         series_buglistings = []
         bug_task_set = getUtility(IBugTaskSet)
-        series = any(*self.series_list)
+        series_list = self.series_list
+        if not series_list:
+            return series_buglistings
         open_bugs = bug_task_set.open_bugtask_search
-        open_bugs.setTarget(series)
+        open_bugs.setTarget(any(*series_list))
         # This would be better as delegation not a case statement.
         if IDistribution(self.context, None):
             backlink = BugTask.distroseriesID
@@ -1220,7 +1222,7 @@ class BugTargetBugListingView:
         else:
             raise AssertionError("illegal context %r" % self.context)
         counts = bug_task_set.countBugs(open_bugs, (backlink,))
-        for series in self.series_list:
+        for series in series_list:
             series_bug_count = counts.get((series.id,), 0)
             if series_bug_count > 0:
                 series_buglistings.append(
@@ -1237,6 +1239,8 @@ class BugTargetBugListingView:
         milestone_buglistings = []
         bug_task_set = getUtility(IBugTaskSet)
         milestones = self.milestones_list
+        if not milestones:
+            return milestone_buglistings
         open_bugs = bug_task_set.open_bugtask_search
         open_bugs.setTarget(any(*milestones))
         counts = bug_task_set.countBugs(open_bugs, (BugTask.milestoneID,))

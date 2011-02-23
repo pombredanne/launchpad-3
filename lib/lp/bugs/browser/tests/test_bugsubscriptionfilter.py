@@ -52,6 +52,7 @@ class TestBugSubscriptionFilterBase:
         with person_logged_in(self.owner):
             self.subscription = self.structure.addBugSubscription(
                 self.owner, self.owner)
+            self.initial_filter = self.subscription.bug_filters.one()
             self.subscription_filter = self.subscription.newBugFilter()
 
 
@@ -484,7 +485,8 @@ class TestBugSubscriptionFilterEditView(
                 self.subscription_filter, name="+edit", form=form)
             self.assertEqual([], view.errors)
         # The subscription filter has been deleted.
-        self.assertEqual([], list(self.subscription.bug_filters))
+        self.assertEqual(
+            [self.initial_filter], list(self.subscription.bug_filters))
 
 
 class TestBugSubscriptionFilterAdvancedFeatures(TestCaseWithFactory):
@@ -514,6 +516,7 @@ class TestBugSubscriptionFilterAdvancedFeatures(TestCaseWithFactory):
                 with person_logged_in(person):
                     subscription = self.target.addBugSubscription(
                         person, person)
+                    initial_filter = subscription.bug_filters.one()
                     form = {
                         "field.description": "New description",
                         "field.statuses": ["NEW", "INCOMPLETE"],
@@ -527,12 +530,14 @@ class TestBugSubscriptionFilterAdvancedFeatures(TestCaseWithFactory):
                         subscription, name="+new-filter", form=form)
 
                 filters = subscription.bug_filters
-                self.assertEqual(filters.count(), 1)
+                new_filter = [filter for filter in filters
+                              if filter != initial_filter][0]
+                self.assertEqual(filters.count(), 2)
                 self.assertEqual(
-                    level, filters[0].bug_notification_level,
+                    level, new_filter.bug_notification_level,
                     "Bug notification level of filter should be %s, "
                     "is actually %s." % (
-                        level.name, filters[0].bug_notification_level.name))
+                        level.name, new_filter.bug_notification_level.name))
 
     def test_nothing_is_not_a_valid_level(self):
         # BugNotificationLevel.NOTHING isn't considered valid when a
@@ -596,7 +601,9 @@ class TestBugSubscriptionFilterCreateView(TestCaseWithFactory):
 
     def test_create(self):
         # New filters can be created with +new-filter.
-        self.assertEqual([], list(self.subscription.bug_filters))
+        initial_filter = self.subscription.bug_filters.one()
+        self.assertEqual(
+            [initial_filter], list(self.subscription.bug_filters))
         form = {
             "field.description": "New description",
             "field.statuses": ["NEW", "INCOMPLETE"],
@@ -610,7 +617,9 @@ class TestBugSubscriptionFilterCreateView(TestCaseWithFactory):
                 self.subscription, name="+new-filter", form=form)
             self.assertEqual([], view.errors)
         # The subscription filter has been created.
-        subscription_filter = self.subscription.bug_filters.one()
+        subscription_filter = [
+            filter for filter in self.subscription.bug_filters
+            if filter != initial_filter][0]
         self.assertEqual(
             u"New description",
             subscription_filter.description)
