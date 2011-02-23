@@ -19,6 +19,7 @@ from simplejson import dumps
 from zope import formlib
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import RadioWidget
+from zope.component import getUtility
 from zope.schema import Choice
 from zope.schema.vocabulary import (
     SimpleTerm,
@@ -40,6 +41,7 @@ from lp.app.browser.launchpadform import (
 from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
+from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.services import features
 from lp.services.propertycache import cachedproperty
 
@@ -116,8 +118,7 @@ class AdvancedSubscriptionMixin:
             # drop the NOTHING option since it just makes the UI
             # confusing.
             for level in sorted(BugNotificationLevel.items, reverse=True)
-                if level != BugNotificationLevel.NOTHING
-            ]
+                if level != BugNotificationLevel.NOTHING]
         bug_notification_vocabulary = SimpleVocabulary(
             bug_notification_level_terms)
 
@@ -515,8 +516,7 @@ class BugPortletDuplicateSubcribersContents(LaunchpadView, BugViewMixin):
             SubscriptionAttrDecorator(subscription)
             for subscription in sorted(
                 self.context.getSubscriptionsFromDuplicates(),
-                key=(lambda subscription: subscription.person.displayname))
-            ]
+                key=(lambda subscription: subscription.person.displayname))]
 
 
 class BugPortletSubcribersIds(LaunchpadView, BugViewMixin):
@@ -554,3 +554,8 @@ class BugSubscriptionListView(LaunchpadView):
             self.user.displayname, self.context.bug.id)
 
     page_title = label
+
+    @property
+    def structural_subscriptions(self):
+        return getUtility(IBugTaskSet).getAllStructuralSubscriptions(
+            self.context.bug.bugtasks, self.user)
