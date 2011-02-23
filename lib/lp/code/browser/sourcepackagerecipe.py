@@ -508,7 +508,7 @@ class SourcePackageRecipeRequestBuildsAjaxView(
         unexpected exception, that will be handled using the form's standard
         exception processing mechanism (using response code 500).
         """
-        errors = self.requestBuild(data)
+        builds, errors = self.requestBuild(data)
         # If there are errors we return a json data snippet containing the
         # errors instead of rendering the form. These errors are processed
         # by the caller's response handler and displayed to the user.
