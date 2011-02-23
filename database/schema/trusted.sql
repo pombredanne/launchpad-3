@@ -60,6 +60,9 @@ DECLARE
 BEGIN
     FOR count IN 1..n LOOP
         FETCH FORWARD FROM cur INTO r;
+        IF NOT FOUND THEN
+            RETURN;
+        END IF;
         RETURN NEXT r;
     END LOOP;
 END;
