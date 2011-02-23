@@ -282,7 +282,7 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
         # There is one template on the Ubuntu source package but it matches
         # not the requested name.
         sourcepackage = self._makeSourcePackage()
-        productseries = self._makeUpstreamProductSeries(sourcepackage=sourcepackage)
+        productseries = self._makeUpstreamProductSeries(sourcepackage)
         templatename = self.factory.getUniqueString()
         self.factory.makePOTemplate(
             sourcepackage=sourcepackage, name=templatename)
