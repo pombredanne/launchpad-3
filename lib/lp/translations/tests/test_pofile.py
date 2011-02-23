@@ -760,6 +760,18 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
         # A `POFile` starts out with consistent statistics.
         self.assertTrue(self.factory.makePOFile().testStatistics())
 
+    def test_updateStatistics_counts_zero_for_empty_template(self):
+        # Statistics for an empty template are all calculated as zero.
+        pofile = self.factory.makePOFile()
+        pofile.updateStatistics()
+        self.assertEquals(0, self.devel_pofile.messageCount())
+        self.assertEquals(0, self.devel_pofile.translatedCount())
+        self.assertEquals(0, self.devel_pofile.untranslatedCount())
+        self.assertEquals(0, self.devel_pofile.currentCount())
+        self.assertEquals(0, self.devel_pofile.rosettaCount())
+        self.assertEquals(0, self.devel_pofile.updatesCount())
+        self.assertEquals(0, self.devel_pofile.unreviewedCount())
+
     def test_updateStatistics(self):
         # Test that updating statistics keeps working.
 

@@ -37,7 +37,6 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
     Alias,
     And,
-    Count,
     Desc,
     In,
     Join,
@@ -2227,8 +2226,7 @@ class BugTaskSet:
                 AND MessageChunk.fti @@ ftq(%s))""" % searchtext_quoted
         text_search_clauses = [
             "Bug.fti @@ ftq(%s)" % searchtext_quoted,
-            "BugTask.fti @@ ftq(%s)" % searchtext_quoted
-            ]
+            "BugTask.fti @@ ftq(%s)" % searchtext_quoted]
         no_targetnamesearch = bool(features.getFeatureFlag(
             'malone.disable_targetnamesearch'))
         if not no_targetnamesearch:
@@ -2470,12 +2468,13 @@ class BugTaskSet:
             eager_load = None
         else:
             requested_joins = kwargs.get('prejoins', [])
-            # NB: We could save later work by predicting what sort of targets
-            # we might be interested in here, but as at any point we're dealing
-            # with relatively few results, this is likely to be a small win.
+            # NB: We could save later work by predicting what sort of
+            # targets we might be interested in here, but as at any
+            # point we're dealing with relatively few results, this is
+            # likely to be a small win.
             prejoins = [
-                (Bug, Join(Bug, BugTask.bug == Bug.id))
-                ] + requested_joins
+                (Bug, Join(Bug, BugTask.bug == Bug.id))] + requested_joins
+
             def eager_load(results):
                 product_ids = set([row[0].productID for row in results])
                 product_ids.discard(None)
@@ -2502,7 +2501,8 @@ class BugTaskSet:
     def countBugs(self, params, group_on):
         """See `IBugTaskSet`."""
         resultset = self._search(
-            group_on + (Count(BugTask.bugID),), [], None, params).result_set
+            group_on + (SQL("COUNT(Distinct BugTask.bug)"),),
+            [], None, params).result_set
         # We group on the related field:
         resultset.group_by(*group_on)
         resultset.order_by()
@@ -3060,22 +3060,42 @@ class BugTaskSet:
 
         return counts
 
-    def getStructuralSubscribers(self, bugtasks, recipients=None, level=None):
-        """See `IBugTaskSet`."""
-        query_arguments = []
+    def _getStructuralSubscriptionTargets(self, bugtasks):
+        """Return (bugtask, target) pairs for each target of the bugtasks.
+
+        Each bugtask may be responsible theoretically for 0 or more targets.
+        In practice, each generates one, two or three.
+        """
         for bugtask in bugtasks:
             if IStructuralSubscriptionTarget.providedBy(bugtask.target):
-                query_arguments.append((bugtask.target, bugtask))
+                yield (bugtask, bugtask.target)
                 if bugtask.target.parent_subscription_target is not None:
-                    query_arguments.append(
-                        (bugtask.target.parent_subscription_target, bugtask))
+                    yield (bugtask, bugtask.target.parent_subscription_target)
             if ISourcePackage.providedBy(bugtask.target):
                 # Distribution series bug tasks with a package have the source
                 # package set as their target, so we add the distroseries
                 # explicitly to the set of subscription targets.
-                query_arguments.append((bugtask.distroseries, bugtask))
+                yield (bugtask, bugtask.distroseries)
             if bugtask.milestone is not None:
-                query_arguments.append((bugtask.milestone, bugtask))
+                yield (bugtask, bugtask.milestone)
+
+    def getAllStructuralSubscriptions(self, bugtasks, recipient):
+        """See `IBugTaskSet`."""
+        targets = [target for bugtask, target
+                   in self._getStructuralSubscriptionTargets(bugtasks)]
+        if len(targets) == 0:
+            return EmptyResultSet()
+        union = lambda left, right: (
+            removeSecurityProxy(left).union(
+                removeSecurityProxy(right)))
+        queries = (
+            target.getSubscriptions(recipient) for target in targets)
+        return reduce(union, queries)
+
+    def getStructuralSubscribers(self, bugtasks, recipients=None, level=None):
+        """See `IBugTaskSet`."""
+        query_arguments = list(
+            self._getStructuralSubscriptionTargets(bugtasks))
 
         if len(query_arguments) == 0:
             return EmptyResultSet()
@@ -3091,7 +3111,7 @@ class BugTaskSet:
                 removeSecurityProxy(right)))
         queries = (
             target.getSubscriptionsForBugTask(bugtask, level)
-            for target, bugtask in query_arguments)
+            for bugtask, target in query_arguments)
         subscriptions = reduce(union, queries)
 
         # Pull all the subscriptions in.
