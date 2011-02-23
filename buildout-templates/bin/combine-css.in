@@ -36,6 +36,7 @@ names = [
     'lazr/build/activator/assets/skins/sam/activator.css',
     'lazr/build/choiceedit/assets/choiceedit-core.css',
     'yui3-gallery/gallery-accordion/assets/skins/sam/gallery-accordion.css',
+    'yui3-gallery/gallery-accordion/assets/skins/sam/gallery-accordion-skin.css',
     # This one goes at the end because it's our main stylesheet and should
     # take precedence over the others.
     'build/style-3-0.css']
