@@ -29,9 +29,9 @@
       by <span tal:replace="context/supersededby/title" />
     </li>
     <li tal:define="sprb context/sourcepackagerelease/source_package_recipe_build" tal:condition="sprb">
-    <a tal:attributes="href sprb/fmt:url">Built</a> by recipe 
-    <a tal:attributes="href sprb/recipe/fmt:url" tal:content="sprb/recipe/name" ></a> for 
-    <a tal:attributes="href sprb/requester/fmt:url" tal:content="sprb/requester/displayname" ></a>.
+      <a tal:attributes="href sprb/fmt:url">Built</a> by recipe 
+      <a tal:attributes="href sprb/recipe/fmt:url" tal:content="sprb/recipe/name" ></a> for 
+      <a tal:attributes="href sprb/requester/fmt:url" tal:content="sprb/requester/displayname" ></a>.
     </li>
     <li tal:condition="context/datepublished">
       Published
