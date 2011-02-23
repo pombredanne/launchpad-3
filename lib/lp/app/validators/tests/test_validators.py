@@ -19,7 +19,7 @@ def test_suite():
     suite = TestSuite()
 
     # Include the doctests in __init__.py.
-    from canonical.launchpad import validators
+    from lp.app import validators
     suite.addTest(DocTestSuite(validators))
 
     from lp.app.validators import email, name, url, version
