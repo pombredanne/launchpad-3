@@ -767,6 +767,7 @@ rules.
 
 First, we need a tree to document.
 
+  >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
   >>> tree = LookupTree(
   ...     ('ASSIGNED', 'STARTED', BugTaskStatus.INPROGRESS),
   ...     ('NEEDINFO', 'WAITING', 'SUSPENDED', BugTaskStatus.INCOMPLETE),
