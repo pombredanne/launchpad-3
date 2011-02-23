@@ -117,7 +117,7 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
         # With no sourcepackage the sharing information on a source package
         # will be empty.
         productseries = self.factory.makeProductSeries()
-        self.assertEquals(
+        self.assertContentEqual(
             [],
             get_ubuntu_sharing_info(productseries=productseries))
 
@@ -126,7 +126,7 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
         # will be empty, even when searching for a specific template name.
         productseries = self.factory.makeProductSeries()
         templatename = self.factory.getUniqueString()
-        self.assertEquals(
+        self.assertContentEqual(
             [],
             get_ubuntu_sharing_info(
                 productseries=productseries, templatename=templatename))
@@ -136,7 +136,7 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
         # on a productseries will be empty.
         sourcepackage = self._makeSourcePackage()
         productseries = self._makeUpstreamProductSeries(sourcepackage)
-        self.assertEquals(
+        self.assertContentEqual(
             [(sourcepackage, None)],
             get_ubuntu_sharing_info(productseries=productseries))
 
@@ -147,7 +147,7 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
         sourcepackage = self._makeSourcePackage()
         productseries = self._makeUpstreamProductSeries(sourcepackage)
         templatename = self.factory.getUniqueString()
-        self.assertEquals(
+        self.assertContentEqual(
             [(sourcepackage, None)],
             get_ubuntu_sharing_info(
                 productseries=productseries, templatename=templatename))
@@ -158,7 +158,7 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
         sourcepackage = self._makeSourcePackage()
         productseries = self._makeUpstreamProductSeries(sourcepackage)
         potemplate = self.factory.makePOTemplate(sourcepackage=sourcepackage)
-        self.assertEquals(
+        self.assertContentEqual(
             [(sourcepackage, potemplate)],
             get_ubuntu_sharing_info(
                 productseries=productseries))
@@ -173,7 +173,7 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
         potemplate = self.factory.makePOTemplate(
             sourcepackage=sourcepackage,
             name=templatename)
-        self.assertEquals(
+        self.assertContentEqual(
             [(sourcepackage, potemplate)],
             get_ubuntu_sharing_info(
                 productseries=productseries, templatename=templatename))
@@ -188,7 +188,7 @@ class TestTranslationSharingInfo(TestCaseWithFactory):
             sourcepackage=sourcepackage,
             name=templatename)
         different_templatename = self.factory.getUniqueString()
-        self.assertEquals(
+        self.assertContentEqual(
             [(sourcepackage, None)],
             get_ubuntu_sharing_info(
                 productseries=productseries,

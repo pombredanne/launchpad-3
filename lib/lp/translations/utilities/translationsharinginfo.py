@@ -37,6 +37,7 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.productseries import ProductSeries
+from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.translations.model.potemplate import POTemplate
 
@@ -151,7 +152,9 @@ def find_upstream_sharing_info(sourcepackage,
 
 def get_ubuntu_sharing_info(productseries, templatename=None):
     """Return a list of sharing information for the given target."""
-    return list(find_ubuntu_sharing_info(productseries, templatename))
+    for result in find_ubuntu_sharing_info(productseries, templatename):
+        distroseries, sourcepackagename, templatename = result
+        yield (SourcePackage(sourcepackagename, distroseries), templatename)
 
 
 def get_upstream_sharing_info(sourcepackage, templatename=None):
