@@ -662,7 +662,15 @@ class cmd_images(EC2Command):
 
 
 class cmd_list(EC2Command):
-    """List all your current EC2 test runs."""
+    """List all your current EC2 test runs.
+
+    If an instance is publishing an 'info.json' file with 'description' and
+    'failed-yet' fields, this command will list that instance, whether it has
+    failed the test run and how long it has been up for.
+
+    [FAILED] means that the has been a failing test. [OK] means that the test
+    run has had no failures yet, it's not a guarantee of a successful run.
+    """
 
     aliases = ["ls"]
 
@@ -718,10 +726,10 @@ class cmd_list(EC2Command):
             current_status =     'unknown '
         else:
             description = data['description']
-            if data['successful']:
-                current_status = '[OK]    '
-            else:
+            if data['failed-yet']:
                 current_status = '[FAILED]'
+            else:
+                current_status = '[OK]    '
         output = '%s  %s (up for %s)' % (description, current_status, uptime)
         if verbose:
             url = self.get_http_url(instance)

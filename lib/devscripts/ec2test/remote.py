@@ -671,7 +671,7 @@ class WebTestLogger:
         fd = open(self._info_json, 'w')
         simplejson.dump(
             {'description': self._request.get_merge_description(),
-             'successful': self.successful,
+             'failed-yet': not self.successful,
              }, fd)
         fd.close()
 
