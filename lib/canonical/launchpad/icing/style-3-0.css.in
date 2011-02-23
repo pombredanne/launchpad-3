@@ -1788,6 +1788,9 @@ div#edit-commit_message {
 .sprite-after {
     padding: 2px 18px 0 0;
     }
+h1 a.sprite, h2 a.sprite, h3 a.sprite {
+    font-size: 12px;
+    }
 .icon-only {
     border: 0;
     padding: 0;
