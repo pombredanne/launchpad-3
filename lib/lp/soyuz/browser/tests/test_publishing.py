@@ -51,24 +51,25 @@ class TestSourcePublicationListingExtra(BrowserTestCase):
         sprb = self.factory.makeSourcePackageRecipeBuild(
             archive=self.archive)
         recipe = sprb.recipe
+        requester = sprb.requester
         spph = self.publisher.getPubSource(
             archive=self.archive, status=PackagePublishingStatus.PUBLISHED)
         spph.sourcepackagerelease.source_package_recipe_build = sprb
-        recipe_link_matcher = soupmatchers.HTMLContains(
+        recipe_link_matches = soupmatchers.HTMLContains(
             soupmatchers.Tag(
-                'link to build', 'a', attrs={'href': canonical_url(sprb,
-                    force_local_path=True)},
+                'link to build', 'a',
+                attrs={'href': canonical_url(sprb, force_local_path=True)},
                 text='Built'),
             soupmatchers.Tag(
                 'recipe name', 'a', attrs={'href': canonical_url(recipe)},
                 text=recipe.name),
             soupmatchers.Tag(
                 'requester', 'a',
-                attrs={'href': canonical_url(sprb.requester,
-                    force_local_path=True)},
-                text=sprb.requester.displayname))
+                attrs={
+                    'href': canonical_url(requester, force_local_path=True)},
+                text=requester.displayname))
         browser = self.getViewBrowser(spph, '+listing-archive-extra')
-        self.assertThat(browser.contents, recipe_link_matcher)
+        self.assertThat(browser.contents, recipe_link_matches)
 
     def test_view_without_source_package_recipe(self):
         # And if a SourcePackageRelease is not linked, there is no sign of it
