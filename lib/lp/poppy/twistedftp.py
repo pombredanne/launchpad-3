@@ -13,8 +13,9 @@ import logging
 import os
 import tempfile
 
+from twisted.application import service, strports
 from twisted.cred import checkers, credentials
-from twisted.cred.portal import IRealm
+from twisted.cred.portal import IRealm, Portal
 from twisted.internet import defer
 from twisted.protocols import ftp
 from twisted.python import filepath
@@ -27,6 +28,8 @@ from canonical.launchpad.interfaces.gpghandler import (
     IGPGHandler,
     )
 
+from canonical.config import config
+from lp.poppy import get_poppy_root
 from lp.poppy.filesystem import UploadFileSystem
 from lp.poppy.hooks import Hooks
 from lp.registry.interfaces.gpg import IGPGKeySet
@@ -35,13 +38,14 @@ from lp.registry.interfaces.gpg import IGPGKeySet
 class PoppyAccessCheck:
     """An `ICredentialsChecker` for Poppy FTP sessions."""
     implements(checkers.ICredentialsChecker)
-    credentialInterfaces = credentials.IUsernamePassword,
+    credentialInterfaces = (
+        credentials.IUsernamePassword, credentials.IAnonymous)
 
     def requestAvatarId(self, credentials):
         # Poppy allows any credentials.  People can use "anonymous" if
-        # they want but anything goes.  Returning "poppy" here is
-        # a totally arbitrary avatar.
-        return "poppy"
+        # they want but anything goes.  Thus, we don't actually *check* the
+        # credentials, and we return the standard avatarId for 'anonymous'.
+        return checkers.ANONYMOUS
 
 
 class PoppyAnonymousShell(ftp.FTPShell):
@@ -175,3 +179,25 @@ class PoppyFileWriter(ftp._FileWriter):
         return None
 
 
+class FTPServiceFactory(service.Service):
+    """A factory that makes an `FTPService`"""
+
+    def __init__(self, port):
+        realm = FTPRealm(get_poppy_root())
+        portal = Portal(realm)
+        portal.registerChecker(PoppyAccessCheck())
+        factory = ftp.FTPFactory(portal)
+
+        factory.tld = get_poppy_root()
+        factory.protocol = ftp.FTP
+        factory.welcomeMessage = "Launchpad upload server"
+        factory.timeOut = config.poppy.idle_timeout
+
+        self.ftpfactory = factory
+        self.portno = port
+
+    @staticmethod
+    def makeFTPService(port=2121):
+        strport = "tcp:%s" % port
+        factory = FTPServiceFactory(port)
+        return strports.service(strport, factory.ftpfactory)

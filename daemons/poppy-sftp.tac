@@ -5,13 +5,12 @@
 #     twistd -noy sftp.tac
 # or similar.  Refer to the twistd(1) man page for details.
 
-import os
+import logging
 
-from twisted.application import service, strports
+from twisted.application import service
 from twisted.conch.interfaces import ISession
 from twisted.conch.ssh import filetransfer
 from twisted.cred.portal import IRealm, Portal
-from twisted.protocols import ftp
 from twisted.protocols.policies import TimeoutFactory
 from twisted.python import components
 from twisted.web.xmlrpc import Proxy
@@ -22,18 +21,15 @@ from canonical.config import config
 from canonical.launchpad.daemons import readyservice
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 
+from lp.poppy import get_poppy_root
 from lp.poppy.twistedftp import (
-    FTPRealm,
-    PoppyAccessCheck,
+    FTPServiceFactory,
     )
 from lp.poppy.twistedsftp import SFTPServer
 from lp.services.sshserver.auth import (
     LaunchpadAvatar, PublicKeyFromLaunchpadChecker)
 from lp.services.sshserver.service import SSHService
 from lp.services.sshserver.session import DoNothingSession
-
-# XXX: Rename this file to something that doesn't mention poppy. Talk to
-# bigjools.
 
 
 def make_portal():
@@ -69,20 +65,13 @@ class Realm:
         return deferred.addCallback(got_user_dict)
 
 
-def get_poppy_root():
-    """Return the poppy root to use for this server.
-
-    If the POPPY_ROOT environment variable is set, use that. If not, use
-    config.poppy.fsroot.
-    """
-    poppy_root = os.environ.get('POPPY_ROOT', None)
-    if poppy_root:
-        return poppy_root
-    return config.poppy.fsroot
-
-
 def poppy_sftp_adapter(avatar):
     return SFTPServer(avatar, get_poppy_root())
+
+
+# Connect Python logging to Twisted's logging.
+from lp.services.twistedsupport.loggingsupport import set_up_tacfile_logging
+set_up_tacfile_logging("poppy-sftp", logging.INFO)
 
 
 components.registerAdapter(
@@ -91,34 +80,8 @@ components.registerAdapter(
 components.registerAdapter(DoNothingSession, LaunchpadAvatar, ISession)
 
 
-class FTPServiceFactory(service.Service):
-    def __init__(self, port):
-        factory = ftp.FTPFactory()
-        realm = FTPRealm(get_poppy_root())
-        portal = Portal(realm)
-        portal.registerChecker(PoppyAccessCheck())
-
-        factory.tld = get_poppy_root()
-        factory.portal = portal
-        factory.protocol = ftp.FTP
-        factory.welcomeMessage = "Launchpad upload server"
-        factory.timeOut = config.poppy.idle_timeout
-
-        # Setting this works around the fact that the twistd FTP server
-        # invokes a special restricted shell when someone logs in as
-        # "anonymous" which is the default for 'dput'.
-        factory.userAnonymous = "userthatwillneverhappen"
-        self.ftpfactory = factory
-        self.portno = port
-
-    @staticmethod
-    def makeFTPService(port=2121):
-        strport = "tcp:%s" % port
-        factory = FTPServiceFactory(port)
-        return strports.service(strport, factory.ftpfactory)
-
 # ftpport defaults to 2121 in schema-lazr.conf
-ftpservice = FTPServiceFactory.makeFTPService(port=config.poppy.ftpport)
+ftpservice = FTPServiceFactory.makeFTPService(port=config.poppy.ftp_port)
 
 # Construct an Application that has the Poppy SSH server,
 # and the Poppy FTP server.
