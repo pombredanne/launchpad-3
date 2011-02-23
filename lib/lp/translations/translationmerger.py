@@ -365,7 +365,8 @@ class TranslationMerger:
             Packaging.distroseries == PackageTemplate.distroseriesID,
             Packaging.distroseries == DistroSeries.id,
             DistroSeries.distribution == ubuntu.id,
-            Packaging.sourcepackagename == PackageTemplate.sourcepackagenameID,
+            Packaging.sourcepackagename ==
+                PackageTemplate.sourcepackagenameID,
             )
         result.config(distinct=True)
         return result
