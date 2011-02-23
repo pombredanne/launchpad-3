@@ -36,10 +36,10 @@ from canonical.launchpad.interfaces.emailaddress import (
     IEmailAddress,
     IEmailAddressSet,
     )
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.cve import valid_cve
-from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.validators.url import valid_absolute_url
+from lp.services.validators import LaunchpadValidationError
+from lp.services.validators.cve import valid_cve
+from lp.services.validators.email import valid_email
+from lp.services.validators.url import valid_absolute_url
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.menu import structured
 from lp.app.errors import NotFoundError

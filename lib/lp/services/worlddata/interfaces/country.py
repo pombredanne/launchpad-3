@@ -32,7 +32,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.validators.name import valid_name
+from lp.services.validators.name import valid_name
 from lp.services.fields import (
     Description,
     Title,

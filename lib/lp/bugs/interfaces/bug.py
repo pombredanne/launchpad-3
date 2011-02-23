@@ -65,10 +65,10 @@ from zope.schema.vocabulary import SimpleVocabulary
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IPrivacy
 from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.validators.attachment import (
+from lp.services.validators.attachment import (
     attachment_size_constraint,
     )
-from canonical.launchpad.validators.name import name_validator
+from lp.services.validators.name import name_validator
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bugactivity import IBugActivity
 from lp.bugs.interfaces.bugattachment import IBugAttachment

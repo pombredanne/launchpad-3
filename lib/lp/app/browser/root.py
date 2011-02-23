@@ -32,7 +32,7 @@ from canonical.launchpad.interfaces.searchservice import (
     GoogleResponseError,
     ISearchService,
     )
-from canonical.launchpad.validators.name import sanitize_name
+from lp.services.validators.name import sanitize_name
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator

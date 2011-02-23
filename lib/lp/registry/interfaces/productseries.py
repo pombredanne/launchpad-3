@@ -47,8 +47,8 @@ from zope.schema import (
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IHasAppointedDriver
 from canonical.launchpad.interfaces.validation import validate_url
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import name_validator
+from lp.services.validators import LaunchpadValidationError
+from lp.services.validators.name import name_validator
 from canonical.launchpad.webapp.url import urlparse
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.launchpad import IServiceUsage

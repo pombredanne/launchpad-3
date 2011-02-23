@@ -27,7 +27,7 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     ISlaveStore,
     )
-from canonical.launchpad.validators.name import valid_name
+from lp.services.validators.name import valid_name
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,

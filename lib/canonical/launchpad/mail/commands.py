@@ -39,7 +39,7 @@ from canonical.launchpad.mail.helpers import (
     get_error_message,
     get_person_or_team,
     )
-from canonical.launchpad.validators.name import valid_name
+from lp.services.validators.name import valid_name
 from canonical.launchpad.webapp.authorization import check_permission
 from lp.app.errors import (
     NotFoundError,

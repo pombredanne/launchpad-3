@@ -61,8 +61,8 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.validators.name import sanitize_name
+from lp.services.validators.email import valid_email
+from lp.services.validators.name import sanitize_name
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,

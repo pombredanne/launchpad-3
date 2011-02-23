@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces.emailaddress import (
     IEmailAddressSet,
     InvalidEmailAddress,
     )
-from canonical.launchpad.validators.email import valid_email
+from lp.services.validators.email import valid_email
 
 
 class HasOwnerMixin:

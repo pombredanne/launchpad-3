@@ -39,7 +39,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.validators import LaunchpadValidationError
+from lp.services.validators import LaunchpadValidationError
 from lp.code.enums import (
     CodeImportReviewStatus,
     RevisionControlSystems,

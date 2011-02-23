@@ -52,8 +52,8 @@ from zope.schema import (
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.version import sane_version
+from lp.services.validators import LaunchpadValidationError
+from lp.services.validators.version import sane_version
 from lp.services.fields import (
     ContentNameField,
     PersonChoice,

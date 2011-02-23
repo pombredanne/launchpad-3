@@ -49,7 +49,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasLogo,
     IHasMugshot,
     )
-from canonical.launchpad.validators.name import name_validator
+from lp.services.validators.name import name_validator
 from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications

@@ -18,7 +18,7 @@ from lazr.uri import (
 from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 
-from canonical.launchpad.validators import LaunchpadValidationError
+from lp.services.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from lp.app.browser.tales import BranchFormatterAPI

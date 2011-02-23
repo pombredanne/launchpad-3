@@ -18,8 +18,8 @@ from cscvs.dircompare import path
 import pytz
 from zope.component import getUtility
 
-from canonical.launchpad.validators.name import invalid_name_pattern
-from canonical.launchpad.validators.version import sane_version
+from lp.services.validators.name import invalid_name_pattern
+from lp.services.validators.version import sane_version
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.productrelease import UpstreamFileType
 from lp.registry.interfaces.series import SeriesStatus

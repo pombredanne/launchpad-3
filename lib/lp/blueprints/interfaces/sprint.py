@@ -32,7 +32,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IHasDrivers
-from canonical.launchpad.validators.name import name_validator
+from lp.services.validators.name import name_validator
 from lp.app.interfaces.headings import IRootContext
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
 from lp.registry.interfaces.role import IHasOwner

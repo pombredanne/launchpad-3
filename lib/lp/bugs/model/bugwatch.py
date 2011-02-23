@@ -54,7 +54,7 @@ from canonical.launchpad.database.message import Message
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.validators.email import valid_email
+from lp.services.validators.email import valid_email
 from canonical.launchpad.webapp import (
     urlappend,
     urlsplit,

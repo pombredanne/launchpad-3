@@ -100,8 +100,8 @@ from zope.schema.interfaces import (
 from zope.security.interfaces import ForbiddenAttribute
 
 from canonical.launchpad import _
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import (
+from lp.services.validators import LaunchpadValidationError
+from lp.services.validators.name import (
     name_validator,
     valid_name,
     )

@@ -29,8 +29,8 @@ from zope.schema import (
     Text,
     )
 
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.email import email_validator
+from lp.services.validators import LaunchpadValidationError
+from lp.services.validators.email import email_validator
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured

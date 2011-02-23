@@ -24,7 +24,7 @@ from canonical.lazr.utils import safe_js_escape
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.validators import LaunchpadValidationError
+from lp.services.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, IMultiLineWidgetLayout)
 from lp.app.browser.tales import ObjectImageDisplayAPI

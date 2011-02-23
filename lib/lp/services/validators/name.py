@@ -10,7 +10,7 @@ import re
 from textwrap import dedent
 
 from canonical.launchpad import _
-from canonical.launchpad.validators import LaunchpadValidationError
+from lp.services.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.menu import structured
 
 

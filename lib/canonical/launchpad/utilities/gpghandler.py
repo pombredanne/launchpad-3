@@ -40,7 +40,7 @@ from canonical.launchpad.interfaces.gpghandler import (
     MoreThanOneGPGKeyFound,
     SecretGPGKeyImportDetected,
     )
-from canonical.launchpad.validators.email import valid_email
+from lp.services.validators.email import valid_email
 from lp.registry.interfaces.gpg import (
     GPGKeyAlgorithm,
     valid_fingerprint,

@@ -22,7 +22,7 @@ def test_suite():
     from canonical.launchpad import validators
     suite.addTest(DocTestSuite(validators))
 
-    from canonical.launchpad.validators import email, name, url, version
+    from lp.services.validators import email, name, url, version
     suite.addTest(suitefor(email))
     suite.addTest(suitefor(name))
     suite.addTest(suitefor(url))

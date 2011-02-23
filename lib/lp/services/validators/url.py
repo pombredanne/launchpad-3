@@ -6,7 +6,7 @@ __metaclass__ = type
 from textwrap import dedent
 
 from canonical.launchpad import _
-from canonical.launchpad.validators import LaunchpadValidationError
+from lp.services.validators import LaunchpadValidationError
 
 
 def valid_absolute_url(name):

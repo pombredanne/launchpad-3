@@ -14,7 +14,7 @@ from zope.component import getUtility
 from zope.schema.interfaces import TooShort
 
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.validators import LaunchpadValidationError
+from lp.services.validators import LaunchpadValidationError
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.fields import (
     BaseImageUpload,

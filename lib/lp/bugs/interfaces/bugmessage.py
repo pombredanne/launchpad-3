@@ -28,7 +28,7 @@ from zope.schema import (
 
 from canonical.launchpad.interfaces.launchpad import IHasBug
 from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.validators.attachment import (
+from lp.services.validators.attachment import (
     attachment_size_constraint,
     )
 from lp.bugs.interfaces.bug import IBug

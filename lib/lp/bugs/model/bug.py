@@ -101,7 +101,7 @@ from canonical.launchpad.interfaces.message import (
     IMessage,
     IndexedMessage,
     )
-from canonical.launchpad.validators import LaunchpadValidationError
+from lp.services.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,

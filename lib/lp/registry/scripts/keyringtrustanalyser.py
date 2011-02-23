@@ -7,7 +7,7 @@ from zope.component import getUtility
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from canonical.launchpad.validators.email import valid_email
+from lp.services.validators.email import valid_email
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
