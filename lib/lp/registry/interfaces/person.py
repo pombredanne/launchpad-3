@@ -2159,8 +2159,8 @@ class IPersonSet(Interface):
 
         This schedules a call to `merge()` to happen outside of the current
         context/request. The intention is that it is called soon after this
-        method is called but there is no guarantee, nor is it not guaranteed
-        to succeed.
+        method is called but there is no guarantee of that, nor is that call
+        guaranteed to succeed.
 
         :return: A `PersonMergeJob`.
         """
