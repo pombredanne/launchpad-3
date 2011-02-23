@@ -108,26 +108,26 @@ class ISourcePackageRecipeView(Interface):
     pending_builds = exported(
         CollectionField(
             title=_("The pending builds of this recipe."),
-            description=_('Pending builds of this recipe, sorted by '
-                    'desc(date_created), then by desc(id).'),
+            description=_('Pending builds of this recipe, sorted in '
+                    'descending order of creation.'),
             value_type=Reference(schema=Interface),
             readonly=True))
 
     completed_builds = exported(
         CollectionField(
             title=_("The completed builds of this recipe."),
-            description=_('Completed builds of this recipe, sorted by '
-                    'desc(greater(date_finished, date_started)), '
-                    'then by desc(id).'),
+            description=_('Completed builds of this recipe, sorted in '
+                    'descending order of finishing (or starting if not'
+                    'completed successfully).'),
             value_type=Reference(schema=Interface),
             readonly=True))
 
     builds = exported(
         CollectionField(
             title=_("All builds of this recipe."),
-            description=_('All builds of this recipe, sorted by '
-                    'desc(greater(date_finished, date_started)), '
-                    'then by desc(id).'),
+            description=_('All builds of this recipe, sorted in '
+                    'descending order of finishing (or starting if not'
+                    'completed successfully).'),
             value_type=Reference(schema=Interface),
             readonly=True))
 

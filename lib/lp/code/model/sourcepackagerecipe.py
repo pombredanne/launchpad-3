@@ -304,7 +304,9 @@ class SourcePackageRecipe(Storm):
     def pending_builds(self):
         """See `ISourcePackageRecipe`."""
         filter_term = BuildFarmJob.status == BuildStatus.NEEDSBUILD
-        order_by = Desc(BuildFarmJob.date_created), Desc(BuildFarmJob.id)
+        # We want to order by date_created but this is the same as ordering
+        # by id (since id increases monotonically) and is less expensive.
+        order_by = Desc(BuildFarmJob.id)
         return self._getBuilds(filter_term, order_by)
 
     def _getBuilds(self, filter_term, order_by):
