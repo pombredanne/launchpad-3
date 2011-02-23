@@ -109,41 +109,60 @@ class IrcIDPruner(BulkPruner):
 class TestBulkPruner(TestCase):
     layer = LaunchpadZopelessLayer
 
+    def setUp(self):
+        super(TestBulkPruner, self).setUp()
+        # Create some random entries in the IrcID table.
+        for i in range(10):
+            IrcID(personID=1, network='whatever', nickname='random%d' % i)
+
+
     def test_bulkpruner(self):
         log = BufferLogger()
         pruner = IrcIDPruner(log)
 
-        # The loop thinks there is stuff to do.
+        # The loop thinks there is stuff to do. Confirm the initial
+        # state is sane.
         self.assertFalse(pruner.isDone())
 
-        # Determine how many items to prune and to leave.
+        # An arbitrary chunk size.
+        chunk_size = 2
+
+        # Determine how many items to prune and to leave. We don't want
+        # to rely on the sample data so don't hard code these values.
         store = IMasterStore(IrcID)
         num_to_prune = store.find(
             IrcID, IrcID.id < 5).count()
         num_to_leave = store.find(
             IrcID, IrcID.id >= 5).count()
-        self.assertTrue(num_to_prune > 0)
+        self.assertTrue(num_to_prune > chunk_size)
         self.assertTrue(num_to_leave > 0)
 
-        # Run one loop with a known chunk size.
-        chunk_size = 2
+        # Run one loop.
         pruner(chunk_size)
         # Make sure it committed by throwing away uncommitted changes.
         transaction.abort()
 
+        # Confirm 'chunk_size' items where removed; no more, no less.
         num_remaining = store.find(IrcID).count()
         expected_num_remaining = num_to_leave + num_to_prune - chunk_size
         self.assertEqual(num_remaining, expected_num_remaining)
 
-        # The loop thinks there is stuff to do.
+        # The loop thinks there is more stuff to do.
         self.assertFalse(pruner.isDone())
 
+        # Run the loop to completion, removing the remaining targetted
+        # rows.
         while not pruner.isDone():
-            pruner(chunk_size)
+            pruner(1000000)
         # Make sure it committed by throwing away uncommitted changes.
         transaction.abort()
 
+        # Confirm we have removed all targetted rows.
         self.assertEqual(store.find(IrcID, IrcID.id < 5).count(), 0)
+
+        # Confirm we have the expected number of remaining rows.
+        # With the previous check, this means no untargetted rows
+        # where removed.
         self.assertEqual(
             store.find(IrcID, IrcID.id >= 5).count(), num_to_leave)
 

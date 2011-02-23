@@ -152,7 +152,10 @@ class BulkPruner(TunableLoop):
 
 
 class POTranslationPruner(BulkPruner):
-    """Remove unlinked POTranslation entries."""
+    """Remove unlinked POTranslation entries.
+
+    XXX bug=723596 StuartBishop: This job only needs to run once per month.
+    """
 
     target_table_class = POTranslation
 
