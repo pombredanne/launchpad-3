@@ -211,7 +211,9 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
     name = exported(TextLine(
             title=_("Name"), required=True,
             constraint=name_validator,
-            description=_("The name of this recipe.")))
+            description=_(
+                "The name of the recipe is part of the URL and needs to "
+                "be unique for the given owner.")))
 
     description = exported(Description(
         title=_('Description'), required=True,

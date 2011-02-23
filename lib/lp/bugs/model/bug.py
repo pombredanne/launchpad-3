@@ -534,7 +534,7 @@ BugMessage""" % sqlvalues(self.id))
                 BugMessage.bugID == self.id,
                 BugMessage.messageID == Message.id,
                 )
-        results.order_by(BugMessage.index, Message.datecreated, Message.id)
+        results.order_by(BugMessage.index)
         return DecoratedResultSet(results, index_message,
             pre_iter_hook=eager_load)
 
