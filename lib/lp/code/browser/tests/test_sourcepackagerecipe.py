@@ -26,6 +26,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_main_content,
+    find_tag_by_id,
     find_tags_by_class,
     get_feedback_messages,
     get_radio_button_text_for_field,
@@ -1226,6 +1227,88 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         set_status(build6, BuildStatus.FULLYBUILT)
         self.assertEqual(
             [build1, build2, build3, build4, build5], view.builds)
+
+    def test_request_daily_builds_button_stale(self):
+        # Recipes that are stale and are built daily have a build now link
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, daily_build_archive=self.ppa,
+            is_stale=True, build_daily=True)
+        browser = self.getViewBrowser(recipe)
+        build_button = find_tag_by_id(browser.contents, 'field.actions.build')
+        self.assertIsNot(None, build_button)
+
+    def test_request_daily_builds_button_not_stale(self):
+        # Recipes that are not stale do not have a build now link
+        login(ANONYMOUS)
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, daily_build_archive=self.ppa,
+            is_stale=False, build_daily=True)
+        browser = self.getViewBrowser(recipe)
+        build_button = find_tag_by_id(browser.contents, 'field.actions.build')
+        self.assertIs(None, build_button)
+
+    def test_request_daily_builds_button_not_daily(self):
+        # Recipes that are not built daily do not have a build now link
+        login(ANONYMOUS)
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, daily_build_archive=self.ppa,
+            is_stale=True, build_daily=False)
+        browser = self.getViewBrowser(recipe)
+        build_button = find_tag_by_id(browser.contents, 'field.actions.build')
+        self.assertIs(None, build_button)
+
+    def test_request_daily_builds_button_no_daily_ppa(self):
+        # Recipes that have no daily build ppa do not have a build now link
+        login(ANONYMOUS)
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, is_stale=True, build_daily=True)
+        naked_recipe = removeSecurityProxy(recipe)
+        naked_recipe.daily_build_archive = None
+        browser = self.getViewBrowser(recipe)
+        build_button = find_tag_by_id(browser.contents, 'field.actions.build')
+        self.assertIs(None, build_button)
+
+    def test_request_daily_builds_button_ppa_with_no_permissions(self):
+        # Recipes that have a daily build ppa without upload permissions
+        # do not have a build now link
+        login(ANONYMOUS)
+        distroseries = self.factory.makeSourcePackageRecipeDistroseries()
+        person = self.factory.makePerson()
+        daily_build_archive = self.factory.makeArchive(
+                distribution=distroseries.distribution, owner=person)
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, daily_build_archive=daily_build_archive,
+            is_stale=True, build_daily=True)
+        browser = self.getViewBrowser(recipe)
+        build_button = find_tag_by_id(browser.contents, 'field.actions.build')
+        self.assertIs(None, build_button)
+
+    def test_request_daily_builds_ajax_link_not_rendered(self):
+        # The Build now link should not be rendered without javascript.
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, daily_build_archive=self.ppa,
+            is_stale=True, build_daily=True)
+        browser = self.getViewBrowser(recipe)
+        build_link = find_tag_by_id(browser.contents, 'request-daily-builds')
+        self.assertIs(None, build_link)
+
+    def test_request_daily_builds_action(self):
+        # Daily builds should be triggered when requested.
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, daily_build_archive=self.ppa,
+            is_stale=True, build_daily=True)
+        browser = self.getViewBrowser(recipe)
+        browser.getControl('Build now').click()
+        login(ANONYMOUS)
+        builds = recipe.getPendingBuilds()
+        build_distros = [
+            build.distroseries.displayname for build in builds]
+        build_distros.sort()
+        # Our recipe has a Warty distroseries
+        self.assertEqual(['Warty'], build_distros)
+        self.assertEqual(
+            set([2505]),
+            set(build.buildqueue_record.lastscore for build in builds))
 
     def test_request_builds_page(self):
         """Ensure the +request-builds page is sane."""
