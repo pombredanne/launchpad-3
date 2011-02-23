@@ -692,6 +692,15 @@ class IDistributionSet(Interface):
             members, owner, mugshot=None, logo=None, icon=None):
         """Create a new distribution."""
 
+    def getCurrentSourceReleases(distro_to_source_packagenames):
+        """Lookup many distribution source package releases.
+
+        :param distro_to_source_packagenames: A dictionary with
+            its keys being `IDistribution` and its values a list of
+            `ISourcePackageName`.
+        :return: A dict as per `IDistribution.getCurrentSourceReleases`
+        """
+
 
 class NoSuchDistribution(NameLookupFailed):
     """Raised when we try to find a distribution that doesn't exist."""
