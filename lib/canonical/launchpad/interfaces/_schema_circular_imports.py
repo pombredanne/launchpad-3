@@ -264,8 +264,8 @@ patch_plain_parameter_type(IPerson, 'getArchiveSubscriptionURL', 'archive',
 patch_entry_return_type(IPerson, 'getRecipe', ISourcePackageRecipe)
 
 # IHasRecipe
-patch_collection_return_type(
-    IHasRecipes, 'getRecipes', ISourcePackageRecipe)
+patch_collection_property(
+    IHasRecipes, 'recipes', ISourcePackageRecipe)
 
 IPerson['hardware_submissions'].value_type.schema = IHWSubmission
 
@@ -448,14 +448,14 @@ patch_reference_property(
 # ISourcePackageRecipeView
 patch_entry_return_type(
     ISourcePackageRecipe, 'requestBuild', ISourcePackageRecipeBuild)
-patch_entry_return_type(
-    ISourcePackageRecipe, 'getLastBuild', ISourcePackageRecipeBuild)
-patch_collection_return_type(
-    ISourcePackageRecipe, 'getPendingBuilds', ISourcePackageRecipeBuild)
-patch_collection_return_type(
-    ISourcePackageRecipe, 'getCompletedBuilds', ISourcePackageRecipeBuild)
-patch_collection_return_type(
-    ISourcePackageRecipe, 'getBuilds', ISourcePackageRecipeBuild)
+patch_reference_property(
+    ISourcePackageRecipe, 'last_build', ISourcePackageRecipeBuild)
+patch_collection_property(
+    ISourcePackageRecipe, 'builds', ISourcePackageRecipeBuild)
+patch_collection_property(
+    ISourcePackageRecipe, 'pending_builds', ISourcePackageRecipeBuild)
+patch_collection_property(
+    ISourcePackageRecipe, 'completed_builds', ISourcePackageRecipeBuild)
 
 # IHasBugs
 patch_plain_parameter_type(

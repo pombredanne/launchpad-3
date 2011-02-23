@@ -24,13 +24,11 @@ from textwrap import dedent
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
-    export_read_operation,
     export_write_operation,
     exported,
     mutator_for,
     operation_for_version,
     operation_parameters,
-    operation_returns_collection_of,
     operation_returns_entry,
     REQUEST_USER,
     )
@@ -53,7 +51,6 @@ from zope.schema import (
     TextLine,
     )
 
-from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
 from lp.code.interfaces.branch import IBranch
@@ -108,32 +105,44 @@ class ISourcePackageRecipeView(Interface):
 
     recipe_text = exported(Text(readonly=True))
 
+    pending_builds = exported(
+        CollectionField(
+            title=_("The pending builds of this recipe."),
+            description=_('Pending builds of this recipe, sorted by '
+                    'desc(date_created), then by desc(id).'),
+            value_type=Reference(schema=Interface),
+            readonly=True))
+
+    completed_builds = exported(
+        CollectionField(
+            title=_("The completed builds of this recipe."),
+            description=_('Completed builds of this recipe, sorted by '
+                    'desc(greater(date_finished, date_started)), '
+                    'then by desc(id).'),
+            value_type=Reference(schema=Interface),
+            readonly=True))
+
+    builds = exported(
+        CollectionField(
+            title=_("All builds of this recipe."),
+            description=_('All builds of this recipe, sorted by '
+                    'desc(greater(date_finished, date_started)), '
+                    'then by desc(id).'),
+            value_type=Reference(schema=Interface),
+            readonly=True))
+
+    last_build = exported(
+        Reference(
+            Interface,
+            title=_("The the most recent build of this recipe."),
+            readonly=True))
+
     def isOverQuota(requester, distroseries):
         """True if the recipe/requester/distroseries combo is >= quota.
 
         :param requester: The Person requesting a build.
         :param distroseries: The distroseries to build for.
         """
-
-    @operation_returns_collection_of(Interface)
-    @export_read_operation()
-    def getBuilds():
-        """Return a ResultSet of all the builds."""
-
-    @operation_returns_collection_of(Interface)
-    @export_read_operation()
-    def getPendingBuilds():
-        """Return a ResultSet of all the pending builds."""
-
-    @operation_returns_collection_of(Interface)
-    @export_read_operation()
-    def getCompletedBuilds():
-        """Return a ResultSet of all the non-pending builds."""
-
-    @operation_returns_entry(Interface)
-    @export_read_operation()
-    def getLastBuild():
-        """Return the the most recent build of this recipe."""
 
     @call_with(requester=REQUEST_USER)
     @operation_parameters(

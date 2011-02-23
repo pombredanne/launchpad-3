@@ -13,15 +13,19 @@ from zope.interface import (
     Interface,
     )
 
-from lazr.restful.declarations import (
-    export_read_operation,
-    operation_returns_collection_of,
+from lazr.restful.declarations import exported
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
     )
+
+from canonical.launchpad import _
 
 class IHasRecipes(Interface):
     """An object that has recipes."""
 
-    @operation_returns_collection_of(Interface)
-    @export_read_operation()
-    def getRecipes():
-        """Returns all recipes associated with the object."""
+    recipes = exported(
+        CollectionField(
+            title=_("All recipes associated with the object."),
+            value_type=Reference(schema=Interface),
+            readonly=True))

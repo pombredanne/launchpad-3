@@ -281,7 +281,8 @@ class SourcePackageRecipe(Storm):
             queue_record.manualScore(queue_record.lastscore + 100)
         return build
 
-    def getBuilds(self):
+    @property
+    def builds(self):
         """See `ISourcePackageRecipe`."""
         order_by = (Desc(Greatest(
                             BuildFarmJob.date_started,
@@ -289,7 +290,8 @@ class SourcePackageRecipe(Storm):
                    Desc(BuildFarmJob.date_created), Desc(BuildFarmJob.id))
         return self._getBuilds(None, order_by)
 
-    def getCompletedBuilds(self):
+    @property
+    def completed_builds(self):
         """See `ISourcePackageRecipe`."""
         filter_term = BuildFarmJob.status != BuildStatus.NEEDSBUILD
         order_by = (Desc(Greatest(
@@ -298,7 +300,8 @@ class SourcePackageRecipe(Storm):
                    Desc(BuildFarmJob.id))
         return self._getBuilds(filter_term, order_by)
 
-    def getPendingBuilds(self):
+    @property
+    def pending_builds(self):
         """See `ISourcePackageRecipe`."""
         filter_term = BuildFarmJob.status == BuildStatus.NEEDSBUILD
         order_by = Desc(BuildFarmJob.date_created), Desc(BuildFarmJob.id)
@@ -319,7 +322,8 @@ class SourcePackageRecipe(Storm):
         result.order_by(order_by)
         return result
 
-    def getLastBuild(self):
+    @property
+    def last_build(self):
         """See `ISourcePackageRecipeBuild`."""
         return self._getBuilds(
             True, Desc(BuildFarmJob.date_finished)).first()
