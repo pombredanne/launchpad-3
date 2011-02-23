@@ -374,8 +374,14 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
                     data['archive'], self.user, distroseries, manual=True)
                 builds.append(build)
             except BuildAlreadyPending, e:
-                errors['distros'] = ("An identical build is already pending "
-                    "for %s." % e.distroseries)
+                existing_error = errors.get("distros")
+                if existing_error:
+                    new_error = existing_error[:-1] + (
+                                    ", and %s." % e.distroseries)
+                else:
+                    new_error = ("An identical build is "
+                                "already pending for %s." % e.distroseries)
+                errors["distros"] =  new_error
         return builds, errors
 
 
@@ -487,7 +493,8 @@ class SourcePackageRecipeRequestBuildsAjaxView(
         """Set up the response and json data to return to the caller."""
         self.request.response.setStatus(400, reason)
         self.request.response.setHeader('Content-type', 'application/json')
-        return simplejson.dumps(errors)
+        return_data = dict(builds=data, errors=errors)
+        return simplejson.dumps(return_data)
 
     def failure(self, action, data, errors):
         """Called by the form if validate() finds any errors.
@@ -510,10 +517,14 @@ class SourcePackageRecipeRequestBuildsAjaxView(
         """
         builds, errors = self.requestBuild(data)
         # If there are errors we return a json data snippet containing the
-        # errors instead of rendering the form. These errors are processed
-        # by the caller's response handler and displayed to the user.
+        # errors as well as the form content. These errors are processed
+        # by the caller's response handler and displayed to the user. The
+        # form content may be rendered as well if required.
         if errors:
-            return self._process_error(data, errors, "Request Build")
+            builds_html = None
+            if len(builds):
+                builds_html = self.render()
+            return self._process_error(builds_html, errors, "Request Build")
 
     @property
     def builds(self):

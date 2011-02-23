@@ -77,10 +77,20 @@ class TestRecipeBuild(WindmillTestCase):
             % quote_jquery_expression(PPAFormatterAPI(self.ppa).url()),
             timeout=FOR_ELEMENT)
 
-        # And try the same one again.
+        # And try the same one again plus a new one.
         client.click(id=u'request-builds')
         client.waits.forElement(id=u'field.archive')
+        client.click(id=u'field.distros.1')
         client.click(name=u'field.actions.request')
+
+        # And check that there's an info message.
+        client.waits.forElement(
+            jquery=u"('div.popup-build-informational')",
+            timeout=FOR_ELEMENT)
+
+        client.asserts.assertTextIn(
+            jquery=u"('div.popup-build-informational')[0]",
+            validator=u'1 new recipe build has been queued.')
 
         # And check that there's an error.
         client.waits.forElement(
