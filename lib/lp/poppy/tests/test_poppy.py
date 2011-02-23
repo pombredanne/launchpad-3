@@ -35,6 +35,7 @@ from canonical.testing.layers import (
 from lp.registry.interfaces.ssh import (
     ISSHKeySet,
     )
+from lp.poppy.hooks import Hooks
 from lp.testing import TestCaseWithFactory
 
 
@@ -47,7 +48,7 @@ class FTPServer(Fixture):
 
     def setUp(self):
         super(FTPServer, self).setUp()
-        self.useFixture(PoppyTac(self.root_dir))
+        self.poppytac = self.useFixture(PoppyTac(self.root_dir))
 
     def getAnonTransport(self):
         return get_transport('ftp://anonymous:me@example.com@localhost:%s/' % (self.port,))
@@ -65,12 +66,13 @@ class FTPServer(Fixture):
     def waitForClose(self):
         """Wait for an FTP connection to close.
 
-        Poppy is configured to echo 'CLOSED' to stdout when a
-        connection closes, so we wait for CLOSED to appear in its
+        Poppy is configured to echo 'Post-processing finished' to stdout
+        when a connection closes, so we wait for that to appear in its
         output as a way to tell that the server has finished with the
         connection.
         """
-        time.sleep(5)
+        self.poppytac.waitForPostProcessing()
+        #time.sleep(5)
 
 
 class SFTPServer(Fixture):
@@ -110,7 +112,7 @@ class SFTPServer(Fixture):
     def setUp(self):
         super(SFTPServer, self).setUp()
         self.setUpUser('joe')
-        self.useFixture(PoppyTac(self.root_dir))
+        self.poppytac = self.useFixture(PoppyTac(self.root_dir))
 
     def disconnect(self, transport):
         transport._get_connection().close()
@@ -122,7 +124,8 @@ class SFTPServer(Fixture):
         # XXX: Steve Kowalik 2010-05-24 bug=586695 There has to be a
         # better way to wait for the SFTP server to process our upload
         # rather than sleeping for 10 seconds.
-        time.sleep(10)
+        #time.sleep(10)
+        self.poppytac.waitForPostProcessing()
 
     def getTransport(self):
         return get_transport('sftp://joe@localhost:%s/' % (self.port,))
@@ -167,6 +170,23 @@ class PoppyTac(TacTestSetup):
     @property
     def pidfile(self):
         return os.path.join(self.root, 'poppy-sftp.pid')
+
+    def waitForPostProcessing(self):
+        now = time.time()
+        deadline = now + 20
+        while now < deadline and not self._hasPostProcessed():
+            time.sleep(0.1)
+            now = time.time()
+
+        if now >= deadline:
+            raise Exception("Poppy post-processing did not complete")
+
+    def _hasPostProcessed(self):
+        if os.path.exists(self.logfile):
+            with open(self.logfile, "r") as logfile:
+                return Hooks.LOG_MAGIC in logfile.read()
+        else:
+            return False
 
 
 class TestPoppy(TestCaseWithFactory):

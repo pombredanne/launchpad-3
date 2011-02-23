@@ -5,6 +5,8 @@
 #     twistd -noy sftp.tac
 # or similar.  Refer to the twistd(1) man page for details.
 
+import logging
+
 from twisted.application import service
 from twisted.conch.interfaces import ISession
 from twisted.conch.ssh import filetransfer
@@ -27,9 +29,6 @@ from lp.services.sshserver.auth import (
     LaunchpadAvatar, PublicKeyFromLaunchpadChecker)
 from lp.services.sshserver.service import SSHService
 from lp.services.sshserver.session import DoNothingSession
-
-# XXX: Rename this file to something that doesn't mention poppy. Talk to
-# bigjools.
 
 
 def make_portal():
@@ -67,6 +66,11 @@ class Realm:
 
 def poppy_sftp_adapter(avatar):
     return SFTPServer(avatar, get_poppy_root())
+
+
+# Connect Python logging to Twisted's logging.
+from lp.services.twistedsupport.loggingsupport import set_up_tacfile_logging
+set_up_tacfile_logging("poppy-sftp", logging.INFO)
 
 
 components.registerAdapter(

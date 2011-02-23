@@ -75,6 +75,25 @@ def set_up_logging_for_script(options, name):
     return logger_object
 
 
+def set_up_tacfile_logging(name, level):
+    """Create a `Logger` object for use in tac files.
+
+    This is preferable to use over `set_up_logging_for_script` for .tac
+    files since there's no options to pass through.  The logger object
+    is connected to Twisted's log and returned.
+
+    :param name: The logger instance name.
+    :param level: The log level to use, eg. logging.INFO or logging.DEBUG
+    """
+    logger = logging.getLogger(name)
+    channel = logging.StreamHandler(log.StdioOnnaStick())
+    channel.setLevel(level)
+    channel.setFormatter(logging.Formatter('%(message)s'))
+    logger.addHandler(channel)
+    logger.setLevel(level)
+    return logger
+
+
 def set_up_oops_reporting(configuration, name, mangle_stdout=True):
     """Set up OOPS reporting by starting the Twisted logger with an observer.
 

@@ -3,6 +3,12 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'Hooks',
+    'PoppyInterfaceFailure',
+    ]
+
+
 import logging
 import os
 import shutil
@@ -19,6 +25,7 @@ class PoppyInterfaceFailure(Exception):
 class Hooks:
 
     clients = {}
+    LOG_MAGIC = "Post-processing finished"
 
     def __init__(self, targetpath, logger, allow_user, cmd=None,
                  targetstart=0, perms=None, prefix=''):
@@ -122,6 +129,9 @@ class Hooks:
             self.lock.release(skip_delete=True)
 
         self.clients.pop(fsroot)
+        # This is mainly done so that tests know when the
+        # post-processing hook has finished.
+        self.logger.info(self.LOG_MAGIC)
 
     def auth_verify_hook(self, fsroot, user, password):
         """Verify that the username matches a distribution we care about.
