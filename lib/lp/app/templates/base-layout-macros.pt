@@ -179,13 +179,10 @@
 
   <script tal:content='structure string:
   LPS.use(function(Y) {
-    Y.on("lp:context:changed", function(entry, fields_changed) {
-      Y.log("lp:context:changed");
-      Y.log(entry);
-      Y.log(fields_changed);
-      //if (fields_changed.indexOf("web_link") >= 0) {
-      // / window.location = entry.get("web_link");
-      //}
+    Y.on("lp:context:changed", function(fields_changed, entry) {
+      if (Y.Array.indexOf(fields_changed, "web_link") >= 0) {
+        window.location = entry.get("web_link");
+      }
     });
   });'/>
 
