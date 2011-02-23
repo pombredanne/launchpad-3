@@ -7,6 +7,7 @@ import os
 
 from canonical.config import config
 
+
 def get_poppy_root():
     """Return the poppy root to use for this server.
 
@@ -17,4 +18,3 @@ def get_poppy_root():
     if poppy_root:
         return poppy_root
     return config.poppy.fsroot
-

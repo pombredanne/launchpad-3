@@ -208,6 +208,7 @@ class LoggingProxy(xmlrpc.Proxy):
         self.request_count += 1
         self.logger.log(
             self.level, 'Sending request [%d]: %s%s', request, method, args)
+
         def _logResult(result):
             self.logger.log(
                 self.level, 'Reply to request [%d]: %s', request, result)

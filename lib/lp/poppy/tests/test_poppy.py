@@ -280,7 +280,7 @@ class TestPoppy(TestCaseWithFactory):
         self.assertEqual(
             os.stat(wanted_path).st_mode,
             stat.S_IROTH | stat.S_ISGID | stat.S_IRGRP | stat.S_IWGRP
-            | stat.S_IWUSR | stat.S_IRUSR | stat.S_IFREG )
+            | stat.S_IWUSR | stat.S_IRUSR | stat.S_IFREG)
 
     def test_full_source_upload(self):
         """Check that the connection will deal with multiple files being
@@ -319,7 +319,7 @@ class TestPoppy(TestCaseWithFactory):
             self.assertEqual(
                 os.stat(wanted_path).st_mode,
                 stat.S_IROTH | stat.S_ISGID | stat.S_IRGRP | stat.S_IWGRP
-                | stat.S_IWUSR | stat.S_IRUSR | stat.S_IFREG )
+                | stat.S_IWUSR | stat.S_IRUSR | stat.S_IFREG)
 
     def test_upload_isolation(self):
         """Check if poppy isolates the uploads properly.

@@ -129,6 +129,8 @@ class FTPRealm:
 
 
 class FTPServiceFactory(service.Service):
+    """A factory that makes an `FTPService`"""
+
     def __init__(self, port):
         realm = FTPRealm(get_poppy_root())
         portal = Portal(realm)
@@ -143,14 +145,8 @@ class FTPServiceFactory(service.Service):
         self.ftpfactory = factory
         self.portno = port
 
-        # Setting this works around the fact that the twistd FTP server
-        # invokes a special restricted shell when someone logs in as
-        # "anonymous" which is the default for 'dput'.
-        #factory.userAnonymous = "userthatwillneverhappen"
-
     @staticmethod
     def makeFTPService(port=2121):
         strport = "tcp:%s" % port
         factory = FTPServiceFactory(port)
         return strports.service(strport, factory.ftpfactory)
-
