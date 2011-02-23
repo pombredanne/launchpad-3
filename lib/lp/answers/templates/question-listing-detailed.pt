@@ -7,12 +7,14 @@
 <li tal:attributes="title description">
       <a tal:replace="structure context/fmt:link" />
       (<span tal:replace="context/status/title">Approved</span>)
-    <br /> posted
+    <br />
+    <span class="registered">posted
       <span
         tal:attributes="title context/datecreated/fmt:datetime"
         tal:replace="context/datecreated/fmt:displaydate">2005-10-05</span>
       in
       <span tal:replace="context/target/title">SmegConf</span>
+    </span>
 </li>
 </tal:root>
 
