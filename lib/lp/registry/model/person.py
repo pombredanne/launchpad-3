@@ -372,7 +372,7 @@ class PersonSettings(Storm):
     personID = Int("person", default=None, primary=True)
     person = Reference(personID, "Person.id")
 
-    selfgenerated_bugnotifications = BoolCol(notNull=True, default=True)
+    selfgenerated_bugnotifications = BoolCol(notNull=True, default=False)
 
 
 def readonly_settings(message, interface):

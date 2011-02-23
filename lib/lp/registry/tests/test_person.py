@@ -293,6 +293,12 @@ class TestPerson(TestCaseWithFactory):
         self.assertTrue(from_person.is_merge_pending)
         self.assertFalse(to_person.is_merge_pending)
 
+    def test_selfgenerated_bugnotifications_none_by_default(self):
+        # Default for new accounts is to not get any
+        # self-generated bug notifications by default.
+        user = self.factory.makePerson()
+        self.assertFalse(user.selfgenerated_bugnotifications)
+
 
 class TestPersonStates(TestCaseWithFactory):
 
@@ -413,9 +419,7 @@ class TestPersonStates(TestCaseWithFactory):
         # A PUBLIC team with a structural subscription to a product can
         # convert to a PRIVATE team.
         foo_bar = Person.byName('name16')
-        StructuralSubscription(
-            product=self.bzr, subscriber=self.otherteam,
-            subscribed_by=foo_bar)
+        self.bzr.addSubscription(self.otherteam, foo_bar)
         self.otherteam.visibility = PersonVisibility.PRIVATE
 
     def test_visibility_validator_team_private_to_public(self):

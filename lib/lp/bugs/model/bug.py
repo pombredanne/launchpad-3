@@ -437,6 +437,8 @@ class Bug(SQLBase):
     @property
     def indexed_messages(self):
         """See `IMessageTarget`."""
+        # Note that this is a decorated result set, so will cache its value (in
+        # the absence of slices)
         return self._indexed_messages(include_content=True)
 
     def _indexed_messages(self, include_content=False, include_parents=True):
@@ -532,7 +534,7 @@ BugMessage""" % sqlvalues(self.id))
                 BugMessage.bugID == self.id,
                 BugMessage.messageID == Message.id,
                 )
-        results.order_by(BugMessage.index, Message.datecreated, Message.id)
+        results.order_by(BugMessage.index)
         return DecoratedResultSet(results, index_message,
             pre_iter_hook=eager_load)
 
@@ -1369,39 +1371,55 @@ BugMessage""" % sqlvalues(self.id))
         """See `IBug`."""
         return self._question_from_bug
 
-    def getMessageChunks(self):
+    def getMessagesForView(self, slice_info):
         """See `IBug`."""
-        query = """
-            Message.id = MessageChunk.message AND
-            BugMessage.message = Message.id AND
-            BugMessage.bug = %s
-            """ % sqlvalues(self)
-
-        chunks = MessageChunk.select(query,
-            clauseTables=["BugMessage", "Message"],
-            # XXX: kiko 2006-09-16 bug=60745:
-            # There is an issue that presents itself
-            # here if we prejoin message.owner: because Message is
-            # already in the clauseTables, the SQL generated joins
-            # against message twice and that causes the results to
-            # break.
-            prejoinClauseTables=["Message"],
-            # Note the ordering by Message.id here; while datecreated in
-            # production is never the same, it can be in the test suite.
-            orderBy=["Message.datecreated", "Message.id",
-                     "MessageChunk.sequence"])
-        chunks = list(chunks)
-
-        # Since we can't prejoin, cache all people at once so we don't
-        # have to do it while rendering, which is a big deal for bugs
-        # with a million comments.
-        owner_ids = set()
-        for chunk in chunks:
-            if chunk.message.ownerID:
-                owner_ids.add(str(chunk.message.ownerID))
-        list(Person.select("ID in (%s)" % ",".join(owner_ids)))
-
-        return chunks
+        # Note that this function and indexed_messages have significant overlap
+        # and could stand to be refactored.
+        slices = []
+        if slice_info is not None:
+            # NB: This isn't a full implementation of the slice protocol,
+            # merely the bits needed by BugTask:+index.
+            for slice in slice_info:
+                if not slice.start:
+                    assert slice.stop > 0, slice.stop
+                    slices.append(BugMessage.index < slice.stop)
+                elif not slice.stop:
+                    if slice.start < 0:
+                        # If the high index is N, a slice of -1: should
+                        # return index N - so we need to add one to the
+                        # range.
+                        slices.append(BugMessage.index >= SQL(
+                            "(select max(index) from "
+                            "bugmessage where bug=%s) + 1 - %s" % (
+                            sqlvalues(self.id, -slice.start))))
+                    else:
+                        slices.append(BugMessage.index >= slice.start)
+                else:
+                    slices.append(And(BugMessage.index >= slice.start,
+                        BugMessage.index < slice.stop))
+        if slices:
+            ranges = [Or(*slices)]
+        else:
+            ranges = []
+        # We expect:
+        # 1 bugmessage -> 1 message -> small N chunks. For now, using a wide
+        # query seems fine as we have to join out from bugmessage anyway.
+        result = Store.of(self).find((BugMessage, Message, MessageChunk),
+            Message.id==MessageChunk.messageID,
+            BugMessage.messageID==Message.id,
+            BugMessage.bug==self.id,
+            *ranges)
+        result.order_by(BugMessage.index, MessageChunk.sequence)
+        def eager_load_owners(rows):
+            owners = set()
+            for row in rows:
+                owners.add(row[1].ownerID)
+            owners.discard(None)
+            if not owners:
+                return
+            PersonSet().getPrecachedPersonsFromIDs(owners,
+                need_validity=True)
+        return DecoratedResultSet(result, pre_iter_hook=eager_load_owners)
 
     def getNullBugTask(self, product=None, productseries=None,
                     sourcepackagename=None, distribution=None,
@@ -1761,11 +1779,15 @@ BugMessage""" % sqlvalues(self.id))
     def _known_viewers(self):
         """A set of known persons able to view this bug.
 
-        Seed it by including the list of all owners of pillars for bugtasks
-        for the bug.
+        This method must return an empty set or bug searches will trigger late
+        evaluation. Any 'should be set on load' propertis must be done by the
+        bug search.
+
+        If you are tempted to change this method, don't. Instead see
+        userCanView which defines the just-in-time policy for bug visibility,
+        and BugTask._search which honours visibility rules.
         """
-        pillar_owners = [bt.pillar.owner.id for bt in self.bugtasks]
-        return set(pillar_owners)
+        return set()
 
     def userCanView(self, user):
         """See `IBug`.
@@ -1799,6 +1821,12 @@ BugMessage""" % sqlvalues(self.id))
             # Explicit subscribers may also view it.
             for subscription in self.subscriptions:
                 if user.inTeam(subscription.person):
+                    self._known_viewers.add(user.id)
+                    return True
+            # Pillar owners can view it. Note that this is contentious and
+            # possibly incorrect: see bug 702429.
+            for pillar_owner in [bt.pillar.owner for bt in self.bugtasks]:
+                if user.inTeam(pillar_owner):
                     self._known_viewers.add(user.id)
                     return True
         return False

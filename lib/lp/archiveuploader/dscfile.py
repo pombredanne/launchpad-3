@@ -28,7 +28,7 @@ import apt_pkg
 from debian.deb822 import Deb822Dict
 from zope.component import getUtility
 
-from canonical.encoding import guess as guess_encoding
+from lp.services.encoding import guess as guess_encoding
 from canonical.launchpad.interfaces.gpghandler import (
     GPGVerificationError,
     IGPGHandler,
