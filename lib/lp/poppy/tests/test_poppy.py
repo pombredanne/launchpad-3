@@ -60,7 +60,7 @@ class FTPServer(Fixture):
         transport._get_connection().close()
 
     def waitForStartUp(self):
-        """Wait for the FTP server to start up."""
+        """Wait for the FT Pserve start up."""
         pass
 
     def waitForClose(self):
@@ -72,7 +72,6 @@ class FTPServer(Fixture):
         connection.
         """
         self.poppytac.waitForPostProcessing()
-        #time.sleep(5)
 
 
 class SFTPServer(Fixture):
@@ -121,10 +120,6 @@ class SFTPServer(Fixture):
         pass
 
     def waitForClose(self):
-        # XXX: Steve Kowalik 2010-05-24 bug=586695 There has to be a
-        # better way to wait for the SFTP server to process our upload
-        # rather than sleeping for 10 seconds.
-        #time.sleep(10)
         self.poppytac.waitForPostProcessing()
 
     def getTransport(self):

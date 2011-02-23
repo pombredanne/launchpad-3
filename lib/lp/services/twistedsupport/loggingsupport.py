@@ -12,6 +12,7 @@ __all__ = [
     'log_oops_from_failure',
     'set_up_logging_for_script',
     'set_up_oops_reporting',
+    'set_up_tacfile_logging',
     ]
 
 
