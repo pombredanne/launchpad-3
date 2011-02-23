@@ -163,7 +163,7 @@
                       links cache/links;
                       objects cache/objects;">
     <script tal:repeat="key links"
-      tal:content="string:LP.client.links['${key}'] =
+      tal:content="string:LP.links['${key}'] =
                    '${links/?key/fmt:api_url}';">
     </script>
     <script tal:repeat="key objects"
