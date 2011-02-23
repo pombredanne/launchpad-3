@@ -123,7 +123,7 @@ class ITranslationMessage(Interface):
 
     potmsgset = Object(
         title=_("The template message that this translation is for"),
-        readonly=True, required=True, schema=IPOTMsgSet)
+        readonly=False, required=True, schema=IPOTMsgSet)
 
     date_created = Datetime(
         title=_("The date we saw this translation first"),

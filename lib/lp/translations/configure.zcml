@@ -561,7 +561,6 @@
             <require
                 permission="launchpad.Edit"
                 set_schema="lp.translations.interfaces.translationmessage.ITranslationMessage"/>
-            <require permission="launchpad.Admin" set_attributes="potmsgset"/>
         </class>
 
         <!-- Dummy Translation Message. It's a read only class. -->
