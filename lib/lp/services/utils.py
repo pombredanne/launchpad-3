@@ -16,6 +16,7 @@ __all__ = [
     'decorate_with',
     'docstring_dedent',
     'iter_split',
+    'run_capturing_output',
     'synchronize',
     'text_delta',
     'traceback_info',
@@ -23,11 +24,16 @@ __all__ = [
     ]
 
 from itertools import tee
+from StringIO import StringIO
 import string
 import sys
 from textwrap import dedent
 from types import FunctionType
 
+from fixtures import (
+    Fixture,
+    MonkeyPatch,
+    )
 from lazr.enum import BaseItem
 from twisted.python.util import mergeFunctionMetadata
 from zope.security.proxy import isinstance as zope_isinstance
@@ -218,6 +224,35 @@ def docstring_dedent(s):
     # Make sure there is at least one newline so the split works.
     first, rest = (s+'\n').split('\n', 1)
     return (first + '\n' + dedent(rest)).strip()
+
+
+class CapturedOutput(Fixture):
+    """A fixture that captures output to stdout and stderr."""
+
+    def __init__(self):
+        super(CapturedOutput, self).__init__()
+        self.stdout = StringIO()
+        self.stderr = StringIO()
+
+    def setUp(self):
+        super(CapturedOutput, self).setUp()
+        self.useFixture(MonkeyPatch('sys.stdout', self.stdout))
+        self.useFixture(MonkeyPatch('sys.stderr', self.stderr))
+
+
+def run_capturing_output(function, *args, **kwargs):
+    """Run ``function`` capturing output to stdout and stderr.
+
+    :param function: A function to run.
+    :param args: Arguments passed to the function.
+    :param kwargs: Keyword arguments passed to the function.
+    :return: A tuple of ``(ret, stdout, stderr)``, where ``ret`` is the value
+        returned by ``function``, ``stdout`` is the captured standard output
+        and ``stderr`` is the captured stderr.
+    """
+    with CapturedOutput() as captured:
+        ret = function(*args, **kwargs)
+    return ret, captured.stdout.getvalue(), captured.stderr.getvalue()
 
 
 def traceback_info(info):
