@@ -123,7 +123,3 @@ class RemoteBugUpdaterTestCase(TestCaseWithFactory):
         self.assertEqual(
             "INFO Unknown remote importance 'spam' for bug 42 on "
             "http://example.com.\n", updater.logger.getLogBuffer())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
