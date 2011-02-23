@@ -22,6 +22,10 @@ class PoppyInterfaceFailure(Exception):
     pass
 
 
+# See Hooks.targetcount.
+targetcount = 0
+
+
 class Hooks:
 
     clients = {}
@@ -33,9 +37,15 @@ class Hooks:
         self.logger = logging.getLogger("%s.Hooks" % logger.name)
         self.cmd = cmd
         self.allow_user = allow_user
-        self.targetcount = targetstart
         self.perms = perms
         self.prefix = prefix
+
+    @property
+    def targetcount(self):
+        """A guaranteed unique integer for ensuring unique upload dirs."""
+        global targetcount
+        targetcount += 1
+        return targetcount
 
     def new_client_hook(self, fsroot, host, port):
         """Prepare a new client record indexed by fsroot..."""
@@ -87,7 +97,6 @@ class Hooks:
             pass
 
         try:
-            self.targetcount += 1
             timestamp = time.strftime("%Y%m%d-%H%M%S")
             path = "upload%s-%s-%06d" % (
                 self.prefix, timestamp, self.targetcount)

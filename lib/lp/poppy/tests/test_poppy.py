@@ -51,7 +51,8 @@ class FTPServer(Fixture):
         self.poppytac = self.useFixture(PoppyTac(self.root_dir))
 
     def getAnonTransport(self):
-        return get_transport('ftp://anonymous:me@example.com@localhost:%s/' % (self.port,))
+        return get_transport(
+            'ftp://anonymous:me@example.com@localhost:%s/' % (self.port,))
 
     def getTransport(self):
         return get_transport('ftp://ubuntu:@localhost:%s/' % (self.port,))
@@ -63,7 +64,7 @@ class FTPServer(Fixture):
         """Wait for the FT Pserve start up."""
         pass
 
-    def waitForClose(self):
+    def waitForClose(self, number=1):
         """Wait for an FTP connection to close.
 
         Poppy is configured to echo 'Post-processing finished' to stdout
@@ -71,7 +72,7 @@ class FTPServer(Fixture):
         output as a way to tell that the server has finished with the
         connection.
         """
-        self.poppytac.waitForPostProcessing()
+        self.poppytac.waitForPostProcessing(number)
 
 
 class SFTPServer(Fixture):
@@ -119,8 +120,8 @@ class SFTPServer(Fixture):
     def waitForStartUp(self):
         pass
 
-    def waitForClose(self):
-        self.poppytac.waitForPostProcessing()
+    def waitForClose(self, number=1):
+        self.poppytac.waitForPostProcessing(number)
 
     def getTransport(self):
         return get_transport('sftp://joe@localhost:%s/' % (self.port,))
@@ -166,20 +167,21 @@ class PoppyTac(TacTestSetup):
     def pidfile(self):
         return os.path.join(self.root, 'poppy-sftp.pid')
 
-    def waitForPostProcessing(self):
+    def waitForPostProcessing(self, number=1):
         now = time.time()
         deadline = now + 20
-        while now < deadline and not self._hasPostProcessed():
+        while now < deadline and not self._hasPostProcessed(number):
             time.sleep(0.1)
             now = time.time()
 
         if now >= deadline:
             raise Exception("Poppy post-processing did not complete")
 
-    def _hasPostProcessed(self):
+    def _hasPostProcessed(self, number):
         if os.path.exists(self.logfile):
             with open(self.logfile, "r") as logfile:
-                return Hooks.LOG_MAGIC in logfile.read()
+                occurrences = logfile.read().count(Hooks.LOG_MAGIC)
+                return occurrences >= number
         else:
             return False
 
@@ -332,13 +334,11 @@ class TestPoppy(TestCaseWithFactory):
         fake_file = StringIO.StringIO("ONE")
         conn_one.put_file('test', fake_file, mode=None)
         self.server.disconnect(conn_one)
-        self.server.waitForClose()
 
         conn_two = self.server.getTransport()
         fake_file = StringIO.StringIO("TWO")
         conn_two.put_file('test', fake_file, mode=None)
         self.server.disconnect(conn_two)
-        self.server.waitForClose()
 
         # Perform a pair of sessions with simultaneous connections.
         conn_three = self.server.getTransport()
@@ -351,10 +351,11 @@ class TestPoppy(TestCaseWithFactory):
         conn_four.put_file('test', fake_file, mode=None)
 
         self.server.disconnect(conn_three)
-        self.server.waitForClose()
 
         self.server.disconnect(conn_four)
-        self.server.waitForClose()
+
+        # Wait for the 4 uploads to finish.
+        self.server.waitForClose(4)
 
         # Build a list of directories representing the 4 sessions.
         upload_dirs = [leaf for leaf in sorted(os.listdir(self.root_dir))
