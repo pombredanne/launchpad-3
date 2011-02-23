@@ -16,6 +16,7 @@ from lp.registry.interfaces.persontransferjob import (
     IPersonMergeJobSource,
     )
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.model.job import Job
 from lp.services.log.logger import BufferLogger
 from lp.testing import TestCaseWithFactory
 
@@ -90,10 +91,10 @@ class TestPersonMergeJob(TestCaseWithFactory):
             [], self.find(from_person=self.to_person))
 
     def test_find_only_pending_or_running(self):
-        # find() only returns jobs that are pending or running.
+        # find() only returns jobs that are pending.
         for status in JobStatus.items:
             removeSecurityProxy(self.job.job)._status = status
-            if status in (JobStatus.WAITING, JobStatus.RUNNING):
+            if status in Job.PENDING_STATUSES:
                 self.assertEqual([self.job], self.find())
             else:
                 self.assertEqual([], self.find())

@@ -103,7 +103,7 @@ class IPersonMergeJobSource(IJobSource):
         """Create a new IMembershipNotificationJob."""
 
     def find(from_person=None, to_person=None):
-        """Finds pending or running merge jobs.
+        """Finds pending merge jobs.
 
         :param from_person: Match jobs on `from_person`, or `None` to ignore
             `from_person`.
