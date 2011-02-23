@@ -5,7 +5,6 @@ __metaclass__ = type
 
 
 from storm.locals import ClassAlias, Store
-from zope.security.proxy import removeSecurityProxy
 
 from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.translationtemplateitem import (
@@ -60,7 +59,7 @@ class TranslationSplitter:
         :param ubuntu_item: The `TranslationTemplateItem` to use.
         """
         new_potmsgset = ubuntu_item.potmsgset.clone()
-        removeSecurityProxy(ubuntu_item).potmsgset = new_potmsgset
+        ubuntu_item.potmsgset = new_potmsgset
         return new_potmsgset
 
     @staticmethod
@@ -76,8 +75,7 @@ class TranslationSplitter:
         """
         for message in upstream_msgset.getAllTranslationMessages():
             if message.potemplate == ubuntu_item.potemplate:
-                naked_message = removeSecurityProxy(message)
-                naked_message.potmsgset = ubuntu_item.potmsgset
+                message.potmsgset = ubuntu_item.potmsgset
             elif not message.is_diverged:
                 message.clone(ubuntu_item.potmsgset)
 

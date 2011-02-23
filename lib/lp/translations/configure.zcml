@@ -383,6 +383,7 @@
         class="lp.translations.model.translationtemplateitem.TranslationTemplateItem">
         <allow
             interface="lp.translations.interfaces.translationtemplateitem.ITranslationTemplateItem"/>
+        <require permission="launchpad.Admin" set_attributes="potmsgset"/>
     </class>
 
     <!-- ProductSeriesLanguage -->
@@ -560,6 +561,7 @@
             <require
                 permission="launchpad.Edit"
                 set_schema="lp.translations.interfaces.translationmessage.ITranslationMessage"/>
+            <require permission="launchpad.Admin" set_attributes="potmsgset"/>
         </class>
 
         <!-- Dummy Translation Message. It's a read only class. -->
