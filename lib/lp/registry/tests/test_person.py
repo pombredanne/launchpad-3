@@ -278,6 +278,21 @@ class TestPerson(TestCaseWithFactory):
             user.getOwnedOrDrivenPillars()]
         self.assertEqual(expected_pillars, received_pillars)
 
+    def test_no_merge_pending(self):
+        # is_merge_pending returns False when this person is not the "from"
+        # person of an active merge job.
+        person = self.factory.makePerson()
+        self.assertFalse(person.is_merge_pending)
+
+    def test_merge_pending(self):
+        # is_merge_pending returns True when this person is the "from" person
+        # of an active merge job.
+        from_person = self.factory.makePerson()
+        to_person = self.factory.makePerson()
+        getUtility(IPersonSet).mergeAsync(from_person, to_person)
+        self.assertTrue(from_person.is_merge_pending)
+        self.assertFalse(to_person.is_merge_pending)
+
 
 class TestPersonStates(TestCaseWithFactory):
 
