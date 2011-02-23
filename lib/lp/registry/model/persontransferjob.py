@@ -129,17 +129,6 @@ class PersonTransferJobDerived(BaseRunnableJob):
     def __init__(self, job):
         self.context = job
 
-    def __repr__(self):
-        return (
-            '<%(job_type)s branch job (%(id)s) for %(minor_person)s '
-            'as part of %(major_person)s. status=%(status)s>' % {
-                'job_type': self.context.job_type.name,
-                'id': self.context.id,
-                'minor_person': self.minor_person.name,
-                'major_person': self.major_person.name,
-                'status': self.job.status,
-                })
-
     @classmethod
     def create(cls, minor_person, major_person, metadata):
         """See `IPersonTransferJob`."""
@@ -330,6 +319,12 @@ class MembershipNotificationJob(PersonTransferJobDerived):
                     self.member_template % replacements, force_wrap=True)
                 simple_sendmail(from_addr, address, subject, msg)
         log.debug('MembershipNotificationJob sent email')
+
+    def __repr__(self):
+        return (
+            "<{self.__class__.__name__} about "
+            "~{self.minor_person.name} in ~{self.major_person.name}; "
+            "status={self.job.status}>").format(self=self)
 
 
 class PersonMergeJob(PersonTransferJobDerived):
