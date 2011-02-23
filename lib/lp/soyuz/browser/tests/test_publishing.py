@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from BeautifulSoup import BeautifulSoup
+import soupmatchers
 from zope.component import getUtility
 
 from canonical.testing.layers import LaunchpadFunctionalLayer
@@ -54,16 +54,21 @@ class TestSourcePublicationListingExtra(BrowserTestCase):
         spph = self.publisher.getPubSource(
             archive=self.archive, status=PackagePublishingStatus.PUBLISHED)
         spph.sourcepackagerelease.source_package_recipe_build = sprb
-        expected_contents = (
-            '<a href="%s">Built</a> by recipe <a href="%s">%s</a> for '
-            '<a href="%s">%s</a>.' % (
-                canonical_url(sprb, force_local_path=True),
-                canonical_url(recipe), recipe.name,
-                canonical_url(sprb.requester, force_local_path=True),
-                sprb.requester.displayname))
+        recipe_link_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'link to build', 'a', attrs={'href': canonical_url(sprb,
+                    force_local_path=True)},
+                text='Built'),
+            soupmatchers.Tag(
+                'recipe name', 'a', attrs={'href': canonical_url(recipe)},
+                text=recipe.name),
+            soupmatchers.Tag(
+                'requester', 'a',
+                attrs={'href': canonical_url(sprb.requester,
+                    force_local_path=True)},
+                text=sprb.requester.displayname))
         browser = self.getViewBrowser(spph, '+listing-archive-extra')
-        contents = BeautifulSoup(browser.contents)
-        self.assertIn(expected_contents, str(contents))
+        self.assertThat(browser.contents, recipe_link_matcher)
 
     def test_view_without_source_package_recipe(self):
         # And if a SourcePackageRelease is not linked, there is no sign of it
