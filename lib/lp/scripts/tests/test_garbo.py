@@ -18,6 +18,7 @@ from storm.expr import (
     Min,
     SQL,
     )
+from storm.locals import Storm, Int
 from storm.store import Store
 import transaction
 from zope.component import getUtility
@@ -45,6 +46,7 @@ from canonical.testing.layers import (
     DatabaseLayer,
     LaunchpadScriptLayer,
     LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.bugs.model.bugnotification import (
     BugNotification,
@@ -66,7 +68,6 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
     )
-from lp.registry.model.person import IrcID
 from lp.scripts.garbo import (
     BulkPruner,
     DailyDatabaseGarbageCollector,
@@ -100,25 +101,32 @@ class TestGarboScript(TestCase):
         self.failIf(err.strip(), "Output to stderr: %s" % err)
 
 
-class IrcIDPruner(BulkPruner):
-    target_table_class = IrcID
-    ids_to_prune_query = "SELECT id FROM IrcID WHERE id < 5"
+class BulkFoo(Storm):
+    __storm_table__ = 'bulkfoo'
+    id = Int(primary=True)
+
+
+class BulkFooPruner(BulkPruner):
+    target_table_class = BulkFoo
+    ids_to_prune_query = "SELECT id FROM BulkFoo WHERE id < 5"
     maximum_chunk_size = 2
 
 
 class TestBulkPruner(TestCase):
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         super(TestBulkPruner, self).setUp()
-        # Create some random entries in the IrcID table.
-        for i in range(10):
-            IrcID(personID=1, network='whatever', nickname='random%d' % i)
 
+        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.store.execute("CREATE TABLE BulkFoo (id serial PRIMARY KEY)")
+
+        for i in range(10):
+            self.store.add(BulkFoo())
 
     def test_bulkpruner(self):
         log = BufferLogger()
-        pruner = IrcIDPruner(log)
+        pruner = BulkFooPruner(log)
 
         # The loop thinks there is stuff to do. Confirm the initial
         # state is sane.
@@ -127,23 +135,22 @@ class TestBulkPruner(TestCase):
         # An arbitrary chunk size.
         chunk_size = 2
 
-        # Determine how many items to prune and to leave. We don't want
-        # to rely on the sample data so don't hard code these values.
-        store = IMasterStore(IrcID)
-        num_to_prune = store.find(
-            IrcID, IrcID.id < 5).count()
-        num_to_leave = store.find(
-            IrcID, IrcID.id >= 5).count()
+        # Determine how many items to prune and to leave rather than
+        # hardcode these numbers.
+        num_to_prune = self.store.find(
+            BulkFoo, BulkFoo.id < 5).count()
+        num_to_leave = self.store.find(
+            BulkFoo, BulkFoo.id >= 5).count()
         self.assertTrue(num_to_prune > chunk_size)
         self.assertTrue(num_to_leave > 0)
 
-        # Run one loop.
+        # Run one loop. Make sure it committed by throwing away
+        # uncommitted changes.
         pruner(chunk_size)
-        # Make sure it committed by throwing away uncommitted changes.
         transaction.abort()
 
         # Confirm 'chunk_size' items where removed; no more, no less.
-        num_remaining = store.find(IrcID).count()
+        num_remaining = self.store.find(BulkFoo).count()
         expected_num_remaining = num_to_leave + num_to_prune - chunk_size
         self.assertEqual(num_remaining, expected_num_remaining)
 
@@ -154,29 +161,28 @@ class TestBulkPruner(TestCase):
         # rows.
         while not pruner.isDone():
             pruner(1000000)
-        # Make sure it committed by throwing away uncommitted changes.
         transaction.abort()
 
         # Confirm we have removed all targetted rows.
-        self.assertEqual(store.find(IrcID, IrcID.id < 5).count(), 0)
+        self.assertEqual(self.store.find(BulkFoo, BulkFoo.id < 5).count(), 0)
 
         # Confirm we have the expected number of remaining rows.
         # With the previous check, this means no untargetted rows
         # where removed.
         self.assertEqual(
-            store.find(IrcID, IrcID.id >= 5).count(), num_to_leave)
+            self.store.find(BulkFoo, BulkFoo.id >= 5).count(), num_to_leave)
 
         # Cleanup clears up our resources.
         pruner.cleanUp()
 
         # We can run it again - temporary objects cleaned up.
-        pruner = IrcIDPruner(log)
+        pruner = BulkFooPruner(log)
         while not pruner.isDone():
             pruner(chunk_size)
 
 
 class TestGarbo(TestCaseWithFactory):
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         super(TestGarbo, self).setUp()
