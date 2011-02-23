@@ -167,13 +167,13 @@
                    '${links/?key/fmt:api_url}';">
     </script>
     <script tal:repeat="key objects"
-      tal:content="string:LP.client.cache['${key}'] =
+      tal:content="string:LP.cache['${key}'] =
                    ${objects/?key/webservice:json};">
     </script>
   </tal:cache>
 
   <script tal:condition="context/webservice:is_entry"
-    tal:content="string:LP.client.cache['context'] =
+    tal:content="string:LP.cache['context'] =
                  ${context/webservice:json};">
   </script>
 </metal:lp-client-cache>
