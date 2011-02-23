@@ -11,7 +11,7 @@ from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.side import (
     TranslationSide,
     )
-from lp.translations.translationsplitter import (
+from lp.translations.utilities.translationsplitter import (
     TranslationSplitter,
     )
 
