@@ -178,15 +178,6 @@ class TestOopsMiddleware(TestCase):
         logger.addHandler(handler)
         self.addCleanup(logger.removeHandler, handler)
 
-    def _eventTriggered(self, event):
-        if isinstance(event, ErrorReportEvent):
-            self.error_events.append(event)
-
-    def watchForErrorReportEvent(self):
-        self.error_events = []
-        zope.event.subscribers.append(self._eventTriggered)
-        self.addCleanup(zope.event.subscribers.remove, self._eventTriggered)
-
     def runtime_failing_app(self, environ, start_response):
         if False:
             yield None
@@ -213,7 +204,6 @@ class TestOopsMiddleware(TestCase):
         return fail_write
 
     def wrap_and_run(self, app, failing_write=False):
-        self.watchForErrorReportEvent()
         app = oops_middleware(app)
         # Just random env data, rather than setting up a whole wsgi stack just
         # to pass in values for this dict
@@ -234,23 +224,21 @@ class TestOopsMiddleware(TestCase):
         res = self.wrap_and_run(self.runtime_failing_app)
         # After the exception was raised, we should also have gotten an oops
         # event
-        self.assertEqual(1, len(self.error_events))
-        event = self.error_events[0]
-        self.assertIsInstance(event, ErrorReportEvent)
-        self.assertIsInstance(event.object, ErrorReport)
-        self.assertEqual('RuntimeError', event.object.type)
+        self.assertEqual(1, len(self.oopses))
+        oops = self.oopses[0]
+        self.assertEqual('RuntimeError', oops.type)
 
     def test_ignores_socket_exceptions(self):
         self.catchLogEvents()
         res = self.wrap_and_run(self.socket_failing_app)
-        self.assertEqual(0, len(self.error_events))
+        self.assertEqual(0, len(self.oopses))
         self.assertContainsRe(self.log_stream.getvalue(),
             'Caught socket exception from <unknown>:.*Connection closed')
 
     def test_ignores_writer_failures(self):
         self.catchLogEvents()
         res = self.wrap_and_run(self.success_app, failing_write=True)
-        self.assertEqual(0, len(self.error_events))
+        self.assertEqual(0, len(self.oopses))
         self.assertContainsRe(self.log_stream.getvalue(),
             'Caught socket exception from <unknown>:.*Connection closed')
 
