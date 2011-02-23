@@ -797,7 +797,7 @@ def quote_jquery_expression(expression):
         "([#!$%&()+,./:;?@~|^{}\\[\\]`*\\\'\\\"])", r"\\\\\1", expression)
 
 
-class YUIUnitTestCase(TestCase):
+class YUIUnitTestCase(WindmillTestCase):
 
     layer = None
     suite_name = ''
