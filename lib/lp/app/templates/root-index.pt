@@ -12,29 +12,12 @@
           width: 90%;
           max-width: 80em;
       }
-      .homepage-portlet {
-          margin-bottom: 3em;
-          line-height: 140%;
-      }
-      .homepage-portlet h2 {
-          border-bottom: 1px solid;
-          margin-top: 2em;
-          font-size: 1.8em;
-          padding-bottom: 2px;
-          }
-      .homepage-whatslaunchpad h2 {
-          font-size: 2em;
-          font-weight: bold;
-          line-height: 110%;
-          margin-bottom: 0.5em;
-      }
       #homepage-whatslaunchpad ul {
           margin-left: 1em;
           margin-bottom: 0.5em;
       }
       #homepage-whatslaunchpad ul,
       #homepage-whatslaunchpad-tour {
-          font-size: 1.3em;
           font-weight: bold;
       }
       #homepage-stats {
@@ -42,7 +25,6 @@
           margin: auto;
           padding-top: 0.5em;
           color: gray;
-          font-size: 0.8em;
       }
       #homepage-blogposts {
           padding-right: 4em;
@@ -51,7 +33,6 @@
           padding-top: 0.5em;
           }
       .featured-project-top h3 {
-          font-size: 1.3em;
           font-weight: bold;
           }
       .featured-project-top h3 img {
@@ -83,7 +64,7 @@
         </div>
 
         <div class="yui-g">
-          <div class="yui-u first">
+          <div class="yui-u first" style="margin-top: 1.5em;">
             <div class="homepage-whatslaunchpad"
                  tal:condition="not:view/user" tal:content="cache:anonymous">
               <h2><span class="launchpad-gold">Launchpad</span> is a software collaboration platform that provides:</h2>
