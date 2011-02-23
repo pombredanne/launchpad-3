@@ -246,7 +246,7 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more
         # bugs with different assignees.
-        query_limit = 34
+        query_limit = 35
         self.add_bug(3)
         self.assert_milestone_page_query_count(
             self.milestone, query_limit=query_limit)
@@ -262,7 +262,7 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         # is very large already, if the test fails due to such a change,
         # please cut some more of the existing fat out of it rather than
         # increasing the cap.
-        page_query_limit = 35
+        page_query_limit = 36
         product = self.factory.makeProduct()
         login_person(product.owner)
         milestone = self.factory.makeMilestone(
