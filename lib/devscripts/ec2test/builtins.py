@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The command classes for the 'ec2' utility."""
@@ -147,6 +147,12 @@ def filename_type(filename):
     return filename
 
 
+def set_trace_if(enable_debugger=False):
+    """If `enable_debugger` is True, drop into the debugger."""
+    if enable_debugger:
+        pdb.set_trace()
+
+
 class EC2Command(Command):
     """Subclass of `Command` that customizes usage to say 'ec2' not 'bzr'.
 
@@ -272,8 +278,7 @@ class cmd_test(EC2Command):
             pqm_submit_location=None, pqm_email=None, postmortem=False,
             attached=False, debug=False, open_browser=False,
             include_download_cache_changes=False):
-        if debug:
-            pdb.set_trace()
+        set_trace_if(debug)
         if branch is None:
             branch = []
         branches, test_branch = _get_branches_and_test_branch(
@@ -387,8 +392,7 @@ class cmd_land(EC2Command):
                 "wide because this will break the rest of Launchpad.\n\n"
                 "***************************************************\n")
             raise
-        if debug:
-            pdb.set_trace()
+        set_trace_if(debug)
         if print_commit and dry_run:
             raise BzrCommandError(
                 "Cannot specify --print-commit and --dry-run.")
@@ -482,8 +486,7 @@ class cmd_demo(EC2Command):
     def run(self, test_branch=None, branch=None, trunk=False, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE, debug=False,
             include_download_cache_changes=False, demo=None):
-        if debug:
-            pdb.set_trace()
+        set_trace_if(debug)
         if branch is None:
             branch = []
         branches, test_branch = _get_branches_and_test_branch(
@@ -558,8 +561,7 @@ class cmd_update_image(EC2Command):
     def run(self, ami_name, machine=None, instance_type='m1.large',
             debug=False, postmortem=False, extra_update_image_command=None,
             public=False):
-        if debug:
-            pdb.set_trace()
+        set_trace_if(debug)
 
         if extra_update_image_command is None:
             extra_update_image_command = []
@@ -568,8 +570,8 @@ class cmd_update_image(EC2Command):
         # fresh Ubuntu images and cause havoc if the locales they refer to are
         # not available. We kill them here to ease bootstrapping, then we
         # later modify the image to prevent sshd from accepting them.
-        os.environ.pop("LANG", None)
-        os.environ.pop("LC_ALL", None)
+        for variable in ['LANG', 'LC_ALL', 'LC_TIME']:
+            os.environ.pop(variable, None)
 
         credentials = EC2Credentials.load_from_file()
 
