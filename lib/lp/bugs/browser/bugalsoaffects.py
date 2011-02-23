@@ -39,8 +39,8 @@ from canonical.launchpad.interfaces.validation import (
     valid_upstreamtask,
     validate_new_distrotask,
     )
-from lp.services.validators import LaunchpadValidationError
-from lp.services.validators.email import email_validator
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.email import email_validator
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured

@@ -25,7 +25,7 @@ from zope.interface import (
     )
 
 from canonical.config import config
-from lp.services.validators import LaunchpadValidationError
+from lp.app.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadXMLRPCView,

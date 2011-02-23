@@ -66,7 +66,7 @@ from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.services.validators.name import (
+from lp.app.validators.name import (
     sanitize_name,
     valid_name,
     )

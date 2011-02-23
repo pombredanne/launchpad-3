@@ -8,7 +8,7 @@ __metaclass__ = type
 import re
 
 from canonical.launchpad import _
-from lp.services.validators import LaunchpadValidationError
+from lp.app.validators import LaunchpadValidationError
 
 
 def valid_email(emailaddr):

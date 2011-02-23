@@ -9,7 +9,7 @@ import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.services.validators.name import valid_name
+from lp.app.validators.name import valid_name
 from canonical.librarian.testing.fake import FakeLibrarian
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,

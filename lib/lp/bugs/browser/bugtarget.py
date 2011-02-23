@@ -64,7 +64,7 @@ from canonical.launchpad.browser.feeds import (
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.searchbuilder import any
-from lp.services.validators.name import valid_name_pattern
+from lp.app.validators.name import valid_name_pattern
 from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,
