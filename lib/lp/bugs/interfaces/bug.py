@@ -68,7 +68,7 @@ from canonical.launchpad.interfaces.message import IMessage
 from lp.app.validators.attachment import (
     attachment_size_constraint,
     )
-from lp.app.validators.name import name_validator
+from lp.app.validators.name import bug_name_validator
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bugactivity import IBugActivity
 from lp.bugs.interfaces.bugattachment import IBugAttachment
@@ -208,7 +208,7 @@ class IBug(IPrivacy, IHasLinkedBranches):
             description=_("""A short and unique name.
                 Add one only if you often need to retype the URL
                 but have trouble remembering the bug number."""),
-            constraint=name_validator))
+            constraint=bug_name_validator))
     title = exported(
         Title(title=_('Summary'), required=True,
               description=_("""A one-line summary of the problem.""")))
