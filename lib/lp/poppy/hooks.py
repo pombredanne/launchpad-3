@@ -22,14 +22,11 @@ class PoppyInterfaceFailure(Exception):
     pass
 
 
-# See Hooks.targetcount.
-targetcount = 0
-
-
 class Hooks:
 
     clients = {}
     LOG_MAGIC = "Post-processing finished"
+    _targetcount = 0
 
     def __init__(self, targetpath, logger, allow_user, cmd=None,
                  targetstart=0, perms=None, prefix=''):
@@ -43,9 +40,8 @@ class Hooks:
     @property
     def targetcount(self):
         """A guaranteed unique integer for ensuring unique upload dirs."""
-        global targetcount
-        targetcount += 1
-        return targetcount
+        Hooks._targetcount += 1
+        return Hooks._targetcount
 
     def new_client_hook(self, fsroot, host, port):
         """Prepare a new client record indexed by fsroot..."""
@@ -165,3 +161,4 @@ class Hooks:
         #except object, e:
         #    print e
         #return False
+
