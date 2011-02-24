@@ -528,7 +528,7 @@ class TestRequest(TestCaseWithTransport, RequestHelpers):
         [body, attachment] = email.get_payload()
         self.assertIsInstance(body, MIMEText)
         self.assertEqual('inline', body['Content-Disposition'])
-        self.assertEqual('text/plain; charset="utf8"', body['Content-Type'])
+        self.assertEqual('text/plain; charset="utf-8"', body['Content-Type'])
         self.assertEqual("foo", body.get_payload(decode=True))
 
     def test_report_email_attachment(self):
@@ -716,7 +716,7 @@ class TestWebTestLogger(TestCaseWithTransport, RequestHelpers):
         logger.prepare()
         self.assertEqual(
             {'description': request.get_merge_description(),
-             'successful': True,
+             'failed-yet': False,
              },
             simplejson.loads(open('www/info.json').read()))
 
@@ -742,7 +742,7 @@ class TestWebTestLogger(TestCaseWithTransport, RequestHelpers):
         logger.got_failure()
         self.assertEqual(
             {'description': request.get_merge_description(),
-             'successful': False,
+             'failed-yet': True,
              },
             simplejson.loads(open('www/info.json').read()))
 
@@ -808,7 +808,7 @@ class TestWebTestLogger(TestCaseWithTransport, RequestHelpers):
         [body, attachment] = email.get_payload()
         self.assertIsInstance(body, MIMEText)
         self.assertEqual('inline', body['Content-Disposition'])
-        self.assertEqual('text/plain; charset="utf8"', body['Content-Type'])
+        self.assertEqual('text/plain; charset="utf-8"', body['Content-Type'])
         self.assertEqual(
             logger.get_summary_contents(), body.get_payload(decode=True))
         self.assertIsInstance(attachment, MIMEApplication)
