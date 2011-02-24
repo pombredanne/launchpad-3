@@ -69,7 +69,7 @@ class Job(SQLBase):
     attempt_count = IntCol(default=0)
 
     # Mapping of valid target states from a given state.
-    VALID_TRANSITIONS = {
+    _valid_transitions = {
         JobStatus.WAITING:
             (JobStatus.RUNNING,
              JobStatus.SUSPENDED),
@@ -90,7 +90,7 @@ class Job(SQLBase):
          JobStatus.SUSPENDED))
 
     def _set_status(self, status):
-        if status not in self.VALID_TRANSITIONS[self._status]:
+        if status not in self._valid_transitions[self._status]:
             raise InvalidTransition(self._status, status)
         self._status = status
 
