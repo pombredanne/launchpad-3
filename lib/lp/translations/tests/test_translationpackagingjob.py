@@ -24,6 +24,10 @@ from lp.translations.model.potemplate import POTemplateSubset
 from lp.translations.model.translationpackagingjob import (
     TranslationMergeJob,
     TranslationPackagingJob,
+    TranslationSplitJob,
+    )
+from lp.translations.tests.test_translationsplitter import (
+    make_shared_potmsgset,
     )
 
 
@@ -156,3 +160,19 @@ class TestTranslationMergeJob(TestCaseWithFactory):
         self.assertNotEqual([], self.findJobs(productseries, sourcepackage))
         # Ensure no constraints were violated.
         transaction.commit()
+
+
+class TestTranslationSplitJob(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_run_splits_translations(self):
+        upstream_item, ubuntu_item = make_shared_potmsgset(self.factory)
+        job = TranslationSplitJob.create(
+            upstream_item.potemplate.productseries,
+            ubuntu_item.potemplate.distroseries,
+            ubuntu_item.potemplate.sourcepackagename,
+        )
+        self.assertEqual(upstream_item.potmsgset, ubuntu_item.potmsgset)
+        job.run()
+        self.assertNotEqual(upstream_item.potmsgset, ubuntu_item.potmsgset)

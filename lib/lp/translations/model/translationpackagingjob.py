@@ -27,8 +27,10 @@ from lp.translations.translationmerger import (
     TransactionManager,
     TranslationMerger,
     )
+from lp.translations.utilities.translationsplitter import TranslationSplitter
 
-__all__ = ['TranslationMergeJob']
+
+__all__ = ['TranslationMergeJob', 'TranslationSplitJob']
 
 
 def schedule_merge(packaging, event):
@@ -87,3 +89,15 @@ class TranslationMergeJob(TranslationPackagingJob):
         tm = TransactionManager(None, False)
         TranslationMerger.mergePackagingTemplates(
             self.productseries, self.sourcepackagename, self.distroseries, tm)
+
+
+class TranslationSplitJob(TranslationPackagingJob):
+    """Job for merging translations between a product and sourcepackage."""
+
+    implements(IRunnableJob)
+
+    class_job_type = PackagingJobType.TRANSLATION_SPLIT
+
+    def run(self):
+        """See `IRunnableJob`."""
+        TranslationSplitter(self.productseries, self.sourcepackage).split()

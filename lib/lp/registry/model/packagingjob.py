@@ -43,6 +43,11 @@ class PackagingJobType(DBEnumeratedType):
         Merge translations betweeen productseries and sourcepackage.
         """)
 
+    TRANSLATION_SPLIT = DBItem(1, """
+        Split translations between productseries and sourcepackage.
+
+        Split translations between productseries and sourcepackage.
+        """)
 
 class PackagingJob(StormBase):
     """Base class for jobs related to a packaging."""
@@ -102,6 +107,10 @@ class PackagingJobDerived:
     delegates(IPackagingJob, 'job')
 
     _subclass = {}
+
+    @property
+    def sourcepackage(self):
+        return self.distroseries.getSourcePackage(self.sourcepackagename)
 
     @staticmethod
     def _register_subclass(cls):
