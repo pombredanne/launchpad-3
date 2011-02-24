@@ -206,16 +206,17 @@ If we go ahead and modify the description, however:
     True
 
 The displayable comments for a bug can be obtained from the view
-property visible_oldest_comments_for_display.
+property activity_and_comments.
 
-    >>> viewable_comments = ubuntu_bugview.visible_oldest_comments_for_display
+    >>> comments = [event.get('comment') for event in 
+    ...     ubuntu_bugview.activity_and_comments if event.get('comment')]
 
 Because we omit the first comment, and because the third comment is
 indentical to the second, we really only display one comment:
 
-    >>> print len(viewable_comments)
+    >>> print len(comments)
     1
-    >>> [(c.index, c.owner.name, c.text_contents) for c in viewable_comments]
+    >>> [(c.index, c.owner.name, c.text_contents) for c in comments]
     [(1, u'name16', u'I can reproduce this bug.')]
 
 (Unregister our listener, since we no longer need it.)

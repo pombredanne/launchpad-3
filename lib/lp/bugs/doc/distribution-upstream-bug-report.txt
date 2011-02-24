@@ -117,7 +117,7 @@ upstream is reported for it. Let's fix that:
     >>> name12 = getUtility(IPersonSet).getByName('name12')
     >>> pmount = getUtility(IProductSet).createProduct(
     ...     name12, 'pmount', 'pmount', 'pmount', 'pmount')
-    >>> getUtility(IPackagingUtil).createPackaging(
+    >>> packaging = getUtility(IPackagingUtil).createPackaging(
     ...     pmount.getSeries('trunk'), pmount_spn,
     ...     ubuntu.currentseries, PackagingType.PRIME, name12)
     >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(limit=3))

@@ -6,6 +6,8 @@
 __metaclass__ = type
 __all__ = ['BugActivity', 'BugActivitySet']
 
+import re
+
 from sqlobject import (
     ForeignKey,
     StringCol,
@@ -38,6 +40,42 @@ class BugActivity(SQLBase):
     oldvalue = StringCol(default=None)
     newvalue = StringCol(default=None)
     message = StringCol(default=None)
+
+    # The regular expression we use for matching bug task changes.
+    bugtask_change_re = re.compile(
+        '(?P<target>[a-z0-9][a-z0-9\+\.\-]+( \([A-Za-z0-9\s]+\))?): '
+        '(?P<attribute>assignee|importance|milestone|status)')
+
+    @property
+    def target(self):
+        """Return the target of this BugActivityItem.
+
+        `target` is determined based on the `whatchanged` string.
+
+        :return: The target name of the item if `whatchanged` is of the
+        form <target_name>: <attribute>. Otherwise, return None.
+        """
+        match = self.bugtask_change_re.match(self.whatchanged)
+        if match is None:
+            return None
+        else:
+            return match.groupdict()['target']
+
+    @property
+    def attribute(self):
+        """Return the attribute changed in this BugActivityItem.
+
+        `attribute` is determined based on the `whatchanged` string.
+
+        :return: The attribute name of the item if `whatchanged` is of
+            the form <target_name>: <attribute>. Otherwise, return the
+            original `whatchanged` string.
+        """
+        match = self.bugtask_change_re.match(self.whatchanged)
+        if match is None:
+            return self.whatchanged
+        else:
+            return match.groupdict()['attribute']
 
 
 class BugActivitySet:

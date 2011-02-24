@@ -26,6 +26,7 @@ JS_DIRSET = [
     (os.path.join('lib', 'lp', 'registry', 'javascript'), 'registry'),
     (os.path.join('lib', 'lp', 'translations', 'javascript'), 'translations'),
     (os.path.join('lib', 'lp', 'soyuz', 'javascript'), 'soyuz'),
+    (os.path.join('lib', 'lp', 'contrib', 'javascript', 'yui3-gallery', 'gallery-accordion'), 'contrib'),
     ]
 ICING_ROOT = os.path.join(TOP, 'lib', 'canonical', 'launchpad', 'icing')
 ICING_BUILD = os.path.join(ICING_ROOT, 'build')
@@ -48,6 +49,10 @@ for DIRSET in JS_DIRSET:
     # We don't want the tests to be included.  If we want to nest the files in
     # more folders though, this is where we change it.
     for filename in os.listdir(full_dir):
+        # Some third-party JavaScript libraries may include pre-built -min and
+        # -debug files.  Skip those.
+        if filename.endswith('-min.js') or filename.endswith('-debug.js'):
+            continue
         if filename.endswith('.js'):
             basename, nothing = filename.split('.js')
             min_filename = basename + '-min.js'

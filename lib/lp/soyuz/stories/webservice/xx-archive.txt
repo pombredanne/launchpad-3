@@ -112,10 +112,7 @@ Attempting to grab a non-existent archive will result in a 404 error:
     >>> print webservice.get(bogus_archive)
     HTTP/1.1 404 Not Found
     ...
-    Traceback (most recent call last):
-    ...
-    NotFound: Object: ..., name: u'bogus'
-    <BLANKLINE>
+    Object: ..., name: u'bogus'
 
 
 = Archive Permissions =
@@ -379,7 +376,7 @@ And ``checkUpload`` now also no longer passes:
     >>> print(response)
     HTTP/1.1 403 Forbidden
     ...
-    NoRightsForArchive: The signer of this package has no upload rights to
+    The signer of this package has no upload rights to
     this distribution's primary archive.  Did you mean to upload to a PPA?
 
 
@@ -418,8 +415,7 @@ the 'main' component, or an error is returned:
     >>> print response
     HTTP/1.1 400 Bad Request
     ...
-    InvalidComponent: Component for PPAs should be 'main'
-    <BLANKLINE>
+    Component for PPAs should be 'main'
 
 getQueueAdminsForComponent returns all the permissions where someone
 can administer distroseries queues in a particular component.
@@ -736,8 +732,7 @@ all packages or none of them if there was a problem.
     ...     to_series="warty", include_binaries=True)
     HTTP/1.1 400 Bad Request
     ...
-    CannotCopy: package1 1.1 in hoary (source has no binaries to be copied)
-    <BLANKLINE>
+    package1 1.1 in hoary (source has no binaries to be copied)
 
 Even if the error was only when processing 'package1', the 'allowed'
 source was not synchronised to Celso's PPA.
@@ -875,8 +870,7 @@ bad request will result:
     >>> print response
     HTTP/1.1 400 Bad Request
     ...
-    ArchiveNotPrivate: Only private archives can have subscriptions.
-    <BLANKLINE>
+    Only private archives can have subscriptions.
 
 First we'll subscribe mark to cprov's archive:
 
@@ -938,7 +932,7 @@ is already a current subscription:
     >>> print response
     HTTP/1.1 400 Bad Request
     ...
-    AlreadySubscribed: Mark Shuttleworth already has a current subscription
+    Mark Shuttleworth already has a current subscription
     for 'PPA named p3a for Celso Providelo'.
 
 
@@ -952,8 +946,7 @@ admins and commercial admins.
     >>> print modify_archive(user_webservice, mark_archive)
     HTTP/1.1 401 Unauthorized
     ...
-    Unauthorized: (<Archive at ...>, 'private', 'launchpad.Commercial')
-    <BLANKLINE>
+    (<Archive at ...>, 'private', 'launchpad.Commercial')
 
 
 === Copying private file to public archives ===
@@ -1000,7 +993,7 @@ error is returned.
     ...     to_series="hoary")
     HTTP/1.1 400 Bad Request
     ...
-    CannotCopy: foocomm 1.0-2 in hoary
+    foocomm 1.0-2 in hoary
     (same version already uploaded and waiting in ACCEPTED queue)
 
 

@@ -387,7 +387,8 @@ class DistributionMirror(SQLBase):
 
         if notify_owner:
             owner_address = get_contact_email_addresses(self.owner)
-            simple_sendmail(fromaddress, owner_address, subject, message)
+            if len(owner_address) > 0:
+                simple_sendmail(fromaddress, owner_address, subject, message)
 
     def newProbeRecord(self, log_file):
         """See IDistributionMirror"""

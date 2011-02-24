@@ -61,7 +61,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.autodecorate import AutoDecorate
 from canonical.config import config
 from canonical.database.constants import (
     DEFAULT,
@@ -233,6 +232,7 @@ from lp.services.log.logger import BufferLogger
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.propertycache import clear_property_cache
+from lp.services.utils import AutoDecorate
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.adapters.packagelocation import PackageLocation
@@ -547,7 +547,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makePerson(
         self, email=None, name=None, password=None,
         email_address_status=None, hide_email_addresses=False,
-        displayname=None, time_zone=None, latitude=None, longitude=None):
+        displayname=None, time_zone=None, latitude=None, longitude=None,
+        selfgenerated_bugnotifications=False):
         """Create and return a new, arbitrary Person.
 
         :param email: The email address for the new person.
@@ -564,6 +565,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param time_zone: This person's time zone, as a string.
         :param latitude: This person's latitude, as a float.
         :param longitude: This person's longitude, as a float.
+        :param selfgenerated_bugnotifications: Receive own bugmail.
         """
         if email is None:
             email = self.getUniqueEmailAddress()
@@ -593,6 +595,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         # Make sure the non-security-proxied object is not returned.
         del naked_person
+
+        if selfgenerated_bugnotifications:
+            # Set it explicitely only when True because the default
+            # is False.
+            person.selfgenerated_bugnotifications = True
 
         # To make the person someone valid in Launchpad, validate the
         # email.
@@ -2643,8 +2650,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,
                        translation_domain=None, path=None,
-                       copy_pofiles=True, side=None):
+                       copy_pofiles=True, side=None, sourcepackage=None):
         """Make a new translation template."""
+        if sourcepackage is not None:
+            assert distroseries is None, (
+                'Cannot specify sourcepackage and distroseries')
+            distroseries = sourcepackage.distroseries
+            assert sourcepackagename is None, (
+                'Cannot specify sourcepackage and sourcepackagename')
+            sourcepackagename = sourcepackage.sourcepackagename
         if productseries is None and distroseries is None:
             if side != TranslationSide.UBUNTU:
                 # No context for this template; set up a productseries.
@@ -2707,10 +2721,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                     create_sharing=create_sharing)
 
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
-                      context=None, sequence=0):
+                      context=None, sequence=None):
         """Make a new `POTMsgSet` in the given template."""
         if singular is None and plural is None:
             singular = self.getUniqueString()
+        if sequence is None:
+            sequence = self.getUniqueInteger()
         potmsgset = potemplate.createMessageSetFromText(
             singular, plural, context, sequence)
         removeSecurityProxy(potmsgset).sync()
@@ -2755,7 +2771,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if pofile is None:
             pofile = self.makePOFile('sr')
         if potmsgset is None:
-            potmsgset = self.makePOTMsgSet(pofile.potemplate, sequence=1)
+            potmsgset = self.makePOTMsgSet(pofile.potemplate)
         if translator is None:
             translator = self.makePerson()
         translations = self.makeTranslationsDict(translations)
@@ -2813,7 +2829,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if pofile is None:
             pofile = self.makePOFile(language=language, side=side)
         if potmsgset is None:
-            potmsgset = self.makePOTMsgSet(pofile.potemplate, sequence=1)
+            potmsgset = self.makePOTMsgSet(pofile.potemplate)
         if translator is None:
             translator = self.makePerson()
         if reviewer is None:

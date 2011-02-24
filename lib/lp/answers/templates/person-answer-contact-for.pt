@@ -16,7 +16,7 @@
           tal:attributes="href question_target/fmt:url:answers"
           tal:content="question_target/title">Project Title</a>
         <tal:link condition="view/showRemoveYourselfLink">
-          <img src="/@@/remove" />&mdash;
+          <img src="/@@/remove" alt="Remove" />&mdash;
           <a id="project-setanswercontact" href="#"
             tal:attributes="href string:${question_target/fmt:url}/+support-contact;
             id string:${question_target/name}-setdirectanswercontact">

@@ -117,6 +117,7 @@ from canonical.launchpad.database.emailaddress import (
     EmailAddress,
     HasOwnerMixin,
     )
+from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.oauth import (
     OAuthAccessToken,
@@ -370,7 +371,7 @@ class PersonSettings(Storm):
     personID = Int("person", default=None, primary=True)
     person = Reference(personID, "Person.id")
 
-    selfgenerated_bugnotifications = BoolCol(notNull=True, default=True)
+    selfgenerated_bugnotifications = BoolCol(notNull=True, default=False)
 
 
 def readonly_settings(message, interface):
@@ -4149,7 +4150,6 @@ class PersonSet:
 
     def cacheBrandingForPeople(self, people):
         """See `IPersonSet`."""
-        from canonical.launchpad.database.librarian import LibraryFileAlias
         aliases = []
         aliases.extend(person.iconID for person in people
                        if person.iconID is not None)
@@ -4166,7 +4166,7 @@ class PersonSet:
     def getPrecachedPersonsFromIDs(
         self, person_ids, need_karma=False, need_ubuntu_coc=False,
         need_location=False, need_archive=False,
-        need_preferred_email=False, need_validity=False):
+        need_preferred_email=False, need_validity=False, need_icon=False):
         """See `IPersonSet`."""
         origin = [Person]
         conditions = [
@@ -4176,13 +4176,13 @@ class PersonSet:
             need_karma=need_karma, need_ubuntu_coc=need_ubuntu_coc,
             need_location=need_location, need_archive=need_archive,
             need_preferred_email=need_preferred_email,
-            need_validity=need_validity)
+            need_validity=need_validity, need_icon=need_icon)
 
     def _getPrecachedPersons(
         self, origin, conditions, store=None,
         need_karma=False, need_ubuntu_coc=False,
         need_location=False, need_archive=False, need_preferred_email=False,
-        need_validity=False):
+        need_validity=False, need_icon=False):
         """Lookup all members of the team with optional precaching.
 
         :param store: Provide ability to specify the store.
@@ -4197,6 +4197,8 @@ class PersonSet:
         :param need_preferred_email: The preferred email attribute will be
             cached.
         :param need_validity: The is_valid attribute will be cached.
+        :param need_icon: Cache the persons' icons so that their URLs can
+            be generated without further reference to the database.
         """
         if store is None:
             store = IStore(Person)
@@ -4251,6 +4253,10 @@ class PersonSet:
             origin.extend(valid_stuff["joins"])
             columns.extend(valid_stuff["tables"])
             decorators.extend(valid_stuff["decorators"])
+        if need_icon:
+            IconAlias = ClassAlias(LibraryFileAlias, "LibraryFileAlias")
+            origin.append(LeftJoin(IconAlias, Person.icon == IconAlias.id))
+            columns.append(IconAlias)
         if len(columns) == 1:
             column = columns[0]
             # Return a simple ResultSet
