@@ -198,8 +198,9 @@ def clear_request_started():
     _local.request_start_time = None
     request = get_current_browser_request()
     set_request_timeline(request, Timeline())
-    transaction.manager.unregisterSynch(_local.commit_logger)
-    del _local.commit_logger
+    if getattr(_local, 'commit_logger', None) is None:
+        transaction.manager.unregisterSynch(_local.commit_logger)
+        del _local.commit_logger
 
 
 def summarize_requests():
