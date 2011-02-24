@@ -75,9 +75,7 @@ def _maybe_profile(event):
     except AttributeError:
         # The first call in on a new thread cannot be profiling at the start.
         pass
-    print "doing the do", event.request['PATH_INFO']
     actions = get_desired_profile_actions(event.request)
-    print "actions", event.request['PATH_INFO'], actions
     if config.profiling.profile_all_requests:
         actions.add('log')
     _profilers.actions = actions
