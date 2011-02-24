@@ -193,6 +193,9 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         """See `ITranslationMessage`."""
         return [None] * TranslationConstants.MAX_PLURAL_FORMS
 
+    def clone(self, potmsgset):
+        raise NotImplementedError()
+
     def destroySelf(self):
         """See `ITranslationMessage`."""
         # This object is already non persistent, so nothing needs to be done.
