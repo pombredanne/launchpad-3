@@ -47,6 +47,10 @@ from bzrlib.smtp_connection import SMTPConnection
 
 import subunit
 
+# We need to be able to unpickle objects from bzr-pqm, so make sure we
+# can import it.
+bzrlib.plugin.load_plugins()
+
 
 class NonZeroExitCode(Exception):
     """Raised when the child process exits with a non-zero exit code."""
