@@ -105,9 +105,9 @@ from canonical.launchpad.searchbuilder import (
     any,
     NULL,
     )
+from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.name import name_validator
-from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from lp.bugs.interfaces.bugwatch import (
     IBugWatch,
     IBugWatchSet,

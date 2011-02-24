@@ -24,7 +24,6 @@ from zope.security.interfaces import Unauthorized
 from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interaction import setupInteractionForPerson
@@ -34,6 +33,7 @@ from lp.app.errors import (
     NameLookupFailed,
     NotFoundError,
     )
+from lp.app.validators import LaunchpadValidationError
 from lp.code.bzr import (
     BranchFormat,
     ControlFormat,

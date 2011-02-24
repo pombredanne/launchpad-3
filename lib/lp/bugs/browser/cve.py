@@ -16,7 +16,6 @@ __all__ = [
 
 from zope.component import getUtility
 
-from lp.app.validators.cve import valid_cve
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,
@@ -28,6 +27,7 @@ from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
     )
+from lp.app.validators.cve import valid_cve
 from lp.bugs.interfaces.cve import (
     ICve,
     ICveSet,

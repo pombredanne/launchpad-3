@@ -66,9 +66,9 @@ from zope.schema import (
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.app.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
+from lp.app.validators import LaunchpadValidationError
 from lp.code.bzr import (
     BranchFormat,
     ControlFormat,

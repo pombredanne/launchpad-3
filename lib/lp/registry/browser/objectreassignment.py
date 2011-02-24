@@ -24,13 +24,13 @@ from zope.schema.vocabulary import (
     )
 
 from canonical.launchpad import _
-from lp.app.validators.name import valid_name
 from canonical.launchpad.webapp import canonical_url
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     )
+from lp.app.validators.name import valid_name
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.registry.interfaces.person import (
     IObjectReassignment,

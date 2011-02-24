@@ -9,25 +9,31 @@ __all__ = [
     'LocationWidget',
     ]
 
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form import InputWidget
 from zope.app.form.browser.interfaces import IBrowserWidget
 from zope.app.form.browser.widget import BrowserWidget
-from zope.app.form.interfaces import IInputWidget, WidgetInputError
+from zope.app.form.interfaces import (
+    IInputWidget,
+    WidgetInputError,
+    )
 from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import implements
-from zope.schema import Choice, Float
-
-from z3c.ptcompat import ViewPageTemplateFile
-
-from canonical.lazr.utils import safe_js_escape
+from zope.schema import (
+    Choice,
+    Float,
+    )
 
 from canonical.config import config
 from canonical.launchpad import _
-from lp.app.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, IMultiLineWidgetLayout)
+    ILaunchBag,
+    IMultiLineWidgetLayout,
+    )
+from canonical.lazr.utils import safe_js_escape
 from lp.app.browser.tales import ObjectImageDisplayAPI
+from lp.app.validators import LaunchpadValidationError
 from lp.registry.interfaces.location import IObjectWithLocation
 from lp.services.geoip.interfaces import IGeoIPRecord
 

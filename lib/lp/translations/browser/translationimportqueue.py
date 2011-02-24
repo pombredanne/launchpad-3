@@ -25,7 +25,6 @@ from zope.schema.vocabulary import (
     )
 
 from canonical.database.constants import UTC_NOW
-from lp.app.validators.name import valid_name
 from canonical.launchpad.webapp import (
     canonical_url,
     GetitemNavigation,
@@ -39,6 +38,7 @@ from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
+from lp.app.validators.name import valid_name
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.services.worlddata.interfaces.language import ILanguageSet

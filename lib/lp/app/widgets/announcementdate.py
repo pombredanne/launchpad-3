@@ -27,8 +27,8 @@ from zope.schema.vocabulary import (
     )
 
 from canonical.launchpad import _
-from lp.app.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
+from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.date import DateTimeWidget
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.registry.interfaces.announcement import IAnnouncement

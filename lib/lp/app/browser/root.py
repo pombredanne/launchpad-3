@@ -32,7 +32,6 @@ from canonical.launchpad.interfaces.searchservice import (
     GoogleResponseError,
     ISearchService,
     )
-from lp.app.validators.name import sanitize_name
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -46,6 +45,7 @@ from lp.app.browser.launchpadform import (
     safe_action,
     )
 from lp.app.errors import NotFoundError
+from lp.app.validators.name import sanitize_name
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.bugs.interfaces.bug import IBugSet
 from lp.code.interfaces.branchcollection import IAllBranches
