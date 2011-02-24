@@ -175,7 +175,7 @@ a.bg-image {
 /* person/project/bug descriptions, bug comments */
 .report h2 {font-size: 24px;}
 .boardComment, .boardCommentSummary {border: 1px solid #ddd;}
-.boardComment {margin: 1em 0 1.4em;}
+.boardComment {margin: 1em 0 1.5em;}
 .boardCommentSummary {margin: 0.3em 0 0.3em 0;}
 .remoteBugComment {background-color: #f6f6f6;}
 * html .boardComment {float: left; clear: both; width: 99%;} /* IE float bug */
@@ -653,7 +653,7 @@ div.popupTitle {
 }
 
 #search-results .lower-batch-nav, .freeform-batch .lower-batch-nav  {
-  margin-top: 1.4em;
+  margin-top: 1.5em;
   border-top: 1px solid #d2d2d2;
   margin-bottom: 12px;
   background: #e7effc;

@@ -457,12 +457,12 @@ ol.subordinate {
 .related ul.sourcepackage-links li.sourcepackage-not-dev-focus:before {
     content: "";
     display: inline-block;
-    width: 1.4em;
+    width: 1.5em;
     }
 .related ul.sourcepackage-links li.sourcepackage-dev-focus:before {
     content: "⇒ ";
     display: inline-block;
-    width: 1.4em;
+    width: 1.5em;
     }
 .related ul li:before {
     content: "\00BB \0020";
@@ -663,7 +663,7 @@ table.listing table.simple td {
     }
 table.listing .section-heading {
     border: none;
-    padding-top: 1.4em;
+    padding-top: 1.5em;
     }
 table.summary th, table.summary td,
 table.listing table.summary th, table.listing table.summary td {
@@ -1132,7 +1132,7 @@ span.see-all {
 .login-logout {
     position: absolute;
     top: .5em;
-    right: 1.4em;
+    right: 1.5em;
     }
 #rendertime {
     float: left;
