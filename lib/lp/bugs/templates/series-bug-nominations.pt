@@ -8,14 +8,6 @@
 <body>
   <tal:main metal:fill-slot="main">
     <div class="top-portlet">
-      <h1
-        tal:condition="view/shouldShowAdvancedForm"
-        tal:content="view/getAdvancedSearchPageHeading"
-      >Bugs nominated for Fooix: Advanced search</h1>
-      <h1 tal:condition="not: view/shouldShowAdvancedForm">
-        Bugs nominated for
-        <tal:software replace="context/displayname">Fooix</tal:software>
-      </h1>
 
       <tal:do_not_show_advanced_form
         condition="not: view/shouldShowAdvancedForm">
