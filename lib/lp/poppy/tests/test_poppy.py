@@ -394,7 +394,7 @@ class TestPoppy(TestCaseWithFactory):
         # We can't use bzrlib's transport here because it uploads a
         # renamed file before renaming it on the server.
         f = ftplib.FTP()
-        f.connect(host="localhost", port=2121)
+        f.connect(host="localhost", port=config.poppy.ftp_port)
         f.login()
         self.assertRaises(
             ftplib.error_perm,

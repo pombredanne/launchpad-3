@@ -72,7 +72,7 @@ class TestPoppyFileWriter(TestCaseWithFactory):
             d.addBoth(callback)
             return d
 
-    def test_changes_filke_with_invalid_GPG(self):
+    def test_changes_file_with_invalid_GPG(self):
         invalid_changes_file = os.path.join(
             self.test_files_dir, "broken_source.changes")
 
