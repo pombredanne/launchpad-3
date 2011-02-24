@@ -148,7 +148,7 @@ class PoppyFileWriter(ftp._FileWriter):
     def close(self):
         """Called after the file has been completely downloaded."""
         if self.fObj.name.endswith(".changes"):
-            error =  self.validateGPG(self.fObj.name)
+            error = self.validateGPG(self.fObj.name)
             if error is not None:
                 # PermissionDeniedError is one of the few ftp exceptions
                 # that lets us pass an error string back to the client.
@@ -157,7 +157,7 @@ class PoppyFileWriter(ftp._FileWriter):
 
     def validateGPG(self, signed_file):
         """Check the GPG signature in the file referenced by signed_file.
-        
+
         Return an error string if there's a problem, or None.
         """
         try:

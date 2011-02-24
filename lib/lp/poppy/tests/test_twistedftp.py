@@ -36,7 +36,7 @@ class TestPoppyFileWriter(TestCaseWithFactory):
 
         # Start the test keyserver.  Starting up and tearing this down
         # for each test is expensive, but we don't have a way of having
-        # cross-test persistent fixtures yet.  See 
+        # cross-test persistent fixtures yet.  See bug 724349.
         self.tac = KeyServerTac()
         self.tac.setUp()
         self.addCleanup(self.tac.tearDown)
@@ -64,8 +64,10 @@ class TestPoppyFileWriter(TestCaseWithFactory):
     def test_changes_file_with_valid_GPG(self):
         valid_changes_file = os.path.join(
             self.test_files_dir, "etherwake_1.08-1_source.changes")
+
         def callback(result):
             self.assertIs(None, result)
+
         with open(valid_changes_file) as opened_file:
             file_writer = PoppyFileWriter(opened_file)
             d = file_writer.close()
@@ -84,7 +86,7 @@ class TestPoppyFileWriter(TestCaseWithFactory):
 
         def success_callback(result):
             self.fail("Success when there should have been failure.")
-            
+
         with open(invalid_changes_file) as opened_file:
             file_writer = PoppyFileWriter(opened_file)
             d = file_writer.close()
