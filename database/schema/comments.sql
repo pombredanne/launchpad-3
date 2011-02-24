@@ -291,6 +291,13 @@ COMMENT ON COLUMN BugNotificationAttachment.message IS 'A message to be attached
 COMMENT ON COLUMN BugNotificationAttachment.bug_notification IS 'The bug notification, to which things should be attached to.';
 
 
+-- BugNotificationFilter
+
+COMMENT ON TABLE BugNotificationFilter IS 'BugSubscriptionFilters that caused BugNotification to be generated.';
+COMMENT ON COLUMN BugNotificationFilter.bug_subscription_filter IS 'A BugSubscriptionFilter that caused a notification to go off.';
+COMMENT ON COLUMN BugNotificationFilter.bug_notification IS 'The bug notification which a filter caused to be emitted.';
+
+
 -- BugNotificationRecipient
 COMMENT ON TABLE BugNotificationRecipient IS 'The recipient for a bug notification.';
 COMMENT ON COLUMN BugNotificationRecipient.bug_notification IS 'The notification this recipient should get.';

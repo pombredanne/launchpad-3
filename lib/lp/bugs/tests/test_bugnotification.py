@@ -28,6 +28,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.model.bugnotification import (
     BugNotification,
+    BugNotificationFilter,
     BugNotificationSet,
     )
 from lp.testing import TestCaseWithFactory
@@ -134,6 +135,56 @@ class TestNotificationsSentForBugExpiration(TestCaseWithFactory):
             [self.product.owner.preferredemail.email,
              self.subscriber.preferredemail.email],
             [mail['To'] for mail in pop_notifications()])
+
+
+class TestNotificationsLinkToFilters(TestCaseWithFactory):
+    """Ensure link to bug subscription filters works from notifications."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestNotificationsLinkToFilters, self).setUp()
+        self.bug = self.factory.makeBug()
+        message = self.factory.makeMessage()
+        self.notification = BugNotification(
+            message=message, activity=None, bug=self.bug, is_comment=False,
+            date_emailed=None)
+
+    def test_bug_filters_empty(self):
+        # When there are no linked bug filters, it returns a ResultSet
+        # with no entries.
+        self.assertTrue(self.notification.bug_filters.is_empty())
+
+    def test_bug_filters_single(self):
+        # With a linked BugSubscriptionFilter, it is returned.
+        subscriber=self.factory.makePerson()
+        subscription = self.bug.default_bugtask.target.addSubscription(
+            subscriber, subscriber)
+        bug_filter = subscription.newBugFilter()
+        BugNotificationFilter(
+            bug_notification=self.notification,
+            bug_subscription_filter=bug_filter)
+
+        self.assertContentEqual([bug_filter],
+                                self.notification.bug_filters)
+
+    def test_bug_filters_multiple(self):
+        # We can have more than one filter matched up with a single
+        # notification.
+        subscriber=self.factory.makePerson()
+        subscription = self.bug.default_bugtask.target.addSubscription(
+            subscriber, subscriber)
+        bug_filter1 = subscription.newBugFilter()
+        bug_filter2 = subscription.newBugFilter()
+        BugNotificationFilter(
+            bug_notification=self.notification,
+            bug_subscription_filter=bug_filter1)
+        BugNotificationFilter(
+            bug_notification=self.notification,
+            bug_subscription_filter=bug_filter2)
+
+        self.assertContentEqual([bug_filter1, bug_filter2],
+                                self.notification.bug_filters)
 
 
 class TestNotificationProcessingWithoutRecipients(TestCaseWithFactory):
