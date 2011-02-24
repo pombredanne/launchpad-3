@@ -10,8 +10,8 @@ import re
 from textwrap import dedent
 
 from canonical.launchpad import _
-from lp.app.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.menu import structured
+from lp.app.validators import LaunchpadValidationError
 
 
 valid_name_pattern = re.compile(r"^[a-z0-9][a-z0-9\+\.\-]+$")

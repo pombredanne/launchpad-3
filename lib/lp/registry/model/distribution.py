@@ -66,10 +66,6 @@ from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.app.validators.name import (
-    sanitize_name,
-    valid_name,
-    )
 from canonical.launchpad.webapp.url import urlparse
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.questioncollection import (
@@ -89,6 +85,10 @@ from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
+    )
+from lp.app.validators.name import (
+    sanitize_name,
+    valid_name,
     )
 from lp.archivepublisher.debversion import Version
 from lp.blueprints.enums import (
@@ -153,13 +153,13 @@ from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage,
     )
 from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.hasdrivers import HasDriversMixin
 from lp.registry.model.karma import KarmaContextMixin
 from lp.registry.model.milestone import (
     HasMilestonesMixin,
     Milestone,
     )
 from lp.registry.model.pillar import HasAliasMixin
-from lp.registry.model.hasdrivers import HasDriversMixin
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.propertycache import (
     cachedproperty,
@@ -172,7 +172,6 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     PackageUploadStatus,
     )
-from lp.soyuz.model.files import BinaryPackageFile
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     MAIN_ARCHIVE_PURPOSES,
@@ -196,6 +195,7 @@ from lp.soyuz.model.distroarchseries import (
     DistroArchSeriesSet,
     )
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
+from lp.soyuz.model.files import BinaryPackageFile
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackageFilePublishing,

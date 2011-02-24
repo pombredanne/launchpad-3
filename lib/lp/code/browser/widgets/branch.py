@@ -18,10 +18,10 @@ from lazr.uri import (
 from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 
-from lp.app.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from lp.app.browser.tales import BranchFormatterAPI
+from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.popup import VocabularyPickerWidget
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import IBranch

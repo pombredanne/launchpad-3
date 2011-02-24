@@ -27,13 +27,13 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     ISlaveStore,
     )
-from lp.app.validators.name import valid_name
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.app.validators.name import valid_name
 from lp.code.errors import (
     CannotHaveLinkedBranch,
     InvalidNamespace,

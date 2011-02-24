@@ -62,7 +62,6 @@ from canonical.launchpad.interfaces.lpstorm import (
     ISlaveStore,
     IStore,
     )
-from lp.app.validators.name import valid_name
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -70,6 +69,7 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.url import urlappend
 from lp.app.errors import NotFoundError
+from lp.app.validators.name import valid_name
 from lp.archivepublisher.debversion import Version
 from lp.archiveuploader.utils import (
     re_isadeb,

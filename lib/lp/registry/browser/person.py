@@ -176,7 +176,6 @@ from canonical.launchpad.interfaces.message import (
     )
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.mailnotification import send_direct_contact_email
-from lp.app.validators.email import valid_email
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -224,6 +223,7 @@ from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
+from lp.app.validators.email import valid_email
 from lp.app.widgets.image import ImageChangeWidget
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,

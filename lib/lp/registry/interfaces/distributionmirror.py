@@ -55,9 +55,9 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
+from canonical.launchpad.webapp.menu import structured
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.name import name_validator
-from canonical.launchpad.webapp.menu import structured
 from lp.services.fields import (
     ContentNameField,
     PublicPersonChoice,

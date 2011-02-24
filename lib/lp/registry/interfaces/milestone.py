@@ -229,6 +229,9 @@ class IMilestoneSet(Interface):
         NotFoundError will be raised.
         """
 
+    def getByIds(milestoneids):
+        """Get the milestones for milestoneids."""
+
     def getByNameAndProduct(name, product, default=None):
         """Get a milestone by its name and product.
 

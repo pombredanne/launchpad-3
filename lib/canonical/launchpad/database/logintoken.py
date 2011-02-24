@@ -31,9 +31,9 @@ from canonical.launchpad.components.tokens import (
     create_unique_token_for_table,
     )
 from canonical.launchpad.helpers import get_email_template
+from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.logintoken import (
     ILoginToken,
     ILoginTokenSet,
@@ -43,7 +43,6 @@ from canonical.launchpad.mail import (
     format_address,
     simple_sendmail,
     )
-from lp.app.validators.email import valid_email
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
@@ -51,6 +50,7 @@ from canonical.launchpad.webapp.interfaces import (
     MASTER_FLAVOR,
     )
 from lp.app.errors import NotFoundError
+from lp.app.validators.email import valid_email
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.person import IPersonSet
 

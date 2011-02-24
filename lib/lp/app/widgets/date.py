@@ -20,16 +20,24 @@ __all__ = [
     ]
 
 from datetime import datetime
+
 import pytz
-
-from zope.datetime import parse, DateTimeError
-from zope.app.form.browser.textwidgets import escape, TextWidget
-from zope.app.form.browser.widget import DisplayWidget
-from zope.app.form.interfaces import InputErrors, WidgetInputError
-from zope.app.form.interfaces import ConversionError
-from zope.component import getUtility
-
 from z3c.ptcompat import ViewPageTemplateFile
+from zope.app.form.browser.textwidgets import (
+    escape,
+    TextWidget,
+    )
+from zope.app.form.browser.widget import DisplayWidget
+from zope.app.form.interfaces import (
+    ConversionError,
+    InputErrors,
+    WidgetInputError,
+    )
+from zope.component import getUtility
+from zope.datetime import (
+    DateTimeError,
+    parse,
+    )
 
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.app.validators import LaunchpadValidationError

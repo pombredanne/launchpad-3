@@ -101,7 +101,6 @@ from canonical.launchpad.interfaces.message import (
     IMessage,
     IndexedMessage,
     )
-from lp.app.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -114,6 +113,7 @@ from lp.app.errors import (
     NotFoundError,
     UserCannotUnsubscribePerson,
     )
+from lp.app.validators import LaunchpadValidationError
 from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug,
     BranchUnlinkedFromBug,
@@ -1417,8 +1417,8 @@ BugMessage""" % sqlvalues(self.id))
             owners.discard(None)
             if not owners:
                 return
-            PersonSet().getPrecachedPersonsFromIDs(owners,
-                need_validity=True)
+            list(PersonSet().getPrecachedPersonsFromIDs(owners,
+                need_validity=True))
         return DecoratedResultSet(result, pre_iter_hook=eager_load_owners)
 
     def getNullBugTask(self, product=None, productseries=None,

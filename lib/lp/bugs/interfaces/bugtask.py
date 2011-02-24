@@ -105,9 +105,9 @@ from canonical.launchpad.searchbuilder import (
     any,
     NULL,
     )
+from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.name import name_validator
-from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from lp.bugs.interfaces.bugwatch import (
     IBugWatch,
     IBugWatchSet,
@@ -477,6 +477,7 @@ class IBugTask(IHasDateCreated, IHasBug):
         readonly=True,
         vocabulary='Milestone',
         schema=Interface)) # IMilestone
+    milestoneID = Attribute('The id of the milestone.')
 
     # XXX kiko 2006-03-23:
     # The status and importance's vocabularies do not

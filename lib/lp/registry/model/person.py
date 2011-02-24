@@ -163,14 +163,14 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
+from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.lazr.utils import get_current_browser_request
 from lp.app.validators.email import valid_email
 from lp.app.validators.name import (
     sanitize_name,
     valid_name,
     )
-from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.lazr.utils import get_current_browser_request
 from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationFilter,

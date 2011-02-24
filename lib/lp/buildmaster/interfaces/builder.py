@@ -28,7 +28,6 @@ from lazr.restful.declarations import (
     operation_parameters,
     operation_returns_entry,
     )
-
 from zope.interface import (
     Attribute,
     Interface,

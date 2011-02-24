@@ -102,13 +102,13 @@ from canonical.launchpad.interfaces.launchpad import (
     IPrivacy,
     )
 from canonical.launchpad.interfaces.validation import validate_new_team_email
-from lp.app.validators import LaunchpadValidationError
-from lp.app.validators.email import email_validator
-from lp.app.validators.name import name_validator
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.email import email_validator
+from lp.app.validators.name import name_validator
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.code.interfaces.hasbranches import (

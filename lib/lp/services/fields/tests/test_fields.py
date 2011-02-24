@@ -9,20 +9,20 @@ import datetime
 from StringIO import StringIO
 import time
 
-from zope.interface import Interface
 from zope.component import getUtility
+from zope.interface import Interface
 from zope.schema.interfaces import TooShort
 
 from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.app.validators import LaunchpadValidationError
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.validators import LaunchpadValidationError
+from lp.registry.interfaces.nameblacklist import INameBlacklistSet
 from lp.services.fields import (
     BaseImageUpload,
     BlacklistableContentNameField,
     FormattableDate,
     StrippableText,
     )
-from lp.registry.interfaces.nameblacklist import INameBlacklistSet
 from lp.testing import (
     login_person,
     TestCase,

@@ -24,15 +24,6 @@ from urllib import (
     splittype,
     )
 
-from storm.locals import (
-        Int,
-        Reference,
-        ReferenceSet,
-        Unicode,
-        )
-from zope.component import getUtility
-from zope.interface import implements
-
 from lazr.uri import URI
 from pytz import timezone
 from sqlobject import (
@@ -50,8 +41,16 @@ from storm.expr import (
     Not,
     SQL,
     )
-from storm.locals import Bool
+from storm.locals import (
+    Bool,
+    Int,
+    Reference,
+    ReferenceSet,
+    Unicode,
+    )
 from storm.store import Store
+from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
@@ -61,9 +60,14 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.app.errors import NotFoundError
 from lp.app.validators.email import valid_email
 from lp.app.validators.name import sanitize_name
-from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
     IBugTracker,
@@ -74,8 +78,6 @@ from lp.bugs.interfaces.bugtracker import (
     IBugTrackerSet,
     SINGLE_PRODUCT_BUGTRACKERTYPES,
     )
-from canonical.launchpad.webapp.interfaces import (
-        DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 from lp.bugs.interfaces.bugtrackerperson import BugTrackerPersonAlreadyExists
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugmessage import BugMessage
