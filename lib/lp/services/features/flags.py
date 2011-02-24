@@ -61,6 +61,10 @@ flag_info = sorted([
      'boolean',
      'Enables use of memcached where it is supported.',
      'enabled'),
+    ('profiling.enabled',
+     'boolean',
+     'Overrides config.profiling.profiling_allowed to permit profiling.'
+     ''),
     ('publicrestrictedlibrarian',
      'boolean',
      'Redirects to private librarian files instead of proxying them.',
