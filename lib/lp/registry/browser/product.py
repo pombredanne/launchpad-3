@@ -170,6 +170,8 @@ from lp.registry.browser.pillar import (
     )
 from lp.registry.browser.productseries import get_series_branch_error
 from lp.bugs.browser.structuralsubscription import (
+    expose_user_administered_teams_to_js,
+    expose_user_subscription_status_to_js,
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
@@ -1006,6 +1008,10 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         self.show_programming_languages = bool(
             self.context.programminglang or
             check_permission('launchpad.Edit', self.context))
+        expose_user_administered_teams_to_js(self.request, self.user)
+        expose_user_subscription_status_to_js(
+            self.context, self.request, self.user)
+
 
     @property
     def show_license_status(self):

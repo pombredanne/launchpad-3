@@ -4,6 +4,8 @@
 __metaclass__ = type
 
 __all__ = [
+    'expose_user_administered_teams_to_js',
+    'expose_user_subscription_status_to_js',
     'StructuralSubscriptionMenuMixin',
     'StructuralSubscriptionTargetTraversalMixin',
     'StructuralSubscriptionView',
@@ -12,6 +14,10 @@ __all__ = [
 
 from operator import attrgetter
 
+from lazr.restful.interfaces import (
+    IJSONRequestCache,
+    IWebServiceClientRequest,
+    )
 from zope.component import getUtility
 from zope.formlib import form
 from zope.schema import (
@@ -22,6 +28,7 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
+from zope.traversing.browser import absoluteURL
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import Link
@@ -346,6 +353,25 @@ class StructuralSubscriptionMenuMixin:
             return Link('+subscribe', text, icon=icon, enabled=False)
         else:
             return Link('+subscribe', text, icon=icon, enabled=enabled)
+
+
+def expose_user_administered_teams_to_js(request, user,
+        absoluteURL=absoluteURL):
+    """Make the list of teams the user adminsters available to JavaScript."""
+    info = []
+    api_request = IWebServiceClientRequest(request)
+    for team in user.getAdministratedTeams():
+        info.append({
+            'link': absoluteURL(team, api_request),
+            'title': team.title,
+        })
+    IJSONRequestCache(request).objects['administratedTeams'] = info
+
+
+def expose_user_subscription_status_to_js(context, request, user):
+    """Make the user's subscription state available to JavaScript."""
+    IJSONRequestCache(request).objects['userHasBugSubscriptions'] = (
+        context.userHasBugSubscriptions(user))
 
 
 class StructuralSubscribersPortletView(LaunchpadView):
