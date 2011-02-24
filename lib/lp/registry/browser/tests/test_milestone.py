@@ -260,7 +260,7 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
         # is very large already, if the test fails due to such a change,
         # please cut some more of the existing fat out of it rather than
         # increasing the cap.
-        page_query_limit = 34
+        page_query_limit = 35
         product = self.factory.makeProduct()
         login_person(product.owner)
         milestone = self.factory.makeMilestone(

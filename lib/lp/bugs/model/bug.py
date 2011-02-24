@@ -534,7 +534,7 @@ BugMessage""" % sqlvalues(self.id))
                 BugMessage.bugID == self.id,
                 BugMessage.messageID == Message.id,
                 )
-        results.order_by(BugMessage.index, Message.datecreated, Message.id)
+        results.order_by(BugMessage.index)
         return DecoratedResultSet(results, index_message,
             pre_iter_hook=eager_load)
 
@@ -1781,11 +1781,15 @@ BugMessage""" % sqlvalues(self.id))
     def _known_viewers(self):
         """A set of known persons able to view this bug.
 
-        Seed it by including the list of all owners of pillars for bugtasks
-        for the bug.
+        This method must return an empty set or bug searches will trigger late
+        evaluation. Any 'should be set on load' propertis must be done by the
+        bug search.
+
+        If you are tempted to change this method, don't. Instead see
+        userCanView which defines the just-in-time policy for bug visibility,
+        and BugTask._search which honours visibility rules.
         """
-        pillar_owners = [bt.pillar.owner.id for bt in self.bugtasks]
-        return set(pillar_owners)
+        return set()
 
     def userCanView(self, user):
         """See `IBug`.
@@ -1819,6 +1823,12 @@ BugMessage""" % sqlvalues(self.id))
             # Explicit subscribers may also view it.
             for subscription in self.subscriptions:
                 if user.inTeam(subscription.person):
+                    self._known_viewers.add(user.id)
+                    return True
+            # Pillar owners can view it. Note that this is contentious and
+            # possibly incorrect: see bug 702429.
+            for pillar_owner in [bt.pillar.owner for bt in self.bugtasks]:
+                if user.inTeam(pillar_owner):
                     self._known_viewers.add(user.id)
                     return True
         return False

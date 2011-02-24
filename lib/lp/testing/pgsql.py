@@ -16,7 +16,9 @@ import psycopg2
 
 from canonical.config import config
 from canonical.database.postgresql import (
-    generateResetSequencesSQL, resetSequences)
+    generateResetSequencesSQL,
+    resetSequences,
+    )
 
 
 class ConnectionWrapper:

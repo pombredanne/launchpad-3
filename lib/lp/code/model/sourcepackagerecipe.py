@@ -70,6 +70,7 @@ from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.model.distroseries import DistroSeries
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.stormexpr import Greatest
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.model.archive import Archive
@@ -147,7 +148,7 @@ class SourcePackageRecipe(Storm):
         return self.sourcepackagename.name
 
     name = Unicode(allow_none=True)
-    description = Unicode(allow_none=False)
+    description = Unicode(allow_none=True)
 
     @property
     def _recipe_data(self):
@@ -244,7 +245,8 @@ class SourcePackageRecipe(Storm):
         return SourcePackageRecipeBuild.getRecentBuilds(
             requester, self, distroseries).count() >= 5
 
-    def requestBuild(self, archive, requester, distroseries, pocket,
+    def requestBuild(self, archive, requester, distroseries,
+                     pocket=PackagePublishingPocket.RELEASE,
                      manual=False):
         """See `ISourcePackageRecipe`."""
         if not archive.is_ppa:
