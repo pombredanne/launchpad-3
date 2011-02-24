@@ -153,7 +153,7 @@
     <subscriber
         for="lp.registry.interfaces.packaging.IPackaging
              lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="lp.translations.model.translationmergejob.schedule_merge" />
+        handler="lp.translations.model.translationpackagingjob.schedule_merge" />
     <facet
         facet="translations">
 
@@ -629,13 +629,14 @@
         <allow interface="lp.translations.interfaces.translationtemplatesbuildjob.ITranslationTemplatesBuildJobSource"/>
     </securedutility>
     <securedutility
-        component='lp.translations.model.translationmergejob.TranslationMergeJob'
-        provides='lp.translations.interfaces.translationmergejob.ITranslationMergeJobSource'
+        component='lp.translations.model.translationpackagingjob.TranslationPackagingJob'
+        provides='lp.translations.interfaces.translationpackagingjob.ITranslationPackagingJobSource'
     >
-        <allow interface='lp.translations.interfaces.translationmergejob.ITranslationMergeJobSource'/>
+        <allow
+        interface='lp.translations.interfaces.translationpackagingjob.ITranslationPackagingJobSource'/>
     </securedutility>
     <class
-        class="lp.translations.model.translationmergejob.TranslationMergeJob">
+        class="lp.translations.model.translationpackagingjob.TranslationMergeJob">
         <allow interface='lp.services.job.interfaces.job.IRunnableJob'/>
     </class>
     <utility
