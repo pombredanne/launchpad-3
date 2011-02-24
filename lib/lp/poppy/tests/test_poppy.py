@@ -336,11 +336,13 @@ class TestPoppy(TestCaseWithFactory):
         fake_file = StringIO.StringIO("ONE")
         conn_one.put_file('test', fake_file, mode=None)
         self.server.disconnect(conn_one)
+        self.server.waitForClose(1)
 
         conn_two = self.server.getTransport()
         fake_file = StringIO.StringIO("TWO")
         conn_two.put_file('test', fake_file, mode=None)
         self.server.disconnect(conn_two)
+        self.server.waitForClose(2)
 
         # Perform a pair of sessions with simultaneous connections.
         conn_three = self.server.getTransport()
@@ -353,10 +355,9 @@ class TestPoppy(TestCaseWithFactory):
         conn_four.put_file('test', fake_file, mode=None)
 
         self.server.disconnect(conn_three)
+        self.server.waitForClose(3)
 
         self.server.disconnect(conn_four)
-
-        # Wait for the 4 uploads to finish.
         self.server.waitForClose(4)
 
         # Build a list of directories representing the 4 sessions.
