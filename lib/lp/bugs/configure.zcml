@@ -193,6 +193,7 @@
                     date_fix_released
                     date_left_closed
                     date_closed
+                    milestoneID
                     productseriesID
                     task_age
                     bug_subscribers
@@ -314,6 +315,15 @@
             <require
                 permission="launchpad.Edit"
                 set_schema="lp.bugs.interfaces.bugtask.IBugTask"/>
+        </class>
+
+        <!-- BugTaskSearchParams -->
+        <class
+            class="lp.bugs.interfaces.bugtask.BugTaskSearchParams">
+            <allow
+                attributes="
+                    setTarget
+                    "/>
         </class>
 
         <!-- BugTaskSet -->
@@ -732,10 +742,9 @@
                     messages
                     getBugNotificationRecipients
                     hasBranch
-                    reindexMessages
                     security_related
                     tags
-                    getMessageChunks
+                    getMessagesForView
                     isSubscribedToDupes
                     getSubscribersFromDuplicates
                     getSubscriptionsFromDuplicates
@@ -743,6 +752,7 @@
                     getSubscriptionForPerson
                     getSubscriptionInfo
                     indexed_messages
+                    _indexed_messages
                     getAlsoNotifiedSubscribers
                     getBugWatch
                     canBeNominatedFor
