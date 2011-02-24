@@ -65,7 +65,7 @@ class TestUpstreamPOTemplateSharingInfo(BrowserTestCase, TestSharingInfoMixin):
         return self.factory.makePOTemplate()
 
     NOT_SHARING_TEXT = """
-       This template is not sharing translations with an Ubuntu source package."""
+       This template is not sharing translations with a template in an Ubuntu source package."""
         
     def makeSharingObject(self):
         template = self.factory.makePOTemplate()

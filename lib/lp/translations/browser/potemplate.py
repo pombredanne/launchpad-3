@@ -83,6 +83,10 @@ from lp.translations.interfaces.translationimporter import (
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
+from lp.translations.utilities.translationsharinginfo import (
+    has_ubuntu_template,
+    get_ubuntu_sharing_info,
+    )
 
 
 class POTemplateNavigation(Navigation):
@@ -353,6 +357,21 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
             pofileset = getUtility(IPOFileSet)
             pofile = pofileset.getDummy(self.context, language)
         return pofile
+
+    def is_sharing(self):
+        return has_ubuntu_template(
+            productseries=self.context.productseries,
+            templatename=self.context.name)
+
+    @property
+    def sharing_template(self):
+        infos = get_ubuntu_sharing_info(
+            productseries=self.context.productseries,
+            templatename=self.context.name)
+        if len(infos) == 0:
+            return None
+        sourcepackage, template = infos[0]
+        return template
 
 
 class POTemplateUploadView(LaunchpadView, TranslationsMixin):

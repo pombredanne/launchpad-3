@@ -460,6 +460,7 @@ class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
         sourcepackage, template = infos[0]
         return sourcepackage
 
+
 class SettingsRadioWidget(LaunchpadRadioWidgetWithDescription):
     """Remove the confusing hint under the widget."""
 

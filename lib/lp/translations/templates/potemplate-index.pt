@@ -84,6 +84,20 @@
 
   <div class="yui-g">
     <div class="yui-u first">
+      <div class="portlet" id="sharing-information">
+        <h3>Sharing Information</h3>
+        <p tal:condition="not:view/is_sharing">
+          This template is not sharing translations with
+          a template in an Ubuntu source package.
+        </p>
+        <p tal:condition="view/is_sharing"
+           tal:define="template view/sharing_template">
+          This template is sharing translations with
+          <a tal:content="template/title"
+             tal:attributes="href template/fmt:url"
+             >template</a>.
+        </p>
+      </div>
       <div class="portlet">
         <h3>Permissions</h3>
         <p>
