@@ -13,6 +13,7 @@ from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
+from lp.registry.model.packagingjob import PackagingJob
 from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.job.model.job import Job
 from lp.testing import TestCaseWithFactory
@@ -47,8 +48,8 @@ def make_translation_merge_job(factory, not_ubuntu=False):
     productseries = upstream_pofile.potemplate.productseries
     distroseries = package_pofile.potemplate.distroseries
     sourcepackagename = package_pofile.potemplate.sourcepackagename
-    return TranslationMergeJob(
-        job=Job(), productseries=productseries, distroseries=distroseries,
+    return TranslationMergeJob.create(
+        productseries=productseries, distroseries=distroseries,
         sourcepackagename=sourcepackagename)
 
 
@@ -127,11 +128,11 @@ class TestTranslationMergeJob(TestCaseWithFactory):
     def findJobs(productseries, sourcepackage):
         store = Store.of(productseries)
         result = store.find(
-            TranslationMergeJob,
-            TranslationMergeJob.productseries_id == productseries.id,
-            TranslationMergeJob.sourcepackagename_id ==
+            PackagingJob,
+            PackagingJob.productseries_id == productseries.id,
+            PackagingJob.sourcepackagename_id ==
             sourcepackage.sourcepackagename.id,
-            TranslationMergeJob.distroseries_id ==
+            PackagingJob.distroseries_id ==
             sourcepackage.distroseries.id,
             )
         return list(result)
