@@ -1194,8 +1194,10 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
     def test_builds(self):
         """Ensure SourcePackageRecipeView.builds is as described."""
         recipe = self.makeRecipe()
+        # We create builds in time ascending order (oldest first) since we
+        # use id as the ordering attribute and lower ids mean created earlier.
         date_gen = time_counter(
-            datetime(2010, 03, 16, tzinfo=utc), timedelta(days=-1))
+            datetime(2010, 03, 16, tzinfo=utc), timedelta(days=1))
         build1 = self.makeBuildJob(recipe, date_gen.next())
         build2 = self.makeBuildJob(recipe, date_gen.next())
         build3 = self.makeBuildJob(recipe, date_gen.next())
@@ -1204,7 +1206,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build6 = self.makeBuildJob(recipe, date_gen.next())
         view = SourcePackageRecipeView(recipe, None)
         self.assertEqual(
-            [build1, build2, build3, build4, build5, build6],
+            [build6, build5, build4, build3, build2, build1],
             view.builds)
 
         def set_status(build, status):
@@ -1214,19 +1216,19 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             if status == BuildStatus.FULLYBUILT:
                 naked_build.date_finished = (
                     naked_build.date_created + timedelta(minutes=10))
-        set_status(build1, BuildStatus.FULLYBUILT)
-        set_status(build2, BuildStatus.FAILEDTOBUILD)
+        set_status(build6, BuildStatus.FULLYBUILT)
+        set_status(build5, BuildStatus.FAILEDTOBUILD)
         # When there are 4+ pending builds, only the the most
         # recently-completed build is returned (i.e. build1, not build2)
         self.assertEqual(
-            [build3, build4, build5, build6, build1],
+            [build4, build3, build2, build1, build6],
             view.builds)
-        set_status(build3, BuildStatus.FULLYBUILT)
         set_status(build4, BuildStatus.FULLYBUILT)
-        set_status(build5, BuildStatus.FULLYBUILT)
-        set_status(build6, BuildStatus.FULLYBUILT)
+        set_status(build3, BuildStatus.FULLYBUILT)
+        set_status(build2, BuildStatus.FULLYBUILT)
+        set_status(build1, BuildStatus.FULLYBUILT)
         self.assertEqual(
-            [build1, build2, build3, build4, build5], view.builds)
+            [build6, build5, build4, build3, build2], view.builds)
 
     def test_request_daily_builds_button_stale(self):
         # Recipes that are stale and are built daily have a build now link

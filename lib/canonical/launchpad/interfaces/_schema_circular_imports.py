@@ -61,7 +61,6 @@ from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
-from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchsubscription import IBranchSubscription
@@ -75,6 +74,7 @@ from lp.code.interfaces.hasbranches import (
     IHasMergeProposals,
     IHasRequestedReviews,
     )
+from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
