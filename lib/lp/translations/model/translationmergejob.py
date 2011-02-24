@@ -19,6 +19,7 @@ from lp.translations.interfaces.translationmergejob import (
     ITranslationMergeJobSource,
     )
 from lp.registry.model.packagingjob import (
+    PackagingJob,
     PackagingJobDerived,
     PackagingJobType,
     )
@@ -58,6 +59,12 @@ class TranslationMergeJob(PackagingJobDerived, BaseRunnableJob):
         return cls.create(
             packaging.productseries, packaging.distroseries,
             packaging.sourcepackagename)
+
+    @classmethod
+    def iterReady(cls):
+        """See `IJobSource`."""
+        return super(TranslationMergeJob, cls).iterReady(
+            [PackagingJob.job_type == cls.class_job_type])
 
     def run(self):
         """See `IRunnableJob`."""

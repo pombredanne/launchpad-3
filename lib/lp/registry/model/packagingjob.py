@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'PackagingJob',
     'PackagingJobType',
     'PackagingJobDerived',
     ]
@@ -85,9 +86,31 @@ class PackagingJob(StormBase):
         self.productseries = productseries
 
 
+class RegisteredSubclass(type):
+    """Metaclass for when subclasses should be registered."""
+
+    def __init__(cls, name, bases, dict_):
+        cls._register_subclass()
+
+
 class PackagingJobDerived:
+    """Base class for specialized Packaging Job types."""
+
+    __metaclass__ = RegisteredSubclass
 
     delegates(IPackagingJob, 'job')
+
+    _subclass = {}
+
+    @classmethod
+    def _register_subclass(cls):
+        """Register this class with its enumeration."""
+        job_type = getattr(cls, 'class_job_type', None)
+        if job_type is None:
+            return
+        value = cls._subclass.setdefault(job_type, cls)
+        assert value is cls, (
+            '%s already registered to %s.' % (job_type.name, value.__name__))
 
     def __init__(self, job):
         assert job.job_type == self.class_job_type
@@ -107,13 +130,17 @@ class PackagingJobDerived:
         return cls(context)
 
     @classmethod
-    def iterReady(cls):
-        """See `IJobSource`."""
+    def iterReady(cls, extra_clauses):
+        """See `IJobSource`.
+
+        This version will emit any ready job based on PackagingJob.
+        :param extra_clauses: Extra clauses to reduce the selections.
+        """
         store = IStore(PackagingJob)
         jobs = store.find(
             (PackagingJob),
-            PackagingJob.job_type == cls.class_job_type,
             PackagingJob.job == Job.id,
             Job.id.is_in(Job.ready_jobs),
+            *extra_clauses
         )
-        return (cls(job) for job in jobs)
+        return (cls._subclass[job.job_type](job) for job in jobs)
