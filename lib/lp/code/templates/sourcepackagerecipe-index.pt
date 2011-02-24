@@ -140,13 +140,15 @@
   </div>
 
   <script type="text/javascript">
-    LPS.use('lp.code.sourcepackagerecipe.index', function(Y) {
-      Y.on('domready', Y.lp.code.sourcepackagerecipe.index.setup);
-    });
-  </script>
+    LPS.use('io-base', 'lp.ui', 'lp.code.requestbuild_overlay', function(Y) {
 
-  <script id='requestbuild-script' type="text/javascript" tal:content="string:
-      LPS.use('io-base', 'lp.code.requestbuild_overlay', function(Y) {
+        Y.on('lp:context:deb_version_template:changed', function(e) {
+            Y.lp.ui.update_field('#debian-version dd', e.new_value);
+        });
+        Y.on('lp:context:base_branch_link:changed', function(e) {
+            Y.lp.ui.update_field('#base-branch dd', e.entry.getHTML(e.name));
+        });
+
         if(Y.UA.ie) {
             return;
         }
