@@ -63,7 +63,7 @@ flag_info = sorted([
      'enabled'),
     ('profiling.enabled',
      'boolean',
-     'Overrides config.profiling.profiling_allowed to permit profiling.'
+     'Overrides config.profiling.profiling_allowed to permit profiling.',
      ''),
     ('publicrestrictedlibrarian',
      'boolean',

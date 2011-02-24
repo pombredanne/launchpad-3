@@ -26,7 +26,10 @@ from zope.traversing.namespace import view
 
 from canonical.config import config
 import canonical.launchpad.webapp.adapter as da
-from canonical.launchpad.webapp.interfaces import IStartRequestEvent
+from canonical.launchpad.webapp.interfaces import (
+    DisallowedStore,
+    IStartRequestEvent,
+    )
 from lp.services.profile.mem import (
     memory,
     resident,
@@ -47,8 +50,11 @@ def before_traverse(event):
     # done in _maybe_profile so that function takes care of it. We have to use
     # this event (or add a new one) because we depend on the feature flags
     # system being configured and usable, and on the principal being known.
-    if getFeatureFlag('profiling.enabled'):
-        _maybe_profile(event)
+    try:
+        if getFeatureFlag('profiling.enabled'):
+            _maybe_profile(event)
+    except DisallowedStore:
+        pass
 
 
 @adapter(IStartRequestEvent)
