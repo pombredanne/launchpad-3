@@ -186,6 +186,41 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
         self.assertContentEqual([bug_filter1, bug_filter2],
                                 self.notification.bug_filters)
 
+    def test_getFiltersByRecipient_empty(self):
+        # When there are no linked bug filters, it returns a ResultSet
+        # with no entries.
+        subscriber = self.factory.makePerson()
+        self.assertTrue(
+            self.notification.getFiltersByRecipient(subscriber).is_empty())
+
+    def test_getFiltersByRecipient_other_persons(self):
+        # When there are no bug filters for other recipients,
+        # it returns a ResultSet with no entries.
+        recipient = self.factory.makePerson()
+        subscriber = self.factory.makePerson()
+        subscription = self.bug.default_bugtask.target.addSubscription(
+            subscriber, subscriber)
+        bug_filter = subscription.newBugFilter()
+        BugNotificationFilter(
+            bug_notification=self.notification,
+            bug_subscription_filter=bug_filter)
+        self.assertTrue(
+            self.notification.getFiltersByRecipient(recipient).is_empty())
+
+    def test_getFiltersByRecipient_match(self):
+        # When there are no bug filters for other recipients,
+        # it returns a ResultSet with no entries.
+        subscriber = self.factory.makePerson()
+        subscription = self.bug.default_bugtask.target.addSubscription(
+            subscriber, subscriber)
+        bug_filter = subscription.newBugFilter()
+        BugNotificationFilter(
+            bug_notification=self.notification,
+            bug_subscription_filter=bug_filter)
+        self.assertContentEqual(
+            [bug_filter],
+            self.notification.getFiltersByRecipient(subscriber))
+
 
 class TestNotificationProcessingWithoutRecipients(TestCaseWithFactory):
     """Adding notificatons without any recipients does not cause any harm.

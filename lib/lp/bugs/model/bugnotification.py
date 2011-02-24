@@ -47,6 +47,8 @@ from lp.bugs.interfaces.bugnotification import (
     IBugNotificationSet,
     )
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
+from lp.bugs.model.structuralsubscription import StructuralSubscription
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.stormbase import StormBase
 
 
@@ -79,6 +81,18 @@ class BugNotification(SQLBase):
             (BugSubscriptionFilter.id ==
              BugNotificationFilter.bug_subscription_filter_id),
             BugNotificationFilter.bug_notification == self)
+
+    def getFiltersByRecipient(self, recipient):
+        """See `IBugNotification`."""
+        return IStore(BugSubscriptionFilter).find(
+            BugSubscriptionFilter,
+            (BugSubscriptionFilter.id ==
+             BugNotificationFilter.bug_subscription_filter_id),
+            BugNotificationFilter.bug_notification == self,
+            (BugSubscriptionFilter.structural_subscription_id ==
+             StructuralSubscription.id),
+            TeamParticipation.personID == recipient.id,
+            TeamParticipation.teamID == StructuralSubscription.subscriberID)
 
 
 class BugNotificationSet:
