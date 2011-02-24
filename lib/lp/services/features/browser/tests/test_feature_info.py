@@ -19,6 +19,7 @@ from lp.services.features.flags import (
     flag_info,
     NullFeatureController,
     undocumented_flags,
+    value_domain_info,
     )
 from lp.services.features.scopes import (
     HANDLERS,
@@ -63,6 +64,14 @@ class TestFeatureControlPage(BrowserTestCase):
         browser = self.getUserBrowserAsAdmin()
         browser.open(self.getFeatureInfoUrl())
         for record in flag_info:
+            for item in record:
+                self.assertThat(browser.contents, Contains(item))
+
+    def test_value_domain_documentation_displayed(self):
+        """The value domain documentation is displayed on the page."""
+        browser = self.getUserBrowserAsAdmin()
+        browser.open(self.getFeatureInfoUrl())
+        for record in value_domain_info:
             for item in record:
                 self.assertThat(browser.contents, Contains(item))
 

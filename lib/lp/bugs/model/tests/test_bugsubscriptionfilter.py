@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from storm.store import Store
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import ProxyFactory
+from zope.security.proxy import ProxyFactory, removeSecurityProxy
 
 from canonical.launchpad import searchbuilder
 from canonical.launchpad.interfaces.lpstorm import IStore
@@ -85,6 +85,19 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         self.assertIs(None, bug_subscription_filter.other_parameters)
         self.assertIs(None, bug_subscription_filter.description)
 
+    def test_has_other_filters_one(self):
+        # With only the initial, default filter, it returns False.
+        initial_filter = self.subscription.bug_filters.one()
+        naked_filter = removeSecurityProxy(initial_filter)
+        self.assertFalse(naked_filter._has_other_filters())
+
+    def test_has_other_filters_more_than_one(self):
+        # With more than one filter, it returns True.
+        bug_subscription_filter = BugSubscriptionFilter()
+        bug_subscription_filter.structural_subscription = self.subscription
+        naked_filter = removeSecurityProxy(bug_subscription_filter)
+        self.assertTrue(naked_filter._has_other_filters())
+
     def test_delete(self):
         """`BugSubscriptionFilter` objects can be deleted.
 
@@ -102,6 +115,23 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         bug_subscription_filter.delete()
         IStore(bug_subscription_filter).flush()
         self.assertIs(None, Store.of(bug_subscription_filter))
+
+    def test_delete_final(self):
+        # Final remaining `BugSubscriptionFilter` can't be deleted.
+        # Only the linked data is removed.
+        bug_subscription_filter = self.subscription.bug_filters.one()
+        bug_subscription_filter.importances = [BugTaskImportance.LOW]
+        bug_subscription_filter.statuses = [BugTaskStatus.NEW]
+        bug_subscription_filter.tags = [u"foo"]
+        IStore(bug_subscription_filter).flush()
+        self.assertIsNot(None, Store.of(bug_subscription_filter))
+        # Delete.
+        bug_subscription_filter.delete()
+        IStore(bug_subscription_filter).flush()
+        self.assertIsNot(None, Store.of(bug_subscription_filter))
+        self.assertContentEqual([], bug_subscription_filter.statuses)
+        self.assertContentEqual([], bug_subscription_filter.importances)
+        self.assertContentEqual([], bug_subscription_filter.tags)
 
     def test_statuses(self):
         # The statuses property is a frozenset of the statuses that are

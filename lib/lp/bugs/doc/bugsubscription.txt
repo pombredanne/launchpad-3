@@ -250,14 +250,14 @@ BugNotificationLevel for structural subscriptions.  Only subscribers who
 have a bug notification level greater than or equal to the value passed
 in the `level` parameter are returned.
 
-Structural subscriptions control their bug notification levels via zero
-or more filters.  If there are no filters, the subscription is
-interpreted to mean that the subscriber wants all notifications.  In the
-case of bug notification levels, that is equivalent to
+Structural subscriptions control their bug notification levels via one
+or more filters.  If there are no explicit filters, the default subscription
+filter is interpreted to mean that the subscriber wants all notifications.
+In the case of bug notification levels, that is equivalent to
 BugNotificationLevel.COMMENTS.
 
     >>> print subscription_no_priv.bug_filters.count()
-    0
+    1
 
 With this subscription level, No Privileges Person is returned for all
 parameter values of level.
@@ -297,7 +297,7 @@ level set to LIFECYCLE, he will not be included, if the parameter
 
     >>> from lp.testing import person_logged_in
     >>> with person_logged_in(mr_no_privs):
-    ...     filter_no_priv = subscription_no_priv.newBugFilter()
+    ...     filter_no_priv = subscription_no_priv.bug_filters.one()
     ...     filter_no_priv.bug_notification_level = (
     ...         BugNotificationLevel.LIFECYCLE)
 

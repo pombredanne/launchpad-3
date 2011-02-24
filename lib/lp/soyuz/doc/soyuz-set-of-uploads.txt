@@ -3,7 +3,7 @@
 This test will:
 
   * Pre-create the directory structure
-  * Turn on the zeca keyserver
+  * Turn on the test keyserver
   * Run process-upload.py
   * Check result
   * Mark packages as ACCEPTED
@@ -54,13 +54,13 @@ Before asking the system to process the upload, we must prepare the
 database and services to receive it. Since we're using
 'sample.person@canonical.com' as our Changed-By address and his
 key has signed all the relevant uploads in the suite of uploads we're
-using, this essentially boils down to ensuring that zeca and the
+using, this essentially boils down to ensuring that test keyserver and the
 librarian are running and making sure that the key is attached to the
 relevant launchpad person.
 
-  >>> from canonical.zeca.ftests.harness import ZecaTestSetup
-  >>> zeca = ZecaTestSetup()
-  >>> zeca.setUp()
+  >>> from lp.testing.keyserver import KeyServerTac
+  >>> keyserver = KeyServerTac()
+  >>> keyserver.setUp()
 
 Import public keyring into current LPDB.
 
@@ -757,5 +757,5 @@ everything up.
   >>> shutil.rmtree("/var/tmp/archive/")
   >>> shutil.rmtree(temp_dir)
 
-  >>> zeca.tearDown()
+  >>> keyserver.tearDown()
 

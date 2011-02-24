@@ -141,12 +141,7 @@ class HasBugsBase:
     @property
     def open_bugtasks(self):
         """See `IHasBugs`."""
-        open_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES),
-            omit_dupes=True)
-
-        return self.searchTasks(open_tasks_query)
+        return self.searchTasks(BugTaskSet().open_bugtask_search)
 
     @property
     def new_bugtasks(self):

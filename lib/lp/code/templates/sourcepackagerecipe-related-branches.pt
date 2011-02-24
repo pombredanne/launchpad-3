@@ -40,7 +40,7 @@
     </div>
 
     <div tal:condition="seriesBranches" id="related-series-branches">
-      <h2 style="margin-top: 1.5em;">Product series branches</h2>
+      <h2 style="margin-top: 1.5em;">Project series branches</h2>
       <table class="listing" id="related-series-branches-listing">
         <thead>
           <tr>
