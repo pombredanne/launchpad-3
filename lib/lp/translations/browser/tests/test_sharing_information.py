@@ -2,10 +2,9 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the POTemplate recipe view classes and templates."""
+from lp.translations.interfaces.side import TranslationSide
 
 __metaclass__ = type
-
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.testing.pages import (
@@ -15,13 +14,20 @@ from canonical.launchpad.testing.pages import (
     )
 from lp.app.enums import ServiceUsage
 from lp.services.features.testing import FeatureFixture
-from lp.testing import BrowserTestCase
+from lp.testing import (
+    BrowserTestCase,
+    celebrity_logged_in,
+    )
 
 
 def set_translations_usage(obj):
     """Set the translations_usage to LAUNCHPAD."""
-    naked_obj = removeSecurityProxy(obj)
-    naked_obj.translations_usage = ServiceUsage.LAUNCHPAD
+    with celebrity_logged_in('admin'):
+        obj.translations_usage = ServiceUsage.LAUNCHPAD
+
+def enable_translations_on_distroseries(distroseries):
+    with celebrity_logged_in('admin'):
+        distroseries.hide_all_translations = False
 
 
 class TestSharingInfoMixin:
@@ -80,6 +86,7 @@ class TestUpstreamPOTemplateSharingInfo(BrowserTestCase, TestSharingInfoMixin):
     SHARING_TEXT = """
        This template is sharing translations with .*"""
 
+
 class TestUpstreamSharingInfo(BrowserTestCase, TestSharingInfoMixin):
     """Test display of product series sharing info."""
 
@@ -105,3 +112,60 @@ class TestUpstreamSharingInfo(BrowserTestCase, TestSharingInfoMixin):
 
     SHARING_TEXT = """
        This project series is sharing translations with .*"""
+
+
+class TestUbuntuPOTemplateSharingInfo(BrowserTestCase, TestSharingInfoMixin):
+    """Test display of template sharing info in an Ubuntu source package."""
+
+    layer = DatabaseFunctionalLayer
+
+    def makeNotSharingObject(self):
+        template = self.factory.makePOTemplate(side=TranslationSide.UBUNTU)
+        enable_translations_on_distroseries(template.distroseries)
+        return template
+
+    NOT_SHARING_TEXT = """
+       This template is not sharing translations with a template in an upstream project."""
+
+    def makeSharingObject(self):
+        upstream_template = self.factory.makePOTemplate()
+        packaging = self.factory.makePackagingLink(
+            productseries=upstream_template.productseries, in_ubuntu=True)
+        template = self.factory.makePOTemplate(
+            distroseries=packaging.distroseries,
+            sourcepackagename=packaging.sourcepackagename,
+            name=upstream_template.name)
+        enable_translations_on_distroseries(packaging.distroseries)
+        return template
+
+    SHARING_TEXT = """
+       This template is sharing translations with .*"""
+
+
+class TestUbuntuSharingInfo(BrowserTestCase, TestSharingInfoMixin):
+    """Test display of source package sharing info."""
+
+    layer = DatabaseFunctionalLayer
+
+    def makeNotSharingObject(self):
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=self.factory.makeUbuntuDistroSeries())
+        enable_translations_on_distroseries(sourcepackage.distroseries)
+        return sourcepackage
+
+    NOT_SHARING_TEXT = """
+       This source package is not sharing translations with an upstream project."""
+
+    def makeSharingObject(self):
+        upstream_template = self.factory.makePOTemplate()
+        packaging = self.factory.makePackagingLink(
+            productseries=upstream_template.productseries, in_ubuntu=True)
+        self.factory.makePOTemplate(
+            distroseries=packaging.distroseries,
+            sourcepackagename=packaging.sourcepackagename,
+            name=upstream_template.name)
+        enable_translations_on_distroseries(packaging.distroseries)
+        return packaging.sourcepackage
+
+    SHARING_TEXT = """
+       This source package is sharing translations with .*"""
