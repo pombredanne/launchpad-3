@@ -41,7 +41,6 @@ from lp.blueprints.model.specification import Specification
 from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtask import get_related_bugtasks_search_params
-from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.registry.errors import (
     NameAlreadyTaken,
     PrivatePersonLinkageError,
