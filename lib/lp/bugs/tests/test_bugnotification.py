@@ -194,7 +194,7 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
             self.notification.getFiltersByRecipient(subscriber).is_empty())
 
     def test_getFiltersByRecipient_other_persons(self):
-        # When there are no bug filters for other recipients,
+        # When there is no bug filter for the recipient,
         # it returns a ResultSet with no entries.
         recipient = self.factory.makePerson()
         subscriber = self.factory.makePerson()
@@ -208,8 +208,8 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
             self.notification.getFiltersByRecipient(recipient).is_empty())
 
     def test_getFiltersByRecipient_match(self):
-        # When there are no bug filters for other recipients,
-        # it returns a ResultSet with no entries.
+        # When there are bug filters for the recipient,
+        # only those filters are returned.
         subscriber = self.factory.makePerson()
         subscription = self.bug.default_bugtask.target.addSubscription(
             subscriber, subscriber)
