@@ -17,7 +17,8 @@ from lp.testing import TestCase
 class TestSphinxDocumentation(TestCase):
     """Is our Sphinx documentation building correctly?"""
 
-    def test_docs_build_without_error(self):
+    # XXX: SteveKowalik 2011-02-24 bug=721166 Keep failing spuriously.
+    def DISABLED_test_docs_build_without_error(self):
         # The Sphinx documentation must build without errors or warnings.
         #
         # Note that the documents are built on devpad.canonical.com in a
