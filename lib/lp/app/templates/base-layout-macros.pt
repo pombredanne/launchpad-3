@@ -179,11 +179,6 @@
     tal:content="structure string:LP.cache['context'] =
                  ${context/webservice:json};">
   </script>
-
-  <script tal:content='structure string:
-  LPS.use(function(Y) {
-  });'/>
-
 </metal:lp-client-cache>
 
 
