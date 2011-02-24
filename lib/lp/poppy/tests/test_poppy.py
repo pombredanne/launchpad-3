@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import ftplib
 import os
 import shutil
 import stat
@@ -37,6 +38,7 @@ from lp.registry.interfaces.ssh import (
     )
 from lp.poppy.hooks import Hooks
 from lp.testing import TestCaseWithFactory
+from lp.testing.keyserver import KeyServerTac
 
 
 class FTPServer(Fixture):
@@ -369,6 +371,36 @@ class TestPoppy(TestCaseWithFactory):
             content = open(os.path.join(
                 self.root_dir, upload_dirs[index], "test")).read()
             self.assertEqual(content, expected_contents[index])
+
+    def test_bad_gpg_on_changesfile(self):
+        """Check that we get a rejection error when uploading .changes files
+        with invalid GPG signatures.
+        """
+        # Start up the poppy server.
+        self.server.waitForStartUp()
+
+        transport = self.server.getTransport()
+        if transport.external_url().startswith("sftp"):
+            # We're not GPG-checking sftp uploads right now.
+            return
+
+        # Start up the test keyserver.
+        tac = KeyServerTac()
+        tac.setUp()
+        self.addCleanup(tac.tearDown)
+
+        fake_file = StringIO.StringIO("fake contents")
+
+        # We can't use bzrlib's transport here because it uploads a
+        # renamed file before renaming it on the server.
+        f = ftplib.FTP()
+        f.connect(host="localhost", port=2121)
+        f.login()
+        self.assertRaises(
+            ftplib.error_perm,
+            f.storbinary,
+            'STOR '+'foo_source.changes',
+            fake_file)
 
 
 def test_suite():
