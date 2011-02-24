@@ -40,8 +40,8 @@ general stats.
     0 Bugs fixed elsewhere
     2 Open CVE bugs - CVE reports
 
-Once the user has identified him or herself, information on assigned
-bugs is also shown.
+Once the user has identified themselves, show information on assigned and
+reported bugs.
 
     >>> print_bugfilters_portlet_unfilled(user_browser, path)
     New bugs
@@ -51,6 +51,7 @@ bugs is also shown.
     High importance bugs
     <BLANKLINE>
     Bugs assigned to me
+    Bugs reported by me
     Bugs with patches
     Bugs fixed elsewhere
     Open CVE bugs - CVE reports
@@ -65,6 +66,7 @@ bugs is also shown.
     0 High importance bugs
     <BLANKLINE>
     0 Bugs assigned to me
+    3 Bugs reported by me
     0 Bugs with patches
     0 Bugs fixed elsewhere
     2 Open CVE bugs - CVE reports
@@ -108,8 +110,8 @@ link to review nominations.
     0 Bugs fixed elsewhere
     1 Open CVE bug - CVE report
 
-Once the user has identified him or herself, information on assigned
-bugs is also shown.
+Once the user has identified themselves, show information on assigned and
+reported bugs.
 
     >>> print_bugfilters_portlet_unfilled(user_browser, path)
     New bugs
@@ -119,6 +121,7 @@ bugs is also shown.
     High importance bugs
     <BLANKLINE>
     Bugs assigned to me
+    Bugs reported by me
     Bugs with patches
     Bugs fixed elsewhere
     Open CVE bugs - CVE reports
@@ -135,6 +138,7 @@ bugs is also shown.
     0 High importance bugs
     <BLANKLINE>
     0 Bugs assigned to me
+    2 Bugs reported by me
     0 Bugs with patches
     0 Bugs fixed elsewhere
     1 Open CVE bug - CVE report
@@ -175,8 +179,8 @@ If the user is not logged-in general stats are shown.
     0 Bugs fixed elsewhere
     2 Open CVE bugs
 
-Once the user has identified him or herself, information on assigned
-bugs is also shown.
+Once the user has identified themselves, show information on assigned and
+reported bugs.
 
     >>> print_bugfilters_portlet_unfilled(user_browser, path)
     New bugs
@@ -186,6 +190,7 @@ bugs is also shown.
     High importance bugs
     <BLANKLINE>
     Bugs assigned to me
+    Bugs reported by me
     Bugs with patches
     Bugs fixed elsewhere
     Open CVE bugs
@@ -200,6 +205,7 @@ bugs is also shown.
     0 High importance bugs
     <BLANKLINE>
     0 Bugs assigned to me
+    3 Bugs reported by me
     0 Bugs with patches
     0 Bugs fixed elsewhere
     2 Open CVE bugs
@@ -242,8 +248,8 @@ option to subscribe to bug mail.
     0 Bugs fixed elsewhere
     1 Open CVE bug
 
-Once the user has identified him or herself, information on assigned
-bugs is also shown.
+Once the user has identified themselves, show information on assigned and
+reported bugs.
 
     >>> print_bugfilters_portlet_unfilled(user_browser, path)
     New bugs
@@ -253,6 +259,7 @@ bugs is also shown.
     High importance bugs
     <BLANKLINE>
     Bugs assigned to me
+    Bugs reported by me
     Bugs with patches
     Bugs fixed elsewhere
     Open CVE bugs
@@ -265,6 +272,7 @@ bugs is also shown.
     0 High importance bugs
     <BLANKLINE>
     0 Bugs assigned to me
+    2 Bugs reported by me
     0 Bugs with patches
     0 Bugs fixed elsewhere
     1 Open CVE bug
@@ -308,8 +316,8 @@ If the user is not logged-in general stats are shown.
     0 Bugs fixed elsewhere
     1 Open CVE bug
 
-Once the user has identified him or herself, information on assigned
-bugs is also shown.
+Once the user has identified themselves, show information on assigned
+and reported bugs.
 
     >>> print_bugfilters_portlet_unfilled(user_browser, path)
     New bugs
@@ -319,6 +327,7 @@ bugs is also shown.
     High importance bugs
     <BLANKLINE>
     Bugs assigned to me
+    Bugs reported by me
     Bugs with patches
     Bugs fixed elsewhere
     Open CVE bugs
@@ -333,6 +342,7 @@ bugs is also shown.
     0 High importance bugs
     <BLANKLINE>
     0 Bugs assigned to me
+    4 Bugs reported by me
     0 Bugs with patches
     0 Bugs fixed elsewhere
     1 Open CVE bug
@@ -387,6 +397,7 @@ bugs is also shown.
     High importance bugs
     <BLANKLINE>
     Bugs assigned to me
+    Bugs reported by me
     Bugs with patches
     Bugs fixed elsewhere
     Open CVE bugs - CVE reports
@@ -401,6 +412,7 @@ bugs is also shown.
     0 High importance bugs
     <BLANKLINE>
     0 Bugs assigned to me
+    3 Bugs reported by me
     0 Bugs with patches
     0 Bugs fixed elsewhere
     1 Open CVE bug - CVE report
