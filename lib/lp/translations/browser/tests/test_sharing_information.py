@@ -94,11 +94,14 @@ class TestUpstreamSharingInfo(BrowserTestCase, TestSharingInfoMixin):
        This project series is not sharing translations with an Ubuntu source package."""
 
     def makeSharingObject(self):
-        productseries = self.factory.makeProductSeries()
-        set_translations_usage(productseries.product)
-        self.factory.makePackagingLink(
-            productseries=productseries, in_ubuntu=True)
-        return productseries
+        template = self.factory.makePOTemplate()
+        packaging = self.factory.makePackagingLink(
+            productseries=template.productseries, in_ubuntu=True)
+        self.factory.makePOTemplate(
+            distroseries=packaging.distroseries,
+            sourcepackagename=packaging.sourcepackagename,
+            name=template.name)
+        return template.productseries
 
     SHARING_TEXT = """
        This project series is sharing translations with .*"""

@@ -87,7 +87,7 @@
             </p>
             <p tal:condition="view/is_sharing">
               This project series is sharing translations with
-              <a tal:replace="structure view/ubuntu_package_in_focus/fmt:link">
+              <a tal:replace="structure view/sharing_sourcepackage/fmt:link">
                 package name
               </a>.
             </p>

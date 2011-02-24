@@ -3,6 +3,8 @@
 # pylint: disable-msg=E1002
 
 """View classes for `IProductSeries`."""
+from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
+from lp.translations.utilities.translationsharinginfo import has_upstream_template, has_ubuntu_template, get_ubuntu_sharing_info
 
 __metaclass__ = type
 
@@ -448,8 +450,15 @@ class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
         return check_permission("launchpad.TranslationsAdmin", self.context)
 
     def is_sharing(self):
-        return False
+        return has_ubuntu_template(productseries=self.context)
 
+    @property
+    def sharing_sourcepackage(self):
+        infos = get_ubuntu_sharing_info(productseries=self.context)
+        if len(infos) == 0:
+            return None
+        sourcepackage, template = infos[0]
+        return sourcepackage
 
 class SettingsRadioWidget(LaunchpadRadioWidgetWithDescription):
     """Remove the confusing hint under the widget."""
