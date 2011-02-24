@@ -28,6 +28,7 @@ __all__ = [
     'normalize_whitespace',
     'oauth_access_token_for',
     'person_logged_in',
+    'quote_jquery_expression'
     'record_statements',
     'run_with_login',
     'run_with_storm_debug',
@@ -793,6 +794,12 @@ class WindmillTestCase(TestCaseWithFactory):
         client.open(url=obj_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         return client, obj_url
+
+
+def quote_jquery_expression(expression):
+    """jquery requires meta chars used in literals escaped with \\"""
+    return re.sub(
+        "([#!$%&()+,./:;?@~|^{}\\[\\]`*\\\'\\\"])", r"\\\\\1", expression)
 
 
 class YUIUnitTestCase(WindmillTestCase):
