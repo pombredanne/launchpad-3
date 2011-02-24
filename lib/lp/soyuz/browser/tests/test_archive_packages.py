@@ -187,7 +187,7 @@ class TestPPAPackages(TestCaseWithFactory):
         self.assertIs(None, view.specified_name_filter)
 
     def test_source_query_counts(self):
-        query_baseline = 42
+        query_baseline = 43
         # Assess the baseline.
         collector = QueryCollector()
         collector.register()
