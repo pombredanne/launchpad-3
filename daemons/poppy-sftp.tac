@@ -5,7 +5,7 @@
 #     twistd -noy sftp.tac
 # or similar.  Refer to the twistd(1) man page for details.
 
-import os
+import logging
 
 from twisted.application import service
 from twisted.conch.interfaces import ISession
@@ -20,14 +20,15 @@ from zope.interface import implements
 from canonical.config import config
 from canonical.launchpad.daemons import readyservice
 
+from lp.poppy import get_poppy_root
+from lp.poppy.twistedftp import (
+    FTPServiceFactory,
+    )
 from lp.poppy.twistedsftp import SFTPServer
 from lp.services.sshserver.auth import (
     LaunchpadAvatar, PublicKeyFromLaunchpadChecker)
 from lp.services.sshserver.service import SSHService
 from lp.services.sshserver.session import DoNothingSession
-
-# XXX: Rename this file to something that doesn't mention poppy. Talk to
-# bigjools.
 
 
 def make_portal():
@@ -63,20 +64,13 @@ class Realm:
         return deferred.addCallback(got_user_dict)
 
 
-def get_poppy_root():
-    """Return the poppy root to use for this server.
-
-    If the POPPY_ROOT environment variable is set, use that. If not, use
-    config.poppy.fsroot.
-    """
-    poppy_root = os.environ.get('POPPY_ROOT', None)
-    if poppy_root:
-        return poppy_root
-    return config.poppy.fsroot
-
-
 def poppy_sftp_adapter(avatar):
     return SFTPServer(avatar, get_poppy_root())
+
+
+# Connect Python logging to Twisted's logging.
+from lp.services.twistedsupport.loggingsupport import set_up_tacfile_logging
+set_up_tacfile_logging("poppy-sftp", logging.INFO)
 
 
 components.registerAdapter(
@@ -85,8 +79,14 @@ components.registerAdapter(
 components.registerAdapter(DoNothingSession, LaunchpadAvatar, ISession)
 
 
-# Construct an Application that has the Poppy SSH server.
+# ftpport defaults to 2121 in schema-lazr.conf
+ftpservice = FTPServiceFactory.makeFTPService(port=config.poppy.ftp_port)
+
+# Construct an Application that has the Poppy SSH server,
+# and the Poppy FTP server.
 application = service.Application('poppy-sftp')
+
+ftpservice.setServiceParent(application)
 
 def timeout_decorator(factory):
     """Add idle timeouts to a factory."""
