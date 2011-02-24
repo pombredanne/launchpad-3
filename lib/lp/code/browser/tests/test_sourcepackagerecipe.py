@@ -1300,7 +1300,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         browser = self.getViewBrowser(recipe)
         browser.getControl('Build now').click()
         login(ANONYMOUS)
-        builds = recipe.getPendingBuilds()
+        builds = recipe.pending_builds
         build_distros = [
             build.distroseries.displayname for build in builds]
         build_distros.sort()
