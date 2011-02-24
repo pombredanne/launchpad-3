@@ -5,6 +5,9 @@
 
 __metaclass__ = type
 
+from testtools.content import Content
+from testtools.content_type import UTF8_TEXT
+import transaction
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
@@ -18,7 +21,10 @@ from lp.registry.interfaces.persontransferjob import (
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.log.logger import BufferLogger
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    run_script,
+    TestCaseWithFactory,
+    )
 
 
 class TestPersonMergeJob(TestCaseWithFactory):
@@ -66,6 +72,23 @@ class TestPersonMergeJob(TestCaseWithFactory):
             ["DEBUG PersonMergeJob is about to merge ~void into ~gestalt",
              "DEBUG PersonMergeJob has merged ~void into ~gestalt"],
             logger.getLogBuffer().splitlines())
+
+    def test_smoke(self):
+        # Smoke test, primarily for DB permissions.
+        from_email = self.from_person.preferredemail
+        removeSecurityProxy(from_email).personID = self.to_person.id
+        removeSecurityProxy(from_email).accountID = self.to_person.accountID
+        transaction.commit()
+
+        out, err, exit_code = run_script(
+            "LP_DEBUG_SQL=1 cronscripts/process-job-source.py -vv %s" % (
+                IPersonMergeJobSource.getName()))
+
+        self.addDetail("stdout", Content(UTF8_TEXT, lambda: out))
+        self.addDetail("stderr", Content(UTF8_TEXT, lambda: err))
+
+        self.assertEqual(0, exit_code)
+        self.assertEqual(self.to_person, self.from_person.merged)
 
     def test_repr(self):
         # A useful representation is available for PersonMergeJob instances.
