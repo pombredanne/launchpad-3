@@ -1057,7 +1057,7 @@ class FunctionalLayer(BaseLayer):
 
         # Access the cookie manager's secret to get the cache populated.
         # If we don't, it may issue extra queries depending on test order.
-        unused = canonical.launchpad.webapp.session.idmanager.secret
+        canonical.launchpad.webapp.session.idmanager.secret
         # If our request publication factories were defined using ZCML,
         # they'd be set up by FunctionalTestSetup().setUp(). Since
         # they're defined by Python code, we need to call that code
