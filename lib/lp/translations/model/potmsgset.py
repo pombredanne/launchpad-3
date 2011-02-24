@@ -1035,6 +1035,8 @@ class POTMsgSet(SQLBase):
                         traits.other_side_traits.getCurrentMessage(
                             self, pofile.potemplate, pofile.language))
                     if other_incumbent is None:
+                        # Untranslated on the other side; use the new
+                        # translation there as well.
                         traits.other_side_traits.setFlag(message, True)
                     elif (incumbent_message is None and
                           traits.side == TranslationSide.UPSTREAM):
