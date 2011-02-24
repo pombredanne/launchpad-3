@@ -88,7 +88,11 @@
         <h3>Sharing Information</h3>
         <p tal:condition="not:view/is_sharing">
           This template is not sharing translations with
-          a template in an Ubuntu source package.
+          a template in an
+          <span tal:condition="view/is_upstream_template">
+              Ubuntu source package</span>
+          <span tal:condition="not:view/is_upstream_template">
+              upstream project</span>.
         </p>
         <p tal:condition="view/is_sharing"
            tal:define="template view/sharing_template">

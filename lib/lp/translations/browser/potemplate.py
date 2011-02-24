@@ -3,6 +3,7 @@
 # pylint: disable-msg=F0401
 
 """Browser code for PO templates."""
+from lp.translations.interfaces.side import TranslationSide
 
 __metaclass__ = type
 
@@ -86,7 +87,7 @@ from lp.translations.interfaces.translationimportqueue import (
 from lp.translations.utilities.translationsharinginfo import (
     has_ubuntu_template,
     get_ubuntu_sharing_info,
-    )
+    has_upstream_template, get_upstream_sharing_info)
 
 
 class POTemplateNavigation(Navigation):
@@ -358,19 +359,33 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
             pofile = pofileset.getDummy(self.context, language)
         return pofile
 
+    @property
+    def is_upstream_template(self):
+        return self.context.translation_side == TranslationSide.UPSTREAM
+
     def is_sharing(self):
-        return has_ubuntu_template(
-            productseries=self.context.productseries,
-            templatename=self.context.name)
+        if self.is_upstream_template:
+            return has_ubuntu_template(
+                productseries=self.context.productseries,
+                templatename=self.context.name)
+        else:
+            return has_upstream_template(
+                sourcepackage=self.context.sourcepackage,
+                templatename=self.context.name)
 
     @property
     def sharing_template(self):
-        infos = get_ubuntu_sharing_info(
-            productseries=self.context.productseries,
-            templatename=self.context.name)
+        if self.is_upstream_template:
+            infos = get_ubuntu_sharing_info(
+                productseries=self.context.productseries,
+                templatename=self.context.name)
+        else:
+            infos = get_upstream_sharing_info(
+                sourcepackage=self.context.sourcepackage,
+                templatename=self.context.name)
         if len(infos) == 0:
             return None
-        sourcepackage, template = infos[0]
+        obj, template = infos[0]
         return template
 
 
