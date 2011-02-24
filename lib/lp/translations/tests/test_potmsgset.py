@@ -920,6 +920,8 @@ class TestPOTMsgSetResetTranslation(TestCaseWithFactory):
 
         message_this = self.factory.makeCurrentTranslationMessage(
             pofile=self.pofile, potmsgset=self.potmsgset)
+        self.potmsgset.setSequence(
+            other_potemplate, self.factory.getUniqueInteger())
         message_other = self.factory.makeCurrentTranslationMessage(
             pofile=other_pofile, potmsgset=self.potmsgset)
         traits = getUtility(ITranslationSideTraitsSet).getTraits(
@@ -1323,6 +1325,7 @@ class TestPOTMsgSet_submitSuggestion(TestCaseWithFactory):
             productseries=series2, name=pofile.potemplate.name)
         pofile2 = template2.getPOFileByLang(pofile.language.code)
         translation = {0: self.factory.getUniqueString()}
+        potmsgset.setSequence(template2, self.factory.getUniqueInteger())
         diverged_message = self.factory.makeCurrentTranslationMessage(
             pofile=pofile2, potmsgset=potmsgset, translator=owner,
             translations=translation, diverged=True)
@@ -1771,6 +1774,8 @@ class TestFindTranslationMessage(TestCaseWithFactory):
         diverged = self.factory.makeDivergedTranslationMessage(
             pofile=pofile, potmsgset=potmsgset,
             translations=translations)
+        potmsgset.setSequence(
+            other_pofile.potemplate, self.factory.getUniqueInteger())
         shared = self.factory.makeCurrentTranslationMessage(
             pofile=other_pofile, potmsgset=potmsgset,
             translations=translations)
@@ -1839,6 +1844,8 @@ class TestFindTranslationMessage(TestCaseWithFactory):
         other_pofile = self.factory.makePOFile(pofile.language.code)
         potmsgset.setSequence(pofile.potemplate, 1)
 
+        potmsgset.setSequence(
+            other_pofile.potemplate, self.factory.getUniqueInteger())
         self.factory.makeCurrentTranslationMessage(
             pofile=other_pofile, potmsgset=potmsgset,
             translations=translations, diverged=True)

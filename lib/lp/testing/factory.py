@@ -2829,13 +2829,25 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             'Cannot specify both language and pofile.')
         assert None in (side, pofile), (
             'Cannot specify both side and pofile.')
+        link_potmsgset_with_potemplate = (
+            pofile is None or potmsgset is None)
         if pofile is None:
             pofile = self.makePOFile(language=language, side=side)
         if potmsgset is None:
             potmsgset = self.makePOTMsgSet(pofile.potemplate, sequence=1)
-        tti_for_message_in_template = TranslationTemplateItem.selectOneBy(
-            potmsgset=potmsgset, potemplate=pofile.potemplate)
-        assert tti_for_message_in_template is not None
+        if link_potmsgset_with_potemplate:
+            # If we have a new pofile or a new potmsgset, we must link
+            # the potmsgset to the pofile's potemplate.
+            potmsgset.setSequence(
+                pofile.potemplate, self.getUniqueInteger())
+        else:
+            # Otherwise it is the duty of the callsite to ensure
+            # consistency.
+            store = IStore(TranslationTemplateItem)
+            tti_for_message_in_template = store.find(
+                TranslationTemplateItem.potmsgset == potmsgset,
+                TranslationTemplateItem.potemplate == pofile.potemplate).any()
+            assert tti_for_message_in_template is not None
         if translator is None:
             translator = self.makePerson()
         if reviewer is None:

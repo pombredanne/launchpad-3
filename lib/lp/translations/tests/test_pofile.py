@@ -2004,16 +2004,16 @@ class TestPOFileStatistics(TestCaseWithFactory):
             pofile=other_pofile, potmsgset=self.potmsgset, diverged=True)
 
     def test_POFile_updateStatistics_diverged_message_this_side(self):
-        # Translations that are diverged for a given target do not
-        # appear in the statistical data for another target.
+        # Translations that are diverged for a given target on this side
+        # do not appear in the statistical data for another target.
         self.makeDivergedTranslationForOtherTarget(for_sourcepackage=False)
         self.pofile.updateStatistics()
         self.assertEqual(self.pofile.rosettaCount(), 0)
         self.assertEqual(self.pofile.unreviewedCount(), 0)
 
     def test_POFile_updateStatistics_diverged_message_other_side(self):
-        # Translations that are diverged for a given target do not
-        # appear in the statistical data for another target.
+        # Translations that are diverged for a given target on the other side
+        # do not appear in the statistical data for another target.
         self.makeDivergedTranslationForOtherTarget(for_sourcepackage=True)
         self.pofile.updateStatistics()
         self.assertEqual(self.pofile.rosettaCount(), 0)
@@ -2346,6 +2346,8 @@ class TestPOFileTranslationMessages(TestCaseWithFactory):
     def test_getTranslationMessages_other_pofile(self):
         # A message from another POFiles is not included.
         other_pofile = self.factory.makePOFile('de')
+        self.potmsgset.setSequence(
+            other_pofile.potemplate, self.factory.getUniqueInteger())
         self.factory.makeCurrentTranslationMessage(
             potmsgset=self.potmsgset, pofile=other_pofile)
 
@@ -2377,6 +2379,8 @@ class TestPOFileTranslationMessages(TestCaseWithFactory):
         # A message matching given condition but located in another POFile
         # is not included.
         other_pofile = self.factory.makePOFile('de')
+        self.potmsgset.setSequence(
+            other_pofile.potemplate, self.factory.getUniqueInteger())
         self.factory.makeCurrentTranslationMessage(
             potmsgset=self.potmsgset, pofile=other_pofile,
             diverged=True)
