@@ -95,7 +95,12 @@
   <tal:comment replace="nothing">
     Load and initialize the common script used by all pages.
   </tal:comment>
-
+  <script type="text/javascript">
+    var LP = {
+        cache: {},
+        links: {}
+    };
+  </script>
   <tal:needs_json tal:condition="request/needs_json">
     <script type="text/javascript"
             tal:attributes="src string:${icingroot_contrib}/json2.js"></script>
@@ -106,25 +111,23 @@
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
   <script id="base-layout-load-scripts" type="text/javascript">
-    LPS.use('node', 'lp', function(Y) {
+    LPS.use('node', 'lp', 'lp.app.links', function(Y) {
         Y.on('load', function(e) {
             sortables_init();
             initInlineHelp();
             Y.lp.activate_collapsibles();
             activateFoldables();
             activateConstrainBugExpiration();
+            Y.lp.app.links.check_valid_lp_links();
         }, window);
 
         // Hook up the function that dismisses the help window if we click
         // anywhere outside of it.
         Y.on('click', handleClickOnPage, window);
-    });
 
-    LPS.use('lp.app.links',
-      function(Y) {
-        Y.on('load', function(e) {
-            Y.lp.app.links.check_valid_lp_links();
-        }, window);
+        Y.on('lp:context:web_link:changed', function(e) {
+            window.location = e.new_value;
+        });
     });
   </script>
 </metal:page-javascript>
@@ -179,11 +182,6 @@
 
   <script tal:content='structure string:
   LPS.use(function(Y) {
-    Y.on("lp:context:changed", function(fields_changed, entry) {
-      if (Y.Array.indexOf(fields_changed, "web_link") >= 0) {
-        window.location = entry.get("web_link");
-      }
-    });
   });'/>
 
 </metal:lp-client-cache>
