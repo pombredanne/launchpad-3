@@ -31,7 +31,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.mem import resident
+from lp.services.profile.mem import resident
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import (
     default_name_by_purpose,

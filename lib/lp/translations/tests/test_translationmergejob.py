@@ -6,6 +6,9 @@
 __metaclass__ = type
 
 
+from storm.locals import Store
+import transaction
+
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
@@ -14,92 +17,131 @@ from lp.services.job.interfaces.job import IRunnableJob
 from lp.services.job.model.job import Job
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.side import TranslationSide
+from lp.translations.interfaces.translationmergejob import (
+    ITranslationMergeJobSource,
+    )
 from lp.translations.model.potemplate import POTemplateSubset
 from lp.translations.model.translationmergejob import TranslationMergeJob
+
+
+def make_translation_merge_job(factory, not_ubuntu=False):
+    singular = factory.getUniqueString()
+    upstream_pofile = factory.makePOFile(side=TranslationSide.UPSTREAM)
+    upstream_potmsgset = factory.makePOTMsgSet(
+        upstream_pofile.potemplate, singular)
+    upstream = factory.makeCurrentTranslationMessage(
+        pofile=upstream_pofile, potmsgset=upstream_potmsgset)
+    if not_ubuntu:
+        distroseries = factory.makeDistroSeries()
+    else:
+        distroseries = factory.makeUbuntuDistroSeries()
+    package_potemplate = factory.makePOTemplate(
+        distroseries=distroseries, name=upstream_pofile.potemplate.name)
+    package_pofile = factory.makePOFile(
+        potemplate=package_potemplate, language=upstream_pofile.language)
+    package_potmsgset = factory.makePOTMsgSet(
+        package_pofile.potemplate, singular)
+    package = factory.makeCurrentTranslationMessage(
+        pofile=package_pofile, potmsgset=package_potmsgset,
+        translations=upstream.translations)
+    productseries = upstream_pofile.potemplate.productseries
+    distroseries = package_pofile.potemplate.distroseries
+    sourcepackagename = package_pofile.potemplate.sourcepackagename
+    return TranslationMergeJob(
+        job=Job(), productseries=productseries, distroseries=distroseries,
+        sourcepackagename=sourcepackagename)
+
+
+def get_msg_sets(productseries=None, distroseries=None,
+               sourcepackagename=None):
+    msg_sets = []
+    for template in POTemplateSubset(
+        productseries=productseries, distroseries=distroseries,
+        sourcepackagename=sourcepackagename):
+        msg_sets.extend(template.getPOTMsgSets())
+    return msg_sets
+
+
+def get_translations(productseries=None, distroseries=None,
+                    sourcepackagename=None):
+    msg_sets = get_msg_sets(
+        productseries=productseries, distroseries=distroseries,
+        sourcepackagename=sourcepackagename)
+    translations = set()
+    for msg_set in msg_sets:
+        translations.update(msg_set.getAllTranslationMessages())
+    return translations
+
+
+def count_translations(job):
+    tm = get_translations(productseries=job.productseries)
+    tm.update(get_translations(
+        sourcepackagename=job.sourcepackagename,
+        distroseries=job.distroseries))
+    return len(tm)
 
 
 class TestTranslationMergeJob(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    @staticmethod
-    def makeTranslationMergeJob(factory):
-        singular = factory.getUniqueString()
-        upstream_pofile = factory.makePOFile(
-            side=TranslationSide.UPSTREAM)
-        upstream_potmsgset = factory.makePOTMsgSet(
-            upstream_pofile.potemplate, singular, sequence=1)
-        upstream = factory.makeCurrentTranslationMessage(
-            pofile=upstream_pofile, potmsgset=upstream_potmsgset)
-        ubuntu_potemplate = factory.makePOTemplate(
-            side=TranslationSide.UBUNTU, name=upstream_pofile.potemplate.name)
-        ubuntu_pofile = factory.makePOFile(
-            potemplate=ubuntu_potemplate, language=upstream_pofile.language)
-        ubuntu_potmsgset = factory.makePOTMsgSet(
-            ubuntu_pofile.potemplate, singular, sequence=1)
-        ubuntu = factory.makeCurrentTranslationMessage(
-            pofile=ubuntu_pofile, potmsgset=ubuntu_potmsgset,
-            translations=upstream.translations)
-        productseries = upstream_pofile.potemplate.productseries
-        distroseries = ubuntu_pofile.potemplate.distroseries
-        sourcepackagename = ubuntu_pofile.potemplate.sourcepackagename
-        return TranslationMergeJob(
-            Job(), productseries, distroseries, sourcepackagename)
-
     def test_interface(self):
-        """TranslationMergeJob must implement IRunnableJob."""
-        job = self.makeTranslationMergeJob(self.factory)
+        """TranslationMergeJob must implement its interfaces."""
+        verifyObject(ITranslationMergeJobSource, TranslationMergeJob)
+        job = make_translation_merge_job(self.factory)
         verifyObject(IRunnableJob, job)
-
-    @staticmethod
-    def getMsgSets(productseries=None, distroseries=None,
-                   sourcepackagename=None):
-        msg_sets = []
-        for template in POTemplateSubset(
-            productseries=productseries, distroseries=distroseries,
-            sourcepackagename=sourcepackagename):
-            msg_sets.extend(template.getPOTMsgSets())
-        return msg_sets
-
-    @classmethod
-    def getTranslations(cls, productseries=None, distroseries=None,
-                        sourcepackagename=None):
-        msg_sets = cls.getMsgSets(
-            productseries=productseries, distroseries=distroseries,
-            sourcepackagename=sourcepackagename)
-        translations = set()
-        for msg_set in msg_sets:
-            translations.update(msg_set.getAllTranslationMessages())
-        return translations
-
-    @classmethod
-    def countTranslations(cls, job):
-        tm = cls.getTranslations(productseries=job.productseries)
-        tm.update(cls.getTranslations(
-            sourcepackagename=job.sourcepackagename,
-            distroseries=job.distroseries))
-        return len(tm)
 
     def test_run_merges_msgset(self):
         """Run should merge msgsets."""
-        job = self.makeTranslationMergeJob(self.factory)
+        job = make_translation_merge_job(self.factory)
         self.becomeDbUser('rosettaadmin')
-        product_msg = self.getMsgSets(productseries=job.productseries)
-        package_msg = self.getMsgSets(
+        product_msg = get_msg_sets(productseries=job.productseries)
+        package_msg = get_msg_sets(
             sourcepackagename=job.sourcepackagename,
             distroseries=job.distroseries)
         self.assertNotEqual(package_msg, product_msg)
         job.run()
-        product_msg = self.getMsgSets(productseries=job.productseries)
-        package_msg = self.getMsgSets(
+        product_msg = get_msg_sets(productseries=job.productseries)
+        package_msg = get_msg_sets(
             sourcepackagename=job.sourcepackagename,
             distroseries=job.distroseries)
         self.assertEqual(package_msg, product_msg)
 
     def test_run_merges_translations(self):
         """Run should merge translations."""
-        job = self.makeTranslationMergeJob(self.factory)
+        job = make_translation_merge_job(self.factory)
         self.becomeDbUser('rosettaadmin')
-        self.assertEqual(2, self.countTranslations(job))
+        self.assertEqual(2, count_translations(job))
         job.run()
-        self.assertEqual(1, self.countTranslations(job))
+        self.assertEqual(1, count_translations(job))
+
+    def test_skips_non_ubuntu_distros(self):
+        """Run should ignore non-Ubuntu distributions."""
+        job = make_translation_merge_job(self.factory, not_ubuntu=True)
+        self.becomeDbUser('rosettaadmin')
+        self.assertEqual(2, count_translations(job))
+        job.run()
+        self.assertEqual(2, count_translations(job))
+
+    @staticmethod
+    def findJobs(productseries, sourcepackage):
+        store = Store.of(productseries)
+        result = store.find(
+            TranslationMergeJob,
+            TranslationMergeJob.productseries_id == productseries.id,
+            TranslationMergeJob.sourcepackagename_id ==
+            sourcepackage.sourcepackagename.id,
+            TranslationMergeJob.distroseries_id ==
+            sourcepackage.distroseries.id,
+            )
+        return list(result)
+
+    def test_create_packaging_makes_job(self):
+        """Creating a Packaging should make a TranslationMergeJob."""
+        productseries = self.factory.makeProductSeries()
+        sourcepackage = self.factory.makeSourcePackage()
+        self.assertEqual([], self.findJobs(productseries, sourcepackage))
+        sourcepackage.setPackaging(productseries, productseries.owner)
+        self.assertNotEqual([], self.findJobs(productseries, sourcepackage))
+        # Ensure no constraints were violated.
+        transaction.commit()

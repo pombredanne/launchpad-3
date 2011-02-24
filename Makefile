@@ -79,10 +79,10 @@ doc:
 check_merge: $(BUILDOUT_BIN)
 	[ `PYTHONPATH= bzr status -S database/schema/ | \
 		grep -v "\(^P\|pending\|security.cfg\|Makefile\|unautovacuumable\|_pythonpath.py\)" | wc -l` -eq 0 ]
-	${PY} lib/canonical/tests/test_no_conflict_marker.py
+	${PY} lib/lp/tests/test_no_conflict_marker.py
 
 check_db_merge: $(PY)
-	${PY} lib/canonical/tests/test_no_conflict_marker.py
+	${PY} lib/lp/tests/test_no_conflict_marker.py
 
 check_config: build
 	bin/test -m canonical.config.tests -vvt test_config

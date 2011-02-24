@@ -18,12 +18,6 @@ and hide errors (eg. if this object is supposed to be usable outside of
 zope, we should not be testing it with the full Z3 functional test
 harness).
 
-canonical.functional.FunctionalTestCase
----------------------------------------
-
-This is a customised zope3 FunctionalTestCase and should be used when you
-simply need the zope3 utilities etc available.
-
 PgTestSetup
 -----------
 
@@ -31,9 +25,9 @@ PgTestSetup is used for tests that require access to a PostgreSQL backend.
 For example, we would use this for testing SQLObject or our custom
 extentions to it.
 
-The class is defined in canonical.ftests.pgsql
+The class is defined in lp.testing.pgsql
 
->>> from canonical.ftests.pgsql import PgTestSetup
+>>> from lp.testing.pgsql import PgTestSetup
 
 The setup procedure builds us a fresh, empty database
 

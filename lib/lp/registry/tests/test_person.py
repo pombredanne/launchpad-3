@@ -277,12 +277,6 @@ class TestPerson(TestCaseWithFactory):
             user.getOwnedOrDrivenPillars()]
         self.assertEqual(expected_pillars, received_pillars)
 
-    def test_selfgenerated_bugnotifications_none_by_default(self):
-        # Default for new accounts is to not get any
-        # self-generated bug notifications by default.
-        user = self.factory.makePerson()
-        self.assertFalse(user.selfgenerated_bugnotifications)
-
 
 class TestPersonStates(TestCaseWithFactory):
 

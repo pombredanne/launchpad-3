@@ -43,6 +43,7 @@ __all__ = [
     ]
 
 import cgi
+from collections import defaultdict
 from datetime import (
     datetime,
     timedelta,
@@ -247,11 +248,17 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
-from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distribution import (
+    IDistribution,
+    IDistributionSet,
+    )
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
-from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseries import (
+    IDistroSeries,
+    IDistroSeriesSet,
+    )
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -3078,12 +3085,11 @@ class TextualBugTaskSearchListingView(BugTaskSearchListingView):
 
         # XXX flacoste 2008/04/24 This should be moved to a
         # BugTaskSearchParams.setTarget().
-        if IDistroSeries.providedBy(self.context):
-            search_params.setDistroSeries(self.context)
+        if (IDistroSeries.providedBy(self.context) or
+            IProductSeries.providedBy(self.context)):
+            search_params.setTarget(self.context)
         elif IDistribution.providedBy(self.context):
             search_params.setDistribution(self.context)
-        elif IProductSeries.providedBy(self.context):
-            search_params.setProductSeries(self.context)
         elif IProduct.providedBy(self.context):
             search_params.setProduct(self.context)
         elif IProjectGroup.providedBy(self.context):
@@ -3144,26 +3150,22 @@ class BugTasksAndNominationsView(LaunchpadView):
         self.many_bugtasks = len(self.bugtasks) >= 10
         self.cached_milestone_source = CachedMilestoneSourceFactory()
         self.user_is_subscribed = self.context.isSubscribed(self.user)
-        distro_packages = {}
+        distro_packages = defaultdict(list)
+        distro_series_packages = defaultdict(list)
         for bugtask in self.bugtasks:
             target = bugtask.target
             if IDistributionSourcePackage.providedBy(target):
-                distro_packages.setdefault(target.distribution, [])
                 distro_packages[target.distribution].append(
                     target.sourcepackagename)
             if ISourcePackage.providedBy(target):
-                distro_packages.setdefault(target.distroseries, [])
-                distro_packages[target.distroseries].append(
+                distro_series_packages[target.distroseries].append(
                     target.sourcepackagename)
-        # Set up a mapping from a target to its current release, using
-        # only a few DB queries. It would be easier to use the packages'
-        # currentrelease attributes, but that causes many DB queries to
-        # be issued.
-        self.target_releases = {}
-        for distro_or_series, package_names in distro_packages.items():
-            releases = distro_or_series.getCurrentSourceReleases(
-                package_names)
-            self.target_releases.update(releases)
+        distro_set = getUtility(IDistributionSet)
+        self.target_releases = dict(distro_set.getCurrentSourceReleases(
+            distro_packages))
+        distro_series_set = getUtility(IDistroSeriesSet)
+        self.target_releases.update(
+            distro_series_set.getCurrentSourceReleases(distro_series_packages))
 
     def getTargetLinkTitle(self, target):
         """Return text to put as the title for the link to the target."""
@@ -3815,7 +3817,13 @@ class BugActivityItem:
     @property
     def change_summary(self):
         """Return a formatted summary of the change."""
-        return self.attribute
+        if self.target is not None:
+            # This is a bug task.  We want the attribute, as filtered out.
+            return self.attribute
+        else:
+            # Otherwise, the attribute is more normalized than what we want.
+            # Use "whatchanged," which sometimes is more descriptive.
+            return self.whatchanged
 
     @property
     def _formatted_tags_change(self):
@@ -3859,30 +3867,31 @@ class BugActivityItem:
             'old_value': self.oldvalue,
             'new_value': self.newvalue,
             }
-        if self.attribute == 'summary':
+        attribute = self.attribute
+        if attribute == 'title':
             # We display summary changes as a unified diff, replacing
             # \ns with <br />s so that the lines are separated properly.
             diff = cgi.escape(
                 get_unified_diff(self.oldvalue, self.newvalue, 72), True)
             return diff.replace("\n", "<br />")
 
-        elif self.attribute == 'description':
+        elif attribute == 'description':
             # Description changes can be quite long, so we just return
             # 'updated' rather than returning the whole new description
             # or a diff.
             return 'updated'
 
-        elif self.attribute == 'tags':
+        elif attribute == 'tags':
             # We special-case tags because we can work out what's been
             # added and what's been removed.
             return self._formatted_tags_change.replace('\n', '<br />')
 
-        elif self.attribute == 'assignee':
+        elif attribute == 'assignee':
             for key in return_dict:
                 if return_dict[key] is None:
                     return_dict[key] = 'nobody'
 
-        elif self.attribute == 'milestone':
+        elif attribute == 'milestone':
             for key in return_dict:
                 if return_dict[key] is None:
                     return_dict[key] = 'none'

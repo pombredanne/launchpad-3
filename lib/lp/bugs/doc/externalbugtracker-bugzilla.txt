@@ -282,6 +282,8 @@ if the bug is closed:
     'Incomplete'
     >>> external_bugzilla.convertRemoteStatus('NEEDINFO_REPORTER').title
     'Incomplete'
+    >>> external_bugzilla.convertRemoteStatus('NEEDSINFO').title
+    'Incomplete'
     >>> external_bugzilla.convertRemoteStatus('MODIFIED').title
     'Fix Committed'
     >>> external_bugzilla.convertRemoteStatus('UPSTREAM').title
@@ -301,6 +303,8 @@ if the bug is closed:
     "Won't Fix"
     >>> external_bugzilla.convertRemoteStatus('CLOSED INVALID').title
     'Invalid'
+    >>> external_bugzilla.convertRemoteStatus('CLOSED DUPLICATE').title
+    'Invalid'
     >>> external_bugzilla.convertRemoteStatus('CLOSED UPSTREAM').title
     "Won't Fix"
 
@@ -311,6 +315,10 @@ returned.
     Traceback (most recent call last):
       ...
     UnknownRemoteStatusError: FOO
+    >>> external_bugzilla.convertRemoteStatus('CLOSED BAR').title
+    Traceback (most recent call last):
+      ...
+    UnknownRemoteStatusError: CLOSED BAR
 
 
 Importance Conversion
@@ -341,6 +349,10 @@ isn't available in which case we map against priority values.
     'High'
     >>> external_bugzilla.convertRemoteImportance('MAJOR').title
     'High'
+    >>> external_bugzilla.convertRemoteImportance('CRASH').title
+    'High'
+    >>> external_bugzilla.convertRemoteImportance('GRAVE').title
+    'High'
 
     >>> external_bugzilla.convertRemoteImportance('URGENT NORMAL').title
     'Medium'
@@ -367,6 +379,8 @@ isn't available in which case we map against priority values.
     'Wishlist'
     >>> external_bugzilla.convertRemoteImportance('ENHANCEMENT').title
     'Wishlist'
+    >>> external_bugzilla.convertRemoteImportance('WISHLIST').title
+    'Wishlist'
 
     >>> external_bugzilla.convertRemoteImportance('IMMEDIATE').title
     'Critical'
@@ -377,6 +391,17 @@ isn't available in which case we map against priority values.
     >>> external_bugzilla.convertRemoteImportance('MEDIUM').title
     'Medium'
     >>> external_bugzilla.convertRemoteImportance('LOW').title
+    'Low'
+
+    >>> external_bugzilla.convertRemoteImportance('P5').title
+    'Critical'
+    >>> external_bugzilla.convertRemoteImportance('P4').title
+    'High'
+    >>> external_bugzilla.convertRemoteImportance('P3').title
+    'Medium'
+    >>> external_bugzilla.convertRemoteImportance('P2').title
+    'Low'
+    >>> external_bugzilla.convertRemoteImportance('P1').title
     'Low'
 
 Some bugzillas don't provide a value, resulting in blank strings for
