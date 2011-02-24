@@ -95,6 +95,7 @@ from zope.security.simplepolicies import PermissiveSecurityPolicy
 from zope.server.logger.pythonlogger import PythonLogger
 from zope.testing.testrunner.runner import FakeInputContinueGenerator
 
+import canonical.launchpad.webapp.session
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr import pidfile
 from canonical.config import CanonicalConfig, config, dbconfig
@@ -1054,6 +1055,9 @@ class FunctionalLayer(BaseLayer):
         if not is_ca_available():
             raise LayerInvariantError("Component architecture failed to load")
 
+        # Access the cookie manager's secret to get the cache populated.
+        # If we don't, it may issue extra queries depending on test order.
+        unused = canonical.launchpad.webapp.session.idmanager.secret
         # If our request publication factories were defined using ZCML,
         # they'd be set up by FunctionalTestSetup().setUp(). Since
         # they're defined by Python code, we need to call that code
