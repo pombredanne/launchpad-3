@@ -15,14 +15,16 @@ from canonical.testing.layers import (
     )
 from lp.registry.model.packagingjob import PackagingJob
 from lp.services.job.interfaces.job import IRunnableJob
-from lp.services.job.model.job import Job
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.side import TranslationSide
-from lp.translations.interfaces.translationmergejob import (
-    ITranslationMergeJobSource,
+from lp.translations.interfaces.translationpackagingjob import (
+    ITranslationPackagingJobSource,
     )
 from lp.translations.model.potemplate import POTemplateSubset
-from lp.translations.model.translationmergejob import TranslationMergeJob
+from lp.translations.model.translationpackagingjob import (
+    TranslationMergeJob,
+    TranslationPackagingJob,
+    )
 
 
 def make_translation_merge_job(factory, not_ubuntu=False):
@@ -82,13 +84,21 @@ def count_translations(job):
     return len(tm)
 
 
+class TestTranslationPackagingJob(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_interface(self):
+        """Should implement ITranslationPackagingJobSource."""
+        verifyObject(ITranslationPackagingJobSource, TranslationPackagingJob)
+
+
 class TestTranslationMergeJob(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
     def test_interface(self):
-        """TranslationMergeJob must implement its interfaces."""
-        verifyObject(ITranslationMergeJobSource, TranslationMergeJob)
+        """TranslationMergeJob must implement IRunnableJob."""
         job = make_translation_merge_job(self.factory)
         verifyObject(IRunnableJob, job)
 

@@ -15,8 +15,8 @@ from lp.services.job.interfaces.job import (
     IRunnableJob,
     )
 from lp.services.job.runner import BaseRunnableJob
-from lp.translations.interfaces.translationmergejob import (
-    ITranslationMergeJobSource,
+from lp.translations.interfaces.translationpackagingjob import (
+    ITranslationPackagingJobSource,
     )
 from lp.registry.model.packagingjob import (
     PackagingJob,
@@ -40,14 +40,19 @@ def schedule_merge(packaging, event):
     return TranslationMergeJob.forPackaging(packaging)
 
 
-class TranslationMergeJob(PackagingJobDerived, BaseRunnableJob):
-    """Job for merging translations between a product and sourcepackage."""
+class TranslationPackagingJob(PackagingJobDerived, BaseRunnableJob):
+    """Iterate through all Translation job types."""
 
-    classProvides(ITranslationMergeJobSource)
+    classProvides(ITranslationPackagingJobSource)
 
-    implements(IRunnableJob)
+    _translation_packaging_job_types = []
 
-    class_job_type = PackagingJobType.TRANSLATION_MERGE
+    @staticmethod
+    def _register_subclass(cls):
+        PackagingJobDerived._register_subclass(cls)
+        job_type = getattr(cls, 'class_job_type', None)
+        if job_type is not None:
+            cls._translation_packaging_job_types.append(job_type)
 
     @classmethod
     def forPackaging(cls, packaging):
@@ -63,8 +68,17 @@ class TranslationMergeJob(PackagingJobDerived, BaseRunnableJob):
     @classmethod
     def iterReady(cls):
         """See `IJobSource`."""
-        return super(TranslationMergeJob, cls).iterReady(
-            [PackagingJob.job_type == cls.class_job_type])
+        clause = PackagingJob.job_type.is_in(
+            cls._translation_packaging_job_types)
+        return super(TranslationPackagingJob, cls).iterReady([clause])
+
+
+class TranslationMergeJob(TranslationPackagingJob):
+    """Job for merging translations between a product and sourcepackage."""
+
+    implements(IRunnableJob)
+
+    class_job_type = PackagingJobType.TRANSLATION_MERGE
 
     def run(self):
         """See `IRunnableJob`."""

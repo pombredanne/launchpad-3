@@ -11,7 +11,7 @@ import transaction
 from canonical.launchpad.scripts.tests import run_script
 from canonical.testing.layers import ZopelessAppServerLayer
 from lp.testing import TestCaseWithFactory
-from lp.translations.tests.test_translationmergejob import (
+from lp.translations.tests.test_translationpackagingjob import (
     count_translations,
     make_translation_merge_job,
     )

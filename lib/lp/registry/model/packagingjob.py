@@ -33,6 +33,7 @@ from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import IJob
 from lp.services.job.model.job import Job
 
+
 class PackagingJobType(DBEnumeratedType):
     """Types of Packaging Job."""
 
@@ -90,7 +91,7 @@ class RegisteredSubclass(type):
     """Metaclass for when subclasses should be registered."""
 
     def __init__(cls, name, bases, dict_):
-        cls._register_subclass()
+        cls._register_subclass(cls)
 
 
 class PackagingJobDerived:
@@ -102,7 +103,7 @@ class PackagingJobDerived:
 
     _subclass = {}
 
-    @classmethod
+    @staticmethod
     def _register_subclass(cls):
         """Register this class with its enumeration."""
         job_type = getattr(cls, 'class_job_type', None)
@@ -141,6 +142,5 @@ class PackagingJobDerived:
             (PackagingJob),
             PackagingJob.job == Job.id,
             Job.id.is_in(Job.ready_jobs),
-            *extra_clauses
-        )
+            *extra_clauses)
         return (cls._subclass[job.job_type](job) for job in jobs)
