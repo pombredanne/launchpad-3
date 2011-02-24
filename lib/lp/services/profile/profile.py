@@ -44,7 +44,9 @@ def before_traverse(event):
     """Handle profiling when enabled via the profiling.enabled feature flag."""
     # This event is raised on each step of traversal so needs to be lightweight
     # and not assume that profiling has not started - but this is equally well
-    # done in _maybe_profile so that function takes care of it.
+    # done in _maybe_profile so that function takes care of it. We have to use
+    # this event (or add a new one) because we depend on the feature flags
+    # system being configured and usable, and on the principal being known.
     if getFeatureFlag('profiling.enabled'):
         _maybe_profile(event)
 
