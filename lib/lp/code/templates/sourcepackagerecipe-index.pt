@@ -16,6 +16,18 @@
       font-family: "UbuntuBeta Mono","Ubuntu Mono",monospace;
       margin-top: -15px;
     }
+    .build-informational {
+        background: #d4e8ff url('/+icing/blue-fade-to-grey');
+        border: solid #666;
+        border-width: 1px 2px 2px 1px;
+        color: black;
+        padding: 5px 5px 5px 5px;
+        margin-right: 40px
+        }
+    .build-informational::before {
+        padding-right: 5px;
+        content: url('/@@/info');
+        }
   </style>
 </metal:block>
 
@@ -60,6 +72,23 @@
               </a>
             </dt>
             <dd tal:content="structure view/daily_build_widget"/>
+            <dd
+              tal:define="link context/menu:context/request_daily_build"
+              tal:condition="link/enabled"
+              >
+              <noscript>
+                <form action="+request-daily-build"
+                      method="post"
+                      id="request-daily-build-form">
+                    <input type="submit" name="field.actions.build"
+                        id="field.actions.build" value="Build now" />
+                </form>
+              </noscript>
+              <a id="request-daily-build"
+                 class="sprite source-package-recipe js-action unseen"
+                 tal:attributes="href link/url"
+                 tal:content="link/text"/>
+            </dd>
           </dl>
 
           <dl id="owner">
@@ -121,11 +150,16 @@
         if(Y.UA.ie) {
             return;
         }
-
         Y.on('load', function() {
-            var logged_in = LP.client.links['me'] !== undefined;
+            var logged_in = LP.links['me'] !== undefined;
             if (logged_in) {
-                Y.lp.code.requestbuild_overlay.connect_requestbuild();
+                build_now_link = Y.one('#request-daily-build');
+                if( build_now_link != null ) {
+                  build_now_link.removeClass('unseen');
+                  Y.lp.code.requestbuild_overlay.connect_requestdailybuild();
+                }
+                Y.lp.code.requestbuild_overlay.connect_requestbuilds();
+
             }
         }, window);
       });"

@@ -137,6 +137,10 @@ class ISourcePackageRecipeView(Interface):
             able to upload to the archive.
         """
 
+    @export_write_operation()
+    def performDailyBuild():
+        """Perform a build into the daily build archive."""
+
 
 class ISourcePackageRecipeEdit(Interface):
     """ISourcePackageRecipe methods that require launchpad.Edit permission."""

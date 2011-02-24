@@ -151,7 +151,7 @@
                       // that user doesn't click the trigger and navigates to the
                       // non-JS form, we first disable the link. This is awful and
                       // must be fixed as soon as YUI3 is fixed.
-                      if (LP.client.links['me'] !== undefined) {
+                      if (LP.links['me'] !== undefined) {
                           Y.one('#edit-tags-trigger').on('click', function(e) {
                               e.halt();
                           });
