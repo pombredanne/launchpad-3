@@ -7,7 +7,10 @@ __metaclass__ = type
 
 from textwrap import dedent
 
-from testtools.matchers import LessThan, Matcher
+from testtools.matchers import (
+    LessThan,
+    Matcher,
+    )
 from zope.component import getUtility
 
 from canonical.config import config
@@ -26,7 +29,10 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
-from lp.testing.matchers import HasQueryCount, BrowsesWithQueryLimit
+from lp.testing.matchers import (
+    BrowsesWithQueryLimit,
+    HasQueryCount,
+    )
 from lp.testing.memcache import MemcacheTestCase
 from lp.testing.views import create_initialized_view
 
