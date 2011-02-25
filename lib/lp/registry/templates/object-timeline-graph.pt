@@ -125,7 +125,7 @@
 
               var client = new LP.client.Launchpad();
               client.named_get(
-                  LP.client.cache['context']['self_link'],
+                  LP.cache['context']['self_link'],
                   'get_timeline', get_timeline_config);
 
               var drag_scroll_handler =
