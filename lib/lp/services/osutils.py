@@ -118,5 +118,9 @@ def open_for_writing(filename, mode, dirmode=0777):
     :param dirmode: The mode to use to create directories, if necessary.
     :return: A file-like object that can be used to write to 'filename'.
     """
-    ensure_directory_exists(os.path.dirname(filename), mode=dirmode)
-    return open(filename, mode)
+    try:
+        return open(filename, mode)
+    except IOError, e:
+        if e.errno == errno.ENOENT:
+            os.makedirs(os.path.dirname(filename), mode=dirmode)
+            return open(filename, mode)
