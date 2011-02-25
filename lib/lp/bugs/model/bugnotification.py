@@ -176,12 +176,11 @@ class BugNotificationFilter(StormBase):
     implements(IBugNotificationFilter)
 
     __storm_table__ = "BugNotificationFilter"
+    __storm_primary__ = "bug_notification_id", "bug_subscription_filter_id"
 
     def __init__(self, bug_notification, bug_subscription_filter):
         self.bug_notification = bug_notification
         self.bug_subscription_filter = bug_subscription_filter
-
-    id = Int(primary=True)
 
     bug_notification_id = Int(
         "bug_notification", allow_none=False)

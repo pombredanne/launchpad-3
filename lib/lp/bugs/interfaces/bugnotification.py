@@ -103,7 +103,6 @@ class IBugNotificationRecipient(Interface):
 
 class IBugNotificationFilter(Interface):
     """`BugSubscriptionFilter` that generated a bug notification."""
-    id = Int(required=True, readonly=True)
 
     bug_notification = Reference(
         IBugNotification,
