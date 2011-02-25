@@ -148,6 +148,17 @@ class POTMsgSet(SQLBase):
 
     credits_message_ids = credits_message_info.keys()
 
+    def clone(self):
+        return POTMsgSet(
+            context=self.context,
+            msgid_singular=self.msgid_singular,
+            msgid_plural=self.msgid_plural,
+            commenttext=self.commenttext,
+            filereferences=self.filereferences,
+            sourcecomment=self.sourcecomment,
+            flagscomment=self.flagscomment,
+        )
+
     def _conflictsExistingSourceFileFormats(self, source_file_format=None):
         """Return whether `source_file_format` conflicts with existing ones
         for this `POTMsgSet`.
@@ -549,7 +560,8 @@ class POTMsgSet(SQLBase):
         else:
             return None
 
-    def submitSuggestion(self, pofile, submitter, new_translations):
+    def submitSuggestion(self, pofile, submitter, new_translations,
+                         from_import=False):
         """See `IPOTMsgSet`."""
         if self.is_translation_credit:
             # We don't support suggestions on credits messages.
@@ -565,11 +577,16 @@ class POTMsgSet(SQLBase):
             ('msgstr%d' % form, potranslation)
             for form, potranslation in potranslations.iteritems())
 
-        pofile.potemplate.awardKarma(submitter, 'translationsuggestionadded')
+        if from_import:
+            origin = RosettaTranslationOrigin.SCM
+        else:
+            origin = RosettaTranslationOrigin.ROSETTAWEB
+            pofile.potemplate.awardKarma(
+                submitter, 'translationsuggestionadded')
 
         return TranslationMessage(
             potmsgset=self, language=pofile.language,
-            origin=RosettaTranslationOrigin.ROSETTAWEB, submitter=submitter,
+            origin=origin, submitter=submitter,
             **forms)
 
     def _checkForConflict(self, current_message, lock_timestamp,
@@ -1159,6 +1176,7 @@ class POTMsgSet(SQLBase):
         if translation_template_item is not None:
             # Update the sequence for the translation template item.
             translation_template_item.sequence = sequence
+            return translation_template_item
         elif sequence >= 0:
             # Introduce this new entry into the TranslationTemplateItem for
             # later usage.
@@ -1173,7 +1191,7 @@ class POTMsgSet(SQLBase):
                     "Attempt to add a POTMsgSet into a POTemplate which "
                     "has a conflicting value for uses_english_msgids.")
 
-            TranslationTemplateItem(
+            return TranslationTemplateItem(
                 potemplate=potemplate,
                 sequence=sequence,
                 potmsgset=self)
@@ -1181,7 +1199,7 @@ class POTMsgSet(SQLBase):
             # There is no entry for this potmsgset in TranslationTemplateItem
             # table, neither we need to create one, given that the sequence is
             # less than zero.
-            pass
+            return None
 
     def getSequence(self, potemplate):
         """See `IPOTMsgSet`."""

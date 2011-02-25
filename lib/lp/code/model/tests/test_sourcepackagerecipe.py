@@ -10,7 +10,6 @@ from datetime import (
     timedelta,
     )
 import textwrap
-import unittest
 
 from bzrlib.plugins.builder.recipe import ForbiddenInstructionError
 from pytz import UTC
@@ -39,7 +38,6 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
     ISourcePackageRecipeSource,
     MINIMAL_RECIPE_TEXT,
-    recipes_enabled,
     )
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
@@ -72,7 +70,6 @@ from lp.testing import (
     login,
     login_person,
     person_logged_in,
-    set_feature_flag,
     TestCaseWithFactory,
     ws_object,
     )
@@ -376,24 +373,6 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         queue_record.score()
         self.assertEqual(2705, queue_record.lastscore)
 
-    def test_requestBuildHonoursConfig(self):
-        recipe = self.factory.makeSourcePackageRecipe()
-        (distroseries,) = list(recipe.distroseries)
-        ppa = self.factory.makeArchive()
-        self.pushConfig('build_from_branch', enabled=False)
-        self.assertRaises(
-            ValueError, recipe.requestBuild, ppa, ppa.owner, distroseries,
-            PackagePublishingPocket.RELEASE)
-
-    def test_recipes_enabled_config(self):
-        self.pushConfig('build_from_branch', enabled=False)
-        self.assertFalse(recipes_enabled())
-
-    def test_recipes_enabled_flag(self):
-        self.pushConfig('build_from_branch', enabled=False)
-        set_feature_flag(u'code.recipes_enabled', u'on')
-        self.assertTrue(recipes_enabled())
-
     def test_requestBuildRejectsOverQuota(self):
         """Build requests that exceed quota raise an exception."""
         requester = self.factory.makePerson(name='requester')
@@ -602,19 +581,32 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             timedelta(minutes=11), recipe.getMedianBuildDuration())
 
     def test_getBuilds(self):
-        # Builds that need building are pending.
+        # Test the various getBuilds methods.
         recipe = self.factory.makeSourcePackageRecipe()
-        build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
-        self.assertEqual([], list(recipe.getBuilds()))
-        self.assertEqual([build], list(recipe.getPendingBuilds()))
+        builds = [
+                self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+                for x in range(3)]
+        # We want the latest builds first.
+        builds.reverse()
+
+        self.assertEqual([], list(recipe.completed_builds))
+        self.assertEqual(builds, list(recipe.pending_builds))
+        self.assertEqual(builds, list(recipe.builds))
+
+        # Change the status of one of the builds and retest.
+        removeSecurityProxy(builds[0]).status = BuildStatus.FULLYBUILT
+        self.assertEqual([builds[0]], list(recipe.completed_builds))
+        self.assertEqual(builds[1:], list(recipe.pending_builds))
+        self.assertEqual(builds, list(recipe.builds))
 
     def test_getBuilds_cancelled(self):
         # Cancelled builds are not considered pending.
         recipe = self.factory.makeSourcePackageRecipe()
         build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
         build.cancelBuild()
-        self.assertEqual([build], list(recipe.getBuilds()))
-        self.assertEqual([], list(recipe.getPendingBuilds()))
+        self.assertEqual([build], list(recipe.builds))
+        self.assertEqual([build], list(recipe.completed_builds))
+        self.assertEqual([], list(recipe.pending_builds))
 
     def test_setRecipeText_private_base_branch(self):
         source_package_recipe = self.factory.makeSourcePackageRecipe()
@@ -653,8 +645,9 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             recipe=recipe, archive=archive)
         with person_logged_in(archive.owner):
             archive.disable()
-        self.assertEqual([], list(recipe.getBuilds()))
-        self.assertEqual([], list(recipe.getPendingBuilds()))
+        self.assertEqual([], list(recipe.builds))
+        self.assertEqual([], list(recipe.completed_builds))
+        self.assertEqual([], list(recipe.pending_builds))
 
 
 class TestRecipeBranchRoundTripping(TestCaseWithFactory):
@@ -921,8 +914,14 @@ class TestWebservice(TestCaseWithFactory):
         recipe, user = self.makeRecipe()[:-1]
         self.assertEqual(recipe, user.getRecipe(name=recipe.name))
 
+    def test_recipes(self):
+        """Person.recipes works as expected."""
+        recipe, user = self.makeRecipe()[:-1]
+        [ws_recipe] = user.recipes
+        self.assertEqual(recipe, ws_recipe)
+
     def test_requestBuild(self):
-        """Build requests can be performed."""
+        """Build requests can be performed and last_build works."""
         person = self.factory.makePerson()
         archive = self.factory.makeArchive(owner=person)
         distroseries = self.factory.makeSourcePackageRecipeDistroseries()
@@ -930,9 +929,10 @@ class TestWebservice(TestCaseWithFactory):
         recipe, user, launchpad = self.makeRecipe(person)
         distroseries = ws_object(launchpad, distroseries)
         archive = ws_object(launchpad, archive)
-        recipe.requestBuild(
+        build = recipe.requestBuild(
             archive=archive, distroseries=distroseries,
             pocket=PackagePublishingPocket.RELEASE.title)
+        self.assertEqual(build, recipe.last_build)
 
     def test_requestBuildRejectRepeat(self):
         """Build requests are rejected if already pending."""
@@ -987,6 +987,22 @@ class TestWebservice(TestCaseWithFactory):
             pocket=PackagePublishingPocket.RELEASE.title)
         self.assertIn('BuildNotAllowedForDistro', str(e))
 
+    def test_getBuilds(self):
+        """SourcePackageRecipe.[pending_|completed_]builds is as expected."""
+        person = self.factory.makePerson()
+        archives = [self.factory.makeArchive(owner=person) for x in range(4)]
+        distroseries= self.factory.makeSourcePackageRecipeDistroseries()
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+        recipe, user, launchpad = self.makeRecipe(person)
+        distroseries = ws_object(launchpad, distroseries)
+
+        builds = []
+        for archive in archives:
+            archive = ws_object(launchpad, archive)
+            build = recipe.requestBuild(
+                archive=archive, distroseries=distroseries,
+                pocket=PackagePublishingPocket.RELEASE.title)
+            builds.insert(0, build)
+        self.assertEqual(builds, list(recipe.pending_builds))
+        self.assertEqual(builds, list(recipe.builds))
+        self.assertEqual([], list(recipe.completed_builds))

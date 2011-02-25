@@ -95,7 +95,7 @@ from zope.security.simplepolicies import PermissiveSecurityPolicy
 from zope.server.logger.pythonlogger import PythonLogger
 from zope.testing.testrunner.runner import FakeInputContinueGenerator
 
-from canonical.ftests.pgsql import PgTestSetup
+import canonical.launchpad.webapp.session
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr import pidfile
 from canonical.config import CanonicalConfig, config, dbconfig
@@ -132,6 +132,7 @@ from canonical.testing.profiled import profiled
 from canonical.testing.smtpd import SMTPController
 from lp.services.memcache.client import memcache_client_factory
 from lp.services.osutils import kill_by_pidfile
+from lp.testing.pgsql import PgTestSetup
 
 
 orig__call__ = zope.app.testing.functional.HTTPCaller.__call__
@@ -1054,6 +1055,9 @@ class FunctionalLayer(BaseLayer):
         if not is_ca_available():
             raise LayerInvariantError("Component architecture failed to load")
 
+        # Access the cookie manager's secret to get the cache populated.
+        # If we don't, it may issue extra queries depending on test order.
+        canonical.launchpad.webapp.session.idmanager.secret
         # If our request publication factories were defined using ZCML,
         # they'd be set up by FunctionalTestSetup().setUp(). Since
         # they're defined by Python code, we need to call that code

@@ -193,6 +193,7 @@
                     date_fix_released
                     date_left_closed
                     date_closed
+                    milestoneID
                     productseriesID
                     task_age
                     bug_subscribers
@@ -751,6 +752,7 @@
                     getSubscriptionForPerson
                     getSubscriptionInfo
                     indexed_messages
+                    _indexed_messages
                     getAlsoNotifiedSubscribers
                     getBugWatch
                     canBeNominatedFor

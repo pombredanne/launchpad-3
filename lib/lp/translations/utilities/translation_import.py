@@ -30,6 +30,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
     )
+from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -440,13 +441,12 @@ class FileImporter(object):
             return False
         if self.translation_import_queue_entry.sourcepackagename is None:
             return False
-        distroseries = self.translation_import_queue_entry.distroseries
-        sourcepackagename = (
-            self.translation_import_queue_entry.sourcepackagename)
+        sourcepackage = getUtility(ISourcePackageFactory).new(
+            self.translation_import_queue_entry.sourcepackagename,
+            self.translation_import_queue_entry.distroseries)
         from lp.translations.utilities.translationsharinginfo import (
             has_upstream_template)
-        return not has_upstream_template(
-            distroseries=distroseries, sourcepackagename=sourcepackagename)
+        return not has_upstream_template(sourcepackage)
 
     @cachedproperty
     def translations_are_msgids(self):
@@ -545,7 +545,8 @@ class FileImporter(object):
         # The message is first stored as a suggestion and only made
         # current if it validates.
         new_message = potmsgset.submitSuggestion(
-            self.pofile, self.last_translator, sanitized_translations)
+            self.pofile, self.last_translator, sanitized_translations,
+            from_import=True)
 
         validation_ok = self._validateMessage(
             potmsgset, new_message, sanitized_translations, message_data)

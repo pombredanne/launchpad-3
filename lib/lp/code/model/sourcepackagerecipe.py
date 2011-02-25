@@ -62,7 +62,6 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
     ISourcePackageRecipeData,
     ISourcePackageRecipeSource,
-    recipes_enabled,
     )
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
@@ -71,6 +70,7 @@ from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.model.distroseries import DistroSeries
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.stormexpr import Greatest
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.model.archive import Archive
@@ -245,11 +245,10 @@ class SourcePackageRecipe(Storm):
         return SourcePackageRecipeBuild.getRecentBuilds(
             requester, self, distroseries).count() >= 5
 
-    def requestBuild(self, archive, requester, distroseries, pocket,
+    def requestBuild(self, archive, requester, distroseries,
+                     pocket=PackagePublishingPocket.RELEASE,
                      manual=False):
         """See `ISourcePackageRecipe`."""
-        if not recipes_enabled():
-            raise ValueError('Source package recipe builds disabled.')
         if not archive.is_ppa:
             raise NonPPABuildRequest
 
@@ -282,34 +281,65 @@ class SourcePackageRecipe(Storm):
             queue_record.manualScore(queue_record.lastscore + 100)
         return build
 
-    def getBuilds(self):
+    def performDailyBuild(self):
         """See `ISourcePackageRecipe`."""
-        where_clause = BuildFarmJob.status != BuildStatus.NEEDSBUILD
-        order_by = Desc(Greatest(
-                BuildFarmJob.date_started,
-                BuildFarmJob.date_finished)), BuildFarmJob.id
-        return self._getBuilds(where_clause, order_by)
+        builds = []
+        self.is_stale = False
+        for distroseries in self.distroseries:
+            try:
+                build = self.requestBuild(
+                    self.daily_build_archive, self.owner,
+                    distroseries, PackagePublishingPocket.RELEASE)
+                builds.append(build)
+            except BuildAlreadyPending:
+                continue
+        return builds
 
-    def getPendingBuilds(self):
+    @property
+    def builds(self):
         """See `ISourcePackageRecipe`."""
-        where_clause = BuildFarmJob.status == BuildStatus.NEEDSBUILD
-        order_by = Desc(BuildFarmJob.date_created), BuildFarmJob.id
-        return self._getBuilds(where_clause, order_by)
+        order_by = (Desc(Greatest(
+                            BuildFarmJob.date_started,
+                            BuildFarmJob.date_finished)),
+                   Desc(BuildFarmJob.date_created), Desc(BuildFarmJob.id))
+        return self._getBuilds(None, order_by)
 
-    def _getBuilds(self, where_clause, order_by):
+    @property
+    def completed_builds(self):
+        """See `ISourcePackageRecipe`."""
+        filter_term = BuildFarmJob.status != BuildStatus.NEEDSBUILD
+        order_by = (Desc(Greatest(
+                            BuildFarmJob.date_started,
+                            BuildFarmJob.date_finished)),
+                   Desc(BuildFarmJob.id))
+        return self._getBuilds(filter_term, order_by)
+
+    @property
+    def pending_builds(self):
+        """See `ISourcePackageRecipe`."""
+        filter_term = BuildFarmJob.status == BuildStatus.NEEDSBUILD
+        # We want to order by date_created but this is the same as ordering
+        # by id (since id increases monotonically) and is less expensive.
+        order_by = Desc(BuildFarmJob.id)
+        return self._getBuilds(filter_term, order_by)
+
+    def _getBuilds(self, filter_term, order_by):
         """The actual query to get the builds."""
-        result = Store.of(self).find(
-            SourcePackageRecipeBuild,
+        query_args = [
             SourcePackageRecipeBuild.recipe==self,
             SourcePackageRecipeBuild.package_build_id == PackageBuild.id,
             PackageBuild.build_farm_job_id == BuildFarmJob.id,
             And(PackageBuild.archive_id == Archive.id,
                 Archive._enabled == True),
-            where_clause)
+            ]
+        if filter_term is not None:
+            query_args.append(filter_term)
+        result = Store.of(self).find(SourcePackageRecipeBuild, *query_args)
         result.order_by(order_by)
         return result
 
-    def getLastBuild(self):
+    @property
+    def last_build(self):
         """See `ISourcePackageRecipeBuild`."""
         return self._getBuilds(
             True, Desc(BuildFarmJob.date_finished)).first()

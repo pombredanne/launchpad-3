@@ -916,6 +916,15 @@ class IDistroSeriesSet(Interface):
             `PackagePublishingPocket`.
         """
 
+    def getCurrentSourceReleases(distro_series_source_packagenames):
+        """Lookup many distroseries source package releases.
+
+        :param distro_series_to_source_packagenames: A dictionary with
+            its keys being `IDistroSeries` and its values a list of
+            `ISourcePackageName`.
+        :return: A dict as per `IDistroSeries.getCurrentSourceReleases`
+        """
+
     def search(distribution=None, released=None, orderBy=None):
         """Search the set of distro seriess.
 
