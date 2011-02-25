@@ -1009,6 +1009,15 @@ Similarly, we can search for bugs that do not have any linked branches.
     20 0
     21 0
 
+And we can search for bugs linked to a specific branch.
+
+    >>> search_params = BugTaskSearchParams(
+    ...     user=None, linked_branches=1)
+    >>> for task in firefox.searchTasks(search_params):
+    ...     print task.bug.id
+    4
+    5
+
 
 == Ordering search results ==
 
