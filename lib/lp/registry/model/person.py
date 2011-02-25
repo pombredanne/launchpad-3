@@ -2851,7 +2851,8 @@ class Person(
         from lp.hardwaredb.model.hwdb import HWSubmissionSet
         return HWSubmissionSet().search(owner=self)
 
-    def getRecipes(self):
+    @property
+    def recipes(self):
         """See `IHasRecipes`."""
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         store = Store.of(self)
@@ -3454,8 +3455,8 @@ class PersonSet:
 
     def _mergeSourcePackageRecipes(self, from_person, to_person):
         # This shouldn't use removeSecurityProxy.
-        recipes = from_person.getRecipes()
-        existing_names = [r.name for r in to_person.getRecipes()]
+        recipes = from_person.recipes
+        existing_names = [r.name for r in to_person.recipes]
         for recipe in recipes:
             new_name = recipe.name
             count = 1

@@ -383,6 +383,7 @@
         class="lp.translations.model.translationtemplateitem.TranslationTemplateItem">
         <allow
             interface="lp.translations.interfaces.translationtemplateitem.ITranslationTemplateItem"/>
+        <require permission="launchpad.Admin" set_attributes="potmsgset"/>
     </class>
 
     <!-- ProductSeriesLanguage -->
