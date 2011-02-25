@@ -37,15 +37,6 @@ from lp.translations.utilities.translationsplitter import TranslationSplitter
 __all__ = ['TranslationMergeJob', 'TranslationSplitJob']
 
 
-def schedule_merge(packaging, event):
-    """Event subscriber to create a TranslationMergeJob on new packagings.
-
-    :param packaging: The `Packaging` to create a `TranslationMergeJob` for.
-    :param event: The event itself.
-    """
-    return TranslationMergeJob.forPackaging(packaging)
-
-
 class TranslationPackagingJob(PackagingJobDerived, BaseRunnableJob):
     """Iterate through all Translation job types."""
 
