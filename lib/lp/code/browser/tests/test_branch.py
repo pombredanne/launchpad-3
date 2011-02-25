@@ -19,6 +19,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.helpers import truncate_text
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -29,8 +30,6 @@ from canonical.launchpad.testing.pages import (
     find_tag_by_id,
     setupBrowser,
     )
-from canonical.launchpad.webapp.publisher import canonical_url
-
 from lp.app.interfaces.headings import IRootContext
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
@@ -58,6 +57,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.matchers import BrowsesWithQueryLimit
 from lp.testing.views import create_initialized_view
 
 
@@ -360,6 +360,41 @@ class TestBranchView(BrowserTestCase):
         for bug in view.linked_bugs:
             self.assertTrue(
                 bug.bugtask.status in UNRESOLVED_BUGTASK_STATUSES)
+
+    def test_linked_bugs_nonseries_branch_query_scaling(self):
+        # As we add linked bugs, the query count for a branch index page stays
+        # constant.
+        branch = self.factory.makeAnyBranch()
+        browses_under_limit = BrowsesWithQueryLimit(54, branch.owner)
+        # Start with some bugs, otherwise we might see a spurious increase
+        # depending on optimisations in eager loaders.
+        with person_logged_in(branch.owner):
+            self._addBugLinks(branch)
+            self.assertThat(branch, browses_under_limit)
+        with person_logged_in(branch.owner):
+            # Add plenty of bugs.
+            for _ in range(5):
+                self._addBugLinks(branch)
+            self.assertThat(branch, browses_under_limit)
+
+    def test_linked_bugs_series_branch_query_scaling(self):
+        # As we add linked bugs, the query count for a branch index page stays
+        # constant.
+        product = self.factory.makeProduct()
+        branch = self.factory.makeProductBranch(product=product)
+        browses_under_limit = BrowsesWithQueryLimit(54, branch.owner)
+        with person_logged_in(product.owner):
+            product.development_focus.branch = branch
+        # Start with some bugs, otherwise we might see a spurious increase
+        # depending on optimisations in eager loaders.
+        with person_logged_in(branch.owner):
+            self._addBugLinks(branch)
+            self.assertThat(branch, browses_under_limit)
+        with person_logged_in(branch.owner):
+            # Add plenty of bugs.
+            for _ in range(5):
+                self._addBugLinks(branch)
+            self.assertThat(branch, browses_under_limit)
 
     def _add_revisions(self, branch, nr_revisions=1):
         revisions = []
