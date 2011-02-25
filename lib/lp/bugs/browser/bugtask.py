@@ -43,6 +43,7 @@ __all__ = [
     ]
 
 import cgi
+from collections import defaultdict
 from datetime import (
     datetime,
     timedelta,
@@ -247,11 +248,17 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
-from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distribution import (
+    IDistribution,
+    IDistributionSet,
+    )
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
-from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseries import (
+    IDistroSeries,
+    IDistroSeriesSet,
+    )
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -3143,26 +3150,22 @@ class BugTasksAndNominationsView(LaunchpadView):
         self.many_bugtasks = len(self.bugtasks) >= 10
         self.cached_milestone_source = CachedMilestoneSourceFactory()
         self.user_is_subscribed = self.context.isSubscribed(self.user)
-        distro_packages = {}
+        distro_packages = defaultdict(list)
+        distro_series_packages = defaultdict(list)
         for bugtask in self.bugtasks:
             target = bugtask.target
             if IDistributionSourcePackage.providedBy(target):
-                distro_packages.setdefault(target.distribution, [])
                 distro_packages[target.distribution].append(
                     target.sourcepackagename)
             if ISourcePackage.providedBy(target):
-                distro_packages.setdefault(target.distroseries, [])
-                distro_packages[target.distroseries].append(
+                distro_series_packages[target.distroseries].append(
                     target.sourcepackagename)
-        # Set up a mapping from a target to its current release, using
-        # only a few DB queries. It would be easier to use the packages'
-        # currentrelease attributes, but that causes many DB queries to
-        # be issued.
-        self.target_releases = {}
-        for distro_or_series, package_names in distro_packages.items():
-            releases = distro_or_series.getCurrentSourceReleases(
-                package_names)
-            self.target_releases.update(releases)
+        distro_set = getUtility(IDistributionSet)
+        self.target_releases = dict(distro_set.getCurrentSourceReleases(
+            distro_packages))
+        distro_series_set = getUtility(IDistroSeriesSet)
+        self.target_releases.update(
+            distro_series_set.getCurrentSourceReleases(distro_series_packages))
 
     def getTargetLinkTitle(self, target):
         """Return text to put as the title for the link to the target."""

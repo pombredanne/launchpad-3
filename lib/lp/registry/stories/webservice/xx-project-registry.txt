@@ -180,6 +180,7 @@ Projects are available at their canonical URL on the API virtual host.
     programming_language: None
     project_group_link: u'http://.../mozilla'
     qualifies_for_free_hosting: False
+    recipes_collection_link: u'http://.../firefox/recipes'
     registrant_link: u'http://.../~name12'
     releases_collection_link: u'http://.../firefox/releases'
     remote_product: None
@@ -244,6 +245,7 @@ several that are not available to non-privileged users marked as
     programming_language: None
     project_group_link: u'http://.../mozilla'
     qualifies_for_free_hosting: False
+    recipes_collection_link: u'http://.../firefox/recipes'
     registrant_link: u'http://.../~name12'
     releases_collection_link: u'http://.../firefox/releases'
     remote_product: None
