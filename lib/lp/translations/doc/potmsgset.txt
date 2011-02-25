@@ -607,7 +607,7 @@ Let's create a new potmsgset object.
 If we assign the sequence == 0, the POTMsgSet object doesn't have an
 entry in the TranslationTemplateItems:
 
-    >>> potmsgset.setSequence(potemplate, 0)
+    >>> item = potmsgset.setSequence(potemplate, 0)
     >>> is_potmsgset_in_potemplate(potmsgset, potemplate)
     False
     >>> potmsgset.getSequence(potemplate)
@@ -615,7 +615,7 @@ entry in the TranslationTemplateItems:
 
 The used number doesn't matter as long as it's higher than zero.
 
-    >>> potmsgset.setSequence(potemplate, 99)
+    >>> item = potmsgset.setSequence(potemplate, 99)
     >>> is_potmsgset_in_potemplate(potmsgset, potemplate)
     True
     >>> potmsgset.getSequence(potemplate)
@@ -623,7 +623,7 @@ The used number doesn't matter as long as it's higher than zero.
 
 If we change it back to zero, it's removed from the table:
 
-    >>> potmsgset.setSequence(potemplate, 0)
+    >>> item = potmsgset.setSequence(potemplate, 0)
     >>> is_potmsgset_in_potemplate(potmsgset, potemplate)
     False
     >>> potmsgset.getSequence(potemplate)

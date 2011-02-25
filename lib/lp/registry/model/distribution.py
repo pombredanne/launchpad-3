@@ -10,6 +10,7 @@ __all__ = [
     'DistributionSet',
     ]
 
+from operator import attrgetter
 
 from sqlobject import (
     BoolCol,
@@ -33,6 +34,7 @@ from zope.interface import (
     alsoProvides,
     implements,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -775,34 +777,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getCurrentSourceReleases(self, source_package_names):
         """See `IDistribution`."""
-        source_package_ids = [
-            package_name.id for package_name in source_package_names]
-        releases = SourcePackageRelease.select("""
-            SourcePackageName.id IN %s AND
-            SourcePackageRelease.id =
-                SourcePackagePublishingHistory.sourcepackagerelease AND
-            SourcePackagePublishingHistory.id = (
-                SELECT max(spph.id)
-                FROM SourcePackagePublishingHistory spph,
-                     SourcePackageRelease spr, SourcePackageName spn,
-                     DistroSeries ds
-                WHERE
-                    spn.id = SourcePackageName.id AND
-                    spr.sourcepackagename = spn.id AND
-                    spph.sourcepackagerelease = spr.id AND
-                    spph.archive IN %s AND
-                    spph.status IN %s AND
-                    spph.distroseries = ds.id AND
-                    ds.distribution = %s)
-            """ % sqlvalues(
-                source_package_ids, self.all_distro_archive_ids,
-                active_publishing_status, self),
-            clauseTables=[
-                'SourcePackageName', 'SourcePackagePublishingHistory'])
-        return dict(
-            (self.getSourcePackage(release.sourcepackagename),
-             DistributionSourcePackageRelease(self, release))
-            for release in releases)
+        return getUtility(IDistributionSet).getCurrentSourceReleases(
+            {self:source_package_names})
 
     @property
     def has_any_specifications(self):
@@ -1848,8 +1824,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         assert sourcepackage is not None, (
             "Translations sharing policy requires a SourcePackage.")
 
-        if not has_upstream_template(
-                sourcepackage.distroseries, sourcepackage.sourcepackagename):
+        if not has_upstream_template(sourcepackage):
             # There is no known upstream template or series.  Take the
             # uploader's word for whether these are upstream translations
             # (in which case they're shared) or not.
@@ -1925,3 +1900,56 @@ class DistributionSet:
         getUtility(IArchiveSet).new(distribution=distro,
             owner=owner, purpose=ArchivePurpose.PRIMARY)
         return distro
+
+    def getCurrentSourceReleases(self, distro_source_packagenames):
+        """See `IDistributionSet`."""
+        # Builds one query for all the distro_source_packagenames.
+        # This may need tuning: its possible that grouping by the common
+        # archives may yield better efficiency: the current code is
+        # just a direct push-down of the previous in-python lookup to SQL.
+        series_clauses = []
+        distro_lookup = {}
+        for distro, package_names in distro_source_packagenames.items():
+            source_package_ids = map(attrgetter('id'), package_names)
+            # all_distro_archive_ids is just a list of ints, but it gets
+            # wrapped anyway - and sqlvalues goes boom.
+            archives = removeSecurityProxy(
+                distro.all_distro_archive_ids)
+            clause = """(spr.sourcepackagename IN %s AND
+                spph.archive IN %s AND
+                ds.distribution = %s)
+                """ % sqlvalues(source_package_ids, archives, distro.id)
+            series_clauses.append(clause)
+            distro_lookup[distro.id] = distro
+        if not len(series_clauses):
+            return {}
+        combined_clause = "(" + " OR ".join(series_clauses) + ")"
+
+        releases = IStore(SourcePackageRelease).find(
+            (SourcePackageRelease, Distribution.id), SQL("""
+                (SourcePackageRelease.id, Distribution.id) IN (
+                    SELECT DISTINCT ON (
+                        spr.sourcepackagename, ds.distribution)
+                        spr.id, ds.distribution
+                    FROM
+                        SourcePackageRelease AS spr,
+                        SourcePackagePublishingHistory AS spph,
+                        DistroSeries AS ds
+                    WHERE
+                        spph.sourcepackagerelease = spr.id
+                        AND spph.distroseries = ds.id
+                        AND spph.status IN %s
+                        AND %s
+                    ORDER BY
+                        spr.sourcepackagename, ds.distribution, spph.id DESC
+                    )
+                """
+                % (sqlvalues(active_publishing_status) + (combined_clause,))))
+        result = {}
+        for sp_release, distro_id in releases:
+            distro = distro_lookup[distro_id]
+            sourcepackage = distro.getSourcePackage(
+                sp_release.sourcepackagename)
+            result[sourcepackage] = DistributionSourcePackageRelease(
+                distro, sp_release)
+        return result

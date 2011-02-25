@@ -734,7 +734,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self._do_premerge(recipe.owner, person)
         login_person(person)
         self.person_set.merge(recipe.owner, person)
-        self.assertEqual(1, person.getRecipes().count())
+        self.assertEqual(1, person.recipes.count())
 
     def test_merge_with_duplicated_recipes(self):
         # If both the from and to people have recipes with the same name,
@@ -750,7 +750,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self._do_premerge(merge_from.owner, mergee)
         login_person(mergee)
         self.person_set.merge(merge_from.owner, merge_to.owner)
-        recipes = mergee.getRecipes()
+        recipes = mergee.recipes
         self.assertEqual(2, recipes.count())
         descriptions = [r.description for r in recipes]
         self.assertEqual([u'TO', u'FROM'], descriptions)
