@@ -384,6 +384,7 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
                     new_message = ("An identical build is "
                                 "already pending for %s." % e.distroseries)
                 informational["already_pending"] = new_message
+
         return builds, informational
 
 
