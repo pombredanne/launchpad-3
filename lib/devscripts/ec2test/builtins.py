@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = []
 
+from datetime import datetime
 import os
 import pdb
 import socket
@@ -13,12 +14,20 @@ import subprocess
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.commands import Command
-from bzrlib.errors import BzrCommandError
+from bzrlib.errors import (
+    BzrCommandError,
+    ConnectionError,
+    NoSuchFile,
+    )
 from bzrlib.help import help_commands
 from bzrlib.option import (
     ListOption,
     Option,
     )
+from bzrlib.transport import get_transport
+from pytz import UTC
+import simplejson
+
 from devscripts import get_launchpad_root
 from devscripts.ec2test.account import VALID_AMI_OWNERS
 from devscripts.ec2test.credentials import EC2Credentials
@@ -652,6 +661,107 @@ class cmd_images(EC2Command):
                 self.outf.write(format % (
                         revision, image.id, image.ownerId,
                         VALID_AMI_OWNERS.get(image.ownerId, "unknown")))
+
+
+class cmd_list(EC2Command):
+    """List all your current EC2 test runs.
+
+    If an instance is publishing an 'info.json' file with 'description' and
+    'failed-yet' fields, this command will list that instance, whether it has
+    failed the test run and how long it has been up for.
+
+    [FAILED] means that the has been a failing test. [OK] means that the test
+    run has had no failures yet, it's not a guarantee of a successful run.
+    """
+
+    aliases = ["ls"]
+
+    takes_options = [
+        Option('show-urls',
+               help="Include more information about each instance"),
+        Option('all', short_name='a',
+               help="Show all instances, not just ones with ec2test data."),
+        ]
+
+    def iter_instances(self, account):
+        """Iterate through all instances in 'account'."""
+        for reservation in account.conn.get_all_instances():
+            for instance in reservation.instances:
+                yield instance
+
+    def get_uptime(self, instance):
+        """How long has 'instance' been running?"""
+        expected_format = '%Y-%m-%dT%H:%M:%S.000Z'
+        launch_time = datetime.strptime(instance.launch_time, expected_format)
+        return (
+            datetime.utcnow().replace(tzinfo=UTC)
+            - launch_time.replace(tzinfo=UTC))
+
+    def get_http_url(self, instance):
+        hostname = instance.public_dns_name
+        if not hostname:
+            return
+        return 'http://%s/' % (hostname,)
+
+    def get_ec2test_info(self, instance):
+        """Load the ec2test-specific information published by 'instance'."""
+        url = self.get_http_url(instance)
+        if url is None:
+            return
+        try:
+            json = get_transport(url).get_bytes('info.json')
+        except (ConnectionError, NoSuchFile):
+            # Probably not an ec2test instance, or not ready yet.
+            return None
+        return simplejson.loads(json)
+
+    def format_instance(self, instance, data, verbose):
+        """Format 'instance' for display.
+
+        :param instance: The EC2 instance to display.
+        :param data: Launchpad-specific data.
+        :param verbose: Whether we want verbose output.
+        """
+        uptime = self.get_uptime(instance)
+        if data is None:
+            description = instance.id
+            current_status =     'unknown '
+        else:
+            description = data['description']
+            if data['failed-yet']:
+                current_status = '[FAILED]'
+            else:
+                current_status = '[OK]    '
+        output = '%s  %s (up for %s)' % (description, current_status, uptime)
+        if verbose:
+            url = self.get_http_url(instance)
+            if url is None:
+                url = "No web service"
+            output += '\n  %s' % (url,)
+        return output
+
+    def format_summary(self, by_state):
+        return ', '.join(
+            ': '.join((state, str(num)))
+            for (state, num) in sorted(list(by_state.items())))
+
+    def run(self, show_urls=False, all=False):
+        credentials = EC2Credentials.load_from_file()
+        session_name = EC2SessionName.make(EC2TestRunner.name)
+        account = credentials.connect(session_name)
+        instances = list(self.iter_instances(account))
+        if len(instances) == 0:
+            print "No instances running."
+            return
+
+        by_state = {}
+        for instance in instances:
+            by_state[instance.state] = by_state.get(instance.state, 0) + 1
+            data = self.get_ec2test_info(instance)
+            if data is None and not all:
+                continue
+            print self.format_instance(instance, data, show_urls)
+        print 'Summary: %s' % (self.format_summary(by_state),)
 
 
 class cmd_help(EC2Command):

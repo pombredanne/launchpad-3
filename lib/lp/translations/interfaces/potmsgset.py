@@ -128,6 +128,9 @@ class IPOTMsgSet(Interface):
             queries that search for credits messages.
             """))
 
+    def clone():
+        """Return a new copy of this POTMsgSet."""
+
     def getCurrentTranslationMessageOrDummy(pofile):
         """Return the current `TranslationMessage`, or a dummy.
 
