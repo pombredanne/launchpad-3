@@ -5,7 +5,6 @@ __metaclass__ = type
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.enum import BugNotificationLevel
-from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.bugs.model.bug import BugSubscriptionInfo
 from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import (
@@ -90,8 +89,8 @@ class TestBug(TestCaseWithFactory):
         member = self.factory.makePerson()
         team = self.factory.makeTeam(
             owner=member, visibility=PersonVisibility.PRIVATE)
-        StructuralSubscription(
-            product=product, subscriber=team, subscribed_by=member)
+        with person_logged_in(member):
+            product.addSubscription(team, member)
         self.assertTrue(team in bug.getAlsoNotifiedSubscribers())
 
     def test_get_indirect_subscribers_with_private_team(self):
@@ -100,8 +99,8 @@ class TestBug(TestCaseWithFactory):
         member = self.factory.makePerson()
         team = self.factory.makeTeam(
             owner=member, visibility=PersonVisibility.PRIVATE)
-        StructuralSubscription(
-            product=product, subscriber=team, subscribed_by=member)
+        with person_logged_in(member):
+            product.addSubscription(team, member)
         self.assertTrue(team in bug.getIndirectSubscribers())
 
     def test_get_direct_subscribers_with_private_team(self):

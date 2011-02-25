@@ -38,7 +38,7 @@ class CodeImportWorker(LaunchpadScript):
         LaunchpadScript.__init__(self, name, dbuser, test_args)
         set_up_oops_reporting('codeimportworker', name, mangle_stdout=True)
 
-    def _init_db(self, implicit_begin, isolation):
+    def _init_db(self, isolation):
         # This script doesn't access the database.
         pass
 
