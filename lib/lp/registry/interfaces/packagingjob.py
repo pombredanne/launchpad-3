@@ -15,8 +15,7 @@ class IPackagingJob(IJob):
 
     productseries = Attribute(_("The productseries of the Packaging."))
 
-    productseries = Attribute(_("The productseries of the Packaging."))
-
     distroseries = Attribute(_("The distroseries of the Packaging."))
 
-    sourcepackagename = Attribute(_("The sourcepackagename of the Packaging."))
+    sourcepackagename = Attribute(
+        _("The sourcepackagename of the Packaging."))
