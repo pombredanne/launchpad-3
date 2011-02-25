@@ -122,6 +122,9 @@ from lp.bugs.model.bugtarget import (
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.bugtracker import BugTracker
 from lp.bugs.model.bugwatch import BugWatch
+from lp.bugs.model.structuralsubscription import (
+    StructuralSubscriptionTargetMixin,
+    )
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
 from lp.code.model.branchvisibilitypolicy import BranchVisibilityPolicyMixin
@@ -162,9 +165,6 @@ from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.series import ACTIVE_STATUSES
 from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.registry.model.structuralsubscription import (
-    StructuralSubscriptionTargetMixin,
-    )
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -1315,7 +1315,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return DecoratedResultSet(
             self.getVersionSortedSeries(statuses=statuses), decorate)
 
-    def getRecipes(self):
+    @property
+    def recipes(self):
         """See `IHasRecipes`."""
         from lp.code.model.branch import Branch
         store = Store.of(self)

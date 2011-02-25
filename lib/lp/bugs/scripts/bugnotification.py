@@ -39,7 +39,7 @@ def construct_email_notifications(bug_notifications):
     """
     first_notification = bug_notifications[0]
     bug = first_notification.bug
-    person = first_notification.message.owner
+    person_causing_change = first_notification.message.owner
     subject = first_notification.message.subject
 
     comment = None
@@ -49,12 +49,17 @@ def construct_email_notifications(bug_notifications):
     recipients = {}
     for notification in bug_notifications:
         for recipient in notification.recipients:
-            for email_person in emailPeople(recipient.person):
+            email_people = emailPeople(recipient.person)
+            if (not person_causing_change.selfgenerated_bugnotifications and
+                person_causing_change in email_people):
+                email_people.remove(person_causing_change)
+            for email_person in email_people:
                 recipients[email_person] = recipient
 
     for notification in bug_notifications:
         assert notification.bug == bug, bug.id
-        assert notification.message.owner == person, person.id
+        assert notification.message.owner == person_causing_change, (
+            person_causing_change.id)
         if notification.is_comment:
             assert comment is None, (
                 "Only one of the notifications is allowed to be a comment.")
@@ -99,8 +104,9 @@ def construct_email_notifications(bug_notifications):
     messages = []
     mail_wrapper = MailWrapper(width=72)
     content = '\n\n'.join(text_notifications)
-    from_address = get_bugmail_from_address(person, bug)
-    bug_notification_builder = BugNotificationBuilder(bug, person)
+    from_address = get_bugmail_from_address(person_causing_change, bug)
+    bug_notification_builder = BugNotificationBuilder(
+        bug, person_causing_change)
     sorted_recipients = sorted(
         recipients.items(), key=lambda t: t[0].preferredemail.email)
     for email_person, recipient in sorted_recipients:
@@ -145,7 +151,7 @@ def construct_email_notifications(bug_notifications):
         else:
             email_template = 'bug-notification.txt'
 
-        body = get_email_template(email_template) % body_data
+        body = (get_email_template(email_template) % body_data).strip()
         msg = bug_notification_builder.build(
             from_address, address, body, subject, email_date,
             rationale, references, msgid)

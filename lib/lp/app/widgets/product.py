@@ -33,6 +33,7 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.vhosts import allvhosts
 from lp.app.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
@@ -349,9 +350,10 @@ class LicenseWidget(CheckBoxMatrixWidget):
         if term.value.url is None:
             return value
         else:
-            return ('%s&nbsp;<a href="%s" class="sprite external-link">'
-                    '<span class="invisible-link">view license</span></a>'
-                    % (value, term.value.url))
+            return structured(
+                '%s&nbsp;<a href="%s" class="sprite external-link">'
+                '<span class="invisible-link">view license</span></a>'
+                % (value, term.value.url))
 
     def renderItem(self, index, text, value, name, cssClass):
         """See `ItemsEditWidgetBase`."""

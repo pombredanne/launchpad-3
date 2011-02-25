@@ -143,7 +143,6 @@ from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
-from lp.code.interfaces.sourcepackagerecipe import recipes_enabled
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -385,10 +384,8 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
             '+upgrade', 'Upgrade this branch', icon='edit', enabled=enabled)
 
     def create_recipe(self):
-        if not self.context.private and recipes_enabled():
-            enabled = True
-        else:
-            enabled = False
+        # You can't create a recipe for a private branch.
+        enabled = not self.context.private
         text = 'Create packaging recipe'
         return Link('+new-recipe', text, enabled=enabled, icon='add')
 
@@ -551,7 +548,7 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
 
     @property
     def recipe_count_text(self):
-        count = self.context.getRecipes().count()
+        count = self.context.recipes.count()
         if count == 0:
             return 'No recipes'
         elif count == 1:

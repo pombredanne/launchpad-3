@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -18,8 +18,7 @@ import hashlib
 import random
 from UserDict import UserDict
 
-from oauth.oauth import OAuthRequest
-
+from contrib.oauth import OAuthRequest
 from zope.annotation.interfaces import IAnnotations
 from zope.app.security.interfaces import ILoginPassword
 from zope.app.security.principalregistry import UnauthenticatedPrincipal

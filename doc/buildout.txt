@@ -599,7 +599,7 @@ paths as well, so we can use a checkout of any code we like, with changes
 being picked up instantly without us having to create a distribution.
 
 To do this add the extra paths to the ``develop`` key in the ``[buildout]``
-section of ``buildout.cfg"::
+section of ``buildout.cfg``::
 
     [buildout]
     develop = .

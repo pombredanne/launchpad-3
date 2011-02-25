@@ -27,7 +27,10 @@ from canonical.launchpad.interfaces.emailaddress import (
     InvalidEmailAddress,
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -43,6 +46,7 @@ from lp.registry.errors import (
     PrivatePersonLinkageError,
     )
 from lp.registry.interfaces.karma import IKarmaCacheManager
+from lp.registry.interfaces.nameblacklist import INameBlacklistSet
 from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
     InvalidName,
@@ -56,7 +60,6 @@ from lp.registry.model.karma import (
     KarmaTotalCache,
     )
 from lp.registry.model.person import Person
-from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -274,6 +277,12 @@ class TestPerson(TestCaseWithFactory):
             user.getOwnedOrDrivenPillars()]
         self.assertEqual(expected_pillars, received_pillars)
 
+    def test_selfgenerated_bugnotifications_none_by_default(self):
+        # Default for new accounts is to not get any
+        # self-generated bug notifications by default.
+        user = self.factory.makePerson()
+        self.assertFalse(user.selfgenerated_bugnotifications)
+
 
 class TestPersonStates(TestCaseWithFactory):
 
@@ -394,9 +403,7 @@ class TestPersonStates(TestCaseWithFactory):
         # A PUBLIC team with a structural subscription to a product can
         # convert to a PRIVATE team.
         foo_bar = Person.byName('name16')
-        StructuralSubscription(
-            product=self.bzr, subscriber=self.otherteam,
-            subscribed_by=foo_bar)
+        self.bzr.addSubscription(self.otherteam, foo_bar)
         self.otherteam.visibility = PersonVisibility.PRIVATE
 
     def test_visibility_validator_team_private_to_public(self):
@@ -471,6 +478,15 @@ class TestPersonSet(TestCaseWithFactory):
             "INSERT INTO NameBlacklist(id, regexp) VALUES (-100, 'foo')")
         self.failUnless(self.person_set.isNameBlacklisted('foo'))
         self.failIf(self.person_set.isNameBlacklisted('bar'))
+
+    def test_isNameBlacklisted_user_is_admin(self):
+        team = self.factory.makeTeam()
+        name_blacklist_set = getUtility(INameBlacklistSet)
+        self.admin_exp = name_blacklist_set.create(u'fnord', admin=team)
+        self.store = IStore(self.admin_exp)
+        self.store.flush()
+        user = team.teamowner
+        self.assertFalse(self.person_set.isNameBlacklisted('fnord', user))
 
     def test_getByEmail_ignores_case_and_whitespace(self):
         person1_email = 'foo.bar@canonical.com'
@@ -718,7 +734,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self._do_premerge(recipe.owner, person)
         login_person(person)
         self.person_set.merge(recipe.owner, person)
-        self.assertEqual(1, person.getRecipes().count())
+        self.assertEqual(1, person.recipes.count())
 
     def test_merge_with_duplicated_recipes(self):
         # If both the from and to people have recipes with the same name,
@@ -734,7 +750,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self._do_premerge(merge_from.owner, mergee)
         login_person(mergee)
         self.person_set.merge(merge_from.owner, merge_to.owner)
-        recipes = mergee.getRecipes()
+        recipes = mergee.recipes
         self.assertEqual(2, recipes.count())
         descriptions = [r.description for r in recipes]
         self.assertEqual([u'TO', u'FROM'], descriptions)

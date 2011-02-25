@@ -10,10 +10,8 @@ This document is about security policy in Launchpad.
 Defining Permissions in Launchpad
 ---------------------------------
 
-**************************************************************************
-NOTE: A new permission should only be defined if absolutely necessary, and
-it should be considered thoroughly in a code review.
-**************************************************************************
+**NOTE: A new permission should only be defined if absolutely necessary, and
+it should be considered thoroughly in a code review.**
 
 Occassionally, you'll find yourself in a situation where the existing
 permissions in Launchpad aren't enough for what you want. For example, as I
@@ -40,7 +38,7 @@ To define a security adapter for a given permission on an interface:
 
 1. Define the adapter in lib/canonical/launchpad/security.py. Here's a simple
 example of an adapter that authorizes only an object owner for the
-launchpad.Edit permission on objects that implement the IHasOwner interface:
+launchpad.Edit permission on objects that implement the IHasOwner interface::
 
     class EditByOwner(AuthorizationBase):
         permission = 'launchpad.Edit'
@@ -56,7 +54,7 @@ appropriately.
 
 2. Declare the permission on a given interface in a zcml file. So, for the
 above adapter, here's how it's hooked up to IProduct, where IProduct is
-protected with the launchpad.Edit permission:
+protected with the launchpad.Edit permission::
 
     <class
         class="lp.registry.model.product.Product">

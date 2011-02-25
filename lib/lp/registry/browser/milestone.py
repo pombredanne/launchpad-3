@@ -55,22 +55,23 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.widgets.date import DateWidget
 from lp.bugs.browser.bugtask import BugTaskListingItem
+from lp.bugs.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
+    StructuralSubscriptionTargetTraversalMixin,
+    )
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.registry.browser import (
     get_status_counts,
     RegistryDeleteViewMixin,
     )
 from lp.registry.browser.product import ProductDownloadFileMixin
-from lp.registry.browser.structuralsubscription import (
-    StructuralSubscriptionMenuMixin,
-    StructuralSubscriptionTargetTraversalMixin,
-    )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import (
     IMilestone,
     IMilestoneSet,
     IProjectGroupMilestone,
     )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.services.propertycache import cachedproperty
 
@@ -252,11 +253,18 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
                 self.user, self.context))
         # Checking bug permissions is expensive. We know from the query that
         # the user has at least launchpad.View on the bugtasks and their bugs.
+        # NB: this is in principle unneeded due to injection of permission in
+        # the model layer now.
         precache_permission_for_objects(
             self.request, 'launchpad.View', non_conjoined_slaves)
         precache_permission_for_objects(
             self.request, 'launchpad.View',
             [task.bug for task in non_conjoined_slaves])
+        # We want the assignees loaded as we show them in the milestone home
+        # page.
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            [bug.assigneeID for bug in non_conjoined_slaves],
+            need_validity=True))
         return non_conjoined_slaves
 
     @cachedproperty

@@ -33,7 +33,7 @@ LPS.use('node', 'lp.app.picker', 'plugin', function(Y) {
     }
 
     // Sort out the "Choose..." link.
-    var show_widget_node = Y.get('#' + args.show_widget_id);
+    var show_widget_node = Y.one('#' + args.show_widget_id);
     show_widget_node.set('innerHTML', 'Choose&hellip;');
     show_widget_node.addClass('js-action');
     show_widget_node.get('parentNode').removeClass('unseen');

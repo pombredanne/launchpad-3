@@ -54,10 +54,10 @@ from lp.bugs.interfaces.bugtarget import (
     IHasOfficialBugTags,
     )
 from lp.bugs.interfaces.bugtask import IBugTask
-from lp.registry.interfaces.productrelease import IProductRelease
-from lp.registry.interfaces.structuralsubscription import (
+from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
     )
+from lp.registry.interfaces.productrelease import IProductRelease
 from lp.services.fields import (
     ContentNameField,
     FormattableDate,
@@ -228,6 +228,9 @@ class IMilestoneSet(Interface):
         If the milestone with that ID is not found, a
         NotFoundError will be raised.
         """
+
+    def getByIds(milestoneids):
+        """Get the milestones for milestoneids."""
 
     def getByNameAndProduct(name, product, default=None):
         """Get a milestone by its name and product.

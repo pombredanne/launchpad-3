@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A representation of an Amazon Web Services account."""
@@ -32,6 +32,8 @@ VALID_AMI_OWNERS = {
     '038531743404': 'jelmer',
     '444667466231': 'allenap',
     '441991801793': 'gmb',
+    '005470753809': 'bigjools',
+    '967591634984': 'jtv',
     # ...anyone else want in on the fun?
     }
 

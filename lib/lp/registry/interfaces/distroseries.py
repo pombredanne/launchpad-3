@@ -63,6 +63,9 @@ from lp.bugs.interfaces.bugtarget import (
     IHasBugs,
     IHasOfficialBugTags,
     )
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.milestone import (
     IHasMilestones,
@@ -75,9 +78,6 @@ from lp.registry.interfaces.series import (
     SeriesStatus,
     )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
-    )
 from lp.services.fields import (
     ContentNameField,
     Description,
@@ -914,6 +914,15 @@ class IDistroSeriesSet(Interface):
         :param suite: A string that forms the name of a suite.
         :return: (`IDistroSeries`, `DBItem`) where the item is from
             `PackagePublishingPocket`.
+        """
+
+    def getCurrentSourceReleases(distro_series_source_packagenames):
+        """Lookup many distroseries source package releases.
+
+        :param distro_series_to_source_packagenames: A dictionary with
+            its keys being `IDistroSeries` and its values a list of
+            `ISourcePackageName`.
+        :return: A dict as per `IDistroSeries.getCurrentSourceReleases`
         """
 
     def search(distribution=None, released=None, orderBy=None):
