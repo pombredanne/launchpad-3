@@ -134,6 +134,7 @@ from lp.soyuz.interfaces.archive import (
     IArchive,
     IArchiveEditDependenciesForm,
     IArchiveSet,
+    NoSuchPPA,
     )
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
@@ -166,13 +167,10 @@ def traverse_named_ppa(person_name, ppa_name):
     :param person_name: The person part of the URL
     :param ppa_name: The PPA name part of the URL
     """
-    # For now, all PPAs are assumed to be Ubuntu-related.  This will
-    # change when we start doing PPAs for other distros.
-    ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-    archive_set = getUtility(IArchiveSet)
-    archive = archive_set.getPPAByDistributionAndOwnerName(
-            ubuntu, person_name, ppa_name)
-    if archive is None:
+    person = getUtility(IPersonSet).getByName(person_name)
+    try:
+        archive = person.getPPAByName(ppa_name)
+    except NoSuchPPA:
         raise NotFoundError("%s/%s", (person_name, ppa_name))
 
     return archive
@@ -967,7 +965,7 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
                 builds = status_summary['builds']
 
             latest_updates_list.append({
-                'date_published' : date_published,
+                'date_published': date_published,
                 'title': source_package_name,
                 'status': status_names[current_status.title],
                 'status_class': current_status.title,

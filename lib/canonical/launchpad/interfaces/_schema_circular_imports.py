@@ -74,6 +74,7 @@ from lp.code.interfaces.hasbranches import (
     IHasMergeProposals,
     IHasRequestedReviews,
     )
+from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
@@ -262,6 +263,10 @@ patch_plain_parameter_type(IPerson, 'getArchiveSubscriptionURL', 'archive',
 
 patch_entry_return_type(IPerson, 'getRecipe', ISourcePackageRecipe)
 
+# IHasRecipe
+patch_collection_property(
+    IHasRecipes, 'recipes', ISourcePackageRecipe)
+
 IPerson['hardware_submissions'].value_type.schema = IHWSubmission
 
 # publishing.py
@@ -439,6 +444,18 @@ patch_reference_property(
 patch_reference_property(
     ISourcePackageRelease, 'source_package_recipe_build',
     ISourcePackageRecipeBuild)
+
+# ISourcePackageRecipeView
+patch_entry_return_type(
+    ISourcePackageRecipe, 'requestBuild', ISourcePackageRecipeBuild)
+patch_reference_property(
+    ISourcePackageRecipe, 'last_build', ISourcePackageRecipeBuild)
+patch_collection_property(
+    ISourcePackageRecipe, 'builds', ISourcePackageRecipeBuild)
+patch_collection_property(
+    ISourcePackageRecipe, 'pending_builds', ISourcePackageRecipeBuild)
+patch_collection_property(
+    ISourcePackageRecipe, 'completed_builds', ISourcePackageRecipeBuild)
 
 # IHasBugs
 patch_plain_parameter_type(

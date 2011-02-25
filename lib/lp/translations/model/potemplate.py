@@ -853,7 +853,8 @@ class POTemplate(SQLBase, RosettaStats):
 
         return potmsgset
 
-    def getOrCreatePOMsgID(self, text):
+    @staticmethod
+    def getOrCreatePOMsgID(text):
         """Creates or returns existing POMsgID for given `text`."""
         try:
             msgid = POMsgID.byMsgid(text)
@@ -1023,7 +1024,7 @@ class POTemplate(SQLBase, RosettaStats):
     @property
     def translation_side(self):
         """See `IPOTemplate`."""
-        if self.productseries is not None:
+        if self.productseriesID is not None:
             return TranslationSide.UPSTREAM
         else:
             return TranslationSide.UBUNTU
