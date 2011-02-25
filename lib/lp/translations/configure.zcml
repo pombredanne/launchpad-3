@@ -152,7 +152,7 @@
         factory="lp.translations.utilities.gettext_po_exporter.GettextPOChangedExporter"/>
     <subscriber
         for="lp.registry.interfaces.packaging.IPackaging
-             lazr.lifecycle.interfaces.IObjectCreatedEvent"
+             lazr.lifecycle.interfaces.IObjectEvent"
         handler="lp.registry.model.packagingjob.schedule_job" />
     <facet
         facet="translations">
