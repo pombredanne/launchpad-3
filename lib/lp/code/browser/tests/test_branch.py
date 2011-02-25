@@ -809,7 +809,3 @@ class TestBranchRootContext(TestCaseWithFactory):
         branch = self.factory.makeProductBranch()
         root_context = IRootContext(branch)
         self.assertEqual(branch.product, root_context)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

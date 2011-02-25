@@ -17,9 +17,11 @@ from zope.interface.verify import verifyObject
 from zope.security.checker import NamesChecker
 from zope.security.proxy import ProxyFactory
 
-from lp.testing import TestCase
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing import TestCase, TestCaseWithFactory
 from lp.testing._webservice import QueryCollector
 from lp.testing.matchers import (
+    BrowsesWithQueryLimit,
     Contains,
     DoesNotContain,
     DoesNotCorrectlyProvide,
@@ -224,6 +226,18 @@ class TestQueryMatching(TestCase):
         self.assertEqual(
             "queries do not match: %s" % (LessThan(2).match(2).describe(),),
             mismatch.describe())
+
+
+class TestBrowserQueryMatching(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_smoke(self):
+        person = self.factory.makePerson()
+        matcher = BrowsesWithQueryLimit(100, person)
+        self.assertThat(person, matcher)
+        matcher = Not(BrowsesWithQueryLimit(1, person))
+        self.assertThat(person, matcher)
 
 
 class DoesNotContainTests(TestCase):

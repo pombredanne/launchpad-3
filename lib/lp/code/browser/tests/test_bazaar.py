@@ -74,8 +74,3 @@ class TestBazaarViewPreCacheLaunchpadPermissions(TestCaseWithFactory):
         recent_branches = self.getViewBranches('recently_imported_branches')
         self.assertEqual(branch, recent_branches[0])
         self.assertTrue(check_permission('launchpad.View', branch))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-
