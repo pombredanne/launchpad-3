@@ -107,6 +107,7 @@ class PackagingJobDerived:
     delegates(IPackagingJob, 'job')
 
     _subclass = {}
+    _event_types = {}
 
     @property
     def sourcepackage(self):
@@ -116,11 +117,14 @@ class PackagingJobDerived:
     def _register_subclass(cls):
         """Register this class with its enumeration."""
         job_type = getattr(cls, 'class_job_type', None)
-        if job_type is None:
-            return
-        value = cls._subclass.setdefault(job_type, cls)
-        assert value is cls, (
-            '%s already registered to %s.' % (job_type.name, value.__name__))
+        if job_type is not None:
+            value = cls._subclass.setdefault(job_type, cls)
+            assert value is cls, (
+                '%s already registered to %s.' % (
+                    job_type.name, value.__name__))
+        event_type = getattr(cls, 'create_on_event', None)
+        if event_type is not None:
+            cls._event_types.setdefault(event_type, []).append(cls)
 
     def __init__(self, job):
         assert job.job_type == self.class_job_type
@@ -140,6 +144,20 @@ class PackagingJobDerived:
         return cls(context)
 
     @classmethod
+    def scheduleJob(cls, packaging, event):
+        """Event subscriber to create a PackagingJob on events.
+
+        :param packaging: The `Packaging` to create a `TranslationMergeJob`
+            for.
+        :param event: The event itself.
+        """
+        for event_type, job_classes in cls._event_types.iteritems():
+            if not event_type.providedBy(event):
+                continue
+            for job_class in job_classes:
+                job_class.forPackaging(packaging)
+
+    @classmethod
     def iterReady(cls, extra_clauses):
         """See `IJobSource`.
 
@@ -153,3 +171,7 @@ class PackagingJobDerived:
             Job.id.is_in(Job.ready_jobs),
             *extra_clauses)
         return (cls._subclass[job.job_type](job) for job in jobs)
+
+
+#make accessible to zcml
+schedule_job = PackagingJobDerived.scheduleJob

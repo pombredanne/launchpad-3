@@ -6,6 +6,9 @@
 __metaclass__ = type
 
 
+from lazr.lifecycle.interfaces import (
+    IObjectCreatedEvent,
+    )
 from zope.interface import (
     classProvides,
     implements,
@@ -81,6 +84,8 @@ class TranslationMergeJob(TranslationPackagingJob):
     implements(IRunnableJob)
 
     class_job_type = PackagingJobType.TRANSLATION_MERGE
+
+    create_on_event = IObjectCreatedEvent
 
     def run(self):
         """See `IRunnableJob`."""
