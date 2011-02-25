@@ -11,6 +11,7 @@ from canonical.launchpad.testing.pages import (
     find_tag_by_id,
     )
 from lp.app.enums import ServiceUsage
+from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     BrowserTestCase,
     celebrity_logged_in,
@@ -45,6 +46,8 @@ class TestSharingInfoMixin:
     SHARING_TEXT = None
 
     def _test_sharing_information(self, obj, expected_text):
+        self.useFixture(FeatureFixture(
+            {'translations.sharing_information.enabled': 'on'}))
         browser = self.getViewBrowser(
             obj, no_login=True, rootsite="translations")
         sharing_info = find_tag_by_id(browser.contents, 'sharing-information')
