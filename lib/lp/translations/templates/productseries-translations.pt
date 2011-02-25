@@ -76,7 +76,8 @@
                   ">translation instructions</a> first.
             </p>
           </div>
-          <div class="portlet" id="sharing-information">
+          <div class="portlet" id="sharing-information"
+            tal:condition="features/translations.sharing_information.enabled">
             <h3>Sharing Information</h3>
             <p tal:condition="not:view/is_sharing">
               This project series is not sharing translations with

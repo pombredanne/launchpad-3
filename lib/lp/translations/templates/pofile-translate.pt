@@ -61,15 +61,17 @@
         use-macro="context/@@+translations-macros/nav-pofile-subpages" />
 
       <!-- Sharing information -->
-      <div id="sharing-information"
-           tal:condition="view/is_sharing"
-           tal:define="sharing_pofile view/sharing_pofile">
-        <p>
-          These translations are shared with
-          <a tal:content="sharing_pofile/title"
-             tal:attributes="href sharing_pofile/fmt:url"
-             >pofile</a>.
-        </p>
+      <div tal:condition="features/translations.sharing_information.enabled">
+        <div id="sharing-information"
+             tal:condition="view/is_sharing"
+             tal:define="sharing_pofile view/sharing_pofile">
+          <p>
+            These translations are shared with
+            <a tal:content="sharing_pofile/title"
+               tal:attributes="href sharing_pofile/fmt:url"
+               >pofile</a>.
+          </p>
+        </div>
       </div>
 
         <!-- View filter and suggestions from alternative language. -->
