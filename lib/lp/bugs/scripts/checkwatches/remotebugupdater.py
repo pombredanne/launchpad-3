@@ -13,7 +13,7 @@ import sys
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
-from lp.bugs.externalbugtracker import (
+from lp.bugs.externalbugtracker.base import (
     BugNotFound,
     InvalidBugId,
     PrivateRemoteBug,
