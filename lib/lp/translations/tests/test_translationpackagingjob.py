@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 
-from storm.locals import Store
 import transaction
 from zope.component import getUtility
 
@@ -158,19 +157,6 @@ class TestTranslationMergeJob(TestCaseWithFactory):
         self.assertEqual(2, count_translations(job))
         job.run()
         self.assertEqual(2, count_translations(job))
-
-    @staticmethod
-    def findJobs(productseries, sourcepackage):
-        store = Store.of(productseries)
-        result = store.find(
-            PackagingJob,
-            PackagingJob.productseries_id == productseries.id,
-            PackagingJob.sourcepackagename_id ==
-            sourcepackage.sourcepackagename.id,
-            PackagingJob.distroseries_id ==
-            sourcepackage.distroseries.id,
-            )
-        return list(result)
 
     def test_create_packaging_makes_job(self):
         """Creating a Packaging should make a TranslationMergeJob."""
