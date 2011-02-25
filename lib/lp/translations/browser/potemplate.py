@@ -87,7 +87,9 @@ from lp.translations.interfaces.translationimportqueue import (
 from lp.translations.utilities.translationsharinginfo import (
     has_ubuntu_template,
     get_ubuntu_sharing_info,
-    has_upstream_template, get_upstream_sharing_info)
+    has_upstream_template,
+    get_upstream_sharing_info,
+    )
 
 
 class POTemplateNavigation(Navigation):
