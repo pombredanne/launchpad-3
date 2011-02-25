@@ -26,6 +26,8 @@ from lazr.config.interfaces import ConfigErrors
 
 from canonical.launchpad.readonly import is_read_only
 
+from lp.services.osutils import ensure_directory_exists
+
 
 __all__ = [
     'DatabaseConfig',
@@ -239,7 +241,9 @@ class CanonicalConfig:
 
         Call this method before letting any ZCML processing occur.
         """
-        loader_file = os.path.join(self.root, 'zcml/+config-overrides.zcml')
+        loader_directory = os.path.join(self.root, 'zcml')
+        ensure_directory_exists(loader_directory)
+        loader_file = os.path.join(loader_directory, '+config-overrides.zcml')
         loader = open(loader_file, 'w')
 
         print >> loader, """

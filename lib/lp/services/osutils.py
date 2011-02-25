@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'override_environ',
+    'ensure_directory_exists',
     'remove_tree',
     'kill_by_pidfile',
     'remove_if_exists',
