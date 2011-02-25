@@ -18,7 +18,10 @@ from zope.security.checker import NamesChecker
 from zope.security.proxy import ProxyFactory
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.testing import TestCase, TestCaseWithFactory
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing._webservice import QueryCollector
 from lp.testing.matchers import (
     BrowsesWithQueryLimit,

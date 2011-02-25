@@ -10,7 +10,6 @@ from datetime import (
     timedelta,
     )
 from textwrap import dedent
-import unittest
 
 import pytz
 import simplejson
