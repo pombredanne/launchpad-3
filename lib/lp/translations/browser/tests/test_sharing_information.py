@@ -48,9 +48,12 @@ class TestSharingInfoMixin:
         browser = self.getViewBrowser(
             obj, no_login=True, rootsite="translations")
         sharing_info = find_tag_by_id(browser.contents, 'sharing-information')
-        self.assertIsNot(None, sharing_info)
-        self.assertTextMatchesExpressionIgnoreWhitespace(
-            expected_text, extract_text(sharing_info))
+        if expected_text is None:
+            self.assertIs(None, sharing_info)
+        else:
+            self.assertIsNot(None, sharing_info)
+            self.assertTextMatchesExpressionIgnoreWhitespace(
+                expected_text, extract_text(sharing_info))
 
     def test_not_sharing(self):
         self._test_sharing_information(
@@ -86,6 +89,33 @@ class TestUpstreamPOTemplateSharingInfo(BrowserTestCase,
 
     SHARING_TEXT = """
         This template is sharing translations with .*"""
+
+
+class TestPOFileSharingInfo(BrowserTestCase,
+                                        TestSharingInfoMixin):
+    """Test display of POFile sharing info."""
+
+    layer = DatabaseFunctionalLayer
+
+    def makeNotSharingObject(self):
+        return self.factory.makePOFile()
+
+    NOT_SHARING_TEXT = None
+
+    def makeSharingObject(self):
+        pofile = self.factory.makePOFile()
+        packaging = self.factory.makePackagingLink(
+            productseries=pofile.potemplate.productseries,
+            in_ubuntu=True)
+        # This will also create a copy of pofile.
+        self.factory.makePOTemplate(
+            distroseries=packaging.distroseries,
+            sourcepackagename=packaging.sourcepackagename,
+            name=pofile.potemplate.name)
+        return pofile
+
+    SHARING_TEXT = """
+        These translations are shared with .*"""
 
 
 class TestUpstreamSharingInfo(BrowserTestCase, TestSharingInfoMixin):
