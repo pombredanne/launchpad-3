@@ -198,7 +198,7 @@ def clear_request_started():
     _local.request_start_time = None
     request = get_current_browser_request()
     set_request_timeline(request, Timeline())
-    if getattr(_local, 'commit_logger', None) is None:
+    if getattr(_local, 'commit_logger', None) is not None:
         transaction.manager.unregisterSynch(_local.commit_logger)
         del _local.commit_logger
 
