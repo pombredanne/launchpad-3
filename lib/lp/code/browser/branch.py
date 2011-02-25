@@ -83,7 +83,7 @@ from canonical.launchpad.browser.feeds import (
 from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.searchbuilder import any
+from canonical.launchpad import searchbuilder
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,
@@ -601,9 +601,9 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
 
     @cachedproperty
     def linked_bugtasks(self):
-        """Return a list of DecoratedBugs linked to the branch."""
+        """Return a list of bugtasks linked to the branch."""
         if self.context.is_series_branch:
-            status_filter = any(*UNRESOLVED_BUGTASK_STATUSES)
+            status_filter = searchbuilder.any(*UNRESOLVED_BUGTASK_STATUSES)
         else:
             status_filter = None
         return list(self.context.getLinkedBugTasks(

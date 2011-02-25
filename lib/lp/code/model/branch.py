@@ -63,6 +63,7 @@ from canonical.launchpad import _
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities,
     IPrivacy,
@@ -310,7 +311,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         """See `IBranch`."""
         params = BugTaskSearchParams(user=user, linked_branches=self.id,
             status=status_filter)
-        tasks = list(getUtility(IBugTaskSet).search(params))
+        tasks = shortlist(getUtility(IBugTaskSet).search(params), 1000)
         # Post process to discard irrelevant tasks: we only return one task per
         # bug, and cannot easily express this in sql (yet).
         order = {}

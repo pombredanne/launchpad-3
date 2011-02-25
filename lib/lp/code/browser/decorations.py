@@ -104,8 +104,8 @@ class DecoratedBranch(BzrIdentityMixin):
         # the model, and the related visibility checks made part of the query.
         # Alternatively it may be unused at this stage.
         bugs = defaultdict(list)
-        for bugtask in self.branch.linked_bugs:
-            bugs[bugtask.bug].append(bugtask)
+        for bug in self.branch.linked_bugs:
+            bugs[bug.id].extend(bug.bugtasks)
         return [DecoratedBug(bug, self.branch, tasks)
                 for bug, tasks in bugs.iteritems()
                 if check_permission('launchpad.View', bug)]
