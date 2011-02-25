@@ -85,6 +85,7 @@ class PoppyAnonymousShell(ftp.FTPShell):
         except (IOError, OSError), e:
             return ftp.errnoToFailure(e.errno, path)
         except:
+            # Push any other error up to Twisted to deal with.
             return defer.fail()
         return defer.succeed(PoppyFileWriter(fObj))
 
