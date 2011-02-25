@@ -56,7 +56,8 @@ class TestTranslationSplitter(TestCaseWithFactory):
         splitter = TranslationSplitter(productseries, package)
         self.assertContentEqual([], splitter.findShared())
         (upstream_item,) = potmsgset.getAllTranslationTemplateItems()
-        ubuntu_item = use_in_template(self.factory, potmsgset, ubuntu_template)
+        ubuntu_item = use_in_template(
+            self.factory, potmsgset, ubuntu_template)
         self.assertContentEqual(
             [(upstream_item, ubuntu_item)], splitter.findShared())
         removeSecurityProxy(upstream_item).destroySelf()

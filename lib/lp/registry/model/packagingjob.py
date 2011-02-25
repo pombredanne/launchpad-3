@@ -49,6 +49,7 @@ class PackagingJobType(DBEnumeratedType):
         Split translations between productseries and sourcepackage.
         """)
 
+
 class PackagingJob(StormBase):
     """Base class for jobs related to a packaging."""
 

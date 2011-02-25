@@ -14,7 +14,6 @@ from lp.translations.model.translationpackagingjob import (
     TranslationSplitJob)
 from lp.testing import TestCaseWithFactory
 from lp.translations.tests.test_translationpackagingjob import (
-    count_translations,
     make_translation_merge_job,
     )
 
