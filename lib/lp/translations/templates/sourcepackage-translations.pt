@@ -24,8 +24,6 @@
                  context/distroseries/distribution/@@+portlet-translation-groups-and-permission"/>
             </p>
           </div>
-        </div>
-        <div class="yui-u">
           <div class="portlet" id="sharing-information">
             <h3>Sharing Information</h3>
             <p tal:condition="not:view/is_sharing">
@@ -39,6 +37,8 @@
               </a>.
             </p>
           </div>
+        </div>
+        <div class="yui-u">
 
           <div class="portlet">
             <h3>Administration</h3>
