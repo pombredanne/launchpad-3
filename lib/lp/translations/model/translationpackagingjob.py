@@ -8,6 +8,7 @@ __metaclass__ = type
 
 from lazr.lifecycle.interfaces import (
     IObjectCreatedEvent,
+    IObjectDeletedEvent,
     )
 from zope.interface import (
     classProvides,
@@ -102,6 +103,8 @@ class TranslationSplitJob(TranslationPackagingJob):
     implements(IRunnableJob)
 
     class_job_type = PackagingJobType.TRANSLATION_SPLIT
+
+    create_on_event = IObjectDeletedEvent
 
     def run(self):
         """See `IRunnableJob`."""
