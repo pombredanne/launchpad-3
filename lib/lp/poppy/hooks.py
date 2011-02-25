@@ -3,6 +3,12 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'Hooks',
+    'PoppyInterfaceFailure',
+    ]
+
+
 import logging
 import os
 import shutil
@@ -19,6 +25,8 @@ class PoppyInterfaceFailure(Exception):
 class Hooks:
 
     clients = {}
+    LOG_MAGIC = "Post-processing finished"
+    _targetcount = 0
 
     def __init__(self, targetpath, logger, allow_user, cmd=None,
                  targetstart=0, perms=None, prefix=''):
@@ -26,9 +34,14 @@ class Hooks:
         self.logger = logging.getLogger("%s.Hooks" % logger.name)
         self.cmd = cmd
         self.allow_user = allow_user
-        self.targetcount = targetstart
         self.perms = perms
         self.prefix = prefix
+
+    @property
+    def targetcount(self):
+        """A guaranteed unique integer for ensuring unique upload dirs."""
+        Hooks._targetcount += 1
+        return Hooks._targetcount
 
     def new_client_hook(self, fsroot, host, port):
         """Prepare a new client record indexed by fsroot..."""
@@ -80,7 +93,6 @@ class Hooks:
             pass
 
         try:
-            self.targetcount += 1
             timestamp = time.strftime("%Y%m%d-%H%M%S")
             path = "upload%s-%s-%06d" % (
                 self.prefix, timestamp, self.targetcount)
@@ -122,6 +134,9 @@ class Hooks:
             self.lock.release(skip_delete=True)
 
         self.clients.pop(fsroot)
+        # This is mainly done so that tests know when the
+        # post-processing hook has finished.
+        self.logger.info(self.LOG_MAGIC)
 
     def auth_verify_hook(self, fsroot, user, password):
         """Verify that the username matches a distribution we care about.
@@ -146,3 +161,4 @@ class Hooks:
         #except object, e:
         #    print e
         #return False
+

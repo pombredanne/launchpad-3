@@ -2721,15 +2721,27 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return potemplate.newPOFile(language_code,
                                     create_sharing=create_sharing)
 
-    def makePOTMsgSet(self, potemplate, singular=None, plural=None,
-                      context=None, sequence=None):
+    def makePOTMsgSet(self, potemplate=None, singular=None, plural=None,
+                      context=None, sequence=None, commenttext=None,
+                      filereferences=None, sourcecomment=None,
+                      flagscomment=None):
         """Make a new `POTMsgSet` in the given template."""
+        if potemplate is None:
+            potemplate = self.makePOTemplate()
         if singular is None and plural is None:
             singular = self.getUniqueString()
         if sequence is None:
             sequence = self.getUniqueInteger()
         potmsgset = potemplate.createMessageSetFromText(
             singular, plural, context, sequence)
+        if commenttext is not None:
+            potmsgset.commenttext = commenttext
+        if filereferences is not None:
+            potmsgset.filereferences = filereferences
+        if sourcecomment is not None:
+            potmsgset.sourcecomment = sourcecomment
+        if flagscomment is not None:
+            potmsgset.flagscomment = flagscomment
         removeSecurityProxy(potmsgset).sync()
         return potmsgset
 
@@ -2792,7 +2804,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                       translations=None, diverged=False,
                                       current_other=False,
                                       date_created=None, date_reviewed=None,
-                                      language=None, side=None):
+                                      language=None, side=None,
+                                      potemplate=None):
         """Create a `TranslationMessage` and make it current.
 
         By default the message will only be current on the side (Ubuntu
@@ -2820,6 +2833,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param date_reviewed: Force a specific review date instead of 'now'.
         :param language: `Language` to use for the POFile
         :param side: The `TranslationSide` this translation should be for.
+        :param potemplate: If provided, the POTemplate to use when creating
+            the POFile.
         """
         assert not (diverged and current_other), (
             "A diverged message can't be current on the other side.")
@@ -2828,9 +2843,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         assert None in (side, pofile), (
             'Cannot specify both side and pofile.')
         if pofile is None:
-            pofile = self.makePOFile(language=language, side=side)
+            pofile = self.makePOFile(
+                language=language, side=side, potemplate=potemplate)
+        else:
+            assert potemplate is None, (
+                'Cannot specify both pofile and potemplate')
+        potemplate = pofile.potemplate
         if potmsgset is None:
-            potmsgset = self.makePOTMsgSet(pofile.potemplate)
+            potmsgset = self.makePOTMsgSet(potemplate)
         if translator is None:
             translator = self.makePerson()
         if reviewer is None:
