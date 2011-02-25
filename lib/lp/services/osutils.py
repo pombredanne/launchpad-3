@@ -5,11 +5,12 @@
 
 __metaclass__ = type
 __all__ = [
-    'override_environ',
     'ensure_directory_exists',
-    'remove_tree',
     'kill_by_pidfile',
+    'open_for_writing',
+    'override_environ',
     'remove_if_exists',
+    'remove_tree',
     'two_stage_kill',
     'until_no_eintr',
     ]
@@ -104,3 +105,18 @@ def ensure_directory_exists(directory, mode=0777):
             return False
         raise
     return True
+
+
+def open_for_writing(filename, mode, dirmode=0777):
+    """Open 'filename' for writing, creating directories if necessary.
+
+    :param filename: The path of the file to open.
+    :param mode: The mode to open the filename with. Should be 'w', 'a' or
+        something similar. See ``open`` for more details. If you pass in
+        a read-only mode (e.g. 'r'), then we'll just accept that and return
+        a read-only file-like object.
+    :param dirmode: The mode to use to create directories, if necessary.
+    :return: A file-like object that can be used to write to 'filename'.
+    """
+    ensure_directory_exists(os.path.dirname(filename), mode=dirmode)
+    return open(filename, mode)
