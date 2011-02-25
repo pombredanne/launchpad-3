@@ -3,7 +3,6 @@
 # pylint: disable-msg=F0401
 
 """Browser code for PO templates."""
-from lp.translations.interfaces.side import TranslationSide
 
 __metaclass__ = type
 
@@ -78,6 +77,7 @@ from lp.translations.interfaces.potemplate import (
     IPOTemplateSet,
     IPOTemplateSubset,
     )
+from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translationimporter import (
     ITranslationImporter,
     )

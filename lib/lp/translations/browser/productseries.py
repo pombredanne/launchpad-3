@@ -3,8 +3,6 @@
 # pylint: disable-msg=E1002
 
 """View classes for `IProductSeries`."""
-from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
-from lp.translations.utilities.translationsharinginfo import has_upstream_template, has_ubuntu_template, get_ubuntu_sharing_info
 
 __metaclass__ = type
 
@@ -62,6 +60,10 @@ from lp.translations.interfaces.translationimportqueue import (
     )
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
+    )
+from lp.translations.utilities.translationsharinginfo import (
+    has_ubuntu_template,
+    get_ubuntu_sharing_info,
     )
 
 

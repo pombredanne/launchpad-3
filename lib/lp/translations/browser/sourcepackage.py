@@ -26,6 +26,7 @@ from lp.translations.utilities.translationsharinginfo import (
 
 
 class SourcePackageTranslationsView(TranslationsMixin):
+
     @property
     def potemplates(self):
         return list(self.context.getCurrentTranslationTemplates())

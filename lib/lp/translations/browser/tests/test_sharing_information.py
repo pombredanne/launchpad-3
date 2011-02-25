@@ -2,28 +2,27 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the POTemplate recipe view classes and templates."""
-from lp.translations.interfaces.side import TranslationSide
 
 __metaclass__ = type
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.testing.pages import (
     extract_text,
-    find_main_content,
     find_tag_by_id,
     )
 from lp.app.enums import ServiceUsage
-from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     BrowserTestCase,
     celebrity_logged_in,
     )
+from lp.translations.interfaces.side import TranslationSide
 
 
 def set_translations_usage(obj):
     """Set the translations_usage to LAUNCHPAD."""
     with celebrity_logged_in('admin'):
         obj.translations_usage = ServiceUsage.LAUNCHPAD
+
 
 def enable_translations_on_distroseries(distroseries):
     with celebrity_logged_in('admin'):
@@ -62,7 +61,8 @@ class TestSharingInfoMixin:
             self.makeSharingObject(), self.SHARING_TEXT)
 
 
-class TestUpstreamPOTemplateSharingInfo(BrowserTestCase, TestSharingInfoMixin):
+class TestUpstreamPOTemplateSharingInfo(BrowserTestCase,
+                                        TestSharingInfoMixin):
     """Test display of template sharing info."""
 
     layer = DatabaseFunctionalLayer
@@ -71,8 +71,9 @@ class TestUpstreamPOTemplateSharingInfo(BrowserTestCase, TestSharingInfoMixin):
         return self.factory.makePOTemplate()
 
     NOT_SHARING_TEXT = """
-       This template is not sharing translations with a template in an Ubuntu source package."""
-        
+        This template is not sharing translations with a template in an
+        Ubuntu source package."""
+
     def makeSharingObject(self):
         template = self.factory.makePOTemplate()
         packaging = self.factory.makePackagingLink(
@@ -84,7 +85,7 @@ class TestUpstreamPOTemplateSharingInfo(BrowserTestCase, TestSharingInfoMixin):
         return template
 
     SHARING_TEXT = """
-       This template is sharing translations with .*"""
+        This template is sharing translations with .*"""
 
 
 class TestUpstreamSharingInfo(BrowserTestCase, TestSharingInfoMixin):
@@ -98,7 +99,8 @@ class TestUpstreamSharingInfo(BrowserTestCase, TestSharingInfoMixin):
         return productseries
 
     NOT_SHARING_TEXT = """
-       This project series is not sharing translations with an Ubuntu source package."""
+        This project series is not sharing translations with an Ubuntu source
+        package."""
 
     def makeSharingObject(self):
         template = self.factory.makePOTemplate()
@@ -111,7 +113,7 @@ class TestUpstreamSharingInfo(BrowserTestCase, TestSharingInfoMixin):
         return template.productseries
 
     SHARING_TEXT = """
-       This project series is sharing translations with .*"""
+        This project series is sharing translations with .*"""
 
 
 class TestUbuntuPOTemplateSharingInfo(BrowserTestCase, TestSharingInfoMixin):
@@ -125,7 +127,8 @@ class TestUbuntuPOTemplateSharingInfo(BrowserTestCase, TestSharingInfoMixin):
         return template
 
     NOT_SHARING_TEXT = """
-       This template is not sharing translations with a template in an upstream project."""
+        This template is not sharing translations with a template in an
+        upstream project."""
 
     def makeSharingObject(self):
         upstream_template = self.factory.makePOTemplate()
@@ -139,7 +142,7 @@ class TestUbuntuPOTemplateSharingInfo(BrowserTestCase, TestSharingInfoMixin):
         return template
 
     SHARING_TEXT = """
-       This template is sharing translations with .*"""
+        This template is sharing translations with .*"""
 
 
 class TestUbuntuSharingInfo(BrowserTestCase, TestSharingInfoMixin):
@@ -154,7 +157,8 @@ class TestUbuntuSharingInfo(BrowserTestCase, TestSharingInfoMixin):
         return sourcepackage
 
     NOT_SHARING_TEXT = """
-       This source package is not sharing translations with an upstream project."""
+        This source package is not sharing translations with an upstream
+        project."""
 
     def makeSharingObject(self):
         upstream_template = self.factory.makePOTemplate()
@@ -168,4 +172,4 @@ class TestUbuntuSharingInfo(BrowserTestCase, TestSharingInfoMixin):
         return packaging.sourcepackage
 
     SHARING_TEXT = """
-       This source package is sharing translations with .*"""
+        This source package is sharing translations with .*"""
