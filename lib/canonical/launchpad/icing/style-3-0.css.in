@@ -2153,7 +2153,10 @@ body.tab-bugs #duplicate-actions .sprite {
     background-image: url(/@@/ppa-icon-inactive.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
-
+.source-package-recipe {
+    background-image: url(/@@/source-package-recipe.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+    }
 .bug-status-expand {
     background-image: url(/@@/bug-status-expand.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;

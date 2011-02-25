@@ -1315,7 +1315,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return DecoratedResultSet(
             self.getVersionSortedSeries(statuses=statuses), decorate)
 
-    def getRecipes(self):
+    @property
+    def recipes(self):
         """See `IHasRecipes`."""
         from lp.code.model.branch import Branch
         store = Store.of(self)

@@ -29,7 +29,7 @@
         <p>These other questions seem similar to yours. You may want to take a look at them.</p>
 
         <ul id="similar-questions">
-          <ul tal:repeat="question view/similar_questions"
+          <li tal:repeat="question view/similar_questions"
               tal:replace="structure question/@@+listing-detailed" />
         </ul>
       </tal:similar-questions>
