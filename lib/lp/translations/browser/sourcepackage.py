@@ -19,6 +19,10 @@ from canonical.launchpad.webapp import (
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.translations import TranslationsMixin
+from lp.translations.utilities.translationsharinginfo import (
+    has_upstream_template,
+    get_upstream_sharing_info,
+    )
 
 
 class SourcePackageTranslationsView(TranslationsMixin):
@@ -29,6 +33,18 @@ class SourcePackageTranslationsView(TranslationsMixin):
     @property
     def label(self):
         return "Translations for %s" % self.context.displayname
+
+    def is_sharing(self):
+        return has_upstream_template(self.context)
+
+    @property
+    def sharing_productseries(self):
+        infos = get_upstream_sharing_info(self.context)
+        if len(infos) == 0:
+            return None
+
+        productseries, template = infos[0]
+        return productseries
 
 
 class SourcePackageTranslationsMenu(NavigationMenu):
