@@ -285,7 +285,7 @@ Create a PO template and put a single message set in it.
     ...     owner=mark, languagepack=True, path='po/test.pot',
     ...     header=pot_header)
     >>> potmsgset = template.createMessageSetFromText(u'blah', None)
-    >>> potmsgset.setSequence(template, 1)
+    >>> item = potmsgset.setSequence(template, 1)
 
 We set the template last update date to the oldest date we are going to
 play with, so it doesn't affect translations export.

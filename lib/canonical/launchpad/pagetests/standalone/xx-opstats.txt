@@ -180,16 +180,14 @@ also return a timeout Fault:
     ... """)
     >>> output.getStatus()
     503
+    >>> # Reset the timeouts so +opstat doesn't die.
+    >>> base_test_data = config.pop('base_test_data')
     >>> report()
     503s: 1
     5XXs: 1
     http requests: 1
     requests: 1
     timeouts: 1
-
-Reset our config until Bug 78545 is fixed:
-
-    >>> base_test_data = config.pop('base_test_data')
 
 
 == HTTP access for Cricket ==

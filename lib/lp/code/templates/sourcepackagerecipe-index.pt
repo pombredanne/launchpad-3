@@ -14,6 +14,9 @@
     }
     div#edit-recipe_text, div#edit-description {
       font-family: "UbuntuBeta Mono","Ubuntu Mono",monospace;
+    }
+    div#edit-recipe_text.yui3-editable_text-content,
+    div#edit-description.yui3-editable_text-content {
       margin-top: -15px;
     }
     .build-informational {
@@ -146,7 +149,7 @@
             return;
         }
         Y.on('load', function() {
-            var logged_in = LP.client.links['me'] !== undefined;
+            var logged_in = LP.links['me'] !== undefined;
             if (logged_in) {
                 build_now_link = Y.one('#request-daily-build');
                 if( build_now_link != null ) {
