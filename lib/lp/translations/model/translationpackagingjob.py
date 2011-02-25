@@ -3,7 +3,11 @@
 
 """Job for merging translations."""
 
+
 __metaclass__ = type
+
+
+__all__ = ['TranslationMergeJob']
 
 
 from lazr.lifecycle.interfaces import (
@@ -30,8 +34,6 @@ from lp.translations.translationmerger import (
     TransactionManager,
     TranslationMerger,
     )
-
-__all__ = ['TranslationMergeJob']
 
 
 class TranslationPackagingJob(PackagingJobDerived, BaseRunnableJob):
