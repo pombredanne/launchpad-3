@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTarget-related browser views."""
@@ -24,7 +24,10 @@ __all__ = [
 import cgi
 from cStringIO import StringIO
 from datetime import datetime
-from operator import itemgetter
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
 import urllib
 
 from lazr.restful.interface import copy_field
@@ -47,6 +50,7 @@ from zope.schema import (
     Bool,
     Choice,
     )
+from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import SimpleVocabulary
 from zope.security.proxy import removeSecurityProxy
 
@@ -72,11 +76,6 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
-from canonical.widgets.product import (
-    GhostCheckBoxWidget,
-    GhostWidget,
-    ProductBugTrackerWidget,
-    )
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -84,6 +83,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     safe_action,
     )
+from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.tales import BugTrackerFormatterAPI
 from lp.app.enums import ServiceUsage
 from lp.app.errors import (
@@ -93,6 +93,11 @@ from lp.app.errors import (
 from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
+    )
+from lp.app.widgets.product import (
+    GhostCheckBoxWidget,
+    GhostWidget,
+    ProductBugTrackerWidget,
     )
 from lp.bugs.browser.bugrole import BugRoleMixin
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
@@ -104,7 +109,6 @@ from lp.bugs.browser.widgets.bugtask import NewLineToSpacesWidget
 from lp.bugs.interfaces.apportjob import IProcessApportBlobJobSource
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
-    IBug,
     IBugAddForm,
     IBugSet,
     IProjectGroupBugAddForm,
@@ -124,6 +128,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.bugs.interfaces.securitycontact import IHasSecurityContact
+from lp.bugs.model.bugtask import BugTask
 from lp.bugs.utilities.filebugdataparser import FileBugData
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
 from lp.registry.browser.product import ProductConfigureBase
@@ -343,13 +348,16 @@ class FileBugViewBase(LaunchpadFormView):
         # The comment field is only required if filing a new bug.
         if self.submit_bug_action.submitted():
             comment = data.get('comment')
-            if comment:
-                if len(comment) > IBug['description'].max_length:
-                    self.setFieldError('comment',
-                        'The description is too long. If you have lots '
-                        'text to add, attach a file to the bug instead.')
-            else:
-                self.setFieldError('comment', "Required input is missing.")
+            # The widget only exposes the error message. The private
+            # attr contains the real error.
+            widget_error = self.widgets.get('comment')._error
+            if widget_error and isinstance(widget_error.errors, TooLong):
+                self.setFieldError('comment',
+                    'The description is too long. If you have lots '
+                    'text to add, attach a file to the bug instead.')
+            elif not comment or widget_error is not None:
+                self.setFieldError(
+                    'comment', "Provide details about the issue.")
         # Check a bug has been selected when the user wants to
         # subscribe to an existing bug.
         elif self.this_is_my_bug_action.submitted():
@@ -503,7 +511,10 @@ class FileBugViewBase(LaunchpadFormView):
         else:
             private = False
 
-        notifications = [self.getAcknowledgementMessage(self.context)]
+        linkified_ack = structured(FormattersAPI(
+            self.getAcknowledgementMessage(self.context)).text_to_html(
+                last_paragraph_class="last"))
+        notifications = [linkified_ack]
         params = CreateBugParams(
             title=title, comment=comment, owner=self.user,
             security_related=security_related, private=private,
@@ -1167,7 +1178,21 @@ class BugTargetBugListingView:
             series = self.context.product.series
         else:
             raise AssertionError("series_list called with illegal context")
-        return series
+        return list(series)
+
+    @property
+    def milestones_list(self):
+        if IDistribution(self.context, None):
+            milestone_resultset = self.context.milestones
+        elif IProduct(self.context, None):
+            milestone_resultset = self.context.milestones
+        elif IDistroSeries(self.context, None):
+            milestone_resultset = self.context.distribution.milestones
+        elif IProductSeries(self.context, None):
+            milestone_resultset = self.context.product.milestones
+        else:
+            raise AssertionError("series_list called with illegal context")
+        return list(milestone_resultset)
 
     @property
     def series_buglistings(self):
@@ -1179,8 +1204,26 @@ class BugTargetBugListingView:
         able to see in a listing.
         """
         series_buglistings = []
-        for series in self.series_list:
-            series_bug_count = series.open_bugtasks.count()
+        bug_task_set = getUtility(IBugTaskSet)
+        series_list = self.series_list
+        if not series_list:
+            return series_buglistings
+        open_bugs = bug_task_set.open_bugtask_search
+        open_bugs.setTarget(any(*series_list))
+        # This would be better as delegation not a case statement.
+        if IDistribution(self.context, None):
+            backlink = BugTask.distroseriesID
+        elif IProduct(self.context, None):
+            backlink = BugTask.productseriesID
+        elif IDistroSeries(self.context, None):
+            backlink = BugTask.distroseriesID
+        elif IProductSeries(self.context, None):
+            backlink = BugTask.productseriesID
+        else:
+            raise AssertionError("illegal context %r" % self.context)
+        counts = bug_task_set.countBugs(open_bugs, (backlink,))
+        for series in series_list:
+            series_bug_count = counts.get((series.id,), 0)
             if series_bug_count > 0:
                 series_buglistings.append(
                     dict(
@@ -1188,23 +1231,28 @@ class BugTargetBugListingView:
                         url=canonical_url(series) + "/+bugs",
                         count=series_bug_count,
                         ))
-
         return series_buglistings
 
     @property
     def milestone_buglistings(self):
         """Return a buglisting for each milestone."""
         milestone_buglistings = []
-        for series in self.series_list:
-            for milestone in series.milestones:
-                milestone_bug_count = milestone.open_bugtasks.count()
-                if milestone_bug_count > 0:
-                    milestone_buglistings.append(
-                        dict(
-                            title=milestone.name,
-                            url=canonical_url(milestone),
-                            count=milestone_bug_count,
-                            ))
+        bug_task_set = getUtility(IBugTaskSet)
+        milestones = self.milestones_list
+        if not milestones:
+            return milestone_buglistings
+        open_bugs = bug_task_set.open_bugtask_search
+        open_bugs.setTarget(any(*milestones))
+        counts = bug_task_set.countBugs(open_bugs, (BugTask.milestoneID,))
+        for milestone in milestones:
+            milestone_bug_count = counts.get((milestone.id,), 0)
+            if milestone_bug_count > 0:
+                milestone_buglistings.append(
+                    dict(
+                        title=milestone.name,
+                        url=canonical_url(milestone),
+                        count=milestone_bug_count,
+                        ))
         return milestone_buglistings
 
 

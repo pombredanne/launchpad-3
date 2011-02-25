@@ -29,9 +29,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import (
-    IWebBrowserOriginatingRequest,
-    )
+from lazr.restful.interfaces import IWebBrowserOriginatingRequest
 from canonical.launchpad.webapp.publisher import (
     canonical_url,
     LaunchpadView,
@@ -85,8 +83,8 @@ class MixedFileAliasView(LaunchpadView):
 
     If the file is public, it will redirect to the files http url.
 
-    Otherwise if the feature flag publicrestrictedlibrarian is set to 'on'
-    this will allocate a token and redirect to the aliases private url.
+    Otherwise if the feature flag publicrestrictedlibrarian is true this will
+    allocate a token and redirect to the aliases private url.
 
     Otherwise it will proxy the file in the appserver.
 
@@ -181,7 +179,7 @@ class MixedFileAliasView(LaunchpadView):
         if not self.context.restricted:
             # Public file, just point the client at the right place.
             return RedirectionView(self.context.http_url, self.request), ()
-        if getFeatureFlag(u'publicrestrictedlibrarian') != 'on':
+        if not getFeatureFlag(u'publicrestrictedlibrarian'):
             # Restricted file and we have not enabled the public
             # restricted librarian yet :- deliver inline.
             self._when_streaming()

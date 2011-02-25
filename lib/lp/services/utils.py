@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Generic Python utilities.
@@ -9,21 +9,95 @@ stuff.
 
 __metaclass__ = type
 __all__ = [
+    'AutoDecorate',
+    'base',
     'CachingIterator',
+    'compress_hash',
     'decorate_with',
     'docstring_dedent',
     'iter_split',
+    'run_capturing_output',
     'synchronize',
     'text_delta',
+    'traceback_info',
     'value_string',
     ]
 
+from itertools import tee
+from StringIO import StringIO
+import string
+import sys
 from textwrap import dedent
-import itertools
+from types import FunctionType
 
+from fixtures import (
+    Fixture,
+    MonkeyPatch,
+    )
 from lazr.enum import BaseItem
 from twisted.python.util import mergeFunctionMetadata
 from zope.security.proxy import isinstance as zope_isinstance
+
+
+def AutoDecorate(*decorators):
+    """Factory to generate metaclasses that automatically apply decorators.
+
+    AutoDecorate is a metaclass factory that can be used to make a class
+    implicitly wrap all of its methods with one or more decorators.
+    """
+
+    class AutoDecorateMetaClass(type):
+        def __new__(cls, class_name, bases, class_dict):
+            new_class_dict = {}
+            for name, value in class_dict.items():
+                if type(value) == FunctionType:
+                    for decorator in decorators:
+                        value = decorator(value)
+                        assert callable(value), (
+                            "Decorator %s didn't return a callable."
+                            % repr(decorator))
+                new_class_dict[name] = value
+            return type.__new__(cls, class_name, bases, new_class_dict)
+
+    return AutoDecorateMetaClass
+
+
+def base(number, radix):
+    """Convert 'number' to an arbitrary base numbering scheme, 'radix'.
+
+    This function is based on work from the Python Cookbook and is under the
+    Python license.
+
+    Inverse function to int(str, radix) and long(str, radix)
+    """
+    if not 2 <= radix <= 62:
+        raise ValueError("radix must be between 2 and 62: %s" % (radix,))
+
+    if number < 0:
+        raise ValueError("number must be non-negative: %s" % (number,))
+
+    result = []
+    addon = result.append
+    if number == 0:
+        addon('0')
+
+    ABC = string.digits + string.ascii_letters
+    while number:
+        number, rdigit = divmod(number, radix)
+        addon(ABC[rdigit])
+
+    result.reverse()
+    return ''.join(result)
+
+
+def compress_hash(hash_obj):
+    """Compress a hash_obj using `base`.
+
+    Given an ``md5`` or ``sha1`` hash object, compress it down to either 22 or
+    27 characters in a way that's safe to be used in URLs. Takes the hex of
+    the hash and converts it to base 62.
+    """
+    return base(int(hash_obj.hexdigest(), 16), 62)
 
 
 def iter_split(string, splitter):
@@ -123,28 +197,12 @@ class CachingIterator:
 
     def __init__(self, iterator):
         self.iterator = iterator
-        self.data = []
 
     def __iter__(self):
-        index = itertools.count()
-        while True:
-            pos = index.next()
-            try:
-                yield self.data[pos]
-            except IndexError:
-                # Defer to the iterator.
-                pass
-            else:
-                continue
-            if self.iterator is None:
-                break
-            try:
-                item = self.iterator.next()
-            except StopIteration:
-                self.iterator = None
-                break
-            self.data.append(item)
-            yield item
+        # Teeing an iterator previously returned by tee won't cause heat
+        # death. See tee_copy in itertoolsmodule.c in the Python source.
+        self.iterator, iterator = tee(self.iterator)
+        return iterator
 
 
 def decorate_with(context_factory, *args, **kwargs):
@@ -166,3 +224,42 @@ def docstring_dedent(s):
     # Make sure there is at least one newline so the split works.
     first, rest = (s+'\n').split('\n', 1)
     return (first + '\n' + dedent(rest)).strip()
+
+
+class CapturedOutput(Fixture):
+    """A fixture that captures output to stdout and stderr."""
+
+    def __init__(self):
+        super(CapturedOutput, self).__init__()
+        self.stdout = StringIO()
+        self.stderr = StringIO()
+
+    def setUp(self):
+        super(CapturedOutput, self).setUp()
+        self.useFixture(MonkeyPatch('sys.stdout', self.stdout))
+        self.useFixture(MonkeyPatch('sys.stderr', self.stderr))
+
+
+def run_capturing_output(function, *args, **kwargs):
+    """Run ``function`` capturing output to stdout and stderr.
+
+    :param function: A function to run.
+    :param args: Arguments passed to the function.
+    :param kwargs: Keyword arguments passed to the function.
+    :return: A tuple of ``(ret, stdout, stderr)``, where ``ret`` is the value
+        returned by ``function``, ``stdout`` is the captured standard output
+        and ``stderr`` is the captured stderr.
+    """
+    with CapturedOutput() as captured:
+        ret = function(*args, **kwargs)
+    return ret, captured.stdout.getvalue(), captured.stderr.getvalue()
+
+
+def traceback_info(info):
+    """Set `__traceback_info__` in the caller's locals.
+
+    This is more aesthetically pleasing that assigning to __traceback_info__,
+    but it more importantly avoids spurious lint warnings about unused local
+    variables, and helps to avoid typos.
+    """
+    sys._getframe(1).f_locals["__traceback_info__"] = info

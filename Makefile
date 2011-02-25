@@ -71,14 +71,18 @@ $(API_INDEX): $(BZR_VERSION_INFO) $(PY)
 
 apidoc: compile $(API_INDEX)
 
+# Used to generate HTML developer documentation for Launchpad.
+doc:
+	$(MAKE) -C doc/ html
+
 # Run by PQM.
 check_merge: $(BUILDOUT_BIN)
 	[ `PYTHONPATH= bzr status -S database/schema/ | \
 		grep -v "\(^P\|pending\|security.cfg\|Makefile\|unautovacuumable\|_pythonpath.py\)" | wc -l` -eq 0 ]
-	${PY} lib/canonical/tests/test_no_conflict_marker.py
+	${PY} lib/lp/tests/test_no_conflict_marker.py
 
 check_db_merge: $(PY)
-	${PY} lib/canonical/tests/test_no_conflict_marker.py
+	${PY} lib/lp/tests/test_no_conflict_marker.py
 
 check_config: build
 	bin/test -m canonical.config.tests -vvt test_config
@@ -390,7 +394,7 @@ clean: clean_js clean_buildout
 			  /var/tmp/mailman-xmlrpc.test \
 			  /var/tmp/ppa \
 			  /var/tmp/ppa.test \
-			  /var/tmp/zeca
+			  /var/tmp/testkeyserver
 	# /var/tmp/launchpad_mailqueue is created read-only on ec2test
 	# instances.
 	if [ -w /var/tmp/launchpad_mailqueue ]; then $(RM) -rf /var/tmp/launchpad_mailqueue; fi
@@ -485,7 +489,7 @@ pydoctor:
 		--docformat restructuredtext --verbose-about epytext-summary \
 		$(PYDOCTOR_OPTIONS)
 
-.PHONY: apidoc buildout_bin check tags TAGS zcmldocs realclean clean debug \
+.PHONY: apidoc buildout_bin check doc tags TAGS zcmldocs realclean clean debug \
 	stop start run ftest_build ftest_inplace test_build test_inplace \
 	pagetests check check_merge schema default launchpad.pot \
 	check_merge_ui pull scan sync_branches reload-apache hosted_branches \

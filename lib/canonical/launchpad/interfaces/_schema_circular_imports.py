@@ -39,6 +39,7 @@ from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications,
     ISpecificationTarget,
     )
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bug import (
     IBug,
     IFrontPageBugAddForm,
@@ -73,6 +74,7 @@ from lp.code.interfaces.hasbranches import (
     IHasMergeProposals,
     IHasRequestedReviews,
     )
+from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
@@ -81,7 +83,6 @@ from lp.hardwaredb.interfaces.hwdb import (
     HWBus,
     IHWSubmission,
     )
-from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -99,7 +100,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.interfaces.structuralsubscription import (
+from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscription,
     IStructuralSubscriptionTarget,
     )
@@ -261,6 +262,10 @@ patch_plain_parameter_type(IPerson, 'getArchiveSubscriptionURL', 'archive',
                            IArchive)
 
 patch_entry_return_type(IPerson, 'getRecipe', ISourcePackageRecipe)
+
+# IHasRecipe
+patch_collection_property(
+    IHasRecipes, 'recipes', ISourcePackageRecipe)
 
 IPerson['hardware_submissions'].value_type.schema = IHWSubmission
 
@@ -439,6 +444,18 @@ patch_reference_property(
 patch_reference_property(
     ISourcePackageRelease, 'source_package_recipe_build',
     ISourcePackageRecipeBuild)
+
+# ISourcePackageRecipeView
+patch_entry_return_type(
+    ISourcePackageRecipe, 'requestBuild', ISourcePackageRecipeBuild)
+patch_reference_property(
+    ISourcePackageRecipe, 'last_build', ISourcePackageRecipeBuild)
+patch_collection_property(
+    ISourcePackageRecipe, 'builds', ISourcePackageRecipeBuild)
+patch_collection_property(
+    ISourcePackageRecipe, 'pending_builds', ISourcePackageRecipeBuild)
+patch_collection_property(
+    ISourcePackageRecipe, 'completed_builds', ISourcePackageRecipeBuild)
 
 # IHasBugs
 patch_plain_parameter_type(

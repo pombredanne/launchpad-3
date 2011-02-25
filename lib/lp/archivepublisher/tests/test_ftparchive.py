@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for ftparchive.py"""
@@ -25,7 +25,7 @@ from canonical.testing.layers import (
     )
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
-from lp.archivepublisher.ftparchive import (
+from lp.archivepublisher.model.ftparchive import (
     AptFTPArchiveFailure,
     f_touch,
     FTPArchiveHandler,

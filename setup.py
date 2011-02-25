@@ -68,6 +68,7 @@ setup(
         'RestrictedPython',
         'setproctitle',
         'setuptools',
+        'Sphinx',
         'soupmatchers',
         'sourcecodegen',
         'storm',

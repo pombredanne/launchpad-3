@@ -52,7 +52,6 @@ from canonical.launchpad.interfaces.oauth import (
     )
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite,
-    SpecialOutputChecker,
     stop,
     strip_prefix,
     )
@@ -918,7 +917,7 @@ def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
     unnumberedfilenames = sorted(unnumberedfilenames)
 
     suite = unittest.TestSuite()
-    checker = SpecialOutputChecker()
+    checker = doctest.OutputChecker()
     # Add unnumbered tests to the suite individually.
     if unnumberedfilenames:
         suite.addTest(LayeredDocFileSuite(

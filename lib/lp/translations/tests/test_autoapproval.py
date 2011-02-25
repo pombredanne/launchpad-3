@@ -787,7 +787,7 @@ class TestGetPOFileFromLanguage(TestCaseWithFactory, GardenerDbUserMixin):
         template = self.factory.makePOTemplate(
             productseries=trunk, translation_domain='domain')
         template.iscurrent = True
-        self.factory.makePOTMsgSet(template, "translator-credits", sequence=1)
+        self.factory.makePOTMsgSet(template, "translator-credits")
 
         entry = self.queue.addOrUpdateEntry(
             'nl.po', '# ...', False, template.owner, productseries=trunk)
@@ -1055,7 +1055,7 @@ class TestAutoApprovalNewPOFile(TestCaseWithFactory, GardenerDbUserMixin):
         trunk = self.product.getSeries('trunk')
         template = self._makeTemplate(trunk)
         credits = self.factory.makePOTMsgSet(
-            template, singular='translation-credits', sequence=1)
+            template, singular='translation-credits')
 
         entry = self._makeQueueEntry(trunk)
 

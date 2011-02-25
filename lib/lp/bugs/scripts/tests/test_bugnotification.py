@@ -456,7 +456,3 @@ class TestNotificationBatches(unittest.TestCase):
         expected = [notifications[0:3], notifications[3:4]]
         observed = list(notification_batches(notifications))
         self.assertEquals(expected, observed)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

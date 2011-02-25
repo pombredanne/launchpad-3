@@ -19,10 +19,6 @@ from lp.app.enums import ServiceUsage
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.interfaces.translationmessage import (
-    TranslationValidationStatus,
-    )
-from lp.translations.utilities.validate import GettextValidationError
 
 
 class TestTranslationSuggestions(TestCaseWithFactory):
@@ -63,7 +59,6 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         # translations for it, there are no suggestions for translating
         # it whatsoever.
         potmsgset = self.factory.makePOTMsgSet(self.foo_template)
-        potmsgset.setSequence(self.foo_template, 1)
         self.assertEquals(
             potmsgset.getExternallyUsedTranslationMessages(self.nl), [])
         self.assertEquals(
@@ -75,9 +70,7 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         # suggestion.
         text = "error message 936"
         foomsg = self.factory.makePOTMsgSet(self.foo_template, text)
-        foomsg.setSequence(self.foo_template, 1)
         barmsg = self.factory.makePOTMsgSet(self.bar_template, text)
-        barmsg.setSequence(self.bar_template, 1)
         translation = self.factory.makeCurrentTranslationMessage(
             pofile=self.bar_nl, current_other=False, potmsgset=barmsg)
 
@@ -98,9 +91,7 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         # If global suggestions are disabled, empty list is returned.
         text = "error message 936"
         foomsg = self.factory.makePOTMsgSet(self.foo_template, text)
-        foomsg.setSequence(self.foo_template, 1)
         barmsg = self.factory.makePOTMsgSet(self.bar_template, text)
-        barmsg.setSequence(self.bar_template, 1)
         translation = self.factory.makeCurrentTranslationMessage(
             pofile=self.bar_nl, current_other=False, potmsgset=barmsg)
 
@@ -127,11 +118,9 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         # Suggestions made for bar can also be useful suggestions for foo.
         text = "Welcome to our application!  We hope to have code soon."
         foomsg = self.factory.makePOTMsgSet(self.foo_template, text)
-        foomsg.setSequence(self.foo_template, 1)
         barmsg = self.factory.makePOTMsgSet(self.bar_template, text)
-        barmsg.setSequence(self.bar_template, 1)
         suggestion = barmsg.submitSuggestion(
-            self.bar_nl, self.foo_template.owner, { 0: "Noueh hallo dus." })
+            self.bar_nl, self.foo_template.owner, {0: "Noueh hallo dus."})
 
         transaction.commit()
 
@@ -151,15 +140,13 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         before = now - timedelta(1, 1, 1)
 
         foomsg = self.factory.makePOTMsgSet(self.foo_template, text)
-        foomsg.setSequence(self.foo_template, 1)
         barmsg = self.factory.makePOTMsgSet(self.bar_template, text)
-        barmsg.setSequence(self.bar_template, 1)
         suggestion1 = self.factory.makeCurrentTranslationMessage(
             pofile=self.bar_nl, potmsgset=foomsg,
-            translations={ 0: suggested_dutch })
+            translations={0: suggested_dutch})
         suggestion2 = self.factory.makeCurrentTranslationMessage(
             pofile=self.bar_nl, potmsgset=barmsg,
-            translations={ 0: suggested_dutch })
+            translations={0: suggested_dutch})
         self.assertNotEqual(suggestion1, suggestion2)
         removeSecurityProxy(suggestion1).date_created = before
         removeSecurityProxy(suggestion2).date_created = before
@@ -170,7 +157,6 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         oof_template = self.factory.makePOTemplate()
         oof_potmsgset = self.factory.makePOTMsgSet(
             oof_template, singular=text)
-        oof_potmsgset.setSequence(oof_template, 1)
         from storm.store import Store
         Store.of(oof_template).flush()
         transaction.commit()
@@ -188,11 +174,11 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         potmsgset = self.factory.makePOTMsgSet(self.foo_template)
         suggestion1 = self.factory.makeCurrentTranslationMessage(
             pofile=self.foo_nl, potmsgset=potmsgset,
-            translations={ 0 : translated_in_ubuntu },
+            translations={0: translated_in_ubuntu},
             current_other=False)
         suggestion2 = self.factory.makeCurrentTranslationMessage(
             pofile=self.foo_nl, potmsgset=potmsgset,
-            translations={ 0 : translated_upstream },
+            translations={0: translated_upstream},
             current_other=True)
         ubuntu_translation = potmsgset.getCurrentTranslation(
             self.foo_template, self.foo_nl.language,

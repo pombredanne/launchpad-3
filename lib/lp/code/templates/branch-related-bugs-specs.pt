@@ -22,7 +22,7 @@
                  class="delete-buglink"
                  tal:attributes="href string:+bug/${bug/id}/+delete;
                                  id string:delete-buglink-${bug/id}">
-                <img src="/@@/remove"/>
+                <img src="/@@/remove" alt="Remove"/>
               </a>
             </tal:buglink-edit>
           </li>
@@ -81,7 +81,7 @@
     }
 
     Y.on('domready', function() {
-        var logged_in = LP.client.links['me'] !== undefined;
+        var logged_in = LP.links['me'] !== undefined;
 
         if (logged_in) {
             Y.lp.code.branch.bugspeclinks.connect_branchlinks();
