@@ -26,7 +26,7 @@ from lazr.config.interfaces import ConfigErrors
 
 from canonical.launchpad.readonly import is_read_only
 
-from lp.services.osutils import ensure_directory_exists
+from lp.services.osutils import open_for_writing
 
 
 __all__ = [
@@ -241,10 +241,8 @@ class CanonicalConfig:
 
         Call this method before letting any ZCML processing occur.
         """
-        loader_directory = os.path.join(self.root, 'zcml')
-        ensure_directory_exists(loader_directory)
-        loader_file = os.path.join(loader_directory, '+config-overrides.zcml')
-        loader = open(loader_file, 'w')
+        loader_file = os.path.join(self.root, 'zcml/+config-overrides.zcml')
+        loader = open_for_writing(loader_file, 'w')
 
         print >> loader, """
             <configure xmlns="http://namespaces.zope.org/zope">
