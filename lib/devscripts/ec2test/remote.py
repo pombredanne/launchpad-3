@@ -36,19 +36,19 @@ import traceback
 import unittest
 from xml.sax.saxutils import escape
 
-import simplejson
-
 import bzrlib.branch
 import bzrlib.config
-import bzrlib.errors
-import bzrlib.workingtree
-
 from bzrlib.email_message import EmailMessage
+import bzrlib.errors
 from bzrlib.smtp_connection import SMTPConnection
-
+import bzrlib.workingtree
+import simplejson
 import subunit
-
 from testtools import MultiTestResult
+
+# We need to be able to unpickle objects from bzr-pqm, so make sure we
+# can import it.
+bzrlib.plugin.load_plugins()
 
 
 class NonZeroExitCode(Exception):
