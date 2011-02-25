@@ -81,9 +81,9 @@
             <a href=""
                tal:attributes="href pot/fmt:url"
                tal:content="pot/name">A POTemplate
-            </a><tal:comma condition="not: repeat/pot/end">,
-          </tal:comma></tal:relatives_by_source><!--
-            --><tal:more-templates replace="structure view/more_templates_by_source_link">
+            </a><tal:comma condition="not: repeat/pot/end">, </tal:comma
+              ></tal:relatives_by_source><tal:more-templates
+                replace="structure view/more_templates_by_source_link">
             and <a href="#">17 other templates</a>
             </tal:more-templates>.
         </p>
