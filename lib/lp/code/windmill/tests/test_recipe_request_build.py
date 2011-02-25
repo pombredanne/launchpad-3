@@ -13,13 +13,12 @@ from canonical.launchpad.webapp.publisher import canonical_url
 from lp.testing.windmill.constants import (
     FOR_ELEMENT,
     PAGE_LOAD,
-    SLEEP,
     )
 from lp.testing.windmill.lpuser import login_person
 from lp.app.browser.tales import PPAFormatterAPI
 from lp.code.windmill.testing import CodeWindmillLayer
 from lp.soyuz.model.processor import ProcessorFamily
-from lp.testing import WindmillTestCase
+from lp.testing import WindmillTestCase, quote_jquery_expression
 
 
 class TestRecipeBuild(WindmillTestCase):
@@ -50,7 +49,7 @@ class TestRecipeBuild(WindmillTestCase):
             owner=self.chef, distroseries=self.squirrel, name=u'cake_recipe',
             description=u'This recipe builds a foo for disto bar, with my'
             ' Secret Squirrel changes.', branches=[cake_branch],
-            daily_build_archive=self.ppa)
+            daily_build_archive=self.ppa, build_daily=True, is_stale=True)
         transaction.commit()
         login_person(self.chef, "chef@example.com", "test", self.client)
 
@@ -74,8 +73,8 @@ class TestRecipeBuild(WindmillTestCase):
 
         # Ensure it shows up.
         client.waits.forElement(
-            xpath = (u'//tr[contains(@class, "package-build")]/td[4]'
-                     '/a[@href="%s"]') % PPAFormatterAPI(self.ppa).url(),
+            jquery=u"('tr.package-build a[href$=\"%s\"]')"
+            % quote_jquery_expression(PPAFormatterAPI(self.ppa).url()),
             timeout=FOR_ELEMENT)
 
         # And try the same one again.
@@ -85,12 +84,27 @@ class TestRecipeBuild(WindmillTestCase):
 
         # And check that there's an error.
         client.waits.forElement(
-            xpath = (
-                u'//div[contains(@class, "yui3-lazr-formoverlay-errors")]'
-                '/ul/li'), timeout=FOR_ELEMENT)
-        client.asserts.assertText(
-            xpath = (
-                u'//div[contains(@class, "yui3-lazr-formoverlay-errors")]'
-                '/ul/li'),
+            jquery=u"('div.yui3-lazr-formoverlay-errors ul li')",
+            timeout=FOR_ELEMENT)
+
+        client.asserts.assertTextIn(
+            jquery=u"('div.yui3-lazr-formoverlay-errors ul li')[0]",
             validator=u'An identical build is already pending for %s %s.'
                         % (self.ppa.distribution.name, self.squirrel.name))
+
+    def test_recipe_daily_build_request(self):
+        """Request a recipe build."""
+
+        client = self.client
+        client.open(url=canonical_url(self.recipe))
+        client.waits.forElement(
+            id=u'request-daily-build', timeout=PAGE_LOAD)
+
+        # Request a daily build.
+        client.click(id=u'request-daily-build')
+
+        # Ensure it shows up.
+        client.waits.forElement(
+            jquery=u"('tr.package-build a[href$=\"%s\"]')"
+            % quote_jquery_expression(PPAFormatterAPI(self.ppa).url()),
+            timeout=FOR_ELEMENT)
