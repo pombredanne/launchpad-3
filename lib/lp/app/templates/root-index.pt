@@ -41,7 +41,8 @@
       .featured-project-top p {
           margin-top: 0.5em;
           margin-bottom: 1em;
-          border-bottom: 1px solid #888888;
+          padding-bottom: .5em;
+          border-bottom: 1px dotted #999;
           }
     </style>
   </metal:head>
@@ -57,7 +58,7 @@
 
       <div id="homepage" class="homepage">
 
-        <div class="top-portlet" style="border-bottom: 1px solid;">
+        <div class="top-portlet" style="border-bottom: 1px dotted #999;">
           <img src="/@@/launchpad-logo-and-name.png"
                alt=""
                style="margin: 0 9em 1em 0"/>
