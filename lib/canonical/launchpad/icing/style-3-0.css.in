@@ -928,8 +928,14 @@ h1 .yui3-ieditor-errors {
 .lazr-multiline-edit textarea {
     max-width: inherit;
     }
-.lazr-multiline-edit h2 {
-    
+.lazr-multiline-edit .clearfix h2 {
+    /* Undo the damage done by lazr. */
+    margin-left: 0;
+    font-family: 'UbuntuBeta Regular', Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
+    font-size: 22px;
+    font-weight: normal;
+    line-height: 12px;
+    color: #333;
     }
 .widget-hd.js-action {
     /* The js-action class is also used for non-links, for example, with
