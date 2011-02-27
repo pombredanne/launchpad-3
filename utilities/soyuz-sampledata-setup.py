@@ -37,8 +37,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from storm.store import Store
 
-from canonical.database.sqlbase import sqlvalues
-
 from canonical.lp import initZopeless
 
 from canonical.launchpad.interfaces.launchpad import (
@@ -270,6 +268,14 @@ def create_sample_series(original_series, log):
             spfss.add(parent, SourcePackageFormat.FORMAT_3_0_NATIVE)
 
 
+def add_series_component(series):
+    """Permit a component in the given series."""
+    component = getUtility(IComponentSet)['main']
+    get_store(MASTER_FLAVOR).add(
+        ComponentSelection(
+            distroseries=series, component=component))
+
+
 def clean_up(distribution, log):
     # First we eliminate all active publishings in the Ubuntu main archives.
     # None of the librarian files exist, so it kills the publisher.
@@ -287,6 +293,9 @@ def clean_up(distribution, log):
     retire_ppas(distribution)
 
     retire_series(distribution)
+
+    # grumpy has no components, which upsets the publisher.
+    add_series_component(distribution['grumpy'])
 
 
 def set_source_package_format(distroseries):
