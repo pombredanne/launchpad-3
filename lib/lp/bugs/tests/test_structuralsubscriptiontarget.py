@@ -192,6 +192,7 @@ class FilteredStructuralSubscriptionTestBase:
         self.bug = self.bugtask.bug
         self.subscription = self.target.addSubscription(
             self.ordinary_subscriber, self.ordinary_subscriber)
+        self.initial_filter = self.subscription.bug_filters[0]
 
     def assertSubscriptions(
         self, expected_subscriptions, level=BugNotificationLevel.NOTHING):
@@ -214,14 +215,13 @@ class FilteredStructuralSubscriptionTestBase:
         self.assertSubscriptions([self.subscription])
 
         # Filter the subscription to bugs in the CONFIRMED state.
-        subscription_filter = self.subscription.newBugFilter()
-        subscription_filter.statuses = [BugTaskStatus.CONFIRMED]
+        self.initial_filter.statuses = [BugTaskStatus.CONFIRMED]
 
         # With the filter the subscription is not found.
         self.assertSubscriptions([])
 
         # If the filter is adjusted, the subscription is found again.
-        subscription_filter.statuses = [self.bugtask.status]
+        self.initial_filter.statuses = [self.bugtask.status]
         self.assertSubscriptions([self.subscription])
 
     def test_getSubscriptionsForBugTask_with_filter_on_importance(self):
@@ -232,14 +232,13 @@ class FilteredStructuralSubscriptionTestBase:
         self.assertSubscriptions([self.subscription])
 
         # Filter the subscription to bugs in the CRITICAL state.
-        subscription_filter = self.subscription.newBugFilter()
-        subscription_filter.importances = [BugTaskImportance.CRITICAL]
+        self.initial_filter.importances = [BugTaskImportance.CRITICAL]
 
         # With the filter the subscription is not found.
         self.assertSubscriptions([])
 
         # If the filter is adjusted, the subscription is found again.
-        subscription_filter.importances = [self.bugtask.importance]
+        self.initial_filter.importances = [self.bugtask.importance]
         self.assertSubscriptions([self.subscription])
 
     def test_getSubscriptionsForBugTask_with_filter_on_level(self):
@@ -247,8 +246,8 @@ class FilteredStructuralSubscriptionTestBase:
         # which getSubscriptionsForBugTask() observes.
 
         # Adjust the subscription level to METADATA.
-        filter = self.subscription.newBugFilter()
-        filter.bug_notification_level = BugNotificationLevel.METADATA
+        self.initial_filter.bug_notification_level = (
+            BugNotificationLevel.METADATA)
 
         # The subscription is found when looking for NOTHING or above.
         self.assertSubscriptions(
@@ -264,8 +263,7 @@ class FilteredStructuralSubscriptionTestBase:
         # If a subscription filter has include_any_tags, a bug with one or
         # more tags is matched.
 
-        subscription_filter = self.subscription.newBugFilter()
-        subscription_filter.include_any_tags = True
+        self.initial_filter.include_any_tags = True
 
         # Without any tags the subscription is not found.
         self.assertSubscriptions([])
@@ -278,8 +276,7 @@ class FilteredStructuralSubscriptionTestBase:
         # If a subscription filter has exclude_any_tags, only bugs with no
         # tags are matched.
 
-        subscription_filter = self.subscription.newBugFilter()
-        subscription_filter.exclude_any_tags = True
+        self.initial_filter.exclude_any_tags = True
 
         # Without any tags the subscription is found.
         self.assertSubscriptions([self.subscription])
@@ -293,9 +290,8 @@ class FilteredStructuralSubscriptionTestBase:
         # tags must be present, bugs with any of those tags are matched.
 
         # Looking for either the "foo" or the "bar" tag.
-        subscription_filter = self.subscription.newBugFilter()
-        subscription_filter.tags = [u"foo", u"bar"]
-        subscription_filter.find_all_tags = False
+        self.initial_filter.tags = [u"foo", u"bar"]
+        self.initial_filter.find_all_tags = False
 
         # Without either tag the subscription is not found.
         self.assertSubscriptions([])
@@ -309,9 +305,8 @@ class FilteredStructuralSubscriptionTestBase:
         # tags must be present, bugs with all of those tags are matched.
 
         # Looking for both the "foo" and the "bar" tag.
-        subscription_filter = self.subscription.newBugFilter()
-        subscription_filter.tags = [u"foo", u"bar"]
-        subscription_filter.find_all_tags = True
+        self.initial_filter.tags = [u"foo", u"bar"]
+        self.initial_filter.find_all_tags = True
 
         # Without either tag the subscription is not found.
         self.assertSubscriptions([])
@@ -330,9 +325,8 @@ class FilteredStructuralSubscriptionTestBase:
         # matched.
 
         # Looking to exclude the "foo" or "bar" tags.
-        subscription_filter = self.subscription.newBugFilter()
-        subscription_filter.tags = [u"-foo", u"-bar"]
-        subscription_filter.find_all_tags = False
+        self.initial_filter.tags = [u"-foo", u"-bar"]
+        self.initial_filter.find_all_tags = False
 
         # Without either tag the subscription is found.
         self.assertSubscriptions([self.subscription])
@@ -347,9 +341,8 @@ class FilteredStructuralSubscriptionTestBase:
         # matched.
 
         # Looking to exclude the "foo" and "bar" tags.
-        subscription_filter = self.subscription.newBugFilter()
-        subscription_filter.tags = [u"-foo", u"-bar"]
-        subscription_filter.find_all_tags = True
+        self.initial_filter.tags = [u"-foo", u"-bar"]
+        self.initial_filter.find_all_tags = True
 
         # Without either tag the subscription is found.
         self.assertSubscriptions([self.subscription])
@@ -370,27 +363,26 @@ class FilteredStructuralSubscriptionTestBase:
         self.bug.tags = ["foo"]
 
         # Filter the subscription to bugs in the CRITICAL state.
-        subscription_filter = self.subscription.newBugFilter()
-        subscription_filter.statuses = [BugTaskStatus.CONFIRMED]
-        subscription_filter.importances = [BugTaskImportance.CRITICAL]
+        self.initial_filter.statuses = [BugTaskStatus.CONFIRMED]
+        self.initial_filter.importances = [BugTaskImportance.CRITICAL]
 
         # With the filter the subscription is not found.
         self.assertSubscriptions([])
 
         # If the filter is adjusted to match status but not importance, the
         # subscription is still not found.
-        subscription_filter.statuses = [self.bugtask.status]
+        self.initial_filter.statuses = [self.bugtask.status]
         self.assertSubscriptions([])
 
         # If the filter is adjusted to also match importance, the subscription
         # is found again.
-        subscription_filter.importances = [self.bugtask.importance]
+        self.initial_filter.importances = [self.bugtask.importance]
         self.assertSubscriptions([self.subscription])
 
         # If the filter is given some tag criteria, the subscription is not
         # found.
-        subscription_filter.tags = [u"-foo", u"bar", u"baz"]
-        subscription_filter.find_all_tags = False
+        self.initial_filter.tags = [u"-foo", u"bar", u"baz"]
+        self.initial_filter.find_all_tags = False
         self.assertSubscriptions([])
 
         # After removing the "foo" tag and adding the "bar" tag, the
@@ -400,7 +392,7 @@ class FilteredStructuralSubscriptionTestBase:
 
         # Requiring that all tag criteria are fulfilled causes the
         # subscription to no longer be found.
-        subscription_filter.find_all_tags = True
+        self.initial_filter.find_all_tags = True
         self.assertSubscriptions([])
 
         # After adding the "baz" tag, the subscription is found again.
@@ -411,7 +403,7 @@ class FilteredStructuralSubscriptionTestBase:
         # If a subscription has multiple filters, the subscription is selected
         # when any filter is found to match. Put another way, the filters are
         # ORed together.
-        subscription_filter1 = self.subscription.newBugFilter()
+        subscription_filter1 = self.initial_filter
         subscription_filter1.statuses = [BugTaskStatus.CONFIRMED]
         subscription_filter2 = self.subscription.newBugFilter()
         subscription_filter2.tags = [u"foo"]

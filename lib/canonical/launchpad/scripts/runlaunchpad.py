@@ -17,13 +17,14 @@ import fixtures
 from zope.app.server.main import main
 
 from canonical.config import config
-from lp.services.mailman import runmailman
 from canonical.launchpad.daemons import tachandler
 from canonical.launchpad.testing import googletestservice
 from canonical.lazr.pidfile import (
     make_pidfile,
     pidfile_path,
     )
+from lp.services.mailman import runmailman
+from lp.services.osutils import ensure_directory_exists
 
 
 def make_abspath(path):
@@ -39,7 +40,7 @@ class Service(fixtures.Fixture):
 
     def launch(self):
         """Run the service in a thread or external process.
-        
+
         May block long enough to kick it off, but must return control to
         the caller without waiting for it to shutdown.
         """
@@ -308,6 +309,9 @@ def start_launchpad(argv=list(sys.argv)):
     # Create the ZCML override file based on the instance.
     config.generate_overrides()
 
+    # Many things rely on a directory called 'logs' existing in the current
+    # working directory.
+    ensure_directory_exists('logs')
     with nested(*services):
         # Store our process id somewhere
         make_pidfile('launchpad')
