@@ -341,8 +341,8 @@ class TestBranchView(BrowserTestCase):
         with person_logged_in(reporter):
             branch.linkBug(bug, reporter)
             view = create_initialized_view(branch, '+index')
-            # Comparing bug ids as the linked bugs are decorated bugs.
-            self.assertEqual([bug.id], [bug.id for bug in view.linked_bugtasks])
+            self.assertEqual([bug.id],
+                [task.bug.id for task in view.linked_bugtasks])
         with person_logged_in(branch.owner):
             view = create_initialized_view(branch, '+index')
             self.assertEqual([], view.linked_bugtasks)
@@ -356,9 +356,9 @@ class TestBranchView(BrowserTestCase):
         with person_logged_in(branch.owner):
             self._addBugLinks(branch)
         view = create_initialized_view(branch, '+index')
-        for bug in view.linked_bugtasks:
+        for bugtask in view.linked_bugtasks:
             self.assertTrue(
-                bug.bugtask.status in UNRESOLVED_BUGTASK_STATUSES)
+                bugtask.status in UNRESOLVED_BUGTASK_STATUSES)
 
     def test_linked_bugs_nonseries_branch_query_scaling(self):
         # As we add linked bugs, the query count for a branch index page stays
