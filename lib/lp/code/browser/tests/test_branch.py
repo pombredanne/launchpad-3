@@ -323,18 +323,18 @@ class TestBranchView(BrowserTestCase):
             bug = self.factory.makeBug(status=status)
             branch.linkBug(bug, branch.owner)
 
-    def test_linked_bugs(self):
+    def test_linked_bugtasks(self):
         # The linked bugs for a non series branch shows all linked bugs.
         branch = self.factory.makeAnyBranch()
         with person_logged_in(branch.owner):
             self._addBugLinks(branch)
         view = create_initialized_view(branch, '+index')
-        self.assertEqual(len(BugTaskStatus), len(view.linked_bugs))
+        self.assertEqual(len(BugTaskStatus), len(view.linked_bugtasks))
         self.assertFalse(view.context.is_series_branch)
 
-    def test_linked_bugs_privacy(self):
+    def test_linked_bugtasks_privacy(self):
         # If a linked bug is private, it is not in the linked bugs if the user
-        # can't see it.
+        # can't see any of the tasks.
         branch = self.factory.makeAnyBranch()
         reporter = self.factory.makePerson()
         bug = self.factory.makeBug(private=True, owner=reporter)
@@ -342,13 +342,13 @@ class TestBranchView(BrowserTestCase):
             branch.linkBug(bug, reporter)
             view = create_initialized_view(branch, '+index')
             # Comparing bug ids as the linked bugs are decorated bugs.
-            self.assertEqual([bug.id], [bug.id for bug in view.linked_bugs])
+            self.assertEqual([bug.id], [bug.id for bug in view.linked_bugtasks])
         with person_logged_in(branch.owner):
             view = create_initialized_view(branch, '+index')
-            self.assertEqual([], view.linked_bugs)
+            self.assertEqual([], view.linked_bugtasks)
 
-    def test_linked_bugs_series_branch(self):
-        # The linked bugs for a series branch shows only unresolved bugs.
+    def test_linked_bugtasks_series_branch(self):
+        # The linked bugtasks for a series branch shows only unresolved bugs.
         product = self.factory.makeProduct()
         branch = self.factory.makeProductBranch(product=product)
         with person_logged_in(product.owner):
@@ -356,7 +356,7 @@ class TestBranchView(BrowserTestCase):
         with person_logged_in(branch.owner):
             self._addBugLinks(branch)
         view = create_initialized_view(branch, '+index')
-        for bug in view.linked_bugs:
+        for bug in view.linked_bugtasks:
             self.assertTrue(
                 bug.bugtask.status in UNRESOLVED_BUGTASK_STATUSES)
 
