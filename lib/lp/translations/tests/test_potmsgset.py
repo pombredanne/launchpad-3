@@ -920,6 +920,8 @@ class TestPOTMsgSetResetTranslation(TestCaseWithFactory):
 
         message_this = self.factory.makeCurrentTranslationMessage(
             pofile=self.pofile, potmsgset=self.potmsgset)
+        self.potmsgset.setSequence(
+            other_potemplate, self.factory.getUniqueInteger())
         message_other = self.factory.makeCurrentTranslationMessage(
             pofile=other_pofile, potmsgset=self.potmsgset)
         traits = getUtility(ITranslationSideTraitsSet).getTraits(
@@ -1323,6 +1325,7 @@ class TestPOTMsgSet_submitSuggestion(TestCaseWithFactory):
             productseries=series2, name=pofile.potemplate.name)
         pofile2 = template2.getPOFileByLang(pofile.language.code)
         translation = {0: self.factory.getUniqueString()}
+        potmsgset.setSequence(template2, self.factory.getUniqueInteger())
         diverged_message = self.factory.makeCurrentTranslationMessage(
             pofile=pofile2, potmsgset=potmsgset, translator=owner,
             translations=translation, diverged=True)
@@ -1771,6 +1774,8 @@ class TestFindTranslationMessage(TestCaseWithFactory):
         diverged = self.factory.makeDivergedTranslationMessage(
             pofile=pofile, potmsgset=potmsgset,
             translations=translations)
+        potmsgset.setSequence(
+            other_pofile.potemplate, self.factory.getUniqueInteger())
         shared = self.factory.makeCurrentTranslationMessage(
             pofile=other_pofile, potmsgset=potmsgset,
             translations=translations)
@@ -1839,6 +1844,8 @@ class TestFindTranslationMessage(TestCaseWithFactory):
         other_pofile = self.factory.makePOFile(pofile.language.code)
         potmsgset.setSequence(pofile.potemplate, 1)
 
+        potmsgset.setSequence(
+            other_pofile.potemplate, self.factory.getUniqueInteger())
         self.factory.makeCurrentTranslationMessage(
             pofile=other_pofile, potmsgset=potmsgset,
             translations=translations, diverged=True)
@@ -1880,3 +1887,33 @@ class TestFindTranslationMessage(TestCaseWithFactory):
         found = potmsgset.findTranslationMessage(
             pofile, translations=translations, prefer_shared=True)
         self.assertEqual(shared, found)
+
+
+class TestClone(TestCaseWithFactory):
+    """Test the clone() method."""
+
+    layer = ZopelessDatabaseLayer
+
+    def test_clone(self):
+        """Cloning a POTMsgSet should produce a near-identical copy."""
+        msgset = self.factory.makePOTMsgSet(
+            context=self.factory.getUniqueString('context'),
+            plural=self.factory.getUniqueString('plural'),
+            singular=self.factory.getUniqueString('singular'),
+            commenttext=self.factory.getUniqueString('comment'),
+            filereferences=self.factory.getUniqueString('filereferences'),
+            sourcecomment=self.factory.getUniqueString('sourcecomment'),
+            flagscomment=self.factory.getUniqueString('flagscomment'),
+        )
+        new_msgset = msgset.clone()
+        naked_msgset = removeSecurityProxy(msgset)
+        naked_new_msgset = removeSecurityProxy(new_msgset)
+        self.assertNotEqual(msgset.id, new_msgset.id)
+        self.assertEqual(msgset.context, new_msgset.context)
+        self.assertEqual(msgset.msgid_singular, new_msgset.msgid_singular)
+        self.assertEqual(msgset.msgid_plural, new_msgset.msgid_plural)
+        self.assertEqual(
+            msgset.commenttext, new_msgset.commenttext)
+        self.assertEqual(msgset.filereferences, new_msgset.filereferences)
+        self.assertEqual(msgset.sourcecomment, new_msgset.sourcecomment)
+        self.assertEqual(msgset.flagscomment, new_msgset.flagscomment)

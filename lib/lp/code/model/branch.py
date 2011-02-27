@@ -685,7 +685,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             map(ClearOfficialPackageBranch, series_set.findForBranch(self)))
         deletion_operations.extend(
             DeletionCallable.forSourcePackageRecipe(recipe)
-            for recipe in self.getRecipes())
+            for recipe in self.recipes)
         return (alteration_operations, deletion_operations)
 
     def deletionRequirements(self):
@@ -1180,7 +1180,8 @@ class Branch(SQLBase, BzrIdentityMixin):
                     user, checked_branches)
         return can_access
 
-    def getRecipes(self):
+    @property
+    def recipes(self):
         """See `IHasRecipes`."""
         from lp.code.model.sourcepackagerecipedata import (
             SourcePackageRecipeData)

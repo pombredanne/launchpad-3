@@ -1926,7 +1926,9 @@ class BugTaskSet:
                 ssub_match_milestone)
 
             join_tables.append(
-                (Product, LeftJoin(Product, BugTask.productID == Product.id)))
+                (Product, LeftJoin(Product, And(
+                                BugTask.productID == Product.id,
+                                Product.active))))
             join_tables.append(
                 (StructuralSubscription,
                  Join(StructuralSubscription, join_clause)))
@@ -1934,6 +1936,28 @@ class BugTaskSet:
                 'StructuralSubscription.subscriber = %s'
                 % sqlvalues(params.structural_subscriber))
             has_duplicate_results = True
+
+
+        # Remove bugtasks from deactivated products, if necessary.
+        # We don't have to do this if
+        # 1) We're searching on bugtasks for a specific product
+        # 2) We're searching on bugtasks for a specific productseries
+        # 3) We're searching on bugtasks for a distribution
+        # 4) We're searching for bugtasks for a distroseries
+        # because in those instances we don't have arbitrary products which
+        # may be deactivated showing up in our search.
+        if (params.product is None and
+            params.distribution is None and
+            params.productseries is None and
+            params.distroseries is None):
+            # Prevent circular import problems.
+            from lp.registry.model.product import Product
+            extra_clauses.append(
+                "(Bugtask.product IS NULL OR Product.active = TRUE)")
+            join_tables.append(
+                (Product, LeftJoin(Product, And(
+                                BugTask.productID == Product.id,
+                                Product.active))))
 
         if params.component:
             clauseTables += [SourcePackagePublishingHistory,
@@ -2106,7 +2130,6 @@ class BugTaskSet:
         if not decorators:
             decorator = lambda x: x
         else:
-
             def decorator(obj):
                 for decor in decorators:
                     obj = decor(obj)
@@ -2243,7 +2266,8 @@ class BugTaskSet:
                 AND MessageChunk.fti @@ ftq(%s))""" % searchtext_quoted
         text_search_clauses = [
             "Bug.fti @@ ftq(%s)" % searchtext_quoted,
-            "BugTask.fti @@ ftq(%s)" % searchtext_quoted]
+            "BugTask.fti @@ ftq(%s)" % searchtext_quoted,
+            ]
         no_targetnamesearch = bool(features.getFeatureFlag(
             'malone.disable_targetnamesearch'))
         if not no_targetnamesearch:
@@ -2381,8 +2405,9 @@ class BugTaskSet:
         origin = [BugTask]
         already_joined = set(origin)
         for table, join in join_tables:
-            origin.append(join)
-            already_joined.add(table)
+            if table not in already_joined:
+                origin.append(join)
+                already_joined.add(table)
         for table, join in prejoin_tables:
             if table not in already_joined:
                 origin.append(join)
