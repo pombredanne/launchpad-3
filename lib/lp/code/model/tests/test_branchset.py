@@ -17,20 +17,16 @@ class TestBranchSet(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        self.branch_set = BranchSet()
-
     def test_provides_IBranchSet(self):
         # BranchSet instances provide IBranchSet.
-        self.assertProvides(self.branch_set, IBranchSet)
+        self.assertProvides(BranchSet(), IBranchSet)
 
     def test_getByUrls(self):
         # getByUrls returns a list of branches matching the list of URLs that
         # it's given.
         a = self.factory.makeAnyBranch()
         b = self.factory.makeAnyBranch()
-        branches = self.branch_set.getByUrls(
+        branches = BranchSet().getByUrls(
             [a.bzr_identity, b.bzr_identity])
         self.assertEqual({a.bzr_identity: a, b.bzr_identity: b}, branches)
 
@@ -38,5 +34,5 @@ class TestBranchSet(TestCaseWithFactory):
         # If a branch cannot be found for a URL, then None appears in the list
         # in place of the branch.
         url = 'http://example.com/doesntexist'
-        branches = self.branch_set.getByUrls([url])
+        branches = BranchSet().getByUrls([url])
         self.assertEqual({url: None}, branches)
