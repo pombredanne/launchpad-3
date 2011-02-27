@@ -1291,7 +1291,8 @@ class BranchSet:
         branches = all_branches.visibleByUser(
             visible_by_user).withLifecycleStatus(*lifecycle_statuses)
         branches = branches.withBranchType(
-            BranchType.HOSTED, BranchType.MIRRORED).scanned().getBranches()
+            BranchType.HOSTED, BranchType.MIRRORED).scanned().getBranches(
+                eager_load=False)
         branches.order_by(
             Desc(Branch.date_last_modified), Desc(Branch.id))
         if branch_count is not None:
@@ -1307,7 +1308,7 @@ class BranchSet:
         branches = all_branches.visibleByUser(
             visible_by_user).withLifecycleStatus(*lifecycle_statuses)
         branches = branches.withBranchType(
-            BranchType.IMPORTED).scanned().getBranches()
+            BranchType.IMPORTED).scanned().getBranches(eager_load=False)
         branches.order_by(
             Desc(Branch.date_last_modified), Desc(Branch.id))
         if branch_count is not None:
@@ -1321,7 +1322,8 @@ class BranchSet:
         """See `IBranchSet`."""
         all_branches = getUtility(IAllBranches)
         branches = all_branches.withLifecycleStatus(
-            *lifecycle_statuses).visibleByUser(visible_by_user).getBranches()
+            *lifecycle_statuses).visibleByUser(visible_by_user).getBranches(
+                eager_load=False)
         branches.order_by(
             Desc(Branch.date_created), Desc(Branch.id))
         if branch_count is not None:
@@ -1340,10 +1342,10 @@ class BranchSet:
         """See `IBranchSet`."""
         return getUtility(IBranchLookup).getByUrls(urls)
 
-    def getBranches(self, limit=50):
+    def getBranches(self, limit=50, eager_load=True):
         """See `IBranchSet`."""
         anon_branches = getUtility(IAllBranches).visibleByUser(None)
-        branches = anon_branches.scanned().getBranches()
+        branches = anon_branches.scanned().getBranches(eager_load=eager_load)
         branches.order_by(
             Desc(Branch.date_last_modified), Desc(Branch.id))
         branches.config(limit=limit)

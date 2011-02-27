@@ -1278,8 +1278,13 @@ class IBranchSet(Interface):
         """
 
     @collection_default_content()
-    def getBranches(limit=50):
-        """Return a collection of branches."""
+    def getBranches(limit=50, eager_load=True):
+        """Return a collection of branches.
+        
+        :param eager_load: If True (the default because this is used in the 
+            web service and it needs the related objects to create links) eager
+            load related objects (products, code imports etc).
+        """
 
 
 class IBranchListingQueryOptimiser(Interface):

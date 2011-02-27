@@ -89,7 +89,7 @@ class GenericBranchCollection:
 
     def count(self):
         """See `IBranchCollection`."""
-        return self.getBranches().count()
+        return self.getBranches(eager_load=False).count()
 
     def ownerCounts(self):
         """See `IBranchCollection`."""
@@ -136,7 +136,7 @@ class GenericBranchCollection:
 
     def _getBranchIdQuery(self):
         """Return a Storm 'Select' for the branch IDs in this collection."""
-        select = self.getBranches()._get_select()
+        select = self.getBranches(eager_load=False)._get_select()
         select.columns = (Branch.id,)
         return select
 
@@ -144,7 +144,7 @@ class GenericBranchCollection:
         """Return the where expressions for this collection."""
         return self._branch_filter_expressions
 
-    def getBranches(self):
+    def getBranches(self, eager_load=False):
         """See `IBranchCollection`."""
         tables = [Branch] + self._tables.values()
         expressions = self._getBranchExpressions()
@@ -364,7 +364,7 @@ class GenericBranchCollection:
         # of the unique name and sort based on relevance.
         branch = self._getExactMatch(search_term)
         if branch is not None:
-            if branch in self.getBranches():
+            if branch in self.getBranches(eager_load=False):
                 return CountableIterator(1, [branch])
             else:
                 return CountableIterator(0, [])
@@ -397,7 +397,8 @@ class GenericBranchCollection:
 
         # Get the results.
         collection = self._filterBy([Branch.id.is_in(Union(*queries))])
-        results = collection.getBranches().order_by(Branch.name, Branch.id)
+        results = collection.getBranches(eager_load=False).order_by(
+            Branch.name, Branch.id)
         return CountableIterator(results.count(), results)
 
     def scanned(self):
