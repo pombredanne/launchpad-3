@@ -8,6 +8,7 @@
 __metaclass__ = type
 __all__ = [
     'BugNotification',
+    'BugNotificationFilter',
     'BugNotificationRecipient',
     'BugNotificationSet',
     ]
@@ -24,6 +25,10 @@ from sqlobject import (
     StringCol,
     )
 from storm.store import Store
+from storm.locals import (
+    Int,
+    Reference,
+    )
 from zope.interface import implements
 
 from canonical.config import config
@@ -33,12 +38,18 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.bugs.enum import BugNotificationStatus
 from lp.bugs.interfaces.bugnotification import (
     IBugNotification,
+    IBugNotificationFilter,
     IBugNotificationRecipient,
     IBugNotificationSet,
     )
+from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
+from lp.bugs.model.structuralsubscription import StructuralSubscription
+from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.stormbase import StormBase
 
 
 class BugNotification(SQLBase):
@@ -61,6 +72,27 @@ class BugNotification(SQLBase):
         """See `IBugNotification`."""
         return BugNotificationRecipient.selectBy(
             bug_notification=self, orderBy='id')
+
+    @property
+    def bug_filters(self):
+        """See `IStructuralSubscription`."""
+        return IStore(BugSubscriptionFilter).find(
+            BugSubscriptionFilter,
+            (BugSubscriptionFilter.id ==
+             BugNotificationFilter.bug_subscription_filter_id),
+            BugNotificationFilter.bug_notification == self)
+
+    def getFiltersByRecipient(self, recipient):
+        """See `IBugNotification`."""
+        return IStore(BugSubscriptionFilter).find(
+            BugSubscriptionFilter,
+            (BugSubscriptionFilter.id ==
+             BugNotificationFilter.bug_subscription_filter_id),
+            BugNotificationFilter.bug_notification == self,
+            (BugSubscriptionFilter.structural_subscription_id ==
+             StructuralSubscription.id),
+            TeamParticipation.personID == recipient.id,
+            TeamParticipation.teamID == StructuralSubscription.subscriberID)
 
 
 class BugNotificationSet:
@@ -137,3 +169,25 @@ class BugNotificationRecipient(SQLBase):
         dbName='person', notNull=True, foreignKey='Person')
     reason_header = StringCol(dbName='reason_header', notNull=True)
     reason_body = StringCol(dbName='reason_body', notNull=True)
+
+
+class BugNotificationFilter(StormBase):
+    """See `IBugNotificationFilter`."""
+    implements(IBugNotificationFilter)
+
+    __storm_table__ = "BugNotificationFilter"
+    __storm_primary__ = "bug_notification_id", "bug_subscription_filter_id"
+
+    def __init__(self, bug_notification, bug_subscription_filter):
+        self.bug_notification = bug_notification
+        self.bug_subscription_filter = bug_subscription_filter
+
+    bug_notification_id = Int(
+        "bug_notification", allow_none=False)
+    bug_notification = Reference(
+        bug_notification_id, "BugNotification.id")
+
+    bug_subscription_filter_id = Int(
+        "bug_subscription_filter", allow_none=False)
+    bug_subscription_filter = Reference(
+        bug_subscription_filter_id, "BugSubscriptionFilter.id")
