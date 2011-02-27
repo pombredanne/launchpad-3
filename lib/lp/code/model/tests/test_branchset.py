@@ -40,7 +40,3 @@ class TestBranchSet(TestCaseWithFactory):
         url = 'http://example.com/doesntexist'
         branches = self.branch_set.getByUrls([url])
         self.assertEqual({url: None}, branches)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
