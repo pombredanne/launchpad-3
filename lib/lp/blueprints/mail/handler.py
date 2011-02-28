@@ -16,6 +16,7 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.launchpad.interfaces.mail import IMailHandler
+from canonical.launchpad.mail.helpers import get_main_body
 from canonical.launchpad.webapp import urlparse
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.services.mail.sendmail import sendmail
@@ -69,6 +70,11 @@ class SpecificationHandler:
         else:
             return getUtility(ISpecificationSet).getByURL(url)
 
+    def get_spec_url_from_email(self, signed_msg):
+        """Return the first url found in the email body."""
+        mail_body = get_main_body(signed_msg)
+        return get_spec_url_from_moin_mail(mail_body)
+
     def process(self, signed_msg, to_addr, filealias=None, log=None):
         """See IMailHandler."""
         match = self._spec_changes_address.match(to_addr)
@@ -95,8 +101,7 @@ class SpecificationHandler:
         # sender.
         del signed_msg['Sender']
 
-        mail_body = signed_msg.get_payload(decode=True)
-        spec_url = get_spec_url_from_moin_mail(mail_body)
+        spec_url = self.get_spec_url_from_email(signed_msg)
         if spec_url is not None:
             if log is not None:
                 log.debug('Found a spec URL: %s' % spec_url)

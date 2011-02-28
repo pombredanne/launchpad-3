@@ -9,7 +9,10 @@ from testtools.matchers import Equals, Is
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 
-from lp.blueprints.mail.handler import get_spec_url_from_moin_mail
+from lp.blueprints.mail.handler import (
+    get_spec_url_from_moin_mail,
+    SpecificationHandler,
+    )
 from lp.services.log.logger import (
     BufferLogger,
     DevNullLogger,
@@ -74,4 +77,12 @@ class TestBlueprintEmailHandler(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    
+    def test_find_url_in_multipart_message(self):
+        """Multipart email is common, and we should be able to handle it."""
+        message = self.factory.makeSignedMessage(
+            body="An url http://example.com/foo in the body.",
+            attachment_contents="Nothing here either")
+        handler = SpecificationHandler()
+        self.assertThat(
+            handler.get_spec_url_from_email(message),
+            Equals('http://example.com/foo'))
