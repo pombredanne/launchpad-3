@@ -76,9 +76,9 @@ class TestPOTMsgSetMerging(TestCaseWithFactory, TranslatableProductMixin):
         # sharing templates had matching POTMsgSets, they will share
         # one.
         trunk_potmsgset = self.factory.makePOTMsgSet(
-            self.trunk_template, singular='foo', sequence=1)
+            self.trunk_template, singular='foo')
         stable_potmsgset = self.factory.makePOTMsgSet(
-            self.stable_template, singular='foo', sequence=1)
+            self.stable_template, singular='foo')
 
         self.merger.mergePOTMsgSets()
 
@@ -92,9 +92,9 @@ class TestPOTMsgSetMerging(TestCaseWithFactory, TranslatableProductMixin):
         # merge_potmsgsets can be run again on a situation it's
         # produced.  It will produce the same situation.
         trunk_potmsgset = self.factory.makePOTMsgSet(
-            self.trunk_template, singular='foo', sequence=1)
+            self.trunk_template, singular='foo')
         stable_potmsgset = self.factory.makePOTMsgSet(
-            self.stable_template, singular='foo', sequence=1)
+            self.stable_template, singular='foo')
 
         self.merger.mergePOTMsgSets()
         self.merger.mergePOTMsgSets()
@@ -108,9 +108,9 @@ class TestPOTMsgSetMerging(TestCaseWithFactory, TranslatableProductMixin):
     def test_unmatchedPOTMsgSetsDoNotShare(self):
         # Only identically-keyed potmsgsets get merged.
         trunk_potmsgset = self.factory.makePOTMsgSet(
-            self.trunk_template, singular='foo', sequence=1)
+            self.trunk_template, singular='foo')
         stable_potmsgset = self.factory.makePOTMsgSet(
-            self.stable_template, singular='foo', context='bar', sequence=1)
+            self.stable_template, singular='foo', context='bar')
 
         self.merger.mergePOTMsgSets()
 
@@ -152,10 +152,10 @@ class TranslatedProductMixin(TranslatableProductMixin):
         super(TranslatedProductMixin, self).setUpProduct()
 
         self.trunk_potmsgset = self.factory.makePOTMsgSet(
-            self.trunk_template, singular='foo', sequence=1)
+            self.trunk_template, singular='foo')
 
         self.stable_potmsgset = self.factory.makePOTMsgSet(
-            self.stable_template, singular='foo', sequence=1)
+            self.stable_template, singular='foo')
 
         self.msgid = self.trunk_potmsgset.msgid_singular
 

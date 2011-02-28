@@ -947,17 +947,17 @@ h1 .edit {
     top: -3px;
     margin-left: 0.5em;
     }
-.yui-ieditor {
+.yui3-ieditor {
     padding-right: 288px;
     }
-.lazr-multiline-edit .yui-ieditor {
+h1 .yui3-ieditor-errors {
+    font-size: 0.5em;
+    }
+.lazr-multiline-edit .yui3-ieditor {
     padding-right: 0;
     }
 .lazr-multiline-edit textarea {
     max-width: inherit;
-    }
-.lazr-multiline-edit .yui-ieditor-input {
-    padding-right: 5px !important;
     }
 .widget-hd.js-action {
     /* The js-action class is also used for non-links, for example, with
@@ -1471,10 +1471,10 @@ span.help {
    Colors and fonts
 */
 
-h1, h2, h3, 
-table.listing thead, 
-#homepage-stats strong, 
-#application-footer strong, 
+h1, h2, h3,
+table.listing thead,
+#homepage-stats strong,
+#application-footer strong,
 #application-summary strong {
     color: #5a5a5a;
 }
@@ -1825,8 +1825,8 @@ div#edit-commit_message {
     font-size: 93%;
     margin: 1em 0;
     }
-div#edit-description .yui-ieditor-input,
-div#edit-commit_message .yui-ieditor-input {
+
+.yui3-ieditor-multiline .yui3-ieditor-input {
     top: 0;
     }
 
@@ -2204,7 +2204,10 @@ body.tab-bugs #duplicate-actions .sprite {
     background-image: url(/@@/ppa-icon-inactive.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
-
+.source-package-recipe {
+    background-image: url(/@@/source-package-recipe.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+    }
 .bug-status-expand {
     background-image: url(/@@/bug-status-expand.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;

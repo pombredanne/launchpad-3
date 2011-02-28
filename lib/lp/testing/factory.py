@@ -61,7 +61,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.autodecorate import AutoDecorate
 from canonical.config import config
 from canonical.database.constants import (
     DEFAULT,
@@ -233,6 +232,7 @@ from lp.services.log.logger import BufferLogger
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.propertycache import clear_property_cache
+from lp.services.utils import AutoDecorate
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.adapters.packagelocation import PackageLocation
@@ -293,6 +293,9 @@ from lp.translations.interfaces.translationtemplatesbuildjob import (
 from lp.translations.interfaces.translator import ITranslatorSet
 from lp.translations.model.translationimportqueue import (
     TranslationImportQueueEntry,
+    )
+from lp.translations.model.translationtemplateitem import (
+    TranslationTemplateItem,
     )
 from lp.translations.utilities.sanitize import (
     sanitize_translations_from_webui,
@@ -2720,13 +2723,27 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return potemplate.newPOFile(language_code,
                                     create_sharing=create_sharing)
 
-    def makePOTMsgSet(self, potemplate, singular=None, plural=None,
-                      context=None, sequence=0):
+    def makePOTMsgSet(self, potemplate=None, singular=None, plural=None,
+                      context=None, sequence=None, commenttext=None,
+                      filereferences=None, sourcecomment=None,
+                      flagscomment=None):
         """Make a new `POTMsgSet` in the given template."""
+        if potemplate is None:
+            potemplate = self.makePOTemplate()
         if singular is None and plural is None:
             singular = self.getUniqueString()
+        if sequence is None:
+            sequence = self.getUniqueInteger()
         potmsgset = potemplate.createMessageSetFromText(
             singular, plural, context, sequence)
+        if commenttext is not None:
+            potmsgset.commenttext = commenttext
+        if filereferences is not None:
+            potmsgset.filereferences = filereferences
+        if sourcecomment is not None:
+            potmsgset.sourcecomment = sourcecomment
+        if flagscomment is not None:
+            potmsgset.flagscomment = flagscomment
         removeSecurityProxy(potmsgset).sync()
         return potmsgset
 
@@ -2769,7 +2786,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if pofile is None:
             pofile = self.makePOFile('sr')
         if potmsgset is None:
-            potmsgset = self.makePOTMsgSet(pofile.potemplate, sequence=1)
+            potmsgset = self.makePOTMsgSet(pofile.potemplate)
         if translator is None:
             translator = self.makePerson()
         translations = self.makeTranslationsDict(translations)
@@ -2789,7 +2806,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                       translations=None, diverged=False,
                                       current_other=False,
                                       date_created=None, date_reviewed=None,
-                                      language=None, side=None):
+                                      language=None, side=None,
+                                      potemplate=None):
         """Create a `TranslationMessage` and make it current.
 
         By default the message will only be current on the side (Ubuntu
@@ -2817,6 +2835,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param date_reviewed: Force a specific review date instead of 'now'.
         :param language: `Language` to use for the POFile
         :param side: The `TranslationSide` this translation should be for.
+        :param potemplate: If provided, the POTemplate to use when creating
+            the POFile.
         """
         assert not (diverged and current_other), (
             "A diverged message can't be current on the other side.")
@@ -2824,10 +2844,30 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             'Cannot specify both language and pofile.')
         assert None in (side, pofile), (
             'Cannot specify both side and pofile.')
+        link_potmsgset_with_potemplate = (
+            (pofile is None and potemplate is None) or potmsgset is None)
         if pofile is None:
-            pofile = self.makePOFile(language=language, side=side)
+            pofile = self.makePOFile(
+                language=language, side=side, potemplate=potemplate)
+        else:
+            assert potemplate is None, (
+                'Cannot specify both pofile and potemplate')
+        potemplate = pofile.potemplate
         if potmsgset is None:
-            potmsgset = self.makePOTMsgSet(pofile.potemplate, sequence=1)
+            potmsgset = self.makePOTMsgSet(potemplate)
+        if link_potmsgset_with_potemplate:
+            # If we have a new pofile or a new potmsgset, we must link
+            # the potmsgset to the pofile's potemplate.
+            potmsgset.setSequence(
+                pofile.potemplate, self.getUniqueInteger())
+        else:
+            # Otherwise it is the duty of the callsite to ensure
+            # consistency.
+            store = IStore(TranslationTemplateItem)
+            tti_for_message_in_template = store.find(
+                TranslationTemplateItem.potmsgset == potmsgset,
+                TranslationTemplateItem.potemplate == pofile.potemplate).any()
+            assert tti_for_message_in_template is not None
         if translator is None:
             translator = self.makePerson()
         if reviewer is None:

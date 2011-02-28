@@ -30,13 +30,10 @@ def reference_xhtml_representation(context, field, request):
     def render(value):
         # The value is a webservice link to the object, we want field value.
         obj = getattr(context, field.__name__, None)
-        if obj is None:
-            return ''
-        else:
-            try:
-                return format_link(obj)
-            except NotImplementedError:
-                return value
+        try:
+            return format_link(obj, empty_value='')
+        except NotImplementedError:
+            return value
     return render
 
 

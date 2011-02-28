@@ -190,7 +190,17 @@ class BugSubscriptionFilter(StormBase):
         _get_tags, _set_tags, doc=(
             "A frozenset of tags filtered on."))
 
+    def _has_other_filters(self):
+        """Are there other filters for parent `StructuralSubscription`?"""
+        store = Store.of(self)
+        return bool(store.find(
+            BugSubscriptionFilter,
+            (BugSubscriptionFilter.structural_subscription ==
+             self.structural_subscription),
+            BugSubscriptionFilter.id != self.id).any())
+
     def delete(self):
         """See `IBugSubscriptionFilter`."""
         self.importances = self.statuses = self.tags = ()
-        Store.of(self).remove(self)
+        if self._has_other_filters():
+            Store.of(self).remove(self)

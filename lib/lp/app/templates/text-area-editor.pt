@@ -23,9 +23,8 @@
             widget.editor.plug({
                 fn: Y.lp.client.plugins.PATCHPlugin, cfg: {
                   patch: ${view/json_attribute},
-                  resource: ${view/json_attribute_uri},
-                  patch_field: true,
-                  accept: 'application/xhtml+xml'
+                  resource: ${view/json_resource_uri},
+                  use_html: true
             }});
             if (!Y.UA.opera) {
                 widget.render();
