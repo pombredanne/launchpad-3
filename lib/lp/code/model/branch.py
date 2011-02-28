@@ -137,6 +137,7 @@ from lp.registry.interfaces.person import (
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
+from lp.services.propertycache import cachedproperty
 
 
 class Branch(SQLBase, BzrIdentityMixin):
@@ -704,13 +705,19 @@ class Branch(SQLBase, BzrIdentityMixin):
             DeleteCodeImport(self.code_import)()
         Store.of(self).flush()
 
-    def associatedProductSeries(self):
-        """See `IBranch`."""
+    @cachedproperty
+    def _associatedProductSeries(self):
+        """Helper for eager loading associatedProductSeries."""
+        # This is eager loaded by BranchCollection.getBranches.
         # Imported here to avoid circular import.
         from lp.registry.model.productseries import ProductSeries
         return Store.of(self).find(
             ProductSeries,
             ProductSeries.branch == self)
+
+    def associatedProductSeries(self):
+        """See `IBranch`."""
+        return self._associatedProductSeries
 
     def getProductSeriesPushingTranslations(self):
         """See `IBranch`."""

@@ -23,12 +23,16 @@ from storm.expr import (
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
 from canonical.launchpad.webapp.vocabulary import CountableIterator
+from canonical.lazr.utils import safe_hasattr
 from lp.code.interfaces.branch import user_has_special_branch_access
 from lp.code.interfaces.branchcollection import (
     IBranchCollection,
@@ -55,6 +59,7 @@ from lp.registry.model.person import (
 from lp.registry.model.product import Product
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.propertycache import get_property_cache
 
 
 class GenericBranchCollection:
@@ -148,7 +153,28 @@ class GenericBranchCollection:
         """See `IBranchCollection`."""
         tables = [Branch] + self._tables.values()
         expressions = self._getBranchExpressions()
-        return self.store.using(*tables).find(Branch, *expressions)
+        resultset = self.store.using(*tables).find(Branch, *expressions)
+        if not eager_load:
+            return resultset
+        def do_eager_load(rows):
+            branch_ids = set(branch.id for branch in rows)
+            if not branch_ids:
+                return
+            branches = dict((branch.id, branch) for branch in rows)
+            caches = dict((branch.id, get_property_cache(branch))
+                for branch in rows)
+            for cache in caches.values():
+                if not safe_hasattr(cache, '_associatedProductSeries'):
+                    cache._associatedProductSeries = []
+            # associatedProductSeries
+            # Imported here to avoid circular import.
+            from lp.registry.model.productseries import ProductSeries
+            for productseries in self.store.find(
+                ProductSeries,
+                ProductSeries.branchID.is_in(branch_ids)):
+                cache = caches[productseries.branchID]
+                cache._associatedProductSeries.append(productseries)
+        return DecoratedResultSet(resultset, pre_iter_hook=do_eager_load)
 
     def getMergeProposals(self, statuses=None, for_branches=None,
                           target_branch=None, merged_revnos=None):
