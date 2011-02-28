@@ -85,7 +85,7 @@
     border-top: 1px solid #EBEBEB;
     padding: 1em 0;
     }
-.portlet h2:first-child {
+.portlet > h2:first-child {
     margin-top: 0;
     }
 .top-portlet {
@@ -1163,19 +1163,13 @@ div.watermark-apps-portlet img {
     margin: 0 1.5em 0 0;
     }
 div.watermark-apps-portlet h1, div.watermark-apps-portlet h2 {
-    color: #000000;
-    font-size: 30px;
-    font-weight: bold;
-    line-height: 34px;
-    clear: none;
-    }
-div.watermark-apps-portlet h1 {
     margin-top: 0px;
     margin-bottom: 6px;
-    }
-div.watermark-apps-portlet h2 {
-    margin-top: 6px;
-    margin-bottom: 6px;
+    color: #000000;
+    font-weight: bold;
+    font-size: 30px;
+    line-height: 34px;
+    clear: none;
     }
 div.watermark-apps-portlet span img {
     float: none;
