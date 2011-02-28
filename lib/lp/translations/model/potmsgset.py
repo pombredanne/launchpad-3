@@ -361,7 +361,7 @@ class POTMsgSet(SQLBase):
 
         return TranslationMessage.select(query)
 
-    def _getExternalTranslationMessages(self, language, used=None):
+    def _getExternalTranslationMessages(self, language, used):
         """Return external suggestions for this message.
 
         External suggestions are all TranslationMessages for the
@@ -374,7 +374,7 @@ class POTMsgSet(SQLBase):
         store.
 
         :param used: If None, return both used and unused messages.
-            Otherwise, return only used (if bool(used)) or unuesd (if not
+            Otherwise, return only used (if bool(used)) or unused (if not
             bool(used)) messages.
         """
         if not config.rosetta.global_suggestions_enabled:
@@ -455,7 +455,7 @@ class POTMsgSet(SQLBase):
         # slower.
         suggested_messages = []
         used_messages = []
-        for message in self._getExternalTranslationMessages(language):
+        for message in self._getExternalTranslationMessages(language, used=None):
             in_use = message.is_current_ubuntu or message.is_current_upstream
             if in_use:
                 used_messages.append(message)

@@ -378,23 +378,6 @@ translations in Spanish:
     Spanish (es) translation of evolution-2.2 in Evolution trunk:
     tarjetas (Launchpad & Upstream)
 
-We get the same results when using the optimised helper:
-
-    >>> suggestions = (
-    ...     evo_product_message.getExternallySuggestedOrUsedTranslationMessages(
-    ...         spanish))[1]
-    >>> print_suggestions(suggestions)
-    Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package
-    "evolution":  caratas (Launchpad)
-    Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package
-    "evolution":  tarjetas (Upstream)
-
-    >>> suggestions = evo_distro_message.getExternallySuggestedOrUsedTranslationMessages(
-    ...    spanish)[1]
-    >>> print_suggestions(suggestions)
-    Spanish (es) translation of evolution-2.2 in Evolution trunk:
-    tarjetas (Launchpad & Upstream)
-
 We need to be logged in as an admin to do some special attribute
 changes:
 
@@ -411,13 +394,6 @@ are not available as suggestions anymore:
     >>> len(suggestions)
     0
 
-    >>> suggestions = (
-    ...     evo_product_message.getExternallySuggestedOrUsedTranslationMessages(
-    ...         spanish))[1]
-    >>> len(suggestions)
-    0
-
-
 The same happens if the distribution is not officially using
 translations.
 
@@ -433,11 +409,6 @@ translations.
     ...     evo_product_message.getExternallyUsedTranslationMessages(spanish))
     >>> len(suggestions)
     0
-    >>> suggestions = (
-    ...     evo_product_message.getExternallySuggestedOrUsedTranslationMessages(
-    ...         spanish))[1]
-    >>> len(suggestions)
-    0
 
 And products not using translations officially have the same behaviour.
 
@@ -446,10 +417,6 @@ And products not using translations officially have the same behaviour.
     >>> transaction.commit()
     >>> suggestions = evo_distro_message.getExternallyUsedTranslationMessages(
     ...    spanish)
-    >>> len(suggestions)
-    0
-    >>> suggestions = evo_distro_message.getExternallySuggestedOrUsedTranslationMessages(
-    ...    spanish)[1]
     >>> len(suggestions)
     0
 
@@ -541,17 +508,6 @@ active) as it's another context.
     Spanish (es) translation of man in Ubuntu Hoary package "evolution":
     lalalala (None)
 
-And our optimised helper returns these too:
-
-    >>> wiki_submissions = (
-    ...     potmsgset_untranslated.getExternallySuggestedOrUsedTranslationMessages(
-    ...         pofile.language))[0]
-    >>> print_suggestions(wiki_submissions)
-    Spanish (es) translation of man in Ubuntu Hoary package "evolution":
-    blah, blah, blah (None)
-    Spanish (es) translation of man in Ubuntu Hoary package "evolution":
-    lalalala (None)
-
 However, if the hoary template version is not current and thus hidden,
 we get no suggestions.
 
@@ -562,12 +518,6 @@ we get no suggestions.
     >>> wiki_submissions = (
     ...     potmsgset_untranslated.getExternallySuggestedTranslationMessages(
     ...         pofile.language))
-    >>> len(wiki_submissions)
-    0
-
-    >>> wiki_submissions = (
-    ...     potmsgset_untranslated.getExternallySuggestedOrUsedTranslationMessages(
-    ...         pofile.language))[0]
     >>> len(wiki_submissions)
     0
 
@@ -588,11 +538,31 @@ Launchpad for translations.
     >>> len(wiki_submissions)
     0
 
-    >>> wiki_submissions = (
+POTMsgSet.getExternallySuggestedOrUsedTranslationMessages
+---------------------------------------------------------
+
+This helper combines both getExternallyUsedTranslationMessages and
+getExternallySuggestedTranslationMessages into one call for more efficient
+database access. It is intended for use whenever both
+getExternallyUsedTranslationMessages and
+getExternallySuggestedTranslationMessages will be used on the same potmsgset.
+
+If we go back to the external translations available before, we can see we get
+the same result for suggestions and used messages.
+
+    >>> suggestions, used = (
     ...     potmsgset_untranslated.getExternallySuggestedOrUsedTranslationMessages(
-    ...         pofile.language))[0]
-    >>> len(wiki_submissions)
-    0
+    ...         pofile.language))
+    >>> wiki_suggestions = (
+    ...     potmsgset_untranslated.getExternallySuggestedTranslationMessages(
+    ...         pofile.language))
+    >>> wiki_used = (
+    ...     potmsgset_untranslated.getExternallyUsedTranslationMessages(
+    ...         pofile.language))
+    >>> wiki_submissions == suggestions
+    True
+    >>> wiki_used == used
+    True
 
 
 Suggestions for translator credits
@@ -632,8 +602,6 @@ However, this one doesn't show up as external suggestion for Spanish.
     >>> new_credits.getExternallyUsedTranslationMessages(spanish)
     []
     >>> new_credits.getExternallySuggestedTranslationMessages(spanish)
-    []
-    >>> new_credits.getExternallySuggestedOrUsedTranslationMessages(spanish)[0]
     []
 
 POTMsgSet.setSequence
