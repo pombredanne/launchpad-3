@@ -233,6 +233,6 @@ class BugNotificationRecipients(NotificationRecipientSet):
 
     def update(self, recipient_set):
         """See `INotificationRecipientSet`."""
-        super(BugNotificationRecipientSet, self).update(recipient_set)
+        super(BugNotificationRecipients, self).update(recipient_set)
         self.subscription_filters.extend(
             recipient_set.subscription_filters)
