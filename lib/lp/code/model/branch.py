@@ -727,13 +727,19 @@ class Branch(SQLBase, BzrIdentityMixin):
             ProductSeries,
             ProductSeries.translations_branch == self)
 
-    def associatedSuiteSourcePackages(self):
-        """See `IBranch`."""
+    @cachedproperty
+    def _associatedSuiteSourcePackages(self):
+        """Helper for associatedSuiteSourcePackages."""
+        # This is eager loaded by BranchCollection.getBranches.
         series_set = getUtility(IFindOfficialBranchLinks)
         # Order by the pocket to get the release one first.
         links = series_set.findForBranch(self).order_by(
             SeriesSourcePackageBranch.pocket)
         return [link.suite_sourcepackage for link in links]
+
+    def associatedSuiteSourcePackages(self):
+        """See `IBranch`."""
+        return self._associatedSuiteSourcePackages
 
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines,

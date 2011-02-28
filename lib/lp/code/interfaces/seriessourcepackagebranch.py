@@ -65,6 +65,13 @@ class IFindOfficialBranchLinks(Interface):
         :return: An `IResultSet` of `ISeriesSourcePackageBranch` objects.
         """
 
+    def findForBranches(branches):
+        """Get the links to source packages from a branch.
+
+        :param branches: A an iterable of `IBranch`.
+        :return: An `IResultSet` of `ISeriesSourcePackageBranch` objects.
+        """
+
     def findForSourcePackage(sourcepackage):
         """Get the links to branches from a source package.
 

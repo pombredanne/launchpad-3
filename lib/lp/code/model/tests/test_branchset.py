@@ -5,12 +5,18 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
+from testtools.matchers import LessThan
 
+from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.model.branch import BranchSet
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    logout,
+    TestCaseWithFactory,
+    )
+from lp.testing._webservice import QueryCollector
+from lp.testing.matchers import HasQueryCount
 
 
 class TestBranchSet(TestCaseWithFactory):
@@ -36,3 +42,19 @@ class TestBranchSet(TestCaseWithFactory):
         url = 'http://example.com/doesntexist'
         branches = BranchSet().getByUrls([url])
         self.assertEqual({url: None}, branches)
+
+    def test_api_branches_query_count(self):
+        webservice = LaunchpadWebServiceCaller()
+        collector = QueryCollector()
+        collector.register()
+        self.addCleanup(collector.unregister)
+        # Get 'all' of the 50 branches this collection is limited to - rather
+        # than the default in-test-suite pagination size of 5.
+        url = "/branches?ws.size=50"
+        logout()
+        response = webservice.get(url,
+            headers={'User-Agent': 'AnonNeedsThis'})
+        self.assertEqual(response.status, 200,
+            "Got %d for url %r with response %r" % (
+            response.status, url, response.body))
+        self.assertThat(collector, HasQueryCount(LessThan(13)))

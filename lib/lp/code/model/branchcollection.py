@@ -33,14 +33,16 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.vocabulary import CountableIterator
 from canonical.lazr.utils import safe_hasattr
+from lp.bugs.model.bug import Bug
+from lp.bugs.model.bugbranch import BugBranch
 from lp.code.interfaces.branch import user_has_special_branch_access
 from lp.code.interfaces.branchcollection import (
     IBranchCollection,
     InvalidFilter,
     )
-
-from lp.bugs.model.bug import Bug
-from lp.bugs.model.bugbranch import BugBranch
+from lp.code.interfaces.seriessourcepackagebranch import (
+    IFindOfficialBranchLinks,
+    )
 from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
@@ -166,6 +168,8 @@ class GenericBranchCollection:
             for cache in caches.values():
                 if not safe_hasattr(cache, '_associatedProductSeries'):
                     cache._associatedProductSeries = []
+                if not safe_hasattr(cache, '_associatedSuiteSourcePackages'):
+                    cache._associatedSuiteSourcePackages = []
             # associatedProductSeries
             # Imported here to avoid circular import.
             from lp.registry.model.productseries import ProductSeries
@@ -174,6 +178,14 @@ class GenericBranchCollection:
                 ProductSeries.branchID.is_in(branch_ids)):
                 cache = caches[productseries.branchID]
                 cache._associatedProductSeries.append(productseries)
+            # associatedSuiteSourcePackages
+            series_set = getUtility(IFindOfficialBranchLinks)
+            # Order by the pocket to get the release one first.
+            links = series_set.findForBranches(rows).order_by(
+                SeriesSourcePackageBranch.pocket)
+            for link in links:
+                cache = caches[link.branchID]
+                cache._associatedSuiteSourcePackages.append(link)
         return DecoratedResultSet(resultset, pre_iter_hook=do_eager_load)
 
     def getMergeProposals(self, statuses=None, for_branches=None,
