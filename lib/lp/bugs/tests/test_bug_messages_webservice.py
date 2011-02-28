@@ -49,7 +49,7 @@ class TestSetCommentVisibility(TestCaseWithFactory):
 
         bug_entry = lp.load(
             'http://api.launchpad.dev/1.0/bugs/%s/' % self.bug.id)
-        return bug_entry 
+        return bug_entry
 
     def _set_visibility(self, bug):
         """Method to set visibility; needed for assertRaises."""
@@ -73,7 +73,7 @@ class TestSetCommentVisibility(TestCaseWithFactory):
             HTTPError,
             self._set_visibility,
             bug)
-        
+
     def test_anon_cannot_set_visible(self):
         # Anonymous users can't set bug comment
         # visibility.

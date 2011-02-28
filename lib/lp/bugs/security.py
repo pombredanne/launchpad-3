@@ -23,6 +23,7 @@ from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.structuralsubscription import IStructuralSubscription
 
+
 class EditBugNominationStatus(AuthorizationBase):
     permission = 'launchpad.Driver'
     usedfor = IBugNomination
