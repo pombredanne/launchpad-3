@@ -448,8 +448,20 @@ class POTMsgSet(SQLBase):
 
     def getExternallySuggestedOrUsedTranslationMessages(self, language):
         """See `IPOTMsgSet`."""
-        return (self.getExternallySuggestedTranslationMessages(language),
-            self.getExternallyUsedTranslationMessages(language))
+        # This method exists because suggestions + used == all external
+        # messages : its better not to do the work twice. We could use a
+        # temp table and query twice, but as the list length is capped at
+        # 2000, doing a single pass in python should be insignificantly
+        # slower.
+        suggested_messages = []
+        used_messages = []
+        for message in self._getExternalTranslationMessages(language):
+            in_use = message.is_current_ubuntu or message.is_current_upstream
+            if in_use:
+                used_messages.append(message)
+            else:
+                suggested_messages.append(message)
+        return suggested_messages, used_messages
 
     @property
     def flags(self):
