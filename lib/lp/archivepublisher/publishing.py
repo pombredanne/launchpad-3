@@ -25,7 +25,7 @@ from lp.archivepublisher.config import (
     )
 from lp.archivepublisher.diskpool import DiskPool
 from lp.archivepublisher.domination import Dominator
-from lp.archivepublisher.ftparchive import FTPArchiveHandler
+from lp.archivepublisher.model.ftparchive import FTPArchiveHandler
 from lp.archivepublisher.htaccess import (
     htpasswd_credentials_for_archive,
     write_htaccess,

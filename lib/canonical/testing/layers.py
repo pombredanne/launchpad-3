@@ -95,7 +95,7 @@ from zope.security.simplepolicies import PermissiveSecurityPolicy
 from zope.server.logger.pythonlogger import PythonLogger
 from zope.testing.testrunner.runner import FakeInputContinueGenerator
 
-from canonical.ftests.pgsql import PgTestSetup
+import canonical.launchpad.webapp.session
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr import pidfile
 from canonical.config import CanonicalConfig, config, dbconfig
@@ -132,11 +132,16 @@ from canonical.testing.profiled import profiled
 from canonical.testing.smtpd import SMTPController
 from lp.services.memcache.client import memcache_client_factory
 from lp.services.osutils import kill_by_pidfile
+from lp.testing.pgsql import PgTestSetup
 
 
 orig__call__ = zope.app.testing.functional.HTTPCaller.__call__
 COMMA = ','
 WAIT_INTERVAL = datetime.timedelta(seconds=180)
+
+
+def set_up_functional_test():
+    return FunctionalTestSetup('zcml/ftesting.zcml')
 
 
 class LayerError(Exception):
@@ -1018,7 +1023,7 @@ def wsgi_application(environ, start_response):
     # zope.publisher.paste.Application.
     request_cls, publication_cls = chooseClasses(
         environ['REQUEST_METHOD'], environ)
-    publication = publication_cls(FunctionalTestSetup().db)
+    publication = publication_cls(set_up_functional_test().db)
     request = request_cls(environ['wsgi.input'], environ)
     request.setPublication(publication)
     # The rest of this function is an amalgam of
@@ -1048,14 +1053,17 @@ class FunctionalLayer(BaseLayer):
     @profiled
     def setUp(cls):
         FunctionalLayer.isSetUp = True
-        FunctionalTestSetup().setUp()
+        set_up_functional_test().setUp()
 
-        # Assert that FunctionalTestSetup did what it says it does
+        # Assert that set_up_functional_test did what it says it does
         if not is_ca_available():
             raise LayerInvariantError("Component architecture failed to load")
 
+        # Access the cookie manager's secret to get the cache populated.
+        # If we don't, it may issue extra queries depending on test order.
+        canonical.launchpad.webapp.session.idmanager.secret
         # If our request publication factories were defined using ZCML,
-        # they'd be set up by FunctionalTestSetup().setUp(). Since
+        # they'd be set up by set_up_functional_test().setUp(). Since
         # they're defined by Python code, we need to call that code
         # here.
         register_launchpad_request_publication_factories()
@@ -1083,7 +1091,7 @@ class FunctionalLayer(BaseLayer):
         transaction.begin()
 
         # Fake a root folder to keep Z3 ZODB dependencies happy.
-        fs = FunctionalTestSetup()
+        fs = set_up_functional_test()
         if not fs.connection:
             fs.connection = fs.db.open()
         root = fs.connection.root()

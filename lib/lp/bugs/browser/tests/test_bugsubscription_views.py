@@ -10,7 +10,7 @@ from canonical.testing.layers import LaunchpadFunctionalLayer
 
 from lp.bugs.browser.bugsubscription import (
     BugPortletSubcribersIds,
-    BugSubscriptionAddView,
+    BugSubscriptionListView,
     BugSubscriptionSubscribeSelfView,
     )
 from lp.bugs.enum import BugNotificationLevel
@@ -63,7 +63,8 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     level, subscription.bug_notification_level,
                     "Bug notification level of subscription should be %s, is "
                     "actually %s." % (
-                        level.title, subscription.bug_notification_level.title))
+                        level.title,
+                        subscription.bug_notification_level.title))
 
     def test_nothing_is_not_a_valid_level(self):
         # BugNotificationLevel.NOTHING isn't considered valid when
@@ -266,3 +267,27 @@ class BugPortletSubcribersIdsTests(TestCaseWithFactory):
         self.assertEqual(
             harness.request.response.getHeader('content-type'),
             'application/json')
+
+
+class BugSubscriptionsListViewTestCase(TestCaseWithFactory):
+    """Tests for the BugSubscriptionsListView."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(BugSubscriptionsListViewTestCase, self).setUp()
+        self.product = self.factory.makeProduct(
+            name='widgetsrus', displayname='Widgets R Us')
+        self.bug = self.factory.makeBug(product=self.product)
+        self.subscriber = self.factory.makePerson()
+
+    def test_identify_structural_subscriptions(self):
+        # This shows simply that we can identify the structural
+        # subscriptions for the page.  The content will come later.
+        with person_logged_in(self.subscriber):
+            sub = self.product.addBugSubscription(
+                self.subscriber, self.subscriber)
+            harness = LaunchpadFormHarness(
+                self.bug.default_bugtask, BugSubscriptionListView)
+            self.assertEqual(
+                list(harness.view.structural_subscriptions), [sub])

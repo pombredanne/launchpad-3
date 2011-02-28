@@ -280,6 +280,8 @@ COMMENT ON COLUMN BugNotification.bug IS 'The bug that was changed.';
 COMMENT ON COLUMN BugNotification.message IS 'The message the contains the textual representation of the change.';
 COMMENT ON COLUMN BugNotification.is_comment IS 'Is the change a comment addition.';
 COMMENT ON COLUMN BugNotification.date_emailed IS 'When this notification was emailed to the bug subscribers.';
+COMMENT ON COLUMN BugNotification.activity IS 'The BugActivity record corresponding to this notification, if any.';
+COMMENT ON COLUMN BugNotification.status IS 'The status of this bug notification: pending, omitted, or sent.';
 
 
 -- BugNotificationAttachment
@@ -287,6 +289,13 @@ COMMENT ON COLUMN BugNotification.date_emailed IS 'When this notification was em
 COMMENT ON TABLE BugNotificationAttachment IS 'Attachments to be attached to a bug notification.';
 COMMENT ON COLUMN BugNotificationAttachment.message IS 'A message to be attached to the sent bug notification. It will be attached as a mime/multipart part, with a content type of message/rfc822.';
 COMMENT ON COLUMN BugNotificationAttachment.bug_notification IS 'The bug notification, to which things should be attached to.';
+
+
+-- BugNotificationFilter
+
+COMMENT ON TABLE BugNotificationFilter IS 'BugSubscriptionFilters that caused BugNotification to be generated.';
+COMMENT ON COLUMN BugNotificationFilter.bug_subscription_filter IS 'A BugSubscriptionFilter that caused a notification to go off.';
+COMMENT ON COLUMN BugNotificationFilter.bug_notification IS 'The bug notification which a filter caused to be emitted.';
 
 
 -- BugNotificationRecipient
@@ -1824,6 +1833,14 @@ of giving the person any special privileges to edit the Packaging record,
 it is simply a record of who told us about this packaging relationship. Note
 that we do not keep a history of these, so if someone sets it correctly,
 then someone else sets it incorrectly, we lose the first setting.';
+
+COMMENT ON TABLE PackagingJob IS 'A Job related to a Packaging entry.';
+COMMENT ON COLUMN PackagingJob.id IS '';
+COMMENT ON COLUMN PackagingJob.job IS 'The Job related to this PackagingJob.';
+COMMENT ON COLUMN PackagingJob.job_type IS 'An enumeration specifying the type of job to perform.';
+COMMENT ON COLUMN PackagingJob.productseries IS 'The productseries of the Packaging.';
+COMMENT ON COLUMN PackagingJob.sourcepackagename IS 'The sourcepackage of the Packaging.';
+COMMENT ON COLUMN PackagingJob.distroseries IS 'The distroseries of the Packaging.';
 
 -- Translator / TranslationGroup
 

@@ -61,7 +61,6 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.encoding import guess as ensure_unicode
 from canonical.launchpad.helpers import get_filename_from_message_id
 from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAliasSet,
@@ -83,6 +82,7 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     validate_public_person,
     )
+from lp.services.encoding import guess as ensure_unicode
 from lp.services.job.model.job import Job
 from lp.services.propertycache import cachedproperty
 
@@ -131,6 +131,9 @@ class Message(SQLBase):
     raw = ForeignKey(foreignKey='LibraryFileAlias', dbName='raw',
                      default=None)
     bugattachments = SQLMultipleJoin('BugAttachment', joinColumn='_message')
+
+    def __repr__(self):
+        return "<Message at 0x%x id=%s>" % (id(self), self.id)
 
     def __iter__(self):
         """See IMessage.__iter__"""

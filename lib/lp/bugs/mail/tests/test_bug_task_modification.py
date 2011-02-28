@@ -44,7 +44,7 @@ class TestModificationNotification(TestCaseWithFactory):
             ['status'], user=self.user))
         transaction.commit()
         latest_notification = BugNotification.selectFirst(orderBy='-id')
-        notifications, messages = construct_email_notifications(
+        notifications, omitted, messages = construct_email_notifications(
             [latest_notification])
         self.assertEqual(len(notifications), 1,
                          'email notification not created')

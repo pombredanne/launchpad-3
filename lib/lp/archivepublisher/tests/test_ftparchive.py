@@ -19,7 +19,7 @@ from lp.services.log.logger import BufferLogger
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
-from lp.archivepublisher.ftparchive import (
+from lp.archivepublisher.model.ftparchive import (
     f_touch,
     FTPArchiveHandler,
     )

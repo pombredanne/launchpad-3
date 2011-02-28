@@ -7,7 +7,9 @@ __metaclass__ = type
 __all__ = ['Packaging', 'PackagingUtil']
 
 from sqlobject import ForeignKey
+from zope.event import notify
 from zope.interface import implements
+from lazr.lifecycle.event import ObjectCreatedEvent
 
 from canonical.database.constants import (
     DEFAULT,
@@ -55,6 +57,10 @@ class Packaging(SQLBase):
         return SourcePackage(distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename)
 
+    def __init__(self, **kwargs):
+        super(Packaging, self).__init__(**kwargs)
+        notify(ObjectCreatedEvent(self))
+
 
 class PackagingUtil:
     """Utilities for Packaging."""
@@ -71,11 +77,11 @@ class PackagingUtil:
             raise AssertionError(
                 "A packaging entry for %s in %s already exists." %
                 (sourcepackagename.name, distroseries.name))
-        Packaging(productseries=productseries,
-                  sourcepackagename=sourcepackagename,
-                  distroseries=distroseries,
-                  packaging=packaging,
-                  owner=owner)
+        return Packaging(productseries=productseries,
+                         sourcepackagename=sourcepackagename,
+                         distroseries=distroseries,
+                         packaging=packaging,
+                         owner=owner)
 
     def deletePackaging(self, productseries, sourcepackagename, distroseries):
         """See `IPackaging`."""

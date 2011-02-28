@@ -68,6 +68,7 @@ setup(
         'RestrictedPython',
         'setproctitle',
         'setuptools',
+        'Sphinx',
         'soupmatchers',
         'sourcecodegen',
         'storm',
@@ -81,7 +82,7 @@ setup(
         'zope.app.apidoc',
         'zope.app.appsetup',
         'zope.app.component',
-        'zope.app.dav', # ./package-includes/dav-configure.zcml
+        'zope.app.dav', # ./zcml/package-includes/dav-configure.zcml
         'zope.app.error',
         'zope.app.exception',
         'zope.app.file',

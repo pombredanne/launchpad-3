@@ -38,7 +38,6 @@ from canonical.testing.layers import (
     )
 from lp.answers.model.answercontact import AnswerContact
 from lp.blueprints.model.specification import Specification
-from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtask import get_related_bugtasks_search_params
@@ -398,9 +397,7 @@ class TestPersonStates(TestCaseWithFactory):
         # A PUBLIC team with a structural subscription to a product can
         # convert to a PRIVATE team.
         foo_bar = Person.byName('name16')
-        StructuralSubscription(
-            product=self.bzr, subscriber=self.otherteam,
-            subscribed_by=foo_bar)
+        self.bzr.addSubscription(self.otherteam, foo_bar)
         self.otherteam.visibility = PersonVisibility.PRIVATE
 
     def test_visibility_validator_team_private_to_public(self):
@@ -731,7 +728,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self._do_premerge(recipe.owner, person)
         login_person(person)
         self.person_set.merge(recipe.owner, person)
-        self.assertEqual(1, person.getRecipes().count())
+        self.assertEqual(1, person.recipes.count())
 
     def test_merge_with_duplicated_recipes(self):
         # If both the from and to people have recipes with the same name,
@@ -747,7 +744,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self._do_premerge(merge_from.owner, mergee)
         login_person(mergee)
         self.person_set.merge(merge_from.owner, merge_to.owner)
-        recipes = mergee.getRecipes()
+        recipes = mergee.recipes
         self.assertEqual(2, recipes.count())
         descriptions = [r.description for r in recipes]
         self.assertEqual([u'TO', u'FROM'], descriptions)

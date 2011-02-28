@@ -724,6 +724,12 @@
             template="../templates/bug-remove-question.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bugtask.IBugTask"
+            name="+subscriptions"
+            class="lp.bugs.browser.bugsubscription.BugSubscriptionListView"
+            permission="launchpad.AnyPerson"
+            template="../templates/bug-subscription-list.pt"/>
+        <browser:page
+            for="lp.bugs.interfaces.bugtask.IBugTask"
             name="+subscribe"
             class="lp.bugs.browser.bugsubscription.BugSubscriptionSubscribeSelfView"
             permission="launchpad.AnyPerson"

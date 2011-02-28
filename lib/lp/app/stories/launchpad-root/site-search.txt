@@ -5,7 +5,7 @@ Launchpad features a site-wide search that combines Google's site-
 specific search with Launchpad's prominent objects (projects, bugs,
 teams, etc.).
 
-    >>> from canonical.encoding import ascii_smash
+    >>> from lp.services.encoding import ascii_smash
 
     # Our very helpful function for printing all the page results.
 
