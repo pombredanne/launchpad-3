@@ -52,7 +52,7 @@ order to extract any useful information about the wiki page.
 So, we'll have to extract the specification URL from the message. To do
 this, we use get_spec_url_from_moin_mail():
 
-    >>> from canonical.launchpad.mail.specexploder import (
+    >>> from lp.blueprints.mail.handler import (
     ...     get_spec_url_from_moin_mail)
     >>> get_spec_url_from_moin_mail(moin_change.get_payload(decode=True))
     'https://wiki.ubuntu.com/MediaIntegrityCheck'

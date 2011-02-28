@@ -16,10 +16,23 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.launchpad.interfaces.mail import IMailHandler
-from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
 from canonical.launchpad.webapp import urlparse
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.services.mail.sendmail import sendmail
+
+
+MOIN_URL_RE = re.compile(r'(https?://[^ \r\n]+)')
+
+
+def get_spec_url_from_moin_mail(moin_text):
+     """Extract a specification URL from Moin change notification."""
+     if not isinstance(moin_text, basestring):
+         return None
+     match = MOIN_URL_RE.search(moin_text)
+     if match:
+          return match.group(1)
+     else:
+          return None
 
 
 class SpecificationHandler:
