@@ -1,0 +1,4 @@
+These are for plugins that we do *not* want loaded all of the time.
+
+Specifically, the code import system loads these plugins, but we do not want
+the branch puller or scanner loading them.

@@ -4,8 +4,6 @@
   define-macro="master"
   tal:define="
     revno modules/lp.app.versioninfo/revno | string:unknown;
-    release modules/lp.app.versioninfo/release;
-    version string:Launchpad ${release} (r${revno});
     devmode modules/canonical.config/config/devmode;
     rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
     is_demo modules/canonical.config/config/launchpad/is_demo;

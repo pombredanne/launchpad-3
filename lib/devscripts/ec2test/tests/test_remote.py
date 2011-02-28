@@ -302,6 +302,18 @@ class TestLaunchpadTester(TestCaseWithTransport, RequestHelpers):
         # Message not being sent implies got_result thought it got a failure.
         self.assertEqual([], log)
 
+    def test_gather_test_output(self):
+        # LaunchpadTester._gather_test_output() summarises the output
+        # stream as a TestResult.
+        logger = self.make_logger()
+        tester = self.make_tester(logger=logger)
+        result = tester._gather_test_output(
+            ['test: test_failure', 'failure: test_failure',
+             'test: test_success', 'successful: test_success'],
+            logger)
+        self.assertEquals(2, result.testsRun)
+        self.assertEquals(1, len(result.failures))
+
 
 class TestPidfileHelpers(TestCase):
     """Tests for `write_pidfile` and `remove_pidfile`."""

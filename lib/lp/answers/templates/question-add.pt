@@ -28,12 +28,10 @@
       <tal:similar-questions condition="view/similar_questions">
         <p>These other questions seem similar to yours. You may want to take a look at them.</p>
 
-        <table id="similar-questions">
-          <tbody>
-            <tr tal:repeat="question view/similar_questions"
-                tal:replace="structure question/@@+listing-detailed" />
-          </tbody>
-        </table>
+        <ul id="similar-questions">
+          <li tal:repeat="question view/similar_questions"
+              tal:replace="structure question/@@+listing-detailed" />
+        </ul>
       </tal:similar-questions>
 
       <tal:similar-items condition="view/has_similar_items">

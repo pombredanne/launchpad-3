@@ -19,6 +19,7 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.launchpad.daemons import readyservice
+from canonical.launchpad.scripts import execute_zcml_for_scripts
 
 from lp.poppy import get_poppy_root
 from lp.poppy.twistedftp import (
@@ -104,6 +105,9 @@ svc = SSHService(
     factory_decorator=timeout_decorator,
     banner=config.poppy.banner)
 svc.setServiceParent(application)
+
+# We need Zope for looking up the GPG utilities.
+execute_zcml_for_scripts()
 
 # Service that announces when the daemon is ready
 readyservice.ReadyService().setServiceParent(application)
