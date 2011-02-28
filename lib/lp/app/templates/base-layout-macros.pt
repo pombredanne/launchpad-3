@@ -62,6 +62,12 @@
     somewhere in the automated test system that will prevent Windmill from
     executing.
   </tal:comment>
+  <script type="text/javascript">
+    var LP = {
+        cache: {},
+        links: {}
+    };
+  </script>
   <script type="text/javascript"
           tal:attributes="src string:${icingroot}/MochiKit.js"></script>
 
@@ -95,12 +101,6 @@
   <tal:comment replace="nothing">
     Load and initialize the common script used by all pages.
   </tal:comment>
-  <script type="text/javascript">
-    var LP = {
-        cache: {},
-        links: {}
-    };
-  </script>
   <tal:needs_json tal:condition="request/needs_json">
     <script type="text/javascript"
             tal:attributes="src string:${icingroot_contrib}/json2.js"></script>
