@@ -22,6 +22,7 @@ from lp.testing import (
 
 
 class TestSetCommentVisibility(TestCaseWithFactory):
+    """Tests who can successfully set comment visibility."""
 
     layer = DatabaseFunctionalLayer
 
@@ -39,6 +40,7 @@ class TestSetCommentVisibility(TestCaseWithFactory):
         transaction.commit()
 
     def _get_bug_for_user(self, user=None):
+        """Convenience function to get the api bug reference."""
         endInteraction()
         if user is not None:
             lp = launchpadlib_for("test", user)
@@ -50,6 +52,7 @@ class TestSetCommentVisibility(TestCaseWithFactory):
         return bug_entry 
 
     def _set_visibility(self, bug):
+        """Method to set visibility; needed for assertRaises."""
         bug.setCommentVisibility(
             comment_number=1,
             visible=False)
@@ -62,6 +65,8 @@ class TestSetCommentVisibility(TestCaseWithFactory):
             self.assertFalse(bug_message.visible)
 
     def test_random_user_cannot_set_visible(self):
+        # Logged in users without privs can't set bug comment
+        # visibility.
         nopriv = self.person_set.getByName('no-priv')
         bug = self._get_bug_for_user(nopriv)
         self.assertRaises(
@@ -70,6 +75,8 @@ class TestSetCommentVisibility(TestCaseWithFactory):
             bug)
         
     def test_anon_cannot_set_visible(self):
+        # Anonymous users can't set bug comment
+        # visibility.
         bug = self._get_bug_for_user()
         self.assertRaises(
             HTTPError,
@@ -77,6 +84,8 @@ class TestSetCommentVisibility(TestCaseWithFactory):
             bug)
 
     def test_registry_admin_can_set_visible(self):
+        # Members of registry experts can set bug comment
+        # visibility.
         registry = self.person_set.getByName('registry')
         person = self.factory.makePerson()
         with person_logged_in(registry.teamowner):
@@ -86,6 +95,8 @@ class TestSetCommentVisibility(TestCaseWithFactory):
         self.assertCommentHidden()
 
     def test_admin_can_set_visible(self):
+        # Admins can set bug comment
+        # visibility.
         admins = self.person_set.getByName('admins')
         person = self.factory.makePerson()
         with person_logged_in(admins.teamowner):

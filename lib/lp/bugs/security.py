@@ -165,7 +165,7 @@ class SetMessageVisibility(AuthorizationBase):
     usedfor = IBugMessage
 
     def checkAuthenticated(self, user):
-        """Admins and registry admins can set visibility."""
+        """Admins and registry admins can set bug comment visibility."""
         return (user.in_admin or user.in_registry_experts)
 
 
