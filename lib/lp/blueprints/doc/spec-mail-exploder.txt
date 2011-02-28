@@ -54,7 +54,7 @@ The Mail Handler
 ----------------
 
 The mail handler that handles mail on notifications@specs.launchpad.net
-is SpecificationHandler.
+is BlueprintHandler.
 
     >>> from canonical.config import config
     >>> from lp.services.mail.handlers import mail_handlers

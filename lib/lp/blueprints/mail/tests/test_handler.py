@@ -8,19 +8,11 @@ __metaclass__ = type
 from testtools.matchers import Equals, Is
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-
 from lp.blueprints.mail.handler import (
+    BlueprintHandler,
     get_spec_url_from_moin_mail,
-    SpecificationHandler,
-    )
-from lp.services.log.logger import (
-    BufferLogger,
-    DevNullLogger,
     )
 from lp.testing import (
-    login,
-    login_person,
-    person_logged_in,
     TestCase,
     TestCaseWithFactory,
     )
@@ -82,7 +74,7 @@ class TestBlueprintEmailHandler(TestCaseWithFactory):
         message = self.factory.makeSignedMessage(
             body="An url http://example.com/foo in the body.",
             attachment_contents="Nothing here either")
-        handler = SpecificationHandler()
+        handler = BlueprintHandler()
         self.assertThat(
             handler.get_spec_url_from_email(message),
             Equals('http://example.com/foo'))

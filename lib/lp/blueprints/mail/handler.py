@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
-    "SpecificationHandler",
+    "BlueprintHandler",
     ]
 
 import re
@@ -36,7 +36,7 @@ def get_spec_url_from_moin_mail(moin_text):
           return None
 
 
-class SpecificationHandler:
+class BlueprintHandler:
     """Handles emails sent to specs.launchpad.net."""
 
     implements(IMailHandler)
