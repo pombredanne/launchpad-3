@@ -14,6 +14,7 @@
     }
     div#edit-recipe_text, div#edit-description {
       font-family: "UbuntuBeta Mono","Ubuntu Mono",monospace;
+      margin: 1em 0;
     }
     div#edit-recipe_text.yui3-editable_text-content,
     div#edit-description.yui3-editable_text-content {
