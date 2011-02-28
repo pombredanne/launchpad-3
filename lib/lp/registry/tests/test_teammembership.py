@@ -16,6 +16,7 @@ from unittest import (
 
 import pytz
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import (
     cursor,
@@ -48,7 +49,11 @@ from lp.registry.model.teammembership import (
     TeamMembership,
     TeamParticipation,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.mail_helpers import pop_notifications
 
 
 class TestTeamMembershipSet(TestCase):
@@ -136,7 +141,6 @@ class TestTeamMembershipSet(TestCase):
         # manually because otherwise we would only be allowed to set an
         # expiration date in the future.
         now = datetime.now(pytz.UTC)
-        from zope.security.proxy import removeSecurityProxy
         sample_person_on_motu = removeSecurityProxy(
             self.membershipset.getByPersonAndTeam(sample_person, motu))
         sample_person_on_motu.dateexpires = now
@@ -773,6 +777,47 @@ class TestTeamMembershipSetStatus(TestCaseWithFactory):
         tm.setStatus(TeamMembershipStatus.ADMIN, self.team2.teamowner)
         self.team1.retractTeamMembership(self.team2, self.team1.teamowner)
         self.assertEqual(TeamMembershipStatus.DEACTIVATED, tm.status)
+
+
+class TestTeamMembershipSendExpirationWarningEmail(TestCaseWithFactory):
+    """Test the behaviour of sendExpirationWarningEmail()."""
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestTeamMembershipSendExpirationWarningEmail, self).setUp()
+        self.member = self.factory.makePerson()
+        self.team = self.factory.makeTeam()
+        login_person(self.team.teamowner)
+        self.team.addMember(self.member, self.team.teamowner)
+        self.tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            self.member, self.team)
+        pop_notifications()
+
+    def test_message_sent_for_future_expiration(self):
+        # An email is sent to the user whose membership will expire.
+        now = datetime.now(pytz.UTC)
+        removeSecurityProxy(self.tm).dateexpires = now + timedelta(days=1)
+        self.tm.sendExpirationWarningEmail()
+        notifications = pop_notifications()
+        self.assertEqual(1, len(notifications))
+        message = notifications[0]
+        self.assertEqual(
+            'Your membership in %s is about to expire' % self.team.name,
+            message['subject'])
+        self.assertEqual(
+            self.member.preferredemail.email,
+            message['to'])
+
+    def test_no_message_sent_for_non_active_users(self):
+        # Non-active users do not get an expiration message.
+        with person_logged_in(self.member):
+            self.member.deactivateAccount('Goodbye.')
+        IStore(self.member).flush()
+        now = datetime.now(pytz.UTC)
+        removeSecurityProxy(self.tm).dateexpires = now + timedelta(days=1)
+        self.tm.sendExpirationWarningEmail()
+        notifications = pop_notifications()
+        self.assertEqual(0, len(notifications))
 
 
 class TestCheckTeamParticipationScript(TestCase):

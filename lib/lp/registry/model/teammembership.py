@@ -227,8 +227,12 @@ class TeamMembership(SQLBase):
 
     def sendExpirationWarningEmail(self):
         """See `ITeamMembership`."""
+        # XXX sinzui 2011-02-28:  Change to a test and raise.
+        # Show the team and person
         assert self.dateexpires is not None, (
             'This membership has no expiration date')
+        # XXX sinzui 2011-02-28: Give the date some wiggle room
+        # Show the team and person
         assert self.dateexpires > datetime.now(pytz.timezone('UTC')), (
             "This membership's expiration date must be in the future: %s"
             % self.dateexpires.strftime('%Y-%m-%d'))
