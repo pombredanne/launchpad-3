@@ -355,6 +355,17 @@ class StructuralSubscriptionMenuMixin:
             return Link('+subscribe', text, icon=icon, enabled=enabled)
 
 
+def expose_enum_to_js(request, enum, name):
+    """Make a list of enum titles and value available to JavaScript."""
+    info = []
+    for item in enum:
+        info.append({
+            'title': item.title,
+            'value': item.value.value,
+        })
+    IJSONRequestCache(request).objects[name] = info
+
+
 def expose_user_administered_teams_to_js(request, user,
         absoluteURL=absoluteURL):
     """Make the list of teams the user adminsters available to JavaScript."""
