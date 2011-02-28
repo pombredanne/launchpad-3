@@ -55,7 +55,7 @@ class TestGetSpecUrlFromMoinMail(TestCase):
             Equals('http://example.com/first'))
 
     def test_unicode(self):
-        # Given two urls, only the first is returned.
+        # Unicode strings and urls are fine.
         body = u"""
             Testing unicode:
             http://example.com/\N{SNOWMAN}
