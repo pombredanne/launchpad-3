@@ -548,7 +548,7 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
 
     @property
     def recipe_count_text(self):
-        count = self.context.getRecipes().count()
+        count = self.context.recipes.count()
         if count == 0:
             return 'No recipes'
         elif count == 1:
