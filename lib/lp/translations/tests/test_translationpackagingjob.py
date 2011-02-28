@@ -6,22 +6,32 @@
 __metaclass__ = type
 
 
-from storm.locals import Store
 import transaction
+from zope.component import getUtility
 
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
+from lp.registry.interfaces.packaging import IPackagingUtil
+from lp.registry.model.packagingjob import PackagingJob, PackagingJobDerived
 from lp.services.job.interfaces.job import IRunnableJob
-from lp.services.job.model.job import Job
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCaseWithFactory,
+    )
 from lp.translations.interfaces.side import TranslationSide
-from lp.translations.interfaces.translationmergejob import (
-    ITranslationMergeJobSource,
+from lp.translations.interfaces.translationpackagingjob import (
+    ITranslationPackagingJobSource,
     )
 from lp.translations.model.potemplate import POTemplateSubset
-from lp.translations.model.translationmergejob import TranslationMergeJob
+from lp.translations.model.translationpackagingjob import (
+    TranslationMergeJob,
+    TranslationPackagingJob,
+    TranslationSplitJob,
+    )
+from lp.translations.tests.test_translationsplitter import (
+    make_shared_potmsgset,
+    )
 
 
 def make_translation_merge_job(factory, not_ubuntu=False):
@@ -47,8 +57,8 @@ def make_translation_merge_job(factory, not_ubuntu=False):
     productseries = upstream_pofile.potemplate.productseries
     distroseries = package_pofile.potemplate.distroseries
     sourcepackagename = package_pofile.potemplate.sourcepackagename
-    return TranslationMergeJob(
-        job=Job(), productseries=productseries, distroseries=distroseries,
+    return TranslationMergeJob.create(
+        productseries=productseries, distroseries=distroseries,
         sourcepackagename=sourcepackagename)
 
 
@@ -81,13 +91,38 @@ def count_translations(job):
     return len(tm)
 
 
+class JobFinder:
+
+    def __init__(self, productseries, sourcepackage, job_class):
+        self.productseries = productseries
+        self.sourcepackagename = sourcepackage.sourcepackagename
+        self.distroseries = sourcepackage.distroseries
+        self.job_type = job_class.class_job_type
+
+    def find(self):
+        return list(PackagingJobDerived.iterReady([
+            PackagingJob.productseries_id == self.productseries.id,
+            PackagingJob.sourcepackagename_id == self.sourcepackagename.id,
+            PackagingJob.distroseries_id == self.distroseries.id,
+            PackagingJob.job_type == self.job_type,
+            ]))
+
+
+class TestTranslationPackagingJob(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_interface(self):
+        """Should implement ITranslationPackagingJobSource."""
+        verifyObject(ITranslationPackagingJobSource, TranslationPackagingJob)
+
+
 class TestTranslationMergeJob(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
     def test_interface(self):
-        """TranslationMergeJob must implement its interfaces."""
-        verifyObject(ITranslationMergeJobSource, TranslationMergeJob)
+        """TranslationMergeJob must implement IRunnableJob."""
         job = make_translation_merge_job(self.factory)
         verifyObject(IRunnableJob, job)
 
@@ -123,25 +158,42 @@ class TestTranslationMergeJob(TestCaseWithFactory):
         job.run()
         self.assertEqual(2, count_translations(job))
 
-    @staticmethod
-    def findJobs(productseries, sourcepackage):
-        store = Store.of(productseries)
-        result = store.find(
-            TranslationMergeJob,
-            TranslationMergeJob.productseries_id == productseries.id,
-            TranslationMergeJob.sourcepackagename_id ==
-            sourcepackage.sourcepackagename.id,
-            TranslationMergeJob.distroseries_id ==
-            sourcepackage.distroseries.id,
-            )
-        return list(result)
-
     def test_create_packaging_makes_job(self):
         """Creating a Packaging should make a TranslationMergeJob."""
         productseries = self.factory.makeProductSeries()
         sourcepackage = self.factory.makeSourcePackage()
-        self.assertEqual([], self.findJobs(productseries, sourcepackage))
+        finder = JobFinder(productseries, sourcepackage, TranslationMergeJob)
+        self.assertEqual([], finder.find())
         sourcepackage.setPackaging(productseries, productseries.owner)
-        self.assertNotEqual([], self.findJobs(productseries, sourcepackage))
+        self.assertNotEqual([], finder.find())
         # Ensure no constraints were violated.
         transaction.commit()
+
+
+class TestTranslationSplitJob(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_run_splits_translations(self):
+        upstream_item, ubuntu_item = make_shared_potmsgset(self.factory)
+        job = TranslationSplitJob.create(
+            upstream_item.potemplate.productseries,
+            ubuntu_item.potemplate.distroseries,
+            ubuntu_item.potemplate.sourcepackagename,
+        )
+        self.assertEqual(upstream_item.potmsgset, ubuntu_item.potmsgset)
+        job.run()
+        self.assertNotEqual(upstream_item.potmsgset, ubuntu_item.potmsgset)
+
+    def test_deletePackaging_makes_job(self):
+        """Creating a Packaging should make a TranslationMergeJob."""
+        packaging = self.factory.makePackaging()
+        finder = JobFinder(
+            packaging.productseries, packaging.sourcepackage,
+            TranslationSplitJob)
+        self.assertEqual([], finder.find())
+        getUtility(IPackagingUtil).deletePackaging(
+            packaging.productseries, packaging.sourcepackagename,
+            packaging.distroseries)
+        (job,) = finder.find()
+        self.assertIsInstance(job, TranslationSplitJob)

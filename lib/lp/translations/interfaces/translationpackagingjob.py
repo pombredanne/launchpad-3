@@ -3,5 +3,5 @@ from lp.services.job.interfaces.job import (
     )
 
 
-class ITranslationMergeJobSource(IJobSource):
+class ITranslationPackagingJobSource(IJobSource):
     """Marker interface for Translation merge jobs."""
