@@ -299,8 +299,8 @@ def builds_for_recipe(recipe):
         This allows started but unfinished builds to show up in the view but
         be discarded as more recent builds become available.
         """
-        builds = list(recipe.getPendingBuilds())
-        for build in recipe.getBuilds():
+        builds = list(recipe.pending_builds)
+        for build in recipe.completed_builds:
             builds.append(build)
             if len(builds) >= 5:
                 break
@@ -330,7 +330,7 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
         The distroseries function as defaults for requesting a build.
         """
         initial_values = {'distros': self.context.distroseries}
-        build = self.context.getLastBuild()
+        build = self.context.last_build
         if build is not None:
             initial_values['archive'] = build.archive
         return initial_values
