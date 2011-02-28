@@ -1164,7 +1164,9 @@ div.watermark-apps-portlet img {
     }
 div.watermark-apps-portlet h1, div.watermark-apps-portlet h2 {
     color: #000000;
+    font-size: 30px;
     font-weight: bold;
+    line-height: 34px;
     clear: none;
     }
 div.watermark-apps-portlet h1 {
