@@ -31,5 +31,8 @@ DROP INDEX hwvendorname__name__idx; -- Duplicate
 ALTER TABLE Packaging ALTER COLUMN distroseries SET NOT NULL;
 DROP INDEX packaging__distroseries__sourcepackagename__idx;
 
+-- Should be NOT NULL per Bug #726128
+ALTER TABLE FeatureFlag ALTER COLUMN value SET NOT NULL;
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 42, 0);
 
