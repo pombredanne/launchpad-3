@@ -182,7 +182,7 @@ class TestBulkPruner(TestCase):
 
 
 class TestGarbo(TestCaseWithFactory):
-    layer = ZopelessDatabaseLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         super(TestGarbo, self).setUp()
