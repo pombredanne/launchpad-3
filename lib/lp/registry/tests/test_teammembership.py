@@ -785,8 +785,8 @@ class TestTeamMembershipSendExpirationWarningEmail(TestCaseWithFactory):
 
     def setUp(self):
         super(TestTeamMembershipSendExpirationWarningEmail, self).setUp()
-        self.member = self.factory.makePerson()
-        self.team = self.factory.makeTeam()
+        self.member = self.factory.makePerson(name='green')
+        self.team = self.factory.makeTeam(name='red')
         login_person(self.team.teamowner)
         self.team.addMember(self.member, self.team.teamowner)
         self.tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(
@@ -802,11 +802,9 @@ class TestTeamMembershipSendExpirationWarningEmail(TestCaseWithFactory):
         self.assertEqual(1, len(notifications))
         message = notifications[0]
         self.assertEqual(
-            'Your membership in %s is about to expire' % self.team.name,
-            message['subject'])
+            'Your membership in red is about to expire', message['subject'])
         self.assertEqual(
-            self.member.preferredemail.email,
-            message['to'])
+            self.member.preferredemail.email, message['to'])
 
     def test_no_message_sent_for_non_active_users(self):
         # Non-active users do not get an expiration message.
