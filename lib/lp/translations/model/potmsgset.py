@@ -446,6 +446,11 @@ class POTMsgSet(SQLBase):
         """See `IPOTMsgSet`."""
         return self._getExternalTranslationMessages(language, used=False)
 
+    def getExternallySuggestedOrUsedTranslationMessages(self, language):
+        """See `IPOTMsgSet`."""
+        return (self.getExternallySuggestedTranslationMessages(language),
+            self.getExternallyUsedTranslationMessages(language))
+
     @property
     def flags(self):
         if self.flagscomment is None:
