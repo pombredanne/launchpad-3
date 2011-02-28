@@ -1,27 +1,13 @@
-<tr xmlns:tal="http://xml.zope.org/namespaces/tal">
-  <td class="icon left">
-    <span tal:attributes="class context/default_bugtask/image:sprite_css" />
-  </td>
-  <td>
-    <div>
-      #<span tal:replace="context/id">4</span>
-      <a tal:attributes="href context/fmt:url">
-        <span tal:replace="context/title">Bug Title Here</span>
-      </a>
-    </div>
-    <div class="lesser">
-      in
+<li xmlns:tal="http://xml.zope.org/namespaces/tal">
+    <a tal:replace="structure context/fmt:link" />
+    <br />
+    <span class="registered">in
         <tal:per_pillar repeat="pillar context/affected_pillars">
-          <b tal:content="structure pillar/fmt:link:bugs" />,
+          <pillar tal:replace="structure pillar/fmt:link:bugs" />,
         </tal:per_pillar>
       reported
       <span
         tal:attributes="title context/datecreated/fmt:datetime"
         tal:content="context/datecreated/fmt:displaydate">2005-10-05</span>
-      by
-      <a
-        tal:attributes="href context/owner/fmt:url"
-        tal:content="context/owner/displayname">Foo Bar</a>
-    </div>
-  </td>
-</tr>
+    </span>
+</li>

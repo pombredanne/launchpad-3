@@ -29,6 +29,8 @@ from canonical.lazr.pidfile import (
     pidfile_path,
     )
 
+from lp.services.osutils import ensure_directory_exists
+
 # Set up basic logging.
 log = logging.getLogger(__name__)
 
@@ -107,7 +109,7 @@ def service_is_available(timeout=2.0):
     try:
         try:
             sock.connect((host, port))
-        except socket.error, err:
+        except socket.error:
             return False
         else:
             return True
@@ -255,6 +257,7 @@ def main():
     # Redirect our service output to a log file.
     # pylint: disable-msg=W0602
     global log
+    ensure_directory_exists(os.path.dirname(config.google_test_service.log))
     filelog = logging.FileHandler(config.google_test_service.log)
     log.addHandler(filelog)
     log.setLevel(logging.DEBUG)

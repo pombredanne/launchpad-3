@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -1046,16 +1046,21 @@ class POTMsgSet(SQLBase):
                         traits.other_side_traits.getCurrentMessage(
                             self, pofile.potemplate, pofile.language))
                     if other_incumbent is None:
+                        # Untranslated on the other side; use the new
+                        # translation there as well.
                         traits.other_side_traits.setFlag(message, True)
                     elif (incumbent_message is None and
                           traits.side == TranslationSide.UPSTREAM):
-                        # If this is the first upstream translation, we
-                        # we use it as the current Ubuntu translation
-                        # too, overriding a possibly existing current
-                        # Ubuntu translation.
-                        if other_incumbent is not None:
-                            traits.other_side_traits.setFlag(
-                                other_incumbent, False)
+                        # Translating upstream, and the message was
+                        # previously untranslated.  Any translation in
+                        # Ubuntu is probably different, but only because
+                        # no upstream translation was available.  In
+                        # this special case the upstream translation
+                        # overrides the Ubuntu translation.
+                        traits.other_side_traits.setFlag(
+                            other_incumbent, False)
+                        Store.of(message).add_flush_order(
+                            other_incumbent, message)
                         traits.other_side_traits.setFlag(message, True)
             elif character == '+':
                 if share_with_other_side:
@@ -1069,6 +1074,8 @@ class POTMsgSet(SQLBase):
             message = twin
 
         if not traits.getFlag(message):
+            if incumbent_message is not None and message != incumbent_message:
+                Store.of(message).add_flush_order(incumbent_message, message)
             traits.setFlag(message, True)
             pofile.markChanged(translator=submitter)
 
