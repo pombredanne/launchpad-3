@@ -80,8 +80,8 @@ class TestSourcePublicationListingExtra(BrowserTestCase):
         self.assertNotIn('Built by recipe', browser.contents)
         
     def test_view_with_deleted_source_package_recipe(self):
-        # If a SourcePackageRelease is linked to a deleted recipe, it is also
-        # not shown in the view.
+        # If a SourcePackageRelease is linked to a deleted recipe, the text
+        # 'deleted recipe' is displayed, rather than a link.
         sprb = self.factory.makeSourcePackageRecipeBuild(
             archive=self.archive)
         recipe = sprb.recipe
