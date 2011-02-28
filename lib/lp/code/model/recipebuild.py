@@ -18,9 +18,11 @@ from datetime import (
 
 import pytz
 from storm.expr import (
+    Desc,
     Join,
     Max,
-    Select)
+    Select,
+    )
 from storm import Undef
 
 from zope.interface import implements
@@ -83,26 +85,18 @@ class RecipeBuildRecordSet:
         store = ISlaveStore(SourcePackageRecipe)
         tables = [
             SourcePackageRecipe,
-            Join(Person,
-                 Person.id == SourcePackageRecipe.owner_id),
             Join(SourcePackageRecipeBuild,
                  SourcePackageRecipeBuild.recipe_id ==
                  SourcePackageRecipe.id),
             Join(SourcePackageRelease,
                  SourcePackageRecipeBuild.id ==
                  SourcePackageRelease.source_package_recipe_build_id),
-            Join(SourcePackageName,
-                 SourcePackageRelease.sourcepackagename ==
-                 SourcePackageName.id),
             Join(BinaryPackageBuild,
                  BinaryPackageBuild.source_package_release_id ==
                     SourcePackageRelease.id),
             Join(PackageBuild,
                  PackageBuild.id ==
                  BinaryPackageBuild.package_build_id),
-            Join(Archive,
-                 Archive.id ==
-                 SourcePackageRecipe.daily_build_archive_id),
             Join(BuildFarmJob,
                  BuildFarmJob.id ==
                  PackageBuild.build_farm_job_id),
@@ -115,34 +109,63 @@ class RecipeBuildRecordSet:
             where.append(BuildFarmJob.date_finished >= epoch)
 
         result_set = store.using(*tables).find(
-                (SourcePackageName,
-                    Person,
-                    SourcePackageRecipe,
-                    Archive,
+                (SourcePackageRecipe,
+                    SourcePackageRelease.sourcepackagenameID,
                     Max(BuildFarmJob.date_finished),
                     ),
                 *where
             ).group_by(
-                SourcePackageName,
-                Person,
                 SourcePackageRecipe,
-                Archive,
+                SourcePackageRelease.sourcepackagenameID,
             ).order_by(
-                SourcePackageName.name,
-                Person.name,
-                Archive.name,
-                )
+                Desc(Max(BuildFarmJob.date_finished)),
+                SourcePackageRecipe.name,
+            )
 
         def _makeRecipeBuildRecord(values):
-            (sourcepackagename, recipeowner, recipe, archive,
-                date_finished) = values
+            (recipe, sourcepackagename_id, date_finished) = values
+            sp_name = store.get(SourcePackageName, sourcepackagename_id)
             return RecipeBuildRecord(
-                sourcepackagename, recipeowner,
-                archive, recipe,
+                sp_name, recipe.owner,
+                recipe.daily_build_archive, recipe,
                 date_finished)
 
+        to_recipes = lambda rows: [row[0] for row in rows]
+        to_releases = lambda rows: [row[1] for row in rows]
+
+        def eager_load_owners(recipes):
+            owner_ids = set(recipe.owner_id for recipe in recipes)
+            owner_ids.discard(None)
+            if not owner_ids:
+                return
+            list(store.find(Person, Person.id.is_in(owner_ids)))
+
+        def eager_load_archives(recipes):
+            archive_ids = set(
+            recipe.daily_build_archive_id for recipe in recipes)
+            archive_ids.discard(None)
+            if not archive_ids:
+                return
+            list(store.find(Archive, Archive.id.is_in(archive_ids)))
+
+        def eager_load_sourcepackagenames(releases):
+            name_ids = set(release for release in releases)
+            name_ids.discard(None)
+            if not name_ids:
+                return
+            list(store.find(
+                SourcePackageName, SourcePackageName.id.is_in(name_ids)))
+
+        def _prefetchRecipeBuildData(rows):
+            recipes = to_recipes(rows)
+            eager_load_owners(recipes)
+            eager_load_archives(recipes)
+            releases = to_releases(rows)
+            eager_load_sourcepackagenames(releases)
+
         return RecipeBuildRecordResultSet(
-            result_set, _makeRecipeBuildRecord)
+            result_set, _makeRecipeBuildRecord,
+            pre_iter_hook=_prefetchRecipeBuildData)
 
 
 class RecipeBuildRecordResultSet(DecoratedResultSet):
