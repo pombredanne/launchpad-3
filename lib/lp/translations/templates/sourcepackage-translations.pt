@@ -31,11 +31,12 @@
               This source package is not sharing translations with
               an upstream project.
             </p>
-            <p tal:condition="view/is_sharing">
+            <p tal:condition="view/is_sharing"
+               tal:define="productseries view/sharing_productseries">
               This source package is sharing translations with
-              <a tal:replace="structure view/sharing_productseries/fmt:link">
-                project series name
-              </a>.
+              <a class="sprite product"
+              tal:attributes="href productseries/fmt:url"
+              tal:content="productseries/title">Evolution trunk</a>.
             </p>
           </div>
         </div>

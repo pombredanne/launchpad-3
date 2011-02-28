@@ -65,9 +65,20 @@
         <p tal:condition="view/is_sharing"
            tal:define="template view/sharing_template">
           This template is sharing translations with
-          <a tal:content="template/title"
-             tal:attributes="href template/fmt:url"
-             >template</a>.
+            <a class="sprite package-source"
+                  tal:condition="view/is_upstream_template"
+                  tal:content="template/sourcepackage/displayname"
+                  tal:attributes="href template/sourcepackage/fmt:url">
+              apache in Ubuntu Hoary
+            </a><a class="sprite product"
+                  tal:condition="not:view/is_upstream_template"
+                  tal:content="template/productseries/title"
+                  tal:attributes="href template/productseries/fmt:url">
+              Evolution trunk
+            </a> template
+            <a tal:attributes="href template/fmt:url"
+               tal:content="template/name"
+             >evolution-2.2</a>.
         </p>
       </div>
     </div>

@@ -83,11 +83,12 @@
               This project series is not sharing translations with
               an Ubuntu source package.
             </p>
-            <p tal:condition="view/is_sharing">
+            <p tal:condition="view/is_sharing"
+               tal:define="package view/sharing_sourcepackage">
               This project series is sharing translations with
-              <a tal:replace="structure view/sharing_sourcepackage/fmt:link">
-                package name
-              </a>.
+              <a class="sprite package-source"
+            tal:attributes="href package/fmt:url"
+            tal:content="package/displayname">apache in ubuntu hoary</a>.
             </p>
           </div>
         </div>

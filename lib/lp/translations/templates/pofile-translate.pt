@@ -64,12 +64,24 @@
       <div tal:condition="features/translations.sharing_information.enabled">
         <div id="sharing-information"
              tal:condition="view/is_sharing"
-             tal:define="sharing_pofile view/sharing_pofile">
+             tal:define="sharing_pofile view/sharing_pofile;
+                         template sharing_pofile/potemplate">
           <p>
             These translations are shared with
-            <a tal:content="sharing_pofile/title"
-               tal:attributes="href sharing_pofile/fmt:url"
-               >pofile</a>.
+              <a class="sprite package-source"
+                tal:condition="view/is_upstream_pofile"
+                tal:content="template/sourcepackage/displayname"
+                tal:attributes="href template/sourcepackage/fmt:url">
+                apache in Ubuntu Hoary
+              </a><a class="sprite product"
+                tal:condition="not:view/is_upstream_pofile"
+                tal:content="template/productseries/title"
+                tal:attributes="href template/productseries/fmt:url">
+                Evolution trunk
+              </a> template
+              <a tal:attributes="href sharing_pofile/fmt:url"
+                 tal:content="template/name"
+               >evolution-2.2</a>.
           </p>
         </div>
       </div>
