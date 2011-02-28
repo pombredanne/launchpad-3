@@ -700,7 +700,10 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         """
 
     def associatedSuiteSourcePackages():
-        """Return the suite source packages that this branch is linked to."""
+        """Return the suite source packages that this branch is linked to.
+        
+        :return: A list of suite source packages ordered by pocket.
+        """
 
     def branchLinks():
         """Return a sorted list of ICanHasLinkedBranch objects.

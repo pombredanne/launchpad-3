@@ -180,7 +180,8 @@ class GenericBranchCollection:
                 cache._associatedProductSeries.append(productseries)
             # associatedSuiteSourcePackages
             series_set = getUtility(IFindOfficialBranchLinks)
-            # Order by the pocket to get the release one first.
+            # Order by the pocket to get the release one first. If changing
+            # this be sure to also change BranchCollection.getBranches.
             links = series_set.findForBranches(rows).order_by(
                 SeriesSourcePackageBranch.pocket)
             for link in links:

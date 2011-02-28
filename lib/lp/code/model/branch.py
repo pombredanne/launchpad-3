@@ -732,7 +732,8 @@ class Branch(SQLBase, BzrIdentityMixin):
         """Helper for associatedSuiteSourcePackages."""
         # This is eager loaded by BranchCollection.getBranches.
         series_set = getUtility(IFindOfficialBranchLinks)
-        # Order by the pocket to get the release one first.
+        # Order by the pocket to get the release one first. If changing this be
+        # sure to also change BranchCollection.getBranches.
         links = series_set.findForBranch(self).order_by(
             SeriesSourcePackageBranch.pocket)
         return [link.suite_sourcepackage for link in links]
