@@ -282,7 +282,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         SQLBase._init(self, *args, **kw)
         # Add a marker interface to set permissions for this kind
         # of distribution.
-        if self == getUtility(ILaunchpadCelebrities).ubuntu:
+        if self.name == 'ubuntu':
             alsoProvides(self, IBaseDistribution)
         else:
             alsoProvides(self, IDerivativeDistribution)
