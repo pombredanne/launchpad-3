@@ -11,7 +11,7 @@ __all__ = [
 
 from lazr.restful.declarations import webservice_error
 
-from canonical.launchpad.validators import LaunchpadValidationError
+from lp.app.validators import LaunchpadValidationError
 
 
 class InvalidBugTargetType(Exception):

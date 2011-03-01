@@ -14,6 +14,7 @@
     }
     div#edit-recipe_text, div#edit-description {
       font-family: "UbuntuBeta Mono","Ubuntu Mono",monospace;
+      margin: 1em 0;
     }
     div#edit-recipe_text.yui3-editable_text-content,
     div#edit-description.yui3-editable_text-content {
@@ -146,12 +147,19 @@
   </div>
   <div class='portlet'>
     <h2>Recipe contents</h2>
-        <tal:widget replace="structure view/recipe_text_widget"/>
+    <tal:widget replace="structure view/recipe_text_widget"/>
   </div>
 
-  <tal:script>
-    <script id='requestbuild-script' type="text/javascript" tal:content="string:
-      LPS.use('io-base', 'lp.code.requestbuild_overlay', function(Y) {
+  <script type="text/javascript">
+    LPS.use('io-base', 'lp.ui', 'lp.code.requestbuild_overlay', function(Y) {
+
+        Y.on('lp:context:deb_version_template:changed', function(e) {
+            Y.lp.ui.update_field('#debian-version dd', e.new_value);
+        });
+        Y.on('lp:context:base_branch_link:changed', function(e) {
+            Y.lp.ui.update_field('#base-branch dd', e.entry.getHTML(e.name));
+        });
+
         if(Y.UA.ie) {
             return;
         }
@@ -167,10 +175,8 @@
 
             }
         }, window);
-      });"
-    >
+      });
     </script>
-  </tal:script>
 </div>
 </body>
 </html>
