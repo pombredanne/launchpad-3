@@ -307,7 +307,7 @@ def builds_for_recipe(recipe):
         return builds
 
 
-def new_builds_notification_text(builds, already_pending):
+def new_builds_notification_text(builds, already_pending=None):
     nr_builds = len(builds)
     if not nr_builds:
         builds_text = "All requested recipe builds are already queued."
