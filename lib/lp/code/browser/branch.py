@@ -83,6 +83,7 @@ from canonical.launchpad.browser.feeds import (
 from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad import searchbuilder
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,
@@ -339,10 +340,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         return Link('+register-merge', text, icon='add', enabled=enabled)
 
     def link_bug(self):
-        if self.context.linked_bugs:
-            text = 'Link to another bug report'
-        else:
-            text = 'Link to a bug report'
+        text = 'Link a bug report'
         return Link('+linkbug', text, icon='add')
 
     def link_blueprint(self):
@@ -548,7 +546,7 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
 
     @property
     def recipe_count_text(self):
-        count = self.context.getRecipes().count()
+        count = self.context.recipes.count()
         if count == 0:
             return 'No recipes'
         elif count == 1:
@@ -602,14 +600,14 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
         return len(self.landing_candidates) > 5
 
     @cachedproperty
-    def linked_bugs(self):
-        """Return a list of DecoratedBugs linked to the branch."""
-        bugs = self.context.linked_bugs
+    def linked_bugtasks(self):
+        """Return a list of bugtasks linked to the branch."""
         if self.context.is_series_branch:
-            bugs = [
-                bug for bug in bugs
-                if bug.bugtask.status in UNRESOLVED_BUGTASK_STATUSES]
-        return bugs
+            status_filter = searchbuilder.any(*UNRESOLVED_BUGTASK_STATUSES)
+        else:
+            status_filter = None
+        return list(self.context.getLinkedBugTasks(
+            self.user, status_filter))
 
     @cachedproperty
     def revision_info(self):

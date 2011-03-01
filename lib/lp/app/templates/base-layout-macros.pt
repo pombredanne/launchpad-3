@@ -62,6 +62,12 @@
     somewhere in the automated test system that will prevent Windmill from
     executing.
   </tal:comment>
+  <script type="text/javascript">
+    var LP = {
+        cache: {},
+        links: {}
+    };
+  </script>
   <script type="text/javascript"
           tal:attributes="src string:${icingroot}/MochiKit.js"></script>
 
@@ -95,7 +101,6 @@
   <tal:comment replace="nothing">
     Load and initialize the common script used by all pages.
   </tal:comment>
-
   <tal:needs_json tal:condition="request/needs_json">
     <script type="text/javascript"
             tal:attributes="src string:${icingroot_contrib}/json2.js"></script>
@@ -106,25 +111,23 @@
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
   <script id="base-layout-load-scripts" type="text/javascript">
-    LPS.use('node', 'lp', function(Y) {
+    LPS.use('node', 'lp', 'lp.app.links', function(Y) {
         Y.on('load', function(e) {
             sortables_init();
             initInlineHelp();
             Y.lp.activate_collapsibles();
             activateFoldables();
             activateConstrainBugExpiration();
+            Y.lp.app.links.check_valid_lp_links();
         }, window);
 
         // Hook up the function that dismisses the help window if we click
         // anywhere outside of it.
         Y.on('click', handleClickOnPage, window);
-    });
 
-    LPS.use('lp.app.links',
-      function(Y) {
-        Y.on('load', function(e) {
-            Y.lp.app.links.check_valid_lp_links();
-        }, window);
+        Y.on('lp:context:web_link:changed', function(e) {
+            window.location = e.new_value;
+        });
     });
   </script>
 </metal:page-javascript>
@@ -163,17 +166,17 @@
                       links cache/links;
                       objects cache/objects;">
     <script tal:repeat="key links"
-      tal:content="string:LP.client.links['${key}'] =
+      tal:content="string:LP.links['${key}'] =
                    '${links/?key/fmt:api_url}';">
     </script>
     <script tal:repeat="key objects"
-      tal:content="string:LP.client.cache['${key}'] =
+      tal:content="structure string:LP.cache['${key}'] =
                    ${objects/?key/webservice:json};">
     </script>
   </tal:cache>
 
   <script tal:condition="context/webservice:is_entry"
-    tal:content="string:LP.client.cache['context'] =
+    tal:content="structure string:LP.cache['context'] =
                  ${context/webservice:json};">
   </script>
 </metal:lp-client-cache>

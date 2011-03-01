@@ -102,6 +102,13 @@ def silence_warnings():
     warnings.filterwarnings(
         'ignore', '.*apt_pkg.*', category=DeprecationWarning)
 
+    # pygments-0.8 on Python 2.6:
+    #   DeprecationWarning: object.__init__() takes no parameters
+    warnings.filterwarnings(
+        'ignore',
+        category=DeprecationWarning,
+        module='pygments')
+
 
 def customize_logger():
     """Customize the logging system.

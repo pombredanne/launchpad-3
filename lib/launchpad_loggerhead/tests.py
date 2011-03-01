@@ -1,19 +1,27 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+import cStringIO
+import errno
+import logging
 import unittest
 import urllib
+import socket
+import re
 
 import lazr.uri
 import wsgi_intercept
 from wsgi_intercept.urllib2_intercept import install_opener, uninstall_opener
 import wsgi_intercept.zope_testbrowser
+from paste import httpserver
 from paste.httpexceptions import HTTPExceptionHandler
+import zope.event
 
 from canonical.config import config
+from canonical.launchpad.webapp.errorlog import ErrorReport, ErrorReportEvent
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.testing.layers import DatabaseFunctionalLayer
-from launchpad_loggerhead.app import RootApp
+from launchpad_loggerhead.app import RootApp, oops_middleware
 from launchpad_loggerhead.session import SessionHandler
 from lp.testing import TestCase
 
@@ -140,6 +148,99 @@ class TestLogout(TestCase):
         self.assertEqual(self.browser.url, dummy_root + '+logout')
         self.assertEqual(self.browser.contents,
                          'This is a dummy destination.\n')
+
+
+class TestOopsMiddleware(TestCase):
+
+    def assertContainsRe(self, haystack, needle_re, flags=0):
+        """Assert that a contains something matching a regular expression."""
+        # There is: self.assertTextMatchesExpressionIgnoreWhitespace
+        #           but it does weird things with whitespace, and gives
+        #           unhelpful error messages when it fails, so this is copied
+        #           from bzrlib
+        if not re.search(needle_re, haystack, flags):
+            if '\n' in haystack or len(haystack) > 60:
+                # a long string, format it in a more readable way
+                raise AssertionError(
+                        'pattern "%s" not found in\n"""\\\n%s"""\n'
+                        % (needle_re, haystack))
+            else:
+                raise AssertionError('pattern "%s" not found in "%s"'
+                        % (needle_re, haystack))
+
+    def catchLogEvents(self):
+        """Any log events that are triggered get written to self.log_stream"""
+        logger = logging.getLogger('lp-loggerhead')
+        logger.setLevel(logging.DEBUG)
+        self.log_stream = cStringIO.StringIO()
+        handler = logging.StreamHandler(self.log_stream)
+        handler.setLevel(logging.DEBUG)
+        logger.addHandler(handler)
+        self.addCleanup(logger.removeHandler, handler)
+
+    def runtime_failing_app(self, environ, start_response):
+        if False:
+            yield None
+        raise RuntimeError('just a generic runtime error.')
+
+    def socket_failing_app(self, environ, start_response):
+        if False:
+            yield None
+        raise socket.error(errno.EPIPE, 'Connection closed')
+
+    def noop_start_response(self, status, response_headers, exc_info=None):
+        def noop_write(chunk):
+            pass
+        return noop_write
+
+    def success_app(self, environ, start_response):
+        writer = start_response('200 OK', {})
+        writer('Successfull\n')
+        return []
+
+    def failing_start_response(self, status, response_headers, exc_info=None):
+        def fail_write(chunk):
+            raise socket.error(errno.EPIPE, 'Connection closed')
+        return fail_write
+
+    def wrap_and_run(self, app, failing_write=False):
+        app = oops_middleware(app)
+        # Just random env data, rather than setting up a whole wsgi stack just
+        # to pass in values for this dict
+        environ = {'wsgi.version': (1, 0),
+                   'wsgi.url_scheme': 'http',
+                   'PATH_INFO': '/test/path',
+                   'REQUEST_METHOD': 'GET',
+                   'SERVER_NAME': 'localhost',
+                   'SERVER_PORT': '8080',
+                  }
+        if failing_write:
+            result = list(app(environ, self.failing_start_response))
+        else:
+            result = list(app(environ, self.noop_start_response))
+        return result
+
+    def test_exception_triggers_oops(self):
+        res = self.wrap_and_run(self.runtime_failing_app)
+        # After the exception was raised, we should also have gotten an oops
+        # event
+        self.assertEqual(1, len(self.oopses))
+        oops = self.oopses[0]
+        self.assertEqual('RuntimeError', oops.type)
+
+    def test_ignores_socket_exceptions(self):
+        self.catchLogEvents()
+        res = self.wrap_and_run(self.socket_failing_app)
+        self.assertEqual(0, len(self.oopses))
+        self.assertContainsRe(self.log_stream.getvalue(),
+            'Caught socket exception from <unknown>:.*Connection closed')
+
+    def test_ignores_writer_failures(self):
+        self.catchLogEvents()
+        res = self.wrap_and_run(self.success_app, failing_write=True)
+        self.assertEqual(0, len(self.oopses))
+        self.assertContainsRe(self.log_stream.getvalue(),
+            'Caught socket exception from <unknown>:.*Connection closed')
 
 
 def test_suite():
