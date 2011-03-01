@@ -168,8 +168,7 @@
 
             }
         }, window);
-      });"
-    >
+      });
     </script>
 </div>
 </body>
