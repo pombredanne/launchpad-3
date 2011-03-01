@@ -69,7 +69,7 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
         logged_in_user = getUtility(ILaunchBag).user
         collection = self._getCollection().visibleByUser(logged_in_user)
         if query is None:
-            branches = collection.getBranches()
+            branches = collection.getBranches(eager_load=False)
         else:
             branches = collection.search(query)
         return CountableIterator(branches.count(), branches, self.toTerm)
