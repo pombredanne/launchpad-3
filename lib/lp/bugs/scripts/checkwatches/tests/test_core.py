@@ -176,12 +176,7 @@ class TestCheckwatchesMaster(TestCaseWithFactory):
         # Regression test for bug 497141. KeyErrors raised in
         # RemoteBugUpdater.updateRemoteBug() shouldn't cause
         # checkwatches to abort.
-
-        # Create a couple of bug watches for testing purposes.
-        bug_tracker = self.factory.makeBugTracker()
-        bug_watches = [
-            self.factory.makeBugWatch(bugtracker=bug_tracker)
-            for i in range(2)]
+        (bug_tracker, bug_watches) = self.factory.makeBugTrackerWithWatches()
 
         # Use a test XML-RPC transport to ensure no connections happen.
         test_transport = TestBugzillaAPIXMLRPCTransport(bug_tracker.baseurl)
