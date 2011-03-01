@@ -105,8 +105,7 @@ class TestUpstreamPOTemplateSharingInfo(BrowserTestCase,
         This template is sharing translations with .*"""
 
 
-class TestPOFileSharingInfo(BrowserTestCase,
-                                        TestSharingInfoMixin):
+class TestPOFileSharingInfo(BrowserTestCase, TestSharingInfoMixin):
     """Test display of POFile sharing info."""
 
     layer = DatabaseFunctionalLayer
@@ -122,6 +121,26 @@ class TestPOFileSharingInfo(BrowserTestCase,
         pofile = self.factory.makePOFile(
             potemplate=template, create_sharing=True)
         return pofile
+
+    SHARING_TEXT = """
+        These translations are shared with .*"""
+
+
+class TestDummyPOFileSharingInfo(BrowserTestCase, TestSharingInfoMixin):
+    """Test display of DummyPOFile sharing info."""
+
+    layer = DatabaseFunctionalLayer
+
+    def makeNotSharingObject(self):
+        template = self.factory.makePOTemplate()
+        return template.getDummyPOFile(self.factory.makeLanguage())
+
+    NOT_SHARING_TEXT = None
+
+    def makeSharingObject(self):
+        template = self._makePackagingAndTemplates(TranslationSide.UPSTREAM)
+        # This will also create a copy of pofile in the sharing template.
+        return template.getDummyPOFile(self.factory.makeLanguage())
 
     SHARING_TEXT = """
         These translations are shared with .*"""
