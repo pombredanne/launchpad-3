@@ -235,6 +235,9 @@ class TestCheckwatchesMaster(TestCaseWithFactory):
         self.failUnlessEqual(247, remote_system.batch_size)
 
     def test_xmlrpc_connection_errors_set_activity_properly(self):
+        # HTTP status codes of 502, 503 and 504 indicate connection
+        # errors. An XML-RPC request that fails with one of those is
+        # logged as a connection failure, not an OOPS.
         master = BrokenCheckwatchesMaster(
             transaction.manager, logger=BufferLogger())
         master.error_code = 503
@@ -252,6 +255,9 @@ class TestCheckwatchesMaster(TestCaseWithFactory):
             master.logger.getLogBuffer())
 
     def test_xmlrpc_other_errors_set_activity_properly(self):
+        # HTTP status codes that indicate anything other than a
+        # connection error still aren't OOPSes. They are logged as an
+        # unknown error instead.
         master = BrokenCheckwatchesMaster(
             transaction.manager, logger=BufferLogger())
         master.error_code = 403
