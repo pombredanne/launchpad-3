@@ -298,12 +298,6 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                 translation_group.translation_guide_url is not None)
 
     @property
-    def has_related_templates(self):
-        by_source = self.context.relatives_by_source
-        by_name = self.context.relatives_by_name
-        return bool(by_source) or bool(by_name)
-
-    @property
     def related_templates_by_source(self):
         by_source = list(
             self.context.relatives_by_source[:self.SHOW_RELATED_TEMPLATES])
@@ -333,17 +327,6 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                     url, other)
         else:
             return ""
-
-    @property
-    def related_templates_by_name(self):
-        by_name = list(
-            self.context.relatives_by_name[:self.SHOW_RELATED_TEMPLATES])
-        return by_name
-
-    @property
-    def has_more_templates_by_name(self):
-        by_name_count = self.context.relatives_by_name.count()
-        return by_name_count > self.SHOW_RELATED_TEMPLATES
 
     @property
     def has_pofiles(self):
