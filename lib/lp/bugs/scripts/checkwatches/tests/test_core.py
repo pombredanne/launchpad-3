@@ -7,6 +7,7 @@ __metaclass__ = type
 from datetime import datetime
 import threading
 import unittest
+from xmlrpclib import ProtocolError
 
 import transaction
 from zope.component import getUtility
@@ -26,6 +27,7 @@ from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
     IBugTrackerSet,
     )
+from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.scripts import checkwatches
 from lp.bugs.scripts.checkwatches.base import (
     CheckWatchesErrorUtility,
@@ -164,6 +166,15 @@ class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
         self.failIf(remote_system.sync_comments)
 
 
+class BrokenCheckwatchesMaster(CheckwatchesMaster):
+
+    error_code = None
+
+    def _getExternalBugTrackersAndWatches(self, bug_tracker, bug_watches):
+        raise ProtocolError(
+            "http://example.com/", self.error_code, "Borked", "")
+
+
 class TestCheckwatchesMaster(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
@@ -222,6 +233,40 @@ class TestCheckwatchesMaster(TestCaseWithFactory):
         # If the batch_size is already set, it will not be changed.
         checkwatches.core.suggest_batch_size(remote_system, 99999)
         self.failUnlessEqual(247, remote_system.batch_size)
+
+    def test_xmlrpc_connection_errors_set_activity_properly(self):
+        master = BrokenCheckwatchesMaster(
+            transaction.manager, logger=BufferLogger())
+        master.error_code = 503
+        (bug_tracker, bug_watches) = self.factory.makeBugTrackerWithWatches(
+            base_url='http://example.com/')
+        transaction.commit()
+        master._updateBugTracker(bug_tracker)
+        for bug_watch in bug_watches:
+            self.assertEquals(
+                BugWatchActivityStatus.CONNECTION_ERROR,
+                bug_watch.last_error_type)
+        self.assertEqual(
+            "INFO 'Connection Error' error updating http://example.com/: "
+            "<ProtocolError for http://example.com/: 503 Borked>\n",
+            master.logger.getLogBuffer())
+
+    def test_xmlrpc_other_errors_set_activity_properly(self):
+        master = BrokenCheckwatchesMaster(
+            transaction.manager, logger=BufferLogger())
+        master.error_code = 403
+        (bug_tracker, bug_watches) = self.factory.makeBugTrackerWithWatches(
+            base_url='http://example.com/')
+        transaction.commit()
+        master._updateBugTracker(bug_tracker)
+        for bug_watch in bug_watches:
+            self.assertEquals(
+                BugWatchActivityStatus.UNKNOWN,
+                bug_watch.last_error_type)
+        self.assertEqual(
+            "INFO 'Unknown' error updating http://example.com/: "
+            "<ProtocolError for http://example.com/: 403 Borked>\n",
+            master.logger.getLogBuffer())
 
 
 class TestUpdateBugsWithLinkedQuestions(unittest.TestCase):
