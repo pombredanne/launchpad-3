@@ -107,9 +107,13 @@ class BulkPruner(TunableLoop):
     # from. Must be overridden.
     target_table_class = None
 
-    # The column name in target_table we use as the integer key. May be
-    # overridden.
+    # The column name in target_table we use as the key. The type must
+    # match that returned by the ids_to_prune_query and the
+    # target_table_key_type. May be overridden.
     target_table_key = 'id'
+
+    # SQL type of the target_table_key. May be overridden.
+    target_table_key_type = 'integer'
 
     # An SQL query returning a list of ids to remove from target_table.
     # The query must return a single column named 'id' and should not
@@ -119,10 +123,23 @@ class BulkPruner(TunableLoop):
     # See `TunableLoop`. May be overridden.
     maximum_chunk_size = 10000
 
+    # Optional extra WHERE clause fragment for the deletion to skip
+    # arbitrary rows flagged for deletion. For example, skip rows
+    # that might have been modified since the set of ids_to_prune
+    # was calculated.
+    extra_prune_clause = None
+
+    def getStore(self):
+        """The master Store for the table we are pruning.
+
+        May be overridden.
+        """
+        return IMasterStore(self.target_table_class)
+
     def __init__(self, log, abort_time=None):
         super(BulkPruner, self).__init__(log, abort_time)
 
-        self.store = IMasterStore(self.target_table_class)
+        self.store = self.getStore()
         self.target_table_name = self.target_table_class.__storm_table__
 
         # Open the cursor.
@@ -138,12 +155,20 @@ class BulkPruner(TunableLoop):
 
     def __call__(self, chunk_size):
         """See `ITunableLoop`."""
+        if self.extra_prune_clause:
+            extra = "AND (%s)" % self.extra_prune_clause
+        else:
+            extra = ""
         result = self.store.execute("""
-            DELETE FROM %s WHERE %s IN (
+            DELETE FROM %s
+            WHERE %s IN (
                 SELECT id FROM
-                cursor_fetch('bulkprunerid', %d) AS f(id integer))
+                cursor_fetch('bulkprunerid', %d) AS f(id %s))
+                %s
             """
-            % (self.target_table_name, self.target_table_key, chunk_size))
+            % (
+                self.target_table_name, self.target_table_key,
+                chunk_size, self.target_table_key_type, extra))
         self._num_removed = result.rowcount
         transaction.commit()
 
@@ -157,9 +182,7 @@ class POTranslationPruner(BulkPruner):
 
     XXX bug=723596 StuartBishop: This job only needs to run once per month.
     """
-
     target_table_class = POTranslation
-
     ids_to_prune_query = """
         SELECT POTranslation.id AS id FROM POTranslation
         EXCEPT (
@@ -183,6 +206,67 @@ class POTranslationPruner(BulkPruner):
             UNION ALL SELECT msgstr5 FROM TranslationMessage
                 WHERE msgstr5 IS NOT NULL
             )
+        """
+
+from storm.locals import Pickle, Storm, Unicode
+from canonical.database.datetimecol import UtcDateTimeCol
+
+
+class SessionData(Storm):
+    __storm_table__ = 'SessionData'
+    client_id = Unicode(primary=True)
+    created = UtcDateTimeCol()
+    last_accessed = UtcDateTimeCol()
+
+
+class SessionPkgData(Storm):
+    __storm_table__ = 'SessionPkgData'
+    __storm_primary__ = 'client_id', 'product_id', 'key'
+    client_id = Unicode()
+    product_id = Unicode()
+    key = Unicode()
+    pickle = Pickle()
+
+
+class SessionPruner(BulkPruner):
+    """Base class for session removal."""
+
+    target_table_class = SessionData
+    target_table_key = 'client_id'
+    target_table_key_type = 'text'
+
+    def getStore(self):
+        return session_store()
+
+
+class AntiqueSessionPruner(SessionPruner):
+    """Remove sessions not accessed for 60 days"""
+
+    ids_to_prune_query = """
+        SELECT client_id AS id FROM SessionData
+        WHERE last_accessed < CURRENT_TIMESTAMP - CAST('60 days' AS interval)
+        """
+
+
+class UnusedSessionPruner(SessionPruner):
+    """Remove sessions older than 1 day with no authentication credentials."""
+
+    ids_to_prune_query = """
+        SELECT client_id AS id FROM SessionData
+        WHERE
+            last_accessed < CURRENT_TIMESTAMP - CAST('1 day' AS interval)
+            AND client_id NOT IN (
+                SELECT client_id
+                FROM SessionPkgData
+                WHERE
+                    product_id = 'launchpad.authenticateduser'
+                    AND key='logintime')
+        """
+
+    # Don't delete a session if it has been used between calculating
+    # the list of sessions to remove and the current iteration.
+    prune_extra_clause = """
+        last_accessed < CURRENT_TIMESTAMP - CAST('1 day' AS interval)
         """
 
 
@@ -977,6 +1061,8 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         RevisionCachePruner,
         BugHeatUpdater,
         BugWatchScheduler,
+        AntiqueSessionPruner,
+        UnusedSessionPruner,
         ]
     experimental_tunable_loops = []
 
