@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -147,6 +147,17 @@ class POTMsgSet(SQLBase):
     flagscomment = StringCol(dbName='flagscomment', notNull=False)
 
     credits_message_ids = credits_message_info.keys()
+
+    def clone(self):
+        return POTMsgSet(
+            context=self.context,
+            msgid_singular=self.msgid_singular,
+            msgid_plural=self.msgid_plural,
+            commenttext=self.commenttext,
+            filereferences=self.filereferences,
+            sourcecomment=self.sourcecomment,
+            flagscomment=self.flagscomment,
+        )
 
     def _conflictsExistingSourceFileFormats(self, source_file_format=None):
         """Return whether `source_file_format` conflicts with existing ones
@@ -1035,16 +1046,21 @@ class POTMsgSet(SQLBase):
                         traits.other_side_traits.getCurrentMessage(
                             self, pofile.potemplate, pofile.language))
                     if other_incumbent is None:
+                        # Untranslated on the other side; use the new
+                        # translation there as well.
                         traits.other_side_traits.setFlag(message, True)
                     elif (incumbent_message is None and
                           traits.side == TranslationSide.UPSTREAM):
-                        # If this is the first upstream translation, we
-                        # we use it as the current Ubuntu translation
-                        # too, overriding a possibly existing current
-                        # Ubuntu translation.
-                        if other_incumbent is not None:
-                            traits.other_side_traits.setFlag(
-                                other_incumbent, False)
+                        # Translating upstream, and the message was
+                        # previously untranslated.  Any translation in
+                        # Ubuntu is probably different, but only because
+                        # no upstream translation was available.  In
+                        # this special case the upstream translation
+                        # overrides the Ubuntu translation.
+                        traits.other_side_traits.setFlag(
+                            other_incumbent, False)
+                        Store.of(message).add_flush_order(
+                            other_incumbent, message)
                         traits.other_side_traits.setFlag(message, True)
             elif character == '+':
                 if share_with_other_side:
@@ -1058,6 +1074,8 @@ class POTMsgSet(SQLBase):
             message = twin
 
         if not traits.getFlag(message):
+            if incumbent_message is not None and message != incumbent_message:
+                Store.of(message).add_flush_order(incumbent_message, message)
             traits.setFlag(message, True)
             pofile.markChanged(translator=submitter)
 
@@ -1165,6 +1183,7 @@ class POTMsgSet(SQLBase):
         if translation_template_item is not None:
             # Update the sequence for the translation template item.
             translation_template_item.sequence = sequence
+            return translation_template_item
         elif sequence >= 0:
             # Introduce this new entry into the TranslationTemplateItem for
             # later usage.
@@ -1179,7 +1198,7 @@ class POTMsgSet(SQLBase):
                     "Attempt to add a POTMsgSet into a POTemplate which "
                     "has a conflicting value for uses_english_msgids.")
 
-            TranslationTemplateItem(
+            return TranslationTemplateItem(
                 potemplate=potemplate,
                 sequence=sequence,
                 potmsgset=self)
@@ -1187,7 +1206,7 @@ class POTMsgSet(SQLBase):
             # There is no entry for this potmsgset in TranslationTemplateItem
             # table, neither we need to create one, given that the sequence is
             # less than zero.
-            pass
+            return None
 
     def getSequence(self, potemplate):
         """See `IPOTMsgSet`."""

@@ -1419,8 +1419,8 @@ BugMessage""" % sqlvalues(self.id))
             owners.discard(None)
             if not owners:
                 return
-            PersonSet().getPrecachedPersonsFromIDs(owners,
-                need_validity=True)
+            list(PersonSet().getPrecachedPersonsFromIDs(owners,
+                need_validity=True))
         return DecoratedResultSet(result, pre_iter_hook=eager_load_owners)
 
     def getNullBugTask(self, product=None, productseries=None,

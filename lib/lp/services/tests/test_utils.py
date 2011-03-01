@@ -8,6 +8,7 @@ __metaclass__ = type
 from contextlib import contextmanager
 import hashlib
 import itertools
+import sys
 import unittest
 
 from lp.services.utils import (
@@ -18,6 +19,7 @@ from lp.services.utils import (
     decorate_with,
     docstring_dedent,
     iter_split,
+    run_capturing_output,
     traceback_info,
     )
 from lp.testing import TestCase
@@ -250,6 +252,20 @@ class TestTracebackInfo(TestCase):
         self.assertEqual(None, locals().get("__traceback_info__"))
         traceback_info("Pugwash")
         self.assertEqual("Pugwash", locals().get("__traceback_info__"))
+
+
+class TestRunCapturingOutput(TestCase):
+    """Test `run_capturing_output`."""
+
+    def test_run_capturing_output(self):
+        def f(a, b):
+            sys.stdout.write(str(a))
+            sys.stderr.write(str(b))
+            return a + b
+        c, stdout, stderr = run_capturing_output(f, 3, 4)
+        self.assertEqual(7, c)
+        self.assertEqual('3', stdout)
+        self.assertEqual('4', stderr)
 
 
 def test_suite():

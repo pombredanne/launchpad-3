@@ -152,8 +152,8 @@
         factory="lp.translations.utilities.gettext_po_exporter.GettextPOChangedExporter"/>
     <subscriber
         for="lp.registry.interfaces.packaging.IPackaging
-             lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="lp.translations.model.translationmergejob.schedule_merge" />
+             lazr.lifecycle.interfaces.IObjectEvent"
+        handler="lp.registry.model.packagingjob.schedule_job" />
     <facet
         facet="translations">
 
@@ -387,6 +387,7 @@
         class="lp.translations.model.translationtemplateitem.TranslationTemplateItem">
         <allow
             interface="lp.translations.interfaces.translationtemplateitem.ITranslationTemplateItem"/>
+        <require permission="launchpad.Admin" set_attributes="potmsgset"/>
     </class>
 
     <!-- ProductSeriesLanguage -->
@@ -628,13 +629,18 @@
         <allow interface="lp.translations.interfaces.translationtemplatesbuildjob.ITranslationTemplatesBuildJobSource"/>
     </securedutility>
     <securedutility
-        component='lp.translations.model.translationmergejob.TranslationMergeJob'
-        provides='lp.translations.interfaces.translationmergejob.ITranslationMergeJobSource'
+        component='lp.translations.model.translationpackagingjob.TranslationPackagingJob'
+        provides='lp.translations.interfaces.translationpackagingjob.ITranslationPackagingJobSource'
     >
-        <allow interface='lp.translations.interfaces.translationmergejob.ITranslationMergeJobSource'/>
+        <allow
+        interface='lp.translations.interfaces.translationpackagingjob.ITranslationPackagingJobSource'/>
     </securedutility>
     <class
-        class="lp.translations.model.translationmergejob.TranslationMergeJob">
+        class="lp.translations.model.translationpackagingjob.TranslationMergeJob">
+        <allow interface='lp.services.job.interfaces.job.IRunnableJob'/>
+    </class>
+    <class
+        class="lp.translations.model.translationpackagingjob.TranslationSplitJob">
         <allow interface='lp.services.job.interfaces.job.IRunnableJob'/>
     </class>
     <utility
