@@ -66,9 +66,9 @@ from zope.schema import (
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
+from lp.app.validators import LaunchpadValidationError
 from lp.code.bzr import (
     BranchFormat,
     ControlFormat,
@@ -409,8 +409,16 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         readonly=True,
         value_type=Reference(schema=Interface))) # Really IBug
 
-    def getLinkedBugsAndTasks():
-        """Return a result set for the bugs with their tasks."""
+    def getLinkedBugTasks(user, status_filter):
+        """Return a result set for the tasks that are relevant to this branch.
+
+        When multiple tasks are on a bug, if one of the tasks is for the
+        branch.target, then only that task is returned. Otherwise the default
+        bug task is returned.
+        
+        :param user: The user doing the search.
+        :param status_filter: Passed onto the bug search as a constraint.
+        """
 
     @call_with(registrant=REQUEST_USER)
     @operation_parameters(

@@ -5,9 +5,9 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     block_implicit_flushes,
     cursor,
-    ISOLATION_LEVEL_READ_COMMITTED,
     flush_database_caches,
     flush_database_updates,
+    ISOLATION_LEVEL_READ_COMMITTED,
     quote,
     quote_like,
     SQLBase,
@@ -61,7 +61,6 @@ from canonical.launchpad.testing.systemdocs import (
     setUp as sd_setUp,
     tearDown as sd_tearDown,
     )
-from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
     canonical_url,
     Navigation,
@@ -118,6 +117,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.validators import LaunchpadValidationError
 from lp.app.versioninfo import revno
 from lp.app.widgets.itemswidgets import (
     CheckBoxMatrixWidget,
