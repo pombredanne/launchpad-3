@@ -958,11 +958,11 @@ class EmailNotificationsWithFiltersTest(TestCaseWithFactory):
         for message in messages:
             if by_person:
                 headers[message['to']] = message.get_all(
-                    "X-Subscription-Filter-Description", [])
+                    "X-Launchpad-Subscription-Filter", [])
             else:
                 headers = headers.union(
                     set(message.get_all(
-                        "X-Subscription-Filter-Description", [])))
+                        "X-Launchpad-Subscription-Filter", [])))
         return headers
 
     def test_filter_empty(self):
