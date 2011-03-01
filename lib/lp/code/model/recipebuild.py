@@ -91,6 +91,9 @@ class RecipeBuildRecordSet:
             Join(SourcePackageRelease,
                  SourcePackageRecipeBuild.id ==
                  SourcePackageRelease.source_package_recipe_build_id),
+            Join(SourcePackageName,
+                 SourcePackageRelease.sourcepackagename ==
+                 SourcePackageName.id),
             Join(BinaryPackageBuild,
                  BinaryPackageBuild.source_package_release_id ==
                     SourcePackageRelease.id),
@@ -108,30 +111,42 @@ class RecipeBuildRecordSet:
             epoch = datetime.now(pytz.UTC) - timedelta(days=epoch_days)
             where.append(BuildFarmJob.date_finished >= epoch)
 
+        # We include SourcePackageName directly in the query instead of just
+        # selecting its id and fetching the objects later. This is because
+        # SourcePackageName only has an id and and a name and we use the name
+        # for the order by so there's no benefit in introducing another query
+        # for eager fetching later. If SourcePackageName gets new attributes,
+        # this can be re-evaluated.
         result_set = store.using(*tables).find(
-                (SourcePackageRecipe,
-                    SourcePackageRelease.sourcepackagenameID,
+                (SourcePackageRecipe.id,
+                    SourcePackageName,
                     Max(BuildFarmJob.date_finished),
                     ),
                 *where
             ).group_by(
-                SourcePackageRecipe,
-                SourcePackageRelease.sourcepackagenameID,
+                SourcePackageRecipe.id,
+                SourcePackageName,
             ).order_by(
+                SourcePackageName.name,
                 Desc(Max(BuildFarmJob.date_finished)),
-                SourcePackageRecipe.name,
             )
 
         def _makeRecipeBuildRecord(values):
-            (recipe, sourcepackagename_id, date_finished) = values
-            sp_name = store.get(SourcePackageName, sourcepackagename_id)
+            (recipe_id, sourcepackagename, date_finished) = values
+            recipe = store.get(SourcePackageRecipe, recipe_id)
             return RecipeBuildRecord(
-                sp_name, recipe.owner,
+                sourcepackagename, recipe.owner,
                 recipe.daily_build_archive, recipe,
                 date_finished)
 
-        to_recipes = lambda rows: [row[0] for row in rows]
-        to_releases = lambda rows: [row[1] for row in rows]
+        to_recipes_ids = lambda rows: [row[0] for row in rows]
+
+        def eager_load_recipes(recipe_ids):
+            if not recipe_ids:
+                return []
+            return list(store.find(
+                SourcePackageRecipe,
+                SourcePackageRecipe.id.is_in(recipe_ids)))
 
         def eager_load_owners(recipes):
             owner_ids = set(recipe.owner_id for recipe in recipes)
@@ -148,20 +163,12 @@ class RecipeBuildRecordSet:
                 return
             list(store.find(Archive, Archive.id.is_in(archive_ids)))
 
-        def eager_load_sourcepackagenames(releases):
-            name_ids = set(release for release in releases)
-            name_ids.discard(None)
-            if not name_ids:
-                return
-            list(store.find(
-                SourcePackageName, SourcePackageName.id.is_in(name_ids)))
-
         def _prefetchRecipeBuildData(rows):
-            recipes = to_recipes(rows)
+            recipe_ids = set(to_recipes_ids(rows))
+            recipe_ids.discard(None)
+            recipes = eager_load_recipes(recipe_ids)
             eager_load_owners(recipes)
             eager_load_archives(recipes)
-            releases = to_releases(rows)
-            eager_load_sourcepackagenames(releases)
 
         return RecipeBuildRecordResultSet(
             result_set, _makeRecipeBuildRecord,
