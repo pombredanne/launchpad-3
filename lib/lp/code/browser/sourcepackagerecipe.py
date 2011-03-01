@@ -307,7 +307,7 @@ def builds_for_recipe(recipe):
         return builds
 
 
-def new_builds_notification_text(builds):
+def new_builds_notification_text(builds, already_pending=None):
     nr_builds = len(builds)
     if not nr_builds:
         builds_text = "All requested recipe builds are already queued."
@@ -315,7 +315,9 @@ def new_builds_notification_text(builds):
         builds_text = "1 new recipe build has been queued."
     else:
         builds_text = "%d new recipe builds have been queued." % nr_builds
-    return builds_text
+    if nr_builds > 0 and already_pending:
+        builds_text = "<p>%s</p>%s" % (builds_text, already_pending)
+    return structured(builds_text)
 
 
 class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
@@ -366,7 +368,7 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
         build for a particular distroseries, we simply record that so that
         other builds can ne queued and a message be displayed to the caller.
         """
-        errors = {}
+        informational = {}
         builds = []
         for distroseries in data['distros']:
             try:
@@ -374,9 +376,16 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
                     data['archive'], self.user, distroseries, manual=True)
                 builds.append(build)
             except BuildAlreadyPending, e:
-                errors['distros'] = ("An identical build is already pending "
-                    "for %s." % e.distroseries)
-        return builds, errors
+                existing_message = informational.get("already_pending")
+                if existing_message:
+                    new_message = existing_message[:-1] + (
+                                    ", and %s." % e.distroseries)
+                else:
+                    new_message = ("An identical build is "
+                                "already pending for %s." % e.distroseries)
+                informational["already_pending"] = new_message
+
+        return builds, informational
 
 
 class SourcePackageRecipeRequestBuildsHtmlView(
@@ -395,25 +404,27 @@ class SourcePackageRecipeRequestBuildsHtmlView(
 
     @action('Request builds', name='request')
     def request_action(self, action, data):
-        builds, errors = self.requestBuild(data)
-        if errors:
-            [self.setFieldError(field, message)
-                for (field, message) in errors.items()]
-            return
+        builds, informational = self.requestBuild(data)
         self.next_url = self.cancel_url
-        self.request.response.addNotification(
-                new_builds_notification_text(builds))
+        already_pending = informational.get("already_pending")
+        notification_text = new_builds_notification_text(
+            builds, already_pending)
+        self.request.response.addNotification(notification_text)
 
 
 class SourcePackageRecipeRequestBuildsAjaxView(
         SourcePackageRecipeRequestBuildsView):
     """Supports AJAX form recipe build requests."""
 
-    def _process_error(self, data, errors, reason):
+    def _process_error(self, data=None, builds=None, informational=None,
+                       errors=None, reason="Validation"):
         """Set up the response and json data to return to the caller."""
         self.request.response.setStatus(400, reason)
         self.request.response.setHeader('Content-type', 'application/json')
-        return simplejson.dumps(errors)
+        return_data = dict(builds=builds, errors=errors)
+        if informational:
+            return_data.update(informational)
+        return simplejson.dumps(return_data)
 
     def failure(self, action, data, errors):
         """Called by the form if validate() finds any errors.
@@ -421,7 +432,7 @@ class SourcePackageRecipeRequestBuildsAjaxView(
            We simply convert the errors to json and return that data to the
            caller for display to the user.
         """
-        return self._process_error(data, self.widget_errors, "Validation")
+        return self._process_error(data=data, errors=self.widget_errors)
 
     @action('Request builds', name='request', failure=failure)
     def request_action(self, action, data):
@@ -434,12 +445,18 @@ class SourcePackageRecipeRequestBuildsAjaxView(
         unexpected exception, that will be handled using the form's standard
         exception processing mechanism (using response code 500).
         """
-        builds, errors = self.requestBuild(data)
+        builds, informational = self.requestBuild(data)
         # If there are errors we return a json data snippet containing the
-        # errors instead of rendering the form. These errors are processed
-        # by the caller's response handler and displayed to the user.
-        if errors:
-            return self._process_error(data, errors, "Request Build")
+        # errors as well as the form content. These errors are processed
+        # by the caller's response handler and displayed to the user. The
+        # form content may be rendered as well if required.
+        if informational:
+            builds_html = None
+            if len(builds):
+                builds_html = self.render()
+            return self._process_error(
+                data=data, builds=builds_html, informational=informational,
+                reason="Request Build")
 
     @property
     def builds(self):
@@ -473,47 +490,6 @@ class SourcePackageRecipeRequestDailyBuildView(LaunchpadFormView):
             self.next_url = canonical_url(recipe)
             self.request.response.addNotification(
                     new_builds_notification_text(builds))
-
-    @property
-    def builds(self):
-        return builds_for_recipe(self.context)
-
-
-class SourcePackageRecipeRequestBuildsAjaxView(
-        SourcePackageRecipeRequestBuildsView):
-    """Supports AJAX form recipe build requests."""
-
-    def _process_error(self, data, errors, reason):
-        """Set up the response and json data to return to the caller."""
-        self.request.response.setStatus(400, reason)
-        self.request.response.setHeader('Content-type', 'application/json')
-        return simplejson.dumps(errors)
-
-    def failure(self, action, data, errors):
-        """Called by the form if validate() finds any errors.
-
-           We simply convert the errors to json and return that data to the
-           caller for display to the user.
-        """
-        return self._process_error(data, self.widget_errors, "Validation")
-
-    @action('Request builds', name='request', failure=failure)
-    def request_action(self, action, data):
-        """User action for requesting a number of builds.
-
-        The failure handler will handle any validation errors. We still need
-        to handle errors which may occur when invoking the business logic.
-        These "expected" errors are ones which result in a predefined message
-        being displayed to the user. If the business method raises an
-        unexpected exception, that will be handled using the form's standard
-        exception processing mechanism (using response code 500).
-        """
-        builds, errors = self.requestBuild(data)
-        # If there are errors we return a json data snippet containing the
-        # errors instead of rendering the form. These errors are processed
-        # by the caller's response handler and displayed to the user.
-        if errors:
-            return self._process_error(data, errors, "Request Build")
 
     @property
     def builds(self):
@@ -696,7 +672,7 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
     def initialize(self):
         super(SourcePackageRecipeAddView, self).initialize()
         if getFeatureFlag(RECIPE_BETA_FLAG):
-           self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
+            self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
         widget = self.widgets['use_ppa']
         current_value = widget._getFormValue()
         self.use_ppa_existing = render_radio_widget_part(
@@ -728,8 +704,8 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
         # Grab the last path element of the branch target path.
         source = getUtility(ISourcePackageRecipeSource)
         for recipe_name in self._recipe_names():
-             if not source.exists(owner, recipe_name):
-                 return recipe_name
+            if not source.exists(owner, recipe_name):
+                return recipe_name
 
     @property
     def initial_values(self):
@@ -737,7 +713,7 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
         series = [series for series in distroseries if series.status in (
                 SeriesStatus.CURRENT, SeriesStatus.DEVELOPMENT)]
         return {
-            'name' : self._find_unused_name(self.user),
+            'name': self._find_unused_name(self.user),
             'recipe_text': MINIMAL_RECIPE_TEXT % self.context.bzr_identity,
             'owner': self.user,
             'distros': series,
