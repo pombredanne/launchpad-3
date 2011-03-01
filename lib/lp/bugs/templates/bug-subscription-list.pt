@@ -10,16 +10,24 @@
   i18n:domain="malone"
 >
 
+<head>
+  <tal:head-epilogue metal:fill-slot="head_epilogue">
+    <script type="text/javascript">
+        LPS.use('lp.registry.structural_subscription', function(Y) {
+            Y.lp.registry.structural_subscription.render_bug_subscriptions();
+        });
+    </script>
+
+  </tal:head-epilogue>
+</head>
 <body>
   <div metal:fill-slot="main">
 
     <div id="maincontent">
       <div id="nonportlets" class="readable">
-
+        <div id="subscription-listing"></div>
       </div>
     </div>
-
   </div>
-
 </body>
 </html>
