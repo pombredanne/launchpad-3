@@ -882,7 +882,7 @@ from lp.bugs.scripts.bugnotification import construct_email_notifications
 from storm.store import Store
 
 
-class EmailNotificationsWithFiltersTest(TestCaseWithFactory):
+class TestEmailNotificationsWithFilters(TestCaseWithFactory):
     """Ensure outgoing mails have corresponding mail headers.
 
     Every filter that could have potentially caused a notification to
