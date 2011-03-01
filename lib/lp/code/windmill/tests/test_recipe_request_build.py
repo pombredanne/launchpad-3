@@ -95,6 +95,9 @@ class TestRecipeBuild(WindmillTestCase):
         client.waits.forElement(id=u'field.archive')
         client.click(name=u'field.actions.request')
 
+        # Give the new build a chance to be queued.
+        client.waits.sleep(milliseconds=SLEEP)
+
         # And open the request form again.
         client.click(id=u'request-builds')
         client.waits.forElement(id=u'field.archive')
@@ -114,6 +117,9 @@ class TestRecipeBuild(WindmillTestCase):
         client.click(id=u'field.distros.1')
         client.click(id=u'field.distros.2')
         client.click(name=u'field.actions.request')
+
+        # Give the new builds a chance to be queued.
+        client.waits.sleep(milliseconds=SLEEP)
 
         distribution_set = getUtility(IDistributionSet)
         ubuntu_hoary = distribution_set.getByName('ubuntu').getSeries('hoary')
