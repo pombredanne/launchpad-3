@@ -35,7 +35,6 @@ from operator import (
     isMappingType,
     isSequenceType,
     )
-from operator import attrgetter
 import os
 from pytz import UTC
 from random import randint
