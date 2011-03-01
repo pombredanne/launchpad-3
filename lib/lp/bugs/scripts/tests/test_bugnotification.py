@@ -1022,8 +1022,8 @@ class EmailNotificationsWithFiltersTest(TestCaseWithFactory):
 
         the_subscriber = self.subscription.subscriber
         self.assertEquals(
-            { other_person.preferredemail.email: [u"Someone's filter"],
-              the_subscriber.preferredemail.email : [u"Test filter"] },
+            {other_person.preferredemail.email: [u"Someone's filter"],
+             the_subscriber.preferredemail.email: [u"Test filter"]},
             self.getSubscriptionEmailHeaders(by_person=True))
 
     def test_body_empty(self):
