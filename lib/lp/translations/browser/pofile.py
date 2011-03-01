@@ -1020,7 +1020,11 @@ class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
         if len(infos) == 0:
             return None
         obj, potemplate = infos[0]
-        return potemplate.getPOFileByLang(self.context.language.code)
+        pofile = potemplate.getPOFileByLang(self.context.language.code)
+        if pofile is None:
+            pofile = potemplate.getDummyPOFile(
+                self.context.language, check_for_existing=False)
+        return pofile
 
 
 class POExportView(BaseExportView):
