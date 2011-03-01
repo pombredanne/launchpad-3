@@ -1673,6 +1673,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(IBugTrackerSet).ensureBugTracker(
             base_url, owner, bugtrackertype, title=title, name=name)
 
+    def makeBugTrackerWithWatches(self, base_url=None, count=2):
+        """Make a new bug tracker with some watches."""
+        bug_tracker = self.makeBugTracker(base_url=base_url)
+        bug_watches = [
+            self.makeBugWatch(bugtracker=bug_tracker)
+            for i in range(count)]
+        return (bug_tracker, bug_watches)
+
     def makeBugTrackerComponentGroup(self, name=None, bug_tracker=None):
         """Make a new bug tracker component group."""
         if name is None:
