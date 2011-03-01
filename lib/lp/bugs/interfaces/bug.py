@@ -20,9 +20,8 @@ __all__ = [
     'IProjectGroupBugAddForm',
     ]
 
-from textwrap import dedent
-
 from lazr.enum import DBEnumeratedType
+
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     call_with,
@@ -311,15 +310,8 @@ class IBug(IPrivacy, IHasLinkedBranches):
             readonly=True))
     tags = exported(List(
         title=_("Tags"),
-        description=_(dedent("""
-            The tags applied to this bug.
-
-            Web service:
-                The list of tags is whitespace delimited.
-
-            Launchpadlib:
-                The list of tags is represented as a sequence of strings.
-            """)),
+        description=_("Space-separated keywords for classifying "
+            "this bug report."),
             value_type=Tag(), required=False))
     is_complete = Bool(
         title=_("Is Complete?"),
