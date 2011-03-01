@@ -170,7 +170,11 @@ def construct_email_notifications(bug_notifications):
             for notification_filter in notification_filters:
                 if notification_filter.description is not None:
                     filters.add(notification_filter.description)
-
+        if filters:
+            # There are some filters as well, add it to the email body.
+            filters_text = u"\nMatching filters: %s" % ", ".join(filters)
+        else:
+            filters_text = u""
         # XXX deryck 2009-11-17 Bug #484319
         # This should be refactored to add a link inside the
         # code where we build `reason`.  However, this will
@@ -188,7 +192,9 @@ def construct_email_notifications(bug_notifications):
             'bug_title': data_wrapper.format(bug.title),
             'bug_url': canonical_url(bug),
             'unsubscribe_notice': unsubscribe_notice,
-            'notification_rationale': mail_wrapper.format(reason)}
+            'notification_rationale': mail_wrapper.format(reason),
+            'subscription_filters': filters_text,
+            }
 
         # If the person we're sending to receives verbose notifications
         # we include the description and status of the bug in the email

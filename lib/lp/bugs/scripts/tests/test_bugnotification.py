@@ -965,13 +965,33 @@ class EmailNotificationsWithFiltersTest(TestCaseWithFactory):
                         "X-Launchpad-Subscription-Filter", [])))
         return headers
 
-    def test_filter_empty(self):
+    def getSubscriptionEmailBody(self, by_person=False):
+        filtered, omitted, messages = construct_email_notifications(
+            [self.notification])
+        if by_person:
+            filter_texts = {}
+        else:
+            filter_texts = set()
+        for message in messages:
+            filters_line = None
+            for line in message.get_payload().splitlines():
+                if line.startswith("Matching filters: "):
+                    filters_line = line
+                    break
+            if filters_line is not None:
+                if by_person:
+                    filter_texts[message['to']] = filters_line
+                else:
+                    filter_texts.add(filters_line)
+        return filter_texts
+
+    def test_header_empty(self):
         # An initial filter with no description doesn't cause any
         # headers to be added.
         self.assertContentEqual([],
                                 self.getSubscriptionEmailHeaders())
 
-    def test_filter_single(self):
+    def test_header_single(self):
         # A single filter with a description makes all emails
         # include that particular filter description in a header.
         bug_filter = self.addFilter(u"Test filter")
@@ -979,7 +999,7 @@ class EmailNotificationsWithFiltersTest(TestCaseWithFactory):
         self.assertContentEqual([u"Test filter"],
                                 self.getSubscriptionEmailHeaders())
 
-    def test_filter_multiple(self):
+    def test_header_multiple(self):
         # Multiple filters with a description make all emails
         # include all filter descriptions in the header.
         bug_filter = self.addFilter(u"First filter")
@@ -988,7 +1008,7 @@ class EmailNotificationsWithFiltersTest(TestCaseWithFactory):
         self.assertContentEqual([u"First filter", u"Second filter"],
                                 self.getSubscriptionEmailHeaders())
 
-    def test_filter_other_subscriber_by_person(self):
+    def test_header_other_subscriber_by_person(self):
         # Filters for a different subscribers are included only
         # in email messages relevant to them, even if they might
         # all be for the same notification.
@@ -998,7 +1018,7 @@ class EmailNotificationsWithFiltersTest(TestCaseWithFactory):
         bug_filter = self.addFilter(u"Someone's filter", other_subscription)
         self.addNotificationRecipient(self.notification, other_person)
 
-        bug_filter = self.addFilter(u"Test filter")
+        this_filter = self.addFilter(u"Test filter")
 
         the_subscriber = self.subscription.subscriber
         self.assertEquals(
@@ -1006,4 +1026,26 @@ class EmailNotificationsWithFiltersTest(TestCaseWithFactory):
               the_subscriber.preferredemail.email : [u"Test filter"] },
             self.getSubscriptionEmailHeaders(by_person=True))
 
+    def test_body_empty(self):
+        # An initial filter with no description doesn't cause any
+        # text to be added to the email body.
+        self.assertContentEqual([],
+                                self.getSubscriptionEmailBody())
 
+    def test_body_single(self):
+        # A single filter with a description makes all emails
+        # include that particular filter description in the body.
+        bug_filter = self.addFilter(u"Test filter")
+
+        self.assertContentEqual([u"Matching filters: Test filter"],
+                                self.getSubscriptionEmailBody())
+
+    def test_body_multiple(self):
+        # Multiple filters with description make all emails
+        # include them in the email body.
+        bug_filter = self.addFilter(u"First filter")
+        bug_filter = self.addFilter(u"Second filter")
+
+        self.assertContentEqual(
+            [u"Matching filters: First filter, Second filter"],
+            self.getSubscriptionEmailBody())
