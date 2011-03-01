@@ -105,7 +105,6 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
-    ILaunchBag,
     IStoreSelector,
     MAIN_STORE,
     )
@@ -568,18 +567,18 @@ BugMessage""" % sqlvalues(self.id))
         # triggered in both places. Separately, bugtask_sort_key requires
         # the related products, series, distros, distroseries and source
         # package names to be loaded.
-        IDs = set(map(operator.attrgetter('assigneeID'), tasks))
-        IDs.update(map(operator.attrgetter('ownerID'), tasks))
-        IDs.discard(None)
-        if IDs:
+        ids = set(map(operator.attrgetter('assigneeID'), tasks))
+        ids.update(map(operator.attrgetter('ownerID'), tasks))
+        ids.discard(None)
+        if ids:
             list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
-                IDs, need_validity=True))
+                ids, need_validity=True))
         def load_something(attrname, klass):
-            IDs = set(map(operator.attrgetter(attrname), tasks))
-            IDs.discard(None)
-            if not IDs:
+            ids = set(map(operator.attrgetter(attrname), tasks))
+            ids.discard(None)
+            if not ids:
                 return
-            list(store.find(klass, klass.id.is_in(IDs)))
+            list(store.find(klass, klass.id.is_in(ids)))
         load_something('productID', Product)
         load_something('productseriesID', ProductSeries)
         load_something('distributionID', Distribution)

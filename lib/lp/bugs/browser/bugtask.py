@@ -3250,11 +3250,11 @@ class BugTasksAndNominationsView(LaunchpadView):
         nominations = list(bug.getNominations())
         # Eager load validity for all the persons we know of that will be
         # displayed.
-        IDs = set(map(attrgetter('ownerID'), nominations))
-        IDs.discard(None)
-        if IDs:
+        ids = set(map(attrgetter('ownerID'), nominations))
+        ids.discard(None)
+        if ids:
             list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
-                IDs, need_validity=True))
+                ids, need_validity=True))
 
         # Build a cache we can pass on to getConjoinedMaster(), so that
         # it doesn't have to iterate over all the bug tasks in each loop
