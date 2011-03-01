@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -38,6 +38,7 @@ from canonical.launchpad.testing.systemdocs import (
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import (
     IPersonSet,
+    TeamMembershipRenewalPolicy,
     TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.teammembership import (
@@ -797,14 +798,27 @@ class TestTeamMembershipSendExpirationWarningEmail(TestCaseWithFactory):
         # An exception is raised if the membership does not have an
         # expiration date.
         self.assertEqual(None, self.tm.dateexpires)
-        message = 'This membership has no expiration date: green in red'
+        message = 'green in team red has no membership expiration date.'
+        self.assertRaisesWithContent(
+            AssertionError, message, self.tm.sendExpirationWarningEmail)
+
+    def test_error_raised_for_team_with_automatic_renewal(self):
+        # An exception is raised if the team's TeamMembershipRenewalPolicy
+        # is AUTOMATIC.
+        self.team.renewal_policy = TeamMembershipRenewalPolicy.AUTOMATIC
+        self.team.defaultrenewalperiod = 365
+        tomorrow = datetime.now(pytz.UTC) + timedelta(days=1)
+        removeSecurityProxy(self.tm).dateexpires = tomorrow
+        message = (
+            'Team red with automatic renewals should not send '
+            'expiration warnings.')
         self.assertRaisesWithContent(
             AssertionError, message, self.tm.sendExpirationWarningEmail)
 
     def test_message_sent_for_future_expiration(self):
         # An email is sent to the user whose membership will expire.
-        now = datetime.now(pytz.UTC)
-        removeSecurityProxy(self.tm).dateexpires = now + timedelta(days=1)
+        tomorrow = datetime.now(pytz.UTC) + timedelta(days=1)
+        removeSecurityProxy(self.tm).dateexpires = tomorrow
         self.tm.sendExpirationWarningEmail()
         notifications = pop_notifications()
         self.assertEqual(1, len(notifications))
@@ -813,6 +827,14 @@ class TestTeamMembershipSendExpirationWarningEmail(TestCaseWithFactory):
             'Your membership in red is about to expire', message['subject'])
         self.assertEqual(
             self.member.preferredemail.email, message['to'])
+
+    def test_no_message_sent_for_expired_memberships(self):
+        # Members whose membership has expired do not get a message.
+        yesterday = datetime.now(pytz.UTC) - timedelta(days=1)
+        removeSecurityProxy(self.tm).dateexpires = yesterday
+        self.tm.sendExpirationWarningEmail()
+        notifications = pop_notifications()
+        self.assertEqual(0, len(notifications))
 
     def test_no_message_sent_for_non_active_users(self):
         # Non-active users do not get an expiration message.
