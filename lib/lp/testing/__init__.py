@@ -599,17 +599,11 @@ class TestCaseWithFactory(TestCase):
             because it's stored as a hash.)
         """
         # Do the import here to avoid issues with import cycles.
-        from canonical.launchpad.testing.pages import setupBrowser
+        from canonical.launchpad.testing.pages import setupBrowserForUser
         login(ANONYMOUS)
         if user is None:
             user = self.factory.makePerson(password=password)
-        naked_user = removeSecurityProxy(user)
-        email = naked_user.preferredemail.email
-        if hasattr(naked_user, '_password_cleartext_cached'):
-            password = naked_user._password_cleartext_cached
-        logout()
-        browser = setupBrowser(
-            auth="Basic %s:%s" % (str(email), password))
+        browser = setupBrowserForUser(user, password)
         if url is not None:
             browser.open(url)
         return browser
