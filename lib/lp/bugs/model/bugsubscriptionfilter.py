@@ -202,6 +202,9 @@ class BugSubscriptionFilter(StormBase):
     def delete(self):
         """See `IBugSubscriptionFilter`."""
         self.importances = self.statuses = self.tags = ()
-        self.bug_notification_level = BugNotificationLevel.COMMENTS
+        # Revert bug notification level to the default.
+        self.bug_notification_level = (
+            IBugSubscriptionFilter.getDescriptionFor(
+                'bug_notification_level').default)
         if self._has_other_filters():
             Store.of(self).remove(self)
