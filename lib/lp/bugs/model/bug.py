@@ -143,6 +143,7 @@ from lp.bugs.interfaces.bugnomination import (
     )
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
     BugTaskStatus,
     IBugTaskSet,
     UNRESOLVED_BUGTASK_STATUSES,
@@ -175,7 +176,10 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    validate_public_person,
+    )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
@@ -549,15 +553,39 @@ BugMessage""" % sqlvalues(self.id))
     @cachedproperty
     def bugtasks(self):
         """See `IBug`."""
-        result = BugTask.select('BugTask.bug = %s' % sqlvalues(self.id))
-        result = result.prejoin(
-            ["assignee", "product", "sourcepackagename",
-             "owner", "bugwatch"])
-        # Do not use the default orderBy as the prejoins cause ambiguities
-        # across the tables.
-        result = result.orderBy("id")
-        result = sorted(result, key=bugtask_sort_key)
-        return result
+        # \o/ circular imports.
+        from lp.bugs.model.bugwatch import BugWatch
+        from lp.registry.model.distribution import Distribution
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.registry.model.product import Product
+        from lp.registry.model.productseries import ProductSeries
+        from lp.registry.model.sourcepackagename import SourcePackageName
+        store = Store.of(self)
+        tasks = list(store.find(BugTask, BugTask.bugID == self.id))
+        # The bugtasks attribute is iterated in the API and web services, so it
+        # needs to preload all related data otherwise late evaluation is
+        # triggered in both places. Separately, bugtask_sort_key requires
+        # the related products, series, distros, distroseries and source
+        # package names to be loaded.
+        ids = set(map(operator.attrgetter('assigneeID'), tasks))
+        ids.update(map(operator.attrgetter('ownerID'), tasks))
+        ids.discard(None)
+        if ids:
+            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                ids, need_validity=True))
+        def load_something(attrname, klass):
+            ids = set(map(operator.attrgetter(attrname), tasks))
+            ids.discard(None)
+            if not ids:
+                return
+            list(store.find(klass, klass.id.is_in(ids)))
+        load_something('productID', Product)
+        load_something('productseriesID', ProductSeries)
+        load_something('distributionID', Distribution)
+        load_something('distroseriesID', DistroSeries)
+        load_something('sourcepackagenameID', SourcePackageName)
+        list(store.find(BugWatch, BugWatch.bugID == self.id))
+        return sorted(tasks, key=bugtask_sort_key)
 
     @property
     def default_bugtask(self):
