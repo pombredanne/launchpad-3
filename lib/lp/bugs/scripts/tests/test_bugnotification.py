@@ -896,7 +896,7 @@ class TestEmailNotificationsWithFilters(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        super(EmailNotificationsWithFiltersTest, self).setUp()
+        super(TestEmailNotificationsWithFilters, self).setUp()
         self.bug=self.factory.makeBug()
         subscriber = self.factory.makePerson()
         self.subscription = self.bug.default_bugtask.target.addSubscription(

@@ -17,7 +17,6 @@ from storm.locals import (
 
 from storm.base import Storm
 from storm.expr import (
-    Alias,
     And,
     CompoundOper,
     Except,

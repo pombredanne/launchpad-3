@@ -14,10 +14,6 @@ __all__ = [
     'IStructuralSubscriptionTargetHelper',
     ]
 
-from lazr.enum import (
-    DBEnumeratedType,
-    DBItem,
-    )
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
@@ -41,7 +37,6 @@ from zope.interface import (
     )
 from zope.schema import (
     Bool,
-    Choice,
     Datetime,
     Int,
     )
