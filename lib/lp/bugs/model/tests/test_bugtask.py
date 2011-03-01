@@ -8,7 +8,10 @@ from doctest import DocTestSuite
 import unittest
 
 from lazr.lifecycle.snapshot import Snapshot
-from storm.store import ResultSet
+from storm.store import (
+    EmptyResultSet,
+    ResultSet,
+    )
 from testtools.matchers import (
     Equals,
     StartsWith,
@@ -1505,7 +1508,7 @@ class TestGetStructuralSubscribers(TestCaseWithFactory):
         # subscribers will be returned by getStructuralSubscribers().
         product, bug = self.make_product_with_bug()
         subscribers = self.getStructuralSubscribers(bug.bugtasks)
-        self.assertIsInstance(subscribers, ResultSet)
+        self.assertIsInstance(subscribers, (ResultSet, EmptyResultSet))
         self.assertEqual([], list(subscribers))
 
     def test_getStructuralSubscribers_single_target(self):

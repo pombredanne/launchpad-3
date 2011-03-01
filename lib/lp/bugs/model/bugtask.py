@@ -37,14 +37,18 @@ from sqlobject.sqlbuilder import SQLConstant
 from storm.expr import (
     Alias,
     And,
+    CompoundOper,
+    Count,
     Desc,
     In,
     Join,
     LeftJoin,
+    NamedFunc,
     Not,
     Or,
     Select,
     SQL,
+    Union,
     )
 from storm.info import ClassAlias
 from storm.store import (
@@ -129,9 +133,18 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
+    IStructuralSubscriptionTargetHelper,
     )
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
+from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
+from lp.bugs.model.bugsubscriptionfilterimportance import (
+    BugSubscriptionFilterImportance,
+    )
+from lp.bugs.model.bugsubscriptionfilterstatus import (
+    BugSubscriptionFilterStatus,
+    )
+from lp.bugs.model.bugsubscriptionfiltertag import BugSubscriptionFilterTag
 from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.registry.interfaces.distribution import (
     IDistribution,
@@ -171,6 +184,24 @@ from lp.services.propertycache import get_property_cache
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+
+
+class ArrayAgg(NamedFunc):
+    "Aggregate values (within a GROUP BY) into an array."
+    __slots__ = ()
+    name = "ARRAY_AGG"
+
+
+class ArrayContains(CompoundOper):
+    "True iff the left side is a superset of the right side."
+    __slots__ = ()
+    oper = "@>"
+
+
+class ArrayIntersects(CompoundOper):
+    "True iff the left side shares at least one element with the right side."
+    __slots__ = ()
+    oper = "&&"
 
 
 debbugsseveritymap = {
@@ -3089,58 +3120,320 @@ class BugTaskSet:
             if bugtask.milestone is not None:
                 yield (bugtask, bugtask.milestone)
 
-    def getAllStructuralSubscriptions(self, bugtasks, recipient):
+    def getAllStructuralSubscriptions(self, bugtasks, recipient=None):
         """See `IBugTaskSet`."""
         targets = [target for bugtask, target
                    in self._getStructuralSubscriptionTargets(bugtasks)]
         if len(targets) == 0:
             return EmptyResultSet()
-        union = lambda left, right: (
-            removeSecurityProxy(left).union(
-                removeSecurityProxy(right)))
-        queries = (
-            target.getSubscriptions(recipient) for target in targets)
-        return reduce(union, queries)
+        store = IStore(StructuralSubscription)
+        query = Or(*[IStructuralSubscriptionTargetHelper(target).join
+                     for target in set(targets)])
+        if recipient is not None:
+            query = And(
+                query,
+                StructuralSubscription.subscriber == recipient)
+        return store.find(
+            StructuralSubscription,
+            query)
+
+    def _getStructuralSubscriptionFilterIdQuery(self, bugtasks, level):
+        """Return query for structural filters for the bugtasks and level.
+        
+        Returns None if we already know that the result is empty."""
+        # We get the ids because we need to use group by in order to
+        # look at the filters' tags in aggregate.  Once we have the ids,
+        # we can get the full set of what we need in subsuming or
+        # subsequent SQL calls.
+        # (Aside 1: We could in theory get all the fields we wanted with
+        # a hack--we could use an aggregrate function like max to get
+        # fields that we know will be unique--but Storm would not like
+        # it.)
+        # (Aside 2: IMO Postgres should allow getting other fields if
+        # the group-by key is a primary key and the other fields desired
+        # are other values from the same table as the group-by key, or
+        # values of a table linked by a foreign key from the same table
+        # as the group-by key...but that's dreaming.)
+        # We assume that the bug of the first bugtask will be the bug
+        # for all of the bugtasks.  That assumption suggests that the
+        # method should eventually go on the bug class and maybe the
+        # bugtask class, or be a function.
+        bug = bugtasks[0].bug
+        # See the docstring of _getStructuralSubscriptionTargets.
+        query_arguments = list(
+            self._getStructuralSubscriptionTargets(bugtasks))
+        if len(query_arguments) == 0:
+            # This is unlikely to ever happen unless the bugtasks list itself
+            # is empty, but it's a shortcut nonetheless.
+            return None
+        # With large numbers of filters in the system, it's fastest in
+        # our tests if we get a set of structural subscriptions
+        # pertinent to the given targets, and then work with that.  It also
+        # comes in handy when we have to do a union, because we can share
+        # the work across the two queries.
+        store = IStore(StructuralSubscription)
+        candidates = list(
+            store.find(
+                StructuralSubscription.id,
+                Or(*[IStructuralSubscriptionTargetHelper(target).join
+                     for target
+                     in set(target for bugtask, target
+                            in query_arguments)])))
+        if not candidates:
+            # If there are no structural subscriptions for these targets,
+            # then we don't need to look at the filters.  We're done.
+            return None
+        # The "select_args" dictionary holds the arguments that we will
+        # pass to one or more SELECT clauses.  We start with what will
+        # become the FROM clause.  We always want the following Joins,
+        # so we can add them here at the beginning.
+        select_args = {
+            'tables': [
+                StructuralSubscription,
+                Join(BugSubscriptionFilter,
+                     BugSubscriptionFilter.structural_subscription_id ==
+                     StructuralSubscription.id),
+                LeftJoin(BugSubscriptionFilterStatus,
+                         BugSubscriptionFilterStatus.filter_id ==
+                         BugSubscriptionFilter.id),
+                LeftJoin(BugSubscriptionFilterImportance,
+                         BugSubscriptionFilterImportance.filter_id ==
+                         BugSubscriptionFilter.id),
+                  LeftJoin(BugSubscriptionFilterTag,
+                           BugSubscriptionFilterTag.filter_id ==
+                           BugSubscriptionFilter.id)
+                ]}
+        # The "conditions" list will eventually be passed to a Storm
+        # "And" function, and then become the WHERE clause of our SELECT.
+        conditions = [In(StructuralSubscription.id, candidates)]
+        # Now we start handling the various parts of the filters.  Handling
+        # notification level is trivial, and we do that first.
+        if level is not None and level is not BugNotificationLevel.NOTHING:
+            conditions.append(
+                BugSubscriptionFilter.bug_notification_level >= level)
+        # Now we handle importance and status, which are per bugtask.
+        # What we do is loop through the collection of bugtask, target
+        # in query_arguments.  Each bugtask will have one or more
+        # targets that we have to check.  We figure out how to describe each
+        # target using the useful IStructuralSubscriptionTargetHelper
+        # adapter, which has a "join" attribute on it that tells us how
+        # to distinguish that target.  Once we have all of the target
+        # descriptins, we OR those together, and say that the filters
+        # for those targets must either have no importance or match the
+        # associated bugtask's importance; and have no status or match
+        # the bugtask's status.  Once we have looked at all of the
+        # bugtasks, we OR all of those per-bugtask target comparisons
+        # together, and we are done with the status and importance.
+        # The "outer_or_conditions" list holds the full clauses for each
+        # bugtask.
+        outer_or_conditions = []
+        # The "or_target_conditions" list holds the clauses for each target,
+        # and is reset for each new bugtask.
+        or_target_conditions = []
+        def handle_bugtask_conditions(bugtask):
+            """Helper function for building status and importance clauses.
+            
+            Call with the previous bugtask when the bugtask changes in
+            the iteration of query_arguments, and call with the last
+            bugtask when the iteration is complete."""
+            if or_target_conditions:
+                outer_or_conditions.append(
+                    And(Or(*or_target_conditions),
+                        Or(BugSubscriptionFilterImportance.importance == bugtask.importance,
+                           BugSubscriptionFilterImportance.importance == None),
+                        Or(BugSubscriptionFilterStatus.status == bugtask.status,
+                           BugSubscriptionFilterStatus.status == None)))
+                del or_target_conditions[:]
+        last_bugtask = None
+        for bugtask, target in query_arguments:
+            if last_bugtask is not bugtask:
+                handle_bugtask_conditions(last_bugtask)
+            last_bugtask = bugtask
+            or_target_conditions.append(
+                IStructuralSubscriptionTargetHelper(target).join)
+        # We know there will be at least one bugtask, because we already
+        # escaped early "if len(query_arguments) == 0".
+        handle_bugtask_conditions(bugtask)
+        conditions.append(Or(*outer_or_conditions))
+        # Now we handle tags.  If the bug has no tags, this is
+        # relatively easy. Otherwise, not so much.
+        tags = list(bug.tags) # This subtly removes the security proxy on
+        # the list.  Strings are never security-proxied, so we don't have
+        # to worry about them.
+        if len(tags) == 0:
+            # The bug has no tags.  We should leave out filters that
+            # require any generic non-empty set of tags
+            # (BugSubscriptionFilter.include_any_tags), which we do with
+            # the conditions.  Then we can finish up the WHERE clause. 
+            # Then we have to make sure that the filter does not require
+            # any *specific* tags. We do that with a GROUP BY on the
+            # filters, and then a HAVING clause that aggregates the
+            # BugSubscriptionFilterTags that are set to "include" the
+            # tag.  (If it is not an include, that is an exclude, and a
+            # bug without tags will not have a particular tag, so we can
+            # ignore those in this case.)  This requires a CASE
+            # statement within the COUNT.  After this, we are done, and
+            # we return the fully formed SELECT query object.
+            conditions.append(Not(BugSubscriptionFilter.include_any_tags))
+            select_args['where'] = And(*conditions)
+            select_args['group_by'] = (BugSubscriptionFilter.id,)
+            select_args['having'] = Count(
+                SQL('CASE WHEN BugSubscriptionFilterTag.include '
+                    'THEN BugSubscriptionFilterTag.tag END'))==0
+            return Select(BugSubscriptionFilter.id, **select_args)
+        else:
+            # The bug has some tags.  This will require a bit of fancy
+            # footwork. First, though, we will simply want to leave out
+            # filters that should only match bugs without tags.
+            conditions.append(Not(BugSubscriptionFilter.exclude_any_tags))
+            # We're going to have to do a union with another query.  One
+            # query will handle filters that are marked to include *any*
+            # of the filter's selected tags, and the other query will
+            # handle filters that include *all* of the filter's selected
+            # tags (as determined by BugSubscriptionFilter.find_all_tags).
+            # Every aspect of the unioned queries' WHERE clauses *other
+            # than tags* will need to be the same. We could try making a
+            # temporary table for the shared results, but that would
+            # involve another separate Postgres call, and I think that
+            # we've already gotten the big win by separating out the
+            # structural subscriptions into "candidates," above.
+            #
+            # So, up to now we've been assembling the things that are shared
+            # between the two queries, but now we start working on the
+            # differences between the two unioned queries. "first_select"
+            # will hold one set of arguments, and select_args will hold the
+            # other.
+            first_select = select_args.copy()
+            # As mentioned, in this first SELECT we handle filters that
+            # match any of the filter's tags.  This can be a relatively
+            # straightforward query--we just need a bit more added to
+            # our WHERE clause, and we don't need a GROUP BY/HAVING.
+            first_select['where'] = And(
+                Or(# We want filters that proclaim they simply want any tags.
+                   BugSubscriptionFilter.include_any_tags,
+                   # Also include filters that match any tag...
+                   And(Not(BugSubscriptionFilter.find_all_tags),
+                       Or(# ...with a positive match...
+                          And(BugSubscriptionFilterTag.include,
+                              In(BugSubscriptionFilterTag.tag, tags)),
+                          # ...or with a negative match...
+                          And(Not(BugSubscriptionFilterTag.include),
+                              Not(In(BugSubscriptionFilterTag.tag, tags))),
+                          # ...or if the filter does not specify any tags.
+                          BugSubscriptionFilterTag.tag == None))),
+                *conditions)
+            first_select = Select(BugSubscriptionFilter.id, **first_select)
+            # We have our first clause.  Now we start on the second one:
+            # handling filters that match *all* tags. Our WHERE clause
+            # is straightforward and, it should be clear that we are
+            # simply focusing on BugSubscriptionFilter.find_all_tags,
+            # when the first SELECT did not consider it.
+            select_args['where'] = And(
+                BugSubscriptionFilter.find_all_tags, *conditions)
+            # The GROUP BY collects the filters together.
+            select_args['group_by'] = (BugSubscriptionFilter.id,)
+            # Now it is time for the HAVING clause, which is where some
+            # tricky bits happen. We first make a SQL snippet that
+            # represents the tags on this bug.  It is straightforward
+            # except for one subtle hack: the addition of the empty
+            # space in the array.  This is because we are going to be
+            # aggregating the tags on the filters using ARRAY_AGG, which
+            # includes NULLs (unlike most other aggregators).  That
+            # is an issue here because we use CASE statements to divide
+            # up the set of tags that are supposed to be included and
+            # supposed to be excluded.  This means that if we aggregate
+            # "CASE WHEN BugSubscriptionFilterTag.include THEN
+            # BugSubscriptionFilterTag.tag END" then that array will
+            # include NULL.  SQL treats NULLs as unknowns that can never
+            # be matched, so the array of ['foo', 'bar', NULL] does not
+            # contain the array of ['foo', NULL] ("SELECT
+            # ARRAY['foo','bar',NULL]::TEXT[] @>
+            # ARRAY['foo',NULL]::TEXT[];" is false).  Therefore, so we
+            # can make the HAVING statement we want to make without
+            # defining a custom Postgres aggregator, we use a single
+            # space as, effectively, NULL.  This is safe because a
+            # single space is not an acceptable tag.  Again, the
+            # clearest alternative is defining a custom Postgres aggregator.
+            tags_array = "ARRAY[%s,' ']::TEXT[]" % ",".join(
+                quote(tag) for tag in tags)
+            # Now comes the HAVING clause itself.
+            select_args['having'] = And(
+                # The list of tags should be a superset of the filter tags to
+                # be included.
+                ArrayContains(
+                    SQL(tags_array),
+                    # This next line gives us an array of the tags that the
+                    # filter wants to include.  Notice that it includes the
+                    # empty string when the condition does not match, per the
+                    # discussion above.
+                    ArrayAgg(
+                       SQL("CASE WHEN BugSubscriptionFilterTag.include "
+                           "THEN BugSubscriptionFilterTag.tag "
+                           "ELSE ' '::TEXT END"))),
+                # The list of tags should also not intersect with the
+                # tags that the filter wants to exclude.
+                Not(
+                    ArrayIntersects(
+                        SQL(tags_array),
+                        # This next line gives us an array of the tags
+                        # that the filter wants to exclude.  We do not bother
+                        # with the empty string, and therefore allow NULLs
+                        # into the array, because in this case we are
+                        # determining whether the sets intersect, not if the
+                        # first set subsumes the second.
+                        ArrayAgg(
+                           SQL('CASE WHEN '
+                               'NOT BugSubscriptionFilterTag.include '
+                               'THEN BugSubscriptionFilterTag.tag END')))))
+            # Everything is ready.  Make our second SELECT statement, UNION
+            # it, and return it.
+            return Union(
+                first_select,
+                Select(
+                    BugSubscriptionFilter.id,
+                    **select_args))
 
     def getStructuralSubscribers(self, bugtasks, recipients=None, level=None):
         """See `IBugTaskSet`."""
-        query_arguments = list(
-            self._getStructuralSubscriptionTargets(bugtasks))
-
-        if len(query_arguments) == 0:
+        filter_id_query = self._getStructuralSubscriptionFilterIdQuery(
+            bugtasks, level)
+        if filter_id_query is None:
             return EmptyResultSet()
-
-        if level is None:
-            # If level is not specified, default to NOTHING so that all
-            # subscriptions are found.
-            level = BugNotificationLevel.NOTHING
-
-        # Build the query.
-        union = lambda left, right: (
-            removeSecurityProxy(left).union(
-                removeSecurityProxy(right)))
-        queries = (
-            target.getSubscriptionsForBugTask(bugtask, level)
-            for bugtask, target in query_arguments)
-        subscriptions = reduce(union, queries)
-
-        # Pull all the subscriptions in.
-        subscriptions = list(subscriptions)
-
-        # Prepare a query for the subscribers.
+        # This is here because of a circular import.  Please reconsider if
+        # this code is moved to another module.
         from lp.registry.model.person import Person
-        subscribers = IStore(Person).find(
-            Person, Person.id.is_in(
-                removeSecurityProxy(subscription).subscriberID
-                for subscription in subscriptions))
+        constraints = [
+            Person.id == StructuralSubscription.subscriberID,
+            BugSubscriptionFilter.structural_subscription_id ==
+            StructuralSubscription.id,
+            In(BugSubscriptionFilter.id, filter_id_query)]
+        store = IStore(StructuralSubscription)
+        if recipients is None:
+            return store.find(
+                Person, *constraints).config(distinct=True).order_by()
+        else:
+            subscribers = []
+            query_results = store.find(
+                (Person, StructuralSubscription),
+                *constraints
+                ).config(distinct=True)
+            for person, subscription in query_results:
+                # Set up results.
+                if person not in recipients:
+                    subscribers.append(person)
+                    recipients.addStructuralSubscriber(
+                        person, subscription.target)
+            return subscribers
 
-        if recipients is not None:
-            # We need to process subscriptions, so pull all the
-            # subscribers into the cache, then update recipients
-            # with the subscriptions.
-            subscribers = list(subscribers)
-            for subscription in subscriptions:
-                recipients.addStructuralSubscriber(
-                    subscription.subscriber, subscription.target)
-
-        return subscribers
+    def getStructuralSubscriptions(self, bugtasks, level=None):
+        """See `IBugTaskSet`."""
+        filter_id_query = self._getStructuralSubscriptionFilterIdQuery(
+            bugtasks, level)
+        if filter_id_query is None:
+            return EmptyResultSet()
+        return IStore(StructuralSubscription).find(
+            StructuralSubscription,
+            BugSubscriptionFilter.structural_subscription_id ==
+            StructuralSubscription.id,
+            In(BugSubscriptionFilter.id, filter_id_query)
+            ).config(distinct=True)

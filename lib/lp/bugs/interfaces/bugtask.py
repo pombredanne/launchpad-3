@@ -1609,6 +1609,12 @@ class IBugTaskSet(Interface):
         This takes into account bug subscription filters.
         """
 
+    def getStructuralSubscriptions(bugtasks, level=None):
+        """Return potential structural subscriptions for the bugtasks.
+
+        This takes into account bug subscription filters.
+        """
+
     def getPrecachedNonConjoinedBugTasks(user, milestone):
         """List of non-conjoined bugtasks targeted to the milestone.
 
