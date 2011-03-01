@@ -1,12 +1,17 @@
-#!/usr/bin/python2.4
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=W0403
 """It provides easy integration of other scripts without database access.
 
-   It should provide an easy way to retrieve current information from Launchpad
-   System when using plain shell scripts, for example:
+   It should provide an easy way to retrieve current information from
+   Launchpad when using plain shell scripts, for example:
 
-   * CURRENT distrorelease name: `./ubuntu-helper.py -d ubuntu current`
-   * DEVEVELOPMENT distrorelease name: `./ubuntu-helper.py -d ubuntu development`
+   * CURRENT distroseries name: `./ubuntu-helper.py -d ubuntu current`
+   * DEVELOPMENT distroseries name:
+       `./ubuntu-helper.py -d ubuntu development`
    * Distorelease architectures:
        `./lp-query-distro.py -d ubuntu -s feisty archs`
    * Distorelease official architectures:
@@ -16,21 +21,15 @@
 
    Standard Output will carry the successfully executed information and
    exit_code will be ZERO.
-   In case of failure, exit_code will be different than ZERO and Standard Error
-   will contain debug information.
+   In case of failure, exit_code will be different than ZERO and Standard
+   Error will contain debug information.
    """
 
 import _pythonpath
 
-from canonical.config import config
-from canonical.launchpad.scripts.base import (LaunchpadScript,
-    LaunchpadScriptFailure)
-from canonical.launchpad.scripts.ftpmaster import LpQueryDistro
+from lp.soyuz.scripts.ftpmaster import LpQueryDistro
 
 
 if __name__ == '__main__':
-    # XXX cprov 20070514: we can use read-only DB user for this task,
-    # however the mandatory ScriptActivity recording support added in
-    # LaunchpadScript by RF-4128 doesn't work if we do that.
-    script = LpQueryDistro('lp-query-distro', dbuser='uploader')
+    script = LpQueryDistro('lp-query-distro', dbuser='ro')
     script.run()

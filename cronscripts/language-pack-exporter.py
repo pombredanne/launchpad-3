@@ -1,5 +1,9 @@
-#!/usr/bin/python2.4
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=C0103,W0403
 
 """Script to export a tarball of translations for a distro series."""
 
@@ -7,15 +11,17 @@ __metaclass__ = type
 
 import _pythonpath
 
-from canonical.launchpad.scripts.base import (
+from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
-from canonical.launchpad.scripts.language_pack import export_language_pack
+from lp.translations.scripts.language_pack import export_language_pack
 
 
 class RosettaLangPackExporter(LaunchpadCronScript):
+    """Export language packs for a distribution series."""
     usage = '%prog [options] distribution series'
 
     def add_my_options(self):
+        """See `LaunchpadScript`."""
         self.parser.add_option(
             '--output',
             dest='output',
@@ -40,20 +46,42 @@ class RosettaLangPackExporter(LaunchpadCronScript):
                  ' encoding.'
             )
 
-    def main(self):
-        if len(self.args) != 2:
+    def args(self):
+        """Return the list of command-line arguments."""
+        return self._args
+
+    def _setargs(self, args):
+        """Set distribution_name and series_name from the args."""
+        if len(args) != 2:
             raise LaunchpadScriptFailure(
                 'Wrong number of arguments: should include distribution '
-                'and series name')
+                'and series name.')
 
-        distribution_name, series_name = self.args
+        self._args = args
+        self.distribution_name, self.series_name = self._args
+
+    args = property(args, _setargs, doc=args.__doc__)
+
+    @property
+    def lockfilename(self):
+        """Return lockfilename.
+
+        The lockfile name is unique to the script, distribution, and series.
+        The script can run concurrently for different distroseries.
+        """
+        lockfile_name = "launchpad-%s__%s__%s.lock" % (
+            self.name, self.distribution_name, self.series_name)
+        self.logger.info('Setting lockfile name to %s.' % lockfile_name)
+        return lockfile_name
+
+    def main(self):
+        """See `LaunchpadScript`."""
         self.logger.info(
-            'Exporting translations for series %s of distribution %s',
-            distribution_name, series_name)
-
+            'Exporting translations for series %s of distribution %s.',
+            self.series_name, self.distribution_name)
         success = export_language_pack(
-            distribution_name=distribution_name,
-            series_name=series_name,
+            distribution_name=self.distribution_name,
+            series_name=self.series_name,
             component=self.options.component,
             force_utf8=self.options.force_utf8,
             output_file=self.options.output,
@@ -66,6 +94,7 @@ class RosettaLangPackExporter(LaunchpadCronScript):
 
 
 if __name__ == '__main__':
-    script = RosettaLangPackExporter('language-pack-exporter')
+    script = RosettaLangPackExporter(
+        'language-pack-exporter', dbuser='langpack')
     script.lock_and_run()
 

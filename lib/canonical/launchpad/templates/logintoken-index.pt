@@ -3,10 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/locationless"
   i18n:domain="launchpad"
 >
 
@@ -14,14 +11,12 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Confirmation already concluded</h1>
-
-  <div class="informational message">
+  <p>
     You reached this page probably because you followed a link received by
-    email. That link was sent to confirm you have access to the email 
+    email. That link was sent to confirm you have access to the email
     address it was sent to, but this confirmation was already concluded, so
     you don't need to do anything else.
-  </div>
+  </p>
 
 </div>
 </body>

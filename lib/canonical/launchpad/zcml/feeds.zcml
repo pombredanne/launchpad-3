@@ -1,0 +1,61 @@
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <securedutility
+        class="canonical.launchpad.systemhomes.FeedsApplication"
+        provides="canonical.launchpad.interfaces.launchpad.IFeedsApplication">
+        <allow
+            interface="canonical.launchpad.interfaces.launchpad.IFeedsApplication" />
+    </securedutility>
+
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
+        for="canonical.launchpad.interfaces.launchpad.IFeedsApplication"
+        factory="canonical.launchpad.browser.feeds.FeedsRootUrlData"
+        />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.launchpad.IFeedsApplication"
+        name="+index"
+        />
+
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="FeedsNavigation"
+        />
+
+    <!-- Macros -->
+    <browser:page
+        for="*"
+        name="feed-entry-atom"
+        permission="zope.Public"
+        template="../../lazr/feed/templates/feed-entry-atom.pt"
+        />
+
+    <!-- Feeds -->
+    <browser:feeds
+        module="canonical.launchpad.feed"
+        classes="BugFeed BugTargetBugsFeed PersonBugsFeed SearchBugsFeed
+                 BranchFeed PersonBranchFeed ProductBranchFeed ProjectBranchFeed
+                 LaunchpadAnnouncementsFeed TargetAnnouncementsFeed
+                 PersonRevisionFeed ProductRevisionFeed ProjectRevisionFeed"
+        />
+
+    <!-- Unauthorized -->
+    <browser:page
+        for="zope.exceptions.IUnauthorized"
+        name="index.html"
+        permission="zope.Public"
+        class="canonical.launchpad.webapp.login.FeedsUnauthorizedView"
+        attribute="__call__"
+        layer="canonical.launchpad.layers.FeedsLayer"
+        />
+
+</configure>

@@ -91,7 +91,7 @@ You can use the following authorization lines:
 
   for Mark Shuttleworth: (launchpad admin, registry admin, mirror admin,
                           ubuntu team, testing spanish team)
-    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> browser = setupBrowser(auth='Basic mark@example.com:test')
 
   for Carlos: (launchpad admin, rosetta admin, ubuntu translators, testing
                spanish team)
@@ -119,3 +119,10 @@ You can use the following authorization lines:
 
   for David Allouche (member of vcs-imports)
     >>> browser = setupBrowser(auth='Basic david.allouche@canonical.com:test')
+
+  for Brad Crittenden (member of commercial-approvers)
+    >>> browser = setupBrowser(auth='Basic bac@canonical.com:test')
+
+  for Commercial Member (member of commercial-admins)
+    >>> browser = setupBrowser(
+    ...     auth='Basic commercial-member@canonical.com:test')

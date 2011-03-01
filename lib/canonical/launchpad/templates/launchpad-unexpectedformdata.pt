@@ -3,14 +3,11 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/freeform" 
+  metal:use-macro="view/macro:page/locationless"
   i18n:domain="launchpad"
 >
   <body>
-    <div metal:fill-slot="main">
+    <div class="top-portlet"  metal:fill-slot="main">
       <h1 class="exception">Unexpected form data</h1>
       <p>
       Launchpad doesn't understand the form data submitted in this request.

@@ -1,47 +1,79 @@
-# Copyright 2004 Canonical Ltd
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 __all__ = [
+    'BaseTokenView',
+    'BugTrackerHandshakeView',
+    'ClaimTeamView',
     'LoginTokenSetNavigation',
     'LoginTokenView',
-    'ResetPasswordView',
-    'ValidateEmailView',
-    'NewAccountView',
     'MergePeopleView',
-    'ClaimProfileView',
+    'ValidateEmailView',
+    'ValidateTeamEmailView',
     'ValidateGPGKeyView',
     ]
 
+import cgi
 import urllib
-import pytz
 
+import pytz
+from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
-from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent
-from zope.interface import Interface
+from zope.interface import (
+    alsoProvides,
+    directlyProvides,
+    Interface,
+    )
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
-
-from canonical.widgets import PasswordChangeWidget
-
 from canonical.launchpad import _
-from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
-from canonical.launchpad.webapp.login import logInPerson
-from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.authtoken import LoginTokenType
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddressSet,
+    )
+from canonical.launchpad.interfaces.gpghandler import (
+    GPGKeyExpired,
+    GPGKeyNotFoundError,
+    GPGKeyRevoked,
+    GPGVerificationError,
+    IGPGHandler,
+    )
+from canonical.launchpad.interfaces.logintoken import (
+    IGPGKeyValidationForm,
+    ILoginTokenSet,
+    )
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, GetitemNavigation,
-    LaunchpadView, LaunchpadFormView)
+    canonical_url,
+    GetitemNavigation,
+    LaunchpadView,
+    )
+from canonical.launchpad.webapp.interfaces import (
+    IAlwaysSubmittedWidget,
+    IPlacelessLoginSource,
+    )
+from canonical.launchpad.webapp.login import logInPrincipal
+from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.vhosts import allvhosts
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.registry.browser.team import HasRenewalPolicyMixin
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    ITeam,
+    )
 
-from canonical.launchpad.browser.openidserver import OpenIdMixin
-from canonical.launchpad.interfaces import (
-    IPersonSet, IEmailAddressSet, ILoginTokenSet, IPerson, ILoginToken,
-    IGPGKeySet, IGPGHandler, GPGVerificationError, GPGKeyNotFoundError,
-    ShipItConstants, UBUNTU_WIKI_URL, UnexpectedFormData,
-    IGPGKeyValidationForm, IOpenIDRPConfigSet, EmailAddressStatus,
-    GPGKeyAlgorithm, LoginTokenType, PersonCreationRationale)
 
-UTC = pytz.timezone('UTC')
+UTC = pytz.UTC
 
 
 class LoginTokenSetNavigation(GetitemNavigation):
@@ -61,17 +93,17 @@ class LoginTokenView(LaunchpadView):
     they got this token because they tried to do something that required email
     address confirmation, but that confirmation is already concluded.
     """
-
-    PAGES = {LoginTokenType.PASSWORDRECOVERY: '+resetpassword',
-             LoginTokenType.ACCOUNTMERGE: '+accountmerge',
-             LoginTokenType.NEWACCOUNT: '+newaccount',
-             LoginTokenType.NEWPROFILE: '+newaccount',
-             LoginTokenType.VALIDATEEMAIL: '+validateemail',
-             LoginTokenType.VALIDATETEAMEMAIL: '+validateteamemail',
-             LoginTokenType.VALIDATEGPG: '+validategpg',
-             LoginTokenType.VALIDATESIGNONLYGPG: '+validatesignonlygpg',
-             LoginTokenType.PROFILECLAIM: '+claimprofile',
-             }
+    PAGES = {
+        LoginTokenType.ACCOUNTMERGE: '+accountmerge',
+        LoginTokenType.VALIDATEEMAIL: '+validateemail',
+        LoginTokenType.VALIDATETEAMEMAIL: '+validateteamemail',
+        LoginTokenType.VALIDATEGPG: '+validategpg',
+        LoginTokenType.VALIDATESIGNONLYGPG: '+validatesignonlygpg',
+        LoginTokenType.TEAMCLAIM: '+claimteam',
+        LoginTokenType.BUGTRACKER: '+bugtracker-handshake',
+        }
+    page_title = 'You have already done this'
+    label = 'Confirmation already concluded'
 
     def render(self):
         if self.context.date_consumed is None:
@@ -79,14 +111,38 @@ class LoginTokenView(LaunchpadView):
                 str(self.request.URL), self.PAGES[self.context.tokentype])
             self.request.response.redirect(url)
         else:
-            return LaunchpadView.render(self)
+            return super(LoginTokenView, self).render()
 
 
-class BaseLoginTokenView(OpenIdMixin):
-    """A view class to be used by other LoginToken views."""
+class BaseTokenView:
+    """A view class to be used by other {Login,Auth}Token views."""
 
     expected_token_types = ()
     successfullyProcessed = False
+    # The next URL to use when the user clicks on the 'Cancel' button.
+    _next_url_for_cancel = None
+    _missing = object()
+    # To be overridden in subclasses.
+    default_next_url = _missing
+
+    @property
+    def next_url(self):
+        """The next URL to redirect to on successful form submission.
+
+        When the cancel action is used, self._next_url_for_cancel won't be
+        None so we return that.  Otherwise we return self.default_next_url.
+        """
+        if self._next_url_for_cancel is not None:
+            return self._next_url_for_cancel
+        assert self.default_next_url is not self._missing, (
+            'The implementation of %s should provide a value for '
+            'default_next_url' % self.__class__.__name__)
+        return self.default_next_url
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
 
     def redirectIfInvalidOrConsumedToken(self):
         """If this is a consumed or invalid token redirect to the LoginToken
@@ -104,7 +160,7 @@ class BaseLoginTokenView(OpenIdMixin):
             return False
 
     def success(self, message):
-        """Indicate to the user that the token has been successfully processed.
+        """Indicate to the user that the token was successfully processed.
 
         This involves adding a notification message, and redirecting the
         user to their Launchpad page.
@@ -112,149 +168,123 @@ class BaseLoginTokenView(OpenIdMixin):
         self.successfullyProcessed = True
         self.request.response.addInfoNotification(message)
 
-    def logInPersonByEmail(self, email):
-        """Login the person with the given email address."""
+    def logInPrincipalByEmail(self, email):
+        """Login the principal with the given email address."""
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
-        logInPerson(self.request, principal, email)
+        logInPrincipal(self.request, principal, email)
 
-    def maybeCompleteOpenIDRequest(self):
-        """Respond to a pending OpenID request if one is found.
+    def _cancel(self):
+        """Consume the LoginToken and set self._next_url_for_cancel.
 
-        The OpenIDRequest is looked up in the session based on the
-        login token ID.  If a request exists, the rendered OpenID
-        response is returned.
-
-        If no OpenID request is found, None is returned.
+        _next_url_for_cancel is set to the home page of this LoginToken's
+        requester.
         """
-        try:
-            self.restoreRequestFromSession('token' + self.context.token)
-        except UnexpectedFormData:
-            # There is no OpenIDRequest in the session
-            return None
-        self.next_url = None
-        return self.renderOpenIdResponse(self.createPositiveResponse())
+        self._next_url_for_cancel = canonical_url(self.context.requester)
+        self.context.consume()
+
+    def accountWasSuspended(self, account, reason):
+        """Return True if the person's account was SUSPENDED, otherwise False.
+
+        When the account was SUSPENDED, the Warning Notification with the
+        reason is added to the request's response. The LoginToken is consumed.
+
+        :param account: The IAccount.
+        :param reason: A sentence that explains why the SUSPENDED account
+            cannot be used.
+        """
+        if account.status != AccountStatus.SUSPENDED:
+            return False
+        suspended_account_mailto = (
+            'mailto:feedback@launchpad.net?subject=SUSPENDED%20account')
+        message = structured(
+              '%s Contact a <a href="%s">Launchpad admin</a> '
+              'about this issue.' % (reason, suspended_account_mailto))
+        self.request.response.addWarningNotification(message)
+        self.context.consume()
+        return True
 
 
-class ClaimProfileView(BaseLoginTokenView, LaunchpadFormView):
+class ClaimTeamView(
+    BaseTokenView, HasRenewalPolicyMixin, LaunchpadEditFormView):
 
-    schema = IPerson
-    field_names = ['displayname', 'hide_email_addresses', 'password']
-    custom_widget('password', PasswordChangeWidget)
-    label = 'Claim Launchpad profile'
+    schema = ITeam
+    field_names = [
+        'teamowner', 'displayname', 'teamdescription', 'subscriptionpolicy',
+        'defaultmembershipperiod', 'renewal_policy', 'defaultrenewalperiod']
+    label = 'Claim Launchpad team'
+    custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
+    custom_widget(
+        'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
+    custom_widget(
+        'subscriptionpolicy', LaunchpadRadioWidget, orientation='vertical')
 
-    expected_token_types = (LoginTokenType.PROFILECLAIM,)
+    expected_token_types = (LoginTokenType.TEAMCLAIM,)
 
     def initialize(self):
-        self.redirectIfInvalidOrConsumedToken()
-        self.claimed_profile = getUtility(IEmailAddressSet).getByEmail(
-            self.context.email).person
-        super(ClaimProfileView, self).initialize()
+        if not self.redirectIfInvalidOrConsumedToken():
+            self.claimed_profile = getUtility(IPersonSet).getByEmail(
+                self.context.email)
+            # Let's pretend the claimed profile provides ITeam while we
+            # render/process this page, so that it behaves like a team.
+            directlyProvides(removeSecurityProxy(self.claimed_profile), ITeam)
+        super(ClaimTeamView, self).initialize()
+
+    def setUpWidgets(self, context=None):
+        self.form_fields['teamowner'].for_display = True
+        super(ClaimTeamView, self).setUpWidgets(context=self.claimed_profile)
+        alsoProvides(self.widgets['teamowner'], IAlwaysSubmittedWidget)
 
     @property
     def initial_values(self):
-        return {'displayname': self.claimed_profile.displayname}
+        return {'teamowner': self.context.requester}
 
     @property
-    def next_url(self):
+    def default_next_url(self):
         return canonical_url(self.claimed_profile)
 
     @action(_('Continue'), name='confirm')
     def confirm_action(self, action, data):
-        email = getUtility(IEmailAddressSet).getByEmail(self.context.email)
-        # The user is not yet logged in, but we need to set some
-        # things on his new account, so we need to remove the security
-        # proxy from it.
-        # XXX: Guilherme Salgado 2006-09-27 bug=62674:
-        # We should be able to login with this person and set the
-        # password, to avoid removing the security proxy, but it didn't
-        # work, so I'm leaving this hack for now.
-        from zope.security.proxy import removeSecurityProxy
-        naked_person = removeSecurityProxy(email.person)
-        naked_person.displayname = data['displayname']
-        naked_person.hide_email_addresses = data['hide_email_addresses']
-        naked_person.password = data['password']
-
-        email.person.validateAndEnsurePreferredEmail(email)
-        self.context.consume()
-        self.logInPersonByEmail(email.email)
-        self.request.response.addInfoNotification(_(
-            "Profile claimed successfully"))
-
-
-class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
-
-    schema = ILoginToken
-    field_names = ['email', 'password']
-    custom_widget('password', PasswordChangeWidget)
-    label = 'Reset password'
-    expected_token_types = (LoginTokenType.PASSWORDRECOVERY,)
-
-    def initialize(self):
-        self.redirectIfInvalidOrConsumedToken()
-        super(ResetPasswordView, self).initialize()
-
-    def validate(self, form_values):
-        """Validate the email address."""
-        email = form_values.get("email", "").strip()
-        # All operations with email addresses must be case-insensitive. We
-        # enforce that in EmailAddressSet, but here we only do a comparison,
-        # so we have to .lower() them first.
-        if email.lower() != self.context.email.lower():
-            self.addError(_(
-                "The email address you provided didn't match the address "
-                "you provided when requesting the password reset."))
-
-    @action(_('Continue'), name='continue')
-    def continue_action(self, action, data):
-        """Reset the user's password. When password is successfully changed,
-        the LoginToken (self.context) used is consumed, so nobody can use
-        it again.
-        """
-        emailset = getUtility(IEmailAddressSet)
-        emailaddress = emailset.getByEmail(self.context.email)
-        person = emailaddress.person
-
-        # XXX: Guilherme Salgado 2006-09-27 bug=62674:
-        # It should be possible to do the login before this and avoid
-        # this hack. In case the user doesn't want to be logged in
-        # automatically we can log him out after doing what we want.
-        # XXX: Steve Alexander 2005-03-18:
-        #      Local import, because I don't want this import copied
-        #      elsewhere! This code is to be removed when the
-        #      UpgradeToBusinessClass specification is implemented.
-        from zope.security.proxy import removeSecurityProxy
-        naked_person = removeSecurityProxy(person)
-        #      end of evil code.
-
-        # Make sure this person has a preferred email address.
-        if naked_person.preferredemail != emailaddress:
-            naked_person.validateAndEnsurePreferredEmail(emailaddress)
-
-        naked_person.password = data.get('password')
-        self.context.consume()
-
-        if self.request.form.get('logmein'):
-            self.logInPersonByEmail(self.context.email)
-
-        self.next_url = canonical_url(self.context.requester)
+        self.claimed_profile.convertToTeam(team_owner=self.context.requester)
+        # Although we converted the person to a team it seems that the
+        # security proxy still thinks it's an IPerson and not an ITeam,
+        # which means to edit it we need to be logged in as the person we
+        # just converted into a team.  Of course, we can't do that, so we'll
+        # have to remove its security proxy before we update it.
+        self.updateContextFromData(
+            data, context=removeSecurityProxy(self.claimed_profile))
         self.request.response.addInfoNotification(
-            _('Your password has been reset successfully'))
+            _('Team claimed successfully'))
 
-        return self.maybeCompleteOpenIDRequest()
+    @action(_('Cancel'), name='cancel', validator='validate_cancel')
+    def cancel_action(self, action, data):
+        self._cancel()
 
 
-class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
+class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
 
     schema = IGPGKeyValidationForm
     field_names = []
     expected_token_types = (LoginTokenType.VALIDATEGPG,
                             LoginTokenType.VALIDATESIGNONLYGPG)
 
-    def initialize(self):
-        self.redirectIfInvalidOrConsumedToken()
+    @property
+    def label(self):
         if self.context.tokentype == LoginTokenType.VALIDATESIGNONLYGPG:
-            self.field_names = ['signed_text']
+            return 'Confirm sign-only OpenPGP key'
+        else:
+            assert self.context.tokentype == LoginTokenType.VALIDATEGPG, (
+                'unexpected token type: %r' % self.context.tokentype)
+            return 'Confirm OpenPGP key'
+
+    @property
+    def default_next_url(self):
+        return canonical_url(self.context.requester)
+
+    def initialize(self):
+        if not self.redirectIfInvalidOrConsumedToken():
+            if self.context.tokentype == LoginTokenType.VALIDATESIGNONLYGPG:
+                self.field_names = ['text_signature']
         super(ValidateGPGKeyView, self).initialize()
 
     def validate(self, data):
@@ -262,14 +292,12 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
         if self.context.tokentype == LoginTokenType.VALIDATESIGNONLYGPG:
             self._validateSignOnlyGPGKey(data)
 
-    @action(_('Cancel'), name='cancel')
+    @action(_('Cancel'), name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
-        self.next_url = canonical_url(self.context.requester)
-        self.context.consume()
+        self._cancel()
 
     @action(_('Continue'), name='continue')
     def continue_action_gpg(self, action, data):
-        self.next_url = canonical_url(self.context.requester)
         assert self.gpg_key is not None
         can_encrypt = (
             self.context.tokentype != LoginTokenType.VALIDATESIGNONLYGPG)
@@ -277,124 +305,70 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
 
     def _validateSignOnlyGPGKey(self, data):
         # Verify the signed content.
-        signedcontent = data['signed_text']
+        signedcontent = data.get('text_signature')
+        if signedcontent is None:
+            return
+
         try:
             signature = getUtility(IGPGHandler).getVerifiedSignature(
                 signedcontent.encode('ASCII'))
         except (GPGVerificationError, UnicodeEncodeError), e:
             self.addError(_(
-                'Launchpad could not verify your signature: %s'
-                % str(e)))
+                'Launchpad could not verify your signature: ${err}',
+                mapping=dict(err=str(e))))
             return
 
         if signature.fingerprint != self.context.fingerprint:
             self.addError(_(
-                'The key used to sign the content (%s) is not the key '
-                'you were registering' % signature.fingerprint))
+                'The key used to sign the content (${fprint}) is not the '
+                'key you were registering',
+                mapping=dict(fprint=signature.fingerprint)))
             return
 
         # We compare the word-splitted content to avoid failures due
         # to whitepace differences.
-        if signature.plain_data.split() != self.validationphrase.split():
+        if (signature.plain_data.split()
+            != self.context.validation_phrase.split()):
             self.addError(_(
                 'The signed content does not match the message found '
                 'in the email.'))
             return
 
     def _activateGPGKey(self, key, can_encrypt):
-        gpgkeyset = getUtility(IGPGKeySet)
+        person_url = canonical_url(self.context.requester)
+        lpkey, new, created, owned_by_others = self.context.activateGPGKey(
+            key, can_encrypt)
 
-        fingerprint = key.fingerprint
-        requester = self.context.requester
-        person_url = canonical_url(requester)
-
-        # Is it a revalidation ?
-        lpkey = gpgkeyset.getByFingerprint(fingerprint)
-
-        if lpkey:
-            lpkey.active = True
-            lpkey.can_encrypt = can_encrypt
-            self.request.response.addInfoNotification(_(
-                'Key %s successfully reactivated. '
-                '<a href="%s/+editpgpkeys">See more Information</a>'
-                % (lpkey.displayname, person_url)))
-            self.context.consume()
+        if not new:
+            msgid = _(
+                'Key ${lpkey} successfully reactivated. '
+                '<a href="${url}/+editpgpkeys">See more Information'
+                '</a>',
+                mapping=dict(lpkey=lpkey.displayname, url=person_url))
+            self.request.response.addInfoNotification(structured(msgid))
             return
 
-        # Otherwise prepare to add
-        ownerID = self.context.requester.id
-        keyid = key.keyid
-        keysize = key.keysize
-        algorithm = GPGKeyAlgorithm.items[key.algorithm]
-
-        # Add new key in DB. See IGPGKeySet for further information
-        lpkey = gpgkeyset.new(ownerID, keyid, fingerprint, keysize, algorithm,
-                              can_encrypt=can_encrypt)
-
-        self.context.consume()
         self.request.response.addInfoNotification(_(
-            "The key %s was successfully validated. " % (lpkey.displayname)))
-        guessed, hijacked = self._guessGPGEmails(key.emails)
+            "The key ${lpkey} was successfully validated. ",
+            mapping=dict(lpkey=lpkey.displayname)))
 
-        if len(guessed):
-            # build email list
-            emails = ' '.join([email.email for email in guessed])
+        if len(created):
+            msgid = _(
+                "<p>Some of your key's UIDs (<code>${emails}</code>) are "
+                "not registered in Launchpad. If you want to use them in "
+                'Launchpad, you will need to <a href="${url}/+editemails">'
+                'confirm them</a> first.</p>',
+                mapping=dict(emails=', '.join(created), url=person_url))
+            self.request.response.addInfoNotification(structured(msgid))
 
-            self.request.response.addInfoNotification(_(
-                '<p>Some email addresses were found in your key but are '
-                'not registered with Launchpad:<code>%s</code>. If you '
-                'want to use these addressess with Launchpad, you need to '
-                '<a href="%s/+editemails\">confirm them</a>.</p>'
-                % (emails, person_url)))
-
-        if len(hijacked):
-            # build email list
-            emails = ' '.join([email.email for email in hijacked])
-            self.request.response.addInfoNotification(_(
-                "<p>Also some of them were registered into another "
-                "account(s):<code>%s</code>. Those accounts, probably "
-                "already belong to you, in this case you should be able to "
-                "<a href=\"/people/+requestmerge\">merge them</a> into your "
-                "current account.</p>"
-                % emails))
-
-    def _guessGPGEmails(self, uids):
-        """Figure out which emails from the GPG UIDs are unknown in LP
-        context, add them as NEW EmailAddresses (guessed) and return a
-        list containing the just added address for UI feedback.
-        """
-        emailset = getUtility(IEmailAddressSet)
-        requester = self.context.requester
-        # build a list of already validated and preferred emailaddress
-        # in lowercase for comparision reasons
-        emails = set(email.email.lower()
-                     for email in requester.validatedemails)
-        emails.add(requester.preferredemail.email.lower())
-
-        guessed = []
-        hijacked = []
-        # iter through UIDs
-        for uid in uids:
-            # if UID isn't validated/preferred, append it to list
-            if uid.lower() not in emails:
-                # verify if the email isn't owned by other person.
-                lpemail = emailset.getByEmail(uid)
-                if lpemail:
-                    hijacked.append(lpemail)
-                    continue
-                # store guessed email address with status NEW
-                email = emailset.new(uid, requester)
-                guessed.append(email)
-
-        return guessed, hijacked
-
-    @property
-    def validationphrase(self):
-        """The phrase used to validate sign-only GPG keys"""
-        utctime = self.context.created.astimezone(UTC)
-        return 'Please register %s to the\nLaunchpad user %s.  %s UTC' % (
-            self.context.fingerprint, self.context.requester.name,
-            utctime.strftime('%Y-%m-%d %H:%M:%S'))
+        if len(owned_by_others):
+            msgid = _(
+                "<p>Also, some of them (<code>${emails}</code>) are "
+                "associated with other profile(s) in Launchpad, so you may "
+                'want to <a href="/people/+requestmerge">merge them</a> into '
+                "your current one.</p>",
+                mapping=dict(emails=', '.join(owned_by_others)))
+            self.request.response.addInfoNotification(structured(msgid))
 
     def _getGPGKey(self):
         """Look up the OpenPGP key for this login token.
@@ -411,71 +385,86 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
 
         person_url = canonical_url(requester)
         try:
-            key = gpghandler.retrieveKey(fingerprint)
+            key = gpghandler.retrieveActiveKey(fingerprint)
         except GPGKeyNotFoundError:
-            self.addError(_(
-                'Launchpad could not import this OpenPGP key, because %s. '
-                'Check that you published it correctly in the global key ring '
-                '(using <kbd>gpg --send-keys KEY</kbd>) and that you '
-                'entered the fingerprint correctly (as produced by <kbd>'
-                'gpg --fingerprint YOU</kdb>). Try later or '
-                '<a href="%s/+editpgpkeys">cancel your request</a>.'
-                % (key, person_url)))
-            return None
-
-        # If key is globally revoked, skip the import and consume the token.
-        if key.revoked:
-            self.addError(_(
-                'The key %s cannot be validated because it has been '
+            self.addError(
+                structured(_(
+                'Launchpad could not import the OpenPGP key %{fingerprint}. '
+                'Check that you published it correctly in the '
+                'global key ring (using <kbd>gpg --send-keys '
+                'KEY</kbd>) and that you entered the fingerprint '
+                'correctly (as produced by <kbd>gpg --fingerprint '
+                'YOU</kdb>). Try later or <a href="${url}/+editpgpkeys"> '
+                'cancel your request</a>.',
+                mapping=dict(fingerprint=fingerprint, url=person_url))))
+        except GPGKeyRevoked, e:
+            # If key is globally revoked, skip the import and consume the
+            # token.
+            self.addError(
+                    structured(_(
+                'The key ${key} cannot be validated because it has been '
                 'publicly revoked. You will need to generate a new key '
                 '(using <kbd>gpg --genkey</kbd>) and repeat the previous '
-                'process to <a href="%s/+editpgpkeys">find and import</a> '
-                'the new key.' % (key.keyid, person_url)))
-            return None
-
-        if key.expired:
-            self.addError(_(
-                'The key %s cannot be validated because it has expired. '
+                'process to <a href="${url}/+editpgpkeys">find and '
+                'import</a> the new key.',
+                mapping=dict(key=e.key.keyid, url=person_url))))
+        except GPGKeyExpired, e:
+            self.addError(
+                        structured(_(
+                'The key ${key} cannot be validated because it has expired. '
                 'Change the expiry date (in a terminal, enter '
                 '<kbd>gpg --edit-key <var>your@e-mail.address</var></kbd> '
-                'then enter <kbd>expire</kbd>), and try again.' % key.keyid))
-            return None
+                'then enter <kbd>expire</kbd>), and try again.',
+                mapping=dict(key=e.key.keyid))))
+        else:
+            return key
 
-        return key
 
-
-class ValidateEmailView(BaseLoginTokenView, LaunchpadFormView):
+class ValidateEmailView(BaseTokenView, LaunchpadFormView):
 
     schema = Interface
     field_names = []
-    expected_token_types = (LoginTokenType.VALIDATEEMAIL,
-                            LoginTokenType.VALIDATETEAMEMAIL)
+    expected_token_types = (LoginTokenType.VALIDATEEMAIL,)
+    label = 'Confirm e-mail address'
 
     def initialize(self):
-        self.redirectIfInvalidOrConsumedToken()
+        if self.redirectIfInvalidOrConsumedToken():
+            return
         super(ValidateEmailView, self).initialize()
 
     def validate(self, data):
         """Make sure the email address this token refers to is not in use."""
-        validated = (EmailAddressStatus.VALIDATED, EmailAddressStatus.PREFERRED)
+        validated = (
+            EmailAddressStatus.VALIDATED, EmailAddressStatus.PREFERRED)
         requester = self.context.requester
+        account = self.context.requester_account
 
         emailset = getUtility(IEmailAddressSet)
         email = emailset.getByEmail(self.context.email)
         if email is not None:
-            if email.person.id != requester.id:
+            if email.personID is not None and (
+                requester is None or email.personID != requester.id):
                 dupe = email.person
+                dname = cgi.escape(dupe.name)
                 # Yes, hardcoding an autogenerated field name is an evil
                 # hack, but if it fails nothing will happen.
                 # -- Guilherme Salgado 2005-07-09
                 url = allvhosts.configs['mainsite'].rooturl
-                url += '/people/+requestmerge?field.dupeaccount=%s' % dupe.name
-                self.addError(_(
+                url += '/people/+requestmerge?field.dupe_person=%s' % dname
+                self.addError(
+                        structured(_(
                     'This email address is already registered for another '
                     'Launchpad user account. This account can be a '
                     'duplicate of yours, created automatically, and in this '
-                    'case you should be able to <a href="%s">merge them</a> '
-                    'into a single one.' % url))
+                    'case you should be able to <a href="${url}">merge them'
+                    '</a> into a single one.',
+                    mapping=dict(url=url))))
+            elif account is not None and email.accountID != account.id:
+                # Email address is owned by a personless account.  We
+                # can't offer to perform a merge here.
+                self.addError(
+                    'This email address is already registered for another '
+                    'account')
             elif email.status in validated:
                 self.addError(_(
                     "This email address is already registered and validated "
@@ -486,10 +475,18 @@ class ValidateEmailView(BaseLoginTokenView, LaunchpadFormView):
                 # validated.
                 pass
 
-    @action(_('Cancel'), name='cancel')
+    @property
+    def default_next_url(self):
+        if self.context.redirection_url is not None:
+            return self.context.redirection_url
+        else:
+            assert self.context.requester is not None, (
+                "LoginTokens of this type must have a requester")
+            return canonical_url(self.context.requester)
+
+    @action(_('Cancel'), name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
-        self.next_url = canonical_url(self.context.requester)
-        self.context.consume()
+        self._cancel()
 
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
@@ -501,25 +498,12 @@ class ValidateEmailView(BaseLoginTokenView, LaunchpadFormView):
         If the requester is a team, the team's contact address is removed (if
         any) and this becomes the team's contact address.
         """
-        self.next_url = canonical_url(self.context.requester)
         email = self._ensureEmail()
-        requester = self.context.requester
-
-        if self.context.tokentype == LoginTokenType.VALIDATETEAMEMAIL:
-            if requester.preferredemail is not None:
-                requester.preferredemail.destroySelf()
-            requester.setPreferredEmail(email)
-        elif self.context.tokentype == LoginTokenType.VALIDATEEMAIL:
-            requester.validateAndEnsurePreferredEmail(email)
-        else:
-            raise AssertionError(
-                "We don't know how to process this token (%s) and this error "
-                "should've been caught earlier" % self.context.tokentype)
+        self.markEmailAsValid(email)
 
         self.context.consume()
         self.request.response.addInfoNotification(
             _('Email address successfully confirmed.'))
-        return self.maybeCompleteOpenIDRequest()
 
     def _ensureEmail(self):
         """Make sure self.requester has this token's email address as one of
@@ -528,169 +512,31 @@ class ValidateEmailView(BaseLoginTokenView, LaunchpadFormView):
         emailset = getUtility(IEmailAddressSet)
         email = emailset.getByEmail(self.context.email)
         if email is None:
-            email = emailset.new(self.context.email, self.context.requester)
+            email = emailset.new(
+                email=self.context.email,
+                person=self.context.requester,
+                account=self.context.requester_account)
         return email
 
-
-class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
-    """Page to create a new Launchpad account.
-
-    # This is just a small test to make sure
-    # LoginOrRegister.registered_origins and
-    # NewAccountView.urls_and_rationales are kept in sync.
-    >>> from canonical.launchpad.webapp.login import LoginOrRegister
-    >>> urls = sorted(LoginOrRegister.registered_origins.values())
-    >>> urls == sorted(NewAccountView.urls_and_rationales.keys())
-    True
-    """
-
-    urls_and_rationales = {
-        ShipItConstants.ubuntu_url:
-            PersonCreationRationale.OWNER_CREATED_SHIPIT,
-        ShipItConstants.kubuntu_url:
-            PersonCreationRationale.OWNER_CREATED_SHIPIT,
-        ShipItConstants.edubuntu_url:
-            PersonCreationRationale.OWNER_CREATED_SHIPIT,
-        UBUNTU_WIKI_URL: PersonCreationRationale.OWNER_CREATED_UBUNTU_WIKI}
-
-    created_person = None
-
-    schema = IPerson
-    field_names = ['displayname', 'hide_email_addresses', 'password']
-    custom_widget('password', PasswordChangeWidget)
-    label = 'Complete your registration'
-    expected_token_types = (
-        LoginTokenType.NEWACCOUNT, LoginTokenType.NEWPROFILE)
-
-    def initialize(self):
-        self.redirectIfInvalidOrConsumedToken()
-        self.email = getUtility(IEmailAddressSet).getByEmail(
-            self.context.email)
-        super(NewAccountView, self).initialize()
-
-    # Use a method to set self.next_url rather than a property because we
-    # want to override self.next_url in a subclass of this.
-    def setNextUrl(self):
-        if self.context.redirection_url:
-            self.next_url = self.context.redirection_url
-        elif self.user is not None:
-            # User is logged in, redirect to his home page.
-            self.next_url = canonical_url(self.user)
-        elif self.created_person is not None:
-            # User is not logged in, redirect to the created person's home
-            # page.
-            self.next_url = canonical_url(self.created_person)
-        else:
-            self.next_url = None
-
-    def validate(self, form_values):
-        """Verify if the email address is not used by an existing account."""
-        if self.email is not None and self.email.person.is_valid_person:
-            self.addError(_(
-                'The email address %s is already registered.'
-                % self.context.email))
-
-    @action(_('Continue'), name='continue')
-    def continue_action(self, action, data):
-        """Create a new Person with the context's email address and set a
-        preferred email and password to it, or use an existing Person
-        associated with the context's email address, setting it as the
-        preferred address and also setting the password.
-
-        If everything went ok, we consume the LoginToken (self.context), so
-        nobody can use it again.
-        """
-        if self.email is not None:
-            # This is a placeholder profile automatically created by one of
-            # our scripts, let's just confirm its email address and set a
-            # password.
-            person = self.email.person
-            assert not person.is_valid_person, (
-                'Account %s has already been claimed and this should '
-                'have been caught by the validate() method.' % person.name)
-            email = self.email
-            # The user is not yet logged in, but we need to set some
-            # things on his new account, so we need to remove the security
-            # proxy from it.
-            # XXX: Guilherme Salgado 2006-09-27 bug=62674:
-            # We should be able to login with this person and set the
-            # password, to avoid removing the security proxy, but it didn't
-            # work, so I'm leaving this hack for now.
-            from zope.security.proxy import removeSecurityProxy
-            naked_person = removeSecurityProxy(person)
-            naked_person.displayname = data['displayname']
-            naked_person.hide_email_addresses = data['hide_email_addresses']
-            naked_person.password = data['password']
-            naked_person.creation_rationale = self._getCreationRationale()
-            naked_person.creation_comment = None
-        else:
-            person, email = self._createPersonAndEmail(
-                data['displayname'], data['hide_email_addresses'],
-                data['password'])
-
-        self.created_person = person
-        person.validateAndEnsurePreferredEmail(email)
-        self.context.consume()
-        self.logInPersonByEmail(email.email)
-        self.request.response.addInfoNotification(_(
-            "Registration completed successfully"))
-        self.setNextUrl()
-
-        return self.maybeCompleteOpenIDRequest()
-
-    def _getCreationRationale(self):
-        """Return the creation rationale that should be used for this account.
-
-        If there's an OpenID request in the session we use the given
-        trust_root to find out the creation rationale. If there's no OpenID
-        request but there is a rationale for the logintoken's redirection_url,
-        then use that, otherwise uses
-        PersonCreationRationale.OWNER_CREATED_LAUNCHPAD.
-        """
-        try:
-            self.restoreRequestFromSession('token' + self.context.token)
-        except UnexpectedFormData:
-            # There is no OpenIDRequest in the session, so we'll try to infer
-            # the creation rationale from the token's redirection_url.
-            rationale = self.urls_and_rationales.get(
-                self.context.redirection_url)
-            if rationale is None:
-                rationale = PersonCreationRationale.OWNER_CREATED_LAUNCHPAD
-        else:
-            rpconfig = getUtility(IOpenIDRPConfigSet).getByTrustRoot(
-                self.openid_request.trust_root)
-            if rpconfig is not None:
-                rationale = rpconfig.creation_rationale
-            else:
-                rationale = (
-                    PersonCreationRationale.OWNER_CREATED_UNKNOWN_TRUSTROOT)
-        return rationale
-
-    def _createPersonAndEmail(
-            self, displayname, hide_email_addresses, password):
-        """Create and return a new Person and EmailAddress.
-
-        Use the given arguments and the email address stored in the
-        LoginToken (our context).
-
-        Also fire ObjectCreatedEvents for both the newly created Person
-        and EmailAddress.
-        """
-        rationale = self._getCreationRationale()
-        person, email = getUtility(IPersonSet).createPersonAndEmail(
-            self.context.email, rationale, displayname=displayname,
-            password=password, passwordEncrypted=True,
-            hide_email_addresses=hide_email_addresses)
-
-        notify(ObjectCreatedEvent(person))
-        notify(ObjectCreatedEvent(email))
-        return person, email
+    def markEmailAsValid(self, email):
+        """Mark the given email address as valid."""
+        self.context.requester_account.validateAndEnsurePreferredEmail(email)
 
 
-class MergePeopleView(BaseLoginTokenView, LaunchpadView):
+class ValidateTeamEmailView(ValidateEmailView):
 
+    expected_token_types = (LoginTokenType.VALIDATETEAMEMAIL,)
+    # The desired label is the same as ValidateEmailView.
+
+    def markEmailAsValid(self, email):
+        """See `ValidateEmailView`"""
+        self.context.requester.setContactAddress(email)
+
+
+class MergePeopleView(BaseTokenView, LaunchpadView):
     expected_token_types = (LoginTokenType.ACCOUNTMERGE,)
     mergeCompleted = False
+    label = 'Merge Launchpad accounts'
 
     def initialize(self):
         self.redirectIfInvalidOrConsumedToken()
@@ -699,7 +545,7 @@ class MergePeopleView(BaseLoginTokenView, LaunchpadView):
     def success(self, message):
         # We're not a GeneralFormView, so we need to do the redirect
         # ourselves.
-        BaseLoginTokenView.success(self, message)
+        BaseTokenView.success(self, message)
         self.request.response.redirect(canonical_url(self.context.requester))
 
     def processForm(self):
@@ -714,14 +560,14 @@ class MergePeopleView(BaseLoginTokenView, LaunchpadView):
         if self.mergeCompleted:
             self.success(_(
                 'The accounts have been merged successfully. Everything that '
-                'belonged to the duplicated account should now belong to your '
-                'own account.'))
+                'belonged to the duplicated account should now belong to '
+                'your own account.'))
         else:
             self.success(_(
                 'The e-mail address %s has been assigned to you, but the '
                 'duplicate account you selected has other registered e-mail '
-                'addresses too. To complete the merge, you have to prove that '
-                'you have access to all those e-mail addresses.'
+                'addresses too. To complete the merge, you have to prove '
+                'that you have access to all those e-mail addresses.'
                 % self.context.email))
         self.context.consume()
 
@@ -730,8 +576,12 @@ class MergePeopleView(BaseLoginTokenView, LaunchpadView):
         # dupe account, so we can assign it to him.
         requester = self.context.requester
         emailset = getUtility(IEmailAddressSet)
-        email = emailset.getByEmail(self.context.email)
-        email.person = requester.id
+        email = removeSecurityProxy(emailset.getByEmail(self.context.email))
+        # As a person can have at most one preferred email, ensure
+        # that this new email does not have the PREFERRED status.
+        email.status = EmailAddressStatus.NEW
+        email.personID = requester.id
+        email.accountID = requester.accountID
         requester.validateAndEnsurePreferredEmail(email)
 
         # Need to flush all changes we made, so subsequent queries we make
@@ -750,3 +600,33 @@ class MergePeopleView(BaseLoginTokenView, LaunchpadView):
         getUtility(IPersonSet).merge(self.dupe, requester)
         self.mergeCompleted = True
 
+
+class BugTrackerHandshakeView(BaseTokenView):
+    """A view for authentication BugTracker handshake tokens."""
+    expected_token_types = (LoginTokenType.BUGTRACKER,)
+
+    def __call__(self):
+        # We don't render any templates from this view as it's a
+        # machine-only one, so we set the response to be plaintext.
+        self.request.response.setHeader('Content-type', 'text/plain')
+
+        # Reject the request if it is not a POST - but do not consume
+        # the token.
+        if self.request.method != 'POST':
+            self.request.response.setStatus(405)
+            self.request.response.setHeader('Allow', 'POST')
+            return ("Only POST requests are accepted for bugtracker "
+                    "handshakes.")
+
+        # If the token has been used already or is invalid, return an
+        # HTTP 410 (Gone).
+        if self.redirectIfInvalidOrConsumedToken():
+            self.request.response.setStatus(410)
+            return "Token has already been used or is invalid."
+
+        # The token is valid, so consume it and return an HTTP 200. This
+        # tells the remote tracker that authentication was successful.
+        self.context.consume()
+        self.request.response.setStatus(200)
+        self.request.response.setHeader('Content-type', 'text/plain')
+        return "Handshake token validated."

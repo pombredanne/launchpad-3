@@ -1,34 +1,78 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Publisher of objects as web pages.
 
 """
 
 __metaclass__ = type
-__all__ = ['UserAttributeCache', 'LaunchpadView', 'LaunchpadXMLRPCView',
-           'canonical_url', 'nearest', 'get_current_browser_request',
-           'canonical_url_iterator', 'rootObject', 'Navigation',
-           'stepthrough', 'redirection', 'stepto', 'RedirectionView',
-           'RenamedView']
+__all__ = [
+    'LaunchpadContainer',
+    'LaunchpadView',
+    'LaunchpadXMLRPCView',
+    'canonical_name',
+    'canonical_url',
+    'canonical_url_iterator',
+    'get_current_browser_request',
+    'HTTP_MOVED_PERMANENTLY',
+    'nearest',
+    'Navigation',
+    'rootObject',
+    'stepthrough',
+    'redirection',
+    'stepto',
+    'RedirectionView',
+    'RenamedView',
+    'UserAttributeCache',
+    ]
 
-from zope.interface import implements
-from zope.component import getUtility, queryMultiAdapter
+
 from zope.app import zapi
-from zope.interface.advice import addClassAdvisor
-import zope.security.management
-from zope.security.checker import ProxyFactory, NamesChecker
-from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.publisher.interfaces.http import IHTTPApplicationRequest
 from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
 from zope.app.publisher.xmlrpc import IMethodPublisher
+from zope.component import (
+    getUtility,
+    queryMultiAdapter,
+    )
+from zope.component.interfaces import ComponentLookupError
+from zope.interface import (
+    directlyProvides,
+    implements,
+    )
+from zope.interface.advice import addClassAdvisor
 from zope.publisher.interfaces import NotFound
+from zope.publisher.interfaces.browser import (
+    IBrowserPublisher,
+    IDefaultBrowserLayer,
+    )
+from zope.security.checker import (
+    NamesChecker,
+    ProxyFactory,
+    )
+from zope.traversing.browser.interfaces import IAbsoluteURL
 
 from canonical.launchpad.layers import (
-    setFirstLayer, ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer)
-from canonical.launchpad.webapp.vhosts import allvhosts
+    LaunchpadLayer,
+    setFirstLayer,
+    WebServiceLayer,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData, NoCanonicalUrl, ILaunchpadRoot, ILaunchpadApplication,
-    ILaunchBag, IOpenLaunchBag, IBreadcrumb, NotFoundError)
+    ICanonicalUrlData,
+    ILaunchBag,
+    ILaunchpadApplication,
+    ILaunchpadContainer,
+    ILaunchpadRoot,
+    IOpenLaunchBag,
+    IStructuredString,
+    NoCanonicalUrl,
+    )
 from canonical.launchpad.webapp.url import urlappend
+from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.lazr.utils import get_current_browser_request
+from lp.app.errors import NotFoundError
+
+# HTTP Status code constants - define as appropriate.
+HTTP_MOVED_PERMANENTLY = 301
 
 
 class DecoratorAdvisor:
@@ -64,23 +108,55 @@ class DecoratorAdvisor:
 
 
 class stepthrough(DecoratorAdvisor):
+    """Add the decorated method to stepthrough traversals for a class.
+
+    A stepthrough method must take single argument that's the path segment for
+    the object that it's returning. A common pattern is something like:
+
+      @stepthrough('+foo')
+      def traverse_foo(self, name):
+          return getUtility(IFooSet).getByName(name)
+
+    which looks up an object in IFooSet called 'name', allowing a URL
+    traversal that looks like:
+
+      launchpad.net/.../+foo/name
+
+    See also doc/navigation.txt.
+
+    This uses Zope's class advisor stuff to make sure that the path segment
+    passed to `stepthrough` is handled by the decorated method.
+
+    That is::
+      cls.__stepthrough_traversals__[argument] = decorated
+    """
 
     magic_class_attribute = '__stepthrough_traversals__'
 
-    def __init__(self, name, breadcrumb=None):
-        """Register a stepthrough traversal with the name stepped through.
-
-        You can optionally provide a breadcrumb function that is called
-        with the argument 'self'.  So, a method will do.
-        """
-        DecoratorAdvisor.__init__(self, name)
-        self.breadcrumb = breadcrumb
-
-    def getValueToStore(self):
-        return (self.fn, self.breadcrumb)
-
 
 class stepto(DecoratorAdvisor):
+    """Add the decorated method to stepto traversals for a class.
+
+    A stepto method must take no arguments and return an object for the URL at
+    that point.
+
+      @stepto('+foo')
+      def traverse_foo(self):
+          return getUtility(IFoo)
+
+    which looks up an object for '+foo', allowing a URL traversal that looks
+    like:
+
+      launchpad.net/.../+foo
+
+    See also doc/navigation.txt.
+
+    This uses Zope's class advisor stuff to make sure that the path segment
+    passed to `stepto` is handled by the decorated method.
+
+    That is::
+      cls.__stepto_traversals__[argument] = decorated
+    """
 
     magic_class_attribute = '__stepto_traversals__'
 
@@ -134,6 +210,13 @@ class UserAttributeCache:
 
     _no_user = object()
     _user = _no_user
+    _account = _no_user
+
+    @property
+    def account(self):
+        if self._account is self._no_user:
+            self._account = getUtility(ILaunchBag).account
+        return self._account
 
     @property
     def user(self):
@@ -141,6 +224,20 @@ class UserAttributeCache:
         if self._user is self._no_user:
             self._user = getUtility(ILaunchBag).user
         return self._user
+
+    _is_beta = None
+
+    @property
+    def isBetaUser(self):
+        """Return True if the user is in the beta testers team."""
+        if self._is_beta is not None:
+            return self._is_beta
+
+        # We cannot import ILaunchpadCelebrities here, so we will use the
+        # hardcoded name of the beta testers team
+        self._is_beta = self.user is not None and self.user.inTeam(
+            'launchpad-beta-testers')
+        return self._is_beta
 
 
 class LaunchpadView(UserAttributeCache):
@@ -153,14 +250,17 @@ class LaunchpadView(UserAttributeCache):
     - initialize() <-- subclass this for specific initialization
     - template     <-- the template set from zcml, otherwise not present
     - user         <-- currently logged-in user
-    - render()     <-- used to render the page.  override this if you have many
-                       templates not set via zcml, or you want to do rendering
-                       from Python.
+    - render()     <-- used to render the page.  override this if you have
+                       many templates not set via zcml, or you want to do
+                       rendering from Python.
+    - isBetaUser   <-- whether the logged-in user is a beta tester
     """
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        self._error_message = None
+        self._info_message = None
 
     def initialize(self):
         """Override this in subclasses.
@@ -201,6 +301,54 @@ class LaunchpadView(UserAttributeCache):
             return u''
         else:
             return self.render()
+
+    def _getErrorMessage(self):
+        """Property getter for `error_message`."""
+        return self._error_message
+
+    def _setErrorMessage(self, error_message):
+        """Property setter for `error_message`.
+
+        Enforces `error_message` values that are either None or
+        implement IStructuredString.
+        """
+        if error_message != self._error_message:
+            if (error_message is None or
+                IStructuredString.providedBy(error_message)):
+                # The supplied value is of a compatible type,
+                # assign it to property backing variable.
+                self._error_message = error_message
+            else:
+                raise ValueError(
+                    '%s is not a valid value for error_message, only '
+                    'None and IStructuredString are allowed.' %
+                    type(error_message))
+
+    error_message = property(_getErrorMessage, _setErrorMessage)
+
+    def _getInfoMessage(self):
+        """Property getter for `info_message`."""
+        return self._info_message
+
+    def _setInfoMessage(self, info_message):
+        """Property setter for `info_message`.
+
+        Enforces `info_message` values that are either None or
+        implement IStructuredString.
+        """
+        if info_message != self._info_message:
+            if (info_message is None or
+                IStructuredString.providedBy(info_message)):
+                # The supplied value is of a compatible type,
+                # assign it to property backing variable.
+                self._info_message = info_message
+            else:
+                raise ValueError(
+                    '%s is not a valid value for info_message, only '
+                    'None and IStructuredString are allowed.' %
+                    type(info_message))
+
+    info_message = property(_getInfoMessage, _setInfoMessage)
 
 
 class LaunchpadXMLRPCView(UserAttributeCache):
@@ -256,8 +404,60 @@ def canonical_url_iterator(obj):
             yield urldata.inside
 
 
+class CanonicalAbsoluteURL:
+    """A bridge between Zope's IAbsoluteURL and Launchpad's canonical_url.
+
+    We don't implement the whole interface; only what's needed to
+    make absoluteURL() succceed.
+    """
+    implements(IAbsoluteURL)
+
+    def __init__(self, context, request):
+        """Initialize with respect to a context and request."""
+        self.context = context
+        self.request = request
+
+    def __unicode__(self):
+        """Returns the URL as a unicode string."""
+        raise NotImplementedError()
+
+    def __str__(self):
+        """Returns an ASCII string with all unicode characters url quoted."""
+        return canonical_url(self.context, self.request)
+
+    def __repr__(self):
+        """Get a string representation """
+        raise NotImplementedError()
+
+    __call__ = __str__
+
+
+def layer_for_rootsite(rootsite):
+    """Return the registered layer for the specified rootsite.
+
+    'code' -> lp.code.publisher.CodeLayer
+    'translations' -> lp.translations.publisher.TranslationsLayer
+    et al.
+
+    The layer is defined in ZCML using a named utility with the name of the
+    rootsite, and providing IDefaultBrowserLayer.  If there is no utility
+    defined with the specified name, then LaunchpadLayer is returned.
+    """
+    try:
+        return getUtility(IDefaultBrowserLayer, rootsite)
+    except ComponentLookupError:
+        return LaunchpadLayer
+
+
+class FakeRequest:
+    """Used solely to provide a layer for the view check in canonical_url."""
+
+    form_ng = None
+
+
 def canonical_url(
-    obj, request=None, rootsite=None, path_only_if_possible=False):
+    obj, request=None, rootsite=None, path_only_if_possible=False,
+    view_name=None, force_local_path=False):
     """Return the canonical URL string for the object.
 
     If the canonical url configuration for the given object binds it to a
@@ -275,10 +475,15 @@ def canonical_url(
     the request.  If a request is not provided, but a web-request is in
     progress, the protocol, host and port are taken from the current request.
 
-    If there is no request available, the protocol, host and port are taken
-    from the root_url given in launchpad.conf.
-
-    Raises NoCanonicalUrl if a canonical url is not available.
+    :param request: The web request; if not provided, canonical_url attempts
+        to guess at the current request, using the protocol, host, and port
+        taken from the root_url given in launchpad.conf.
+    :param path_only_if_possible: If the protocol and hostname can be omitted
+        for the current request, return a url containing only the path.
+    :param view_name: Provide the canonical url for the specified view,
+        rather than the default view.
+    :param force_local_path: Strip off the site no matter what.
+    :raises: NoCanonicalUrl if a canonical url is not available.
     """
     urlparts = [urldata.path
                 for urldata in canonical_urldata_iterator(obj)
@@ -296,69 +501,74 @@ def canonical_url(
         # Look for a request from the interaction.
         current_request = get_current_browser_request()
         if current_request is not None:
+            if WebServiceLayer.providedBy(current_request):
+                from canonical.launchpad.webapp.publication import (
+                    LaunchpadBrowserPublication)
+                from canonical.launchpad.webapp.servers import (
+                    LaunchpadBrowserRequest)
+                current_request = LaunchpadBrowserRequest(
+                    current_request.bodyStream.getCacheStream(),
+                    dict(current_request.environment))
+                current_request.setPublication(
+                    LaunchpadBrowserPublication(None))
+                current_request.setVirtualHostRoot(names=[])
+                main_root_url = current_request.getRootURL(
+                    'mainsite')
+                current_request._app_server = main_root_url.rstrip('/')
+
             request = current_request
 
-    if rootsite is None:
-        # This means we should use the request, or fall back to the main site.
-
-        # If there is no request, fall back to the root_url from the
-        # config file.
-        if request is None:
-            root_url = allvhosts.configs['mainsite'].rooturl
-        else:
-            root_url = request.getApplicationURL() + '/'
-    else:
-        # We should use the site given.
-        if rootsite in allvhosts.configs:
-            root_url = allvhosts.configs[rootsite].rooturl
-        elif rootsite == 'shipit':
-            # Special case for shipit.  We need to take the request's layer
-            # into account.
-            if ShipItUbuntuLayer.providedBy(request):
-                root_url = allvhosts.configs['shipitubuntu'].rooturl
-            elif ShipItEdUbuntuLayer.providedBy(request):
-                root_url = allvhosts.configs['shipitedubuntu'].rooturl
-            elif ShipItKUbuntuLayer.providedBy(request):
-                root_url = allvhosts.configs['shipitkubuntu'].rooturl
-            elif request is None:
-                # Fall back to shipitubuntu_root_url
-                root_url = allvhosts.configs['shipitubuntu'].rooturl
+    if view_name is not None:
+        # Make sure that the view is registered for the site requested.
+        fake_request = FakeRequest()
+        directlyProvides(fake_request, layer_for_rootsite(rootsite))
+        # Look first for a view.
+        if queryMultiAdapter((obj, fake_request), name=view_name) is None:
+            # Look if this is a special name defined by Navigation.
+            navigation = queryMultiAdapter(
+                (obj, fake_request), IBrowserPublisher)
+            if isinstance(navigation, Navigation):
+                all_names = navigation.all_traversal_and_redirection_names
             else:
+                all_names = []
+            if view_name not in all_names:
                 raise AssertionError(
-                    "Shipit canonical urls must be used only with request "
-                    "== None or a request providing one of the ShipIt Layers")
-        else:
-            raise AssertionError("rootsite is %s.  Must be in %r." % (
-                    rootsite, sorted(allvhosts.configs.keys())
-                    ))
+                    'Name "%s" is not registered as a view or navigation '
+                    'step for "%s" on "%s".' % (
+                        view_name, obj.__class__.__name__, rootsite))
+        urlparts.insert(0, view_name)
+
+    if request is None:
+        # Yes this really does need to be here, as rootsite can be None, and
+        # we don't want to make the getRootURL from the request break.
+        if rootsite is None:
+            rootsite = 'mainsite'
+        root_url = allvhosts.configs[rootsite].rooturl
+    else:
+        root_url = request.getRootURL(rootsite)
+
     path = u'/'.join(reversed(urlparts))
-    if (path_only_if_possible and
-        request is not None and
-        root_url.startswith(request.getApplicationURL())
-        ):
+    if ((path_only_if_possible and
+         request is not None and
+         root_url.startswith(request.getApplicationURL()))
+        or force_local_path):
         return unicode('/' + path)
     return unicode(root_url + path)
 
 
-def get_current_browser_request():
-    """Return the current browser request, looked up from the interaction.
+def canonical_name(name):
+    """Return the canonical form of a name used in a URL.
 
-    If there is no suitable request, then return None.
+    This helps us to deal with common mistypings of URLs.
+    Currently only accounts for uppercase letters.
 
-    Returns only requests that provide IHTTPApplicationRequest.
+    >>> canonical_name('ubuntu')
+    'ubuntu'
+    >>> canonical_name('UbUntU')
+    'ubuntu'
+
     """
-    interaction = zope.security.management.queryInteraction()
-    requests = [
-        participation
-        for participation in interaction.participations
-        if IHTTPApplicationRequest.providedBy(participation)
-        ]
-    if not requests:
-        return None
-    assert len(requests) == 1, (
-        "We expect only one IHTTPApplicationRequest in the interaction."
-        " Got %s." % len(requests))
-    return requests[0]
+    return name.lower()
 
 
 def nearest(obj, *interfaces):
@@ -368,32 +578,39 @@ def nearest(obj, *interfaces):
     The object returned might be the object given as an argument, if that
     object provides one of the given interfaces.
 
-    Return None is no suitable object is found.
+    Return None is no suitable object is found or if there is no canonical_url
+    defined for the object.
     """
-    for current_obj in canonical_url_iterator(obj):
-        for interface in interfaces:
-            if interface.providedBy(current_obj):
-                return current_obj
-    return None
+    try:
+        for current_obj in canonical_url_iterator(obj):
+            for interface in interfaces:
+                if interface.providedBy(current_obj):
+                    return current_obj
+        return None
+    except NoCanonicalUrl:
+        return None
 
 
 class RootObject:
     implements(ILaunchpadApplication, ILaunchpadRoot)
-    # These next two needed by the Z3 API browser
-    __parent__ = None
-    __name__ = 'Launchpad'
 
 
 rootObject = ProxyFactory(RootObject(), NamesChecker(["__class__"]))
 
 
-class Breadcrumb:
-    implements(IBreadcrumb)
+class LaunchpadContainer:
+    implements(ILaunchpadContainer)
 
-    def __init__(self, url, text, has_menu=False):
-        self.url = url
-        self.text = text
-        self.has_menu = has_menu
+    def __init__(self, context):
+        self.context = context
+
+    def isWithin(self, scope):
+        """Is this object within the given scope?
+
+        By default all objects are only within itself.  More specific adapters
+        must override this and implement the logic they want.
+        """
+        return self.context == scope
 
 
 class Navigation:
@@ -411,12 +628,6 @@ class Navigation:
 
     # Set this if you want to set a new layer before doing any traversal.
     newlayer = None
-
-    def breadcrumb(self):
-        """Return the text of the context object's breadcrumb, or None for
-        no breadcrumb.
-        """
-        return None
 
     def traverse(self, name):
         """Override this method to handle traversal.
@@ -440,7 +651,6 @@ class Navigation:
         return RedirectionView(target, self.request, status)
 
     # The next methods are for use by the Zope machinery.
-
     def publishTraverse(self, request, name):
         """Shim, to set objects in the launchbag when traversing them.
 
@@ -466,23 +676,6 @@ class Navigation:
                 combined_info.update(value)
         return combined_info
 
-    def _append_breadcrumb(self, text):
-        """Add a breadcrumb to the request, at the current URL with the given
-        text.
-
-        request.getURL(1) represents the path traversed so far, but without
-        the step we're currently working out how to traverse.
-        """
-        # If self.context has a view called +menudata, it has a menu.
-        menuview = queryMultiAdapter(
-            (self.context, self.request), name="+menudata")
-        if menuview is None:
-            has_menu = False
-        else:
-            has_menu = menuview.submenuHasItems('')
-        self.request.breadcrumbs.append(
-            Breadcrumb(self.request.getURL(1, path_only=False), text, has_menu))
-
     def _handle_next_object(self, nextobj, request, name):
         """Do the right thing with the outcome of traversal.
 
@@ -492,6 +685,7 @@ class Navigation:
 
         Otherwise, return the object.
         """
+        # Avoid circular imports.
         if nextobj is None:
             raise NotFound(self.context, name)
         elif isinstance(nextobj, redirection):
@@ -499,6 +693,32 @@ class Navigation:
                 nextobj.toname, request, status=nextobj.status)
         else:
             return nextobj
+
+    @property
+    def all_traversal_and_redirection_names(self):
+        """Return the names of all the traversals and redirections defined."""
+        all_names = set()
+        all_names.update(self.stepto_traversals.keys())
+        all_names.update(self.stepthrough_traversals.keys())
+        all_names.update(self.redirections.keys())
+        return list(all_names)
+
+    @property
+    def stepto_traversals(self):
+        """Return a dictionary containing all the stepto names defined."""
+        return self._combined_class_info('__stepto_traversals__')
+
+    @property
+    def stepthrough_traversals(self):
+        """Return a dictionary containing all the stepthrough names defined.
+        """
+        return self._combined_class_info('__stepthrough_traversals__')
+
+    @property
+    def redirections(self):
+        """Return a dictionary containing all the redirections names defined.
+        """
+        return self._combined_class_info('__redirections__')
 
     def _publishTraverse(self, request, name):
         """Traverse, like zope wants."""
@@ -509,18 +729,8 @@ class Navigation:
         if self.newlayer is not None:
             setFirstLayer(request, self.newlayer)
 
-        # store the current context object in the request's
-        # traversed_objects list:
-        request.traversed_objects.append(self.context)
-
-        # Next, if there is a breadcrumb for the context, add it to the
-        # request's list of breadcrumbs.
-        breadcrumb_text = self.breadcrumb()
-        if breadcrumb_text is not None:
-            self._append_breadcrumb(breadcrumb_text)
-
         # Next, see if we're being asked to stepto somewhere.
-        stepto_traversals = self._combined_class_info('__stepto_traversals__')
+        stepto_traversals = self.stepto_traversals
         if stepto_traversals is not None:
             if name in stepto_traversals:
                 handler = stepto_traversals[name]
@@ -535,23 +745,19 @@ class Navigation:
         # If so, see if the name is in the namespace_traversals, and if so,
         # dispatch to the appropriate function.  We can optimise by changing
         # the order of these checks around a bit.
-        namespace_traversals = self._combined_class_info(
-            '__stepthrough_traversals__')
+        namespace_traversals = self.stepthrough_traversals
         if namespace_traversals is not None:
             if name in namespace_traversals:
                 stepstogo = request.stepstogo
                 if stepstogo:
                     nextstep = stepstogo.consume()
-                    handler, breadcrumb_fn = namespace_traversals[name]
-                    if breadcrumb_fn is not None:
-                        breadcrumb_text = breadcrumb_fn(self)
-                        if breadcrumb_text is not None:
-                            self._append_breadcrumb(breadcrumb_text)
+                    handler = namespace_traversals[name]
                     try:
                         nextobj = handler(self, nextstep)
                     except NotFoundError:
                         nextobj = None
-                    return self._handle_next_object(nextobj, request, nextstep)
+                    return self._handle_next_object(nextobj, request,
+                        nextstep)
 
         # Next, look up views on the context object.  If a view exists,
         # use it.
@@ -562,7 +768,7 @@ class Navigation:
         # Next, look up redirections.  Note that registered views take
         # priority over redirections, because you can always make your
         # view redirect, but you can't make your redirection 'view'.
-        redirections = self._combined_class_info('__redirections__')
+        redirections = self.redirections
         if redirections is not None:
             if name in redirections:
                 urlto, status = redirections[name]
@@ -616,9 +822,12 @@ class RenamedView:
         self.rootsite = rootsite
 
     def __call__(self):
-        target_url = "%s/%s" % (
-            canonical_url(self.context, rootsite=self.rootsite),
-            self.new_name)
+        context_url = canonical_url(self.context, rootsite=self.rootsite)
+        # Prevents double slashes on the root object.
+        if context_url.endswith('/'):
+            target_url = "%s%s" % (context_url, self.new_name)
+        else:
+            target_url = "%s/%s" % (context_url, self.new_name)
 
         query_string = self.request.get('QUERY_STRING', '')
         if query_string:
@@ -630,7 +839,7 @@ class RenamedView:
 
     def publishTraverse(self, request, name):
         """See zope.publisher.interfaces.browser.IBrowserPublisher."""
-        raise NotFound(name)
+        raise NotFound(name, self.context)
 
     def browserDefault(self, request):
         """See zope.publisher.interfaces.browser.IBrowserPublisher."""

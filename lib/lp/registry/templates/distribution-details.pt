@@ -1,0 +1,82 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  id="project-info" class="portlet"
+  tal:define="overview_menu context/menu:overview">
+  <h2>Distribution information</h2>
+
+  <div id="table-details" class="two-column-list">
+    <dl id="owner" tal:condition="context/owner">
+      <dt>Maintainer:</dt>
+      <dd>
+        <a tal:replace="structure context/owner/fmt:link" />
+        <a tal:replace="structure overview_menu/reassign/fmt:icon" />
+      </dd>
+    </dl>
+
+    <dl id="driver">
+      <dt>Driver:</dt>
+      <dd tal:define="link overview_menu/driver">
+        <tal:no-driver condition="not:context/driver">
+          <tal:anyone condition="not: link/enabled">
+            None
+          </tal:anyone>
+          <tal:editor condition="link/enabled">
+            Specify a driver
+          </tal:editor>
+        </tal:no-driver>
+        <a
+          tal:condition="context/driver"
+          tal:replace="structure context/driver/fmt:link" />
+        <a tal:replace="structure link/fmt:icon" />
+      </dd>
+    </dl>
+
+    <dl id="members">
+      <dt>Members:</dt>
+      <dd tal:define="link overview_menu/members">
+        <tal:no-members condition="not:context/members">
+          <tal:anyone condition="not: link/enabled">
+            None
+          </tal:anyone>
+          <tal:editor condition="link/enabled">
+            Specify the members team
+          </tal:editor>
+        </tal:no-members>
+        <a
+         tal:condition="context/members"
+         tal:replace="structure context/members/fmt:link" />
+        <a tal:replace="structure link/fmt:icon" />
+      </dd>
+    </dl>
+
+    <dl id="mirror-admins">
+      <dt>Mirror admins:</dt>
+      <dd tal:define="link overview_menu/mirror_admin">
+        <tal:no-mirror-admin condition="not:context/mirror_admin">
+          <tal:anyone condition="not: link/enabled">
+            None
+          </tal:anyone>
+          <tal:editor condition="link/enabled">
+            Specify a mirror admin
+          </tal:editor>
+        </tal:no-mirror-admin>
+        <a
+          tal:condition="context/mirror_admin"
+          tal:replace="structure context/mirror_admin/fmt:link" />
+        <a tal:replace="structure link/fmt:icon" />
+      </dd>
+    </dl>
+  </div>
+
+  <dl id="uploaders" style="clear:left">
+    <dt>Uploaders:</dt>
+
+    <dd tal:repeat="permission context/uploaders">
+      <a tal:replace="structure permission/person/fmt:link" />
+      (<tal:component replace="permission/component/name" />)
+    </dd>
+  </dl>
+
+</div>

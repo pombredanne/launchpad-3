@@ -1,14 +1,30 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-__all__ = ['LoopTuner']
+__all__ = [
+    'DBLoopTuner',
+    'LoopTuner',
+    'TunableLoop',
+    ]
 
 
-import logging
+from datetime import timedelta
 import time
 
+import transaction
+from zope.component import getUtility
+from zope.interface import implements
+
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
+import canonical.launchpad.scripts
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
+from canonical.lazr.utils import safe_hasattr
 
 
 class LoopTuner:
@@ -38,8 +54,10 @@ class LoopTuner:
     and troughs in processing speed.
     """
 
-    def __init__(self, operation, goal_seconds, minimum_chunk_size=1,
-            maximum_chunk_size=1000000000):
+    def __init__(
+        self, operation, goal_seconds,
+        minimum_chunk_size=1, maximum_chunk_size=1000000000,
+        abort_time=None, cooldown_time=None, log=None):
         """Initialize a loop, to be run to completion at most once.
 
         Parameters:
@@ -58,56 +76,118 @@ class LoopTuner:
             needed even if the ITunableLoop ignores chunk size for whatever
             reason, since reaching floating-point infinity would seriously
             break the algorithm's arithmetic.
+
+        cooldown_time: time (in seconds, float) to sleep between consecutive
+            operation runs.  Defaults to None for no sleep.
+
+        abort_time: abort the loop, logging a WARNING message, if the runtime
+            takes longer than this many seconds.
+
+        log: The log object to use. DEBUG level messages are logged
+            giving iteration statistics.
         """
         assert(ITunableLoop.providedBy(operation))
         self.operation = operation
         self.goal_seconds = float(goal_seconds)
         self.minimum_chunk_size = minimum_chunk_size
         self.maximum_chunk_size = maximum_chunk_size
+        self.cooldown_time = cooldown_time
+        self.abort_time = abort_time
+        if log is None:
+            self.log = canonical.launchpad.scripts.log
+        else:
+            self.log = log
+
+    # True if this task has timed out. Set by _isTimedOut().
+    _has_timed_out = False
+
+    def _isTimedOut(self, extra_seconds=0):
+        """Return True if the task will be timed out in extra_seconds.
+
+        If this method returns True, all future calls will also return
+        True.
+        """
+        if self.abort_time is None:
+            return False
+        if self._has_timed_out:
+            return True
+        if self._time() + extra_seconds >= self.start_time + self.abort_time:
+            self._has_timed_out = True
+            return True
+        return False
 
     def run(self):
         """Run the loop to completion."""
-        chunk_size = self.minimum_chunk_size
-        iteration = 0
-        total_size = 0
-        start_time = self._time()
-        last_clock = start_time
-        while not self.operation.isDone():
-            self.operation(chunk_size)
+        try:
+            chunk_size = self.minimum_chunk_size
+            iteration = 0
+            total_size = 0
+            self.start_time = self._time()
+            last_clock = self.start_time
+            while not self.operation.isDone():
 
-            new_clock = self._time()
-            time_taken = new_clock - last_clock
-            last_clock = new_clock
-            logging.info("Iteration %d (size %.1f): %.3f seconds" %
-                         (iteration, chunk_size, time_taken))
+                if self._isTimedOut():
+                    self.log.warn(
+                        "Task aborted after %d seconds." % self.abort_time)
+                    break
 
-            total_size += chunk_size
+                self.operation(chunk_size)
 
-            # Adjust parameter value to approximate goal_seconds.  The new
-            # value is the average of two numbers: the previous value, and an
-            # estimate of how many rows would take us to exactly goal_seconds
-            # seconds.
-            # The weight in this estimate of any given historic measurement
-            # decays exponentially with an exponent of 1/2.  This softens the
-            # blows from spikes and dips in processing time.
-            # Set a reasonable minimum for time_taken, just in case we get
-            # weird values for whatever reason and destabilize the
-            # algorithm.
-            time_taken = max(self.goal_seconds/10, time_taken)
-            chunk_size *= (1 + self.goal_seconds/time_taken)/2
-            chunk_size = max(chunk_size, self.minimum_chunk_size)
-            chunk_size = min(chunk_size, self.maximum_chunk_size)
-            iteration += 1
+                new_clock = self._time()
+                time_taken = new_clock - last_clock
+                last_clock = new_clock
+                self.log.debug("Iteration %d (size %.1f): %.3f seconds" %
+                            (iteration, chunk_size, time_taken))
 
-        total_time = last_clock - start_time
-        average_size = total_size/max(1, iteration)
-        average_speed = total_size/max(1, total_time)
-        logging.info(
-            "Done. %d items in %d iterations, "
-            "%.3f seconds, "
-            "average size %f (%s/s)" %
-                (total_size, iteration, total_time, average_size,
-                 average_speed))
+                last_clock = self._coolDown(last_clock)
+
+                total_size += chunk_size
+
+                # Adjust parameter value to approximate goal_seconds.
+                # The new value is the average of two numbers: the
+                # previous value, and an estimate of how many rows would
+                # take us to exactly goal_seconds seconds. The weight in
+                # this estimate of any given historic measurement decays
+                # exponentially with an exponent of 1/2. This softens
+                # the blows from spikes and dips in processing time. Set
+                # a reasonable minimum for time_taken, just in case we
+                # get weird values for whatever reason and destabilize
+                # the algorithm.
+                time_taken = max(self.goal_seconds/10, time_taken)
+                chunk_size *= (1 + self.goal_seconds/time_taken)/2
+                chunk_size = max(chunk_size, self.minimum_chunk_size)
+                chunk_size = min(chunk_size, self.maximum_chunk_size)
+                iteration += 1
+
+            total_time = last_clock - self.start_time
+            average_size = total_size/max(1, iteration)
+            average_speed = total_size/max(1, total_time)
+            self.log.debug(
+                "Done. %d items in %d iterations, "
+                "%.3f seconds, "
+                "average size %f (%s/s)" %
+                    (total_size, iteration, total_time, average_size,
+                    average_speed))
+        finally:
+            if safe_hasattr(self.operation, 'cleanUp'):
+                self.operation.cleanUp()
+
+    def _coolDown(self, bedtime):
+        """Sleep for `self.cooldown_time` seconds, if set.
+
+        Assumes that anything the main LoopTuner loop does apart from
+        doing a chunk of work or sleeping takes zero time.
+
+        :param bedtime: Time the cooldown started, i.e. the time the
+        chunk of real work was completed.
+        :return: Time when cooldown completed, i.e. the starting time
+        for a next chunk of work.
+        """
+        if self.cooldown_time is None or self.cooldown_time <= 0.0:
+            return bedtime
+        else:
+            self._sleep(self.cooldown_time)
+            return self._time()
 
     def _time(self):
         """Monotonic system timer with unit of 1 second.
@@ -117,3 +197,138 @@ class LoopTuner:
         """
         return time.time()
 
+    def _sleep(self, seconds):
+        """Sleep.
+
+        If the sleep interval would put us over the tasks timeout,
+        do nothing.
+        """
+        if not self._isTimedOut(seconds):
+            time.sleep(seconds)
+
+
+def timedelta_to_seconds(td):
+    return 24 * 60 * td.days + td.seconds
+
+
+class DBLoopTuner(LoopTuner):
+    """A LoopTuner that plays well with PostgreSQL and replication.
+
+    This LoopTuner blocks when database replication is lagging.
+    Making updates faster than replication can deal with them is
+    counter productive and in extreme cases can put the database
+    into a death spiral. So we don't do that.
+
+    This LoopTuner also blocks when there are long running
+    transactions. Vacuuming is ineffective when there are long
+    running transactions. We block when long running transactions
+    have been detected, as it means we have already been bloating
+    the database for some time and we shouldn't make it worse. Once
+    the long running transactions have completed, we know the dead
+    space we have already caused can be cleaned up so we can keep
+    going.
+
+    INFO level messages are logged when the DBLoopTuner blocks in addition
+    to the DEBUG level messages emitted by the standard LoopTuner.
+    """
+
+    # We block until replication lag is under this threshold.
+    acceptable_replication_lag = timedelta(seconds=30) # In seconds.
+
+    # We block if there are transactions running longer than this threshold.
+    long_running_transaction = 30*60 # In seconds
+
+    def _blockWhenLagged(self):
+        """When database replication lag is high, block until it drops."""
+        # Lag is most meaningful on the master.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        msg_counter = 0
+        while not self._isTimedOut():
+            lag = store.execute("SELECT replication_lag()").get_one()[0]
+            if lag is None or lag <= self.acceptable_replication_lag:
+                return
+
+            # Report just once every 10 minutes to avoid log spam.
+            msg_counter += 1
+            if msg_counter % 60 == 1:
+                self.log.info(
+                    "Database replication lagged %s. "
+                    "Sleeping up to 10 minutes." % lag)
+
+            transaction.abort() # Don't become a long running transaction!
+            self._sleep(10)
+
+    def _blockForLongRunningTransactions(self):
+        """If there are long running transactions, block to avoid making
+        bloat worse."""
+        if self.long_running_transaction is None:
+            return
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        msg_counter = 0
+        while not self._isTimedOut():
+            results = list(store.execute("""
+                SELECT
+                    CURRENT_TIMESTAMP - xact_start,
+                    procpid,
+                    usename,
+                    datname,
+                    current_query
+                FROM activity()
+                WHERE xact_start < CURRENT_TIMESTAMP - interval '%f seconds'
+                    AND datname = current_database()
+                ORDER BY xact_start LIMIT 4
+                """ % self.long_running_transaction).get_all())
+            if not results:
+                break
+
+            # Check for long running transactions every 10 seconds, but
+            # only report every 10 minutes to avoid log spam.
+            msg_counter += 1
+            if msg_counter % 60 == 1:
+                for runtime, procpid, usename, datname, query in results:
+                    self.log.info(
+                        "Blocked on %s old xact %s@%s/%d - %s."
+                        % (runtime, usename, datname, procpid, query))
+                self.log.info("Sleeping for up to 10 minutes.")
+            transaction.abort() # Don't become a long running transaction!
+            self._sleep(10)
+
+    def _coolDown(self, bedtime):
+        """As per LoopTuner._coolDown, except we always wait until there
+        is no replication lag.
+        """
+        self._blockForLongRunningTransactions()
+        self._blockWhenLagged()
+        if self.cooldown_time is not None and self.cooldown_time > 0.0:
+            remaining_nap = self._time() - bedtime + self.cooldown_time
+            if remaining_nap > 0.0:
+                self._sleep(remaining_nap)
+        return self._time()
+
+
+class TunableLoop:
+    """A base implementation of `ITunableLoop`."""
+    implements(ITunableLoop)
+
+    goal_seconds = 4
+    minimum_chunk_size = 1
+    maximum_chunk_size = None # Override
+    cooldown_time = 0
+
+    def __init__(self, log, abort_time=None):
+        self.log = log
+        self.abort_time = abort_time
+
+    def isDone(self):
+        """Return True when the TunableLoop is complete."""
+        raise NotImplementedError(self.isDone)
+
+    def run(self):
+        assert self.maximum_chunk_size is not None, (
+            "Did not override maximum_chunk_size.")
+        DBLoopTuner(
+            self, self.goal_seconds,
+            minimum_chunk_size = self.minimum_chunk_size,
+            maximum_chunk_size = self.maximum_chunk_size,
+            cooldown_time = self.cooldown_time,
+            abort_time = self.abort_time).run()

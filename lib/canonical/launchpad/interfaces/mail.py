@@ -1,4 +1,8 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=E0211,E0213
+
 """Interfaces specific to mail handling."""
 
 __metaclass__ = type
@@ -13,8 +17,15 @@ __all__ = ['IWeaklyAuthenticatedPrincipal',
            'IBugEditEmailCommand',
            'IBugTaskEditEmailCommand']
 
-from zope.interface import Interface, Attribute
-from zope.schema import ASCII, Bool
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    ASCII,
+    Bool,
+    )
+
 from canonical.launchpad import _
 
 
@@ -72,12 +83,24 @@ class IMailHandler(Interface):
         The 'filealias' is an ILibraryFileAlias.
         The 'log' is the logger to be used.
 
-        Return True if the mesage was processed, otherwise False.
+        Return False if to_address does not exist/is bad.
+        Return True if the mesage was processed, successfully or
+        unsuccessfully.  This includes user or input errors.
+        Programming errors should cause exceptions to be raised.
         """
 
 
 class EmailProcessingError(Exception):
     """Something went wrong while processing an email command."""
+
+    def __init__(self, args, stop_processing=False):
+        """Initialize
+
+        :args: The standard exception extra arguments.
+        "stop_processing: Should the processing of the email be stopped?
+        """
+        Exception.__init__(self, args)
+        self.stop_processing = stop_processing
 
 
 class BugTargetNotFound(Exception):
@@ -107,7 +130,8 @@ class IEmailCommand(Interface):
         """
 
     def __str__():
-        """Return a textual representation of the command and its arguments."""
+        """Return a textual representation of the command and its arguments.
+        """
 
 
 class IBugEmailCommand(IEmailCommand):

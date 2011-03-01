@@ -1,20 +1,23 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test EntitlementExchange and EntitlementImporter."""
 
 __metaclass__ = type
 
-import unittest
-import logging
 from cStringIO import StringIO
+import logging
+import unittest
 
 from zope.testing.loghandler import Handler
 
-from canonical.testing import LaunchpadZopelessLayer
-from canonical.launchpad import scripts
-from canonical.launchpad.scripts.entitlement import (
-    EntitlementExchange, EntitlementImporter,
-    InvalidFormat, UnsupportedVersion)
+from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.registry.scripts.entitlement import (
+    EntitlementExchange,
+    EntitlementImporter,
+    InvalidFormat,
+    UnsupportedVersion,
+    )
 
 
 class EntitlementExchangeTestCase(unittest.TestCase):

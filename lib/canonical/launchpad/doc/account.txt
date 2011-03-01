@@ -1,0 +1,344 @@
+======================
+Account and AccountSet
+======================
+
+An Account is used by someone to Authenticate with the Launchpad login
+service.
+
+
+AccountSet
+==========
+
+The AccountSet object provides methods to retrieve `IAccount`s. It
+implements the IAccountSet interface.
+
+    >>> from zope.interface.verify import verifyObject
+    >>> from lp.registry.interfaces.person import IPerson
+    >>> from canonical.launchpad.interfaces.account import (
+    ...     IAccount, IAccountSet)
+
+    >>> account_set = getUtility(IAccountSet)
+    >>> verifyObject(IAccountSet, account_set)
+    True
+
+
+Looking up accounts by email address
+------------------------------------
+
+Accounts are generally looked up by email address.
+
+    >>> login('no-priv@canonical.com')
+    >>> account = account_set.getByEmail('no-priv@canonical.com')
+    >>> IAccount.providedBy(account)
+    True
+
+If the account is not found, a LookupError is raised.
+
+    >>> account_set.getByEmail('invalid@whatever')
+    Traceback (most recent call last):
+    ...
+    LookupError:...
+
+Only admins or the person attached to an account can see or edit Account
+details. This is obviously wrong, as the account should have access
+rather than the (optional) attached person. In particular, it means
+Accounts without Person records cannot be managed by the Account owner.
+Fixing this involves more surgery to Launchpad's security systems.
+
+    >>> stub_account = account_set.getByEmail('stuart.bishop@canonical.com')
+    >>> stub_account.date_created
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+    >>> del stub_account
+
+
+Looking up accounts by their database ID
+----------------------------------------
+
+If we know the ID of an account we can use the get() method.
+
+    >>> account_set.get(account.id) == account
+    True
+
+If there's no account with the given ID, a LookupError is raised.
+
+    >>> account_set.get(99999)
+    Traceback (most recent call last):
+    ...
+    LookupError:...
+
+
+Looking up accounts by OpenID identifier
+----------------------------------------
+
+Each Launchpad user is assigned an permanent OpenID identity URL. The
+last component of this URL is specific to the user, and can be used to
+look up the user.
+
+    >>> account = account_set.getByOpenIDIdentifier('no-priv_oid')
+    >>> IAccount.providedBy(account)
+    True
+    >>> print account.displayname
+    No Privileges Person
+
+A LookupError is raised if the identifier is not used by any account.
+
+    >>> account_set.getByOpenIDIdentifier('no-such-identifier')
+    Traceback (most recent call last):
+    ...
+    LookupError: no-such-identifier
+
+
+The Account object
+==================
+
+The account implements the IAccount interface but not all attributes are
+accessible for the owner.
+
+    >>> login('admin@canonical.com')
+    >>> verifyObject(IAccount, account)
+    True
+    >>> login('no-priv@canonical.com')
+
+An account has a displayname, and a preferred email address.
+
+    >>> print account.displayname
+    No Privileges Person
+    >>> print account.preferredemail.email
+    no-priv@canonical.com
+
+Account objects have a useful string representation.
+
+    >>> account
+    <Account 'No Privileges Person' (Active account)>
+
+The account can have additional validated and guessed email
+addresses.  This will be empty if the user has only a single validated
+email address.
+
+    >>> [email.email for email in account.validated_emails]
+    []
+    >>> [email.email for email in account.guessed_emails]
+    []
+
+If we add a new guessed email address, it will be included in the
+guessed list.
+
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     EmailAddressStatus,
+    ...     IEmailAddressSet,
+    ...     )
+    >>> email = getUtility(IEmailAddressSet).new(
+    ...     "guessed-email@example.com", account=account,
+    ...     status=EmailAddressStatus.NEW)
+    >>> [email.email for email in account.guessed_emails]
+    [u'guessed-email@example.com']
+
+If we add a validated email address, it will show up in the validated
+list.
+
+    >>> email = getUtility(IEmailAddressSet).new(
+    ...     "validated-email@example.com", account=account,
+    ...     status=EmailAddressStatus.VALIDATED)
+    >>> [email.email for email in account.validated_emails]
+    [u'validated-email@example.com']
+
+It also has an encrypted password.
+
+    >>> print account.password
+    K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf
+
+Ensure the password changes are sticky, as this is a property hiding the
+AccountPassword table.
+
+    >>> account.password = None
+    >>> print account.password
+    None
+
+    >>> account.password = u'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf'
+    >>> print account.password
+    K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf
+
+The account has other metadata.
+
+    >>> account.date_created
+    datetime.datetime(...)
+
+    >>> print account.creation_rationale.name
+    OWNER_CREATED_LAUNCHPAD
+
+    >>> print account.status.name
+    ACTIVE
+
+    >>> account.date_status_set >= account.date_created
+    True
+
+    >>> print account.status_comment
+    None
+
+    >>> print account.displayname
+    No Privileges Person
+
+When the status is changed, the date_status_set is updated in the
+database. Only an admin can change the status.
+
+    >>> from canonical.launchpad.interfaces.account import AccountStatus
+
+    >>> original_date_status_set = account.date_status_set
+    >>> login('admin@canonical.com')
+    >>> account.status = AccountStatus.SUSPENDED
+
+    # Shouldn't be necessary with Storm!
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(account).sync()
+    >>> account.date_status_set > original_date_status_set
+    True
+
+    >>> account.status = AccountStatus.ACTIVE
+    >>> login('no-priv@canonical.com')
+
+An Account has at least one OpenID identifier used to generate the
+OpenID identity URL.
+
+    >>> account.openid_identifiers.any().identifier
+    u'no-priv_oid'
+
+
+Creating new accounts
+=====================
+
+New Accounts are created using the AccountSet.new() method. The account
+rationale and displayname are required.
+
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> from canonical.launchpad.interfaces.account import (
+    ...     AccountCreationRationale)
+
+    >>> login('admin@canonical.com')
+    >>> passwordless_account = account_set.new(
+    ...     AccountCreationRationale.USER_CREATED, 'Passwordless')
+    >>> transaction.commit()
+    >>> print passwordless_account.creation_rationale.name
+    USER_CREATED
+    >>> print passwordless_account.displayname
+    Passwordless
+    >>> print passwordless_account.password
+    None
+    >>> print passwordless_account.preferredemail
+    None
+
+The new() method accepts the optional parameters of password and
+password_is_encrypted. If password_is_encrypted is False, the default,
+then the method encrypts it for us.
+
+    >>> passworded_account = account_set.new(
+    ...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD , 'Passworded',
+    ...     password=u'clear_password')
+    >>> syncUpdate(passworded_account)
+    >>> passworded_account.password == u'clear_password'
+    False
+
+The method does not encrypt the password if told that it is already
+encrypted, by setting password_is_encrypted to True.
+
+    >>> clear_account = account_set.new(
+    ...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD , 'Clear',
+    ...     password=u'clear_password', password_is_encrypted=True)
+    >>> syncUpdate(clear_account)
+    >>> print clear_account.password
+    clear_password
+
+
+Valid Accounts
+--------------
+
+Like person objects, an account is considered valid if it is in the
+active state and has a preferred email address.  So a newly created
+account with no email address is not valid.
+
+    >>> account = account_set.new(
+    ...     AccountCreationRationale.USER_CREATED,
+    ...     "Valid Account Test")
+    >>> syncUpdate(account)
+    >>> account.status = AccountStatus.ACTIVE
+    >>> account.is_valid
+    False
+
+Let's add a new email address to the account.
+
+    >>> email = getUtility(IEmailAddressSet).new(
+    ...     "valid-account-test@example.com", account=account)
+    >>> account.is_valid
+    False
+
+The account is still not valid because it has no preferred email.
+Setting the email to preferred fixes this.
+
+    >>> from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+    >>> email.status = EmailAddressStatus.PREFERRED
+    >>> account.is_valid
+    True
+
+If the account is deactivated, it won't be considered valid any more:
+
+    >>> account.status = AccountStatus.DEACTIVATED
+    >>> account.is_valid
+    False
+
+
+Creating an IPerson for an Account
+----------------------------------
+
+Newly created accounts without an associated Person can be 'promoted' to full
+Launchpad accounts with an attached Person.
+
+    # We need to change database policy here again, as the SSO Server cannot
+    # modify tables in the lpmain replication set.
+    >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
+    >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
+    >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
+
+    >>> from lp.registry.interfaces.person import PersonCreationRationale
+    >>> fresh_account, email = account_set.createAccountAndEmail(
+    ...     'foo@example.com',
+    ...     AccountCreationRationale.OWNER_CREATED_UBUNTU_SHOP,
+    ...     'Display name', 'password')
+    >>> IPerson(fresh_account)
+    Traceback (most recent call last):
+      ...
+    TypeError: ('Could not adapt', ...
+
+    >>> person = fresh_account.createPerson(
+    ...     PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
+    >>> transaction.commit()
+    >>> person.account == fresh_account
+    True
+    >>> IPerson(fresh_account) == person
+    True
+    >>> person.preferredemail == fresh_account.preferredemail
+    True
+    >>> person.creation_rationale
+    <DBItem PersonCreationRationale.OWNER_CREATED_LAUNCHPAD...
+
+However, if the account has an associated person or has no preferred email
+address, a new Person cannot be created.
+
+    >>> person = fresh_account.createPerson(
+    ...     PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Can't create a Person for an account which already has
+    one.
+
+    >>> print clear_account.preferredemail
+    None
+    >>> person = clear_account.createPerson(
+    ...     PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Can't create a Person for an account which has no email.
+
+    >>> db_policy = getUtility(IStoreSelector).pop()
+

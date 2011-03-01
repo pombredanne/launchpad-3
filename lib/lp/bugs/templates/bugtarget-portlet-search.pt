@@ -1,0 +1,26 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  tal:define="bugs_url context/target/fmt:url/+bugs"
+  class="portlet" id="portlet-search">
+  <h2>Search</h2>
+  <form name="bugtask_search" method="GET" tal:attributes="action bugs_url">
+    <ul>
+      <li>
+        <label for="field.searchtext">Enter bug ID or keywords:</label>
+      </li>
+      <li>
+        <input id="field.searchtext" name="field.searchtext" />
+      </li>
+      <li>
+        <input type="submit" name="search" value="Search" />
+      </li>
+    </ul>
+  </form>
+  <ul>
+    <li>
+      <a tal:attributes="href bugs_url">Show all open bugs</a>
+    </li>
+  </ul>
+</div>

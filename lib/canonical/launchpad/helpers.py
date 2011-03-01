@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Various functions and classes that are useful across different parts of
 launchpad.
 
@@ -8,32 +10,32 @@ be better as a method on an existing content object or IFooSet object.
 
 __metaclass__ = type
 
-import subprocess
-import gettextpo
+from difflib import unified_diff
+import hashlib
 import os
 import random
 import re
+from StringIO import StringIO
+import subprocess
 import tarfile
 import warnings
-from StringIO import StringIO
-from difflib import unified_diff
-import sha
 
 from zope.component import getUtility
+from zope.security.interfaces import ForbiddenAttribute
 
-import canonical
-from canonical.lp.dbschema import (
-    SourcePackageFileType, BinaryPackageFormat, BinaryPackageFileType)
-from canonical.launchpad.interfaces import (
-    ILaunchBag, IRequestPreferredLanguages,
-    IRequestLocalLanguages, ITeam)
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.services.geoip.interfaces import (
+    IRequestLocalLanguages,
+    IRequestPreferredLanguages,
+    )
+from lp.services.utils import compress_hash
 
 
 def text_replaced(text, replacements, _cache={}):
     """Return a new string with text replaced according to the dict provided.
 
-    The keys of the dict are substrings to find, the values are what to replace
-    found substrings with.
+    The keys of the dict are substrings to find, the values are what to
+    replace found substrings with.
 
     :arg text: An unicode or str to do the replacement.
     :arg replacements: A dictionary with the replacements that should be done
@@ -75,13 +77,16 @@ def text_replaced(text, replacements, _cache={}):
         # Make a copy of the replacements dict, as it is mutable, but we're
         # keeping a cached reference to it.
         replacements_copy = dict(replacements)
+
         def matchobj_replacer(matchobj):
             return replacements_copy[matchobj.group()]
+
         regexsub = re.compile(join_char.join(L)).sub
+
         def replacer(s):
             return regexsub(matchobj_replacer, s)
-        _cache[cachekey] = replacer
 
+        _cache[cachekey] = replacer
     return _cache[cachekey](text)
 
 
@@ -95,7 +100,7 @@ def backslashreplace(str):
 def join_lines(*lines):
     """Concatenate a list of strings, adding a newline at the end of each."""
 
-    return ''.join([ x + '\n' for x in lines ])
+    return ''.join([x + '\n' for x in lines])
 
 
 def string_to_tarfile(s):
@@ -110,11 +115,12 @@ def shortest(sequence):
     Return an empty list if the sequence is empty.
     """
     shortest_list = []
+    shortest_length = None
 
     for item in list(sequence):
         new_length = len(item)
 
-        if not shortest_list:
+        if shortest_length is None:
             # First item.
             shortest_list.append(item)
             shortest_length = new_length
@@ -165,7 +171,7 @@ def getValidNameFromString(invalid_name):
     in the database.
     """
     # All chars should be lower case, underscores and spaces become dashes.
-    return text_replaced(invalid_name.lower(), {'_': '-', ' ':'-'})
+    return text_replaced(invalid_name.lower(), {'_': '-', ' ': '-'})
 
 
 def browserLanguages(request):
@@ -173,7 +179,7 @@ def browserLanguages(request):
     return IRequestPreferredLanguages(request).getPreferredLanguages()
 
 
-def simple_popen2(command, input, in_bufsize=1024, out_bufsize=128):
+def simple_popen2(command, input, env=None, in_bufsize=1024, out_bufsize=128):
     """Run a command, give it input on its standard input, and capture its
     standard output.
 
@@ -188,41 +194,50 @@ def simple_popen2(command, input, in_bufsize=1024, out_bufsize=128):
     """
 
     p = subprocess.Popen(
-            command, shell=True, stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-            )
+            command, env=env, stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     (output, nothing) = p.communicate(input)
     return output
 
 
-def contactEmailAddresses(person):
-    """Return a Set of email addresses to contact this Person.
+def emailPeople(person):
+    """Return a set of people to who receive email for this Person.
 
-    If <person> has a preferred email, the Set will contain only that
-    preferred email.
+    If <person> has a preferred email, the set will contain only that
+    person.  If <person> doesn't have a preferred email but is a team,
+    the set will contain the preferred email address of each member of
+    <person>, including indirect members.
 
-    If <person> doesn't have a preferred email but implements ITeam, the
-    Set will contain the preferred email address of each member of <person>.
-
-    Finally, if <person> doesn't have a preferred email neither implement
-    ITeam, the Set will be empty.
+    Finally, if <person> doesn't have a preferred email and is not a team,
+    the set will be empty.
     """
-    emails = set()
-    if person.preferredemail is not None:
-        # XXX: Guilherme Salgado 2006-04-20:
-        # This str() call can be removed as soon as Andrew lands his
-        # unicode-simple-sendmail branch, because that will make
-        # simple_sendmail handle unicode email addresses.
-        emails.add(str(person.preferredemail.email))
-        return emails
+    pending_people = [person]
+    people = set()
+    seen = set()
+    while len(pending_people) > 0:
+        person = pending_people.pop()
+        if person in seen:
+            continue
+        seen.add(person)
+        if person.preferredemail is not None:
+            people.add(person)
+        elif person.isTeam():
+            pending_people.extend(person.activemembers)
+    return people
 
-    if ITeam.providedBy(person):
-        for member in person.activemembers:
-            contactAddresses = contactEmailAddresses(member)
-            if contactAddresses:
-                emails = emails.union(contactAddresses)
 
-    return emails
+def get_contact_email_addresses(person):
+    """Return a set of email addresses to contact this Person.
+
+    In general, it is better to use emailPeople instead.
+    """
+    # Need to remove the security proxy of the email address because the
+    # logged in user may not have permission to see it.
+    from zope.security.proxy import removeSecurityProxy
+    return set(
+        str(removeSecurityProxy(mail_person.preferredemail).email)
+        for mail_person in emailPeople(person))
+
 
 replacements = {0: {'.': ' |dot| ',
                     '@': ' |at| '},
@@ -233,7 +248,7 @@ replacements = {0: {'.': ' |dot| ',
                 3: {'.': ' (!) ',
                     '@': ' (at) '},
                 4: {'.': ' {dot} ',
-                    '@': ' {at} '}
+                    '@': ' {at} '},
                 }
 
 
@@ -254,39 +269,7 @@ def obfuscateEmail(emailaddr, idx=None):
     return text_replaced(emailaddr, replacements[idx])
 
 
-def convertToHtmlCode(text):
-    """Return the given text converted to HTML codes, like &#103;.
-
-    This is usefull to avoid email harvesting, while keeping the email address
-    in a form that a 'normal' person can read.
-    """
-    return ''.join(["&#%s;" % ord(c) for c in text])
-
-
-def validate_translation(original, translation, flags):
-    """Check with gettext if a translation is correct or not.
-
-    If the translation has a problem, raise gettextpo.error.
-    """
-    msg = gettextpo.PoMessage()
-    msg.set_msgid(original[0])
-
-    if len(original) > 1:
-        # It has plural forms.
-        msg.set_msgid_plural(original[1])
-        for i in range(len(translation)):
-            msg.set_msgstr_plural(i, translation[i])
-    elif len(translation):
-        msg.set_msgstr(translation[0])
-
-    for flag in flags:
-        msg.set_format(flag, True)
-
-    # Check the msg.
-    msg.check_format()
-
-
-class ShortListTimeoutError(Exception):
+class ShortListTooBigError(Exception):
     """This error is raised when the shortlist hardlimit is reached"""
 
 
@@ -298,43 +281,69 @@ def shortlist(sequence, longest_expected=15, hardlimit=None):
     >>> shortlist([1, 2])
     [1, 2]
 
-    >>> shortlist([1, 2, 3], 2)
+    >>> shortlist([1, 2, 3], 2) #doctest: +NORMALIZE_WHITESPACE
     Traceback (most recent call last):
-        ...
-    UserWarning: shortlist() should not be used here. It's meant to listify sequences with no more than 2 items.  There were 3 items.
+    ...
+    UserWarning: shortlist() should not be used here. It's meant to listify
+    sequences with no more than 2 items.  There were 3 items.
 
     >>> shortlist([1, 2, 3, 4], hardlimit=2)
     Traceback (most recent call last):
-        ...
-    ShortListTimeoutError: Hard limit of 2 exceeded.  There were 4 items.
+    ...
+    ShortListTooBigError: Hard limit of 2 exceeded.
 
-    >>> shortlist([1, 2, 3, 4], 2, hardlimit=4)
+    >>> shortlist(
+    ...     [1, 2, 3, 4], 2, hardlimit=4) #doctest: +NORMALIZE_WHITESPACE
     Traceback (most recent call last):
-        ...
-    UserWarning: shortlist() should not be used here. It's meant to listify sequences with no more than 2 items.  There were 4 items.
+    ...
+    UserWarning: shortlist() should not be used here. It's meant to listify
+    sequences with no more than 2 items.  There were 4 items.
+
+    It works on iterable also which don't support the extended slice protocol.
+
+    >>> xrange(5)[:1] #doctest: +ELLIPSIS
+    Traceback (most recent call last):
+    ...
+    TypeError: ...
+
+    >>> shortlist(xrange(10), 5, hardlimit=8) #doctest: +ELLIPSIS
+    Traceback (most recent call last):
+    ...
+    ShortListTooBigError: ...
 
     """
-    L = list(sequence)
-    size = len(L)
+    if hardlimit is not None:
+        last = hardlimit + 1
+    else:
+        last = None
+    try:
+        results = list(sequence[:last])
+    except (TypeError, ForbiddenAttribute):
+        results = []
+        for idx, item in enumerate(sequence):
+            if hardlimit and idx > hardlimit:
+                break
+            results.append(item)
+
+    size = len(results)
     if hardlimit and size > hardlimit:
-        msg = 'Hard limit of %d exceeded.  There were %d items.'
-        raise ShortListTimeoutError(msg % (hardlimit, size))
-    if size > longest_expected:
+        raise ShortListTooBigError(
+           'Hard limit of %d exceeded.' % hardlimit)
+    elif size > longest_expected:
         warnings.warn(
             "shortlist() should not be used here. It's meant to listify"
-            " sequences with no more than %d items.  There were %s items." %
-              (longest_expected, size),
-              stacklevel=2)
-    return L
+            " sequences with no more than %d items.  There were %s items."
+            % (longest_expected, size), stacklevel=2)
+    return results
 
 
 def preferred_or_request_languages(request):
-    '''Turn a request into a list of languages to show.
+    """Turn a request into a list of languages to show.
 
     Return Person.languages when the user has preferred languages.
     Otherwise, return the languages from the request either from the
     headers or from the IP address.
-    '''
+    """
     user = getUtility(ILaunchBag).user
     if user is not None and user.languages:
         return user.languages
@@ -413,12 +422,13 @@ def filenameToContentType(fname):
     >>> filenameToContentType('test.tgz')
     'application/octet-stream'
     """
-    ftmap = {".dsc":      "text/plain",
-             ".changes":  "text/plain",
-             ".deb":      "application/x-debian-package",
-             ".udeb":     "application/x-debian-package",
-             ".txt":      "text/plain",
-             ".txt.gz":   "text/plain", # For the build master logs
+    ftmap = {".dsc": "text/plain",
+             ".changes": "text/plain",
+             ".deb": "application/x-debian-package",
+             ".udeb": "application/x-debian-package",
+             ".txt": "text/plain",
+             # For the build master logs
+             ".txt.gz": "text/plain",
              }
     for ending in ftmap:
         if fname.endswith(ending):
@@ -431,69 +441,7 @@ def get_filename_from_message_id(message_id):
 
     It generates a file name that's not easily guessable.
     """
-    return '%s.msg' % (
-            canonical.base.base(long(sha.new(message_id).hexdigest(), 16), 62))
-
-
-def getFileType(fname):
-    if fname.endswith(".deb"):
-        return BinaryPackageFileType.DEB
-    if fname.endswith(".udeb"):
-        return BinaryPackageFileType.DEB
-    if fname.endswith(".dsc"):
-        return SourcePackageFileType.DSC
-    if fname.endswith(".diff.gz"):
-        return SourcePackageFileType.DIFF
-    if fname.endswith(".orig.tar.gz"):
-        return SourcePackageFileType.ORIG
-    if fname.endswith(".tar.gz"):
-        return SourcePackageFileType.TARBALL
-
-
-BINARYPACKAGE_EXTENSIONS = {
-    BinaryPackageFormat.DEB: '.deb',
-    BinaryPackageFormat.UDEB: '.udeb',
-    BinaryPackageFormat.RPM: '.rpm'}
-
-
-class UnrecognizedBinaryFormat(Exception):
-
-    def __init__(self, fname, *args):
-        Exception.__init__(self, *args)
-        self.fname = fname
-
-    def __str__(self):
-        return '%s is not recognized as a binary file.' % self.fname
-
-
-def getBinaryPackageFormat(fname):
-    """Return the BinaryPackageFormat for the given filename.
-
-    >>> getBinaryPackageFormat('mozilla-firefox_0.9_i386.deb').name
-    'DEB'
-    >>> getBinaryPackageFormat('debian-installer.9_all.udeb').name
-    'UDEB'
-    >>> getBinaryPackageFormat('network-manager.9_i386.rpm').name
-    'RPM'
-    """
-    for key, value in BINARYPACKAGE_EXTENSIONS.items():
-        if fname.endswith(value):
-            return key
-
-    raise UnrecognizedBinaryFormat(fname)
-
-
-def getBinaryPackageExtension(format):
-    """Return the file extension for the given BinaryPackageFormat.
-
-    >>> getBinaryPackageExtension(BinaryPackageFormat.DEB)
-    '.deb'
-    >>> getBinaryPackageExtension(BinaryPackageFormat.UDEB)
-    '.udeb'
-    >>> getBinaryPackageExtension(BinaryPackageFormat.RPM)
-    '.rpm'
-    """
-    return BINARYPACKAGE_EXTENSIONS[format]
+    return '%s.msg' % compress_hash(hashlib.sha1(message_id))
 
 
 def intOrZero(value):
@@ -542,13 +490,18 @@ def positiveIntOrZero(value):
     return value
 
 
-def get_email_template(filename):
+def get_email_template(filename, app=None):
     """Returns the email template with the given file name.
 
     The templates are located in 'lib/canonical/launchpad/emailtemplates'.
     """
-    base = os.path.dirname(canonical.launchpad.__file__)
-    fullpath = os.path.join(base, 'emailtemplates', filename)
+    if app is None:
+        base = os.path.dirname(__file__)
+        fullpath = os.path.join(base, 'emailtemplates', filename)
+    else:
+        import lp
+        base = os.path.dirname(lp.__file__)
+        fullpath = os.path.join(base, app, 'emailtemplates', filename)
     return open(fullpath).read()
 
 
@@ -584,3 +537,67 @@ def truncate_text(text, max_length):
             break
         truncated += word
     return truncated[:max_length]
+
+
+def english_list(items, conjunction='and'):
+    """Return all the items concatenated into a English-style string.
+
+    Follows the advice given in The Elements of Style, chapter I,
+    section 2:
+
+    "In a series of three or more terms with a single conjunction, use
+     a comma after each term except the last."
+
+    Beware that this is US English and is wrong for non-US.
+    """
+    items = list(items)
+    if len(items) <= 2:
+        return (' %s ' % conjunction).join(items)
+    else:
+        items[-1] = '%s %s' % (conjunction, items[-1])
+        return ', '.join(items)
+
+
+def ensure_unicode(string):
+    r"""Return input as unicode. None is passed through unharmed.
+
+    Do not use this method. This method exists only to help migration
+    of legacy code where str objects were being passed into contexts
+    where unicode objects are required. All invokations of
+    ensure_unicode() should eventually be removed.
+
+    This differs from the builtin unicode() function, as a TypeError
+    exception will be raised if the parameter is not a basestring or if
+    a raw string is not ASCII.
+
+    >>> ensure_unicode(u'hello')
+    u'hello'
+
+    >>> ensure_unicode('hello')
+    u'hello'
+
+    >>> ensure_unicode(u'A'.encode('utf-16')) # Not ASCII
+    Traceback (most recent call last):
+    ...
+    TypeError: '\xff\xfeA\x00' is not US-ASCII
+
+    >>> ensure_unicode(42)
+    Traceback (most recent call last):
+    ...
+    TypeError: 42 is not a basestring (<type 'int'>)
+
+    >>> ensure_unicode(None) is None
+    True
+    """
+    if string is None:
+        return None
+    elif isinstance(string, unicode):
+        return string
+    elif isinstance(string, basestring):
+        try:
+            return string.decode('US-ASCII')
+        except UnicodeDecodeError:
+            raise TypeError("%s is not US-ASCII" % repr(string))
+    else:
+        raise TypeError(
+            "%r is not a basestring (%r)" % (string, type(string)))

@@ -1,0 +1,84 @@
+===========================
+Re-activating mailing lists
+===========================
+
+A team administrator may re-activate a previously deactivated mailing list
+without the need for approval from a Launchpad administrator.  When the
+mailing list is re-activated, all previous settings and subscriptions are
+restored.
+
+First, No Privileges Person will create a new team and its mailing list.
+
+    >>> from lp.services.mailman.testing import helpers
+    >>> mailing_list = helpers.create_list('itest-one')
+
+Give the mailing list a welcome message.
+
+    >>> from canonical.testing.layers import BaseLayer
+    >>> root_url = BaseLayer.appserver_root_url()
+    >>> browser = Browser('no-priv@canonical.com:test')
+    >>> browser.open('%s/~itest-one/+mailinglist' % root_url)
+    >>> browser.getControl('Welcome message text').value = (
+    ...     'Greetings team one members!')
+    >>> browser.getControl('Save').click()
+    >>> xmlrpc_watcher.wait_for_modification('itest-one')
+
+    >>> from Mailman.MailList import MailList
+    >>> mlist = MailList('itest-one', lock=False)
+    >>> mlist.welcome_msg
+    'Greetings team one members!'
+
+Subscribe Anne to the mailing list so that she can post to after
+re-activation.  Note that no-priv is considered a member because he created
+the mailing list.
+
+    >>> helpers.subscribe('Anne', 'itest-one')
+    >>> mlist.Load()
+    >>> sorted(mlist.getMembers())
+    ['anne.person@example.com', 'aperson@example.org',
+     'archive@mail-archive.dev', 'no-priv@canonical.com']
+
+Now the team owner deactivates the list.
+
+    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getControl('Deactivate this Mailing List').click()
+    >>> xmlrpc_watcher.wait_for_deactivation('itest-one')
+
+As far as Mailman is concerned, the mailing list no longer exists.
+
+    >>> from Mailman.Utils import list_names
+    >>> sorted(name for name in list_names() if name.startswith('itest-'))
+    []
+
+Now the team owner reactivates the list.
+
+    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getControl('Reactivate this Mailing List').click()
+    >>> xmlrpc_watcher.wait_for_reactivation('itest-one')
+
+Mailman reports that the mailing list exists again.
+
+    >>> sorted(name for name in list_names() if name.startswith('itest-'))
+    ['itest-one']
+
+The archive file has been removed.
+
+    >>> from Mailman import mm_cfg
+    >>> import os
+    >>> backup_file = os.path.join(mm_cfg.VAR_PREFIX,
+    ...                            'backups', 'itest-one.tgz')
+    >>> os.path.exists(backup_file)
+    False
+
+On the Mailman side, the mailing list has the expected welcome message.
+
+    >>> mlist.Load()
+    >>> mlist.welcome_msg
+    'Greetings team one members!'
+
+Anne is a member of the re-activated mailing list, just as she was before the
+list was deactivated.
+
+    >>> sorted(mlist.getMembers())
+    ['anne.person@example.com', 'aperson@example.org',
+     'archive@mail-archive.dev', 'no-priv@canonical.com']

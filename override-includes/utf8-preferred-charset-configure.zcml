@@ -1,7 +1,0 @@
-<configure xmlns="http://namespaces.zope.org/zope" >
-
-    <!-- Override the standard IUserPreferredCharsets adapter to always
-         return utf-8 as the preferred charset. -->
-    <adapter factory="canonical.launchpad.webapp.Utf8PreferredCharsets" />
-
-</configure>

@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests confirming that changing isolation levels does what we expect."""
 
@@ -13,9 +14,9 @@ import unittest
 
 from canonical.config import config
 from canonical.database.sqlbase import (
-        cursor, SERIALIZABLE_ISOLATION, READ_COMMITTED_ISOLATION,
-        AUTOCOMMIT_ISOLATION, DEFAULT_ISOLATION, connect
-        )
+    cursor, ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_DEFAULT,
+    ISOLATION_LEVEL_READ_COMMITTED, ISOLATION_LEVEL_SERIALIZABLE,
+    connect)
 from canonical.testing.layers import LaunchpadZopelessLayer
 
 class TestIsolation(unittest.TestCase):
@@ -37,11 +38,11 @@ class TestIsolation(unittest.TestCase):
         self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
 
     def test_default2(self):
-        self.txn.set_isolation_level(DEFAULT_ISOLATION)
+        self.txn.set_isolation_level(ISOLATION_LEVEL_DEFAULT)
         self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
 
     def test_autocommit(self):
-        self.txn.set_isolation_level(AUTOCOMMIT_ISOLATION)
+        self.txn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         # There is no actual 'autocommit' mode in PostgreSQL. psycopg
         # implements this feature by using read committed isolation and
         # issuing commit() statements after every query.
@@ -51,51 +52,54 @@ class TestIsolation(unittest.TestCase):
         # by seeing if we an roll back
         con = self.txn.conn()
         cur = con.cursor()
-        cur.execute("SELECT COUNT(*) FROM Person WHERE password IS NULL")
+        cur.execute(
+            "SELECT COUNT(*) FROM Person WHERE homepage_content IS NULL")
         self.failIfEqual(cur.fetchone()[0], 0)
-        cur.execute("UPDATE Person SET password=NULL")
+        cur.execute("UPDATE Person SET homepage_content=NULL")
         con.rollback()
         cur = con.cursor()
-        cur.execute("SELECT COUNT(*) FROM Person WHERE password IS NOT NULL")
+        cur.execute(
+            "SELECT COUNT(*) FROM Person WHERE homepage_content IS NOT NULL")
         self.failUnlessEqual(cur.fetchone()[0], 0)
 
     def test_readCommitted(self):
-        self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
+        self.txn.set_isolation_level(ISOLATION_LEVEL_READ_COMMITTED)
         self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
 
     def test_serializable(self):
-        self.txn.set_isolation_level(SERIALIZABLE_ISOLATION)
+        self.txn.set_isolation_level(ISOLATION_LEVEL_SERIALIZABLE)
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
 
     def test_commit(self):
         # Change the isolation level
         self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
-        self.txn.set_isolation_level(SERIALIZABLE_ISOLATION)
+        self.txn.set_isolation_level(ISOLATION_LEVEL_SERIALIZABLE)
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
 
         con = self.txn.conn()
         cur = con.cursor()
-        cur.execute("UPDATE Person SET password=NULL")
+        cur.execute("UPDATE Person SET homepage_content=NULL")
         con.commit()
-        cur.execute("UPDATE Person SET password='foo'")
+        cur.execute("UPDATE Person SET homepage_content='foo'")
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
 
     def test_rollback(self):
         # Change the isolation level
         self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
-        self.txn.set_isolation_level(SERIALIZABLE_ISOLATION)
+        self.txn.set_isolation_level(ISOLATION_LEVEL_SERIALIZABLE)
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
 
         con = self.txn.conn()
         cur = con.cursor()
-        cur.execute("UPDATE Person SET password=NULL")
+        cur.execute("UPDATE Person SET homepage_content=NULL")
         con.rollback()
         self.failUnlessEqual(self.getCurrentIsolation(), 'serializable')
 
     def test_script(self):
         # Ensure that things work in stand alone scripts too, in case out
         # test infrustructure is faking something.
-        script = os.path.join(os.path.dirname(__file__), 'script_isolation.py')
+        script = os.path.join(
+                os.path.dirname(__file__), 'script_isolation.py')
         cmd = [sys.executable, script]
         process = Popen(cmd, stdout=PIPE, stderr=STDOUT, stdin=PIPE)
         (script_output, _empty) = process.communicate()
@@ -119,28 +123,19 @@ class TestIsolation(unittest.TestCase):
 
         # Ensure that changing the isolation sticks.
         con = connect(
-                config.launchpad.dbuser, isolation=SERIALIZABLE_ISOLATION
-                )
+            config.launchpad.dbuser, isolation=ISOLATION_LEVEL_SERIALIZABLE)
         self.failUnlessEqual(self.getCurrentIsolation(con), 'serializable')
         con.rollback()
         self.failUnlessEqual(self.getCurrentIsolation(con), 'serializable')
 
-        # Note that it doesn't work to use the dbapi call on a
-        # connection that has already been used, as the call silently
-        # does nothing. This is psycopg behavior.
-        con.set_isolation_level(READ_COMMITTED_ISOLATION)
-        self.failIfEqual(self.getCurrentIsolation(con), 'read committed')
-
         # But on a fresh connection, it works just fine.
         con = connect(config.launchpad.dbuser)
-        con.set_isolation_level(SERIALIZABLE_ISOLATION)
+        con.set_isolation_level(ISOLATION_LEVEL_SERIALIZABLE)
         self.failUnlessEqual(self.getCurrentIsolation(con), 'serializable')
         con.rollback()
         self.failUnlessEqual(self.getCurrentIsolation(con), 'serializable')
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestIsolation))
-    return suite
+    return unittest.TestLoader().loadTestsFromName(__name__)
 

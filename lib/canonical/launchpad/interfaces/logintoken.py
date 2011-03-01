@@ -1,4 +1,7 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=E0211,E0213
 
 """Login token interfaces."""
 
@@ -8,154 +11,32 @@ __all__ = [
     'ILoginToken',
     'ILoginTokenSet',
     'IGPGKeyValidationForm',
-    'LoginTokenType',
     ]
 
-from zope.schema import Choice, Datetime, Int, Text, TextLine
-from zope.interface import Attribute, Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import Text
 
-from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.launchpad import _
-from canonical.launchpad.fields import PasswordField
+from canonical.launchpad.interfaces.authtoken import IAuthToken
 
 
-class LoginTokenType(DBEnumeratedType):
-    """Login token type
-
-    Tokens are emailed to users in workflows that require email address
-    validation, such as forgotten password recovery or account merging.
-    We need to identify the type of request so we know what workflow
-    is being processed.
-    """
-
-    PASSWORDRECOVERY = DBItem(1, """
-        Password Recovery
-
-        User has forgotten or never known their password and need to
-        reset it.
-        """)
-
-    ACCOUNTMERGE = DBItem(2, """
-        Account Merge
-
-        User has requested that another account be merged into their
-        current one.
-        """)
-
-    NEWACCOUNT = DBItem(3, """
-        New Account
-
-        A new account is being setup. They need to verify their email address
-        before we allow them to set a password and log in.
-        """)
-
-    VALIDATEEMAIL = DBItem(4, """
-        Validate Email
-
-        A user has added more email addresses to their account and they
-        need to be validated.
-        """)
-
-    VALIDATETEAMEMAIL = DBItem(5, """
-        Validate Team Email
-
-        One of the team administrators is trying to add a contact email
-        address for the team, but this address need to be validated first.
-        """)
-
-    VALIDATEGPG = DBItem(6, """
-        Validate GPG key
-
-        A user has submited a new GPG key to his account and it need to
-        be validated.
-        """)
-
-    VALIDATESIGNONLYGPG = DBItem(7, """
-        Validate a sign-only GPG key
-
-        A user has submitted a new sign-only GPG key to his account and it
-        needs to be validated.
-        """)
-
-    PROFILECLAIM = DBItem(8, """
-        Claim an unvalidated Launchpad profile
-
-        A user has found an unvalidated profile in Launchpad and is trying
-        to claim it.
-        """)
-
-    NEWPROFILE = DBItem(9, """
-        A user created a new Launchpad profile for another person.
-
-        Any Launchpad user can create new "placeholder" profiles to represent
-        people who don't use Launchpad. The person that a given profile
-        represents has to first use the token to finish the registration
-        process in order to be able to login with that profile.
-        """)
-
-
-class ILoginToken(Interface):
+class ILoginToken(IAuthToken):
     """The object that stores one time tokens used for validating email
     addresses and other tasks that require verifying if an email address is
     valid such as password recovery, account merging and registration of new
     accounts. All LoginTokens must be deleted once they are "consumed"."""
-    id = Int(
-        title=_('ID'), required=True, readonly=True,
-        )
-    email = TextLine(
-        title=_('Email address'),
-        required=True,
-        )
-    requester = Int(
-        title=_('The Person that made this request.'), required=True,
-        )
-    requesteremail = Text(
-        title=_('The email address that was used to login when making this '
-                'request.'),
-        required=False,
-        )
-    redirection_url = Text(
-        title=_('The URL to where we should redirect the user after processing '
-                'his request'),
-        required=False,
-        )
-    created = Datetime(
-        title=_('The timestamp that this request was made.'), required=True,
-        )
-    tokentype = Choice(
-        title=_('The type of request.'), required=True,
-        vocabulary=LoginTokenType
-        )
-    token = Text(
-        title=_('The token (not the URL) emailed used to uniquely identify '
-                'this request.'),
-        required=True,
-        )
+
     fingerprint = Text(
-        title=_('OpenPGP key fingerprint used to retrive key information when necessary.'),
+        title=_('OpenPGP key fingerprint used to retrieve key information '
+                'when necessary.'),
         required=False,
         )
-    date_consumed = Datetime(
-        title=_('Date and time this was consumed'),
-        required=False, readonly=False
-        )
 
-    # used for launchpad page layout
-    title = Attribute('Title')
-
-    # Quick fix for Bug #2481
-    password = PasswordField(
-            title=_('Password'), required=True, readonly=False,
-            description=_("Enter the same password in each field.")
-            )
-
-    def consume():
-        """Mark this token as consumed by setting date_consumed.
-
-        As a consequence of a token being consumed, all tokens requested by
-        the same person and with the same requester email will also be marked
-        as consumed.
-        """
+    validation_phrase = Text(
+        title=_("The phrase used to validate sign-only GPG keys"))
 
     def destroySelf():
         """Remove this LoginToken from the database.
@@ -165,38 +46,9 @@ class ILoginToken(Interface):
         to delete it so nobody can use that token again.
         """
 
-    def sendEmailValidationRequest(appurl):
-        """Send an email message with a magic URL to validate self.email."""
-
     def sendGPGValidationRequest(key):
         """Send an email message with a magic URL to confirm the OpenPGP key.
         If fingerprint is set, send the message encrypted.
-        """
-
-    def sendPasswordResetEmail():
-        """Send an email message to the requester with a magic URL that allows
-        him to reset his password.
-        """
-
-    def sendNewUserEmail():
-        """Send an email message to the requester with a magic URL that allows
-        him to finish the Launchpad registration process.
-        """
-
-    def sendPasswordResetNeutralEmail():
-        """Identical to ILoginToken.sendPasswordResetEmail but in this case
-        the email sent is neutral --it doesn't mention Launchpad.
-
-        This is needed when Launchpad is acting as an OpenID provider for the
-        Ubuntu Shop/Wiki.
-        """
-
-    def sendNewUserNeutralEmail():
-        """Identical to ILoginToken.sendNewUserEmail but in this case
-        the email sent is neutral --it doesn't mention Launchpad.
-
-        This is needed when Launchpad is acting as an OpenID provider for the
-        Ubuntu Shop/Wiki.
         """
 
     def sendProfileCreatedEmail(profile, comment):
@@ -225,6 +77,27 @@ class ILoginToken(Interface):
         claiming the profile that owns self.email.
         """
 
+    def sendClaimTeamEmail():
+        """E-mail instructions for claiming a team to self.email."""
+
+    def activateGPGKey(key, can_encrypt):
+        """Activate a GPG key.
+
+        :return: A Launchpad key, whether it's new, email addresses that were
+            created, email addresses owned by someone else.
+        """
+
+    def createEmailAddresses(uids):
+        """Create EmailAddresses for the GPG UIDs that do not exist yet.
+
+        For each of the given UIDs, check if it is already registered and, if
+        not, register it.
+
+        Return a tuple containing the list of newly created emails (as
+        strings) and the emails that exist and are already assigned to another
+        person (also as strings).
+        """
+
 
 class ILoginTokenSet(Interface):
     """The set of LoginTokens."""
@@ -237,16 +110,39 @@ class ILoginTokenSet(Interface):
         Return the default value if there's no such LoginToken.
         """
 
-    def searchByEmailRequesterAndType(email, requester, type):
-        """Return all LoginTokens for the given email, requester and type."""
+    def searchByEmailRequesterAndType(email, requester, type, consumed=None):
+        """Return all LoginTokens for the given email, requester and type.
+
+        :param email: The email address to search for.
+        :param requester: The Person object representing the requester
+            to search for.
+        :param type: The LoginTokenType to search for.
+        :param consumed: A flag indicating whether to return consumed tokens.
+            If False, only unconsumed tokens will be returned.
+            If True, only consumed tokens will be returned.
+            If None, this parameter will be ignored and all tokens will be
+            returned.
+        """
 
     def deleteByEmailRequesterAndType(email, requester, type):
         """Delete all LoginToken entries with the given email, requester and
         type."""
 
-    def searchByFingerprintRequesterAndType(fingerprint, requester, type):
+    def searchByFingerprintRequesterAndType(fingerprint, requester, type,
+                                            consumed=None):
         """Return all LoginTokens for the given fingerprint, requester and
-        type."""
+        type.
+
+        :param fingerprint: The LoginToken fingerprint to search for.
+        :param requester: The Person object representing the requester
+            to search for.
+        :param type: The LoginTokenType to search for.
+        :param consumed: A flag indicating whether to return consumed tokens.
+            If False, only unconsumed tokens will be returned.
+            If True, only consumed tokens will be returned.
+            If None, this parameter will be ignored and all tokens will be
+            returned.
+        """
 
     def deleteByFingerprintRequesterAndType(fingerprint, requester, type):
         """Delete all LoginToken entries with the given fingerprint,
@@ -267,7 +163,7 @@ class ILoginTokenSet(Interface):
                         also be None in case of a new account
 
         email: the email address that this request will be sent to.
-        It should be previosly validated by valid_email()
+        It should be previously validated by valid_email()
 
         tokentype: the type of the request, according to LoginTokenType.
 
@@ -282,15 +178,11 @@ class ILoginTokenSet(Interface):
         Raises KeyError if there is no such LoginToken.
         """
 
-    def get(id, default=None):
-        """Returns the LoginToken with the given id.
-
-        Returns the default value if there is no such LoginToken.
-        """
-
 
 class IGPGKeyValidationForm(Interface):
     """The schema used by ILoginToken's +validategpg form."""
 
-    signed_text = Text(title=_('Signed text'), required=True)
+    text_signature = Text(
+        title=_('Signed text'), required=True,
+        description=_('The validation text, signed with your key.'))
 

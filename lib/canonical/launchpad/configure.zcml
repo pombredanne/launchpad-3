@@ -1,8 +1,14 @@
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
   xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
+
+  <include package="grokcore.component" file="meta.zcml" />
 
   <include package="canonical.launchpad.webapp" />
   <include package="canonical.launchpad.vocabularies" />
@@ -12,76 +18,62 @@
   <authorizations module="canonical.launchpad.security" />
   <include package="canonical.launchpad.xmlrpc" />
 
+  <include package="lp.hardwaredb" />
+
+  <include package="lp.app" />
+  <include package="lp.bugs" />
+  <include package="lp.buildmaster" />
+  <include package="lp.registry" />
+  <include package="lp.answers" />
+  <include package="lp.coop.answersbugs" />
+  <include package="lp.code" />
+  <include package="lp.soyuz" />
+  <include package="lp.translations" />
+  <include package="lp.testopenid" />
+  <include package="lp.blueprints" />
+  <include package="lp.vostok" />
+
   <browser:url
-    for="canonical.launchpad.interfaces.IPersonSet"
+    for="lp.registry.interfaces.person.IPersonSet"
     path_expression="string:people"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
     />
 
   <browser:url
-    for="canonical.launchpad.interfaces.IDistributionSet"
+     for="lp.code.interfaces.branch.IBranchSet"
+     path_expression="string:branches"
+     parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+    />
+
+  <browser:url
+    for="lp.registry.interfaces.distribution.IDistributionSet"
     path_expression="string:distros"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
     />
 
   <browser:url
-    for="canonical.launchpad.interfaces.ISourcePackageNameSet"
+    for="lp.registry.interfaces.sourcepackagename.ISourcePackageNameSet"
     path_expression="string:sourcepackagenames"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
     />
 
   <browser:url
-    for="canonical.launchpad.interfaces.IBinaryPackageNameSet"
+    for="lp.soyuz.interfaces.binarypackagename.IBinaryPackageNameSet"
     path_expression="string:binarypackagenames"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
     />
 
   <browser:url
-    for="canonical.launchpad.interfaces.IProjectSet"
+    for="lp.registry.interfaces.projectgroup.IProjectGroupSet"
     path_expression="string:projectgroups"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
     />
 
   <browser:url
-    for="canonical.launchpad.interfaces.ILoginTokenSet"
+    for="canonical.launchpad.interfaces.logintoken.ILoginTokenSet"
     path_expression="string:token"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
     />
-
-  <browser:url
-    for="canonical.launchpad.interfaces.IPOTemplateNameSet"
-    path_expression="string:potemplatenames"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-    />
-
-  <!-- feedback page -->
-  <browser:page
-    for="canonical.launchpad.interfaces.ILaunchpadRoot"
-    name="feedback"
-    template="templates/launchpad-feedback.pt"
-    permission="zope.Public"
-    />
-
-  <!-- FAQ -->
-
-  <browser:page
-    for="canonical.launchpad.interfaces.ILaunchpadRoot"
-    name="faq"
-    template="templates/faq.pt"
-    permission="zope.Public"
-    />
-
-  <!-- RDF downloadable documents -->
-  <browser:page
-    for="canonical.launchpad.interfaces.ILaunchpadRoot"
-    name="rdf"
-    template="templates/rdf-index.pt"
-    permission="zope.Public"
-    />
-
-  <browser:resourceDirectory
-    name="rdf"
-    directory="rdfspec" />
 
   <i18n:registerTranslations directory="locales" />
 
@@ -90,9 +82,14 @@
       classes="LaunchpadRootNavigation"
       />
 
-  <browser:resourceDirectory
-      name="PlotKit"
-      directory="../../contrib/PlotKit"
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="LaunchpadRootNavigation"
+      layer="zope.publisher.interfaces.xmlrpc.IXMLRPCRequest"
       />
+
+  <!-- Register a handler to fix things up just before the application
+       starts (and after zcml has been processed). -->
+  <subscriber handler=".webapp.initialization.handle_process_start" />
 
 </configure>

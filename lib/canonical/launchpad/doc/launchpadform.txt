@@ -23,6 +23,9 @@ a LaunchpadFormView based view class:
    overriden. Errors are reported using the addError() and
    setFieldError() methods.
 
+ * if a form contains multiple actions, the validate_widgets method
+   can be used to validate that action's subset of the form's widgets.
+
  * the "next_url" attribute should be set to the URL to redirect to on
    successful form submission.  If this is a computed value, you might
    want to use a property.
@@ -61,7 +64,7 @@ example schema:
 A form that handles all fields in the schema needs only set the
 "schema" attribute:
 
-  >>> from canonical.launchpad.webapp import LaunchpadFormView
+  >>> from lp.app.browser.launchpadform import LaunchpadFormView
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
   >>> class FormTestView1(LaunchpadFormView):
@@ -128,8 +131,8 @@ field.  These can be installed easily with the "custom_widgets"
 attribute:
 
   >>> from zope.app.form.browser import TextWidget
-  >>> from canonical.widgets import PasswordChangeWidget
   >>> from canonical.launchpad.webapp import custom_widget
+  >>> from lp.app.widgets.password import PasswordChangeWidget
 
   >>> class FormTestView3(LaunchpadFormView):
   ...     schema = IFormTest
@@ -245,9 +248,9 @@ Check that form wide errors can be reported:
   >>> view.setUpWidgets()
   >>> data = {}
   >>> view._validate(None, data)
-  ['your password may not be the same as your name']
+  [u'your password may not be the same as your name']
   >>> view.form_wide_errors
-  ['your password may not be the same as your name']
+  [u'your password may not be the same as your name']
 
 Check that widget specific errors can be reported:
 
@@ -259,12 +262,59 @@ Check that widget specific errors can be reported:
   >>> view.setUpWidgets()
   >>> data = {}
   >>> view._validate(None, data)
-  ['your password must not be "password"']
+  [u'your password must not be "password"']
   >>> view.widget_errors
-  {'password': 'your password must not be "password"'}
+  {'password': u'your password must not be "password"'}
 
 The base template used for LaunchpadFormView classes takes care of
 displaying these errors in the appropriate locations.
+
+
+== Widget Validation ===
+
+A form may contain multiple actions, and a widget used for action A
+might not be used for action B. The validate_widgets() method makes it
+easy for an action to validate its widgets, while ignoring widgets
+that belong to other actions. Here, we'll define a form with two
+required fields, and show how to validate one field at a time.
+
+  >>> class INameAndPasswordForm(Interface):
+  ...     name = TextLine(title=u"Name", required=True)
+  ...     password = TextLine(title=u"Password", required=True)
+
+  >>> class FormViewForWidgetValidation(LaunchpadFormView):
+  ...     schema = INameAndPasswordForm
+
+  >>> def print_widget_validation(names):
+  ...     data = {'field.name': '', 'field.password': ''}
+  ...     context = FormTest()
+  ...     request = LaunchpadTestRequest(method='POST', form=data)
+  ...     view = FormViewForWidgetValidation(context, request)
+  ...     view.setUpFields()
+  ...     view.setUpWidgets()
+  ...     for error in view.validate_widgets(data, names=names):
+  ...         if isinstance(error, str):
+  ...            print error
+  ...         else:
+  ...             print "%s: %s" % (error.widget_title, error.doc())
+
+Only the fields we specify will be validated:
+
+  >>> print_widget_validation(['name'])
+  Name: Required input is missing.
+
+  >>> print_widget_validation(['password'])
+  Password: Required input is missing.
+
+  >>> print_widget_validation(['name', 'password'])
+  Name: Required input is missing.
+  Password: Required input is missing.
+
+The default behavior is to validate all widgets.
+
+  >>> print_widget_validation(None)
+  Name: Required input is missing.
+  Password: Required input is missing.
 
 
 == Redirect URL ==
@@ -391,7 +441,7 @@ The focus can also be set explicitly by overriding initial_focus_widget:
   <!--
   setFocusByName('field.password');
   // -->
-  
+
 If initial_focus_widget is set to None, then no element will be focused
 initially:
 
@@ -419,9 +469,9 @@ through a custom_widget() call.
 First we'll create a fake pagetemplate which doesn't use Launchpad's main
 template and thus is way simpler.
 
-  >>> from zope.app.pagetemplate import ViewPageTemplateFile
   >>> from StringIO import StringIO
   >>> from tempfile import mkstemp
+  >>> from z3c.ptcompat import ViewPageTemplateFile
   >>> file, filename = mkstemp()
   >>> f = open(filename, 'w')
   >>> f.write(u'<div metal:use-macro="context/@@launchpad_form/form" />')

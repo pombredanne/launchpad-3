@@ -1,0 +1,81 @@
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+"""Tests for classes in the lp.code.browser.bazaar module."""
+
+__metaclass__ = type
+
+import unittest
+
+from zope.security.proxy import removeSecurityProxy
+
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.code.browser.bazaar import BazaarApplicationView
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    login_person,
+    TestCaseWithFactory,
+    )
+
+
+class TestBazaarViewPreCacheLaunchpadPermissions(TestCaseWithFactory):
+    """Test the precaching of launchpad.View permissions."""
+
+    layer = DatabaseFunctionalLayer
+
+    def getViewBranches(self, attribute):
+        """Create the view and get the branches for `attribute`."""
+        request = LaunchpadTestRequest()
+        login(ANONYMOUS, request)
+        view = BazaarApplicationView(object(), request)
+        return getattr(view, attribute)
+
+    def test_recently_registered(self):
+        # Create a branches that is stacked on a private branch that the
+        # logged in user would not normally see.
+        private_branch = self.factory.makeAnyBranch(private=True)
+        branch = self.factory.makeAnyBranch(stacked_on=private_branch)
+        recent_branches = self.getViewBranches('recently_registered_branches')
+        self.assertEqual(branch, recent_branches[0])
+        self.assertTrue(check_permission('launchpad.View', branch))
+
+    def makeBranchScanned(self, branch):
+        """Make the branch appear scanned."""
+        revision = self.factory.makeRevision()
+        # Login an administrator so they can update the branch's details.
+        login('admin@canonical.com')
+        branch.updateScannedDetails(revision, 1)
+
+    def test_recently_changed(self):
+        # Create a recently changed branch that is stacked on a private branch
+        # that the logged in user would not normally see.
+        private_branch = self.factory.makeAnyBranch(private=True)
+        branch = self.factory.makeAnyBranch(stacked_on=private_branch)
+        self.makeBranchScanned(branch)
+        recent_branches = self.getViewBranches('recently_changed_branches')
+        self.assertEqual(branch, recent_branches[0])
+        self.assertTrue(check_permission('launchpad.View', branch))
+
+    def test_recently_imported(self):
+        # Create an import branch that is stacked on a private branch that the
+        # logged in user would not normally see.  This would never happen in
+        # reality, but hey, lets test the function actually works.
+        private_branch = self.factory.makeAnyBranch(private=True)
+        # A new code import needs a real user as the sender for the outgoing
+        # email.
+        login_person(self.factory.makePerson())
+        code_import = self.factory.makeCodeImport()
+        branch = code_import.branch
+        removeSecurityProxy(branch).stacked_on = private_branch
+        self.makeBranchScanned(branch)
+        recent_branches = self.getViewBranches('recently_imported_branches')
+        self.assertEqual(branch, recent_branches[0])
+        self.assertTrue(check_permission('launchpad.View', branch))
+
+
+def test_suite():
+    return unittest.TestLoader().loadTestsFromName(__name__)
+

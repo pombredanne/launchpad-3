@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """This module contains sorting utility functions."""
 
 __metaclass__ = type
@@ -23,9 +25,10 @@ def expand_numbers(unicode_text, fill_digits=4):
 
     """
     assert(isinstance(unicode_text, unicode))
-    def substitude_filled_numbers(match):
+
+    def substitute_filled_numbers(match):
         return match.group(0).zfill(fill_digits)
-    return re.sub(u'\d+', substitude_filled_numbers, unicode_text)
+    return re.sub(u'\d+', substitute_filled_numbers, unicode_text)
 
 
 # Create translation table for numeric ordinals to their

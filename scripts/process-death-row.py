@@ -1,73 +1,42 @@
-#!/usr/bin/python2.4
-"""Death row kickoff script."""
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
+# Stop lint warning about relative import:
+# pylint: disable-msg=W0403
+"""Death row processor script.
+
+This script removes obsolete files from the selected archive(s) pool.
+
+You can select a specific distribution or let it default to 'ubuntu'.
+
+It operates in 2 modes:
+ * all distribution archive (PRIMARY and PARTNER) [default]
+ * all PPAs [--ppa]
+
+You can optionally specify a different 'pool-root' path which will be used
+as the base path for removing files, instead of the real archive pool root.
+This feature is used to inspect the removed files without actually modifying
+the archive tree.
+
+There is also a 'dry-run' mode that can be used to operate on the real
+archive tree without removing the files.
+"""
 import _pythonpath
 
-from optparse import OptionParser
+# This is needed to prevent circular imports until we get rid of the
+# abomination that is known as
+# canonical/launchpad/interfaces/__init.py__ that imports the whole
+# freaking world.
+import canonical.launchpad.interfaces
 
-from zope.component import getUtility
-
-from canonical.launchpad.interfaces import IDistributionSet
-from canonical.launchpad.scripts import (
-    execute_zcml_for_scripts, logger, logger_options)
-from canonical.lp import initZopeless
-
-from canonical.archivepublisher.deathrow import getDeathRow
-
-
-def main():
-    parser = OptionParser()
-    parser.add_option("-n", "--dry-run", action="store_true",
-                      dest="dry_run", metavar="", default=False,
-                      help=("Dry run: goes through the motions but "
-                            "commits to nothing."))
-    parser.add_option("-d", "--distribution",
-                      dest="distribution", metavar="DISTRO",
-                      help="Specified the distribution name.")
-    parser.add_option("-p", "--pool-root", metavar="PATH",
-                      help="Override the path to the pool folder")
-    parser.add_option("--ppa", action="store_true",
-                      dest="ppa", metavar="PPA", default=False,
-                      help="Run only over PPA archives.")
-
-    logger_options(parser)
-    (options, args) = parser.parse_args()
-    log = logger(options, "deathrow-distro")
-
-    log.debug("Initialising zopeless.")
-
-    # XXX kiko 2006-08-23: Change this when we fix up db security
-    txn = initZopeless(dbuser='lucille')
-    execute_zcml_for_scripts()
-
-    distribution = getUtility(IDistributionSet).getByName(
-        options.distribution)
-
-    if not options.ppa:
-        archives = distribution.all_distro_archives
-    else:
-        archives = distribution.getAllPPAs()
-
-    for archive in archives:
-        death_row = getDeathRow(archive, log, options.pool_root)
-        try:
-            # Unpublish death row
-            log.debug("Unpublishing death row for %s." % archive.title)
-            death_row.reap(options.dry_run)
-
-            if options.dry_run:
-                log.debug("Dry run mode; rolling back.")
-                txn.abort()
-            else:
-                log.debug("Committing")
-                txn.commit()
-        except:
-            log.exception("Unexpected exception while doing death-row "
-                          "unpublish")
-            txn.abort()
-            # Continue with other archives.
+from canonical.config import config
+from lp.soyuz.scripts.processdeathrow import DeathRowProcessor
 
 
 if __name__ == "__main__":
-    main()
+    script = DeathRowProcessor(
+        'process-death-row', dbuser=config.archivepublisher.dbuser)
+    script.lock_and_run()
 

@@ -1,8 +1,11 @@
 #!/usr/bin/python
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
 
-archtag = os.popen("dpkg --print-installation-architecture").read().strip()
+archtag = os.popen("dpkg --print-architecture").read().strip()
 
 from optparse import OptionParser
 

@@ -1,14 +1,17 @@
-#!/usr/bin/python2.4
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=C0103,W0403
 
 # This script updates the cached stats in the system
 
 import _pythonpath
 
-from zope.component import getUtility
-
-from canonical.launchpad.scripts.base import LaunchpadCronScript
-from canonical.launchpad.interfaces import IBugTaskSet
+from lp.services.scripts.base import LaunchpadCronScript
+from lp.bugs.scripts.bugtasktargetnamecaches import (
+    BugTaskTargetNameCacheUpdater)
 from canonical.config import config
 
 
@@ -19,26 +22,12 @@ class UpdateBugTaskTargetNameCaches(LaunchpadCronScript):
     example, an IDistribution being renamed.
     """
     def main(self):
-        self.logger.info("Updating targetname cache of bugtasks.")
-        bugtaskset = getUtility(IBugTaskSet)
-        self.txn.begin()
-        # XXX: kiko 2006-03-23:
-        # We use a special API here, which is kinda klunky, but which
-        # allows us to return all bug tasks (even private ones); this should
-        # eventually be changed to a more elaborate permissions scheme,
-        # pending the infrastructure to do so.
-        bugtask_ids = [bugtask.id for bugtask in bugtaskset.dangerousGetAllTasks()]
-        self.txn.commit()
-        for bugtask_id in bugtask_ids:
-            self.txn.begin()
-            bugtask = bugtaskset.get(bugtask_id)
-            bugtask.updateTargetNameCache()
-            self.txn.commit()
-        self.logger.info("Finished updating targetname cache of bugtasks.")
-
+        updater = BugTaskTargetNameCacheUpdater(self.txn, self.logger)
+        updater.run()
 
 if __name__ == '__main__':
-    script = UpdateBugTaskTargetNameCaches('launchpad-targetnamecacheupdater', 
+    script = UpdateBugTaskTargetNameCaches(
+        'launchpad-targetnamecacheupdater',
         dbuser=config.targetnamecacheupdater.dbuser)
-    script.lock_and_run(implicit_begin=False)
+    script.lock_and_run()
 

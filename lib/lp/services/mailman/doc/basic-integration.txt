@@ -1,0 +1,116 @@
+=================
+Basic integration
+=================
+
+The basic integration between Launchpad and Mailman allows us to run Mailman's
+'withlist' script to check for the existence of the unused (but mandatory)
+site list.  The withlist script called here simply returns a known exit code
+if the site list is set up correctly, otherwise it returns 1.
+
+    >>> import subprocess, os
+    >>> from canonical.config import config
+    >>> from lp.services.mailman.config import configure_prefix
+    >>> def withlist(callable, *options):
+    ...     callable_path = 'lp.services.mailman.testing.' + callable
+    ...     args = ' '.join(options)
+    ...     site_list = 'unused_mailman_site_list'
+    ...     prefix_path = configure_prefix(config.mailman.build_prefix)
+    ...     mailman_bin = os.path.join(prefix_path, 'bin')
+    ...     command = './withlist %s -r %s %s' % (
+    ...         args, callable_path, site_list)
+    ...     return subprocess.call(command.split(), cwd=mailman_bin)
+
+Mailman's site list must exist.
+
+    >>> withlist('withlist_1.test_site_list', '-q')
+    99
+
+Mailman must also be able to import the shared package.
+
+    >>> withlist('withlist_2.can_import', '-q')
+    99
+
+
+Binaries
+========
+
+Mailman contains a number of binary wrappers for integration between the MTA
+and Mailman.  Mailman's 'post' command accepts standard input from the MTA and
+drops the resulting message in Mailman's incoming queue.
+
+    # See `subscriptions.txt`_ for more details.
+    >>> from lp.services.mailman.testing import helpers
+    >>> alpha = helpers.create_list('alpha')
+    >>> helpers.subscribe('Anne', 'alpha')
+
+    # Ignore the list creation notification message.
+    >>> smtpd.reset()
+
+    >>> sample_message = """\
+    ... From: anne.person@example.com
+    ... To: alpha@lists.launchpad.dev
+    ... Subject: A test message
+    ... Message-ID: <aardvark>
+    ...
+    ... This is a test message.
+    ... """
+
+    # The path to the binary we're testing is relative to the top of the
+    # Launchpad source tree.
+    >>> import canonical
+    >>> launchpad_top = os.path.dirname(
+    ...     os.path.dirname(os.path.dirname(canonical.__file__)))
+    >>> binary = os.path.join(launchpad_top,
+    ...     'lib/mailman/mail/mailman')
+
+    >>> mailman = subprocess.Popen(
+    ...     (binary, 'post', 'alpha'),
+    ...     stdin=subprocess.PIPE,
+    ...     stdout=subprocess.PIPE,
+    ...     stderr=subprocess.PIPE)
+
+    >>> stdout, stderr = mailman.communicate(sample_message)
+    >>> mailman.returncode
+    0
+    >>> print stdout
+    <BLANKLINE>
+    >>> print stderr
+    <BLANKLINE>
+
+The message was delivered to Anne and the archiver.
+
+    >>> smtpd_watcher.wait_for_mbox_delivery('aardvark')
+    >>> messages = list(smtpd)
+    >>> len(messages)
+    2
+
+    >>> for message in messages:
+    ...     if message['x-rcptto'] == 'anne.person@example.com':
+    ...         break
+
+    >>> print message.as_string()
+    From: anne.person@example.com
+    To: alpha@lists.launchpad.dev
+    Message-ID: <aardvark>
+    Subject: [Alpha] A test message
+    X-BeenThere: alpha@lists.launchpad.dev
+    X-Mailman-Version: ...
+    Precedence: list
+    List-Id: <alpha.lists.launchpad.dev>
+    List-Help: <http://help.launchpad.dev/ListHelp>
+    List-Subscribe: <http://launchpad.dev/~alpha>
+    List-Unsubscribe: <http://launchpad.dev/~alpha>
+    List-Post: <mailto:alpha@lists.launchpad.dev>
+    List-Archive: <http://lists.launchpad.dev/alpha>
+    List-Owner: <http://launchpad.dev/~alpha>
+    MIME-Version: 1.0
+    Content-Type: text/plain; charset="us-ascii"
+    Content-Transfer-Encoding: 7bit
+    Sender: alpha-bounces+anne.person=example.com@lists.launchpad.dev
+    Errors-To: alpha-bounces+anne.person=example.com@lists.launchpad.dev
+    X-Peer: ...
+    X-MailFrom: alpha-bounces+anne.person=example.com@lists.launchpad.dev
+    X-RcptTo: anne.person@example.com
+    <BLANKLINE>
+    This is a test message.
+    ...

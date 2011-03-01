@@ -6,34 +6,30 @@ being comparable with non-security proxied objects.
 
 First, some imports and set up::
 
-    >>> from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> from canonical.launchpad.database import Person
-
-    >>> LaunchpadFunctionalTestSetup().setUp()
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.model.person import Person
 
 Get a proxied and unproxied person object for the same person, and demonstrate
 working comparisons::
 
-    >>> sabdfl = Person.get(1)
-    >>> sabdfl_proxied = getUtility(IPersonSet).get(1)
-    >>> sabdfl is sabdfl_proxied
+    >>> mark = Person.get(1)
+    >>> mark_proxied = getUtility(IPersonSet).get(1)
+    >>> mark is mark_proxied
     False
-    >>> sabdfl == sabdfl
+    >>> mark == mark
     True
-    >>> sabdfl == sabdfl_proxied
+    >>> mark == mark_proxied
     True
-    >>> sabdfl_proxied == sabdfl
+    >>> mark_proxied == mark
     True
-    >>> sabdfl_proxied == sabdfl_proxied
+    >>> mark_proxied == mark_proxied
     True
 
 A dbschema Item can also be given to sqlobject's select() method, or any
 of its variants.
 
-    >>> from canonical.launchpad.interfaces import TeamSubscriptionPolicy
-    >>> proxied_policy = sabdfl_proxied.subscriptionpolicy
+    >>> proxied_policy = mark_proxied.subscriptionpolicy
     >>> type(proxied_policy)
     <type 'zope.security._proxy._Proxy'>
 
@@ -49,17 +45,12 @@ XXX: stevea: 20051018: Rewrite this test to use security proxies directly
 XXX: bug 3315
 DB schema objects should be comparable correctly when proxied...
 
-    >>> from canonical.launchpad.interfaces import IDistroSeriesSet
-    >>> from canonical.lp.dbschema import DistroSeriesStatus
+    >>> from lp.registry.interfaces.distroseries import IDistroSeriesSet
+    >>> from lp.registry.interfaces.series import SeriesStatus
     >>> hoary = getUtility(IDistroSeriesSet).get(3)
     >>> print hoary.status.name
     DEVELOPMENT
-    >>> hoary.status == DistroSeriesStatus.DEVELOPMENT
+    >>> hoary.status == SeriesStatus.DEVELOPMENT
     True
-    >>> hoary.status is DistroSeriesStatus.DEVELOPMENT
+    >>> hoary.status is SeriesStatus.DEVELOPMENT
     False
-
-Finally, tear down the test:
-
-    >>> LaunchpadFunctionalTestSetup().tearDown()
-

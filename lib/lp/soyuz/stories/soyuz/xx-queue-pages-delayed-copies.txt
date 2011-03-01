@@ -1,0 +1,133 @@
+Displaying delayed-copies
+=========================
+
+Delayed copies can be browsed in the UI as if they were normal uploads.
+
+We will create a testing delayed-copy for Ubuntu/breezy-autotest.
+
+    # Create a delayed-copy in ubuntu/breezy-autotest.
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+    >>> from lp.soyuz.interfaces.queue import IPackageUploadSet
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> cprov_private_ppa = factory.makeArchive(
+    ...     private=True, owner=cprov, distribution=ubuntu,
+    ...     virtualized=False, name="p3a")
+    >>> stp = SoyuzTestPublisher()
+    >>> stp.prepareBreezyAutotest()
+    >>> [bin_hppa, bin_i386] = stp.getPubBinaries(archive=cprov_private_ppa)
+    >>> build = bin_hppa.binarypackagerelease.build
+    >>> breezy_autotest = ubuntu.getSeries('breezy-autotest')
+    >>> stp.addFakeChroots(breezy_autotest)
+    >>> delayed_copy = getUtility(IPackageUploadSet).createDelayedCopy(
+    ...     archive=ubuntu.main_archive, distroseries=breezy_autotest,
+    ...     pocket=PackagePublishingPocket.RELEASE, signing_key=None)
+    >>> unused = delayed_copy.addSource(build.source_package_release)
+    >>> unused = delayed_copy.addBuild(build)
+    >>> transaction.commit()
+    >>> delayed_copy.acceptFromCopy()
+    >>> logout()
+
+Any user accessing the breezy-autotest ACCEPTED queue will notice the
+delayed-copy. They show up in the ACCEPTED distro series queue while
+they are pending processing.
+
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/ubuntu/breezy-autotest/+queue")
+    >>> anon_browser.getControl(
+    ...     name="queue_state", index=0).displayValue = ['Accepted']
+    >>> anon_browser.getControl("Update").click()
+
+It's is listed as a normal upload, however there is no link to the
+'changesfile'.
+
+    >>> for row in find_tags_by_class(anon_browser.contents, "queue-row"):
+    ...     print extract_text(row)
+    Package                           Version  Component Section Priority Sets Pocket When
+    foo, foo (delayed) (source, i386) 666      main      base    low      ...
+
+    >>> anon_browser.getLink('foo, foo')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+On the corresponding expandable area, below the row, there is no file
+information, since the delayed-copy is still pending processing. A
+user can simply view where the delayed copy came from.
+
+    >>> print extract_text(
+    ...     first_tag_by_class(anon_browser.contents,
+    ...                        'queue-%s' % delayed_copy.id))
+    Copied from PPA named p3a for Celso Providelo
+
+The delayed-copy source archive is not linked, since the requester has
+no permission to view it.
+
+    >>> anon_browser.getLink('PPA named p3a for Celso Providelo')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+While the delayed-copy is still in ACCEPTED state, i.e not processed,
+authenticated users with permission to view the archive from where the
+delayed-copy was issued can additionally access a link to its original
+archive, nothing else.
+
+    >>> cprov_browser = setupBrowser(
+    ...       auth="Basic celso.providelo@canonical.com:cprov")
+    >>> cprov_browser.open(anon_browser.url)
+
+    >>> for row in find_tags_by_class(cprov_browser.contents, "queue-row"):
+    ...     print extract_text(row)
+    Package                           Version  Component Section Priority Sets Pocket When
+    foo, foo (delayed) (source, i386) 666      main      base    low      ...
+
+    >>> anon_browser.getLink('foo, foo')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> print extract_text(
+    ...     first_tag_by_class(cprov_browser.contents,
+    ...                        'queue-%s' % delayed_copy.id))
+    Copied from PPA named p3a for Celso Providelo
+
+    >>> print cprov_browser.getLink('PPA named p3a for Celso Providelo').url
+    http://launchpad.dev/~cprov/+archive/p3a
+
+When the delayed-copy is processed (moved to DONE queue) its contents
+become available to everyone.
+
+    # Process the delayed-copy using an external script call.  Since some
+    # DB objects that have no security adapter are modified during the
+    # delayed copy, the modification must be done in Zopeless mode.
+    >>> import os.path
+    >>> from canonical.config import config
+    >>> from canonical.launchpad.ftests.script import run_script
+    >>> script = os.path.join(config.root, "scripts/process-accepted.py")
+    >>> result, stdout, stderr = run_script(script, ["ubuntu"])
+    >>> if result != 0:
+    ...     print stderr
+
+Any user can access the DONE queue and access the delayed-copy
+'changesfile' and view its files in the expandable area.
+
+    >>> anon_browser.getControl(
+    ...     name="queue_state", index=0).displayValue = ['Done']
+    >>> anon_browser.getControl("Update").click()
+
+    >>> print anon_browser.getLink('foo, foo').url
+    http://.../.../foo_666_source.changes
+
+    >>> extra_information = find_tags_by_class(
+    ...     anon_browser.contents, 'queue-%s' % delayed_copy.id)
+    >>> for info in extra_information:
+    ...     print extract_text(info)
+    foo_666.dsc (28 bytes)
+    foo-bin_666_all.deb (18 bytes)   666   main   base   standard
+

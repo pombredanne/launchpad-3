@@ -15,8 +15,8 @@ canonical.launchpad.mailnotification.NotificationRecipientSet.
 You can use it as is or derive from it
 (see bugnotificationrecipients.txt for an example of a derivation).
 
+    >>> from canonical.launchpad.interfaces.launchpad import INotificationRecipientSet
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import INotificationRecipientSet
     >>> from canonical.launchpad.mailnotification import (
     ...     NotificationRecipientSet)
 
@@ -29,7 +29,7 @@ You can use it as is or derive from it
 You add recipients to the set using the add() method. The method takes the
 IPerson to add along the notification rationale and header code.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> person_set = getUtility(IPersonSet)
     >>> sample_person = person_set.getByEmail('test@canonical.com')
     >>> cprov = person_set.getByName('cprov')
@@ -39,7 +39,7 @@ IPerson to add along the notification rationale and header code.
     >>> recipients.add(cprov, 'You are notified for no reason.', 'Why not')
 
 The current list of header values in use can be found at
-ehttps://help.launchpad.net/LaunchpadMessageRationale. The 'Why not'
+https://help.launchpad.net/LaunchpadMessageRationale. The 'Why not'
 value is only used as an example. In practice, you should try to reuse
 existing values if they apply to your context.
 
@@ -123,6 +123,7 @@ Adding a team with a preferred email address works like adding any
 other person:
 
     >>> ubuntu_team = person_set.getByName('ubuntu-team')
+    >>> login_person(ubuntu_team.teamowner)
     >>> print ubuntu_team.preferredemail.email
     support@ubuntu.com
     >>> recipients.add(ubuntu_team, 'You are notified for fun.', 'Fun')
@@ -152,6 +153,7 @@ addresses are added to the recipients list, and this recursively.
     True
     >>> recipients.getEmails()
     ['andrew.bennetts@ubuntulinux.com', 'foo.bar@canonical.com',
+     'limi@plone.org', 'steve.alexander@ubuntulinux.com',
      'test@canonical.com']
 
 But looking at the recipients list, only the team is listed:
@@ -201,7 +203,20 @@ be added with the same rationale:
     >>> recipients.getReason(sample_person)
     ('Notified for fun.', 'Fun')
 
-== A person first impression stick ==
+== Removing recipients ==
+
+It is also possible to remove a person from the NotificationRecipientSet():
+
+    >>> recipients = NotificationRecipientSet()
+    >>> recipients.add(
+    ...     [sample_person, no_priv, cprov], 'Notified for fun.', 'Fun')
+    >>> [person.displayname for person in recipients.getRecipients()]
+    [u'Celso Providelo', u'No Privileges Person', u'Sample Person']
+    >>> recipients.remove([sample_person, cprov])
+    >>> [person.displayname for person in recipients.getRecipients()]
+    [u'No Privileges Person']
+
+== A person's first impression sticks ==
 
 In general, the most specific rationale is used for a given email.
 A rationale given for a person is considered more

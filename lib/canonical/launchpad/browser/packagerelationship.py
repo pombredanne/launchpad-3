@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Package relationships."""
 
@@ -10,11 +11,12 @@ __all__ = [
     ]
 
 import operator as std_operator
-
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import (
-    IPackageRelationship, IPackageRelationshipSet)
+from canonical.launchpad.interfaces.packagerelationship import (
+    IPackageRelationship,
+    IPackageRelationshipSet,
+    )
 from canonical.launchpad.webapp import canonical_url
 
 

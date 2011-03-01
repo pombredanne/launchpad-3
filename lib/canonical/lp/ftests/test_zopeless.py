@@ -1,74 +1,87 @@
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 Tests to make sure that initZopeless works as expected.
 """
-import unittest, warnings, sys, psycopg
-from threading import Thread
 
-from zope.testing.doctest import DocTestSuite
+from doctest import DocTestSuite
+from threading import Thread
+import unittest
+import warnings
+
+import psycopg2
 from sqlobject import StringCol, IntCol
 
+from canonical.database.sqlbase import SQLBase, alreadyInstalledMsg, cursor
 from canonical.lp import initZopeless
-from canonical.database.sqlbase import (
-        SQLBase, alreadyInstalledMsg, cursor, connect, DEFAULT_ISOLATION,
-        AUTOCOMMIT_ISOLATION, READ_COMMITTED_ISOLATION, SERIALIZABLE_ISOLATION,
-        )
-from canonical.ftests.pgsql import PgTestCase, PgTestSetup
-from canonical.functional import FunctionalTestSetup
-from canonical.testing import LaunchpadLayer, ZopelessLayer
-from threading import Thread
-from zope.testing.doctest import DocTestSuite
-
-from sqlobject import StringCol, IntCol
+from canonical.testing.layers import (
+    DatabaseLayer,
+    LaunchpadScriptLayer,
+    )
 
 
 class MoreBeer(SQLBase):
     '''Simple SQLObject class used for testing'''
-    # test_sqlos defines a Beer SQLObject already, so we call this one MoreBeer
-    # to avoid confusing SQLObject.
-    _columns = [
-        StringCol('name', alternateID=True, notNull=True),
-        IntCol('rating', default=None),
-        ]
+    # test_sqlos defines a Beer SQLObject already, so we call this one
+    # MoreBeer to avoid confusing SQLObject.
+    name = StringCol(alternateID=True, notNull=True)
+    rating = IntCol(default=None)
 
 
-class TestInitZopeless(PgTestCase):
-    layer = LaunchpadLayer
+class TestInitZopeless(unittest.TestCase):
+
+    layer = LaunchpadScriptLayer
 
     def test_initZopelessTwice(self):
         # Hook the warnings module, so we can verify that we get the expected
-        # warning.
-        warn_explicit = warnings.warn_explicit
-        warnings.warn_explicit = self.expectedWarning
+        # warning.  The warnings module has two key functions, warn and
+        # warn_explicit, the first calling the second. You might, therefore,
+        # think that we should hook the second, to catch all warnings in one
+        # place.  However, from Python 2.6, both of these are replaced with
+        # entries into a C extension if available, and the C implementation of
+        # the first will not call a monkeypatched Python implementation of the
+        # second.  Therefore, we hook warn, as is the one actually called by
+        # the particular code we are interested in testing.
+        original_warn = warnings.warn
+        warnings.warn = self.warn_hooked
         self.warned = False
         try:
             # Calling initZopeless with the same arguments twice should return
             # the exact same object twice, but also emit a warning.
             try:
-                tm1 = initZopeless(dbname=self.dbname, dbhost='',
-                        dbuser='launchpad')
-                tm2 = initZopeless(dbname=self.dbname, dbhost='',
-                        dbuser='launchpad')
+                dbname = DatabaseLayer._db_fixture.dbname
+                tm1 = initZopeless(
+                    dbname=dbname, dbhost='', dbuser='launchpad')
+                tm2 = initZopeless(
+                    dbname=dbname, dbhost='', dbuser='launchpad')
                 self.failUnless(tm1 is tm2)
                 self.failUnless(self.warned)
             finally:
                 tm1.uninstall()
         finally:
             # Put the warnings module back the way we found it.
-            warnings.warn_explicit = warn_explicit
+            warnings.warn = original_warn
 
-    def expectedWarning(self, message, category, filename, lineno,
-                        module=None, registry=None):
+    def warn_hooked(self, message, category=None, stacklevel=1):
         self.failUnlessEqual(alreadyInstalledMsg, str(message))
         self.warned = True
 
 
-class TestZopeless(PgTestCase):
-    layer = LaunchpadLayer
+class TestZopeless(unittest.TestCase):
+
+    layer = LaunchpadScriptLayer
 
     def setUp(self):
-        PgTestCase.setUp(self)
-        self.tm = initZopeless(dbname=self.dbname, dbuser='launchpad')
-        MoreBeer.createTable()
+        self.tm = initZopeless(dbname=DatabaseLayer._db_fixture.dbname,
+                               dbuser='launchpad')
+
+        c = cursor()
+        c.execute("CREATE TABLE morebeer ("
+                  "  id SERIAL PRIMARY KEY,"
+                  "  name text NOT NULL UNIQUE,"
+                  "  rating integer"
+                  ")")
         self.tm.commit()
 
     def tearDown(self):
@@ -150,10 +163,12 @@ class TestZopeless(PgTestCase):
         # We have observed if a database transaction ends badly, it is
         # not reset for future transactions. To test this, we cause
         # a database exception
-        MoreBeer(name='Victoria Bitter')
+        beer1 = MoreBeer(name='Victoria Bitter')
+        beer1.syncUpdate()
         try:
-            MoreBeer(name='Victoria Bitter')
-        except psycopg.DatabaseError:
+            beer2 = MoreBeer(name='Victoria Bitter')
+            beer2.syncUpdate()
+        except psycopg2.DatabaseError:
             pass
         else:
             self.fail('Unique constraint was not triggered')
@@ -161,7 +176,8 @@ class TestZopeless(PgTestCase):
 
         # Now start a new transaction and see if we can do anything
         self.tm.begin()
-        MoreBeer(name='Singa')
+        beer3 = MoreBeer(name='Singa')
+        beer3.syncUpdate()
 
     def test_externalChange(self):
         # Make a change
@@ -171,7 +187,7 @@ class TestZopeless(PgTestCase):
         self.tm.commit()
 
         # Make another change from a non-SQLObject connection, and commit that
-        conn = psycopg.connect('dbname=' + self.dbname)
+        conn = psycopg2.connect('dbname=' + DatabaseLayer._db_fixture.dbname)
         cur = conn.cursor()
         cur.execute("BEGIN TRANSACTION;")
         cur.execute("UPDATE MoreBeer SET rating=4 "
@@ -191,20 +207,12 @@ def test_isZopeless():
     >>> isZopeless()
     False
 
-    >>> PgTestSetup().setUp()
-    >>> isZopeless()
-    False
-
-    >>> tm = initZopeless(dbname=PgTestSetup().dbname,
+    >>> tm = initZopeless(dbname=DatabaseLayer._db_fixture.dbname,
     ...     dbhost='', dbuser='launchpad')
     >>> isZopeless()
     True
 
     >>> tm.uninstall()
-    >>> isZopeless()
-    False
-
-    >>> PgTestSetup().tearDown()
     >>> isZopeless()
     False
 
@@ -215,10 +223,6 @@ def test_suite():
     suite.addTest(unittest.makeSuite(TestZopeless))
     suite.addTest(unittest.makeSuite(TestInitZopeless))
     doctests = DocTestSuite()
-    doctests.layer = LaunchpadLayer
-    suite.addTests(doctests)
+    doctests.layer = LaunchpadScriptLayer
+    suite.addTest(doctests)
     return suite
-
-if __name__ == '__main__':
-    unittest.main()
-

@@ -1,0 +1,54 @@
+= Product search for pending bugwatches =
+
+Users can search for product bugs that need a bugwatch to track an
+upstream bug. This is a workflow feature for users who are adopting
+upstream products. The general flow assumes a bug is marked as 'Affects
+upstream', during the first round of triage. Another user can choose
+'Show bugs that need to be forwarded to an upstream bug tracker' to
+locate the bugs that need a bugwatch setup.
+
+
+== Marking and searching for pending bugwatches ==
+
+Sample Person is doing some bug reporting and triage for his adopted
+alsa-utils project. He creates two bugs, and uses the 'Affects
+upstream project' link to record that the bug is in the upstream
+product. He does not provide bug watch information.
+
+    >>> browser.addHeader("Authorization", 'Basic test@canonical.com:test')
+    >>> browser.open('http://bugs.launchpad.dev/ubuntu/+source/alsa-utils/')
+    >>> browser.getLink('Report a bug').click()
+    >>> browser.getControl('Summary').value = 'Test Bug 1'
+    >>> browser.getControl('Continue').click()
+    >>> browser.getControl('Further information').value = 'Test Bug 1'
+    >>> browser.getControl('Submit').click()
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
+    Thank you for your bug report...
+
+    >>> browser.getLink('Also affects project').click()
+    >>> browser.getControl(
+    ...     'I just want to register that it is upstream').selected = True
+    >>> browser.getControl('Add to Bug Report').click()
+    >>> browser.title
+    'Bug #... in alsa-utils: ...Test Bug 1...'
+
+Sample Person visits the advanced search page for alsa-utils, and
+chooses to search for all bugs that need to be forwarded upstream.
+He sees one match.
+
+    >>> # alsa-utils must use an external bugtracker to view bugs
+    >>> # forwarded to an upstream.
+    >>> from lp.testing.service_usage_helpers import set_service_usage
+    >>> set_service_usage('alsa-utils', bug_tracking_usage='EXTERNAL')
+
+    >>> browser.open('http://bugs.launchpad.dev/alsa-utils/+bugs?advanced=1')
+    >>> pending_bugwatch_label = (
+    ...     'Show bugs that need to be forwarded to an upstream '
+    ...     'bug tracker')
+    >>> browser.getControl(pending_bugwatch_label).selected = True
+    >>> browser.getControl('Search', index=0).click()
+    >>> bug_listing = find_tag_by_id(browser.contents, 'buglisting')
+    >>> print extract_text(bug_listing)
+    Summary        Importance  Status
+    ...Test Bug 1  Undecided   New

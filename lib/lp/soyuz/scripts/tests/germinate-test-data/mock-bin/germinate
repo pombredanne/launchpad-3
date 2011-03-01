@@ -1,0 +1,5 @@
+#!/bin/sh
+#
+# This is a mock germinate script that just produces enough (empty)
+# files so that the cron.germinate shell script can run.
+touch structure all all.sources minimal standard

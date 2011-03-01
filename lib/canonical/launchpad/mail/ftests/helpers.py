@@ -1,14 +1,16 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Functions to accomodate testing of the email system."""
 
 __all__ = ['read_test_message']
 
 __metaclass__ = type
 
-import email
 import os.path
 
-from canonical.launchpad.mail.signedmessage import signed_message_from_string
+from lp.services.mail.signedmessage import signed_message_from_string
+
 
 testmails_path = os.path.join(os.path.dirname(__file__), 'emails')
 

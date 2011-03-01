@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Preferred charsets."""
 
@@ -7,8 +8,8 @@ __metaclass__ = type
 __all__ = ['Utf8PreferredCharsets']
 
 from zope.component import adapts
-from zope.interface import implements
 from zope.i18n.interfaces import IUserPreferredCharsets
+from zope.interface import implements
 from zope.publisher.interfaces.http import IHTTPRequest
 
 

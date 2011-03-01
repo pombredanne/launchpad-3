@@ -1,18 +1,23 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ karma.py -- handles all karma assignments done in the launchpad
 application."""
 
-from canonical.launchpad.interfaces import (
-    BugTaskStatus, IDistribution, IProduct, QuestionAction)
-from canonical.launchpad.mailnotification import get_bug_delta
+from canonical.database.sqlbase import block_implicit_flushes
+from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.subscribers.bug import get_bug_delta
+from lp.code.enums import BranchMergeProposalStatus
+from lp.registry.interfaces.person import IPerson
 
 
+@block_implicit_flushes
 def bug_created(bug, event):
     """Assign karma to the user which created <bug>."""
     # All newly created bugs get at least one bugtask associated with
     assert len(bug.bugtasks) >= 1
-    _assignKarmaUsingBugContext(event.user, bug, 'bugcreated')
+    _assignKarmaUsingBugContext(IPerson(event.user), bug, 'bugcreated')
+
 
 def _assign_karma_using_bugtask_context(person, bugtask, actionname):
     """Extract the right context from the bugtask and assign karma."""
@@ -29,9 +34,11 @@ def _assign_karma_using_bugtask_context(person, bugtask, actionname):
         sourcepackagename=bugtask.sourcepackagename)
 
 
+@block_implicit_flushes
 def bugtask_created(bugtask, event):
     """Assign karma to the user which created <bugtask>."""
-    _assign_karma_using_bugtask_context(event.user, bugtask, 'bugtaskcreated')
+    _assign_karma_using_bugtask_context(
+        IPerson(event.user), bugtask, 'bugtaskcreated')
 
 
 def _assignKarmaUsingBugContext(person, bug, actionname):
@@ -44,75 +51,86 @@ def _assignKarmaUsingBugContext(person, bug, actionname):
         _assign_karma_using_bugtask_context(person, task, actionname)
 
 
+@block_implicit_flushes
 def bug_comment_added(bugmessage, event):
     """Assign karma to the user which added <bugmessage>."""
-    _assignKarmaUsingBugContext(event.user, bugmessage.bug, 'bugcommentadded')
+    _assignKarmaUsingBugContext(
+        IPerson(event.user), bugmessage.bug, 'bugcommentadded')
 
 
+@block_implicit_flushes
 def bug_modified(bug, event):
     """Check changes made to <bug> and assign karma to user if needed."""
-    user = event.user
+    user = IPerson(event.user)
     bug_delta = get_bug_delta(
         event.object_before_modification, event.object, user)
 
-    assert bug_delta is not None
+    if bug_delta is not None:
+        attrs_actionnames = {'title': 'bugtitlechanged',
+                             'description': 'bugdescriptionchanged',
+                             'duplicateof': 'bugmarkedasduplicate'}
 
-    attrs_actionnames = {'title': 'bugtitlechanged',
-                         'description': 'bugdescriptionchanged',
-                         'duplicateof': 'bugmarkedasduplicate'}
-
-    for attr, actionname in attrs_actionnames.items():
-        if getattr(bug_delta, attr) is not None:
-            _assignKarmaUsingBugContext(user, bug, actionname)
+        for attr, actionname in attrs_actionnames.items():
+            if getattr(bug_delta, attr) is not None:
+                _assignKarmaUsingBugContext(user, bug, actionname)
 
 
+@block_implicit_flushes
 def bugwatch_added(bugwatch, event):
     """Assign karma to the user which added :bugwatch:."""
-    _assignKarmaUsingBugContext(event.user, bugwatch.bug, 'bugwatchadded')
+    _assignKarmaUsingBugContext(
+        IPerson(event.user), bugwatch.bug, 'bugwatchadded')
 
 
+@block_implicit_flushes
 def cve_added(cve, event):
     """Assign karma to the user which added :cve:."""
-    _assignKarmaUsingBugContext(event.user, cve.bug, 'bugcverefadded')
+    _assignKarmaUsingBugContext(
+        IPerson(event.user), cve.bug, 'bugcverefadded')
 
 
-def extref_added(extref, event):
-    """Assign karma to the user which added :extref:."""
-    _assignKarmaUsingBugContext(event.user, extref.bug, 'bugextrefadded')
-
-
+@block_implicit_flushes
 def bugtask_modified(bugtask, event):
     """Check changes made to <bugtask> and assign karma to user if needed."""
-    user = event.user
+    user = IPerson(event.user)
     task_delta = event.object.getDelta(event.object_before_modification)
 
-    assert task_delta is not None
+    if task_delta is None:
+        return
 
     actionname_status_mapping = {
         BugTaskStatus.FIXRELEASED: 'bugfixed',
         BugTaskStatus.INVALID: 'bugrejected',
-        BugTaskStatus.CONFIRMED: 'bugaccepted'}
+        BugTaskStatus.CONFIRMED: 'bugaccepted',
+        BugTaskStatus.TRIAGED: 'bugaccepted',
+        }
 
     if task_delta.status:
         new_status = task_delta.status['new']
         actionname = actionname_status_mapping.get(new_status)
         if actionname is not None:
-            _assign_karma_using_bugtask_context(user, bugtask, actionname)
+            if actionname == 'bugfixed' and bugtask.assignee is not None:
+                _assign_karma_using_bugtask_context(
+                    bugtask.assignee, bugtask, actionname)
+            else:
+                _assign_karma_using_bugtask_context(user, bugtask, actionname)
 
     if task_delta.importance is not None:
         _assign_karma_using_bugtask_context(
             user, bugtask, 'bugtaskimportancechanged')
 
 
+@block_implicit_flushes
 def spec_created(spec, event):
     """Assign karma to the user who created the spec."""
-    event.user.assignKarma(
+    IPerson(event.user).assignKarma(
         'addspec', product=spec.product, distribution=spec.distribution)
 
 
+@block_implicit_flushes
 def spec_modified(spec, event):
     """Check changes made to the spec and assign karma if needed."""
-    user = event.user
+    user = IPerson(event.user)
     spec_delta = event.object.getDelta(event.object_before_modification, user)
     if spec_delta is None:
         return
@@ -135,87 +153,70 @@ def spec_modified(spec, event):
                 distribution=spec.distribution)
 
 
-def _assignKarmaUsingQuestionContext(person, question, actionname):
-    """Assign Karma with the given actionname to the given person.
-
-    Use the given question's context as the karma context.
-    """
-    person.assignKarma(
-        actionname, product=question.product,
-	distribution=question.distribution,
-        sourcepackagename=question.sourcepackagename)
+@block_implicit_flushes
+def branch_created(branch, event):
+    """Assign karma to the user who registered the branch."""
+    branch.target.assignKarma(branch.registrant, 'branchcreated')
 
 
-def question_created(question, event):
-    """Assign karma to the user which created <question>."""
-    _assignKarmaUsingQuestionContext(question.owner, question, 'questionasked')
+@block_implicit_flushes
+def bug_branch_created(bug_branch, event):
+    """Assign karma to the user who linked the bug to the branch."""
+    bug_branch.branch.target.assignKarma(
+        bug_branch.registrant, 'bugbranchcreated')
 
 
-def question_modified(question, event):
-    """Check changes made to <question> and assign karma to user if needed."""
-    user = event.user
-    old_question = event.object_before_modification
-
-    if old_question.description != question.description:
-        _assignKarmaUsingQuestionContext(
-            user, question, 'questiondescriptionchanged')
-
-    if old_question.title != question.title:
-        _assignKarmaUsingQuestionContext(user, question, 'questiontitlechanged')
+@block_implicit_flushes
+def spec_branch_created(spec_branch, event):
+    """Assign karma to the user who linked the spec to the branch."""
+    spec_branch.branch.target.assignKarma(
+        spec_branch.registrant, 'specbranchcreated')
 
 
-QuestionAction2KarmaAction = {
-    QuestionAction.REQUESTINFO: 'questionrequestedinfo',
-    QuestionAction.GIVEINFO: 'questiongaveinfo',
-    QuestionAction.SETSTATUS: None,
-    QuestionAction.COMMENT: 'questioncommentadded',
-    QuestionAction.ANSWER: 'questiongaveanswer',
-    QuestionAction.CONFIRM: None, # Handled in giveAnswer() and confirmAnswer()
-    QuestionAction.EXPIRE: None,
-    QuestionAction.REJECT: 'questionrejected',
-    QuestionAction.REOPEN: 'questionreopened',
-}
+@block_implicit_flushes
+def branch_merge_proposed(proposal, event):
+    """Assign karma to the user who proposed the merge."""
+    proposal.source_branch.target.assignKarma(
+        proposal.registrant, 'branchmergeproposed')
 
 
-def question_comment_added(questionmessage, event):
-    """Assign karma to the user which added <questionmessage>."""
-    question = questionmessage.question
-    karma_action = QuestionAction2KarmaAction.get(questionmessage.action)
-    if karma_action:
-        _assignKarmaUsingQuestionContext(
-            questionmessage.owner, question, karma_action)
-
-
-def question_bug_added(questionbug, event):
-    """Assign karma to the user which added <questionbug>."""
-    question = questionbug.question
-    _assignKarmaUsingQuestionContext(event.user, question, 'questionlinkedtobug')
-
-# XXX flacoste 2007-07-13 bug=125849:
-# This should go away once bug #125849 is fixed.
-def get_karma_context_parameters(context):
-    """Return the proper karma context parameters based on the object."""
-    params = dict(product=None, distribution=None)
-    if IProduct.providedBy(context):
-        params['product'] = context
-    elif IDistribution.providedBy(context):
-        params['distribution'] = context
+@block_implicit_flushes
+def code_review_comment_added(code_review_comment, event):
+    """Assign karma to the user who commented on the review."""
+    proposal = code_review_comment.branch_merge_proposal
+    target = proposal.source_branch.target
+    # If the user is commenting on their own proposal, then they don't
+    # count as a reviewer for that proposal.
+    user = code_review_comment.message.owner
+    reviewer = user.inTeam(proposal.target_branch.code_reviewer)
+    if reviewer and user != proposal.registrant:
+        target.assignKarma(user, 'codereviewreviewercomment')
     else:
-        raise AssertionError('Unknown karma context: %r' % context)
-    return params
+        target.assignKarma(user, 'codereviewcomment')
 
 
-def faq_created(faq, event):
-    """Assign karma to the user who created the FAQ."""
-    context = get_karma_context_parameters(faq.target)
-    faq.owner.assignKarma('faqcreated', **context)
+@block_implicit_flushes
+def branch_merge_status_changed(proposal, event):
+    """Assign karma to the user who approved the merge."""
+    target = proposal.source_branch.target
+    user = IPerson(event.user)
 
+    in_progress_states = (
+        BranchMergeProposalStatus.WORK_IN_PROGRESS,
+        BranchMergeProposalStatus.NEEDS_REVIEW)
 
-def faq_edited(faq, event):
-    """Assign karma to user who edited a FAQ."""
-    user = event.user
-    old_faq = event.object_before_modification
-
-    context = get_karma_context_parameters(faq.target)
-    if old_faq.content != faq.content or old_faq.title != faq.title:
-        user.assignKarma('faqedited', **context)
+    if ((event.to_state == BranchMergeProposalStatus.CODE_APPROVED) and
+        (event.from_state in (in_progress_states))):
+        if user == proposal.registrant:
+            target.assignKarma(user, 'branchmergeapprovedown')
+        else:
+            target.assignKarma(user, 'branchmergeapproved')
+    elif ((event.to_state == BranchMergeProposalStatus.REJECTED) and
+          (event.from_state in (in_progress_states))):
+        if user == proposal.registrant:
+            target.assignKarma(user, 'branchmergerejectedown')
+        else:
+            target.assignKarma(user, 'branchmergerejected')
+    else:
+        # Only care about approved and rejected right now.
+        pass

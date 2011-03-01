@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Browser notification messages
 
 Provides an API for displaying arbitrary  notifications to users after
@@ -12,23 +14,26 @@ browser window the request came from.
 
 __metaclass__ = type
 
-import cgi, urllib
-from urlparse import urlunsplit
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from zope.interface import implements
-from zope.app.session.interfaces import ISession
-import zope.i18n
-from zope.publisher.interfaces.browser import IBrowserRequest
+from zope.session.interfaces import ISession
 
 from canonical.config import config
-from canonical.uuid import generate_uuid
 from canonical.launchpad.webapp.interfaces import (
-        INotificationRequest, INotificationResponse, BrowserNotificationLevel,
-        INotification, INotificationList
-        )
+    BrowserNotificationLevel,
+    INotification,
+    INotificationList,
+    INotificationRequest,
+    INotificationResponse,
+    )
+from canonical.launchpad.webapp.login import allowUnauthenticatedSession
+from canonical.launchpad.webapp.menu import (
+    escape,
+    structured,
+    )
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.launchpad.webapp.url import urlsplit
+
 
 SESSION_KEY = 'launchpad'
 
@@ -61,7 +66,7 @@ class NotificationRequest:
     >>> response = INotificationResponse(request)
     >>> response.addNotification('Aargh')
     >>> [notification.message for notification in request.notifications]
-    ['Fnord', 'Aargh']
+    ['Fnord', u'Aargh']
     """
     implements(INotificationRequest)
 
@@ -87,6 +92,9 @@ class NotificationResponse:
     >>> request = NotificationRequest()
     >>> request.response = response
     >>> response._request = request
+    >>> request.principal = None # full IRequests are zope.security
+    ... # participations, and NotificationResponse.redirect expects a
+    ... # principal, as in the full IRequest interface.
 
     >>> len(response.notifications)
     0
@@ -99,14 +107,12 @@ class NotificationResponse:
     >>> len(response.notifications)
     0
 
-    >>> response.addNotification("<b>%(escaped)s</b>", escaped="<Fnord>")
+    >>> msg = structured("<b>%(escaped)s</b>", escaped="<Fnord>")
+    >>> response.addNotification(msg)
 
     >>> response.addNotification("Whatever", BrowserNotificationLevel.DEBUG)
-    >>> response.addNotification("%(percentage)0.2f%%", percentage=99.0)
-    >>> response.addNotification("%(num)d thingies", num=10)
     >>> response.addDebugNotification('Debug')
     >>> response.addInfoNotification('Info')
-    >>> response.addNoticeNotification('Notice')
     >>> response.addWarningNotification('Warning')
 
     And an odd one to test Bug #54987
@@ -119,13 +125,10 @@ class NotificationResponse:
 
     >>> for notification in response.notifications:
     ...     print "%d -- %s" % (notification.level, notification.message)
-    25 -- <b>&lt;Fnord&gt;</b>
+    20 -- <b>&lt;Fnord&gt;</b>
     10 -- Whatever
-    25 -- 99.00%
-    25 -- 10 thingies
     10 -- Debug
     20 -- Info
-    25 -- Notice
     30 -- Warning
     40 -- Error
 
@@ -138,7 +141,7 @@ class NotificationResponse:
     >>> for notification in ISession(request)[SESSION_KEY]['notifications']:
     ...     print "%d -- %s" % (notification.level, notification.message)
     ...     break
-    25 -- <b>&lt;Fnord&gt;</b>
+    20 -- <b>&lt;Fnord&gt;</b>
 
     If there are no notifications, the session is not touched. This ensures
     that we don't needlessly burden the session storage.
@@ -166,21 +169,10 @@ class NotificationResponse:
     # which would be bad.
     _notifications = None
 
-    def addNotification(self, msg, level=BrowserNotificationLevel.NOTICE, **kw):
-        """See canonical.launchpad.webapp.interfaces.INotificationResponse."""
-        # Bug #54987
-        if isinstance(msg, (zope.i18n.Message, zope.i18n.MessageID)):
-            msg = zope.i18n.translate(msg, context=self._request)
-        if kw:
-            quoted_args = {}
-            for key, value in kw.items():
-                if isinstance(value, (int, float)):
-                    quoted_args[key] = value
-                else:
-                    quoted_args[key] = cgi.escape(unicode(value))
-            msg = msg % quoted_args
-
-        self.notifications.append(Notification(level, msg))
+    def addNotification(self, msg, level=BrowserNotificationLevel.INFO):
+        """See `INotificationResponse`."""
+        self.notifications.append(
+            Notification(level, escape(msg)))
 
     @property
     def notifications(self):
@@ -188,16 +180,7 @@ class NotificationResponse:
         # just return it
         if self._notifications is not None:
             return self._notifications
-        # XXX: SteveAlexander 2007-04-01:
-        #      If there is no session currently then there can be no
-        #      notifications.  However, ISession(self)[SESSION_KEY] creates
-        #      a session whether one is needed or not.
-        #      Options are to refactor the session code so that it makes a
-        #      session only when necessary, or to check for the presence of
-        #      the session cookie at call-sites like this one.
-        #      A get_session() helper would help here.
-        #      Maybe a get_or_create_session() to go with it.
-        cookie_name = config.launchpad.session.cookie
+        cookie_name = config.launchpad_session.cookie
         request = self._request
         response = self
         # Do some getattr sniffing so that the doctests in this module
@@ -229,34 +212,35 @@ class NotificationResponse:
         """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
         self._notifications = None
 
-    def redirect(self, location, status=None):
+    def redirect(self, location, status=None, trusted=True):
         """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
         # We are redirecting, so we need to stuff our notifications into
         # the session
         if self._notifications is not None and len(self._notifications) > 0:
+            # A dance to assert that we want to break the rules about no
+            # unauthenticated sessions. Only after this next line is it safe
+            # to set the session.
+            allowUnauthenticatedSession(self._request)
             session = ISession(self)[SESSION_KEY]
             session['notifications'] = self._notifications
-        return super(NotificationResponse, self).redirect(location, status)
+        return super(NotificationResponse, self).redirect(
+            location, status, trusted=trusted)
 
-    def addDebugNotification(self, msg, **kw):
-        """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
-        self.addNotification(msg, BrowserNotificationLevel.DEBUG, **kw)
+    def addDebugNotification(self, msg):
+        """See `INotificationResponse`."""
+        self.addNotification(msg, BrowserNotificationLevel.DEBUG)
 
-    def addInfoNotification(self, msg, **kw):
-        """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
-        self.addNotification(msg, BrowserNotificationLevel.INFO, **kw)
+    def addInfoNotification(self, msg):
+        """See `INotificationResponse`."""
+        self.addNotification(msg, BrowserNotificationLevel.INFO)
 
-    def addNoticeNotification(self, msg, **kw):
-        """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
-        self.addNotification(msg, BrowserNotificationLevel.NOTICE, **kw)
+    def addWarningNotification(self, msg):
+        """See `INotificationResponse`."""
+        self.addNotification(msg, BrowserNotificationLevel.WARNING)
 
-    def addWarningNotification(self, msg, **kw):
-        """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
-        self.addNotification(msg, BrowserNotificationLevel.WARNING, **kw)
-
-    def addErrorNotification(self, msg, **kw):
-        """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
-        self.addNotification(msg, BrowserNotificationLevel.ERROR, **kw)
+    def addErrorNotification(self, msg):
+        """See `INotificationResponse`."""
+        self.addNotification(msg, BrowserNotificationLevel.ERROR)
 
 
 class NotificationList(list):
@@ -298,7 +282,8 @@ class NotificationList(list):
 
     def __getitem__(self, index_or_levelname):
         if isinstance(index_or_levelname, int):
-            return super(NotificationList, self).__getitem__(index_or_levelname)
+            return super(NotificationList, self).__getitem__(
+                index_or_levelname)
 
         level = getattr(
                 BrowserNotificationLevel, index_or_levelname.upper(), None
@@ -330,26 +315,22 @@ class NotificationTestView1(LaunchpadView):
     in the test suite, as this page is useful for adjusting the visual style
     of the notifications
     """
+
+    label = page_title = 'Notification test'
+
     def initialize(self):
         response = self.request.response
 
         # Add some notifications
         for count in range(1, 3):
             response.addDebugNotification(
-                    'Debug notification <b>%(count)d</b>', count=count
-                    )
+                structured('Debug notification <b>%d</b>' % count))
             response.addInfoNotification(
-                    'Info notification <b>%(count)d</b>', count=count
-                    )
-            response.addNoticeNotification(
-                    'Notice notification <b>%(count)d</b>', count=count
-                    )
+                structured('Info notification <b>%d</b>' % count))
             response.addWarningNotification(
-                    'Warning notification <b>%(count)d</b>', count=count
-                    )
+                structured('Warning notification <b>%d</b>' %count))
             response.addErrorNotification(
-                    'Error notification <b>%(count)d</b>', count=count
-                    )
+                structured('Error notification <b>%d</b>' % count))
 
 
 class NotificationTestView2(NotificationTestView1):

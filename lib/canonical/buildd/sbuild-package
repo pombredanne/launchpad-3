@@ -1,5 +1,8 @@
 #!/bin/sh
-# Copyright Canonical Limited
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+#
 # Authors: Daniel Silverstone <daniel.silverstone@canonical.com>
 #      and Adam Conrad <adam.conrad@canonical.com>
 
@@ -9,26 +12,60 @@
 # Expects rest of arguments to be to pass to sbuild
 
 # Needs SBUILD to be set to a sbuild instance with passwordless sudo ability
-# Needs chapt-get to be a chrooted apt-get thingy
 
 exec 2>&1
 
-echo "Initiating build $BUILDID"
+export LANG=C LC_ALL=C 
 
 SBUILD=/usr/bin/sbuild
 BUILDID=$1
+ARCHITECTURETAG=$2
+SUITE=$3
 
-shift
+shift 3
+
+export NR_PROCESSORS=$(grep ^processor /proc/cpuinfo | wc -l)
+
+echo "Initiating build $BUILDID with $NR_PROCESSORS processor cores."
+
+if [ $NR_PROCESSORS -lt 2 ]; then
+        unset NR_PROCESSORS
+fi
 
 cd "$HOME/build-$BUILDID"
 
-case $(dpkg --print-installation-architecture) in
-  hppa|powerpc|sparc) SBUILD="linux32 $SBUILD" ;;
+hostarch=$(dpkg --print-architecture)
+
+WARN=""
+case $hostarch in
+  hppa|powerpc|sparc)
+    SBUILD="linux32 $SBUILD"
+    WARN="--warnonly"
+    ;;
+  i386|lpia|armel)
+    # SBUILD is already correct
+    WARN="--warnonly"
+    ;;
+  amd64)
+    if [ "$hostarch" != "$ARCHITECTURETAG" ]; then
+      SBUILD="linux32 $SBUILD"
+      WARN="--warnonly"
+    fi
+    ;;
+  ia64)
+    ;;
 esac
 
-LANG=C $SBUILD "$@"
+case $SUITE in
+    warty*|hoary*|breezy*|dapper*|edgy*|feisty*|gutsy*|hardy*|karmic*)
+        WARN="--warnonly"
+        ;;
+esac
+
+$SBUILD "$@" | /usr/bin/check-implicit-pointer-functions --inline $WARN
 RET=$?
 
+# really successful returns
 [ $RET = 0 ] || exit $RET
 
 STATE=$(cat build-progress | awk '{print $2}')

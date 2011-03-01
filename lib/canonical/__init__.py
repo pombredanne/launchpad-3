@@ -1,9 +1,7 @@
-# (c) Canonical Software Ltd. 2004, all rights reserved.
-#
-# This is the python package that defines the 'canonical' package namespace.
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-# We currently only translate launchpad specific stuff using the Zope3 i18n
-# routines, so this is not needed.
-#from zope.i18n.messageid import MessageFactory
-#_ = MessageFactory("canonical")
+"""The canonical namespace package.
 
+:deprecated: New code should go into the `lp` package.
+"""

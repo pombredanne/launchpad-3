@@ -1,0 +1,116 @@
+#!/bin/bash
+#
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+#
+# Runs pocketlint on files changed from parent branch.
+
+
+${shell-relative-path-setup}
+
+utilitiesdir=${buildout:directory/utilities|shell-path}
+[ -z "$utilitiesdir" ] && utilitiesdir=.
+
+
+if [ -z "$1" ]; then
+    # No command line argument provided, lint all changed files.
+    files=$($utilitiesdir/find-changed-files.sh)
+else
+    # Add newlines so grep filters out pyfiles correctly later.
+    files=`echo $* | tr " " "\n"`
+fi
+
+
+echo "= Launchpad lint ="
+echo ""
+echo "Checking for conflicts and issues in changed files."
+
+if [ -z "$files" ]; then
+    echo "No changed files detected."
+    exit 0
+else
+    echo
+    echo "Linting changed files:"
+    for file in $files; do
+        echo "  $file"
+    done
+fi
+
+
+# Are there patches to the schema or changes to current.sql?
+sample_dir="database/sampledata"
+current_sql="$sample_dir/current.sql"
+current_dev_sql="$sample_dir/current-dev.sql"
+lintdata_sql="$sample_dir/lintdata.sql"
+lintdata_dev_sql="$sample_dir/lintdata-dev.sql"
+database_changes=$(echo $files | sed '/database.*\(patch-\|current\)/!d')
+if [ -n "$database_changes" ]; then
+    make -C database/schema lintdata > /dev/null
+    sql_diff=$(diff -q "$current_sql" "$lintdata_sql")
+    if [ -z "$sql_diff" ]; then
+        rm $lintdata_sql
+    fi
+    sql_dev_diff=$(diff -q "$current_dev_sql" "$lintdata_dev_sql")
+    if [ -z "$sql_dev_diff" ]; then
+        rm $lintdata_dev_sql
+    fi
+else
+    sql_diff=""
+    sql_dev_diff=""
+fi
+
+karma_bombs=`sed '/INTO karma /!d; /2000-/d; /2001-/d' $current_sql`
+
+echo_sampledata_changes () {
+    echo "    $2 differs from $1."
+    echo "    Patches to the schema, or manual edits to $1"
+    echo "    do not match the dump of the $3 database."
+    echo "    If $2 is correct, copy it to"
+    echo "    $1."
+    echo "    Otherwise update $1 and run:"
+    echo "        make schema"
+    echo "        make newsampledata"
+    echo "        cd $sample_dir"
+    echo "        cp $4 $1"
+    echo "    Run make schema again to update the test/dev database."
+}
+
+if [ -n "$sql_diff" -o -n "$sql_dev_diff" -o -n "$karma_bombs" ]; then
+    echo ""
+    echo ""
+    echo "== Schema =="
+    echo ""
+fi
+
+#
+if [ -n "$sql_diff" -o -n "$karma_bombs" ]; then
+    echo "$current_sql"
+fi
+if [ -n "$sql_diff" ]; then
+    echo_sampledata_changes \
+        "$current_sql" "$lintdata_sql" "launchpad_ftest_template"\
+       	"newsampledata.sql"
+fi
+if [ -n "$karma_bombs" ]; then
+    echo "    Karma time bombs were added to sampledata."
+    echo "        The Karma table has dates after 2002-01-01; either revise"
+    echo "        them or remove rows if they are unneeded."
+fi
+
+if [ -n "$sql_dev_diff" ]; then
+    echo ""
+    echo "$current_sql"
+    echo_sampledata_changes \
+        "$current_dev_sql" "$lintdata_dev_sql" "launchpad_dev_template"\
+       	"newsampledata-dev.sql"
+fi
+
+
+# Sample data contains auto generated files with long lines.
+pocketlint_files=`echo "$files" | env -i grep -v "$sample_dir"`
+if [ -z "$pocketlint_files" ]; then
+    exit 0
+fi
+
+echo ""
+pocketlint $pocketlint_files 2>&1

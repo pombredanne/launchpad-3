@@ -1,9 +1,17 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python -S
+#
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+import _pythonpath
+
 import sys
 from canonical.lp import initZopeless
 from canonical.database import postgresql
 from canonical.database.sqlbase import cursor
-from canonical.launchpad.database import Person, TeamParticipation
+from lp.registry.model.person import Person
+from lp.registry.model.teammembership import TeamParticipation
+
 
 person_handle = sys.argv[1]
 txn = initZopeless()
@@ -48,4 +56,3 @@ for src_tab, src_col, ref_tab, ref_col, updact, delact in references:
                "person." % (src_col, src_tab, row[0]))
 
 print
-

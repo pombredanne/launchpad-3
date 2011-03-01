@@ -1,5 +1,9 @@
-#!/usr/bin/python2.4
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=C0103,W0403
 """Upstream Product Release Finder.
 
 Scan FTP and HTTP sites specified for each ProductSeries in the database
@@ -9,8 +13,8 @@ to identify files and create new ProductRelease records for them.
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.scripts.base import LaunchpadCronScript
-from canonical.launchpad.scripts.productreleasefinder.finder import (
+from lp.services.scripts.base import LaunchpadCronScript
+from lp.registry.scripts.productreleasefinder.finder import (
     ProductReleaseFinder)
 
 

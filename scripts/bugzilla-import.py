@@ -1,20 +1,21 @@
-#!/usr/bin/python2.4
-# Copyright 2005 Canonical Ltd.  All rights reserved.
-
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 import sys
 import logging
 import optparse
 import MySQLdb
 
+# pylint: disable-msg=W0403
 import _pythonpath
 
-from zope.component import getUtility
 from canonical.config import config
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
-from canonical.launchpad.ftests import login
+from canonical.launchpad.webapp.interaction import setupInteractionByEmail
 
 from canonical.launchpad.scripts import bugzilla
 
@@ -31,10 +32,11 @@ def make_connection(options):
         kws['host'] = options.db_host
 
     return MySQLdb.connect(**kws)
-        
+
 def main(argv):
     parser = optparse.OptionParser(
-        description="This script imports bugs from a Bugzilla into Launchpad.")
+        description=("This script imports bugs from a Bugzilla "
+                     "into Launchpad."))
 
     parser.add_option('--component', metavar='COMPONENT', action='append',
                       help='Limit to this bugzilla component',
@@ -60,7 +62,7 @@ def main(argv):
 
     # logging options
     logger_options(parser, logging.INFO)
-    
+
     options, args = parser.parse_args(argv[1:])
     if options.status is not None:
         options.status = options.status.split(',')
@@ -70,11 +72,15 @@ def main(argv):
     logger(options, 'canonical.launchpad.scripts.bugzilla')
 
     # don't send email
-    config.zopeless.send_email = False
-    
-    ztm = initZopeless()
+    send_email_data = """
+        [zopeless]
+        send_email: False
+        """
+    config.push('send_email_data', send_email_data)
+
     execute_zcml_for_scripts()
-    login('bug-importer@launchpad.net')
+    ztm = initZopeless()
+    setupInteractionByEmail('bug-importer@launchpad.net')
 
     db = make_connection(options)
     bz = bugzilla.Bugzilla(db)
@@ -85,6 +91,7 @@ def main(argv):
                   status=options.status)
 
     bz.processDuplicates(ztm)
+    config.pop('send_email_data')
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

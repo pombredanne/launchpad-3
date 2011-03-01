@@ -1,0 +1,141 @@
+A bugs home page for a project shows different information, depending
+on whether or not the project uses malone for bug tracking.
+
+By default, projects are created without using any bugtracker, malone
+or otherwise.  To demonstrate this, a new project is created.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> login('foo.bar@canonical.com')
+    >>> foobar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+    >>> test_project = factory.makeProduct(
+    ...     name='test-project', title='Simple Test Project', owner=foobar)
+    >>> logout()
+
+The bugs home page for the project states that the project does
+not use Launchpad for bug tracking.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/test-project')
+    >>> uses_malone_p = find_tag_by_id(anon_browser.contents, 'no-malone')
+    >>> print extract_text(uses_malone_p)
+    Test-project must be configured in order for Launchpad to forward bugs to
+    the project's developers.
+
+Only users who have permission to do so can enable bug tracking
+for a project.
+
+    >>> find_tag_by_id(anon_browser.contents, 'no-malone-edit') is None
+    True
+
+    >>> admin_browser.open('http://bugs.launchpad.dev/test-project')
+    >>> enable_tracker = find_tag_by_id(
+    ...     admin_browser.contents, 'no-malone-edit')
+    >>> print extract_text(enable_tracker)
+    Configure bug tracker
+
+The bugs home page for a project using Launchpad for bug tracking
+shows controls for setting bug supervisor and states that no
+bugs have been filed.
+
+    >>> login('foo.bar@canonical.com')
+    >>> uses_malone = factory.makeProduct(
+    ...     name='uses-malone', title='Project Uses Malone',
+    ...     official_malone=True)
+    >>> logout()
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/uses-malone')
+    >>> bug_supervisor = find_tag_by_id(
+    ...     anon_browser.contents, 'bug-supervisor')
+    >>> print extract_text(bug_supervisor)
+    Bug supervisor:
+    None set
+
+    >>> bug_list = find_tag_by_id(
+    ...     anon_browser.contents, 'no-bugs-filed')
+    >>> print extract_text(bug_list)
+    There are currently no bugs filed against Uses-malone.
+
+Since there are no bugs at all filed for the project, no search box is
+shown.
+
+    >>> print len(find_tags_by_class(anon_browser.contents, 'search-box'))
+    0
+
+If we add a bug, we see the search box and the list of hot bugs instead of
+the message "There are currently no bugs filed..."
+
+    >>> login('foo.bar@canonical.com')
+    >>> bug = factory.makeBug(product=uses_malone)
+    >>> logout()
+    >>> anon_browser.open('http://bugs.launchpad.dev/uses-malone')
+    >>> content = find_main_content(anon_browser.contents)
+    >>> print extract_text(find_tag_by_id(content, 'simple-bug-search'))
+    by importance
+    by status
+    ...
+    Advanced search
+
+
+    >>> print find_tag_by_id(content, 'no-bugs-filed')
+    None
+
+    >>> hot_bugs = find_tag_by_id(content, 'hot-bugs')
+    >>> print extract_text(hot_bugs)
+    Summary   Status  Importance   Last changed
+    #16  ...  New     Undecided    ...
+
+When we mark our bug as "fix released", it is no longer a hot bug,
+and we see a message "no hot bugs" instead of the bug listing.
+
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
+    >>> login('foo.bar@canonical.com')
+    >>> bug.default_bugtask.transitionToStatus(
+    ...     BugTaskStatus.FIXRELEASED, user=bug.owner)
+    >>> logout()
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/uses-malone')
+    >>> content = find_main_content(anon_browser.contents)
+    >>> print find_tag_by_id(content, 'hot-bugs')
+    None
+
+    >>> bug_list = find_tag_by_id(content, 'no-bugs-filed')
+    >>> print extract_text(bug_list)
+    There are currently no open bugs filed against Uses-malone.
+
+But since the project has a bug, the search box is still visible.
+
+    >>> print extract_text(find_tag_by_id(content, 'simple-bug-search'))
+    by importance
+    by status
+    ...
+    Advanced search
+
+Projects that use an external bug tracker will list the tracker on a
+bugs home page.
+
+    >>> login('foo.bar@canonical.com')
+    >>> some_tracker = factory.makeBugTracker(
+    ...     base_url='http://tracker.example.com/')
+    >>> test_project.bugtracker = some_tracker
+    >>> logout()
+    >>> anon_browser.open('http://bugs.launchpad.dev/test-project')
+    >>> tracker_text = find_tag_by_id(anon_browser.contents, 'bugtracker')
+    >>> print extract_text(tracker_text)
+    Bugs are tracked in tracker.example.com/.
+
+Projects that are linked to an Ubuntu distro source package and that
+don't use Launchpad for bug tracking will inform the user that a bug can
+be reported on the project's source packages.
+
+    >>> login('foo.bar@canonical.com')
+    >>> packaging = factory.makePackagingLink(
+    ...     productseries=test_project.development_focus,
+    ...     sourcepackagename='test-project-package',
+    ...     in_ubuntu=True)
+    >>> logout()
+    >>> anon_browser.open('http://bugs.launchpad.dev/test-project')
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'also-in-ubuntu'))
+    Ubuntu also tracks bugs for packages derived from this project:
+    test-project-package in ubuntu.

@@ -1,8 +1,7 @@
-%(contents)s
+%(diff)s%(delta)s
 
 --
-%(branch_title)s
+%(branch_identity)s
 %(branch_url)s
 
-You are receiving this branch notification because you are subscribed to it.
-To unsubscribe from this branch go to %(unsubscribe_url)s.
+%(reason)s%(unsubscribe)s

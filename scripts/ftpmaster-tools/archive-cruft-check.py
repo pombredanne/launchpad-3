@@ -1,7 +1,11 @@
-#!/usr/bin/python2.4
-# Copyright 2006 Canonical Ltd
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Archive Cruft checker
+# pylint: disable-msg=W0403
+
+"""Archive Cruft checker.
 
 A kind of archive garbage collector, supersede NBS binaries (not build
 from source).
@@ -10,9 +14,10 @@ import _pythonpath
 import optparse
 import sys
 
+from canonical.config import config
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
-from canonical.launchpad.scripts.ftpmaster import (
+from lp.soyuz.scripts.ftpmaster import (
     ArchiveCruftChecker, ArchiveCruftCheckerError)
 from canonical.lp import initZopeless
 from contrib.glock import GlobalLock
@@ -41,8 +46,8 @@ def main():
     lock.acquire(blocking=True)
 
     log.debug("Initialising connection.")
-    ztm = initZopeless(dbuser="lucille")
     execute_zcml_for_scripts()
+    ztm = initZopeless(dbuser=config.archivepublisher.dbuser)
 
 
     if len(args) > 0:
@@ -61,7 +66,7 @@ def main():
         log.error(info)
         return 1
 
-# XXX cprov 2007-06-26: Disabling by distro-team request, see bug #121784
+# XXX cprov 2007-06-26 bug=121784: Disabling by distro-team request.
 #    if checker.nbs_to_remove and options.action:
 #        checker.doRemovals()
 #        ztm.commit()

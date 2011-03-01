@@ -1,0 +1,21 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div class="portlet" id="portlet-map"
+     tal:define="overview_menu context/menu:overview">
+
+  <tal:show-map condition="view/should_show_map_portlet">
+    <h2>Location</h2>
+
+    <div tal:condition="context/time_zone">
+      <strong>Time zone:</strong>
+      <span tal:replace="context/time_zone">UTC</span>
+      <a tal:replace="structure overview_menu/editlocation/fmt:icon" />
+    </div>
+  </tal:show-map>
+
+</div>
+</tal:root>

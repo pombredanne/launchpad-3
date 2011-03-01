@@ -1,3 +1,5 @@
-# Empty __init__.py to make this directory into a Python package.
-from canonical.launchpad.event.sqlobjectevent import *
-from canonical.launchpad.event.team import *
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+"""Launchpad events."""
+

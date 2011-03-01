@@ -1,0 +1,588 @@
+User-to-user direct email contact
+=================================
+
+A Launchpad user can contact another Launchpad user directly, even if
+the recipient is hiding their email addresses.
+
+    >>> def create_view(sender, recipient, form=None):
+    ...     return create_initialized_view(
+    ...         recipient, '+contactuser',
+    ...         form=form, principal=sender)
+
+    >>> def print_notifications(view):
+    ...     for notification in view.request.notifications:
+    ...         print notification.message
+
+For example, let's say No Privileges Person wants to contact Salgado...
+
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> person_set = getUtility(IPersonSet)
+    >>> no_priv = person_set.getByName('no-priv')
+    >>> salgado = person_set.getByName('salgado')
+
+...No Priv would start by going to Salgado's +contactuser page.
+
+    >>> from canonical.launchpad.ftests import login
+    >>> login_person(no_priv)
+    >>> view = create_view(no_priv, salgado)
+
+This contact is allowed.
+
+    >>> print view.label
+    Contact user
+
+    >>> view.contact_is_allowed
+    True
+
+No Priv changes her mind though.
+
+    >>> print view.cancel_url
+    http://launchpad.dev/~salgado
+
+No Priv decides, what the heck, let's contact Salgado after all.
+
+    >>> view = create_view(
+    ...     no_priv, salgado, {
+    ...     'field.field.from_': 'no-priv@canonical.com',
+    ...     'field.subject': 'Hello Salgado',
+    ...     'field.message': 'Can you tell me about your project?',
+    ...     'field.actions.send': 'Send',
+    ...     })
+    >>> print_notifications(view)
+    Message sent to Guilherme Salgado
+
+    # Capture the date of the last contact for later.
+
+    >>> from canonical.config import config
+    >>> from canonical.launchpad.database.message import UserToUserEmail
+    >>> from lazr.config import as_timedelta
+    >>> from storm.locals import Store
+    >>> first_contact = Store.of(no_priv).find(
+    ...     UserToUserEmail,
+    ...     UserToUserEmail.sender == no_priv).one()
+    >>> expires = first_contact.date_sent + as_timedelta(
+    ...     config.launchpad.user_to_user_throttle_interval)
+
+No Priv sends two more messages to Salgado.  Each of these are allowed
+too.
+
+    >>> view = create_view(
+    ...     no_priv, salgado, {
+    ...     'field.field.from_': 'no-priv@canonical.com',
+    ...     'field.subject': 'Hello Salgado',
+    ...     'field.message': 'Can you tell me about your project?',
+    ...     'field.actions.send': 'Send',
+    ...     })
+    >>> print_notifications(view)
+    Message sent to Guilherme Salgado
+
+    >>> view = create_view(
+    ...     no_priv, salgado, {
+    ...     'field.field.from_': 'no-priv@canonical.com',
+    ...     'field.subject': 'Hello Salgado',
+    ...     'field.message': 'Can you tell me about your project?',
+    ...     'field.actions.send': 'Send',
+    ...     })
+    >>> print_notifications(view)
+    Message sent to Guilherme Salgado
+
+Now however, No Priv had reached her quota for direct user-to-user
+contact and is not allowed to send a fourth message today.
+
+    >>> view = create_view(no_priv, salgado)
+    >>> view.contact_is_allowed
+    False
+
+No Priv can try again later.
+
+    >>> view.next_try == expires
+    True
+
+As a corner case, let's say the number of notifications allowed was
+greater yesterday than it was today.
+
+    >>> config.push('seven_allowed', """\
+    ...    [launchpad]
+    ...    user_to_user_max_messages: 7
+    ...    """)
+
+No Priv can actually try again right now.
+
+    >>> from datetime import datetime
+    >>> import pytz
+    >>> view.next_try <= datetime.now(pytz.timezone('UTC'))
+    True
+
+So, No Priv sends four more emails.
+
+    >>> for i in range(4):
+    ...     assert create_view(no_priv, salgado).contact_is_allowed, (
+    ...         'Contact was not allowed? %s' % i)
+    ...     view = create_view(
+    ...         no_priv, salgado, {
+    ...         'field.field.from_': 'no-priv@canonical.com',
+    ...         'field.subject': 'Hello Salgado',
+    ...         'field.message': 'Can you tell me about your project?',
+    ...         'field.actions.send': 'Send',
+    ...         })
+    ...     print_notifications(view)
+    Message sent to Guilherme Salgado
+    Message sent to Guilherme Salgado
+    Message sent to Guilherme Salgado
+    Message sent to Guilherme Salgado
+
+No Priv has once again reached her limit of emails.
+
+    >>> view = create_view(no_priv, salgado)
+    >>> view.contact_is_allowed
+    False
+
+    >>> view.next_try == expires
+    True
+
+The configuration changes back to allow only three emails.
+
+    >>> config.pop('seven_allowed')
+    (...)
+
+    >>> contacts = Store.of(no_priv).find(
+    ...     UserToUserEmail,
+    ...     UserToUserEmail.sender == no_priv)
+    >>> contact = list(contacts)[4]
+    >>> expires = contact.date_sent + as_timedelta(
+    ...     config.launchpad.user_to_user_throttle_interval)
+
+
+Non-ASCII names
+---------------
+
+Carlos has non-ASCII characters in his name.  When he sends a message to
+a user, his real name will be properly RFC 2047 encoded.
+
+    >>> transaction.abort()
+    >>> from lp.services.mail import stub
+    >>> del stub.test_emails[:]
+    >>> len(stub.test_emails)
+    0
+
+    >>> carlos = person_set.getByName('carlos')
+    >>> login('carlos@canonical.com')
+    >>> view = create_view(
+    ...     carlos, no_priv, {
+    ...     'field.field.from_': 'carlos@canonical.com',
+    ...     'field.subject': 'Hello No Priv',
+    ...     'field.message': 'I see funny characters',
+    ...     'field.actions.send': 'Send',
+    ...     })
+    >>> transaction.commit()
+
+    >>> len(stub.test_emails)
+    1
+
+    >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+    >>> print raw_msg
+    Content-Type: text/plain; charset="us-ascii"
+    ...
+    From: =?utf-8?q?Carlos_Perell=C3=B3_Mar=C3=ADn?= <carlos@canonical.com>
+    To: No Privileges Person <no-priv@canonical.com>
+    ...
+
+Similarly, if Carlos is the recipient of a message, his real name will
+be properly RFC 2047 encoded as well.
+
+    >>> del stub.test_emails[:]
+
+    >>> login('no-priv@canonical.com')
+    >>> view = create_view(
+    ...     no_priv, carlos, {
+    ...     'field.field.from_': 'no-priv@canonical.com',
+    ...     'field.subject': 'Hello Carlos',
+    ...     'field.message': 'I see funny characters',
+    ...     'field.actions.send': 'Send',
+    ...     })
+    >>> transaction.commit()
+
+    >>> len(stub.test_emails)
+    1
+
+    >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+    >>> print raw_msg
+    Content-Type: text/plain; charset="us-ascii"
+    ...
+    From: No Privileges Person <no-priv@canonical.com>
+    To: =?utf-8?q?Carlos_Perell=C3=B3_Mar=C3=ADn?= <carlos@canonical.com>
+    ...
+
+
+Hidden addresses
+----------------
+
+Salgado decides to hide his email addresses.
+
+    >>> login_person(salgado)
+    >>> salgado.hide_email_addresses = True
+
+Anne contacts Salgado even though his email addresses are hidden.
+
+    >>> anne = factory.makePerson(email='anne@example.com', name='anne')
+    >>> logout()
+    >>> login_person(anne)
+
+    >>> view = create_view(
+    ...     anne, salgado, {
+    ...         'field.field.from_': 'anne@example.com',
+    ...         'field.subject': 'Hello Salgado',
+    ...         'field.message': 'It is nice to meet you',
+    ...         'field.actions.send': 'Send',
+    ...         })
+    >>> print_notifications(view)
+    Message sent to Guilherme Salgado
+
+
+Contacting teams
+----------------
+
+Teams can also be contacted directly, regardless of whether they have no
+official contact address, use a Launchpad mailing list, or have the
+contact address set to an explicit address.
+
+    # Clear out left over crud.
+
+    >>> transaction.commit()
+    >>> del stub.test_emails[:]
+
+    >>> from email import message_from_string
+    >>> def print_messages():
+    ...     message_count = 0
+    ...     message_subjects = set()
+    ...     message_senders = set()
+    ...     message_recipients = set()
+    ...     message_bodies = set()
+    ...     while stub.test_emails:
+    ...         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+    ...         message = message_from_string(raw_msg)
+    ...         message_count += 1
+    ...         message_subjects.add(message['subject'])
+    ...         message_senders.add(message['from'])
+    ...         message_recipients.add(message['to'])
+    ...         message_bodies.add(message.get_payload())
+    ...     print 'Senders:', message_senders
+    ...     print 'Subjects:', message_subjects
+    ...     print 'Bodies:'
+    ...     for body in sorted(message_bodies):
+    ...         print body
+    ...     print '# of Messages:', message_count
+    ...     print 'Recipients:'
+    ...     for recipient in sorted(message_recipients):
+    ...         print '   ', recipient
+
+
+Non-member to team
+..................
+
+Non-members may only contact the team owner.
+
+    >>> guadamen = person_set.getByName('guadamen')
+    >>> bart = factory.makePerson(email='bart@example.com', name='bart')
+    >>> login_person(bart)
+
+    >>> view = create_view(
+    ...     bart, guadamen, {
+    ...         'field.field.from_': 'bart@example.com',
+    ...         'field.subject': 'Hello Guadamen',
+    ...         'field.message': 'Can one of you help me?',
+    ...         'field.actions.send': 'Send',
+    ...         })
+    >>> print_notifications(view)
+    Message sent to GuadaMen
+
+    >>> transaction.commit()
+    >>> print_messages()
+    Senders: set(['Bart <bart@example.com>'])
+    Subjects: set(['Hello Guadamen'])
+    Bodies:
+    Can one of you help me?
+    --
+    This message was sent from Launchpad by
+    Bart (http://launchpad.dev/~bart)
+    using the "Contact this team's owner" link on the GuadaMen team page
+    (http://launchpad.dev/~guadamen).
+    For more information see
+    https://help.launchpad.net/YourAccount/ContactingPeople
+    # of Messages: 1
+    Recipients:
+        Foo Bar <foo.bar@canonical.com>
+
+
+Member to team
+..............
+
+Foo Bar is a member of Guadamen team, he is not restricted to contacting
+the team owner. The Guadamen team has no contact address, so contacting
+them contacts all its members directly.
+
+    >>> login('foo.bar@canonical.com')
+    >>> foo_bar = person_set.getByName('name16')
+    >>> view = create_view(
+    ...     foo_bar, guadamen, {
+    ...         'field.field.from_': 'foo.bar@canonical.com',
+    ...         'field.subject': 'Hello Guadamen',
+    ...         'field.message': 'Can one of you help me?',
+    ...         'field.actions.send': 'Send',
+    ...         })
+    >>> print_notifications(view)
+    Message sent to GuadaMen
+
+There are 10 members of the team, so exactly 10 unique copies of the
+message are sent, one to each team member. Everyone gets a message with
+the same subject and body from the same sender.
+
+    >>> transaction.commit()
+    >>> print_messages()
+    Senders: set(['Foo Bar <foo.bar@canonical.com>'])
+    Subjects: set(['Hello Guadamen'])
+    Bodies:
+    Can one of you help me?
+    --
+    This message was sent from Launchpad by
+    Foo Bar (http://launchpad.dev/~name16)
+    to each member of the GuadaMen team using the "Contact this team" link on
+    the GuadaMen team page (http://launchpad.dev/~guadamen).
+    For more information see
+    https://help.launchpad.net/YourAccount/ContactingPeople
+    # of Messages: 10
+    Recipients:
+        Alexander Limi <limi@plone.org>
+        Celso Providelo <celso.providelo@canonical.com>
+        Colin Watson <colin.watson@ubuntulinux.com>
+        Daniel Silverstone <daniel.silverstone@canonical.com>
+        Edgar Bursic <edgar@monteparadiso.hr>
+        Foo Bar <foo.bar@canonical.com>
+        Jeff Waugh <jeff.waugh@ubuntulinux.com>
+        Mark Shuttleworth <mark@example.com>
+        Steve Alexander <steve.alexander@ubuntulinux.com>
+        Ubuntu Team <support@ubuntu.com>
+
+The Guadamen team creates a mailing list but does not set it to be the
+contact address. The mailing list will not be used.
+
+    >>> team, mailing_list = factory.makeTeamAndMailingList(
+    ...     guadamen.name, guadamen.teamowner.name)
+
+    # Ignore the 'new mailing list message'
+
+    >>> transaction.commit()
+    >>> del stub.test_emails[:]
+
+Foo Bar now contacts them again, which he can do because his quota is
+still not met. This message includes a "%s" combination; it is not a
+interpolation instruction.
+
+    >>> view = create_view(
+    ...     foo_bar, guadamen, {
+    ...         'field.field.from_': 'foo.bar@canonical.com',
+    ...         'field.subject': 'My last question for Guadamen',
+    ...         'field.message': 'Can one of you help me with "%s" usage!',
+    ...         'field.actions.send': 'Send',
+    ...         })
+    >>> print_notifications(view)
+    Message sent to GuadaMen
+
+Foo Bar's message gets sent to each individual member of he team.
+
+    >>> transaction.commit()
+    >>> print_messages()
+    Senders: set(['Foo Bar <foo.bar@canonical.com>'])
+    Subjects: set(['My last question for Guadamen'])
+    Bodies:
+    Can one of you help me with "%s" usage!
+    --
+    This message was sent from Launchpad by
+    Foo Bar (http://launchpad.dev/~name16)
+    to each member of the GuadaMen team
+    using the "Contact this team" link on the GuadaMen
+    team page (http://launchpad.dev/~guadamen).
+    For more information see
+    https://help.launchpad.net/YourAccount/ContactingPeople
+    # of Messages: 10
+    Recipients:
+        Alexander Limi <limi@plone.org>
+        Celso Providelo <celso.providelo@canonical.com>
+        Colin Watson <colin.watson@ubuntulinux.com>
+        Daniel Silverstone <daniel.silverstone@canonical.com>
+        Edgar Bursic <edgar@monteparadiso.hr>
+        Foo Bar <foo.bar@canonical.com>
+        Jeff Waugh <jeff.waugh@ubuntulinux.com>
+        Mark Shuttleworth <mark@example.com>
+        Steve Alexander <steve.alexander@ubuntulinux.com>
+        Ubuntu Team <support@ubuntu.com>
+
+The Guadamen team now registers an external contact address (they could
+have also used their Launchpad mailing list address).
+
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     IEmailAddressSet)
+    >>> email_set = getUtility(IEmailAddressSet)
+    >>> address = email_set.new('guadamen@example.com', guadamen)
+    >>> guadamen.setContactAddress(address)
+
+Foo Bar contacts the Guadamen team again, which is allowed because his
+quota was not met by his first message.  This time only one message is
+sent, and that to the new contact address.
+
+    >>> view = create_view(
+    ...     foo_bar, guadamen, {
+    ...         'field.field.from_': 'foo.bar@canonical.com',
+    ...         'field.subject': 'Hello again Guadamen',
+    ...         'field.message': 'Can one of you help me?',
+    ...         'field.actions.send': 'Send',
+    ...         })
+    >>> print_notifications(view)
+    Message sent to GuadaMen
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
+
+    >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+    >>> print from_addr, to_addrs
+    bounces@canonical.com [u'GuadaMen <guadamen@example.com>']
+
+    >>> print raw_msg
+    Content-Type: text/plain; charset="us-ascii"
+    ...
+    From: Foo Bar <foo.bar@canonical.com>
+    To: GuadaMen <guadamen@example.com>
+    Subject: Hello again Guadamen
+    ...
+    X-Launchpad-Message-Rationale: ContactViaWeb member (guadamen team)
+    ...
+    <BLANKLINE>
+    Can one of you help me?
+    --
+    This message was sent from Launchpad by
+    Foo Bar (http://launchpad.dev/~name16)
+    using the "Contact this team" link on the GuadaMen team page
+    (http://launchpad.dev/~guadamen).
+    For more information see
+    https://help.launchpad.net/YourAccount/ContactingPeople
+
+
+Message quota
+-------------
+
+The EmailToPersonView provides two properties that check that the user
+is_allowed to send emails because he has not exceeded the daily quota.
+The next_try property is the date when the user will be allowed to send
+emails again. The is_possible property will be False if is_allowed is
+False.
+
+Foo Bar has now reached his quota and can send no more contact messages
+today.
+
+    >>> view = create_view(
+    ...     foo_bar, guadamen, {
+    ...         'field.field.from_': 'foo.bar@canonical.com',
+    ...         'field.subject': 'My last question for Guadamen',
+    ...         'field.message': 'Really, can one of you help me!',
+    ...         'field.actions.send': 'Send',
+    ...         })
+    >>> view.contact_is_allowed
+    False
+
+    >>> view.next_try
+    datetime.datetime...
+
+    >>> view.contact_is_possible
+    False
+
+    >>> print_notifications(view)
+    Your message was not sent because you have exceeded your daily quota of
+    3 messages to contact users. Try again in ...
+
+Bart has sent 1 message, he may send more messages.
+
+    >>> login_person(bart)
+    >>> view = create_view(bart, guadamen)
+    >>> view.contact_is_allowed
+    True
+
+    >>> view.contact_is_possible
+    True
+
+
+Identifying information
+-----------------------
+
+Every contact message has a special Launchpad header so that people can
+tell that the message came to them through Launchpad. It has a footer
+that contains an explanation as well.
+
+    >>> cris = factory.makePerson(email='cris@example.com', name='cris')
+    >>> dave = factory.makePerson(email='dave@example.com', name='dave')
+    >>> login_person(cris)
+
+    >>> view = create_view(
+    ...     cris, dave, {
+    ...         'field.field.from_': 'cris@example.com',
+    ...         'field.subject': 'Hi Dave',
+    ...         'field.message': 'Can you help me?' ,
+    ...         'field.actions.send': 'Send',
+    ...         })
+    >>> transaction.commit()
+    >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+    >>> print raw_msg
+    Content-Type: text/plain; charset="us-ascii"
+    ...
+    From: Cris <cris@example.com>
+    To: Dave <dave@example.com>
+    Subject: Hi Dave
+    ...
+    X-Launchpad-Message-Rationale: ContactViaWeb user
+    ...
+    <BLANKLINE>
+    Can you help me?
+    --
+    This message was sent from Launchpad by
+    Cris (http://launchpad.dev/~cris)
+    using the "Contact this user" link on your profile page
+    (http://launchpad.dev/~dave).
+    For more information see
+    https://help.launchpad.net/YourAccount/ContactingPeople
+
+
+Message wrapping
+----------------
+
+The message body is wrapped at 72 characters. The footer is not wrapped,
+but a new line is started after the names of the sender and the recient
+to minimise long lines.
+
+    >>> login('test@canonical.com')
+    >>> sample_person = person_set.getByEmail('test@canonical.com')
+    >>> landscape_developers = person_set.getByName('landscape-developers')
+    >>> view = create_view(
+    ...     sample_person, landscape_developers, {
+    ...         'field.field.from_': 'test@canonical.com',
+    ...         'field.subject': 'Wrapping test ',
+    ...         'field.message': 'Can you help me? ' * 8,
+    ...         'field.actions.send': 'Send',
+    ...         })
+    >>> transaction.commit()
+    >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+    >>> header, body =  raw_msg.split('\n\n')
+    >>> for line in body.split('\n'):
+    ...     print "^%s$" % line
+    ^Can you help me? Can you help me? Can you help me? Can you help me? Can$
+    ^you help me? Can you help me? Can you help me? Can you help me?$
+    ^-- $
+    ^This message was sent from Launchpad by$
+    ^Sample Person (http://launchpad.dev/~name12)$
+    ^to each member of the Landscape Developers team using the "Contact this$
+    ^team" link on the Landscape Developers team page$
+    ^(http://launchpad.dev/~landscape-developers).$
+    ^For more information see$
+    ^https://help.launchpad.net/YourAccount/ContactingPeople$
+
+

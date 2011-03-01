@@ -1,0 +1,87 @@
+Linking a product series to a branch
+====================================
+
+To make it a bit more obvious to the newer Launchpad user,
+there is an action item for product series to link to an existing
+bazaar branch.
+
+    >>> sample_browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> sample_browser.open('http://launchpad.dev/firefox/trunk')
+    >>> link = sample_browser.getLink('link the branch to this series')
+    >>> link
+    <Link ... url='http://launchpad.dev/firefox/trunk/+linkbranch'>
+    >>> link.click()
+    
+This page allows the user to import code from various source control systems  
+
+    >>> external_code = find_tag_by_id(sample_browser.contents, 'external-code')
+    >>> print extract_text(external_code)
+    If the code is in Git, Mercurial, CVS or Subversion you can
+    request that the branch be imported to Bazaar.
+
+This link is only shown to those that have edit permissions on the
+product series.
+
+    >>> browser.open('http://launchpad.dev/firefox/trunk')
+    >>> browser.getLink('Link to branch')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+The only field shown is the branch field.
+
+    # Add 15 revisions to the branch we're going to link; 10 old ones
+    # and 5 within the last 30 days.
+    >>> import datetime
+    >>> import pytz
+    >>> from zope.component import getUtility
+    >>> from lp.code.interfaces.branch import IBranchSet
+    >>> from lp.testing import time_counter
+    >>> login('admin@canonical.com')
+    >>> branch = getUtility(IBranchSet).getByUniqueName('~name12/firefox/main')
+    >>> now = datetime.datetime.now(pytz.UTC)
+    >>> day_delta = datetime.timedelta(days=1)
+    >>> factory.makeRevisionsForBranch(
+    ...     branch, count=10, date_generator=time_counter(
+    ...         now - datetime.timedelta(days=50), day_delta))
+    >>> factory.makeRevisionsForBranch(
+    ...     branch, count=5, date_generator=time_counter(
+    ...         now - datetime.timedelta(days=10), day_delta))
+    >>> logout()
+
+    >>> print sample_browser.title
+    Link an existing branch to...
+    >>> sample_browser.getControl('Branch').value = '~name12/firefox/main'
+    >>> sample_browser.getControl('Update').click()
+
+Updating the branch takes the user back to the product series page.
+
+    >>> print sample_browser.title
+    Series trunk : Mozilla Firefox
+    >>> branch = find_tag_by_id(sample_browser.contents, 'branch-details')
+    >>> print extract_text(branch)
+    lp://dev/firefox - Sample Person
+    Change branch
+
+The total and recent revision counts for the branch are displayed to
+give an idea of overall and recent activity on the project.
+
+    >>> revisions = find_tag_by_id(sample_browser.contents, 'branch-revision-details')
+    >>> print extract_text(revisions)
+    15 revisions.
+
+A helpful informational message is also shown to the user.
+
+    >>> for message in get_feedback_messages(sample_browser.contents):
+    ...     print extract_text(message)
+    Series code location updated.
+
+Once a branch is linked, the branch link becomes "Change branch".
+
+    >>> sample_browser.getLink('Link to branch')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> sample_browser.getLink('Change branch')
+    <Link ... url='http://launchpad.dev/firefox/trunk/+linkbranch'>

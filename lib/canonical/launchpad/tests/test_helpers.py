@@ -1,14 +1,20 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
+from doctest import DocTestSuite
 import unittest
 
-from zope.testing.doctest import DocTestSuite
-from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.interface import implements
+from zope.publisher.interfaces.browser import IBrowserRequest
 
 from canonical.launchpad import helpers
-from canonical.launchpad.translationformat import LaunchpadWriteTarFile
-from canonical.launchpad.interfaces import ILanguageSet, IPerson, ILaunchBag
+from canonical.launchpad.ftests import login
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.registry.interfaces.person import IPerson
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.testing.factory import LaunchpadObjectFactory
+from lp.translations.utilities.translation_export import LaunchpadWriteTarFile
 
 
 def make_test_tarball_1():
@@ -37,10 +43,11 @@ def make_test_tarball_1():
             '# Yowza!',
         'uberfrob-0.1/blah/po/la':
             'la la',
-        'uberfrob-0.1/uberfrob.py' :
+        'uberfrob-0.1/uberfrob.py':
             'import sys\n'
-            'print "Frob!"\n'
-    })
+            'print "Frob!"\n',
+        })
+
 
 def make_test_tarball_2():
     r'''
@@ -51,8 +58,10 @@ def make_test_tarball_2():
 
     Check the expected files are in the archive.
 
-    >>> tarball.getnames()
-    ['test/', 'test/cy.po', 'test/es.po', 'test/test.pot']
+    # XXX: 2010-04-26, Salgado, bug=570244: This rstrip('/') is to make the
+    # test pass on python2.5 and 2.6.
+    >>> [name.rstrip('/') for name in tarball.getnames()]
+    ['test', 'test/cy.po', 'test/es.po', 'test/test.pot']
 
     Check the contents.
 
@@ -79,11 +88,13 @@ def make_test_tarball_2():
         'test/es.po': po,
     })
 
+
 def test_join_lines():
     r"""
     >>> helpers.join_lines('foo', 'bar', 'baz')
     'foo\nbar\nbaz\n'
     """
+
 
 def test_shortest():
     """
@@ -93,12 +104,9 @@ def test_shortest():
     ['foo', 'bar']
     """
 
-def test_simple_popen2():
-    r"""
-    """
-
 
 class DummyLanguage:
+
     def __init__(self, code, pluralforms):
         self.code = code
         self.pluralforms = pluralforms
@@ -109,10 +117,10 @@ class DummyLanguageSet:
     implements(ILanguageSet)
 
     _languages = {
-        'ja' : DummyLanguage('ja', 1),
-        'es' : DummyLanguage('es', 2),
-        'fr' : DummyLanguage('fr', 3),
-        'cy' : DummyLanguage('cy', None),
+        'ja': DummyLanguage('ja', 1),
+        'es': DummyLanguage('es', 2),
+        'fr': DummyLanguage('fr', 3),
+        'cy': DummyLanguage('cy', None),
         }
 
     def __getitem__(self, key):
@@ -128,14 +136,16 @@ class DummyPerson:
 
         self.languages = [all_languages[code] for code in self.codes]
 
-dummyPerson = DummyPerson(('es',))
 
+dummyPerson = DummyPerson(('es',))
 dummyNoLanguagePerson = DummyPerson(())
 
 
 class DummyResponse:
+
     def redirect(self, url):
         pass
+
 
 class DummyRequest:
     implements(IBrowserRequest)
@@ -148,20 +158,24 @@ class DummyRequest:
     def get(self, key, default):
         raise key
 
+
 def adaptRequestToLanguages(request):
     return DummyRequestLanguages()
 
 
 class DummyRequestLanguages:
+
     def getPreferredLanguages(self):
         return [DummyLanguage('ja', 1),
             DummyLanguage('es', 2),
-            DummyLanguage('fr', 3),]
+            DummyLanguage('fr', 3),
+            ]
 
     def getLocalLanguages(self):
         return [DummyLanguage('da', 4),
             DummyLanguage('as', 5),
-            DummyLanguage('sr', 6),]
+            DummyLanguage('sr', 6),
+            ]
 
 
 class DummyLaunchBag:
@@ -175,19 +189,23 @@ class DummyLaunchBag:
 def test_preferred_or_request_languages():
     '''
     >>> from zope.app.testing.placelesssetup import setUp, tearDown
-    >>> from zope.app.tests import ztapi
+    >>> from zope.app.testing import ztapi
     >>> from zope.i18n.interfaces import IUserPreferredLanguages
-    >>> from canonical.launchpad.interfaces import IRequestPreferredLanguages
-    >>> from canonical.launchpad.interfaces import IRequestLocalLanguages
+    >>> from lp.services.geoip.interfaces import IRequestPreferredLanguages
+    >>> from lp.services.geoip.interfaces import IRequestLocalLanguages
     >>> from canonical.launchpad.helpers import preferred_or_request_languages
 
     First, test with a person who has a single preferred language.
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-    >>> ztapi.provideUtility(ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyPerson))
-    >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
-    >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
+    >>> ztapi.provideUtility(
+    ...     ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyPerson))
+    >>> ztapi.provideAdapter(
+    ...     IBrowserRequest, IRequestPreferredLanguages,
+    ...     adaptRequestToLanguages)
+    >>> ztapi.provideAdapter(
+    ...     IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
 
     >>> languages = preferred_or_request_languages(DummyRequest())
     >>> len(languages)
@@ -201,9 +219,14 @@ def test_preferred_or_request_languages():
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-    >>> ztapi.provideUtility(ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyNoLanguagePerson))
-    >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
-    >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
+    >>> ztapi.provideUtility(
+    ...     ILaunchBag,
+    ...     DummyLaunchBag('foo.bar@canonical.com', dummyNoLanguagePerson))
+    >>> ztapi.provideAdapter(
+    ...     IBrowserRequest, IRequestPreferredLanguages,
+    ...     adaptRequestToLanguages)
+    >>> ztapi.provideAdapter(
+    ...     IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
 
     >>> languages = preferred_or_request_languages(DummyRequest())
     >>> len(languages)
@@ -213,6 +236,42 @@ def test_preferred_or_request_languages():
 
     >>> tearDown()
     '''
+
+
+def test_shortlist_returns_all_elements():
+    """
+    Override the warning function since by default all warnings raises an
+    exception and we can't test the return value of the function.
+
+    >>> import warnings
+
+    >>> def warn(message, category=None, stacklevel=2):
+    ...     if category is None:
+    ...         category = 'UserWarning'
+    ...     else:
+    ...         category = category.__class__.__name__
+    ...     print "%s: %s" % (category, message)
+
+    >>> old_warn = warnings.warn
+    >>> warnings.warn = warn
+
+    Show that shortlist doesn't crop the results when a warning is
+    printed.
+
+    >>> from canonical.launchpad.helpers import shortlist
+    >>> shortlist(list(range(10)), longest_expected=5) #doctest: +ELLIPSIS
+    UserWarning: shortlist() should not...
+    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+    >>> shortlist(xrange(10), longest_expected=5) #doctest: +ELLIPSIS
+    UserWarning: shortlist() should not...
+    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+    Reset our monkey patch.
+
+    >>> warnings.warn = old_warn
+
+    """
 
 
 class TruncateTextTest(unittest.TestCase):
@@ -228,8 +287,8 @@ class TruncateTextTest(unittest.TestCase):
         self.assertEqual('foo', helpers.truncate_text('foooo', 3))
 
     def test_words_arent_split(self):
-        """When the truncation would leave only half of the last word, then the
-        whole word is removed.
+        """When the truncation would leave only half of the last word, then
+        the whole word is removed.
         """
         self.assertEqual('foo', helpers.truncate_text('foo bar', 5))
 
@@ -239,14 +298,41 @@ class TruncateTextTest(unittest.TestCase):
         self.assertEqual(text, helpers.truncate_text(text, len(text)))
 
 
+class TestEmailPeople(unittest.TestCase):
+    """Tests for emailPeople"""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        login('foo.bar@canonical.com')
+        self.factory = LaunchpadObjectFactory()
+
+    def test_emailPeopleIndirect(self):
+        """Ensure emailPeople uses indirect memberships."""
+        owner = self.factory.makePerson(
+            displayname='Foo Bar', email='foo@bar.com', password='password')
+        team = self.factory.makeTeam(owner)
+        super_team = self.factory.makeTeam(team)
+        recipients = helpers.emailPeople(super_team)
+        self.assertEqual(set([owner]), recipients)
+
+    def test_emailPeopleTeam(self):
+        """Ensure emailPeople uses teams with preferredemail."""
+        owner = self.factory.makePerson(
+            displayname='Foo Bar', email='foo@bar.com', password='password')
+        team = self.factory.makeTeam(owner, email='team@bar.com')
+        super_team = self.factory.makeTeam(team)
+        recipients = helpers.emailPeople(super_team)
+        self.assertEqual(set([team]), recipients)
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(DocTestSuite())
     suite.addTest(DocTestSuite(helpers))
     suite.addTest(
         unittest.TestLoader().loadTestsFromTestCase(TruncateTextTest))
+    suite.addTest(
+        unittest.TestLoader().loadTestsFromTestCase(TestEmailPeople))
     return suite
-
-if __name__ == '__main__':
-    unittest.TextTestRunner().run(test_suite())
-

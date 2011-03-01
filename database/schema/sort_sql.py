@@ -1,5 +1,7 @@
-#!/usr/bin/python2.4
-# Copyright 2005 Canonical Ltd. All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Script to sort SQL dumps.
 
@@ -24,9 +26,10 @@ happen by table, with one block of statements for each table.
 
 __metaclass__ = type
 
-import sys, os, os.path
-sys.path.insert(0, os.path.join(
-    os.path.dirname(__file__), os.pardir, os.pardir, 'lib'))
+# pylint: disable-msg=W0403
+import _pythonpath
+
+import sys
 
 from canonical.launchpad.scripts.sort_sql import Parser, print_lines_sorted
 

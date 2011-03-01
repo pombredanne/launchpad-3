@@ -1,0 +1,72 @@
+The `ArchiveArch` table facilitates the association of archives and
+processor families. This allows a user to specify (or limit) what
+processors the source packages in a certain archives will be built
+for.
+
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> rebuild_archive = factory.makeArchive(
+    ...     purpose=ArchivePurpose.COPY, name='archivearch-test')
+
+The rebuild archive has no associated processor families yet.
+
+    >>> from lp.soyuz.interfaces.archivearch import IArchiveArchSet
+    >>> aa_set = getUtility(IArchiveArchSet)
+    >>> rset = aa_set.getByArchive(rebuild_archive)
+    >>> print rset.count()
+    0
+
+The utility allows us to associate archives with processor families
+and we'll tie the rebuild archive to the 'amd64' processor family.
+
+    # Retrieve the 'amd64' and 'x86' processor families available
+    # in the sampledata.
+    >>> from lp.soyuz.interfaces.processor import IProcessorFamilySet
+    >>> amd64 = getUtility(IProcessorFamilySet).getByName('amd64')
+    >>> x86 = getUtility(IProcessorFamilySet).getByName('x86')
+
+    >>> ignore = aa_set.new(rebuild_archive, amd64)
+
+Now we have an association between the rebuild archive to the 'amd64'
+processor family.
+
+    >>> archive_arches = aa_set.getByArchive(rebuild_archive)
+    >>> archive_arches.count()
+    1
+
+    >>> [archive_arch] = list(archive_arches)
+    >>> print archive_arch.archive.name
+    archivearch-test
+
+    >>> print archive_arch.processorfamily.name
+    amd64
+
+Let's add another association for 'x86' processor family.
+
+    >>> ignore = aa_set.new(rebuild_archive, x86)
+
+    >>> archive_arches = aa_set.getByArchive(rebuild_archive)
+    >>> print archive_arches.count()
+    2
+
+The result follows the creation order, so the just-created
+`ArchiveArch` comes last.
+
+    >>> [old, x86_archive_arch] = list(archive_arches)
+    >>> print x86_archive_arch.archive.name
+    archivearch-test
+
+    >>> print x86_archive_arch.processorfamily.name
+    x86
+
+Last but not least, we query for a specific association.
+
+    >>> archive_arches = aa_set.getByArchive(rebuild_archive, amd64)
+    >>> archive_arches.count()
+    1
+
+    >>> [amd64_archive_arch] = list(archive_arches)
+    >>> print amd64_archive_arch.archive.name
+    archivearch-test
+
+    >>> print amd64_archive_arch.processorfamily.name
+    amd64

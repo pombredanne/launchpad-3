@@ -1,0 +1,77 @@
+************************
+The representation cache
+************************
+
+Launchpad stores JSON representations of objects in a memcached
+cache. The full cache functionality is tested in lazr.restful and in
+lib/lp/services/memcache/doc/restful-cache.txt. This is just a simple
+integration test.
+
+By default, the cache is disabled, even in the testrunner
+environment. (This will change once we improve the Launchpad cache's
+cache invalidation.) Let's enable the cache just for this test.
+
+    >>> from canonical.config import config
+    >>> config.vhost.api.enable_server_side_representation_cache
+    False
+    >>> config.push('enable cache', """\
+    ... [vhost.api]
+    ... enable_server_side_representation_cache: True
+    ... """)
+
+Now we need to get a reference to the cache object, so we can look
+inside.
+
+    >>> from zope.component import getUtility
+    >>> from lazr.restful.interfaces import IRepresentationCache
+    >>> cache = getUtility(IRepresentationCache)
+
+Since the cache is keyed by the underlying database object, we also
+need one of those objects.
+
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> login(ANONYMOUS)
+    >>> person = getUtility(IPersonSet).getByName('salgado')
+    >>> key = cache.key_for(person, 'application/json', 'devel')
+    >>> logout()
+
+The cache starts out empty.
+
+    >>> print cache.get_by_key(key)
+    None
+
+Retrieving a representation of an object populates the cache.
+
+    >>> ignore = webservice.get("/~salgado", api_version="devel").jsonBody()
+
+    >>> cache.get_by_key(key)
+    '{...}'
+
+Once the cache is populated with a representation, the cached
+representation is used in preference to generating a new
+representation of that object. We can verify this by putting a fake
+value into the cache and retrieving a representation of the
+corresponding object.
+
+    >>> import simplejson
+    >>> cache.set_by_key(key, simplejson.dumps("Fake representation"))
+
+    >>> print webservice.get("/~salgado", api_version="devel").jsonBody()
+    Fake representation
+
+If there's a problem with the cache or the invalidation code, we can
+disable the cache by setting a configuration variable.
+
+Cleanup: re-disable the cache.
+
+    >>> ignore = config.pop('enable cache')
+
+Note that documents are never served from a disabled cache, even if the
+cache is populated.
+
+    >>> print webservice.get("/~salgado", api_version="devel").jsonBody()
+    {...}
+
+Cleanup: clear the cache.
+
+    >>> cache.delete(person)

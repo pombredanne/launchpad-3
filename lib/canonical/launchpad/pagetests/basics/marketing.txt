@@ -1,168 +1,186 @@
-= Launchpad Marketing Microsite =
+= Launchpad tour =
 
-From Launchpad's front page, you can access a "marketing microsite"
+From Launchpad's front page, you can access the tour.
 
     >>> browser.open('http://launchpad.dev/')
-    >>> browser.getLink('Learn').click()
+    >>> tour_link = browser.getLink('Take the tour')
+    >>> print tour_link.url
+    http://launchpad.dev/+tour
+    >>> tour_link.click()
     >>> print browser.title
-    About Launchpad
-    >>> browser.url
-    'http://launchpad.dev/+about'
+    Launchpad tour
+    >>> print browser.url
+    http://launchpad.dev/+tour/index
 
-That features three large tabs: "Overview", "Join Launchpad", and
-"Take a tour".
+The tour is circular. Clicking the Next button repeatedly will bring you
+back to the tour start.
 
-    >>> navigation = find_tag_by_id(browser.contents, 'navigation')
-    >>> home_link = navigation.find('a')
-    >>> print home_link.renderContents()
-    Overview
-    >>> print home_link['href']
-    http://launchpad.dev/+about
+    >>> def take_the_tour(steps_taken=0):
+    ...     browser.getLink(id='btnNext').click()
+    ...     print browser.url
+    ...     if browser.url != 'http://launchpad.dev/+tour/index':
+    ...         if steps_taken >= 20:
+    ...             raise RuntimeError('Never ending tour!')
+    ...         take_the_tour(steps_taken=steps_taken+1)
+    >>> take_the_tour()
+    http://launchpad.dev/+tour/bugs
+    http://launchpad.dev/+tour/branch-hosting-tracking
+    http://launchpad.dev/+tour/translation
+    http://launchpad.dev/+tour/community
+    http://launchpad.dev/+tour/ppa
+    http://launchpad.dev/+tour/community-support
+    http://launchpad.dev/+tour/api
+    http://launchpad.dev/+tour/feature-tracking
+    http://launchpad.dev/+tour/release-management
+    http://launchpad.dev/+tour/join-launchpad
+    http://launchpad.dev/+tour/index
 
-    >>> account_link = browser.getLink('Join Launchpad')
-    >>> account_link.url
-    'http://launchpad.dev/+about/+login'
+The images from the tour are retrieved relative to +tour.
 
-    >>> tour_link = browser.getLink('Take a tour').click()
-    >>> print browser.title
-    Launchpad tour: ...
-    >>> browser.url
-    'http://launchpad.dev/+tour'
+    >>> browser.open('http://launchpad.dev/+tour/images/home/main-image.jpg')
+    >>> browser.open('http://launchpad.dev/+tour/images/btn-next.png')
 
-== About each application ==
+But the source directory isn't available:
 
-The 'About Launchpad' page has one link to each Launchpad application
-which brings the Overview page for that application. The overview page
-has a link to the FAQs and Tour page for the application.
+    >>> browser.open(
+    ...     'http://launchpad.dev/+tour/source/code-hosting_SVG.svg')
+    Traceback (most recent call last):
+      ...
+    NotFound:...
 
-    >>> def test_app_marketing_pages(name):
-    ...     """Navigate from About Launchpad through the app marketing pages.
-    ...
-    ...     :param name: The name of the application to test.
-    ...     """
-    ...     browser.open('http://launchpad.dev/+about')
-    ...     links = [name, '%s tour' % name, '%s FAQs' % name,
-    ...              '%s overview' % name]
-    ...     for link in links:
-    ...         browser.getLink(link).click()
-    ...         print "%s: %s" % (browser.title, browser.url)
 
-=== Code ===
+== +about compatibility ==
 
-    >>> test_app_marketing_pages('Code')
-    About Code: http://code.launchpad.dev/+about
-    Code tour:... http://code.launchpad.dev/+tour
-    FAQs about Code: http://code.launchpad.dev/+faq
-    About Code: http://code.launchpad.dev/+about
+Each application used to have an introduction living at +about, this is
+now redirected to the relevant tour page.
 
-=== Bugs ===
+    >>> browser.open('http://launchpad.dev/+about')
+    >>> print browser.url
+    http://launchpad.dev/+tour/index
 
-    >>> test_app_marketing_pages('Bugs')
-    About Bugs: http://bugs.launchpad.dev/+about
-    Bugs tour:... http://bugs.launchpad.dev/+tour
-    FAQs about Bugs: http://bugs.launchpad.dev/+faq
-    About Bugs: http://bugs.launchpad.dev/+about
+    >>> browser.open('http://code.launchpad.dev/+about')
+    >>> print browser.url
+    http://launchpad.dev/+tour/branch-hosting-tracking
 
-=== Blueprints ===
+    >>> browser.open('http://bugs.launchpad.dev/+about')
+    >>> print browser.url
+    http://launchpad.dev/+tour/bugs
 
-    >>> test_app_marketing_pages('Blueprints')
-    About Blueprints: http://blueprints.launchpad.dev/+about
-    Blueprints tour:... http://blueprints.launchpad.dev/+tour
-    FAQs about Blueprints: http://blueprints.launchpad.dev/+faq
-    About Blueprints: http://blueprints.launchpad.dev/+about
+    >>> browser.open('http://blueprints.launchpad.dev/+about')
+    >>> print browser.url
+    http://launchpad.dev/+tour/feature-tracking
 
-=== Translations ===
+    >>> browser.open('http://translations.launchpad.dev/+about')
+    >>> print browser.url
+    http://launchpad.dev/+tour/translation
 
-    >>> test_app_marketing_pages('Translations')
-    About Translations: http://translations.launchpad.dev/+about
-    Translations tour:... http://translations.launchpad.dev/+tour
-    FAQs about Translations: http://translations.launchpad.dev/+faq
-    About Translations: http://translations.launchpad.dev/+about
+    >>> browser.open('http://answers.launchpad.dev/+about')
+    >>> print browser.url
+    http://launchpad.dev/+tour/community-support
 
-=== Answers ===
 
-    >>> test_app_marketing_pages('Answers')
-    About Answers: http://answers.launchpad.dev/+about
-    Answers tour:... http://answers.launchpad.dev/+tour
-    FAQs about Answers: http://answers.launchpad.dev/+faq
-    About Answers: http://answers.launchpad.dev/+about
+== +tour compatibility ==
 
-== Link to overview on application main page ==
+Similarly, each application has their +tour redirecting to their proper
+tour page.
 
-Each application home page features 'Learn more...' link bringing
-the user to the application overview page.
+    >>> browser.open('http://launchpad.dev/+tour')
+    >>> print browser.url
+    http://launchpad.dev/+tour/index
+
+    >>> browser.open('http://code.launchpad.dev/+tour')
+    >>> print browser.url
+    http://launchpad.dev/+tour/branch-hosting-tracking
+
+    >>> browser.open('http://bugs.launchpad.dev/+tour')
+    >>> print browser.url
+    http://launchpad.dev/+tour/bugs
+
+    >>> browser.open('http://blueprints.launchpad.dev/+tour')
+    >>> print browser.url
+    http://launchpad.dev/+tour/feature-tracking
+
+    >>> browser.open('http://translations.launchpad.dev/+tour')
+    >>> print browser.url
+    http://launchpad.dev/+tour/translation
+
+    >>> browser.open('http://answers.launchpad.dev/+tour')
+    >>> print browser.url
+    http://launchpad.dev/+tour/community-support
+
+
+== +faq compatibility ==
+
+Each application also had a +faq link, that link is also redirected to
+the appropriate tour page.
+
+    >>> browser.open('http://code.launchpad.dev/+faq')
+    >>> print browser.url
+    http://launchpad.dev/+tour/branch-hosting-tracking
+
+    >>> browser.open('http://bugs.launchpad.dev/+faq')
+    >>> print browser.url
+    http://launchpad.dev/+tour/bugs
+
+    >>> browser.open('http://blueprints.launchpad.dev/+faq')
+    >>> print browser.url
+    http://launchpad.dev/+tour/feature-tracking
+
+    >>> browser.open('http://translations.launchpad.dev/+faq')
+    >>> print browser.url
+    http://launchpad.dev/+tour/translation
+
+    >>> browser.open('http://answers.launchpad.dev/+faq')
+    >>> print browser.url
+    http://launchpad.dev/+tour/community-support
+
+
+== Links to tour on application main page ==
+
+Each application home page features a 'Take a tour' button that brings
+the user to the appropriate tour page.
+
 
 === Code ===
 
     >>> browser.open('http://code.launchpad.dev')
-    >>> browser.getLink('Learn more').click()
-    >>> print "%s: %s" % (browser.title, browser.url)
-    About Code: http://code.launchpad.dev/+about
+    >>> tour_link = browser.getLink('Take a tour')
+    >>> print tour_link.url
+    http://launchpad.dev/+tour/branch-hosting-tracking
+    >>> tour_link.click()
+
 
 === Bugs ===
 
     >>> browser.open('http://bugs.launchpad.dev')
-    >>> browser.getLink('Learn more').click()
-    >>> print "%s: %s" % (browser.title, browser.url)
-    About Bugs: http://bugs.launchpad.dev/+about
+    >>> tour_link = browser.getLink('take a tour')
+    >>> print tour_link.url
+    http://bugs.launchpad.dev/+tour
+    >>> tour_link.click()
+
 
 === Blueprints ===
 
     >>> browser.open('http://blueprints.launchpad.dev')
-    >>> browser.getLink('Learn more').click()
-    >>> print "%s: %s" % (browser.title, browser.url)
-    About Blueprints: http://blueprints.launchpad.dev/+about
+    >>> tour_link = browser.getLink('Take a tour')
+    >>> print tour_link.url
+    http://launchpad.dev/+tour/feature-tracking
+    >>> tour_link.click()
+
 
 === Translations ===
 
     >>> browser.open('http://translations.launchpad.dev')
-    >>> browser.getLink('Learn more').click()
-    >>> print "%s: %s" % (browser.title, browser.url)
-    About Translations: http://translations.launchpad.dev/+about
+    >>> tour_link = browser.getLink('Take a tour')
+    >>> print tour_link.url
+    http://launchpad.dev/+tour/translation
+    >>> tour_link.click()
+
 
 === Answers ===
 
     >>> browser.open('http://answers.launchpad.dev')
-    >>> browser.getLink('Learn more').click()
-    >>> print "%s: %s" % (browser.title, browser.url)
-    About Answers: http://answers.launchpad.dev/+about
-
-== Link to tour on each application main page ==
-
-Each application home page features a proeminent 'Take a tour'
-button which brings the user to the application tour.
-
-=== Code ===
-
-    >>> browser.open('http://code.launchpad.dev')
-    >>> browser.getLink('Take a tour').click()
-    >>> print "%s: %s" % (browser.title, browser.url)
-    Code tour:... http://code.launchpad.dev/+tour
-
-=== Bugs ===
-
-    >>> browser.open('http://bugs.launchpad.dev')
-    >>> browser.getLink('Take a tour').click()
-    >>> print "%s: %s" % (browser.title, browser.url)
-    Bugs tour:... http://bugs.launchpad.dev/+tour
-
-=== Blueprints ===
-
-    >>> browser.open('http://blueprints.launchpad.dev')
-    >>> browser.getLink('Take a tour').click()
-    >>> print "%s: %s" % (browser.title, browser.url)
-    Blueprints tour:... http://blueprints.launchpad.dev/+tour
-
-=== Translations ===
-
-    >>> browser.open('http://translations.launchpad.dev')
-    >>> browser.getLink('Take a tour').click()
-    >>> print "%s: %s" % (browser.title, browser.url)
-    Translations tour:... http://translations.launchpad.dev/+tour
-
-=== Answers ===
-
-    >>> browser.open('http://answers.launchpad.dev')
-    >>> browser.getLink('Take a tour').click()
-    >>> print "%s: %s" % (browser.title, browser.url)
-    Answers tour:... http://answers.launchpad.dev/+tour
+    >>> tour_link = browser.getLink('Take a tour')
+    >>> print tour_link.url
+    http://launchpad.dev/+tour/community-support
+    >>> tour_link.click()

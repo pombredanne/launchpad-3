@@ -1,4 +1,5 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functions related to the import of Debbugs bugs into Malone."""
 
@@ -16,12 +17,20 @@ import sys
 from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.encoding import guess as ensure_unicode
-from canonical.launchpad.interfaces import (
-    IBugSet, IMessageSet, ILaunchpadCelebrities, UnknownSender, IBugTaskSet,
-    IBugWatchSet, ICveSet, InvalidEmailMessage, CreateBugParams)
-from canonical.launchpad.scripts import debbugs
-from canonical.lp.dbschema import BugTaskStatus
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.message import (
+    IMessageSet,
+    InvalidEmailMessage,
+    UnknownSender,
+    )
+from lp.bugs.interfaces.bug import (
+    CreateBugParams,
+    IBugSet,
+    )
+from lp.bugs.interfaces.bugwatch import IBugWatchSet
+from lp.bugs.interfaces.cve import ICveSet
+from lp.bugs.scripts import debbugs
+from lp.services.encoding import guess as ensure_unicode
 
 
 def bug_filter(bug, previous_import_set, target_bugs, target_package_set,

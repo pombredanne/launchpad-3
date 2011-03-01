@@ -3,14 +3,11 @@
 Here we test the facility for coherently copying data inside the database that
 may be interlinked through foreign keys.
 
+    >>> import transaction
     >>> from canonical.database import postgresql
-    >>> from canonical.database.sqlbase import cursor
     >>> from canonical.database.multitablecopy import MultiTableCopy
+    >>> from canonical.database.sqlbase import cursor
 
-    >>> from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-    >>> dbname = LaunchpadTestSetup().dbname
-    >>> from canonical.database.sqlbase import ZopelessTransactionManager
-    >>> ztm = ZopelessTransactionManager('postgres:///' + dbname)
     >>> # Keep track of tables we'll want to clean up later
     >>> tables_to_clean_up = []
 
@@ -67,7 +64,7 @@ in any old order.  We must follow the list of tables we gave, in that order:
 Since we haven't extracted all tables yet, we're not allowed to move to the
 pouring stage yet:
 
-    >>> copier.pour(ztm)
+    >>> copier.pour(transaction)
     Traceback (most recent call last):
     ...
     AssertionError: Not safe to pour: last table 'textual' was not extracted
@@ -113,7 +110,7 @@ We have the data we're copying in holding tables now.
 Now we pour or data in the holding tables back into the source tables.  Each
 row from the holding tables gets a new id, so no errors about duplicates here.
 
-    >>> copier.pour(ztm)
+    >>> copier.pour(transaction)
 
 Since pour() may commit transactions, our cursor is now invalid.  We get a new
 one before we go on.
@@ -209,7 +206,7 @@ from numeric that referred to it into a holding table for numeric.
 
     >>> cur.execute("UPDATE %s SET t='lots'" % textual_holding_table)
     >>> cur.execute("UPDATE %s SET n=2*n" % numeric_holding_table)
-    >>> copier.pour(ztm)
+    >>> copier.pour(transaction)
 
     >>> cur = cursor()
     >>> cur.execute("""
@@ -308,17 +305,19 @@ which means that the attempt to insert it will violate a unique constraint.
     >>> cur.execute("UPDATE %s SET new_id=id WHERE n=101"
     ...             % numeric_holding_table)
 
-    >>> copier.pour(ztm)
+    >>> copier.pour(transaction)
     Traceback (most recent call last):
     ...
-    IntegrityError: ... duplicate key violates unique constraint ...
+    IntegrityError: duplicate ... violates unique constraint ...
+    <BLANKLINE>
 
 Now we have a fun situation!  Some data has been copied back into our source
 tables, and we don't know how much.  And some data remains in our holding
 tables.
 
-    >>> ztm.abort()
-    >>> ztm.begin()
+    >>> transaction.abort()
+    >>> transaction.begin()
+    <transaction...
     >>> cur = cursor()
     >>> postgresql.have_table(cur, copier.getRawHoldingTableName('textual'))
     False
@@ -354,7 +353,7 @@ does the recovery.  We set up a new copier to simulate this chain of events.
     True
 
     >>> cur.execute("DELETE FROM %s WHERE n=101" % numeric_holding_table)
-    >>> copier.pour(ztm)
+    >>> copier.pour(transaction)
 
 This time we run to completion without problems.
 
@@ -430,7 +429,7 @@ value also occurs in another table.
     ...     "CREATE TABLE double AS SELECT n, 2*n AS double FROM numeric")
     >>> copier = MultiTableCopy('test', ['numeric'])
     >>> copier.extract(
-    ...     'numeric', where_clause="numeric.n=double.double",
+    ...     'numeric', where_clause="source.n=double.double",
     ...     external_joins=['double'])
     >>> holding_table = copier.getHoldingTableName('numeric')
     >>> cur.execute("SELECT n FROM %s ORDER BY n" % holding_table)
@@ -451,7 +450,7 @@ table names get uncomfortably long.
     >>> copier = MultiTableCopy('test', ['numeric'])
     >>> copier.extract(
     ...     'numeric',
-    ...     where_clause="numeric.n = quad.double AND quad.n = dub.double",
+    ...     where_clause="source.n = quad.double AND quad.n = dub.double",
     ...     external_joins=['double dub', 'double quad'])
     >>> cur.execute("SELECT n FROM %s ORDER BY n" % holding_table)
     >>> for number, in cur.fetchall():
@@ -534,10 +533,11 @@ holding tables do not have any referential constraints.
     ...     USING textual
     ...     WHERE holding.new_id = textual.id
     ...     """ % textual_holding_table)
-    >>> copier.pour(ztm)
+    >>> copier.pour(transaction)
 
 Only the non-inert extracted rows will be copied.
 
+    >>> cur = cursor()
     >>> cur.execute("""
     ...     SELECT t, count(*)
     ...     FROM textual
@@ -565,7 +565,7 @@ whether they point to an inert or a non-inert row in the first table.
     2   2
 
 
-== Batch Preparation Callbacks ==
+== Pouring Callbacks ==
 
 All of the real work in a MultiTableCopy happens during the pour() call.  That
 is not always convenient: sometimes you'll want to be able to run some code of
@@ -573,14 +573,30 @@ your own while the pouring is being done.  One reason might be debugging; or
 another good reason is to ensure referential integrity if the tables you're
 pouring to have been changed while the multi-table-copy was in progress.
 
-MultiTableCopy's extract() method lets you specify a callback to do all this.
-The callback will be called at the beginning of every batch of data that is
-poured.  It runs in the same transaction as the pouring of that batch, and its
-run time counts towards the batch's time budget.  It receives parameters
-describing the source and holding tables, as well as size, lowest id, and
-exclusive upper-bound id of the batch being poured.
+MultiTableCopy's extract() method lets you specify callbacks to do all this:
 
-    >>> def textual_callback(
+"Pre-pouring" callbacks are invoked just before pouring each table.  This can
+be useful to make last-moment changes to your holding table based on things
+that may have happened while pouring previous tables.
+
+A pre-pouring callback receives as arguments the name of the holding table
+being poured from and the name of the source table that data is being poured
+back into.
+
+    >>> def textual_prepour(holding_table, source_table):
+    ...     print "Pouring textual"
+
+    >>> def numeric_prepour(holding_table, source_table):
+    ...     print "Pouring numeric"
+
+"Batch preparation" callbacks will be called at the beginning of every batch
+of data that is poured.  Each invocation runs in the same transaction as the
+pouring of that batch, and its run time counts towards the batch's time
+budget.  It receives parameters describing the source and holding tables, as
+well as size, lowest id, and exclusive upper-bound id of the batch being
+poured.
+
+    >>> def textual_batch(
     ...     holding_table, source_table, batch_size, lowest_id, highest_id):
     ...     """Print information about each batch of textual being poured."""
     ...     print "Pouring text from %s to %s" % (
@@ -588,12 +604,14 @@ exclusive upper-bound id of the batch being poured.
 
     >>> copier = MultiTableCopy(
     ...     'test', ['textual', 'numeric'], minimum_batch_size=1)
-    >>> copier.extract('textual', batch_pouring_callback=textual_callback)
+    >>> copier.extract(
+    ...     'textual', pre_pouring_callback=textual_prepour,
+    ...     batch_pouring_callback=textual_batch)
 
 It follows that the callback is tied to a specific table.  We can register
 other callbacks on other tables.
 
-    >>> def numeric_callback(
+    >>> def numeric_batch(
     ...     holding_table, source_table, batch_size, lowest_id, highest_id):
     ...     """Print information about each batch of numeric being poured."""
     ...     print "Pouring numbers from %s to %s" % (
@@ -601,19 +619,21 @@ other callbacks on other tables.
 
     >>> copier.extract(
     ...     'numeric', joins=['textual'],
-    ...     batch_pouring_callback=numeric_callback)
+    ...     pre_pouring_callback=numeric_prepour,
+    ...     batch_pouring_callback=numeric_batch)
 
 The callbacks are called only while pouring, once per batch.
 
-    >>> copier.pour(ztm)
-    Pouring text from "temp_textual_holding_test" to textual
+    >>> copier.pour(transaction)
+    Pouring textual
     Pouring text from "temp_textual_holding_test" to textual
     ...
+    Pouring numeric
     Pouring numbers from "temp_numeric_holding_test" to numeric
-    Pouring numbers from "temp_numeric_holding_test" to numeric
+    ...
+
 
 == Cleanup ==
 
     >>> #postgresql.drop_tables(cursor(), tables_to_clean_up)
-    >>> ztm.uninstall()
 

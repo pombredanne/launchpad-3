@@ -1,6 +1,9 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=C0103,W0403
 
 # This script aims to ensure that there is a Malone watch on Debian bugs
 # that meet certain criteria. The Malone watch will be linked to a BugTask
@@ -8,19 +11,18 @@
 
 __metaclass__ = type
 
+import _pythonpath
 import os
 import logging
-import _pythonpath
 
 # zope bits
 from zope.component import getUtility
 
 # canonical launchpad modules
-from canonical.launchpad.scripts.debsync import (
-    do_import)
-from canonical.launchpad.scripts.base import (
+from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from canonical.launchpad.scripts.debsync import do_import
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 
 
 # setup core values and defaults
@@ -44,14 +46,16 @@ class CreateDebWatches(LaunchpadCronScript):
         self.parser.add_option('--debbugs', action='store', type='string',
             dest='debbugs',
             help="The location of your debbugs database.")
-        self.parser.add_option('--max', action='store', type='int', dest='max',
+        self.parser.add_option(
+            '--max', action='store', type='int', dest='max',
             help="The maximum number of bugs to create.")
         self.parser.add_option('--package', action='append', type='string',
             help="A list of packages for which we should import bugs.",
             dest="packages", default=[])
 
     def main(self):
-        if not os.path.exists(os.path.join(self.options.debbugs, 'index/index.db')):
+        index_db_path = os.path.join(self.options.debbugs, 'index/index.db')
+        if not os.path.exists(index_db_path):
             # make sure the debbugs location looks sane
             raise LaunchpadScriptFailure('%s is not a debbugs db.'
                                          % self.options.debbugs)
@@ -62,7 +66,8 @@ class CreateDebWatches(LaunchpadCronScript):
             try:
                 target_bug = int(arg)
             except ValueError:
-                self.logger.error('%s is not a valid debian bug number.' % arg)
+                self.logger.error(
+                    '%s is not a valid debian bug number.' % arg)
             target_bugs.add(target_bug)
 
         target_package_set = set()
@@ -72,13 +77,14 @@ class CreateDebWatches(LaunchpadCronScript):
 
         # first find all the published ubuntu packages
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        for p in ubuntu.currentrelease.publishedBinaryPackages(
-            component='main'):
-            target_package_set.add(p.binarypackagename.name)
+        for p in ubuntu.currentrelease.getAllPublishedBinaries():
+            target_package_set.add(
+                p.binarypackagerelease.binarypackagename.name)
         # then add packages passed on the command line
         for package in self.options.packages:
             target_package_set.add(package)
-        self.logger.info('%d binary packages targeted.' % len(target_package_set))
+        self.logger.info(
+            '%d binary packages targeted.' % len(target_package_set))
 
         self.txn.abort()
         self.txn.begin()
@@ -88,6 +94,7 @@ class CreateDebWatches(LaunchpadCronScript):
         self.txn.commit()
 
         self.logger.info('Done!')
+
 
 if __name__ == '__main__':
     script = CreateDebWatches("debbugs-mkwatch")

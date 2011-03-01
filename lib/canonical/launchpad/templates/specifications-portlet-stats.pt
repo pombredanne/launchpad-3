@@ -1,4 +1,0 @@
-<div>
-  <strong tal:content="context/specification_count">5</strong> blueprints
-  registered in Launchpad
-</div>

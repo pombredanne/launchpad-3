@@ -1,21 +1,38 @@
-#!/usr/bin/python2.4
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=C0103,W0403
 
 """Refresh and verify cached POFile translation statistics."""
 
-from canonical.launchpad.scripts.base import LaunchpadCronScript
-from canonical.launchpad.scripts.verify_pofile_stats import (
+import _pythonpath
+
+from lp.services.scripts.base import LaunchpadCronScript
+from lp.translations.scripts.verify_pofile_stats import (
     VerifyPOFileStatsProcess)
 
 
 class VerifyPOFileStats(LaunchpadCronScript):
     """Trawl `POFile` table, verifying and updating cached statistics."""
 
+    def add_my_options(self):
+        self.parser.add_option('-i', '--start-id', dest='start_id',
+            type='int',
+            help="Verify from this POFile id upward.")
+
     def main(self):
-        VerifyPOFileStatsProcess(self.txn, self.logger).run()
+        if self.options.start_id is not None:
+            start_id = int(self.options.start_id)
+        else:
+            start_id = 0
+
+        verifier = VerifyPOFileStatsProcess(
+            self.txn, self.logger, start_at_id=start_id)
+        verifier.run()
 
 
 if __name__ == '__main__':
-    script = VerifyPOFileStats(name="pofile-stats")
+    script = VerifyPOFileStats(name="pofile-stats", dbuser='pofilestats')
     script.lock_and_run()
-

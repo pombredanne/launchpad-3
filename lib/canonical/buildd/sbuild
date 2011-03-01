@@ -510,15 +510,15 @@ use Cwd;
 
 # avoid intermixing of stdout and stderr
 $| = 1;
+
+# We should not ignore HUP for our children - it breaks test suites.
 # in case the terminal disappears, the build should continue
-$SIG{'HUP'} = 'IGNORE';
+#$SIG{'HUP'} = 'IGNORE';
 
 $main::distribution = "";
 $main::distribution = $conf::default_distribution if $conf::default_distribution;
 
-$ENV{$_} = $conf::ENV_OVERRIDES{$_} for keys %conf::ENV_OVERRIDES;
-
-chomp( $main::arch = `$conf::dpkg --print-installation-architecture` );
+chomp( $main::arch = `$conf::dpkg --print-architecture` );
 $main::username = (getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
 $main::debug = 0;
 $main::verbose = 0;
@@ -538,6 +538,7 @@ $main::chroot_build_dir = "";
 $main::chroot_apt_options = "";
 @main::toolchain_pkgs = ();
 $main::component="";
+$main::nr_processors = $ENV{'NR_PROCESSORS'} if $ENV{'NR_PROCESSORS'};
 
 $main::new_dpkg = 0;
 check_dpkg_version();
@@ -563,11 +564,20 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 		$main::build_source++;
 		$conf::purge_build_directory = "never";
 	}
+        elsif (/^--architecture=(.)/) {
+                $conf::arch=$1.$';
+	}
 	elsif (/^--archive=(.)/) {
 		$main::archive=$1.$';
 	}
 	elsif (/^--comp=(.)/) {
 		$main::component=$1.$';
+	}
+        elsif (/^--purpose=(.)/) {
+                $main::purpose=$1.$';
+	}
+	elsif (/^--build-debug-symbols$/) {
+		$main::build_debug_symbols = 1;
 	}
 	elsif (/^-d/ || /^--dist/) {
 		if (/^-d(.)/ || /^--dist=(.)/) {
@@ -677,8 +687,8 @@ $SIG{'TERM'} = \&shutdown;
 $SIG{'ALRM'} = \&shutdown;
 $SIG{'PIPE'} = \&shutdown;
 read_deps( map { m,(?:.*/)?([^_/]+)[^/]*, } @ARGV );
-if (-d "chroot-$main::distribution") {
-	$main::chroot_dir = "chroot-$main::distribution";
+if (-d "chroot-autobuild") {
+	$main::chroot_dir = "chroot-autobuild";
 	$main::chroot_build_dir = "$main::chroot_dir/build/$main::username/";
 	$conf::srcdep_lock_dir = "$main::chroot_dir/var/debbuild/srcdep-lock";
 	$main::ilock_file = "$conf::srcdep_lock_dir/install";
@@ -810,7 +820,8 @@ sub fetch_source_files {
 
 			  retry:
 				print PLOG "Checking available source versions...\n";
-				if (!open( PIPE, "$conf::apt_cache $main::chroot_apt_options ".
+				if (!open( PIPE, "$conf::sudo /usr/sbin/chroot ".
+						   "$main::chroot_dir $conf::apt_cache ".
 						   "-q showsrc $pkg 2>&1 </dev/null |" )) {
 					print PLOG "Can't open pipe to apt-cache: $!\n";
 					return ("ERROR");
@@ -832,8 +843,9 @@ sub fetch_source_files {
 				if (!defined($entries{$version})) {
 					if (!$retried) {
 						# try to update apt's cache if nothing found
-						system "$conf::sudo $conf::apt_get ".
-							   "$main::chroot_apt_options update >/dev/null";
+						system "$conf::sudo /usr/sbin/chroot ".
+							   "$main::chroot_dir $conf::apt_get ".
+							   "update >/dev/null";
 						$retried = 1;
 						goto retry;
 					}
@@ -896,10 +908,18 @@ sub fetch_source_files {
 		print PLOG "$dscbase has no Architecture: field -- skipping arch check!\n";
 	}
 	else {
-		if ($dscarchs ne "any" && $dscarchs !~ /\b$main::arch\b/ &&
+		my $valid_arch;
+		for my $a (split(/\s+/, $dscarchs)) {
+			if (system('dpkg-architecture', '-a' . $main::arch, '-i' . $a) eq 0) {
+				$valid_arch = 1;
+				last;
+			}
+		}
+		if ($dscarchs ne "any" && !($valid_arch) &&
 		    !($dscarchs eq "all" && $main::build_arch_all) ) {
-			print PLOG "$dscbase: $main::arch not in arch list: $dscarchs -- ".
-				 "skipping\n";
+			my $msg = "$dscbase: $main::arch not in arch list or does not match any arch ";
+			$msg .= "wildcards: $dscarchs -- skipping\n";
+			print PLOG $msg;
 			$main::pkg_fail_stage = "arch-check";
 			return( "ERROR", @made );
 		}
@@ -963,13 +983,34 @@ sub build {
 				system ("rm -fr $tmpunpackdir") if -d $tmpunpackdir;
 				exit 1;
 			}
-			exec "$conf::dpkg_source -sn -x $main::cwd/$dsc 2>&1";
+
+			my @files;
+			push( @files, $dsc );
+			if (!open( F, "<$main::cwd/$dsc" )) {
+				print PLOG "Can't open $main::cwd/$dsc: $!\n";
+				return 0;
+			}
+			my $dsctext;
+			{ local($/); $dsctext = <F>; }
+			close( F );
+			my $files;
+			$dsctext =~ /^Files:\s*\n((\s+.*\s*\n)+)/mi and $files = $1;
+			push(@files, map { (split( /\s+/, $_ ))[3] } split( "\n", $files ));
+
+			my $file;
+			foreach $file (@files) {
+				system ("cp", "$main::cwd/$file", "$file");
+			}
+			exec "$conf::sudo", "/usr/sbin/chroot", "$main::cwd/$main::chroot_dir",
+				"$conf::su", $main::username, "-s", "/bin/sh", "-c",
+				"cd /build/$main::username && $conf::dpkg_source -sn -x $dsc 2>&1";
+			unlink @files;
 		}
 		$main::sub_task = "dpkg-source";
 		
 		while( <PIPE> ) {
 			print PLOG $_;
-			$dir = $1 if /^dpkg-source: extracting \S+ in (\S+)/;
+			$dir = $1 if /^dpkg-source: (?:info: )?extracting \S+ in (\S+)/;
 			$main::pkg_fail_stage = "unpack-check"
 				if /^dpkg-source: error: file.*instead of expected/;
 		}
@@ -1140,6 +1181,9 @@ EOF
 	open CURRENT, ">$main::cwd/$main::chroot_dir/CurrentlyBuilding" or die "$main::cwd/$main::chroot_dir/CurrentlyBuilding open failed";
 	# Package: must be first
 	print CURRENT "Package: $pkg\nComponent: $main::component\n";
+	print CURRENT "Suite: $main::distribution\n" if $main::distribution;
+	print CURRENT "Purpose: $main::purpose\n" if $main::purpose;
+	print CURRENT "Build-Debug-Symbols: yes\n" if $main::build_debug_symbols;
 	close CURRENT;
 
 	$main::build_start_time = time;
@@ -1165,12 +1209,14 @@ EOF
 				print PLOG "ld.so.conf was not readable! Fixed.\n";
 			}
 			exec "$conf::sudo", "/usr/sbin/chroot", "$main::cwd/$main::chroot_dir",
-				 "$conf::su", $main::username, "-s", "/bin/sh", "-c",
-				 "cd $bdir && PATH=$conf::path ". 
-				 (defined($main::ld_library_path) ?
-				 "LD_LIBRARY_PATH=".$main::ld_library_path." " : "").
-				 "exec $env_cmnd dpkg-buildpackage $conf::pgp_options ".
-				 "$binopt -m'$conf::maintainer_name' -r$conf::fakeroot 2>&1";
+				"$conf::su", $main::username, "-s", "/bin/sh", "-c",
+				"cd $bdir && PATH=$conf::path ".
+				(defined($main::nr_processors) ?
+				"DEB_BUILD_OPTIONS=\"parallel=".$main::nr_processors."\" " : "").
+				(defined($main::ld_library_path) ?
+				"LD_LIBRARY_PATH=".$main::ld_library_path." " : "").
+				"exec $env_cmnd dpkg-buildpackage $conf::pgp_options ".
+				"$binopt -m'$conf::maintainer_name' -r$conf::fakeroot 2>&1";
 		}
 		else {
 			if (-f "/etc/ld.so.conf" && ! -r "/etc/ld.so.conf") {
@@ -1225,6 +1271,13 @@ EOF
 	chdir( $main::cwd );
 
 	my @space_files = ("$dir");
+	if (!$main::nolog and defined $conf::exit_hook and open TMP, '-|', "$conf::exit_hook <$main::pkg_logfile") {
+		local $/ = undef;
+		my $log = <TMP>;
+		close TMP;
+		$rv |= $?;
+		print PLOG $log;
+	}
 	if ($rv) {
 		print PLOG "FAILED [dpkg-buildpackage died]\n";
 	}
@@ -1294,7 +1347,11 @@ EOF
 			while( <F> ) {
 				my $f = (split( /\s+/, $_ ))[0];
 				push( @files, "$main::chroot_build_dir$f" );
-				next if $f !~ /$main::arch\.[\w\d.-]*$/;
+				if ($main::build_arch_all) {
+					next if ($f !~ /$main::arch\.[\w\d.-]*$/ && $f !~ /all\.[\w\d.-]*$/);
+				} else {
+					next if ($f !~ /$main::arch\.[\w\d.-]*$/);
+				}
 				push( @debs, "$main::chroot_build_dir$f" );
 				push( @space_files, $f );
 			}
@@ -1608,10 +1665,7 @@ sub install_deps {
 	}
 	
 	local (*F);
-	my $chroot_opt =
-		$main::chroot_dir ? "--root=$main::cwd/$main::chroot_dir" : "";
-
-	if (open( F, "| $conf::sudo $conf::dpkg $chroot_opt --set-selections")) {
+	if (open( F, "| $conf::sudo /usr/sbin/chroot $main::chroot_dir $conf::dpkg --set-selections")) {
 		foreach my $tpkg (@instd) {
 			print F $tpkg . " purge\n";
 		}
@@ -1679,7 +1733,7 @@ sub unpack_special_source {
 		my $dir;
 		while( <PIPE> ) {
 			print PLOG $_;
-			$dir = $1 if /^dpkg-source: extracting \S+ in (\S+)/;
+			$dir = $1 if /^dpkg-source: (?:info: )?extracting \S+ in (\S+)/;
 		}
 		close( PIPE );
 		if ($?) {
@@ -1752,12 +1806,10 @@ sub uninstall_debs {
 	
 	return 1 if !@_;
 	print "Uninstalling packages: @_\n" if $main::debug;
-	my $chroot_opt =
-		$main::chroot_dir ? "--root=$main::cwd/$main::chroot_dir" : "";
-	print PLOG "  $conf::sudo dpkg $chroot_opt --$mode @_\n";
+	print PLOG "  $conf::sudo dpkg --$mode @_\n";
   repeat:
 	my $output;
-	if (!open( PIPE, "cd $main::chroot_dir/ && $conf::sudo $conf::dpkg $chroot_opt --$mode @_ 2>&1 </dev/null |")) {
+	if (!open( PIPE, "$conf::sudo /usr/sbin/chroot $main::chroot_dir $conf::dpkg --$mode @_ 2>&1 </dev/null |")) {
 		print PLOG "Can't open pipe to dpkg: $!\n";
 		return 0;
 	}
@@ -1819,7 +1871,8 @@ sub run_apt {
 	# treated as if RETURN was pressed.
 	# dpkg since 1.4.1.18 issues an error on the conffile question if it reads
 	# EOF -- hardwire the new --force-confold option to avoid the questions.
-	if (!open( PIPE, "$conf::sudo $conf::apt_get --purge $main::chroot_apt_options ".
+	if (!open( PIPE, "$conf::sudo /usr/sbin/chroot ".
+			   "$main::chroot_dir $conf::apt_get --purge ".
 			   ($main::new_dpkg ? "-o DPkg::Options::=--force-confold " : "").
 			   "-q $mode install @to_install 2>&1 </dev/null |" )) {
 		print PLOG "Can't open pipe to apt-get: $!\n";
@@ -1834,7 +1887,7 @@ sub run_apt {
 
 	if ($status != 0 && $msgs =~ /^E: Packages file \S+ (has changed|is out of sync)/mi) {
 		print PLOG "$conf::sudo $conf::apt_get $main::chroot_apt_op -q update\n";
-		if (!open( PIPE, "$conf::sudo $conf::apt_get $main::chroot_apt_options -q update 2>&1 |" )) {
+		if (!open( PIPE, "$conf::sudo /usr/sbin/chroot $main::chroot_dir $conf::apt_get -q update 2>&1 |" )) {
 			print PLOG "Can't open pipe to apt-get: $!\n";
 			return 0;
 		}
@@ -2168,7 +2221,8 @@ sub get_dpkg_status {
 		if ($provides) {
 			foreach (split( /\s*,\s*/, $provides )) {
 				$result{$_} = { Installed => 1, Version => '=*=PROVIDED=*=' }
-					if isin( $_, @interest );
+					if (isin( $_, @interest ) &&
+						$result{$_}->{'Installed'} != 1);
 			}
 		}
 	}
@@ -2180,6 +2234,9 @@ sub version_cmp {
 	my $v1 = shift;
 	my $rel = shift;
 	my $v2 = shift;
+	if ($v1 eq "=*=PROVIDED=*=") {
+		return 0;
+	}
 	
 	system "$conf::dpkg", "--compare-versions", $v1, $rel, $v2;
 	return $? == 0;
@@ -2626,7 +2683,7 @@ sub get_dependencies {
 	local(*PIPE);
 	my %deps;
 	
-	open( PIPE, "$conf::apt_cache $main::chroot_apt_options show @_ 2>&1 |" )
+	open( PIPE, "$conf::sudo /usr/sbin/chroot $main::chroot_dir $conf::apt_cache show @_ 2>&1 |" )
 		or die "Cannot start $conf::apt_cache $main::chroot_apt_op: $!\n";
 	local($/) = "";
 	while( <PIPE> ) {
@@ -2648,7 +2705,7 @@ sub get_dependencies {
 sub get_virtuals {
 	local(*PIPE);
 
-	open( PIPE, "$conf::apt_cache $main::chroot_apt_options showpkg @_ 2>&1 |" )
+	open( PIPE, "$conf::sudo /usr/sbin/chroot $main::chroot_dir $conf::apt_cache showpkg @_ 2>&1 |" )
 		or die "Cannot start $conf::apt_cache $main::chroot_apt_op: $!\n";
 	my $name;
 	my $in_rprov = 0;
@@ -2680,7 +2737,8 @@ sub get_virtuals {
 sub package_exists {
 	local(*PIPE);
 
-	open( PIPE, "$conf::apt_cache $main::chroot_apt_options showpkg @_ 2>&1 |" )
+	open( PIPE, "$conf::sudo /usr/sbin/chroot $main::chroot_dir ".
+                    "$conf::apt_cache showpkg @_ 2>&1 |" )
 		or die "Cannot start $conf::apt_cache $main::chroot_apt_op: $!\n";
 	my $name;
 	my $in_versions = 0;
@@ -2741,11 +2799,13 @@ sub parse_one_srcdep {
 				my @archs = split( /\s+/, $archlist );
 				my ($use_it, $ignore_it, $include) = (0, 0, 0);
 				foreach (@archs) {
+					# Use 'dpkg-architecture' to support architecture
+					# wildcards.
 					if (/^!/) {
-						$ignore_it = 1 if substr($_, 1) eq $main::arch;
+						$ignore_it = 1 if system('dpkg-architecture', '-a' . $main::arch, '-i' . substr($_, 1)) eq 0;
 					}
 					else {
-						$use_it = 1 if $_ eq $main::arch;
+						$use_it = 1 if system('dpkg-architecture', '-a' . $main::arch, '-i' . $_) eq 0;
 						$include = 1;
 					}
 				}

@@ -1,6 +1,9 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=C0103,W0403
 
 """ Expire all questions in the OPEN and NEEDSINFO states that didn't receive
 any activity in the last X days.
@@ -17,8 +20,8 @@ __all__ = ['ExpireQuestions']
 import _pythonpath
 
 from canonical.config import config
-from canonical.launchpad.scripts.base import LaunchpadCronScript
-from canonical.launchpad.scripts.questionexpiration import QuestionJanitor
+from lp.services.scripts.base import LaunchpadCronScript
+from lp.answers.scripts.questionexpiration import QuestionJanitor
 
 
 class ExpireQuestions(LaunchpadCronScript):

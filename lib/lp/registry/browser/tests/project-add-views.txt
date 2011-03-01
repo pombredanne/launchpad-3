@@ -1,0 +1,268 @@
+Project add views
+=================
+
+New projects are registered in Launchpad using a two step multi-view widget.
+
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> login('foo.bar@canonical.com')
+    >>> product_set = getUtility(IProductSet)
+
+    >>> view = create_initialized_view(product_set, name='+new')
+    >>> view.first_step
+    <class 'lp.registry.browser.product.ProjectAddStepOne'>
+
+The first step requires all of name, summary, displayname to be given.  These
+are forwarded in the form data to the second step.  The title is also
+forwarded, but is only required by the Zope machinery, not the view.
+
+    >>> from lp.registry.browser.product import ProjectAddStepOne
+    >>> form = {
+    ...     'field.actions.continue': 'Continue',
+    ...     'field.__visited_steps__': ProjectAddStepOne.step_name,
+    ...     'field.displayname': '',
+    ...     'field.name': '',
+    ...     'field.summary': '',
+    ... }
+
+    >>> view = create_initialized_view(product_set, name='+new', form=form)
+    >>> for error in view.view.errors:
+    ...     print error
+    ('displayname', 'Name', RequiredMissing())
+    ('name', 'URL', RequiredMissing())
+    ('summary', u'Summary', RequiredMissing())
+
+    >>> form['field.displayname'] = 'Snowdog'
+    >>> form['field.name'] = 'snowdog'
+    >>> form['field.summary'] = 'By-tor and the Snowdog'
+    >>> view = create_initialized_view(product_set, name='+new', form=form)
+
+Each step in the process has a label, a description, and a search results
+count.  The first step has no search results.
+
+    # Because of the way the multistep view works, we need to test the
+    # steps individually.
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+    >>> form['field.__visited_steps__'] = ProjectAddStepOne.step_name
+    >>> request = LaunchpadTestRequest(form=form, method='POST')
+    >>> view = ProjectAddStepOne(product_set, request)
+    >>> view.initialize()
+
+    >>> print view.label
+    Register a project in Launchpad
+    >>> print view.step_description
+    Project basics
+    >>> view.search_results_count
+    0
+
+The second step has the same attributes, but it provides a little more
+information in the label.
+
+    >>> from lp.registry.browser.product import ProjectAddStepTwo
+    >>> form = {
+    ...     'field.actions.continue': 'Continue',
+    ...     'field.__visited_steps__': ProjectAddStepTwo.step_name,
+    ...     'field.displayname': 'Snowdog',
+    ...     'field.name': 'snowdog',
+    ...     'field.title': 'The Snowdog',
+    ...     'field.summary': 'By-tor and the Snowdog',
+    ...     }
+
+    >>> request = LaunchpadTestRequest(form=form, method='POST')
+    >>> view = ProjectAddStepTwo(product_set, request)
+    >>> view.initialize()
+
+    >>> print view.label
+    Register Snowdog (snowdog) in Launchpad
+    >>> print view.step_description
+    Registration details
+    >>> view.search_results_count
+    0
+
+The second step also has a iterator over all the search results, of which
+there are currently none.
+
+    >>> list(view.search_results)
+    []
+
+The prospective project's name, displayname and summary are used to search
+existing projects for possible matches.  By tweaking the project summary, we
+can see that there are search results available.
+
+    >>> form['field.summary'] = 'My Snowdog ate your Firefox'
+
+    >>> request = LaunchpadTestRequest(form=form, method='POST')
+    >>> view = ProjectAddStepTwo(product_set, request)
+    >>> view.initialize()
+
+    >>> print view.label
+    Register Snowdog (snowdog) in Launchpad
+
+Because there are search results, the description used on the page is
+different.
+
+    >>> print view.step_description
+    Check for duplicate projects
+
+The search results are displayed on the page.
+
+    >>> view.search_results_count
+    2
+    >>> for project in view.search_results:
+    ...     print project.name
+    firefox
+    mozilla
+
+The project's license has not yet been selected, so posting this form will
+result in an error, since the license is required.
+
+    >>> form.update({
+    ...     'field.__visited_steps__': '%s|%s' % (
+    ...         ProjectAddStepOne.step_name, ProjectAddStepTwo.step_name),
+    ...     'field.actions.continue': 'Continue',
+    ...     })
+
+    >>> request = LaunchpadTestRequest(form=form, method='POST')
+    >>> view = ProjectAddStepTwo(product_set, request)
+    >>> view.initialize()
+    >>> for error in view.errors:
+    ...     print error
+    You must select at least one license.  If you select Other/Proprietary
+    or Other/OpenSource you must include a description of the license.
+
+When an open source license is selected, the project is created.
+
+    # The form keys have the 'field.' prefix here because the form data will
+    # be processed.
+    >>> form = {
+    ...     'field.displayname': 'Snowdog',
+    ...     'field.name': 'snowdog',
+    ...     'field.title': 'The Snowdog',
+    ...     'field.summary': 'By-tor and the Snowdog',
+    ...     'field.licenses': ['PYTHON'],
+    ...     'field.license_info': '',
+    ...     'field.__visited_steps__': '%s|%s' % (
+    ...         ProjectAddStepOne.step_name, ProjectAddStepTwo.step_name),
+    ...     'field.actions.continue': 'Continue',
+    ...     }
+    >>> request = LaunchpadTestRequest(form=form, method='POST')
+    >>> view = ProjectAddStepTwo(product_set, request)
+    >>> view.initialize()
+    >>> view.errors
+    []
+
+    >>> print product_set.getByName('snowdog').displayname
+    Snowdog
+
+
+Feedback notification
+---------------------
+
+When projects are created with the Other/Proprietary, Other/Open Source or
+I Don't Know license, a message is sent to the user explaining the licensing
+rules.
+
+    >>> form = {
+    ...     'field.displayname': 'Badger',
+    ...     'field.name': 'badger',
+    ...     'field.title': 'The Badger',
+    ...     'field.summary': "There's the Badger!",
+    ...     'field.licenses': ['OTHER_PROPRIETARY'],
+    ...     'field.license_info': '',
+    ...     'field.__visited_steps__': '%s|%s' % (
+    ...         ProjectAddStepOne.step_name, ProjectAddStepTwo.step_name),
+    ...     'field.actions.continue': 'Continue',
+    ...     }
+    >>> request = LaunchpadTestRequest(form=form, method='POST')
+    >>> view = ProjectAddStepTwo(product_set, request)
+    >>> view.initialize()
+
+However, when a proprietary license is selected, a description is required.
+
+    >>> for error in view.errors:
+    ...     print error
+    A description of the "Other/Proprietary" license you checked is required.
+
+    >>> form['field.license_info'] = 'The Badger(tm) License'
+    >>> request = LaunchpadTestRequest(form=form, method='POST')
+    >>> view = ProjectAddStepTwo(product_set, request)
+    >>> view.initialize()
+    >>> view.errors
+    []
+
+    >>> print product_set.getByName('badger').displayname
+    Badger
+
+    >>> transaction.commit()
+    >>> from lp.testing.mail_helpers import print_emails
+    >>> print_emails()
+    From: Launchpad <noreply@launchpad.net>
+    To: Foo Bar <foo.bar@canonical.com>
+    Subject: License information for badger in Launchpad
+    Hello name16,
+    <BLANKLINE>
+    You recently registered the project 'badger' in Launchpad
+    with this licensing:
+    <BLANKLINE>
+        Other/Proprietary.
+    <BLANKLINE>
+    Launchpad is a collaboration site that is free to use for projects
+    with an approved open source license.  When you registered your
+    project the list of licenses presented are the ones we automatically
+    recognize.
+    <BLANKLINE>
+    Other licenses must follow the guidelines we list on the following
+    page in order to be approved:
+    https://help.launchpad.net/Legal/ProjectLicensing
+    <BLANKLINE>
+    Further information is on our FAQ "Can closed-source or proprietary
+    projects use Launchpad?" which can be found at:
+    https://answers.launchpad.net/launchpad/+faq/208
+    <BLANKLINE>
+    If your project's licensing does not meet the guidelines we will
+    consider it "Proprietary" and mark it as such in Launchpad.
+    <BLANKLINE>
+    Proprietary projects can use Launchpad by purchasing a commercial-use
+    subscription which costs US$250/year/project.  Please follow the
+    instructions presented on your project overview page to purchase a
+    subscription voucher.  Feel free to contact me if you have any
+    questions.
+    <BLANKLINE>
+    Sometimes new projects are licensed as 'Other/Open Source' because the
+    licensing decisions have not yet been made.  If that is your situation
+    we urge you to update the licensing in Launchpad as soon as you make
+    that choice.
+    <BLANKLINE>
+    If the license for your project needs to be corrected you can do so by
+    following the 'Change Details' link on your project's overview page.
+    <BLANKLINE>
+    Thanks,
+    <BLANKLINE>
+    The Launchpad team.
+    <BLANKLINE>
+    ----------------------------------------
+
+
+Duplicate projects
+------------------
+
+A project that already exists cannot be registered again.  The only field
+that's checked for duplicates is the 'name' field.
+
+    >>> form = {
+    ...     'field.displayname': 'Cougar',
+    ...     'field.name': 'badger',
+    ...     'field.title': 'The Cougar',
+    ...     'field.summary': "There's the Cougar!",
+    ...     'field.__visited_steps__': ProjectAddStepOne.step_name,
+    ...     'field.actions.continue': 'Continue',
+    ...     }
+    >>> request = LaunchpadTestRequest(form=form, method='POST')
+    >>> view = ProjectAddStepOne(product_set, request)
+    >>> view.initialize()
+
+    >>> for error in view.errors:
+    ...     print error
+    ('name', 'URL',
+     LaunchpadValidationError(u'badger is already used by another project'))

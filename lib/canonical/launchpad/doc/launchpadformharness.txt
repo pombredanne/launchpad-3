@@ -9,7 +9,7 @@ To demonstrate its use we'll create a sample schema and view class:
 
   >>> from zope.interface import Interface, implements
   >>> from zope.schema import Int, TextLine
-  >>> from canonical.launchpad.webapp import LaunchpadFormView, action
+  >>> from lp.app.browser.launchpadform import LaunchpadFormView, action
 
   >>> class IHarnessTest(Interface):
   ...     string = TextLine(title=u"String")
@@ -67,20 +67,20 @@ We can also check for per-widget errors:
   ...                           'field.number': 'not a number' })
   >>> harness.hasErrors()
   True
-  >>> print harness.getWidgetError('string')
+  >>> print harness.getFieldError('string')
   <BLANKLINE>
-  >>> print harness.getWidgetError('number')
+  >>> print harness.getFieldError('number')
   Invalid integer data
 
 
-The getWidgetError() method will also return custom error messages set
+The getFieldError() method will also return custom error messages set
 by setFieldError():
 
   >>> harness.submit('submit', {'field.string': 'abcdef',
   ...                           'field.number': '7' })
   >>> harness.hasErrors()
   True
-  >>> print harness.getWidgetError('number')
+  >>> print harness.getFieldError('number')
   number can not be 7
 
 
@@ -107,3 +107,18 @@ submission:
   u'abcdef'
   >>> context.number
   42
+
+By default LaunchpadFormHarness uses LaunchpadTestRequest as its request
+class, but it's possible to change that by passing a request_class argument to
+it.
+
+    >>> harness.request
+    <...LaunchpadTestRequest...
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> class FormHarnessTestRequest(LaunchpadTestRequest):
+    ...     pass
+    >>> harness = LaunchpadFormHarness(context, HarnessTestView,
+    ...     request_class=FormHarnessTestRequest)
+    >>> harness.request
+    <...FormHarnessTestRequest...

@@ -3,10 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/applicationhome"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
@@ -101,10 +98,7 @@
     </dd>
   </dl>
 
-  <p style="clear: right;">
-    Below, we list the icons which are used in each of the applications that
-    make up Launchpad.
-  </p>
+  <p style="clear: right;">These are the icons used in Launchpad.</p>
 
   <table class="listing">
     <tbody>
@@ -122,13 +116,7 @@
       <tr>
         <td>add</td>
         <td><img alt="" src="/@@/add" /></td>
-        <td rowspan="2">
-          An action that will add data to the system.
-        </td>
-      </tr>
-      <tr>
-        <td>add-large</td>
-        <td><img alt="" src="/@@/add-large" /></td>
+        <td>An action that will add data to the system.</td>
       </tr>
       <tr>
         <td>arrowUp</td>
@@ -141,6 +129,16 @@
         <td>Inside the header for a column sorted descending.</td>
       </tr>
       <tr>
+        <td>arrowStart</td>
+        <td><img src="/@@/arrowStart" /></td>
+        <td>Arrow start. Not used.</td>
+      </tr>
+      <tr>
+        <td>arrowEnd</td>
+        <td><img src="/@@/arrowEnd" /></td>
+        <td>Arrow end. Not used.</td>
+      </tr>
+      <tr>
         <td>arrowTop</td>
         <td><img src="/@@/arrowTop" /></td>
         <td>Arrow top. Not used.</td>
@@ -151,14 +149,58 @@
         <td>Arrow bottom. Not used.</td>
       </tr>
       <tr>
+        <td>arrowLeft</td>
+        <td><img src="/@@/arrowLeft" /></td>
+        <td>Arrow left.</td>
+      </tr>
+      <tr>
+        <td>arrowRight</td>
+        <td><img src="/@@/arrowRight" /></td>
+        <td>Arrow right.</td>
+      </tr>
+      <tr>
         <td>bullet</td>
         <td><img src="/@@/bullet" /></td>
         <td>The default bullet for lists with no special bullet specified.</td>
       </tr>
       <tr>
+        <td>cancel</td>
+        <td><img alt="cancel" src="/@@/cancel" /></td>
+        <td>Cancel an action.</td>
+      </tr>
+      <tr>
+        <td>confirm</td>
+        <td><img alt="confirm" src="/@@/confirm" /></td>
+        <td>Confirm an action.</td>
+      </tr>
+      <tr>
+        <td>crowd</td>
+        <td><img alt="crowd" src="/@@/crowd" /></td>
+        <td rowspan="2">Many people are subscribed to this thing.</td>
+      </tr>
+      <tr>
+        <td>crowd-large</td>
+        <td><img alt="large crowd" src="/@@/crowd-large" /></td>
+      </tr>
+      <tr>
+        <td>trash-icon</td>
+        <td><img alt="delete" src="/@@/trash-icon" /></td>
+        <td>Icon to delete objects permanently from the system.</td>
+      </tr>
+      <tr>
+        <td>trash-large</td>
+        <td><img alt="delete" src="/@@/trash-large" /></td>
+        <td>Icon to delete objects permanently from the system.</td>
+      </tr>
+      <tr>
+        <td>trash-logo</td>
+        <td><img alt="delete" src="/@@/trash-logo" /></td>
+        <td>Icon to delete objects permanently from the system.</td>
+      </tr>
+      <tr>
         <td>distribution-badge</td>
         <td><img alt="" src="/@@/distribution-badge" /></td>
-        <td rowspan="4">An operating system compiled from various software.</td>
+        <td rowspan="3">An operating system compiled from various software.</td>
       </tr>
       <tr>
         <td>distribution</td>
@@ -167,10 +209,6 @@
       <tr>
         <td>distribution-logo</td>
         <td><img alt="" src="/@@/distribution-logo" /></td>
-      </tr>
-      <tr>
-        <td>distribution-mugshot</td>
-        <td><img alt="" src="/@@/distribution-mugshot" /></td>
       </tr>
       <tr>
         <td>download</td>
@@ -203,6 +241,21 @@
         <td><img alt="" src="/@@/error-large" /></td>
       </tr>
       <tr>
+        <td>flame-icon</td>
+        <td><img alt="" src="/@@/flame-icon" /></td>
+        <td rowspan="3">
+          Currently used to show a bug affecting many users.
+        </td>
+      </tr>
+      <tr>
+        <td>flame-large</td>
+        <td><img alt="" src="/@@/flame-large" /></td>
+      </tr>
+      <tr>
+        <td>flame-logo</td>
+        <td><img alt="" src="/@@/flame-logo" /></td>
+      </tr>
+      <tr>
         <td>info</td>
         <td><img alt="" src="/@@/info" /></td>
         <td rowspan="2">
@@ -232,6 +285,21 @@
       <tr>
         <td>launchpad-logo</td>
         <td><img alt="" src="/@@/launchpad-logo" /></td>
+      </tr>
+      <tr>
+        <td>launchpad tour</td>
+        <td>
+          <img alt="" src="/@@/tour-icon" />
+        </td>
+        <td rowspan="3">The Launchpad Tour icon</td>
+      </tr>
+      <tr>
+        <td>tour-large</td>
+        <td><img alt="" src="/@@/tour-large" /></td>
+      </tr>
+      <tr>
+        <td>tour-logo</td>
+        <td><img alt="" src="/@@/tour-logo" /></td>
       </tr>
       <tr>
         <td>list</td>
@@ -269,7 +337,7 @@
       </tr>
       <tr>
         <td>person</td>
-        <td><img alt="" src="/@@/person" /></td>
+        <td><img alt="person icon" src="/@@/person" /></td>
       </tr>
       <tr>
         <td>person-logo</td>
@@ -281,10 +349,8 @@
       </tr>
       <tr>
         <td>person-inactive-badge</td>
-        <td><img alt="" src="/@@/person-badge" /></td>
-        <td rowspan="4">
-          A person who does not use Launchpad.
-        </td>
+        <td><img alt="" src="/@@/person-inactive-badge" /></td>
+        <td rowspan="4">A person who does not use Launchpad.</td>
       </tr>
       <tr>
         <td>person-inactive</td>
@@ -313,7 +379,7 @@
       <tr>
         <td>product-badge</td>
         <td><img alt="" src="/@@/product-badge" /></td>
-        <td>
+        <td rowspan="3">
           A software project.
           The <code>-logo</code> and <code>-mugshot</code> sizes should be
           used where the project owner has not uploaded a custom icon.
@@ -328,13 +394,9 @@
         <td><img alt="" src="/@@/product-logo" /></td>
       </tr>
       <tr>
-        <td>product-mugshot</td>
-        <td><img alt="" src="/@@/product-mugshot" /></td>
-      </tr>
-      <tr>
         <td>project-badge</td>
         <td><img alt="" src="/@@/project-badge" /></td>
-        <td rowspan="4">A group of projects.</td>
+        <td rowspan="3">A group of projects.</td>
       </tr>
       <tr>
         <td>project</td>
@@ -345,21 +407,26 @@
         <td><img alt="" src="/@@/project-logo" /></td>
       </tr>
       <tr>
-        <td>project-mugshot</td>
-        <td><img alt="" src="/@@/project-mugshot" /></td>
-      </tr>
-      <tr>
         <td>read-only</td>
         <td><img alt="" src="/@@/read-only" /></td>
         <td>The adjacent element cannot be changed.</td>
       </tr>
       <tr>
         <td>remove</td>
-        <td><img src="/@@/remove" /></td>
+        <td><img src="/@@/remove" alt="Remove" /></td>
         <td>Can be clicked to "remove" data from the system. Is sometimes
         used as a bullet on an action menu item which results in data
         removal, or in lists where clicking it will remove the data in that
         row.</td>
+      </tr>
+      <tr>
+        <td>rss</td>
+        <td><img src="/@@/rss" /></td>
+        <td rowspan="2">There is an RSS feed here.</td>
+      </tr>
+      <tr>
+        <td>rss-large</td>
+        <td><img src="/@@/rss-large" /></td>
       </tr>
       <tr>
         <td>search</td>
@@ -406,22 +473,10 @@
         <td><img alt="" src="/@@/meeting-mugshot" /></td>
       </tr>
       <tr>
-        <td>mentoring</td>
-        <td><img alt="" src="/@@/mentoring" /></td>
-        <td rowspan="2">A bug or blueprint for which mentoring has been
-          offered.
-        </td>
-      </tr>
-      <tr>
-        <td>mentoring-large</td>
-        <td><img alt="" src="/@@/mentoring-large" /></td>
-      </tr>
-      <tr>
         <td>milestone</td>
         <td><img alt="" src="/@@/milestone" /></td>
         <td>A "target". This indicates a development milestone to which a
-        bug or feature has been targeted. <i>XXX should rename this to
-        "milestone"?</i></td>
+        bug or feature has been targeted.</td>
       </tr>
       <tr>
         <td>team-badge</td>
@@ -484,6 +539,12 @@
         <td>Zoom out.</td>
       </tr>
       <tr>
+        <td>go to overview</td>
+        <td><img src="/@@/overview-bg-button" /></td>
+        <td>This is used as the "go to overview" background image. Can be
+            used for other answers-related actions.</td>
+      </tr>
+      <tr>
         <td>
           <h2>Bugs</h2>
         </td>
@@ -494,6 +555,12 @@
             other people using their code on the fixes for those bugs.
           </strong>
         </td>
+      </tr>
+      <tr>
+        <td>file a bug</td>
+        <td><img src="/@@/bugs-bg-button" /></td>
+        <td>This is used as the "file a bug" background image. Can be
+            used for other bug-related actions.</td>
       </tr>
       <tr>
         <td>bug</td>
@@ -545,6 +612,16 @@
         <td>A bug with importance "unknown"</td>
       </tr>
       <tr>
+        <td>bug-dupe</td>
+        <td><img src="/@@/bug-dupe-icon" /></td>
+        <td>A bug which is a duplicate of another</td>
+      </tr>
+      <tr>
+        <td>bug tracker</td>
+        <td><img src="/@@/bugtracker-icon" /></td>
+        <td>A bug tracker</td>
+      </tr>
+      <tr>
         <td>cve</td>
         <td><img src="/@@/cve" /></td>
         <td>A CVE entry. CVE stands for "Common Vulnerabilities and
@@ -552,17 +629,8 @@
         security problems across multiple vendor's software.</td>
       </tr>
       <tr>
-        <td>
+        <td colspan="3">
           <h2>Translations</h2>
-        </td>
-        <td />
-        <td>
-          <strong>
-            Launchpad lets projects invite translators to help make their
-            software work in any written language. Translators contribute
-            new translations over the web which are then included in new
-            releases of the software.
-          </strong>
         </td>
       </tr>
       <tr>
@@ -608,16 +676,8 @@
         <td>A set of strings available for translation.</td>
       </tr>
       <tr>
-        <td>
+        <td colspan="3">
           <h2>Blueprint</h2>
-        </td>
-        <td />
-        <td>
-          <strong>
-            Blueprint is the Launchpad feature tracker. It is used to help
-            projects plan their feature development and coordinate across
-            distributed teams.
-          </strong>
         </td>
       </tr>
       <tr>
@@ -651,24 +711,15 @@
         <td><img src="/@@/blueprint-undefined" /></td>
       </tr>
       <tr>
-        <td>bounty</td>
-        <td><img src="/@@/bounty" /></td>
-        <td>A bounty. This image is used in blueprint listings to indicate
-        those which have bounties associated with them, and as bullets for
-        lists of bounties.</td>
-      </tr>
-      <tr>
-        <td>
+        <td colspan="3">
           <h2>Code</h2>
         </td>
-        <td />
-        <td>
-          <strong>
-            Launchpad keeps track of the Bazaar branches for a project, and
-            allows you to organise your work efficiently and easily across
-            the entire community.
-          </strong>
-        </td>
+      </tr>
+      <tr>
+        <td>see branches</td>
+        <td><img src="/@@/code-bg-button" /></td>
+        <td>This is used as the "see branches" background image. Can be
+            used for other code-related actions.</td>
       </tr>
       <tr>
         <td>branch</td>
@@ -680,23 +731,50 @@
         <td><img src="/@@/branch-large" /></td>
       </tr>
       <tr>
-        <td>
+        <td>merge-proposal-icon</td>
+        <td><img src="/@@/merge-proposal-icon" /></td>
+        <td rowspan="2">Represents a merge proposal.</td>
+      </tr>
+      <tr>
+        <td>merge-proposal-large</td>
+        <td><img src="/@@/merge-proposal-large" /></td>
+      </tr>
+      <tr>
+        <td>branch-upgrade</td>
+        <td><img src="/@@/branch-upgrade" /></td>
+        <td>To be used when a branch is being upgraded.</td>
+      </tr>
+      <tr>
+        <td>source-package-recipe</td>
+        <td><img src="/@@/source-package-recipe" /></td>
+        <td>Represents a source package recipe.</td>
+      </tr>
+      <tr>
+        <td colspan="3">
           <h2>Packages</h2>
         </td>
-        <td />
+      </tr>
+      <tr>
+        <td>ppa-icon</td>
         <td>
-          <strong>
-            <p>Soyuz is the Launchpad subsystem that keeps track of the
-            packages in a distribution. It handles uploads, the checking of
-            permissions and consistency, builds, and the publishing of these
-            packages into an archive.</p>
-            <p>Soyuz is mostly not a web application, but it still is
-            responsible for presenting the state of the distribution to the
-            world through the Launchpad site. Also, more and more of the
-            administrative processes like mirror management are being
-            handled in Soyuz.</p>
-          </strong>
+          <img alt="" src="/@@/ppa-icon" />
         </td>
+        <td rowspan="3">An active PPA.</td>
+      </tr>
+      <tr>
+        <td>ppa-large</td>
+        <td><img alt="" src="/@@/ppa-large" /></td>
+      </tr>
+      <tr>
+        <td>ppa-logo</td>
+        <td><img alt="" src="/@@/ppa-logo" /></td>
+      </tr>
+      <tr>
+        <td>ppa-icon-inactive</td>
+        <td>
+          <img alt="" src="/@@/ppa-icon-inactive" />
+        </td>
+        <td>Icon for inactive PPAs</td>
       </tr>
       <tr>
         <td>architecture</td>
@@ -704,8 +782,8 @@
         <td>A system architecture, like x86 or ppc or SPARC or IA64</td>
       </tr>
       <tr>
-        <td>build-building</td>
-        <td><img src="/@@/build-building" /></td>
+        <td>processing</td>
+        <td><img src="/@@/processing" /></td>
         <td>A build that is currently in progress.</td>
       </tr>
       <tr>
@@ -724,8 +802,8 @@
         themselves not yet been built.</td>
       </tr>
       <tr>
-        <td>build-failure</td>
-        <td><img src="/@@/build-failure" /></td>
+        <td>build-failed</td>
+        <td><img src="/@@/build-failed" /></td>
         <td>A build that failed.</td>
       </tr>
       <tr>
@@ -737,6 +815,11 @@
         <td>build-success</td>
         <td><img src="/@@/build-success" /></td>
         <td>A build that succeeded.</td>
+      </tr>
+      <tr>
+        <td>build-success-publishing</td>
+        <td><img src="/@@/build-success-publishing" /></td>
+        <td>A build that succeeded and is waiting to be published.</td>
       </tr>
       <tr>
         <td>build-superseded</td>
@@ -759,17 +842,15 @@
         <td>Retry.</td>
       </tr>
       <tr>
-        <td>
+        <td colspan="3">
           <h2>Answers</h2>
         </td>
-        <td />
-        <td>
-          <strong>
-            The "Answer Tracker" is a system that allows users to request
-            help of one form or another with the software. It forms a
-            lightweight framework for community support.
-          </strong>
-        </td>
+      </tr>
+      <tr>
+        <td>file a question</td>
+        <td><img src="/@@/answers-bg-button" /></td>
+        <td>This is used as the "file a question" background image. Can be
+            used for other answers-related actions.</td>
       </tr>
       <tr>
         <td>question</td>
@@ -792,19 +873,8 @@
         <td><img src="/@@/ubuntu-icon" /></td>
         <td>Ubuntu icon</td>
       </tr>
-      <!-- convenience blank row for copying -->
-      <tr>
-        <td></td>
-        <td><img src="/@@/" /></td>
-        <td></td>
-      </tr>
     </tbody>
   </table>
-
-  <p>
-    <i>XXX there are also some images from Shipit that need to go here.</i>
-  </p>
-
 </div>
 
 </body>

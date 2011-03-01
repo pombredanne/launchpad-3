@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The webapp package contains infrastructure that is common across Launchpad
 that is to do with aspects such as security, menus, zcml, tales and so on.
@@ -8,88 +9,80 @@ This module also has an API for use by the application.
 __metaclass__ = type
 
 __all__ = [
-    'Link',
-    'FacetMenu',
+    'action',
     'ApplicationMenu',
-    'ContextMenu',
-    'nearest_context_with_adapter',
-    'nearest_adapter',
+    'canonical_name',
     'canonical_url',
-    'nearest',
-    'structured',
-    'StandardLaunchpadFacets',
+    'ContextMenu',
+    'custom_widget',
     'enabled_with_permission',
+    'expand_numbers',
+    'ExportedFolder',
+    'FacetMenu',
+    'GetitemNavigation',
+    'LaunchpadEditFormView',
+    'LaunchpadFormView',
     'LaunchpadView',
     'LaunchpadXMLRPCView',
+    'Link',
     'Navigation',
-    'stepthrough',
+    'NavigationMenu',
+    'nearest',
     'redirection',
+    'safe_action',
+    'sorted_dotted_numbers',
+    'sorted_version_numbers',
+    'StandardLaunchpadFacets',
+    'stepthrough',
     'stepto',
-    'GetitemNavigation',
-    'smartquote',
+    'structured',
+    'UnsafeFormGetSubmissionError',
     'urlappend',
     'urlparse',
     'urlsplit',
-    'GeneralFormView',
-    'GeneralFormViewFactory',
     'Utf8PreferredCharsets',
-    'LaunchpadFormView',
-    'LaunchpadEditFormView',
-    'action',
-    'custom_widget',
-    'safe_action',
-    'expand_numbers',
-    'sorted_version_numbers',
-    'sorted_dotted_numbers',
-    'UnsafeFormGetSubmissionError',
     ]
-
-import re
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.url import urlappend, urlparse, urlsplit
-from canonical.launchpad.webapp.generalform import (
-    GeneralFormView, GeneralFormViewFactory
-    )
 from canonical.launchpad.webapp.launchpadform import (
-    LaunchpadFormView, LaunchpadEditFormView, action, custom_widget,
-    safe_action)
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    safe_action,
+    )
 from canonical.launchpad.webapp.menu import (
-    Link, FacetMenu, ApplicationMenu, ContextMenu, structured,
-    enabled_with_permission, nearest_context_with_adapter, nearest_adapter
+    ApplicationMenu,
+    ContextMenu,
+    enabled_with_permission,
+    FacetMenu,
+    Link,
+    NavigationMenu,
+    structured,
     )
 from canonical.launchpad.webapp.preferredcharsets import Utf8PreferredCharsets
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, nearest, LaunchpadView, Navigation, stepthrough,
-    redirection, stepto, LaunchpadXMLRPCView)
+    canonical_name,
+    canonical_url,
+    LaunchpadView,
+    LaunchpadXMLRPCView,
+    Navigation,
+    nearest,
+    redirection,
+    stepthrough,
+    stepto,
+    )
 from canonical.launchpad.webapp.sorting import (
-    expand_numbers, sorted_version_numbers, sorted_dotted_numbers)
-
-def smartquote(str):
-    """Return a copy of the string provided, with smartquoting applied.
-
-    >>> smartquote('')
-    u''
-    >>> smartquote('foo "bar" baz')
-    u'foo \u201cbar\u201d baz'
-    >>> smartquote('foo "bar baz')
-    u'foo \u201cbar baz'
-    >>> smartquote('foo bar" baz')
-    u'foo bar\u201d baz'
-    >>> smartquote('""foo " bar "" baz""')
-    u'""foo " bar "" baz""'
-    >>> smartquote('" foo "')
-    u'" foo "'
-    >>> smartquote('"foo".')
-    u'\u201cfoo\u201d.'
-    >>> smartquote('a lot of "foo"?')
-    u'a lot of \u201cfoo\u201d?'
-    """
-    str = unicode(str)
-    str = re.compile(u'(^| )(")([^" ])').sub(u'\\1\u201c\\3', str)
-    str = re.compile(u'([^ "])(")($|[\s.,;:!?])').sub(u'\\1\u201d\\3', str)
-    return str
+    expand_numbers,
+    sorted_dotted_numbers,
+    sorted_version_numbers,
+    )
+from canonical.launchpad.webapp.url import (
+    urlappend,
+    urlparse,
+    urlsplit,
+    )
 
 
 class GetitemNavigation(Navigation):
@@ -107,10 +100,9 @@ class StandardLaunchpadFacets(FacetMenu):
     #   usedfor = IWhatever
 
     links = ['overview', 'branches', 'bugs', 'specifications', 'translations',
-        'answers']
+             'answers']
 
-    enable_only = ['overview', 'bugs', 'specifications',
-                   'translations', 'calendar']
+    enable_only = ['overview', 'bugs', 'specifications', 'translations']
 
     defaultlink = 'overview'
 
@@ -154,21 +146,9 @@ class StandardLaunchpadFacets(FacetMenu):
         summary = 'Blueprints and specifications'
         return Link('', text, summary)
 
-    def bounties(self):
-        target = '+bounties'
-        text = 'Bounties'
-        summary = 'View related bounty offers'
-        return Link(target, text, summary)
-
-    def calendar(self):
-        """Disabled calendar link."""
-        target = '+branches'
-        text = 'Calendar'
-        return Link(target, text, enabled=False)
-
     def branches(self):
         # this is disabled by default, because relatively few objects have
         # branch views
         text = 'Code'
-        summary = 'View related branches of code'
+        summary = 'View related code'
         return Link('', text, summary=summary)

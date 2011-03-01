@@ -1,7 +1,9 @@
 #!/bin/sh
 #
-# Lists pages that are unregistered or missing titles
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 #
+# Lists pages that are unregistered or missing titles
 
 LPDIR=lib/canonical/launchpad
 REGISTRY="lib/canonical/launchpad/zcml/*.zcml lib/canonical/*.zcml
@@ -9,7 +11,6 @@ REGISTRY="lib/canonical/launchpad/zcml/*.zcml lib/canonical/*.zcml
           lib/zope/app/exception/browser/configure.zcml
           lib/zope/app/debugskin/configure.zcml
           lib/canonical/launchpad/webapp/*.zcml
-          lib/canonical/widgets/*.py
           lib/canonical/launchpad/browser/*.py"
 
 MASTER_MACRO='metal:use-macro="context/@@main_template/master"'

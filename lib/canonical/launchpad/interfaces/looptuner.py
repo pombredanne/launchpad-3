@@ -1,4 +1,7 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=E0211,E0213
 
 """Interface for loop bodies that can be fed to the LoopTuner."""
 
@@ -29,3 +32,12 @@ class ITunableLoop(Interface):
         to get as close as possible to your time goal.
         """
 
+    def cleanUp(self):
+        """Clean up any open resources.
+
+        Optional.
+
+        This method is needed because loops may be aborted before
+        completion, so clean up code in the isDone() method may
+        never be invoked.
+        """

@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Module docstring goes here."""
 
@@ -9,16 +10,21 @@ __all__ = [
     'prune_empty_oops_directories',
     ]
 
-from datetime import date, timedelta, datetime
-import re
+from datetime import (
+    date,
+    datetime,
+    timedelta,
+    )
 import os
-import os.path
+import re
 
 from pytz import utc
 
 from canonical.database.sqlbase import cursor
-from canonical.launchpad.webapp import errorlog
-from canonical.launchpad.webapp.tales import FormattersAPI
+from canonical.launchpad.webapp.dbpolicy import SlaveOnlyDatabasePolicy
+from lp.app.browser.stringformatter import FormattersAPI
+from lp.services.log import uniquefileallocator
+
 
 def referenced_oops():
     '''Return a set of OOPS codes that are referenced somewhere in the
@@ -29,7 +35,7 @@ def referenced_oops():
     # Note that the POSIX regexp syntax is subtly different to the Python,
     # and that we need to escape all \ characters to keep the SQL interpreter
     # happy.
-    posix_oops_match = r"~* '\\moops\\s*-?\\s*\\d*[a-z]+\\d+'"
+    posix_oops_match = r"~* '^(oops\\s*-?\\s*\\d*[a-z]+\\d+)|[^=]+(\\moops\\s*-?\\s*\\d*[a-z]+\\d+)'"
     query = """
         SELECT DISTINCT subject FROM Message
         WHERE subject %(posix_oops_match)s AND subject IS NOT NULL
@@ -51,18 +57,15 @@ def referenced_oops():
 
     referenced_codes = set()
 
-    cur = cursor()
-    cur.execute(query)
-    for content in (row[0] for row in cur.fetchall()):
-        found = False
-        for match in FormattersAPI._re_linkify.finditer(content):
-            if match.group('oops') is not None:
-                code_string = match.group('oopscode')
-                referenced_codes.add(code_string.upper())
-                found = True
-        assert found, \
-            'PostgreSQL regexp matched content that Python regexp ' \
-            'did not (%r)' % (content,)
+    with SlaveOnlyDatabasePolicy():
+        cur = cursor()
+        cur.execute(query)
+        for content in (row[0] for row in cur.fetchall()):
+            found = False
+            for match in FormattersAPI._re_linkify.finditer(content):
+                if match.group('oops') is not None:
+                    code_string = match.group('oopscode')
+                    referenced_codes.add(code_string.upper())
 
     return referenced_codes
 
@@ -73,7 +76,9 @@ def path_to_oopsid(path):
     match = re.search('^(\d\d\d\d)-(\d\d+)-(\d\d+)$', date_str)
     year, month, day = (int(bit) for bit in match.groups())
     oops_id = os.path.basename(path).split('.')[1]
-    day = (datetime(year, month, day, tzinfo=utc) - errorlog.epoch).days + 1
+    # Should be making API calls not directly calculating.
+    day = (datetime(year, month, day, tzinfo=utc) - \
+        uniquefileallocator.epoch).days + 1
     return '%d%s' % (day, oops_id)
 
 
@@ -92,11 +97,13 @@ def unwanted_oops_files(root_path, days, log=None):
 
 
 def old_oops_files(root_path, days):
-    '''Generate a list of all OOPS files found under root_path that
-       are older than 'days' days old.
+    """Generate a list of all OOPS files older than 'days' days old.
 
-       root_path defaults to the config.launchpad.errorreports.errordir
-    '''
+    :param root_path: The directory that contains the OOPS files. The
+        cronscript will pass config.error_reports.error_dir if the root_path
+        was not specified on the command line.
+    :param days: The age the OOPS files must exceed to be considered old.
+    """
     now = date.today()
     for (dirpath, dirnames, filenames) in os.walk(root_path):
 

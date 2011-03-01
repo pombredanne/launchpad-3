@@ -1,3 +1,0 @@
-<configure xmlns="http://namespaces.zope.org/zope">
-  <include files="override-includes/*-meta.zcml" />
-</configure>

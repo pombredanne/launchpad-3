@@ -1,0 +1,797 @@
+Person Pages
+============
+
+There are many views that wrap the Person object to display the person's
+information.
+
+
+Probationary and invalid users
+------------------------------
+
+The person +index view provides the is_probationary_or_invalid_user so
+that page features can be disabled because the user may abuse them.
+Active users with karma are not on probation; the user's
+homepage_content is formatted as HTML.
+
+    >>> from lp.registry.interfaces.person import IPersonSet
+
+    >>> homepage_content = "line one <script>\n\nhttp://aa.aa/"
+    >>> person_set = getUtility(IPersonSet)
+    >>> active_user = person_set.getByName('name12')
+    >>> login_person(active_user)
+    >>> active_user.homepage_content = homepage_content
+    >>> login(ANONYMOUS)
+    >>> view = create_initialized_view(active_user, '+index')
+    >>> view.is_probationary_or_invalid_user
+    False
+
+    >>> print view.homepage_content
+    <p>line one &lt;script&gt;</p>
+    <BLANKLINE>
+    <p><a rel="nofollow" href="http://aa.aa/">http://<wbr></wbr>aa.aa/</a></p>
+
+Teams are always valid and do not have probation rules; the homepage
+content is formatted HTML.
+
+    >>> team = factory.makeTeam()
+    >>> login_person(team.teamowner)
+    >>> team.homepage_content = homepage_content
+    >>> login(ANONYMOUS)
+    >>> view = create_initialized_view(team, '+index')
+    >>> view.is_probationary_or_invalid_user
+    False
+
+    >>> print view.homepage_content
+    <p>line one &lt;script&gt;</p>
+    <BLANKLINE>
+    <p><a rel="nofollow" href="http://aa.aa/">http://<wbr></wbr>aa.aa/</a></p>
+
+New users are on probation; the homepage content is escaped HTML.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> new_user = factory.makePerson()
+    >>> removeSecurityProxy(new_user).homepage_content = homepage_content
+    >>> view = create_initialized_view(new_user, '+index')
+    >>> view.is_probationary_or_invalid_user
+    True
+
+    >>> print view.homepage_content
+    line one &lt;script&gt;
+    <BLANKLINE>
+    http://aa.aa/
+
+Inactive and suspended users are invalid; the homepage content is
+escaped HTML.
+
+    >>> from canonical.launchpad.interfaces.account import AccountStatus
+    >>> from canonical.launchpad.interfaces.lpstorm import IMasterObject
+
+    # Only admins can change an account.
+
+    >>> admin_user = person_set.getByName('name16')
+    >>> login_person(admin_user)
+    >>> invalid_user = factory.makePerson(name="ugh")
+    >>> invalid_user.homepage_content = homepage_content
+    >>> IMasterObject(invalid_user.account).status = AccountStatus.NOACCOUNT
+    >>> view = create_initialized_view(invalid_user, '+index')
+    >>> view.is_probationary_or_invalid_user
+    True
+
+    >>> print view.homepage_content
+    line one &lt;script&gt;
+    <BLANKLINE>
+    http://aa.aa/
+
+    >>> login(ANONYMOUS)
+
+If the user has no homepage content, the view's value is None.
+
+    >>> removeSecurityProxy(new_user).homepage_content = None
+    >>> view = create_initialized_view(new_user, '+index')
+    >>> print view.homepage_content
+    None
+
+
+Email address disclosure
+------------------------
+
+PersonView is the base for many views for Person objects, including the
+default view. It provides several properties to help display email
+addresses.
+
+Templates may use the state of the email_address_visibility property to
+determine which message to show to the user. When the state is PUBLIC or
+ALLOWED, the email_addresses property contains a list of the viewable
+email addresses and the visible_email_address_description summarises who
+can see them
+
+Mark has a registered email address, and he has chosen to disclose it to
+anyone in Launchpad..
+
+    >>> login('test@canonical.com')
+    >>> mark = person_set.getByEmail('mark@example.com')
+    >>> mark.preferredemail.email
+    u'mark@example.com'
+
+    >>> mark.hide_email_addresses
+    False
+    >>> logout()
+
+Anonymous users cannot see any Launchpad user's email addresses. The
+email addresses state is LOGIN_REQUIRED, there is no description, nor
+are there any email addresses.
+
+    >>> view = create_initialized_view(mark, '+index')
+    >>> view.email_address_visibility.is_login_required
+    True
+
+    >>> print view.visible_email_address_description
+    None
+
+    >>> view.visible_email_addresses
+    []
+
+Logged in user can see Mark's email addresses. The email addresses state
+is PUBLIC. There is a description of who can see the list of email
+addresses.
+
+    >>> login('test@canonical.com')
+    >>> view = create_initialized_view(mark, '+index')
+    >>> view.email_address_visibility.are_public
+    True
+
+    >>> view.visible_email_address_description
+    'This email address is only visible to Launchpad users.'
+
+    >>> view.visible_email_addresses
+    [u'mark@example.com']
+
+As for Sample Person, he has chosen not to disclose his email addresses.
+
+    >>> login(ANONYMOUS)
+    >>> sample_person = person_set.getByEmail('test@canonical.com')
+    >>> sample_person.hide_email_addresses
+    True
+
+Anonymous users can't see them because the state is LOGIN_REQUIRED.
+
+    >>> view = create_initialized_view(sample_person, '+index')
+    >>> view.email_address_visibility.is_login_required
+    True
+
+    >>> view.visible_email_addresses
+    []
+
+No Privileges Person cannot see them either because the state is HIDDEN.
+There is no description for the email addresses because he cannot view
+them.
+
+    >>> login('no-priv@canonical.com')
+    >>> view = create_initialized_view(sample_person, '+index')
+    >>> view.email_address_visibility.are_hidden
+    True
+
+    >>> print view.visible_email_address_description
+    None
+
+    >>> view.visible_email_addresses
+    []
+
+Admins and commercial admins, like Foo Bar and Commercial Member, can
+see Sample Person's email addresses because the state is ALLOWED. The
+description states that the email addresses are not disclosed to others.
+
+    >>> login('foo.bar@canonical.com')
+    >>> view = create_initialized_view(sample_person, '+index')
+    >>> view.email_address_visibility.are_allowed
+    True
+
+    >>> view.visible_email_address_description
+    'This email address is not disclosed to others.'
+
+    >>> view.visible_email_addresses
+    [u'test@canonical.com', u'testing@canonical.com']
+
+    >>> login('commercial-member@canonical.com')
+    >>> view = create_initialized_view(sample_person, '+index')
+    >>> view.email_address_visibility.are_allowed
+    True
+
+    >>> view.visible_email_addresses
+    [u'test@canonical.com', u'testing@canonical.com']
+
+Teams are like Persons. No email address is disclosed when the user is
+anonymous.
+
+    >>> login(ANONYMOUS)
+    >>> ubuntu_team = person_set.getByName('ubuntu-team')
+    >>> view = create_initialized_view(ubuntu_team, '+index')
+    >>> view.email_address_visibility.is_login_required
+    True
+
+    >>> view.visible_email_addresses
+    []
+
+A logged in user can see the team's contact address because it cannot be
+hidden.
+
+    >>> login('no-priv@canonical.com')
+    >>> view = create_initialized_view(ubuntu_team, '+index')
+    >>> view.email_address_visibility.are_public
+    True
+
+    >>> view.visible_email_addresses
+    [u'support@ubuntu.com']
+
+It is possible for a team to have more than two addresses (from a
+mailing list), but only the preferred address is listed in the
+visible_email_addresses property.
+
+    >>> email_address = factory.makeEmail(
+    ...     'ubuntu_team@canonical.com', ubuntu_team)
+    >>> ubuntu_team.setContactAddress(email_address)
+    >>> mailing_list = factory.makeMailingList(
+    ...     ubuntu_team, ubuntu_team.teamowner)
+    >>> view = create_initialized_view(ubuntu_team, '+index')
+    >>> view.visible_email_addresses
+    [u'ubuntu_team@canonical.com']
+
+When the user or team does not have a validated contact address, the
+email addresses state is NONE_AVAILABLE.
+
+    >>> landscape_developers = person_set.getByName('landscape-developers')
+    >>> view = create_initialized_view(landscape_developers, '+index')
+    >>> view.email_address_visibility.are_none_available
+    True
+
+    >>> print view.visible_email_address_description
+    None
+
+    >>> view.visible_email_addresses
+    []
+
+
+Languages
+---------
+
+The PersonView provides a comma separated list of languages that a
+person speaks. The contact details portlet displays the user languages.
+
+English is the default language in Launchpad. If the user has not set
+his preferred languages, English is used.
+
+    >>> sample_person.languages
+    []
+
+    >>> login(ANONYMOUS)
+    >>> view = create_view(sample_person, '+portlet-contact-details')
+    >>> print view.languages
+    English
+
+This assumption is visible to the user when he views his own profile
+page, and he can set his preferred languages if he wants to make a
+correction. The list of languages is alphabetized.
+
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
+
+    >>> languageset = getUtility(ILanguageSet)
+    >>> sample_person.addLanguage(languageset.getLanguageByCode('so'))
+    >>> sample_person.addLanguage(languageset.getLanguageByCode('fr'))
+
+    >>> view = create_view(sample_person, '+portlet-contact-details')
+    >>> print view.languages
+    French, Somali
+
+Teams may have languages too. English is the default if the team has not
+set a language.
+
+    >>> landscape_developers.languages
+    []
+
+    >>> view = create_view(landscape_developers, '+portlet-contact-details')
+    >>> print view.languages
+    English
+
+Teams most often set just one language that is used for the Answers
+application. If the language is a variant, the variation is shown in
+parenthesis.
+
+    >>> landscape_developers.addLanguage(
+    ...     languageset.getLanguageByCode('pt_BR'))
+    >>> view = create_view(landscape_developers, '+portlet-contact-details')
+    >>> print view.languages
+    Portuguese (Brazil)
+
+
+Things a person is working on
+-----------------------------
+
+PersonView is the base for many views for Person objects. It provides
+several properties to help display things the user is working on.
+
+The +portlet-currentfocus view is responsible for rendering the "Working
+on..." section in the Person profile page (+index). Nothing is rendered
+when the user does not have any assigned bug or specs that are not in
+progress.
+
+    >>> user = factory.makePerson(name='ken', password='test')
+    >>> view = create_initialized_view(user, name='+portlet-currentfocus')
+    >>> view.has_assigned_bugs_or_specs_in_progress
+    False
+
+    >>> len(view.assigned_bugs_in_progress)
+    0
+
+    >>> len(view.assigned_specs_in_progress)
+    0
+
+    >>> from canonical.launchpad.testing.pages import extract_text
+    >>> len(extract_text(view.render()))
+    0
+
+Assigned specifications that do not display when they are not in an in
+progress state.
+
+    >>> from lp.blueprints.enums import SpecificationImplementationStatus
+
+    >>> login_person(user)
+    >>> product = factory.makeProduct(name="tool", owner=user)
+    >>> spec = factory.makeSpecification(
+    ...     product=product, title='Specs need stories')
+    >>> spec.assignee = user
+    >>> view.has_assigned_bugs_or_specs_in_progress
+    False
+
+    >>> len(view.assigned_bugs_in_progress)
+    0
+
+    >>> len(view.assigned_specs_in_progress)
+    0
+
+The specification is displayed only when it is in a in progress state
+(The state may be any from STARTED though DEPLOYMENT). Below the list of
+specifications is a link to show all the specifications that the user is
+working on.
+
+    >>> from lp.blueprints.enums import SpecificationDefinitionStatus
+
+    >>> spec.definition_status = SpecificationDefinitionStatus.APPROVED
+    >>> newstate = spec.updateLifecycleStatus(user)
+    >>> spec.implementation_status = SpecificationImplementationStatus.STARTED
+    >>> newstate = spec.updateLifecycleStatus(user)
+    >>> view = create_initialized_view(user, name='+portlet-currentfocus')
+    >>> view.has_assigned_bugs_or_specs_in_progress
+    True
+
+    >>> len(view.assigned_bugs_in_progress)
+    0
+
+    >>> len(view.assigned_specs_in_progress)
+    1
+
+    >>> print view.render()
+    <div id="working-on"...
+    <a href="/~ken/+specs?role=assignee"> All assigned blueprints </a>...
+    ...<a href="http://blueprints.launchpad.dev/tool/+spec/..."...>Specs
+      need stories</a>...
+    </div>...
+
+Assigned bugs do not display when their status is not INPROGRESS.
+
+    >>> bug = factory.makeBug(
+    ...     product=product, title='tool does not work')
+    >>> bug.bugtasks[0].transitionToAssignee(user)
+    >>> view.has_assigned_bugs_or_specs_in_progress
+    True
+
+    >>> len(view.assigned_bugs_in_progress)
+    0
+
+    >>> len(view.assigned_specs_in_progress)
+    1
+
+The assigned bug is displayed in the "Working on..." section when its
+status is in INPROGRESS.
+
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
+    >>> bug.bugtasks[0].transitionToStatus(BugTaskStatus.INPROGRESS, user)
+
+    # Create a new view because we're testing some cached properties.
+
+    >>> view = create_initialized_view(user, name='+portlet-currentfocus')
+
+    >>> view.has_assigned_bugs_or_specs_in_progress
+    True
+
+    >>> len(view.assigned_bugs_in_progress)
+    1
+
+    >>> len(view.assigned_specs_in_progress)
+    1
+
+    >>> print view.render()
+    <div id="working-on"...
+    <a href="http://launchpad.dev/~ken/+assignedbugs?...">
+      All bugs in progress </a>...
+    ...<a href="http://bugs.launchpad.dev/tool/+bug/..."...>tool
+      does not work</a>...
+    <a href="/~ken/+specs?role=assignee">
+      All assigned blueprints </a>...
+    ...<a href="http://blueprints.launchpad.dev/tool/+spec/..."...>Specs
+      need stories</a>...
+    </div>...
+
+Multiple bugs and specs are displayed.
+
+    >>> another_bug = factory.makeBug(
+    ...     product=product, title='tool does is broken')
+    >>> another_bug.bugtasks[0].transitionToAssignee(user)
+    >>> another_bug.bugtasks[0].transitionToStatus(
+    ...     BugTaskStatus.INPROGRESS, user)
+
+    # Create a new view because we're testing some cached properties.
+
+    >>> view = create_initialized_view(user, name='+portlet-currentfocus')
+
+    >>> view.has_assigned_bugs_or_specs_in_progress
+    True
+
+    >>> len(view.assigned_bugs_in_progress)
+    2
+
+    >>> len(view.assigned_specs_in_progress)
+    1
+
+But duplicate bugs are never displayed.
+
+    >>> another_bug.markAsDuplicate(bug)
+
+    # Create a new view because we're testing some cached properties.
+
+    >>> view = create_initialized_view(user, name='+portlet-currentfocus')
+
+    >>> view.has_assigned_bugs_or_specs_in_progress
+    True
+
+    >>> len(view.assigned_bugs_in_progress)
+    1
+
+    >>> len(view.assigned_specs_in_progress)
+    1
+
+
+Person contacting another person
+--------------------------------
+
+The PersonView provides information to make the link to contact a user.
+No Privileges Person can send a message to Sample Person, even though
+Sample Person has hidden his email addresses.
+
+    >>> login('no-priv@canonical.com')
+    >>> sample_person.hide_email_addresses
+    True
+
+    >>> view = create_initialized_view(sample_person, '+index')
+    >>> print view.contact_link_title
+    Send an email to this user through Launchpad
+
+The EmailToPersonView provides many properties to the page template to
+explain exactly who is being contacted.
+
+    >>> view = create_initialized_view(sample_person, '+contactuser')
+    >>> print view.label
+    Contact user
+
+    >>> print view.specific_contact_title_text
+    Contact this user
+
+    >>> print view.recipients.description
+    You are contacting Sample Person (name12).
+
+    >>> [recipient.name for recipient in view.recipients]
+    [u'name12']
+
+
+Person contacting himself
+-------------------------
+
+For consistency and testing purposes, the "+contactuser" page is
+available even when someone is looking at his own profile page.  The
+wording on the tooltip is different though. No Privileges Person can
+send a message to himself.
+
+    >>> no_priv = person_set.getByEmail('no-priv@canonical.com')
+    >>> view = create_initialized_view(no_priv, '+index')
+    >>> print view.contact_link_title
+    Send an email to yourself through Launchpad
+
+The EmailToPersonView provides the explanation about who is being
+contacted.
+
+    >>> view = create_initialized_view(no_priv, '+contactuser')
+    >>> print view.label
+    Contact user
+
+    >>> print view.specific_contact_title_text
+    Contact yourself
+
+    >>> print view.recipients.description
+    You are contacting No Privileges Person (no-priv).
+
+    >>> [recipient.name for recipient in view.recipients]
+    [u'no-priv']
+
+
+Non-member contacting a Team
+----------------------------
+
+Users can contact teams, but the behaviour depends upon whether the user
+is a member of the team. No Privileges Person is not a member of the
+Landscape Developers team.
+
+    >>> view = create_initialized_view(landscape_developers, '+index')
+    >>> print view.contact_link_title
+    Send an email to this team's owner through Launchpad
+
+The EmailToPersonView can be used by non-members to contact the team
+owner.
+
+    >>> view = create_initialized_view(landscape_developers, '+contactuser')
+    >>> print view.label
+    Contact user
+
+    >>> print view.specific_contact_title_text
+    Contact this team
+
+    >>> print view.recipients.description
+    You are contacting the Landscape Developers (landscape-developers) team
+    owner, Sample Person (name12).
+
+    >>> [recipient.name for recipient in view.recipients]
+    [u'name12']
+
+
+Member contacting a Team
+------------------------
+
+Members can contact their team. How they are contacted depends upon
+whether the team's contact address is set. Sample Person can contact his
+team, Landscape developers, even though they do not have a contact
+address.
+
+    >>> login('test@canonical.com')
+    >>> view = create_initialized_view(landscape_developers, '+index')
+    >>> print view.contact_link_title
+    Send an email to your team's members through Launchpad
+
+The EmailToPersonView can be used by members to contact their team.
+
+    >>> view = create_initialized_view(landscape_developers, '+contactuser')
+    >>> print view.label
+    Contact user
+
+    >>> print view.specific_contact_title_text
+    Contact your team
+
+    >>> print view.recipients.description
+    You are contacting 2 members of the Landscape Developers
+    (landscape-developers) team directly.
+
+    >>> [recipient.name for recipient in view.recipients]
+    [u'salgado', u'name12']
+
+There are 2 recipients, so the object is treats as True.
+
+    >>> recipients = view.recipients
+    >>> len(recipients)
+    2
+
+    >>> bool(recipients)
+    True
+
+If there is only one member of the team, who must therefore be the user
+sending the email, and also be the team owner, The view provides a
+special message just for him.
+
+    >>> vanity_team = factory.makeTeam(
+    ...     sample_person, displayname='Vanity', name='vanity')
+    >>> view = create_initialized_view(vanity_team, '+contactuser')
+    >>> print view.label
+    Contact user
+
+    >>> print view.specific_contact_title_text
+    Contact your team
+
+    >>> print view.recipients.description
+    You are contacting 1 member of the Vanity (vanity) team directly.
+
+    >>> [recipient.name for recipient in view.recipients]
+    [u'name12']
+
+EmailToPersonView will use the contact address when the team has one.
+
+    >>> email_address = factory.makeEmail(
+    ...     'landscapers@canonical.com', landscape_developers)
+    >>> landscape_developers.setContactAddress(email_address)
+
+    >>> view = create_initialized_view(landscape_developers, '+contactuser')
+    >>> print view.recipients.description
+    You are contacting the Landscape Developers (landscape-developers) team.
+
+    >>> [recipient.name for recipient in view.recipients]
+    [u'landscape-developers']
+
+
+Contact this user/team valid addresses and quotas
+-------------------------------------------------
+
+The EmailToPersonView has_valid_email_address property is normally True.
+The is_possible property is True when contact_is_allowed and
+has_valid_email_address are both True.
+
+    >>> view = create_initialized_view(landscape_developers, '+contactuser')
+    >>> view.has_valid_email_address
+    True
+
+    >>> view.contact_is_possible
+    True
+
+The EmailToPersonView provides two properties that check that the user
+is_allowed to send emails because he has not exceeded the daily quota.
+The next_try property is the date when the user will be allowed to send
+emails again. The is_possible property is True when both
+contact_is_allowed and as_valid_email_address are True.
+
+The daily quota is set to 3 emails per day. See the "Message quota" in
+`doc/user-to-user.txt` to see how these two attributes are used.
+
+
+Invalid users and anonymous contacters
+--------------------------------------
+
+Inactive users and users without a preferred email address are invalid
+and cannot be contacted.
+
+    >>> former_user = person_set.getByEmail('former-user@canonical.com')
+    >>> view = create_initialized_view(former_user, '+contactuser')
+    >>> view.request.response.getStatus()
+    302
+
+    >>> print view.request.response.getHeader('Location')
+    http://launchpad.dev/~former-user-deactivatedaccount
+
+    >>> recipients = view.recipients
+    >>> len(recipients)
+    0
+
+    >>> bool(recipients)
+    False
+
+Anonymous users cannot contact anyone, they are redirected to the person
+or team's profile page. This can happen when off-site links point to a
+person or team's contact page.
+
+    >>> login(ANONYMOUS)
+    >>> view = create_initialized_view(landscape_developers, '+contactuser')
+    >>> view.request.response.getStatus()
+    302
+
+    >>> print view.request.response.getHeader('Location')
+    http://launchpad.dev/~landscape-developers
+
+
+Messages and subjects cannot be empty
+-------------------------------------
+
+Messages or subjects that contain only whitespace are treated as an
+error that the user must fix.
+
+    >>> login('test@canonical.com')
+    >>> view = create_initialized_view(
+    ...     landscape_developers, '+contactuser', form={
+    ...         'field.field.from_': 'test@canonical.com',
+    ...         'field.subject': ' ',
+    ...         'field.message': ' ',
+    ...         'field.actions.send': 'Send',
+    ...         })
+    >>> view.errors
+    [u'You must provide a subject and a message.']
+
+
+Person +index "Personal package archives" section
+-------------------------------------------------
+
+The person:+index page has a section titled "Personal package archives",
+which is conditionally displayed depending on the value of the view
+property `should_show_ppa_section`.
+
+The property checks two things to decide whether to return True or not:
+
+ * Return True if the current user has launchpad.Edit permission
+ * Return True if the person has PPAs and at least one of them is viewable
+   by the current user.
+
+Cprov is a user with a PPA:
+
+    >>> cprov = person_set.getByName("cprov")
+
+Anonymous users (i.e. anyone) can see the section.
+
+    >>> login(ANONYMOUS)
+    >>> view = create_initialized_view(cprov, "+index")
+    >>> view.should_show_ppa_section
+    True
+
+Cprov himself can see the section:
+
+    >>> login("celso.providelo@canonical.com")
+    >>> view = create_initialized_view(cprov, "+index")
+    >>> view.should_show_ppa_section
+    True
+
+If we disable Cprov's PPA, the section is not presented to anonymous
+users who cannot view the PPA, but is displayed to Celso.
+
+    >>> login("admin@canonical.com")
+    >>> cprov.archive.disable()
+
+    >>> login(ANONYMOUS)
+    >>> view = create_initialized_view(cprov, "+index")
+    >>> view.should_show_ppa_section
+    False
+
+    >>> login("celso.providelo@canonical.com")
+    >>> view = create_initialized_view(cprov, "+index")
+    >>> view.should_show_ppa_section
+    True
+
+If the PPA is private, only the owner will see the section.
+
+    >>> login("admin@canonical.com")
+    >>> private_ppa = factory.makeArchive(private=True)
+
+    >>> login_person(private_ppa.owner)
+    >>> view = create_initialized_view(private_ppa.owner, "+index")
+    >>> view.should_show_ppa_section
+    True
+
+    >>> login(ANONYMOUS)
+    >>> view = create_initialized_view(private_ppa.owner, "+index")
+    >>> view.should_show_ppa_section
+    False
+
+For a user with no PPAs, nobody will see the section apart from himself.
+This aspect allows him to access the 'Create a new PPA' link.
+
+    >>> print sample_person.archive
+    None
+
+    >>> login_person(sample_person)
+    >>> view = create_initialized_view(sample_person, "+index")
+    >>> view.should_show_ppa_section
+    True
+
+    >>> login(ANONYMOUS)
+    >>> view = create_initialized_view(sample_person, "+index")
+    >>> view.should_show_ppa_section
+    False
+
+If the person is a member of teams with PPAs but doesn't own any
+himself, the section will still not appear for anyone but people with
+lp.edit.
+
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+
+    >>> login("admin@canonical.com")
+    >>> team = factory.makeTeam()
+    >>> ignored = team.addMember(sample_person, sample_person)
+    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    >>> ppa = factory.makeArchive(distribution=ubuntu, owner=team)
+
+    >>> login(ANONYMOUS)
+    >>> view = create_initialized_view(sample_person, "+index")
+    >>> view.should_show_ppa_section
+    False
+
+

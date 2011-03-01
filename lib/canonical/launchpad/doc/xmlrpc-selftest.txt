@@ -2,7 +2,7 @@
 
 The Launchpad root object has a simple XMLRPC API to show that XMLRPC works.
 
-    >>> from canonical.launchpad.xmlrpc import SelfTest, ISelfTest
+    >>> from canonical.launchpad.xmlrpc.application import SelfTest, ISelfTest
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> selftestview = SelfTest('somecontext', 'somerequest')
     >>> verifyObject(ISelfTest, selftestview)
@@ -16,7 +16,7 @@ We can test our XMLRPC APIs using xmlrpclib, using a custom Transport
 which talks with the publisher directly.
 
     >>> import xmlrpclib
-    >>> from canonical.functional import XMLRPCTestTransport
+    >>> from lp.testing.xmlrpc import XMLRPCTestTransport
     >>> selftest = xmlrpclib.ServerProxy(
     ...     'http://xmlrpc.launchpad.dev/', transport=XMLRPCTestTransport())
     >>> selftest.concatenate('foo', 'bar')
@@ -56,7 +56,7 @@ OOPS ID (assuming one was generated):
     'Hello Anonymous.'
 
 The last call returned 'Anonymous', since we didn't provided a username
-and a password. If we do that, hello() will print the the name of the
+and a password. If we do that, hello() will print the name of the
 logged in user:
 
     >>> selftest = xmlrpclib.ServerProxy(

@@ -1,0 +1,146 @@
+===========================
+Validating an email address
+===========================
+
+The user 'salgado' has an unvalidated email address that was probably
+added by gina. Now he wants to validate it.
+
+    # Workaround for https://launchpad.net/launchpad/+bug/39016
+    >>> from lp.services.mail import stub
+    >>> stub.test_emails[:] = []
+
+    >>> browser = setupBrowser(auth='Basic salgado@ubuntu.com:zeca')
+    >>> browser.open('http://launchpad.dev/~salgado/+editemails')
+    >>> print browser.title
+    Change your e-mail settings...
+
+    >>> browser.getControl(name="field.UNVALIDATED_SELECTED").getControl(
+    ...     value='salgado@ubuntu.com').selected = True
+    >>> browser.getControl('Confirm').click()
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    An e-mail message was sent to 'salgado@ubuntu.com'...
+
+Retrieve the email and make sure it was sent to the right address.
+
+    >>> import email
+    >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_msg)
+    >>> print msg.get('to')
+    salgado@ubuntu.com
+
+Visit the token URL mentioned in the email, and get redirected to
++validateemail.
+
+    >>> from canonical.launchpad.ftests.logintoken import (
+    ...     get_token_url_from_email)
+    >>> token_url = get_token_url_from_email(raw_msg)
+    >>> browser.open(token_url)
+
+    >>> print browser.url
+    http://launchpad.dev/token/.../+validateemail
+    >>> print browser.title
+    Confirm e-mail address
+
+    >>> print extract_text(find_main_content(browser.contents))
+
+    <div...Confirm e-mail address...salgado@ubuntu.com...
+
+    >>> browser.getControl('Continue').click()
+    >>> print browser.title
+    Guilherme Salgado in Launchpad
+
+Check that the email address now shows up as validated.
+
+    >>> browser.getLink(url='+editemails').click()
+    >>> browser.getControl(name="field.VALIDATED_SELECTED").getControl(
+    ...     value='salgado@ubuntu.com')
+    <ItemControl...optionValue='salgado@ubuntu.com'...>
+
+    >>> browser.getControl(name="field.UNVALIDATED_SELECTED").getControl(
+    ...     value='salgado@ubuntu.com')
+    Traceback (most recent call last):
+    ...
+    LookupError...
+
+An email address that the user adds manually should have the same
+validation workflow as an email address guessed by the system and
+added by gina.
+
+    >>> browser.getControl('Add a new address').value = 'salgado@example.com'
+    >>> browser.getControl('Add', index=1).click()
+    >>> browser.url
+    'http://launchpad.dev/%7Esalgado/+editemails'
+
+    >>> browser.getControl(name="field.UNVALIDATED_SELECTED").getControl(
+    ...     value='salgado@example.com').selected = True
+    >>> browser.getControl('Confirm').click()
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    An e-mail message was sent to 'salgado@example.com'...
+
+
+Validating the email address string
+===================================
+
+Leaving the email address field blank and hitting the 'Add' button
+should display an error message.
+
+    >>> browser.getControl('Add a new address').value
+    ''
+
+    >>> browser.getControl('Add', index=1).click()
+    >>> print browser.title
+    Change your e-mail settings...
+
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    There is 1 error.
+    Required input is missing.
+
+Entering a string that does not look like an email address causes an
+error to be displayed.
+
+    >>> print browser.title
+    Change your e-mail settings...
+
+    >>> browser.getControl('Add a new address').value = 'foo'
+    >>> browser.getControl('Add', index=1).click()
+    >>> print browser.title
+    Change your e-mail settings...
+
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    There is 1 error.
+    'foo' doesn't seem to be a valid email address.
+
+Markup in new addresses is escaped in error messages so that it cannot
+be interpreted by the browser. Scripts that are embedded in the address
+will not run. A malicious hacker cannot use a XSS vulnerability to gain
+information about Launchpad users.
+
+    >>> print browser.title
+    Change your e-mail settings...
+
+    >>> browser.getControl('Add a new address').value = (
+    ...     "salgado@example.com<br/><script>window.alert('XSS')</script>")
+    >>> browser.getControl('Add', index=1).click()
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    There is 1 error.
+    'salgado...com&lt;br/&gt;&lt;script&gt;window.alert('XSS')&lt;/script&gt;'
+    doesn't seem to be a valid email address.
+
+
++editemails for teams
+=====================
+
+Because people and teams share the same namespace, it used to be possible to
+hack the url to get to a team's +editemails page.  This makes no sense, and
+for teams you should use the +contactaddress url.  The +editemails page is no
+longer available for teams.
+
+    >>> browser.open('http://launchpad.dev/~guadamen/+editemails')
+    Traceback (most recent call last):
+    ...
+    NotFound: Object: <...>, name: u'+editemails'

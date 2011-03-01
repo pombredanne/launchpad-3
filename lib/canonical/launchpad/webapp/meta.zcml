@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure xmlns="http://namespaces.zope.org/meta">
 
   <directive
@@ -22,6 +26,20 @@
       />
 
   <directive
+      namespace="http://namespaces.zope.org/zope"
+      name="call"
+      schema="canonical.launchpad.webapp.metazcml.ICallDirective"
+      handler="canonical.launchpad.webapp.metazcml.call"
+      />
+
+  <directive
+      namespace="http://namespaces.zope.org/browser"
+      name="feeds"
+      schema="canonical.launchpad.webapp.metazcml.IFeedsDirective"
+      handler="canonical.launchpad.webapp.metazcml.feeds"
+      />
+
+  <directive
       namespace="http://namespaces.zope.org/browser"
       name="renamed-page"
       schema="canonical.launchpad.webapp.metazcml.IRenamedPageDirective"
@@ -33,13 +51,6 @@
       name="favicon"
       schema="canonical.launchpad.webapp.metazcml.IFaviconDirective"
       handler="canonical.launchpad.webapp.metazcml.favicon"
-      />
-
-  <directive
-      namespace="http://namespaces.zope.org/browser"
-      name="tour"
-      schema="canonical.launchpad.webapp.metazcml.ITourPageDirective"
-      handler="canonical.launchpad.webapp.metazcml.tour_page"
       />
 
   <complexDirective
@@ -65,23 +76,18 @@
       handler="canonical.launchpad.webapp.metazcml.authorizations"
       />
 
+  <directive
+      namespace="http://namespaces.zope.org/zope"
+      name="publisher"
+      schema="zope.app.publication.metadirectives.IRequestPublicationDirective"
+      handler="canonical.launchpad.webapp.metazcml.launchpadPublisher"
+      />
+
   <groupingDirective
      namespace="http://namespaces.zope.org/zope"
      name="facet"
      schema="canonical.launchpad.webapp.metazcml.IGroupingFacet"
      handler="canonical.launchpad.webapp.metazcml.GroupingFacet"
      />
-
-  <complexDirective
-    namespace="http://namespaces.zope.org/browser"
-    name="generalform"
-    schema="canonical.launchpad.webapp.metazcml.IGeneralFormDirective"
-    handler="canonical.launchpad.webapp.metazcml.GeneralFormDirective"
-    >
-    <subdirective
-      name="widget"
-      schema="zope.app.form.browser.metadirectives.IWidgetSubdirective"
-      />
-  </complexDirective>
 
 </configure>

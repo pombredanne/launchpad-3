@@ -1,48 +1,71 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-__all__ = ['emailcommands', 'get_error_message']
+__all__ = [
+    'EmailCommand',
+    'EmailCommandCollection',
+    'BugEmailCommands',
+    'get_error_message']
 
-import os.path
-import re
-
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectModifiedEvent,
+    )
+from lazr.lifecycle.interfaces import (
+    IObjectCreatedEvent,
+    IObjectModifiedEvent,
+    )
+from lazr.lifecycle.snapshot import Snapshot
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements, providedBy
+from zope.interface import (
+    implements,
+    providedBy,
+    )
 from zope.schema import ValidationError
 
-from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
-from canonical.launchpad.interfaces import (
-        IProduct, IDistribution, IDistroSeries, IBug,
-        IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
-        IBugTaskEditEmailCommand, IBugSet, ICveSet, ILaunchBag,
-        IBugTaskSet, IMessageSet, IDistroBugTask,
-        IDistributionSourcePackage, EmailProcessingError,
-        NotFoundError, CreateBugParams, IPillarNameSet,
-        BugTargetNotFound, IProject, ISourcePackage, IProductSeries,
-        BugTaskStatus)
-from canonical.launchpad.event import (
-    SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
-from canonical.launchpad.event.interfaces import (
-    ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
-
-from canonical.launchpad.webapp.snapshot import Snapshot
-
-from canonical.lp.dbschema import BugTaskImportance
-
-
-def get_error_message(filename, **interpolation_items):
-    """Returns the error message that's in the given filename.
-
-    If the error message requires some parameters, those are given in
-    interpolation_items.
-
-    The files are searched for in lib/canonical/launchpad/mail/errortemplates.
-    """
-    base = os.path.dirname(__file__)
-    fullpath = os.path.join(base, 'errortemplates', filename)
-    error_template = open(fullpath).read()
-    return error_template % interpolation_items
+from canonical.launchpad.interfaces.mail import (
+    BugTargetNotFound,
+    EmailProcessingError,
+    IBugEditEmailCommand,
+    IBugEmailCommand,
+    IBugTaskEditEmailCommand,
+    IBugTaskEmailCommand,
+    )
+from canonical.launchpad.interfaces.message import IMessageSet
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.mail.helpers import (
+    get_error_message,
+    get_person_or_team,
+    )
+from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.webapp.authorization import check_permission
+from lp.app.errors import (
+    NotFoundError,
+    UserCannotUnsubscribePerson,
+    )
+from lp.bugs.interfaces.bug import (
+    CreateBugParams,
+    IBug,
+    IBugSet,
+    )
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    IDistroBugTask,
+    )
+from lp.bugs.interfaces.cve import ICveSet
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 
 
 def normalize_arguments(string_args):
@@ -137,14 +160,16 @@ class BugEmailCommand(EmailCommand):
                 filealias=filealias,
                 parsed_message=parsed_msg)
             if message.text_contents.strip() == '':
-                 raise EmailProcessingError(
-                    get_error_message('no-affects-target-on-submit.txt'))
+                # The report for a new bug must contain an affects command,
+                # since the bug must have at least one task
+                raise EmailProcessingError(
+                    get_error_message('no-affects-target-on-submit.txt'),
+                    stop_processing=True)
 
             params = CreateBugParams(
                 msg=message, title=message.title,
                 owner=getUtility(ILaunchBag).user)
-            bug = getUtility(IBugSet).createBug(params)
-            return bug, SQLObjectCreatedEvent(bug)
+            return getUtility(IBugSet).createBugWithoutTarget(params)
         else:
             try:
                 bugid = int(bugid)
@@ -172,22 +197,21 @@ class EditEmailCommand(EmailCommand):
         args = self.convertArguments(context)
 
         edited_fields = set()
-        if ISQLObjectModifiedEvent.providedBy(current_event):
+        if IObjectModifiedEvent.providedBy(current_event):
             context_snapshot = current_event.object_before_modification
             edited_fields.update(current_event.edited_fields)
         else:
-            context_snapshot = Snapshot(context, providing=providedBy(context))
+            context_snapshot = Snapshot(
+                context, providing=providedBy(context))
 
-        if not ISQLObjectCreatedEvent.providedBy(current_event):
-            notify(SQLObjectToBeModifiedEvent(context, args))
         edited = False
         for attr_name, attr_value in args.items():
             if getattr(context, attr_name) != attr_value:
                 self.setAttributeValue(context, attr_name, attr_value)
                 edited = True
-        if edited and not ISQLObjectCreatedEvent.providedBy(current_event):
+        if edited and not IObjectCreatedEvent.providedBy(current_event):
             edited_fields.update(args.keys())
-            current_event = SQLObjectModifiedEvent(
+            current_event = ObjectModifiedEvent(
                 context, context_snapshot, list(edited_fields))
 
         return context, current_event
@@ -197,42 +221,107 @@ class EditEmailCommand(EmailCommand):
         setattr(context, attr_name, attr_value)
 
 
-class PrivateEmailCommand(EditEmailCommand):
-    """Marks a bug public or private."""
+class PrivateEmailCommand(EmailCommand):
+    """Marks a bug public or private.
+
+    We do not subclass `EditEmailCommand` because we must call
+    `IBug.setPrivate` to update privacy settings, rather than just
+    updating an attribute.
+    """
 
     implements(IBugEditEmailCommand)
 
     _numberOfArguments = 1
 
-    def convertArguments(self, context):
-        """See EmailCommand."""
+    def execute(self, context, current_event):
+        """See `IEmailCommand`. Much of this method has been lifted from
+        `EditEmailCommand.execute`.
+        """
+        # Parse args.
+        self._ensureNumberOfArguments()
         private_arg = self.string_args[0]
         if private_arg == 'yes':
-            return {'private': True}
+            private = True
         elif private_arg == 'no':
-            return {'private': False}
+            private = False
         else:
             raise EmailProcessingError(
-                get_error_message('private-parameter-mismatch.txt'))
+                get_error_message('private-parameter-mismatch.txt'),
+                stop_processing=True)
+
+        # Snapshot.
+        edited_fields = set()
+        if IObjectModifiedEvent.providedBy(current_event):
+            context_snapshot = current_event.object_before_modification
+            edited_fields.update(current_event.edited_fields)
+        else:
+            context_snapshot = Snapshot(
+                context, providing=providedBy(context))
+
+        # Apply requested changes.
+        edited = context.setPrivate(private, getUtility(ILaunchBag).user)
+
+        # Update the current event.
+        if edited and not IObjectCreatedEvent.providedBy(current_event):
+            edited_fields.add('private')
+            current_event = ObjectModifiedEvent(
+                context, context_snapshot, list(edited_fields))
+
+        return context, current_event
 
 
-class SecurityEmailCommand(EditEmailCommand):
+class SecurityEmailCommand(EmailCommand):
     """Marks a bug as security related."""
 
     implements(IBugEditEmailCommand)
 
     _numberOfArguments = 1
 
-    def convertArguments(self, context):
-        """See EmailCommand."""
+    def execute(self, context, current_event):
+        """See `IEmailCommand`.
+
+        Much of this method was lifted from
+        `EditEmailCommand.execute`.
+        """
+        # Parse args.
+        self._ensureNumberOfArguments()
         [security_flag] = self.string_args
         if security_flag == 'yes':
-            return {'security_related': True, 'private': True}
+            security_related = True
         elif security_flag == 'no':
-            return {'security_related': False}
+            security_related = False
         else:
             raise EmailProcessingError(
-                get_error_message('security-parameter-mismatch.txt'))
+                get_error_message('security-parameter-mismatch.txt'),
+                stop_processing=True)
+
+        # Take a snapshot.
+        edited = False
+        edited_fields = set()
+        if IObjectModifiedEvent.providedBy(current_event):
+            context_snapshot = current_event.object_before_modification
+            edited_fields.update(current_event.edited_fields)
+        else:
+            context_snapshot = Snapshot(
+                context, providing=providedBy(context))
+
+        # Apply requested changes.
+        if security_related:
+            user = getUtility(ILaunchBag).user
+            if context.setPrivate(True, user):
+                edited = True
+                edited_fields.add('private')
+        if context.security_related != security_related:
+            context.setSecurityRelated(security_related)
+            edited = True
+            edited_fields.add('security_related')
+
+        # Update the current event.
+        if edited and not IObjectCreatedEvent.providedBy(current_event):
+            current_event = ObjectModifiedEvent(
+                context, context_snapshot, list(edited_fields))
+
+        return context, current_event
 
 
 class SubscribeEmailCommand(EmailCommand):
@@ -248,21 +337,13 @@ class SubscribeEmailCommand(EmailCommand):
         if len(string_args) == 2:
             subscription_name = string_args.pop()
 
+        user = getUtility(ILaunchBag).user
+
         if len(string_args) == 1:
-            person_name_or_email = string_args.pop()
-            valid_person_vocabulary = ValidPersonOrTeamVocabulary()
-            try:
-                person_term = valid_person_vocabulary.getTermByToken(
-                    person_name_or_email)
-            except LookupError:
-                raise EmailProcessingError(
-                    get_error_message(
-                        'no-such-person.txt',
-                        name_or_email=person_name_or_email))
-            person = person_term.value
+            person = get_person_or_team(string_args.pop())
         elif len(string_args) == 0:
             # Subscribe the sender of the email.
-            person = getUtility(ILaunchBag).user
+            person = user
         else:
             raise EmailProcessingError(
                 get_error_message('subscribe-too-many-arguments.txt'))
@@ -274,8 +355,8 @@ class SubscribeEmailCommand(EmailCommand):
                     break
 
         else:
-            bugsubscription = bug.subscribe(person)
-            notify(SQLObjectCreatedEvent(bugsubscription))
+            bugsubscription = bug.subscribe(person, user)
+            notify(ObjectCreatedEvent(bugsubscription))
 
         return bug, current_event
 
@@ -289,17 +370,7 @@ class UnsubscribeEmailCommand(EmailCommand):
         """See IEmailCommand."""
         string_args = list(self.string_args)
         if len(string_args) == 1:
-            person_name_or_email = string_args.pop()
-            valid_person_vocabulary = ValidPersonOrTeamVocabulary()
-            try:
-                person_term = valid_person_vocabulary.getTermByToken(
-                    person_name_or_email)
-            except LookupError:
-                raise EmailProcessingError(
-                    get_error_message(
-                        'no-such-person.txt',
-                        name_or_email=person_name_or_email))
-            person = person_term.value
+            person = get_person_or_team(string_args.pop())
         elif len(string_args) == 0:
             # Subscribe the sender of the email.
             person = getUtility(ILaunchBag).user
@@ -308,9 +379,15 @@ class UnsubscribeEmailCommand(EmailCommand):
                 get_error_message('unsubscribe-too-many-arguments.txt'))
 
         if bug.isSubscribed(person):
-            bug.unsubscribe(person)
+            try:
+                bug.unsubscribe(person, getUtility(ILaunchBag).user)
+            except UserCannotUnsubscribePerson:
+                raise EmailProcessingError(
+                    get_error_message(
+                        'user-cannot-unsubscribe.txt',
+                        person=person.displayname))
         if bug.isSubscribedToDupes(person):
-            bug.unsubscribeFromDupes(person)
+            bug.unsubscribeFromDupes(person, person)
 
         return bug, current_event
 
@@ -336,30 +413,40 @@ class SummaryEmailCommand(EditEmailCommand):
         return {'title': self.string_args[0]}
 
 
-class DuplicateEmailCommand(EditEmailCommand):
+class DuplicateEmailCommand(EmailCommand):
     """Marks a bug as a duplicate of another bug."""
 
     implements(IBugEditEmailCommand)
     _numberOfArguments = 1
 
-    def convertArguments(self, context):
-        """See EmailCommand."""
+    def execute(self, context, current_event):
+        """See IEmailCommand."""
+        self._ensureNumberOfArguments()
         [bug_id] = self.string_args
-        if bug_id == 'no':
+
+        if bug_id != 'no':
+            try:
+                bug = getUtility(IBugSet).getByNameOrID(bug_id)
+            except NotFoundError:
+                raise EmailProcessingError(
+                    get_error_message('no-such-bug.txt', bug_id=bug_id))
+        else:
             # 'no' is a special value for unmarking a bug as a duplicate.
-            return {'duplicateof': None}
-        try:
-            bug = getUtility(IBugSet).getByNameOrID(bug_id)
-        except NotFoundError:
-            raise EmailProcessingError(
-                get_error_message('no-such-bug.txt', bug_id=bug_id))
+            bug = None
+
         duplicate_field = IBug['duplicateof'].bind(context)
         try:
             duplicate_field.validate(bug)
         except ValidationError, error:
             raise EmailProcessingError(error.doc())
 
-        return {'duplicateof': bug}
+        context_snapshot = Snapshot(
+            context, providing=providedBy(context))
+        context.markAsDuplicate(bug)
+        current_event = ObjectModifiedEvent(
+            context, context_snapshot, 'duplicateof')
+        notify(current_event)
+        return bug, current_event
 
 
 class CVEEmailCommand(EmailCommand):
@@ -452,9 +539,9 @@ class AffectsEmailCommand(EmailCommand):
                 "There is no project named '%s' registered in Launchpad." %
                     name)
 
-        # We can't check for IBugTarget, since Project is an IBugTarget
+        # We can't check for IBugTarget, since ProjectGroup is an IBugTarget
         # we don't allow bugs to be filed against.
-        if IProject.providedBy(pillar):
+        if IProjectGroup.providedBy(pillar):
             products = ", ".join(product.name for product in pillar.products)
             raise BugTargetNotFound(
                 "%s is a group of projects. To report a bug, you need to"
@@ -507,11 +594,12 @@ class AffectsEmailCommand(EmailCommand):
             path = string_args.pop(0)
         except IndexError:
             raise EmailProcessingError(
-                get_error_message('affects-no-arguments.txt'))
+                get_error_message('affects-no-arguments.txt'),
+                stop_processing=True)
         try:
             bug_target = self.getBugTarget(path)
         except BugTargetNotFound, error:
-            raise EmailProcessingError(unicode(error))
+            raise EmailProcessingError(unicode(error), stop_processing=True)
         event = None
         bugtask = bug.getBugTask(bug_target)
         if (bugtask is None and
@@ -523,17 +611,17 @@ class AffectsEmailCommand(EmailCommand):
                 bugtask_before_edit = Snapshot(
                     bugtask, providing=IDistroBugTask)
                 bugtask.sourcepackagename = bug_target.sourcepackagename
-                event = SQLObjectModifiedEvent(
+                event = ObjectModifiedEvent(
                     bugtask, bugtask_before_edit, ['sourcepackagename'])
 
         if bugtask is None:
             bugtask = self._create_bug_task(bug, bug_target)
-            event = SQLObjectCreatedEvent(bugtask)
+            event = ObjectCreatedEvent(bugtask)
 
         return bugtask, event
 
     def _targetBug(self, user, bug, series, sourcepackagename=None):
-        """Try to target the bug the the given distroseries.
+        """Try to target the bug the given distroseries.
 
         If the user doesn't have permission to target the bug directly,
         only a nomination will be created.
@@ -558,18 +646,20 @@ class AffectsEmailCommand(EmailCommand):
         if general_task is None:
             # A series task has to have a corresponding
             # distribution/product task.
-            general_task = getUtility(IBugTaskSet).createTask(
-                bug, user, distribution=distribution,
-                product=product, sourcepackagename=sourcepackagename)
+            general_task = bug.addTask(user, general_target)
+
+        # We know the target is of the right type, and we just created
+        # a pillar task, so if canBeNominatedFor == False then a task or
+        # nomination must already exist.
         if not bug.canBeNominatedFor(series):
             # A nomination has already been created.
             nomination = bug.getNominationFor(series)
-            # Automatically approve an existing nomination if a series
-            # manager targets it.
-            if not nomination.isApproved() and nomination.canApprove(user):
-                nomination.approve(user)
         else:
             nomination = bug.addNomination(target=series, owner=user)
+
+        # Automatically approve an existing or new nomination if possible.
+        if not nomination.isApproved() and nomination.canApprove(user):
+            nomination.approve(user)
 
         if nomination.isApproved():
             if sourcepackagename:
@@ -584,29 +674,16 @@ class AffectsEmailCommand(EmailCommand):
 
     def _create_bug_task(self, bug, bug_target):
         """Creates a new bug task with bug_target as the target."""
-        # XXX kiko 2005-09-05 Bug 1690:
-        # We could fix this by making createTask be a method on
-        # IBugTarget, but I'm not going to do this now.
-        bugtaskset = getUtility(IBugTaskSet)
         user = getUtility(ILaunchBag).user
-        if IProduct.providedBy(bug_target):
-            return bugtaskset.createTask(bug, user, product=bug_target)
-        elif IProductSeries.providedBy(bug_target):
-            return self._targetBug(user, bug, bug_target)
-        elif IDistribution.providedBy(bug_target):
-            return bugtaskset.createTask(bug, user, distribution=bug_target)
-        elif IDistroSeries.providedBy(bug_target):
+        if (IProductSeries.providedBy(bug_target) or
+            IDistroSeries.providedBy(bug_target)):
             return self._targetBug(user, bug, bug_target)
         elif ISourcePackage.providedBy(bug_target):
             return self._targetBug(
                 user, bug, bug_target.distroseries,
                 bug_target.sourcepackagename)
-        elif IDistributionSourcePackage.providedBy(bug_target):
-            return bugtaskset.createTask(
-                bug, user, distribution=bug_target.distribution,
-                sourcepackagename=bug_target.sourcepackagename)
         else:
-            assert False, "Not a valid bug target: %r" % bug_target
+            return bug.addTask(user, bug_target)
 
 
 class AssigneeEmailCommand(EditEmailCommand):
@@ -624,20 +701,60 @@ class AssigneeEmailCommand(EditEmailCommand):
         if person_name_or_email == "nobody":
             return {self.name: None}
 
-        valid_person_vocabulary = ValidPersonOrTeamVocabulary()
-        try:
-            person_term = valid_person_vocabulary.getTermByToken(
-                person_name_or_email)
-        except LookupError:
-            raise EmailProcessingError(
-                get_error_message(
-                    'no-such-person.txt', name_or_email=person_name_or_email))
-
-        return {self.name: person_term.value}
+        return {self.name: get_person_or_team(person_name_or_email)}
 
     def setAttributeValue(self, context, attr_name, attr_value):
         """See EmailCommand."""
         context.transitionToAssignee(attr_value)
+
+
+class MilestoneEmailCommand(EditEmailCommand):
+    """Sets the milestone for the bugtask."""
+
+    implements(IBugTaskEditEmailCommand)
+
+    _numberOfArguments = 1
+
+    def convertArguments(self, context):
+        """See EmailCommand."""
+        user = getUtility(ILaunchBag).user
+        milestone_name = self.string_args[0]
+
+        if milestone_name == '-':
+            # Remove milestone
+            return {self.name: None}
+        elif self._userCanEditMilestone(user, context):
+            milestone = context.pillar.getMilestone(milestone_name)
+            if milestone is None:
+                raise EmailProcessingError(
+                    "The milestone %s does not exist for %s. Note that "
+                    "milestones are not automatically created from emails; "
+                    "they must be created on the website." % (
+                        milestone_name, context.pillar.title))
+            else:
+                return {self.name: milestone}
+        else:
+            raise EmailProcessingError(
+                "You do not have permission to set the milestone for %s. "
+                "Only owners, drivers and bug supervisors may assign "
+                "milestones." % (context.pillar.title,))
+
+    def _userCanEditMilestone(self, user, bugtask):
+        """Can the user edit the Milestone field?"""
+        # Adapted from BugTaskEditView.userCanEditMilestone.
+
+        # XXX: GavinPanella 2007-10-18 bug=154088: Consider
+        # refactoring this method and the userCanEditMilestone method
+        # on BugTaskEditView into a new method on IBugTask. This is
+        # non-trivial because check_permission cannot be used in a
+        # database class.
+
+        pillar = bugtask.pillar
+        bug_supervisor = pillar.bug_supervisor
+        if user is not None and bug_supervisor is not None:
+            if user.inTeam(bug_supervisor):
+                return True
+        return check_permission("launchpad.Edit", pillar)
 
 
 class DBSchemaEditEmailCommand(EditEmailCommand):
@@ -691,7 +808,7 @@ class StatusEmailCommand(DBSchemaEditEmailCommand):
         if not context.canTransitionToStatus(attr_value, user):
             raise EmailProcessingError(
                 'The status cannot be changed to %s because you are not '
-                'the registrant or a bug contact for %s.' % (
+                'the registrant or a bug supervisor for %s.' % (
                     attr_value.name.lower(), context.pillar.displayname))
 
         context.transitionToStatus(attr_value, user)
@@ -718,7 +835,8 @@ class TagEmailCommand(EmailCommand):
 
     def execute(self, bug, current_event):
         """See `IEmailCommand`."""
-        string_args = list(self.string_args)
+        # Tags are always lowercase.
+        string_args = [arg.lower() for arg in self.string_args]
         # Bug.tags returns a Zope List, which does not support Python list
         # operations so we need to convert it.
         tags = list(bug.tags)
@@ -737,8 +855,8 @@ class TagEmailCommand(EmailCommand):
             else:
                 remove = False
                 tag = arg
-            # Tag must contain only alphanumeric characters
-            if re.search('[^a-zA-Z0-9]', tag):
+            # Tag must be a valid name.
+            if not valid_name(tag):
                 raise EmailProcessingError(
                     get_error_message('invalid-tag.txt', tag=tag))
             if remove:
@@ -765,7 +883,28 @@ class NoSuchCommand(KeyError):
     """A command with the given name couldn't be found."""
 
 
-class EmailCommands:
+class EmailCommandCollection:
+    """A collection of email commands."""
+
+    @classmethod
+    def names(klass):
+        """Returns all the command names."""
+        return klass._commands.keys()
+
+    @classmethod
+    def get(klass, name, string_args):
+        """Returns a command object with the given name and arguments.
+
+        If a command with the given name can't be found, a NoSuchCommand
+        error is raised.
+        """
+        command_class = klass._commands.get(name)
+        if command_class is None:
+            raise NoSuchCommand(name)
+        return command_class(name, string_args)
+
+
+class BugEmailCommands(EmailCommandCollection):
     """A collection of email commands."""
 
     _commands = {
@@ -779,26 +918,10 @@ class EmailCommands:
         'cve': CVEEmailCommand,
         'affects': AffectsEmailCommand,
         'assignee': AssigneeEmailCommand,
+        'milestone': MilestoneEmailCommand,
         'status': StatusEmailCommand,
         'importance': ImportanceEmailCommand,
         'severity': ReplacedByImportanceCommand,
         'priority': ReplacedByImportanceCommand,
         'tag': TagEmailCommand,
     }
-
-    def names(self):
-        """Returns all the command names."""
-        return self._commands.keys()
-
-    def get(self, name, string_args):
-        """Returns a command object with the given name and arguments.
-
-        If a command with the given name can't be found, a NoSuchCommand
-        error is raised.
-        """
-        command_class = self._commands.get(name)
-        if command_class is None:
-            raise NoSuchCommand(name)
-        return command_class(name, string_args)
-
-emailcommands = EmailCommands()

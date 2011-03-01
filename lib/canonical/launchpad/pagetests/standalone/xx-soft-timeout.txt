@@ -24,7 +24,7 @@ Foo Bar is a Launchpad developer, so he has access to the page. Since
 no timeout value is set, no soft timeout will be generated, though.
 
     >>> from canonical.config import config
-    >>> config.launchpad.soft_request_timeout is None
+    >>> config.database.soft_request_timeout is None
     True
 
     >>> print http(r"""
@@ -40,9 +40,13 @@ slightly longer then the soft_request_timeout value to generate, thus
 causing a soft timeout to be logged.
 
     >>> from canonical.launchpad.webapp.errorlog import globalErrorUtility
-    >>> old_timeout_value = config.launchpad.soft_request_timeout
-    >>> old_lastid = globalErrorUtility.lastid
-    >>> config.launchpad.soft_request_timeout = 1
+    >>> from textwrap import dedent
+    >>> old_lastid = globalErrorUtility.getLastOopsReport().id
+    >>> test_data = (dedent("""
+    ...     [database]
+    ...     soft_request_timeout: 1
+    ...     """))
+    >>> config.push('base_test_data', test_data)
 
     >>> print http(r"""
     ... GET /+soft-timeout HTTP/1.1
@@ -54,7 +58,7 @@ causing a soft timeout to be logged.
 
 We can now see that an error was logged since lastid has changed:
 
-    >>> old_lastid != globalErrorUtility.lastid
+    >>> old_lastid != globalErrorUtility.getLastOopsReport().id
     True
 
 Since the page rendered correctly, we assume it's a soft timeout error,
@@ -63,4 +67,4 @@ render the page.
 
 Let's reset the config value we changed:
 
-    >>> config.launchpad.soft_request_timeout = old_timeout_value
+    >>> test_data = config.pop('base_test_data')

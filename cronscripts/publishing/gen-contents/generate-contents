@@ -1,8 +1,15 @@
 #!/bin/bash
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-# Archive Contents files generator configuration
+# Archive Contents files generator.
 #
-#
+# It uses scripts/ftpmaster-tools/lp-query-distro.py script to
+# collect up-to-date information about the Ubuntu distribution from
+# Launchpad, then sets up an auxiliary archive and a set of
+# configuration files to run apt-ftparchive generating Contents
+# files for all supported suites.
 #
 
 set -x
@@ -11,6 +18,7 @@ set -u
 
 # share lockfile with cron.daily
 LOCKFILE=/srv/launchpad.net/ubuntu-archive/cron.daily.lock
+
 # main archive path (target)
 ARCHIVE='/srv/launchpad.net/ubuntu-archive'
 
@@ -21,16 +29,33 @@ LPPATH='/srv/launchpad.net/codelines/current'
 LPCONTENT="$LPPATH/cronscripts/publishing/gen-contents"
 
 # apt-ftparchive configuration file destination
+APTCONF_HEADER_TEMPLATE="apt_conf_header.template"
+APTCONF_DIST_TEMPLATE="apt_conf_dist.template"
 APTCONF="apt-contents.conf"
 CONTENTHEADER="Contents.top"
 
-## XXX cprov 20070423: We need to retrieve 'development' distrorelease
-## from helper script. See bug # 49174
-# target suite
-suites='gutsy'
+# target pocket suffixes
+pocket_suffixes=`$LPPATH/scripts/ftpmaster-tools/lp-query-distro.py pocket_suffixes`
 
-# target architectures
-archs='i386 amd64 hppa powerpc ia64 sparc'
+# target suites ()
+suites=`$LPPATH/scripts/ftpmaster-tools/lp-query-distro.py supported`
+
+# Combine all supported series with all pocket suffixes to build the list
+# of suites for which we will generate/update Contents.gz.
+new_suites=
+for suite in $suites; do
+  new_suites="${new_suites:+$new_suites }$suite"
+  for pocket_suffix in $pocket_suffixes; do
+    if [ -d "$ARCHIVE/ubuntu/dists/$suite$pocket_suffix" ]; then
+      new_suites="$new_suites $suite$pocket_suffix"
+    fi
+  done
+done
+suites="$new_suites"
+
+# target architectures for the development series
+devel=`$LPPATH/scripts/ftpmaster-tools/lp-query-distro.py development`
+archs=`$LPPATH/scripts/ftpmaster-tools/lp-query-distro.py -s $devel archs`
 
 # target components
 components='main restricted universe multiverse'
@@ -61,7 +86,11 @@ trap cleanup EXIT
 echo 'Ensure we have a private tree in place ...'
 mkdir -p $CONTENTARCHIVE/ubuntu-misc
 mkdir -p $CONTENTARCHIVE/ubuntu-cache
+
+cp $LPCONTENT/$APTCONF_HEADER_TEMPLATE $CONTENTARCHIVE/ubuntu-misc/$APTCONF
 for suite in $suites; do
+  sed -e "s/\$SUITE/$suite/g" -e "s/\$ARCHS/$archs/g" \
+       $LPCONTENT/$APTCONF_DIST_TEMPLATE >> $CONTENTARCHIVE/ubuntu-misc/$APTCONF
   for component in $components; do
     for dir in $dirs; do
       path="$CONTENTARCHIVE/ubuntu/dists/$suite/$component/$dir"
@@ -77,7 +106,6 @@ if test $GENERATEFILES = "yes" ; then
    echo 'Running apt in your private tree to generate new contents ...'
    cp -a $ARCHIVE/ubuntu-overrides $CONTENTARCHIVE/
    cp $LPCONTENT/$CONTENTHEADER $CONTENTARCHIVE/ubuntu-misc/
-   cp $LPCONTENT/$APTCONF $CONTENTARCHIVE/ubuntu-misc/
    apt-ftparchive generate $CONTENTARCHIVE/ubuntu-misc/$APTCONF
 else
    echo "Skipping apt-ftparchive run"

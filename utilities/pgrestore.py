@@ -1,4 +1,8 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 Restore a full database dump. This script should become unnecessary
 when we are running PostgreSQL 8 as it will correctly order its dumps.

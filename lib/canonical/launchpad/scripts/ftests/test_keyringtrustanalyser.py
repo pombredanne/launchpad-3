@@ -1,27 +1,39 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-import unittest
 import logging
+import unittest
+
+import gpgme
+from zope.component import getUtility
 
 from canonical.launchpad.ftests import keys_for_tests
-from canonical.launchpad.ftests.harness import (
-        LaunchpadZopelessTestCase, LaunchpadFunctionalTestCase
-        )
-from canonical.testing import LaunchpadFunctionalLayer
-from canonical.launchpad.interfaces import (
-    IGPGHandler, IPersonSet, IEmailAddressSet, EmailAddressStatus)
-from canonical.launchpad.scripts.keyringtrustanalyser import *
-from zope.component import getUtility
-import gpgme
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus,
+    IEmailAddressSet,
+    )
+from canonical.launchpad.interfaces.gpghandler import IGPGHandler
+from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.scripts.keyringtrustanalyser import (
+    addOtherKeyring,
+    addTrustedKeyring,
+    findEmailClusters,
+    getValidUids,
+    mergeClusters,
+    )
+
 
 test_fpr = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
 foobar_fpr = '340CA3BB270E2716C9EE0B768E7EB7086C64A8C5'
 
 
 class LogCollector(logging.Handler):
+
     def __init__(self):
         logging.Handler.__init__(self)
         self.records = []
+
     def emit(self, record):
         self.records.append(self.format(record))
 
@@ -42,19 +54,16 @@ def setupLogger(name='test_keyringtrustanalyser'):
     return logger, handler
 
 
-class TestKeyringTrustAnalyser(LaunchpadFunctionalTestCase):
-    layer = LaunchpadFunctionalLayer
+class TestKeyringTrustAnalyser(unittest.TestCase):
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        LaunchpadFunctionalTestCase.setUp(self)
-        self.login()
         self.gpg_handler = getUtility(IGPGHandler)
 
     def tearDown(self):
         # XXX stub 2005-10-27: this should be a zope test cleanup
         # thing per SteveA.
         self.gpg_handler.resetLocalState()
-        LaunchpadFunctionalTestCase.tearDown(self)
 
     def _addTrustedKeys(self):
         # Add trusted key with ULTIMATE validity.  This will mark UIDs as
@@ -98,13 +107,15 @@ class TestKeyringTrustAnalyser(LaunchpadFunctionalTestCase):
 
         # test@canonical.com's non-revoked UIDs are valid
         self.assertTrue((test_fpr, 'test@canonical.com') in validuids)
-        self.assertTrue((test_fpr, 'sample.person@canonical.com') in validuids)
+        self.assertTrue((test_fpr,
+                         'sample.person@canonical.com') in validuids)
         self.assertTrue((test_fpr, 'sample.revoked@canonical.com')
                         not in validuids)
 
         # foo.bar@canonical.com's non-revoked signed UIDs are valid
         self.assertTrue((foobar_fpr, 'foo.bar@canonical.com') in validuids)
-        self.assertTrue((foobar_fpr, 'revoked@canonical.com') not in validuids)
+        self.assertTrue((foobar_fpr,
+                         'revoked@canonical.com') not in validuids)
         self.assertTrue((foobar_fpr, 'untrusted@canonical.com')
                         not in validuids)
 
@@ -124,8 +135,9 @@ class TestKeyringTrustAnalyser(LaunchpadFunctionalTestCase):
         self.assertTrue(set(['foo.bar@canonical.com']) in clusters)
 
 
-class TestMergeClusters(LaunchpadZopelessTestCase):
+class TestMergeClusters(unittest.TestCase):
     """Tests of the mergeClusters() routine."""
+    layer = LaunchpadZopelessLayer
 
     def _getEmails(self, person):
         emailset = getUtility(IEmailAddressSet)
@@ -170,7 +182,7 @@ class TestMergeClusters(LaunchpadZopelessTestCase):
 
         address = emailset.getByEmail('newemail@canonical.com')
         self.assertEqual(address.email, 'newemail@canonical.com')
-        self.assertEqual(address.person, person)
+        self.assertEqual(address.personID, person.id)
         self.assertEqual(address.status, EmailAddressStatus.NEW)
 
     def testMergeUnvalidatedAccountWithValidated(self):
@@ -179,7 +191,7 @@ class TestMergeClusters(LaunchpadZopelessTestCase):
 
         validated_person = personset.getByEmail('test@canonical.com')
         unvalidated_person = personset.getByEmail(
-            'christian.reis@ubuntulinux.com')
+            'matsubara@async.com.br')
 
         allemails = self._getEmails(validated_person)
         allemails.update(self._getEmails(unvalidated_person))
@@ -193,7 +205,7 @@ class TestMergeClusters(LaunchpadZopelessTestCase):
         self.assertEqual(unvalidated_person.merged, None)
 
         mergeClusters([set(['test@canonical.com',
-                            'christian.reis@ubuntulinux.com'])])
+                            'matsubara@async.com.br'])])
 
         # unvalidated person has been merged into the validated person
         self.assertEqual(validated_person.merged, None)
@@ -239,7 +251,7 @@ class TestMergeClusters(LaunchpadZopelessTestCase):
         """
         personset = getUtility(IPersonSet)
 
-        person1 = personset.getByEmail('christian.reis@ubuntulinux.com')
+        person1 = personset.getByEmail('matsubara@async.com.br')
         person2 = personset.getByEmail('martin.pitt@canonical.com')
 
         allemails = self._getEmails(person1)
@@ -251,7 +263,7 @@ class TestMergeClusters(LaunchpadZopelessTestCase):
         self.assertEqual(person1.merged, None)
         self.assertEqual(person2.merged, None)
 
-        mergeClusters([set(['christian.reis@ubuntulinux.com',
+        mergeClusters([set(['matsubara@async.com.br',
                             'martin.pitt@canonical.com'])])
 
         # since we don't know which account will be merged, swap
@@ -281,9 +293,4 @@ class TestMergeClusters(LaunchpadZopelessTestCase):
 
 
 def test_suite():
-    loader=unittest.TestLoader()
-    result = loader.loadTestsFromName(__name__)
-    return result
-
-if __name__ == "__main__":
-    unittest.main(defaultTest=test_suite())
+    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -1,0 +1,83 @@
+==========================
+Logging and OOPS reporting
+==========================
+
+The Mailman XMLRPCRunner logs errors and reports OOPSes.
+
+
+MailmanErrorUtility
+===================
+
+The MailmanErrorUtility is a ErrorReportingUtility that is configured
+in the [mailman] section of config.
+
+    >>> from canonical.config import config
+    >>> from lp.services.mailman.monkeypatches.xmlrpcrunner import (
+    ...     MailmanErrorUtility)
+
+    >>> error_utility = MailmanErrorUtility()
+    >>> print error_utility._default_config_section
+    mailman
+
+    >>> print error_utility.oops_prefix
+    TMMX
+    >>> print config.mailman.oops_prefix
+    TMMX
+
+    >>> print error_utility.log_namer._output_root
+    /var/tmp/mailman-xmlrpc.test
+    >>> print config.mailman.error_dir
+    /var/tmp/mailman-xmlrpc.test
+
+
+Error logging
+=============
+
+The log_exception() function is used by XMLRPCRunner to report known
+exceptions. It reports the OOPS.
+
+    >>> from lp.services.mailman.monkeypatches.xmlrpcrunner import (
+    ...     log_exception)
+
+    >>> def test_log_exception():
+    ...     """Raise an error to test log_exception."""
+    ...     try:
+    ...         raise AssertionError("There is an OOPS in progress.")
+    ...     except AssertionError, error:
+    ...         log_exception('Generated Error: %s', error)
+
+    >>> test_log_exception()
+    >>> oops = error_utility.getLastOopsReport()
+    >>> print oops.id
+    OOPS-...TMMX...
+    >>> print oops.type
+    AssertionError
+    >>> print oops.value
+    There is an OOPS in progress.
+    >>> print oops.tb_text
+    Traceback (most recent call last):
+    ...
+    AssertionError: There is an OOPS in progress.
+
+The message was written to the XMLRPCRunner's xmlrpc log.
+
+    >>> xmlrpc_watcher.wait('Generated')
+    >>> print 'log:', xmlrpc_watcher.last_lines_read[-1]
+    log: ... Generated Error: There is an OOPS in progress.
+
+And the message and traceback was written to the error log.
+
+    >>> error_watcher.wait('Generated')
+    >>> print 'log:', error_watcher.last_lines_read[-1]
+    log: ... Generated Error: There is an OOPS in progress.
+
+    >>> error_watcher.wait('AssertionError: There')
+    >>> print error_watcher.last_lines_read[-1]
+    AssertionError: There is an OOPS in progress.
+
+XMLRPCRunner's _oneloop() method will log an 'Unexpected XMLRPCRunner
+exception' if any uncaught exception occurs in the loop. The logging was
+tested by sabotaging the code by adding an undefined name ('defect') to
+the _create() method. The create-lists-txt test was run to generate a
+"NameError: global name 'defect' is not defined". The error was written
+to the xmlrpc log, and an OOPS was reported.

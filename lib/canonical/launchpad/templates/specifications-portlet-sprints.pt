@@ -1,9 +1,0 @@
-<div>
-  <h2>Upcoming meetings</h2>
-
-    <table>
-      <tal:per_sprint repeat="sprint context/coming_sprints"
-                      replace="structure sprint/@@+listing-simple" />
-    </table>
-    <div><a href="/sprints">&raquo; Show all sprints and meetings</a></div>
-</div>

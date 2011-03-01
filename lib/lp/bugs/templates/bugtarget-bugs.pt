@@ -1,0 +1,218 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/main_side"
+  i18n:domain="malone"
+>
+  <metal:block fill-slot="head_epilogue">
+    <meta tal:condition="not: view/bug_tracking_usage/enumvalue:LAUNCHPAD"
+          name="robots" content="noindex,nofollow" />
+    <style type="text/css">
+      p#more-hot-bugs {float:right; margin-top:7px;}
+    </style>
+  </metal:block>
+  <body>
+    <tal:side metal:fill-slot="side"
+              condition="view/bug_tracking_usage/enumvalue:LAUNCHPAD">
+      <div id="involvement" class="portlet">
+        <ul class="involvement">
+          <li style="border: none">
+            <a href="+filebug" class="menu-link-filebug sprite bugs">
+              Report a bug
+            </a>
+          </li>
+          <li>
+            <a tal:define="addquestion_url view/addquestion_url"
+               tal:condition="addquestion_url"
+               tal:attributes="href view/addquestion_url"
+               class="menu-link-filebug sprite answers">
+              Ask a question
+            </a>
+          </li>
+        </ul>
+        <tal:bugtracker
+           define="link context/menu:bugs/configure_bugtracker|nothing"
+           condition="link">
+          <ul tal:condition="link/enabled"
+              style="padding-top: 1em">
+            <li>
+              <a tal:replace="structure link/fmt:link" />
+            </li>
+          </ul>
+        </tal:bugtracker>
+      </div>
+      <div class="portlet">
+        <dl tal:define="bug_supervisor context/bug_supervisor"
+            id="bug-supervisor">
+          <dt>Bug supervisor:</dt>
+          <dd>
+            <tal:none condition="not:bug_supervisor">None set</tal:none>
+            <a tal:condition="bug_supervisor"
+               tal:replace="structure bug_supervisor/fmt:link">Bob Johnson</a>
+            <tal:edit-bug-supervisor
+                condition="context/menu:bugs/bugsupervisor|nothing">
+              <a tal:define="link context/menu:bugs/bugsupervisor"
+                 tal:condition="link/enabled"
+                 tal:attributes="href link/url; title link/text">
+                <img tal:attributes="alt link/text" src="/@@/edit" />
+              </a>
+            </tal:edit-bug-supervisor>
+          </dd>
+        </dl>
+        <dl tal:define="securitycontact context/security_contact">
+          <dt id="bug-security">Security contact:</dt>
+          <dd>
+            <tal:none condition="not:securitycontact">None set</tal:none>
+            <a tal:condition="securitycontact"
+               tal:replace="structure securitycontact/fmt:link">
+              Billy Anderson
+            </a>
+            <tal:edit-securitycontact
+                condition="context/menu:bugs/securitycontact|nothing">
+              <a tal:define="link context/menu:bugs/securitycontact"
+                 tal:condition="link/enabled"
+                 tal:attributes="href link/url; title link/text">
+                <img tal:attributes="alt link/text" src="/@@/edit" />
+              </a>
+            </tal:edit-securitycontact>
+          </dd>
+        </dl>
+      </div>
+      <div tal:replace="structure context/@@+portlet-bugfilters" />
+      <div tal:replace="structure context/@@+portlet-bugtags" />
+      <tal:releasecriticalbugs
+          tal:condition="view/shouldShowReleaseCriticalPortlet"
+          tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />
+      <tal:milestonecriticalbugs
+          tal:condition="view/shouldShowReleaseCriticalPortlet"
+          tal:content="structure context/@@+portlet-bugtasklist-milestonebugs" />
+    </tal:side>
+    <div metal:fill-slot="main" class="tab-bugs"
+         tal:define="search_url string:+bugs;
+                     advanced_search_url string:+bugs?advanced=1">
+
+
+
+      <tal:uses_launchpad_bugtracker
+        condition="view/bug_tracking_usage/enumvalue:LAUNCHPAD">
+      <tal:has_bugtasks condition="context/has_bugtasks">
+        <div id="simple-bug-search" class="portlet-top" style="margin-bottom:2em">
+          <metal:search
+            use-macro="context/@@+bugtarget-macros-search/simple-search-form"
+          />
+        </div>
+        <script type="text/javascript"><!--
+             $('field.searchtext').focus();
+        --></script>
+      </tal:has_bugtasks>
+
+      <div class="portlet" tal:condition="view/hot_bugs_info/bugtasks">
+        <h2>Hot bugs</h2>
+
+        <table class="listing" id="hot-bugs"
+          tal:define="show_package python: 'packagename' in view.columns_to_show
+          ">
+          <thead>
+            <tr>
+              <th colspan="3">Summary</th>
+              <th
+                tal:condition="show_package">
+                Package
+              </th>
+              <th>Status</th>
+              <th>Importance</th>
+              <th>Last changed</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr tal:repeat="bugtask view/hot_bugs_info/bugtasks">
+              <td class="icon left">
+                <span tal:replace="structure bugtask/image:icon" />
+              </td>
+              <td style="text-align: right">
+                #<span tal:replace="bugtask/bug/id" />
+              </td>
+              <td>
+                <a tal:attributes="href bugtask/fmt:url"
+                   tal:content="bugtask/bug/title" />
+              </td>
+              <td tal:content="structure bugtask/sourcepackagename/name|default"
+                tal:condition="show_package"
+              >&mdash;</td>
+              <td tal:attributes="class string:status${bugtask/status/name}"
+                  tal:content="bugtask/status/title" />
+              <td tal:attributes="
+                    class string:importance${bugtask/importance/name}"
+                  tal:content="bugtask/importance/title" />
+              <td tal:content="bugtask/bug/date_last_updated/fmt:displaydate" />
+            </tr>
+          </tbody>
+        </table>
+        <p id="more-hot-bugs"
+           tal:condition="view/hot_bugs_info/has_more_bugs">
+          <a tal:attributes="href string:${context/fmt:url/+bugs}?orderby=-heat&field.status%3Alist=NEW&field.status%3Alist=INCOMPLETE_WITH_RESPONSE&field.status%3Alist=INCOMPLETE_WITHOUT_RESPONSE&field.status%3Alist=CONFIRMED&field.status%3Alist=TRIAGED&field.status%3Alist=INPROGRESS&field.status%3Alist=FIXCOMMITTED&field.omit_dupes=on">Show all bugs by heat</a>
+        </p>
+      </div>
+
+      <tal:no_hot_bugs condition="not: view/hot_bugs_info/bugtasks">
+        <p id="no-bugs-filed"><strong>There are currently no
+          <span tal:condition="context/has_bugtasks">open</span> bugs filed
+          against <tal:displayname replace="context/displayname" />.</strong></p>
+
+        <p id="no-bugs-report"><a href="+filebug">Report a bug.</a></p>
+      </tal:no_hot_bugs>
+    </tal:uses_launchpad_bugtracker>
+
+    <p id="no-malone"
+       tal:condition="view/bug_tracking_usage/enumvalue:UNKNOWN">
+      <strong tal:condition="view/can_have_external_bugtracker">
+        <tal:displayname replace="context/displayname" />
+        must be configured in order for Launchpad to forward bugs to
+        the project's developers.
+      </strong>
+      <strong tal:condition="not: view/can_have_external_bugtracker">
+        <tal:displayname replace="context/displayname" />
+        does not use Launchpad for bug tracking.
+      </strong>
+    </p>
+
+    <p tal:condition="view/external_bugtracker"
+       id="bugtracker">
+      <strong>Bugs are tracked in
+        <tal:bugtracker replace="structure view/bugtracker" />.
+      </strong>
+    </p>
+
+    <tal:also_in_ubuntu
+      condition="not: view/bug_tracking_usage/enumvalue:LAUNCHPAD">
+      <metal:also-in-ubuntu
+        use-macro="context/@@+bugtarget-macros-search/also-in-ubuntu" />
+    </tal:also_in_ubuntu>
+
+    <div
+      tal:condition="not: view/bug_tracking_usage/enumvalue:LAUNCHPAD"
+      tal:define="configure_bugtracker context/menu:overview/configure_bugtracker | nothing">
+      <a class="sprite maybe"
+        href="https://help.launchpad.net/Bugs">Getting started
+      with bug tracking in Launchpad</a>.
+
+      <p tal:condition="context/required:launchpad.Edit"
+          id="no-malone-edit"
+          >
+        <a tal:condition="configure_bugtracker"
+          tal:replace="structure configure_bugtracker/fmt:link"/>
+        <a class="sprite edit"
+          tal:condition="not: configure_bugtracker"
+          tal:attributes="href string:${context/fmt:url/+edit}">
+          Enable bug tracking.</a>
+      </p>
+    </div>
+
+    </div><!-- main -->
+  </body>
+</html>

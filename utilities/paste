@@ -1,51 +1,157 @@
-#!/usr/bin/python
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+import _pythonpath
 
 import base64
 import httplib
 import os
+import pwd
 import sys
 import urllib
+import webbrowser
+from optparse import OptionParser
 from urlparse import urljoin
+from cookielib import Cookie, CookieJar
+from mechanize import HTTPRobotRulesProcessor
 
-paste_host = 'pastebin.canonical.com'
-paste_path = ''
-auth_file = os.path.expanduser('~/.canonical_paste_auth')
+from zope.testbrowser.browser import Browser
 
-def read_auth_file(path):
-    f = file(path)
-    username = f.readline().strip()
-    password = f.readline().strip()
-    f.close()
-    return (username, password)
 
-def make_basic_auth_header(username, password):
-    auth = '%s:%s' % (username, password)
-    return 'Basic %s' % base64.encodestring(auth).strip()
+# Should we be able to override any of these?
+AUTH_FILE = '~/.lp_auth_cookie'
+PRIVATE_PASTE_HOST = 'pastebin.canonical.com'
+PUBLIC_PASTE_HOST = 'pastebin.ubuntu.com'
+PASTE_PATH = ''
+LP_AUTH_INSTRUCTIONS = """
+%s doesn't contain a valid LP authentication cookie.
 
-def https_post_form_with_auth(host, path, form, auth):
-    form_data = urllib.urlencode(form).strip()
-    connection = httplib.HTTPSConnection(host)
-    connection.request('POST', path, form_data, {
-        'Host': host,
-        'Authorization': auth,
-        'Content-type': 'application/x-www-form-urlencoded',
-        'Content-length': str(len(form_data)),
-        })
-    return connection.getresponse()
+Please update this file, with the 'lp' cookie value your browser sends
+when visiting https://launchpad.net (while being logged in). It should
+look something like this:
+
+    sd33JsfeJop3esf6joi8sldfjJoIj3dssD6isfsdweJDe6i9JIKEYK
+""" % AUTH_FILE
+
+
+def parse_arguments():
+    parser = OptionParser(usage='%prog [options] [title] < stdin')
+    parser.add_option('-b', '--browser',
+                      default=False, action='store_true',
+                      help='Open web browser to the pastebin.')
+    parser.add_option('-p', '--private',
+                      default=False, action='store_true',
+                      help='Use a private pastebin (pastebin.canonical.com).')
+    parser.add_option('-s', '--syntax',
+                      default='text', type='string',
+                      help='The syntax of the pastebin.')
+    parser.add_option('-f', '--file',
+                      type='string',
+                      help='File to pastebin instead of stdin.')
+    options, arguments = parser.parse_args()
+    if len(arguments) == 0:
+        parser.title = None
+    elif len(arguments) == 1:
+        parser.title = arguments[0]
+    else:
+        parser.error('Too many arguments')
+        # Does not return
+    parser.options = options
+    parser.arguments = arguments
+    return parser
+
+
+def get_lp_auth_cookie(path):
+    """Read the authentication file, and return a Cookie object."""
+    path = os.path.expanduser(path)
+    if not os.path.exists(path):
+        return None
+    f = open(path)
+    try:
+        cookie_value = f.readline().strip()
+    finally:
+        f.close()
+    return Cookie(
+        version=0, name='lp', value=cookie_value,
+        port=None, port_specified=False,
+        domain='login.launchpad.net', domain_specified=True,
+        domain_initial_dot=False, path='', path_specified=None,
+        secure=True, expires=None, discard=True,
+        comment=None, comment_url=None, rest=None, rfc2109=False)
+
+
+def authenticate(browser):
+    """Go through the OpenID process and authenticate."""
+    # First click on the page where it says we have to log in.
+    browser.getControl('Continue').click()
+    return True
+
+
+def main():
+    parser = parse_arguments()
+    try:
+        poster = os.environ['USER']
+    except KeyError:
+        poster = pwd.getpwuid(os.getuid()).pw_name
+
+    if parser.title is None:
+        title = "The loser %s didn't even add a title" % poster
+    else:
+        title = parser.title
+
+    if parser.options.file:
+        f = open(parser.options.file)
+        try:
+            content = f.read()
+        finally:
+            f.close()
+    else:
+        content = sys.stdin.read()
+
+    form = (
+        ('poster', poster),
+        ('syntax', [parser.options.syntax]),
+        ('content', content),
+        )
+
+    browser = Browser()
+    paste_host = PUBLIC_PASTE_HOST
+    if parser.options.private:
+        paste_host = PRIVATE_PASTE_HOST
+        # Figure out the authentication.
+        lp_cookie = get_lp_auth_cookie(AUTH_FILE)
+        if lp_cookie is None:
+            print LP_AUTH_INSTRUCTIONS
+            return
+        cookiejar = CookieJar()
+        cookiejar.set_cookie(lp_cookie)
+        browser.mech_browser.set_cookiejar(cookiejar)
+
+    # Remove the the check for robots.txt, since the one on
+    # pastebin.ubuntu.com doesn't allow us to open the page. We're not
+    # really a robot.
+    browser.mech_browser.handlers = [
+        handler for handler in browser.mech_browser.handlers
+        if not isinstance(handler, HTTPRobotRulesProcessor)]
+    browser.open(urljoin('https://' + paste_host, PASTE_PATH))
+
+    if parser.options.private:
+        # We need to authenticate before pasting.
+        oid_form = browser.getForm(id='openid_message')
+        if oid_form is not None:
+            authenticated = authenticate(browser)
+            if not authenticated:
+                print LP_AUTH_INSTRUCTIONS
+                return
+    for name, value in form:
+        browser.getControl(name=name).value = value
+    browser.getControl('Paste!').click()
+    print browser.url
+    if parser.options.browser:
+        webbrowser.open(browser.url)
+
 
 if __name__ == '__main__':
-    poster = os.environ.get("USER")
-    syntax = 'text'
-    if len(sys.argv) > 1:
-        title = sys.argv[1]
-    else:
-        title = "The loser %s didn't even add a title" % poster
-    form = (('poster', poster), ('title', title), ('syntax', syntax), ('content', sys.stdin.read()))
-    username, password = read_auth_file(auth_file)
-    auth = make_basic_auth_header(username, password)
-    response = https_post_form_with_auth(paste_host, paste_path, form, auth)
-    location = response.getheader('Location')
-    if location:
-      print urljoin('https://' + paste_host, location)
-    else:
-      print 'Unexpected response:\n%s' % response.getheaders()
+    main()

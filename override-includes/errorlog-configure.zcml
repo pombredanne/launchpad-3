@@ -1,3 +1,0 @@
-<configure xmlns="http://namespaces.zope.org/zope">
-    <include package="canonical.launchpad.webapp" file="errorlog.zcml" />
-</configure>

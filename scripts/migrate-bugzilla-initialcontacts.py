@@ -1,8 +1,9 @@
-#!/usr/bin/python2.4
-# Copyright 2005-2006 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 import logging
-import re
 import MySQLdb
 
 import _pythonpath
@@ -11,11 +12,14 @@ from zope.component import getUtility
 
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.interfaces import (
-    IPersonSet, IEmailAddressSet, ILaunchpadCelebrities, NotFoundError)
+from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.errors import NotFoundError
+from lp.registry.interfaces.person import IPersonSet
 
-ztm = initZopeless()
+
 execute_zcml_for_scripts()
+ztm = initZopeless()
 logging.basicConfig(level=logging.INFO)
 
 ubuntu = getUtility(ILaunchpadCelebrities).ubuntu

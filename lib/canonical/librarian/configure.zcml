@@ -1,19 +1,23 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure xmlns="http://namespaces.zope.org/zope">
 
-    <content class=".client.LibrarianClient">
-        <implements interface=".interfaces.ILibrarianClient" />
-        <allow interface=".interfaces.ILibrarianClient" />
-    </content>
-
-    <content class=".client._File">
+    <class class=".client._File">
         <allow attributes="read close" />
-    </content>
+    </class>
 
     <securedutility
         class=".client.LibrarianClient"
         provides=".interfaces.ILibrarianClient">
-        <allow interface=".interfaces.IFileUploadClient" />
-        <allow interface=".interfaces.IFileDownloadClient" />
+        <allow interface=".interfaces.ILibrarianClient" />
+    </securedutility>
+
+    <securedutility
+        class=".client.RestrictedLibrarianClient"
+        provides=".interfaces.IRestrictedLibrarianClient">
+        <allow interface=".interfaces.IRestrictedLibrarianClient" />
     </securedutility>
 </configure>
 

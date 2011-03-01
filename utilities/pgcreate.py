@@ -1,5 +1,7 @@
-#!/usr/bin/python2.4
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Create a database
 
@@ -10,7 +12,7 @@ __metaclass__ = type
 
 import sys
 import time
-import psycopg
+import psycopg2
 
 def main():
     if len(sys.argv) != 3:
@@ -19,9 +21,9 @@ def main():
 
     template, dbname = sys.argv[1:]
 
-    con = psycopg.connect('dbname=template1')
-    con.set_isolation_level(0)
     for attempt in range(0, 10):
+        con = psycopg2.connect('dbname=template1')
+        con.set_isolation_level(0)
         try:
             cur = con.cursor()
             cur.execute(
@@ -29,9 +31,10 @@ def main():
                         dbname, template
                         )
                     )
-        except psycopg.Error:
+        except psycopg2.Error:
             if attempt == 9:
                 raise
+            con.close()
             time.sleep(1)
         else:
             return 0

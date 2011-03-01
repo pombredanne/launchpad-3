@@ -1,3 +1,6 @@
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Unicode support for CSV files.
 
 Adapted from the Python documentation:
@@ -13,9 +16,9 @@ __all__ = ['UnicodeReader',
            'UnicodeDictWriter']
 
 
-import csv
 import codecs
 import cStringIO
+import csv
 
 
 class UTF8Recoder:
@@ -37,6 +40,17 @@ class UTF8Recoder:
 
 class UnicodeCSVReader:
     """A CSV reader that reads encoded files and yields unicode."""
+
+    class DelegateLineNumAccessDescriptor:
+        """The Python 2.5 DictReader expects its reader to support access to a
+        line_num attribute, therefore to keep UnicodeCSVReader capable of being
+        used within a DictReader we provide a line_num attribute which
+        delegates to the real reader."""
+
+        def __get__(self, obj, type):
+            return obj.reader.line_num
+
+    line_num = DelegateLineNumAccessDescriptor()
 
     def __init__(self, file_, dialect=csv.excel, encoding="utf-8", **kwds):
         file_ = UTF8Recoder(file_, encoding)

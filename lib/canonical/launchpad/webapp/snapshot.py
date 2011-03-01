@@ -1,66 +1,24 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Provides object snapshotting functionality. This is particularly
-useful in calculating deltas"""
+"""Snapshot adapter for the Storm result set."""
 
-from sqlos.interfaces import ISelectResults
+from lazr.lifecycle.interfaces import ISnapshotValueFactory
+from storm.zope.interfaces import IResultSet
+from zope.component import adapter
+from zope.interface import implementer
 
-from zope.interface.interfaces import IInterface
-from zope.interface import directlyProvides
-from zope.schema.interfaces import IField
-
-
-_marker = object()
+from canonical.launchpad.helpers import shortlist
 
 
-class SnapshotCreationError(Exception):
-    """Something went wrong while creating a snapshot."""
+HARD_LIMIT_FOR_SNAPSHOT = 1000
 
-
-class Snapshot:
-    """Provides a simple snapshot of the given object.
-
-    The snapshot will have the attributes listed in names. It
-    will also provide the interfaces listed in providing. If no names
-    are supplied but an interface is provided, all Fields of that
-    interface will be included in the snapshot.
-    """
-    def __init__(self, ob, names=None, providing=None):
-        from canonical.launchpad.helpers import shortlist
-
-        if names is None and providing is None:
-            raise SnapshotCreationError(
-                "You have to specify either 'names' or 'providing'.")
-
-        if IInterface.providedBy(providing):
-            providing = [providing]
-
-        if names is None:
-            names = set()
-            for iface in providing:
-                for name in iface.names(all=True):
-                    field = iface[name]
-                    if IField.providedBy(field):
-                        # Only Fields are actually copied over to the
-                        # snapshot.
-                        # XXX kiko 2006-06-05 bug=48575: this is actually
-                        # rather counterintuitive, and I believe the proper
-                        # solution is to just make names mandatory.
-                        names.add(name)
-
-        for name in names:
-            value = getattr(ob, name, _marker)
-            if value is _marker:
-                raise AssertionError("Attribute %s not in object %r"
-                                     % (name, ob))
-            if ISelectResults.providedBy(value):
-                # SQLMultipleJoin and SQLRelatedJoin return
-                # SelectResults, which doesn't really help the Snapshot
-                # object. We therefore list()ify the values; this isn't
-                # perfect but allows deltas do be generated reliably.
-                value = shortlist(value, longest_expected=100)
-            setattr(self, name, value)
-
-        if providing is not None:
-            directlyProvides(self, providing)
-
+@implementer(ISnapshotValueFactory)
+@adapter(IResultSet) # And ISQLObjectResultSet.
+def snapshot_sql_result(value):
+    # SQLMultipleJoin and SQLRelatedJoin return
+    # SelectResults, which doesn't really help the Snapshot
+    # object. We therefore list()ify the values; this isn't
+    # perfect but allows deltas to be generated reliably.
+    return shortlist(
+        value, longest_expected=100, hardlimit=HARD_LIMIT_FOR_SNAPSHOT)

@@ -1,38 +1,22 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for LaunchpadStatisticSet."""
 
 __metaclass__ = type
 
 __all__ = [
+    'LaunchpadStatisticSet',
     'LaunchpadStatisticSetFacets',
-    'LaunchpadStatisticSetSOP',
     ]
 
-from zope.component import getUtility
-from canonical.launchpad.interfaces import ILaunchpadStatisticSet
-from canonical.launchpad.browser.launchpad import (
-    StructuralObjectPresentation,
+from canonical.launchpad.interfaces.launchpadstatistic import (
+    ILaunchpadStatisticSet,
     )
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
-    LaunchpadView, LaunchpadFormView, Link,
-    StandardLaunchpadFacets)
-
-
-class LaunchpadStatisticSetSOP(StructuralObjectPresentation):
-
-    def getIntroHeading(self):
-        return None
-
-    def getMainHeading(self):
-        return 'Launchpad statistics'
-
-    def listChildren(self, num):
-        return []
-
-    def listAltChildren(self, num):
-        return None
+    LaunchpadView,
+    StandardLaunchpadFacets,
+    )
 
 
 class LaunchpadStatisticSetFacets(StandardLaunchpadFacets):
@@ -45,3 +29,5 @@ class LaunchpadStatisticSetFacets(StandardLaunchpadFacets):
     enable_only = ['overview',]
 
 
+class LaunchpadStatisticSet(LaunchpadView):
+    label = page_title = "Launchpad statistics"

@@ -1,3 +1,7 @@
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
@@ -5,39 +9,33 @@
   i18n_domain="launchpad">
 
   <!-- LaunchpadStatistic -->
-  <content class="canonical.launchpad.database.LaunchpadStatistic">
-    <allow interface="canonical.launchpad.interfaces.ILaunchpadStatistic" />
-  </content>
+  <class class="canonical.launchpad.database.launchpadstatistic.LaunchpadStatistic">
+    <allow interface="canonical.launchpad.interfaces.launchpadstatistic.ILaunchpadStatistic" />
+  </class>
 
 
   <!-- LaunchpadStatisticSet -->
   <securedutility
-    class="canonical.launchpad.database.LaunchpadStatisticSet"
-    provides="canonical.launchpad.interfaces.ILaunchpadStatisticSet">
-    <allow interface="canonical.launchpad.interfaces.ILaunchpadStatisticSet" />
+    class="canonical.launchpad.database.launchpadstatistic.LaunchpadStatisticSet"
+    provides="canonical.launchpad.interfaces.launchpadstatistic.ILaunchpadStatisticSet">
+    <allow interface="canonical.launchpad.interfaces.launchpadstatistic.ILaunchpadStatisticSet" />
   </securedutility>
 
-  <adapter
-    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
-    for="canonical.launchpad.interfaces.ILaunchpadStatisticSet"
-    factory="canonical.launchpad.browser.LaunchpadStatisticSetSOP"
-    permission="zope.Public"
-    />
-
   <browser:url
-    for="canonical.launchpad.interfaces.ILaunchpadStatisticSet"
+    for="canonical.launchpad.interfaces.launchpadstatistic.ILaunchpadStatisticSet"
     path_expression="string:+statistics"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
     />
 
   <browser:defaultView
-    for="canonical.launchpad.interfaces.ILaunchpadStatisticSet"
+    for="canonical.launchpad.interfaces.launchpadstatistic.ILaunchpadStatisticSet"
     name="+index"
     />
 
   <browser:pages
-    for="canonical.launchpad.interfaces.ILaunchpadStatisticSet"
+    for="canonical.launchpad.interfaces.launchpadstatistic.ILaunchpadStatisticSet"
     facet="overview"
+    class="canonical.launchpad.browser.launchpadstatistic.LaunchpadStatisticSet"
     permission="launchpad.Admin">
     <browser:page
       name="+index"

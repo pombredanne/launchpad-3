@@ -6,7 +6,7 @@ Rejected:
 ===
 
 If you don't understand why your files were rejected please send an email
-to launchpad-users@lists.canonical.com for help.
+to %(USERS_ADDRESS)s for help (requires membership).
 
 -- 
 You are receiving this email because you are the uploader of the above

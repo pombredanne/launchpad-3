@@ -1,5 +1,7 @@
 # -*- mode: python -*-
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
 
@@ -8,7 +10,7 @@ from twisted.protocols import portforward
 from twisted.application.internet import TCPServer
 
 import canonical.lp
-from canonical.launchpad.daemons.tachandler import ReadyService
+from canonical.launchpad.daemons.readyservice import ReadyService
 
 application = service.Application('portforward_to_postgres')
 
@@ -22,7 +24,11 @@ elif canonical.lp.dbhost:
 else:
     dbhost = 'localhost'
 
-pf = portforward.ProxyFactory(dbhost, 5432)
+port = 5432
+if os.environ.get('PGPORT'):
+    port = int(os.environ.get('PGPORT'))
+
+pf = portforward.ProxyFactory(dbhost, port)
 svc = internet.TCPServer(5555, pf)
 svc.setServiceParent(application)
 

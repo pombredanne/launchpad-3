@@ -1,0 +1,19 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div class="portlet" id="portlet-details">
+
+  <h2><span tal:replace="context/title">source package "foobar"
+  2.3.1-2</span></h2>
+
+  <div class="portletBody portletContent">
+
+    <div tal:replace="structure context/@@+portlet-details-content" />
+
+  </div>
+
+</div>
+</tal:root>

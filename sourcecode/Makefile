@@ -1,39 +1,32 @@
-PYTHON_VERSION=2.4
-PYTHON=python${PYTHON_VERSION}
+PYTHON=python
 # Not all packages have a working Makefile. Work around this by hardcoding
 # the ones we test.  If we fix them all to have EITHER a good makefile
 # (build and check targets work), or no makefile we can reenable auto
 # detection.
-# test_dirs:=$(shell find . -maxdepth 1 -mindepth 1 -name ".arch-ids" -prune -o -type d -print | grep -v pyarch)
-build_dirs:=buildbot bzr cscvs pygettextpo pygpgme sqlobject twisted zope
-test_dirs:=buildbot bzr cscvs pygettextpo sqlobject twisted zope
-launchpad_test_dirs:=buildbot pygettextpo sqlobject zope
+build_dirs:=cscvs dulwich pygettextpo pygpgme subvertpy
+test_dirs:=cscvs pygettextpo
+
+TEST_ENV_VARS = PYTHON=$(PYTHON)
 
 all:
 
 check: build
 	@ for subdir in ${test_dirs}; do \
-		$(MAKE) -C $$subdir check \
-		PYTHON=${PYTHON} PYTHON_VERSION=${PYTHON_VERSION} || exit $$?;\
-	done
-
-check_for_launchpad: build
-	@ for subdir in ${launchpad_test_dirs}; do \
-		$(MAKE) -C $$subdir check \
-		PYTHON=${PYTHON} PYTHON_VERSION=${PYTHON_VERSION} || exit $$?;\
+		$(MAKE) -C $$subdir check $(TEST_ENV_VARS) || exit $$?;\
 	done
 
 build:
 	@ for subdir in ${build_dirs}; do\
 		if [ -e $$subdir/Makefile ]; then\
-			$(MAKE) -C $$subdir \
-			PYTHON=${PYTHON} PYTHON_VERSION=${PYTHON_VERSION} \
-			       || exit $$?;\
+			$(MAKE) -C $$subdir $(TEST_ENV_VARS) || exit $$?;\
 		fi;\
 	done
-	#cd zope && ./configure --prefix=inst
-	#cd zope && make install
 
-.PHONY: check check_for_launchpad all build
+clean:
+	@ for subdir in ${build_dirs}; do\
+		if [ -e $$subdir/Makefile ]; then\
+			(cd $$subdir && bzr clean-tree --ignored --force) || exit $$?;\
+		fi;\
+	done
 
-
+.PHONY: check all build clean

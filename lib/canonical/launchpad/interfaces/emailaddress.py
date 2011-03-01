@@ -1,16 +1,42 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=E0211,E0213
 
 """EmailAddress interfaces."""
 
 __metaclass__ = type
-__all__ = ['IEmailAddress', 'IEmailAddressSet', 'EmailAddressAlreadyTaken',
-           'EmailAddressStatus']
+__all__ = [
+    'EmailAddressAlreadyTaken',
+    'EmailAddressStatus',
+    'IEmailAddress',
+    'IEmailAddressSet',
+    'InvalidEmailAddress']
 
-from zope.schema import Choice, Int, TextLine
-from zope.interface import Interface, Attribute
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import Reference
+from zope.interface import Interface
+from zope.schema import (
+    Choice,
+    Int,
+    Object,
+    TextLine,
+    )
 
-from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.account import IAccount
+from lp.registry.interfaces.role import IHasOwner
+
+
+class InvalidEmailAddress(Exception):
+    """The email address is not valid."""
 
 
 class EmailAddressAlreadyTaken(Exception):
@@ -63,20 +89,36 @@ class EmailAddressStatus(DBEnumeratedType):
         """)
 
 
-class IEmailAddress(Interface):
-    """The object that stores the IPerson's emails."""
+class IEmailAddress(IHasOwner):
+    """The object that stores the `IPerson`'s emails."""
+    export_as_webservice_entry(plural_name='email_addresses')
 
     id = Int(title=_('ID'), required=True, readonly=True)
-    email = TextLine(title=_('Email Address'), required=True, readonly=False)
+    email = exported(
+        TextLine(title=_('Email Address'), required=True, readonly=True))
     status = Choice(
         title=_('Email Address Status'), required=True, readonly=False,
         vocabulary=EmailAddressStatus)
-    person = Int(title=_('Person'), required=True, readonly=False)
-    personID = Int(title=_('PersonID'), required=True, readonly=True)
-    statusname = Attribute("StatusName")
+    account = Object(title=_('Account'), schema=IAccount, required=False)
+    accountID = Int(title=_('AccountID'), required=False, readonly=True)
+    person = exported(
+        Reference(title=_('Person'), required=False, readonly=False,
+                  schema=Interface))
+    personID = Int(title=_('PersonID'), required=False, readonly=True)
+
+    rdf_sha1 = TextLine(
+        title=_("RDF-ready SHA-1 Hash"),
+        description=_("The SHA-1 hash of the preferred email address and "
+                      "a mailto: prefix as a hexadecimal string. This is "
+                      "used as a key by FOAF RDF spec"),
+        readonly=True)
 
     def destroySelf():
-        """Delete this email from the database."""
+        """Destroy this email address and any associated subscriptions.
+
+        :raises UndeletableEmailAddress: When the email address is a person's
+            preferred one or a hosted mailing list's address.
+        """
 
     def syncUpdate():
         """Write updates made on this object to the database.
@@ -89,18 +131,25 @@ class IEmailAddress(Interface):
 class IEmailAddressSet(Interface):
     """The set of EmailAddresses."""
 
-    def new(email, person, status=EmailAddressStatus.NEW):
-        """Create a new EmailAddress with the given email, pointing to person.
+    def new(email, person=None, status=EmailAddressStatus.NEW, account=None):
+        """Create a new EmailAddress with the given email.
+
+        The newly created EmailAddress will point to the person
+        and/or account.
 
         The given status must be an item of EmailAddressStatus.
+
+        :raises InvalidEmailAddress: If the email address is invalid.
         """
 
     def getByPerson(person):
         """Return all email addresses for the given person."""
+
+    def getPreferredEmailForPeople(self, people):
+        """Return preferred email addresses for the people provided."""
 
     def getByEmail(email):
         """Return the EmailAddress object for the given email.
 
         Return None if there is no such email address.
         """
-

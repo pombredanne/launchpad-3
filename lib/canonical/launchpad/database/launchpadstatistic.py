@@ -1,4 +1,7 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=E0611,W0212
 """Classes that implement LaunchpadStatistics."""
 
 __metaclass__ = type
@@ -8,26 +11,35 @@ __all__ = [
     'LaunchpadStatisticSet',
     ]
 
-from zope.interface import implements
+from sqlobject import (
+    IntCol,
+    StringCol,
+    )
 from zope.component import getUtility
+from zope.interface import implements
 
-from sqlobject import IntCol, StringCol
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-
-from canonical.database.sqlbase import SQLBase, cursor, sqlvalues
-from canonical.launchpad.database.bug import Bug
-from canonical.launchpad.database.bugtask import BugTask
-from canonical.launchpad.database.language import Language
-from canonical.launchpad.database.potemplate import POTemplate
-from canonical.launchpad.database.pofile import POFile
-from canonical.launchpad.database.product import Product
-from canonical.launchpad.database.pomsgid import POMsgID
-from canonical.launchpad.database.question import Question
-
-from canonical.launchpad.interfaces import (
-    ILaunchpadStatistic, ILaunchpadStatisticSet, IPersonSet, QuestionStatus
+from canonical.database.sqlbase import (
+    cursor,
+    SQLBase,
+    sqlvalues,
     )
+from canonical.launchpad.interfaces.launchpadstatistic import (
+    ILaunchpadStatistic,
+    ILaunchpadStatisticSet,
+    )
+from lp.answers.interfaces.questionenums import QuestionStatus
+from lp.answers.model.question import Question
+from lp.app.enums import ServiceUsage
+from lp.bugs.model.bug import Bug
+from lp.bugs.model.bugtask import BugTask
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.model.product import Product
+from lp.services.worlddata.model.language import Language
+from lp.translations.model.pofile import POFile
+from lp.translations.model.pomsgid import POMsgID
+from lp.translations.model.potemplate import POTemplate
 
 
 class LaunchpadStatistic(SQLBase):
@@ -93,8 +105,7 @@ class LaunchpadStatisticSet:
 
         self.update(
                 'products_using_malone',
-                Product.selectBy(official_malone=True).count()
-                )
+                Product.selectBy(official_malone=True).count())
         ztm.commit()
 
         cur = cursor()
@@ -149,13 +160,17 @@ class LaunchpadStatisticSet:
                 distinct=True, clauseTables=['Question']).count())
         self.update(
             'reviewed_products',
-            Product.selectBy(reviewed=True, active=True).count())
+            Product.selectBy(license_reviewed=True, active=True).count())
 
     def _updateRosettaStatistics(self, ztm):
+        # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that 
+        # this query is using _translations_usage, but there's no cleaner
+        # way to deal with it. Once the bug above is resolved, this should
+        # should be fixed to use translations_usage.
         self.update(
                 'products_using_rosetta',
-                Product.selectBy(official_rosetta=True).count()
-                )
+                Product.selectBy(
+                    _translations_usage=ServiceUsage.LAUNCHPAD).count())
         self.update('potemplate_count', POTemplate.select().count())
         ztm.commit()
         self.update('pofile_count', POFile.select().count())
@@ -169,13 +184,16 @@ class LaunchpadStatisticSet:
         ztm.commit()
 
         cur = cursor()
-        cur.execute("SELECT COUNT(DISTINCT person) FROM POSubmission")
+        cur.execute(
+            "SELECT COUNT(DISTINCT submitter) FROM TranslationMessage")
         self.update('translator_count', cur.fetchone()[0] or 0)
         ztm.commit()
 
         cur = cursor()
         cur.execute("""
-            SELECT COUNT(DISTINCT person) FROM POSubmission WHERE origin=2
+            SELECT COUNT(DISTINCT submitter)
+            FROM TranslationMessage
+            WHERE origin=2
             """)
         self.update('rosetta_translator_count', cur.fetchone()[0] or 0)
         ztm.commit()
@@ -210,4 +228,3 @@ class LaunchpadStatisticSet:
             "FROM Question")
         self.update("projects_with_questions_count", cur.fetchone()[0] or 0)
         ztm.commit()
-

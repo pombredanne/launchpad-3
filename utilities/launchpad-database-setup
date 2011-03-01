@@ -1,37 +1,65 @@
 #!/bin/sh
+#
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-if [ "$1" != $(id -un) ]; then
-	echo "THIS SCRIPT WILL DESTROY ALL OF YOUR POSTGRESQL DATA"
-	echo "If you really want that, run it with your username as"
-	echo "an argument"
-	exit 1
+if [ -n "$1" ]; then
+    USER=$1
+    echo "Creating Launchpad database for $USER"
+else
+    echo "usage: launchpad-database-setup DEVELOPER_USER"
+    echo "THIS SCRIPT WILL DESTROY ALL POSTGRESQL DATA for the given user"
+    echo "If you really want that, run it with the username of your "
+    echo "local developer account."
+    exit 1
 fi
 
-set -e
-
 # This attempts to automate instructions provided on
-# https://launchpad.canonical.com/DatabaseSetup which are intended for
+# https://dev.launchpad.net/DatabaseSetup which are intended for
 # initial Launchpad setup on an otherwise unconfigured postgresql instance
 
-sudo /etc/init.d/postgresql-8.2 stop
+for pgversion in 8.4 8.3 8.2
+do
+  sudo grep -q "^auto" /etc/postgresql/$pgversion/main/start.conf
+  if [ $? -eq 0 ]; then
+    break
+  fi
+done
 
+if [ -z "$pgversion" ]
+then
+  echo "Unable to determine your postgres version."
+  exit 1
+fi
 
-main=/var/lib/postgresql/8.2/main
+echo "Using postgres $pgversion"
+
+# Make sure that we have the correct version running on port 5432
+sudo grep -q "port.*5432" /etc/postgresql/$pgversion/main/postgresql.conf
+if [ $? -ne 0 ]; then
+  echo "Please check /etc/postgresql/$pgversion/main/postgresql.conf and"
+  echo "ensure postgres is running on port 5432."
+fi;
+
+if [ -e /etc/init.d/postgresql-$pgversion ]; then
+    sudo /etc/init.d/postgresql-$pgversion stop
+else
+    # This is Maverick.
+    sudo /etc/init.d/postgresql stop $pgversion
+fi
+
 echo Purging postgresql data...
-sudo -u postgres sh -c "rm -rf $main/*"
+sudo pg_dropcluster $pgversion main --stop-server
 echo Re-creating postgresql database...
-sudo -u postgres /usr/lib/postgresql/8.2/bin/initdb \
-	--pgdata=$main \
-	--encoding=UNICODE --locale=C
-sudo -u postgres ln -s /etc/postgresql-common/root.crt $main
-sudo -u postgres ln -s /etc/ssl/certs/ssl-cert-snakeoil.pem $main/server.crt
-sudo -u postgres ln -s /etc/ssl/private/ssl-cert-snakeoil.key $main/server.key
+# Setting locale to C to make the server run in that locale.
+LC_ALL=C sudo pg_createcluster $pgversion main --encoding UNICODE
 
 echo Applying postgresql configuration changes...
 
-sudo cp -a /etc/postgresql/8.2/main/pg_hba.conf /etc/postgresql/8.2/main/pg_hba.conf.old
-sudo grep -q Launchpad /etc/postgresql/8.2/main/pg_hba.conf || \
-sudo patch /etc/postgresql/8.2/main/pg_hba.conf <<'EOF'
+sudo cp -a /etc/postgresql/$pgversion/main/pg_hba.conf \
+    /etc/postgresql/$pgversion/main/pg_hba.conf.old
+sudo grep -q Launchpad /etc/postgresql/$pgversion/main/pg_hba.conf || \
+sudo patch /etc/postgresql/$pgversion/main/pg_hba.conf <<'EOF'
 --- pg_hba.conf 2005-11-02 17:33:08.000000000 -0800
 +++ /tmp/pg_hba.conf    2005-11-03 07:32:46.932400423 -0800
 @@ -58,7 +58,9 @@
@@ -40,48 +68,54 @@ sudo patch /etc/postgresql/8.2/main/pg_hba.conf <<'EOF'
  #
 -
 +# Launchpad users
-+local   all         all                                          trust
-+host    all         all         127.0.0.1       255.255.255.255  trust
++local   all         all                           trust
++host    all         all         127.0.0.1/32      trust
 
 
 
 EOF
-sudo chown --reference=/etc/postgresql/8.2/main/pg_hba.conf.old /etc/postgresql/8.2/main/pg_hba.conf
-sudo chmod --reference=/etc/postgresql/8.2/main/pg_hba.conf.old /etc/postgresql/8.2/main/pg_hba.conf
+sudo chown --reference=/etc/postgresql/$pgversion/main/pg_hba.conf.old \
+    /etc/postgresql/$pgversion/main/pg_hba.conf
+sudo chmod --reference=/etc/postgresql/$pgversion/main/pg_hba.conf.old \
+    /etc/postgresql/$pgversion/main/pg_hba.conf
 
-sudo grep -q Launchpad /etc/postgresql/8.2/main/postgresql.conf || \
-sudo patch /etc/postgresql/8.2/main/postgresql.conf <<'EOF'
---- /etc/postgresql/8.2/main/postgresql.conf    2005-11-03 07:56:27.000000000 -0800
-+++ /tmp/postgresql.conf        2005-11-03 07:57:28.156973216 -0800
-@@ -423,6 +423,14 @@
- # - Other Platforms & Clients -
+sudo grep -q Launchpad /etc/postgresql/$pgversion/main/postgresql.conf || \
+sudo tee -a /etc/postgresql/$pgversion/main/postgresql.conf <<'EOF'
 
- #transform_null_equals = off
+##
+## Launchpad configuration
+##
+# Enable launchpad full text searching in database
+search_path='$user,public,ts2'
+add_missing_from=false
+#enable_seqscan=false
+log_statement='none'
+log_line_prefix='[%t] %q%u@%d '
+fsync = off
 
-+##
-+## Launchpad configuration
-+##
-+# Enable launchpad full text searching in database
-+search_path='$user,public,ts2'
-+add_missing_from=false
-+# Force use of indexes, to assist in tuning queries
-+enable_seqscan=false
-
- #---------------------------------------------------------------------------
- # CUSTOMIZED OPTIONS
 EOF
 
-if [ -f /etc/postgresql/8.2/main/start.conf ]; then
-    sudo sed -i -e 's/^manual/auto/' /etc/postgresql/8.2/main/start.conf
+if [ "$pgversion" = 8.2 -o "$pgversion" = 8.3 ]
+then
+  sudo grep -q '^[[:space:]]*max_fsm_relations' /etc/postgresql/$pgversion/main/postgresql.conf || \
+  sudo tee -a /etc/postgresql/$pgversion/main/postgresql.conf <<'EOF'
+max_fsm_relations=2000
+
+EOF
 fi
 
-sudo /etc/init.d/postgresql-8.2 start
+if [ -e /etc/init.d/postgresql-$pgversion ]; then
+    sudo /etc/init.d/postgresql-$pgversion start
+else
+    # This is Maverick.
+    sudo /etc/init.d/postgresql start $pgversion
+fi
 
 echo Waiting 10 seconds for postgresql to come up...
 sleep 10
 
-echo Creating postgresql user $(id -un)
-sudo -u postgres /usr/lib/postgresql/8.2/bin/createuser -a -d $(id -un)
+echo Creating postgresql user $USER
+sudo -u postgres /usr/lib/postgresql/$pgversion/bin/createuser -a -d $USER
 
 echo
 echo Looks like everything went ok.

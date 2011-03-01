@@ -1,10 +1,12 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functions dealing with extracting information from spec notifications."""
 
 __metaclass__ = type
 
 import re
+
 
 _moin_url_re = re.compile(r'(https?://[^ \r\n]+)')
 

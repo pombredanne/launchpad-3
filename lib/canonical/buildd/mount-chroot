@@ -1,6 +1,7 @@
 #!/bin/sh
-# Copyright Canonical Limited
-# Author: Daniel Silverstone <daniel.silverstone@canonical.com>
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 # Buildd Slave tool to mount a chroot
 
@@ -19,5 +20,6 @@ echo "Mounting chroot for build $BUILDID"
 
 $SUDO mount -t proc none "$HOME/build-$BUILDID/chroot-autobuild/proc"
 $SUDO mount -t devpts none "$HOME/build-$BUILDID/chroot-autobuild/dev/pts"
-$SUDO mount --bind $HOME/ccache "$HOME/build-$BUILDID/chroot-autobuild/home/buildd/.ccache"
-$SUDO mount --bind /var/cache/apt/archives "$HOME/build-$BUILDID/chroot-autobuild/var/cache/apt/archives"
+$SUDO mount -t sysfs none "$HOME/build-$BUILDID/chroot-autobuild/sys"
+$SUDO mount -t tmpfs none "$HOME/build-$BUILDID/chroot-autobuild/dev/shm"
+$SUDO cp /etc/hosts /etc/hostname /etc/resolv.conf $HOME/build-$BUILDID/chroot-autobuild/etc/

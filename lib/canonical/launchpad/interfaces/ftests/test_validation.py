@@ -1,21 +1,24 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Tests for the validators."""
 
 __metaclass__ = type
 
 import unittest
 
-from canonical.functional import FunctionalDocFileSuite
+from canonical.launchpad.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
 from canonical.testing.layers import LaunchpadFunctionalLayer
-from canonical.launchpad.ftests.test_system_documentation import (
-    default_optionflags, setUp, tearDown)
 
 
 def test_suite():
     suite = unittest.TestSuite()
-    test = FunctionalDocFileSuite(
+    test = LayeredDocFileSuite(
         'validation.txt', setUp=setUp, tearDown=tearDown,
-        optionflags=default_optionflags, package=__name__,
         layer=LaunchpadFunctionalLayer)
     suite.addTest(test)
     return suite

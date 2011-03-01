@@ -1,5 +1,0 @@
-<configure xmlns="http://namespaces.zope.org/zope">
-  <content class="canonical.launchpad.database.packagebugcontact.PackageBugContact">
-    <allow attributes="id distribution sourcepackagename bugcontact" />
-  </content>
-</configure>

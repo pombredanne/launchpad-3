@@ -1,20 +1,26 @@
-#!/usr/bin/python2.4
-# Copyright 2005 Canonical Ltd. All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=C0103,W0403
 
 import _pythonpath
 
-from canonical.lp import READ_COMMITTED_ISOLATION
-from canonical.launchpad.scripts.po_export_queue import process_queue
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
+from canonical.launchpad.webapp.dbpolicy import SlaveDatabasePolicy
+from lp.translations.scripts.po_export_queue import process_queue
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 class RosettaExportQueue(LaunchpadCronScript):
+    """Translation exports."""
+
     def main(self):
-        self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
-        process_queue(self.txn, self.logger)
+        with SlaveDatabasePolicy():
+            process_queue(self.txn, self.logger)
 
 
 if __name__ == '__main__':
     script = RosettaExportQueue('rosetta-export-queue', dbuser='poexport')
-    script.lock_and_run()
-
+    script.lock_and_run(isolation=ISOLATION_LEVEL_READ_COMMITTED)

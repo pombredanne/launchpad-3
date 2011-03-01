@@ -1,5 +1,7 @@
-#!/usr/bin/python2.4
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Populate some new columns on the Person table."""
 
@@ -9,9 +11,8 @@ __all__ = []
 import _pythonpath
 
 from optparse import OptionParser
-import sys
 
-from canonical.database.sqlbase import connect, AUTOCOMMIT_ISOLATION
+from canonical.database.sqlbase import connect, ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.launchpad.scripts import db_options
 from canonical.launchpad.scripts.logger import log, logger_options
 
@@ -38,43 +39,18 @@ logger_options(parser)
 db_options(parser)
 options, args = parser.parse_args()
 
-con = connect(options.dbuser, isolation=AUTOCOMMIT_ISOLATION)
+con = connect(options.dbuser, isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
-# Valid people not teams
 update_until_done(con, 'person', """
     UPDATE Person
     SET
-        account_status = 20, personal_standing = 0,
-        mailing_list_receive_duplicates = TRUE,
-        mailing_list_auto_subscribe_policy = 1
+        verbose_bugnotifications = FALSE,
+        visibility = COALESCE(visibility, 1)
     WHERE id IN (
         SELECT Person.id
-        FROM Person, ValidPersonOrTeamCache
-        WHERE teamowner IS NULL
-            AND Person.id = ValidPersonOrTeamCache.id
-            AND account_status IS NULL
+        FROM Person
+        WHERE visibility IS NULL OR verbose_bugnotifications IS NULL
         LIMIT 200
         )
     """)
 
-# Everyone else
-update_until_done(con, 'person', """
-    UPDATE Person
-    SET
-        account_status = 10, personal_standing = 0,
-        mailing_list_receive_duplicates = TRUE,
-        mailing_list_auto_subscribe_policy = 1
-    WHERE id IN (
-        SELECT id FROM Person WHERE account_status IS NULL
-        LIMIT 200
-        )
-    """)
-
-cur = con.cursor()
-cur.execute("SELECT count(*) from Person where account_status IS NULL")
-rows = cur.fetchone()[0]
-if rows == 0:
-    print 'Everything updated'
-else:
-    print 'Rows where missed!'
-    sys.exit(1)

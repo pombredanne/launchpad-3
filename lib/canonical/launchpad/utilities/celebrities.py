@@ -1,14 +1,23 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Classes that implement ICelebrity interfaces."""
 
 __metaclass__ = type
 __all__ = ['LaunchpadCelebrities']
 
-from zope.interface import implements
 from zope.component import getUtility
-from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IPersonSet, IDistributionSet, IBugTrackerSet,
-    IProductSet, NotFoundError, IDistributionMirrorSet)
+from zope.interface import implements
+
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.errors import NotFoundError
+from lp.bugs.interfaces.bugtracker import IBugTrackerSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distributionmirror import IDistributionMirrorSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
+
 
 class MutatedCelebrityError(Exception):
     """A celebrity has had its id or name changed in the database.
@@ -55,6 +64,14 @@ class CelebrityDescriptor:
         self.interface = interface
         self.name = name
 
+    def _getCelebrityByName(self, utility):
+        """Find the celebrity by name."""
+        return utility.getByName(self.name)
+
+    def _isRightCelebrity(self, celebrity):
+        """Is this the celebrity we were looking for?"""
+        return celebrity.name == self.name
+
     def __get__(self, instance, cls=None):
         if instance is None:
             return self
@@ -62,7 +79,7 @@ class CelebrityDescriptor:
         utility = getUtility(self.interface)
         if self.id is None:
             try:
-                celebrity = utility.getByName(self.name)
+                celebrity = self._getCelebrityByName(utility)
                 if celebrity is None:
                     raise MissingCelebrityError(self.name)
             except NotFoundError:
@@ -71,36 +88,77 @@ class CelebrityDescriptor:
         else:
             try:
                 celebrity = utility.get(self.id)
-                if celebrity is None or celebrity.name != self.name:
+                if celebrity is None or not self._isRightCelebrity(celebrity):
                     raise MutatedCelebrityError(self.name)
             except NotFoundError:
                 raise MutatedCelebrityError(self.name)
         return celebrity
 
 
+class PersonCelebrityDescriptor(CelebrityDescriptor):
+    """A `CelebrityDescriptor` for celebrities that are people.
+
+    This descriptor maintains a list of names so code can detect
+    if a given person is a celebrity for special handling.
+    """
+    names = set() # Populated by the constructor.
+
+    def __init__(self, name):
+        PersonCelebrityDescriptor.names.add(name)
+        super(PersonCelebrityDescriptor, self).__init__(IPersonSet, name)
+
+
+class LanguageCelebrityDescriptor(CelebrityDescriptor):
+    """A `CelebrityDescriptor` for celebrities that are languages.
+
+    Unlike most other celebrities, languages are retrieved by code.
+    """
+
+    def _getCelebrityByName(self, utility):
+        """See `CelebrityDescriptor`."""
+        return utility.getLanguageByCode(self.name)
+
+    def _isRightCelebrity(self, celebrity):
+        """See `CelebrityDescriptor`."""
+        return celebrity.code == self.name
+
+
 class LaunchpadCelebrities:
     """See `ILaunchpadCelebrities`."""
     implements(ILaunchpadCelebrities)
 
-    admin = CelebrityDescriptor(IPersonSet, 'admins')
-    ubuntu = CelebrityDescriptor(IDistributionSet, 'ubuntu')
-    debian = CelebrityDescriptor(IDistributionSet, 'debian')
-    rosetta_expert = CelebrityDescriptor(IPersonSet, 'rosetta-admins')
-    bazaar_expert = CelebrityDescriptor(IPersonSet, 'vcs-imports')
-    vcs_imports = CelebrityDescriptor(IPersonSet, 'vcs-imports')
+    admin = PersonCelebrityDescriptor('admins')
+    bazaar_experts = PersonCelebrityDescriptor('bazaar-experts')
+    software_center_agent = PersonCelebrityDescriptor(
+        'software-center-agent')
+    bug_importer = PersonCelebrityDescriptor('bug-importer')
+    bug_watch_updater = PersonCelebrityDescriptor('bug-watch-updater')
+    buildd_admin = PersonCelebrityDescriptor('launchpad-buildd-admins')
+    commercial_admin = PersonCelebrityDescriptor('commercial-admins')
     debbugs = CelebrityDescriptor(IBugTrackerSet, 'debbugs')
-    sourceforge_tracker = CelebrityDescriptor(IBugTrackerSet, 'sf')
-    shipit_admin = CelebrityDescriptor(IPersonSet, 'shipit-admins')
-    buildd_admin = CelebrityDescriptor(IPersonSet, 'launchpad-buildd-admins')
-    launchpad_developers = CelebrityDescriptor(IPersonSet, 'launchpad')
-    ubuntu_bugzilla = CelebrityDescriptor(IBugTrackerSet, 'ubuntu-bugzilla')
-    registry = CelebrityDescriptor(IPersonSet, 'registry')
-    bug_watch_updater = CelebrityDescriptor(IPersonSet, 'bug-watch-updater')
-    bug_importer = CelebrityDescriptor(IPersonSet, 'bug-importer')
+    debian = CelebrityDescriptor(IDistributionSet, 'debian')
+    english = LanguageCelebrityDescriptor(ILanguageSet, 'en')
+    gnome_bugzilla = CelebrityDescriptor(IBugTrackerSet, 'gnome-bugs')
+    hwdb_team = PersonCelebrityDescriptor('hwdb-team')
+    janitor = PersonCelebrityDescriptor('janitor')
+    katie = PersonCelebrityDescriptor('katie')
     launchpad = CelebrityDescriptor(IProductSet, 'launchpad')
-    launchpad_beta_testers = CelebrityDescriptor(
-        IPersonSet, 'launchpad-beta-testers')
-    janitor = CelebrityDescriptor(IPersonSet, 'janitor')
+    launchpad_beta_testers = PersonCelebrityDescriptor(
+        'launchpad-beta-testers')
+    launchpad_developers = PersonCelebrityDescriptor('launchpad')
+    obsolete_junk = CelebrityDescriptor(IProductSet, 'obsolete-junk')
+    ppa_key_guard = PersonCelebrityDescriptor('ppa-key-guard')
+    registry_experts = PersonCelebrityDescriptor('registry')
+    rosetta_experts = PersonCelebrityDescriptor('rosetta-admins')
+    savannah_tracker = CelebrityDescriptor(IBugTrackerSet, 'savannah')
+    shipit_admin = PersonCelebrityDescriptor('shipit-admins')
+    sourceforge_tracker = CelebrityDescriptor(IBugTrackerSet, 'sf')
+    ubuntu = CelebrityDescriptor(IDistributionSet, 'ubuntu')
+    ubuntu_branches = PersonCelebrityDescriptor('ubuntu-branches')
+    ubuntu_bugzilla = CelebrityDescriptor(IBugTrackerSet, 'ubuntu-bugzilla')
+    ubuntu_security = PersonCelebrityDescriptor('ubuntu-security')
+    ubuntu_techboard = PersonCelebrityDescriptor('techboard')
+    vcs_imports = PersonCelebrityDescriptor('vcs-imports')
 
     @property
     def ubuntu_archive_mirror(self):
@@ -122,3 +180,5 @@ class LaunchpadCelebrities:
         assert mirror.isOfficial(), "Main mirror must be an official one."
         return mirror
 
+    def isCelebrityPerson(self, name):
+        return str(name) in PersonCelebrityDescriptor.names

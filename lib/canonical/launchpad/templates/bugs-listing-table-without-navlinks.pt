@@ -8,7 +8,7 @@
   <table class="listing" id="buglisting">
     <thead>
       <tr>
-        <th colspan="3">Summary</th>
+        <th colspan="4">Summary</th>
         <th tal:condition="context/show_column/bugtargetdisplayname|nothing">
           In
         </th>
@@ -18,14 +18,22 @@
         <th tal:condition="context/show_column/productname|nothing">
           Project
         </th>
-        <th tal:condition="context/show_column/importance|nothing">Importance</th>
+        <th tal:condition="context/show_column/importance|nothing">
+          Importance</th>
         <th tal:condition="context/show_column/status|nothing">Status</th>
+        <th tal:condition="context/show_column/date_last_updated|nothing">
+          Date last updated
+        </th>
+        <th tal:condition="context/show_column/heat|nothing"
+            style="width: 55px">
+          Heat
+        </th>
       </tr>
     </thead>
     <tbody>
       <tr tal:repeat="bugtask context/getBugListingItems">
         <td class="icon right">
-          <img src="/@@/bug" tal:replace="structure bugtask/image:icon" />
+          <span tal:replace="structure bugtask/image:icon" />
         </td>
         <td
           class="amount"
@@ -39,23 +47,32 @@
              tal:condition="context/show_column/summary|nothing">
             drop-down list in search bar disappears when using blah blah blah
           </a>
-          <img src="/@@/info" tal:replace="structure bugtask/image:badges" />
+        </td>
+        <td align="right" style="padding-right: 5px">
+          <tal:block replace="structure bugtask/image:badges" />
         </td>
         <td tal:content="bugtask/bugtargetdisplayname"
             tal:condition="context/show_column/bugtargetdisplayname|nothing"
         >mozilla-firefox (Ubuntu)</td>
-        <td tal:content="structure bugtask/sourcepackagename/name|string:&mdash;"
+        <td tal:content="structure bugtask/sourcepackagename/name|default"
             tal:condition="context/show_column/packagename|nothing"
-        >mozilla-firefox (Ubuntu)</td>
-        <td tal:content="structure bugtask/product/name|string:&mdash;"
+        >&mdash;</td>
+        <td tal:content="structure bugtask/product/name|default"
             tal:condition="context/show_column/productname|nothing"
-        >firefox</td>
+        >&mdash;</td>
         <td tal:content="bugtask/importance/title"
             tal:attributes="class string:importance${bugtask/importance/name}"
             tal:condition="context/show_column/importance|nothing">Critical</td>
         <td tal:content="bugtask/status/title"
             tal:attributes="class string:status${bugtask/status/name}"
             tal:condition="context/show_column/status|nothing">Confirmed</td>
+        <td tal:content="bugtask/bug/date_last_updated/fmt:date"
+            tal:condition="context/show_column/date_last_updated|nothing">
+            2007-11-25</td>
+        <td tal:condition="context/show_column/heat|nothing"
+            tal:content="structure bugtask/bug_heat_html"
+            style="text-align: center">
+            HEAT</td>
       </tr>
     </tbody>
   </table>

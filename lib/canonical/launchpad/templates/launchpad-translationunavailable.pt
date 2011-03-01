@@ -3,23 +3,16 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/freeform" 
+  metal:use-macro="view/macro:page/locationless"
   i18n:domain="launchpad"
 >
 
   <body>
-    <div metal:fill-slot="main">
+    <div class="top-portlet" metal:fill-slot="main">
       <h1>Translation page is not available</h1>
-      <p>
-        The page you are trying to use is not available because we are
-        updating translations in bulk. You will be able to use this page once
-        the update process is finished. Try again in several hours.
-      </p>
-      <p>
-        We apologise for the inconvenience.
+      <p tal:content="context">
+        Translations for this release series are not currently available.
+        Please come back soon.
       </p>
     </div>
   </body>

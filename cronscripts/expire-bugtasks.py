@@ -1,6 +1,9 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=C0103,W0403
 
 """Expire all old, Incomplete bugs tasks that are unassigned in Malone.
 
@@ -12,9 +15,11 @@ __metaclass__ = type
 
 import _pythonpath
 
+from zope.component import getUtility
+
 from canonical.config import config
-from canonical.launchpad.scripts.base import LaunchpadCronScript
-from canonical.launchpad.scripts.bugexpire import BugJanitor
+from lp.services.scripts.base import LaunchpadCronScript
+from lp.bugs.scripts.bugexpire import BugJanitor
 
 
 class ExpireBugTasks(LaunchpadCronScript):
@@ -27,9 +32,23 @@ class ExpireBugTasks(LaunchpadCronScript):
     usage = "usage: %prog [options]"
     description =  '    %s' % __doc__
 
+    def add_my_options(self):
+        self.parser.add_option('-u', '--ubuntu', action='store_true',
+                               dest='ubuntu', default=False,
+                               help='Only expire Ubuntu bug tasks.')
+        self.parser.add_option('-l', '--limit', action='store', dest='limit',
+                               type='int', metavar='NUMBER', default=None,
+                               help='Limit expiry to NUMBER of bug tasks.')
+
     def main(self):
         """Run the BugJanitor."""
-        janitor = BugJanitor(log=self.logger)
+        target = None
+        if self.options.ubuntu:
+            # Avoid circular import.
+            from lp.registry.interfaces.distribution import IDistributionSet
+            target = getUtility(IDistributionSet).getByName('ubuntu')
+        janitor = BugJanitor(
+            log=self.logger, target=target, limit=self.options.limit)
         janitor.expireBugTasks(self.txn)
 
 

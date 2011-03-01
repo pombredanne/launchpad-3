@@ -1,31 +1,87 @@
 #! /bin/bash
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+#
+# Update your copy of trunk and the necessary source dependencies, and make
+# sure all source dependencies are properly linked in to all the branches you
+# are working on.
 
-SOURCEDEPS="~/canonical/lp-sourcedeps/sourcecode"
+# Stop if there's an error, and treat unset variables as errors.
+set -eu
 
-# Force tilde expansion
-SOURCEDEPS=$(eval echo ${SOURCEDEPS})
+# Helper function to run a child process, indenting stdout to aid
+# readability.
+run-child() {
+    "$@" | sed -e "s/^/        /"
+}
 
-DEVPAD="devpad.canonical.com"
-ROCKETFUELDEPS="/code/rocketfuel-built/launchpad/sourcecode/*"
-RSYNCOPTIONS="-avp --partial --progress --delete"
+# Load local settings.
+if [ -e "$HOME/.rocketfuel-env.sh" ]
+then
+    source "$HOME/.rocketfuel-env.sh"
+else
+    echo "Please run rocketfuel-setup first." >&2
+    exit 1
+fi
 
-# Make sure we have an ssh key primed
-ssh-add -l
-if [ $? -gt 0 ]; then ssh-add; fi
+LP_DOWNLOAD_CACHE_PATH="$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/download-cache"
+LP_EGGS_PATH="$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/eggs"
+LP_DOWNLOAD_CACHE_PATH="$(eval echo ${LP_DOWNLOAD_CACHE_PATH})"
+LP_EGGS_PATH="$(eval echo ${LP_EGGS_PATH})"
 
-if [ ! -d $SOURCEDEPS ]; then mkdir -p $SOURCEDEPS; fi
+# Pull launchpad devel from launchpad.
+INITIAL_REV=$(bzr revno "$LP_TRUNK_PATH")
+bzr pull -d "$LP_TRUNK_PATH"
+FINAL_REV=$(bzr revno "$LP_TRUNK_PATH")
 
-rsync $RSYNCOPTIONS $DEVPAD:$ROCKETFUELDEPS $SOURCEDEPS/
+# Make sure our directories are around.
+mkdir -p "$LP_SOURCEDEPS_PATH" "$LP_EGGS_PATH"
 
-cd ~/canonical/lp-branches
-for branch in *; do
-  cd $branch
-  echo "Updating sourcecode dependencies for ${branch}"
-  utilities/link-external-sourcecode.sh ../../lp-sourcedeps
-  cd ..
+# Get/update the download cache.
+if [ -d "$LP_DOWNLOAD_CACHE_PATH" ]
+then
+    bzr up "$LP_DOWNLOAD_CACHE_PATH"
+else
+    bzr co lp:lp-source-dependencies "$LP_DOWNLOAD_CACHE_PATH"
+fi
+
+# Add or update sourcepackages.
+sourcedeps_conf="$(dirname "$0")/sourcedeps.conf"
+if [ ! -e "$sourcedeps_conf" ]
+then
+    # Use the global deps which are stable.
+    echo "Could not find $sourcedeps_conf" >&2
+    sourcedeps_conf="$LP_TRUNK_PATH/utilities/sourcedeps.conf"
+fi
+
+echo "Updating sourcecode dependencies in rocketfuel:"
+echo ""
+echo "  NOTE: Each sourcedep may take a while; please be patient."
+echo ""
+echo "  ALSO NOTE: You can ignore any warnings you see below about how"
+echo "  'You have not informed bzr of your Launchpad ID ...' etc."
+echo "  See https://bugs.launchpad.net/bzr/+bug/401617 for why."
+echo ""
+echo "    Sourcedeps: $LP_SOURCEDEPS_PATH"
+
+run-child $LP_TRUNK_PATH/utilities/update-sourcecode $LP_SOURCEDEPS_PATH $sourcedeps_conf
+
+
+# Update the current trees in the repo.
+echo "Updating sourcecode dependencies in current local branches:"
+for branch in "$LP_PROJECT_PATH"/*
+do
+    if [ -d "$branch/sourcecode" ]
+    then
+        echo "    ${branch}"
+        run-child "$LP_TRUNK_PATH/utilities/link-external-sourcecode" \
+            --parent="$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR" --target="$branch"
+    fi
 done
 
-cd ~/canonical/lp-branches/trunk
-bzr pull
-make
-
+# Build launchpad if there were changes.
+if [ $FINAL_REV != $INITIAL_REV ];
+then
+    make -C "$LP_TRUNK_PATH"
+fi

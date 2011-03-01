@@ -1,7 +1,0 @@
-Hello,
-
-The membership status of %(member_name)s in the team %(team_name)s was changed by %(reviewer_name)s from %(old_status)s to %(new_status)s.
-
-%(comment)s
-Regards,
-The Launchpad team

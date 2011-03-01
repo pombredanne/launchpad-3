@@ -1,0 +1,270 @@
+Buildd Scoring
+==============
+
+Some tests for build jobs scoring implementation, which envolves the
+analysis of each job pending in the queue. The actions to be performed are
+described in <https://launchpad.canonical.com/AutoBuildManagement>.
+A summary:
+
+ * ETA to build (smaller == more points)
+ * Time spent in build queue (longer == more points)
+ * urgency
+ * priority/seed/component (BASE|DESKTOP|SUPPORTED) [PEND]
+ * Overarching policy (SECURITY/UPDATES/RELEASE) [PEND]
+ * Per-archive score delta.
+
+    >>> import datetime
+    >>> import pytz
+    >>> LOCAL_NOW = datetime.datetime.now(pytz.timezone('UTC'))
+
+Let's create a 'mock' class which emulate the real behaviour of
+BuildQueue entries.
+
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> hoary = ubuntu['hoary']
+    >>> hoary386 = hoary['i386']
+    >>> hoary386.title
+    u'The Hoary Hedgehog Release for i386 (x86)'
+
+    >>> from canonical.database.sqlbase import commit
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+    >>> from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
+    >>> from lp.soyuz.enums import PackagePublishingStatus
+    >>> from lp.soyuz.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+
+    >>> test_publisher = SoyuzTestPublisher()
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> test_publisher.prepareBreezyAutotest()
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+
+    >>> version = 1
+
+    >>> def setUpBuildQueueEntry(
+    ...     component_name='main', urgency=SourcePackageUrgency.HIGH,
+    ...     pocket=PackagePublishingPocket.RELEASE,
+    ...     date_created=LOCAL_NOW, manual=False, archive=None):
+    ...     global version
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
+    ...     pub = test_publisher.getPubSource(
+    ...        sourcename='test-build', version=str(version),
+    ...        distroseries=hoary, component=component_name,
+    ...        urgency=urgency, pocket=pocket,
+    ...        status=PackagePublishingStatus.PUBLISHED, archive=archive)
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    ...     version += 1
+    ...     build = pub.sourcepackagerelease.createBuild(
+    ...         hoary386, pub.pocket, pub.archive)
+    ...
+    ...     build_queue = build.queueBuild()
+    ...     from zope.security.proxy import removeSecurityProxy
+    ...     naked_build_queue = removeSecurityProxy(build_queue)
+    ...     naked_build_queue.job.date_created = date_created
+    ...     naked_build_queue.manual = manual
+    ...
+    ...     return build_queue
+
+
+ * 1500 points for pocket 'RELEASE',
+ * 1000 points for component 'main',
+ * 15 points for urgency HIGH.
+ * nothing for queue_time
+
+    >>> bq0 = setUpBuildQueueEntry()
+
+    >>> bq0.score()
+    >>> bq0.lastscore
+    2515
+
+If the archive is private, its score is boosted by 10000:
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> private_ppa = factory.makeArchive()
+    >>> private_ppa.buildd_secret = "secret"
+    >>> private_ppa.private = True
+    >>> bq1 = setUpBuildQueueEntry(archive=private_ppa)
+    >>> bq1.score()
+    >>> bq1.lastscore
+    12515
+
+The archive can also have a delta applied to all its build scores.  Setting
+IArchive.relative_build_score to boost by 100 changes the lastscore value
+appropriately.
+
+    >>> private_ppa.relative_build_score = 100
+    >>> bq1.score()
+    >>> bq1.lastscore
+    12615
+
+The delta can also be negative.
+
+    >>> private_ppa.relative_build_score = -100
+    >>> bq1.score()
+    >>> bq1.lastscore
+    12415
+
+    >>> private_ppa.relative_build_score = 0
+    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+
+
+ * 1500 points for pocket 'RELEASE',
+ * 1000 points for main components
+ * 5 point for priority LOW
+ * nothing for queue_time
+
+    >>> time1 = LOCAL_NOW - datetime.timedelta(seconds=290)
+    >>> bq1 = setUpBuildQueueEntry(
+    ...      urgency=SourcePackageUrgency.LOW, date_created=time1)
+
+    >>> bq1.score()
+    >>> bq1.lastscore
+    2505
+
+ * 1500 points for pocket 'RELEASE',
+ * 250 points for universe component universe
+ * 15 points for priority HIGH
+ * 5 points for queue_time ( > 300 seconds)
+
+    >>> time2 = LOCAL_NOW - datetime.timedelta(seconds=310)
+    >>> bq2 = setUpBuildQueueEntry(
+    ...      component_name='universe', urgency=SourcePackageUrgency.HIGH,
+    ...      date_created=time2)
+
+    >>> bq2.score()
+
+    >>> bq2.lastscore
+    1770
+
+ * 1500 points for pocket 'RELEASE',
+ * nothing for component multiverse
+ * 10 points for MEDIUM priority
+ * 10 points for queue_time ( > 900 seconds)
+
+    >>> time3 = LOCAL_NOW - datetime.timedelta(seconds=1000)
+    >>> bq3 = setUpBuildQueueEntry(
+    ...      component_name='multiverse', urgency=SourcePackageUrgency.MEDIUM,
+    ...      date_created=time3)
+
+    >>> bq3.score()
+
+    >>> bq3.lastscore
+    1520
+
+ * 1500 points for pocket 'RELEASE',
+ * 1000 points for main component
+ * 20 points for EMERGENCY priority
+ * 15 points for queue_time ( > 1800 seconds)
+
+    >>> time4 = LOCAL_NOW - datetime.timedelta(seconds=1801)
+    >>> bq4 = setUpBuildQueueEntry(
+    ...      component_name='main', urgency=SourcePackageUrgency.EMERGENCY,
+    ...      date_created=time4)
+
+    >>> bq4.score()
+    >>> bq4.lastscore
+    2535
+
+ * 1500 points for pocket 'RELEASE',
+ * 750 points for restricted component
+ * 5 points for LOW priority
+ * 20 points for queue_time ( > 3600 seconds)
+
+    >>> time5 = LOCAL_NOW - datetime.timedelta(seconds=4000)
+    >>> bq5 = setUpBuildQueueEntry(
+    ...      component_name='restricted', urgency=SourcePackageUrgency.LOW,
+    ...      date_created=time5)
+
+    >>> bq5.score()
+    >>> bq5.lastscore
+    2275
+
+By setting manual attribute of a BuildQueue entry we prevent it to be
+rescored, which allows us to set an arbitrary value on it.
+
+    >>> time6 = LOCAL_NOW
+    >>> bq6 = setUpBuildQueueEntry(
+    ...      urgency=SourcePackageUrgency.LOW, date_created=time6, manual=True)
+
+    >>> bq6.lastscore = 5000
+
+    >>> bq6.score()
+
+    >>> bq6.lastscore
+    5000
+
+Let's see how the score varies for different publishing pockets.
+
+We will start with the lowest priority pocket: backports.
+
+    >>> bq7 = setUpBuildQueueEntry(
+    ...     pocket=PackagePublishingPocket.BACKPORTS)
+    >>> bq7.score()
+    >>> bq7.lastscore
+    1015
+
+The score will increase by 3000 for the next ranked pocket: release.
+
+    >>> bq8 = setUpBuildQueueEntry(
+    ...     pocket=PackagePublishingPocket.RELEASE)
+    >>> bq8.score()
+    >>> bq8.lastscore
+    2515
+
+Going to the next ranked pocket (PROPOSED or UPDATES) there will be a
+score increase of 1500. The reason why PROPOSED and UPDATES have the
+same priority is because sources in both pockets are submitted to the
+same policy and should reach their audience as soon as possible (see
+more information about this decision in bug #372491).
+
+    >>> bq9 = setUpBuildQueueEntry(
+    ...     pocket=PackagePublishingPocket.PROPOSED)
+    >>> bq9.score()
+    >>> bq9.lastscore
+    4015
+
+    >>> bqa = setUpBuildQueueEntry(
+    ...     pocket=PackagePublishingPocket.UPDATES)
+    >>> bqa.score()
+    >>> bqa.lastscore
+    4015
+
+Placing the build in the SECURITY pocket will push its score
+up by another 1500.
+
+    >>> bqb = setUpBuildQueueEntry(
+    ...     pocket=PackagePublishingPocket.SECURITY)
+    >>> bqb.score()
+    >>> bqb.lastscore
+    5515
+
+Builds in COPY archives have a score below zero, so they will only
+be considered when there is nothing else to build. Even language-packs
+and build retries will be built before them.
+
+No other aspects are considered when scoring builds from COPY archive,
+they all have a fixed score of -10. They will get built in the order
+they were created.
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
+    >>> copy = getUtility(IArchiveSet).new(
+    ...     owner=ubuntu.owner, purpose=ArchivePurpose.COPY,
+    ...     name='test-rebuild')
+
+    >>> bqc = setUpBuildQueueEntry(archive=copy)
+    >>> from lp.soyuz.interfaces.binarypackagebuild import (
+    ...     IBinaryPackageBuildSet)
+    >>> build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(bqc)
+    >>> bqc.score()
+    >>> bqc.lastscore
+    -10

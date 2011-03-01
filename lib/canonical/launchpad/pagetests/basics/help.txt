@@ -1,0 +1,12 @@
+== Inline help ==
+
+All Launchpad pages contain an invisible help frame.
+
+    >>> anon_browser.open('http://launchpad.dev/')
+    >>> find_tag_by_id(anon_browser.contents, 'help-pane')
+    <div...
+
+XXX 20080618 mpt: This frame should actually not be omnipresent; it
+should be created only when a help link is clicked (bug 241020). When
+that is fixed, this test can be deleted (or replaced with a Selenium
+test, if we have those by then).

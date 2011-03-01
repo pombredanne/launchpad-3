@@ -5,20 +5,14 @@ filter or otherwise specialize views or behavior.
 First, we'll set up various imports and stub objects.
 
 >>> from zope.component import getUtility
->>> from zope.app.session.interfaces import ISession
->>> from canonical.launchpad.interfaces import ILaunchBag, IOpenLaunchBag
+>>> from canonical.launchpad.webapp.interfaces import ILaunchBag
 >>> from canonical.launchpad.webapp.interfaces import BasicAuthLoggedInEvent
 >>> from canonical.launchpad.webapp.interfaces import LoggedOutEvent
 >>> from canonical.launchpad.webapp.interfaces import \
 ...     CookieAuthPrincipalIdentifiedEvent
 
->>> person = object()
-
 >>> class Principal(object):
 ...     id = 23
-...     def __conform__(self, protocol):
-...         if protocol is IPerson:
-...             return person
 
 >>> principal = Principal()
 >>> class Participation(object):
@@ -63,6 +57,11 @@ Login should be set back to None on a logout.
 >>> print launchbag.login
 None
 
+'user' will also be set to None:
+
+>>> print launchbag.user
+None
+
 Let's do a cookie auth principal identification.  In this case, the login
 will be cookie@example.com.
 
@@ -72,3 +71,32 @@ will be cookie@example.com.
 >>> print launchbag.login
 cookie@example.com
 
+
+== time_zone ==
+
+The time_zone attribute gives the user's time zone, as an pytz object.
+
+    >>> from lp.testing.factory import LaunchpadObjectFactory
+    >>> factory = LaunchpadObjectFactory()
+    >>> person = factory.makePerson()
+    >>> login_person(person)
+    >>> launchbag.time_zone
+    <UTC>
+
+It's cached, so even if the user's time zone is changed, it will stay
+the same. This is to optimize the look-up time, since some pages look it
+up a lot of times.
+
+    >>> person.setLocation(
+    ...     launchbag.user.latitude,
+    ...     launchbag.user.longitude,
+    ...     'Europe/Paris',
+    ...     launchbag.user)
+    >>> launchbag.time_zone
+    <UTC>
+
+After the LaunchBag has been cleared, the correct time zone is returned.
+
+    >>> launchbag.clear()
+    >>> launchbag.time_zone
+    <... 'Europe/Paris' ...>

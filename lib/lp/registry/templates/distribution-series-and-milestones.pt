@@ -1,0 +1,43 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="sandm"
+  tal:condition="context/series">
+    <h2>Series and milestones</h2>
+    <ul tal:condition="context/series"
+      tal:content="cache:public, 1 hour">
+      <tal:per_series repeat="series context/series">
+        <li tal:condition="series/active">
+          <strong>
+          <a tal:attributes="href series/fmt:url" class="sprite distribution">
+            <tal:version replace="series/version">3.0</tal:version>
+            &#8220;<tal:codename replace="series/displayname" />&#8221; series
+          </a>
+          </strong>
+          - <tal:status replace="series/status/name/fmt:lower" />
+        <br/>
+        <tal:milestones
+             define="milestones python: view.linkedMilestonesForSeries(series)"
+             tal:condition="milestones">
+          Milestones:
+          <tal:list replace="structure milestones"/>
+        </tal:milestones>
+        </li>
+      </tal:per_series>
+    </ul>
+
+    <ul class="horizontal">
+      <li
+        tal:define="link context/menu:overview/addseries"
+        tal:condition="link/enabled">
+        <a tal:replace="structure context/menu:overview/addseries/fmt:link" />
+      </li>
+      <li>
+        <a tal:replace="structure context/menu:overview/series/fmt:link" />
+      </li>
+      <li>
+        <a tal:replace="structure context/menu:overview/milestones/fmt:link" />
+      </li>
+    </ul>
+</div>

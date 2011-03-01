@@ -1,0 +1,228 @@
+= Email notifications =
+
+Notifications about changes to a mailing list's status are sent out
+via email.
+
+    >>> from lp.services.mail import stub
+    >>> from lp.testing.mail_helpers import (
+    ...     pop_notifications, print_emails)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> salgado = getUtility(IPersonSet).getByName('salgado')
+
+    >>> from lp.registry.tests.mailinglists_helper import (
+    ...     new_team, new_list_for_team)
+
+    # login() as an admin so that we can call IPerson.join() on any
+    # person/team we want.
+    >>> login('foo.bar@canonical.com')
+
+When a new email list becomes active, an email notification is sent to
+all active team members.
+
+    >>> team_one = new_team('team-one', with_list=False)
+    >>> anne = factory.makePersonByName('Anne')
+    >>> anne.join(team_one)
+
+    # Clear out the team-membership status emails.
+    >>> pop_notifications()
+    [...]
+
+    # This will take our team through the entire list creation
+    # process, generating notification emails along the way.
+    >>> list_one = new_list_for_team(team_one)
+    >>> list_one.status.name
+    'ACTIVE'
+
+    # Send the emails.
+    >>> transaction.commit()
+
+Both Anne and No Privileges Person receive the notifications, Anne as a
+newly subscribed member and No Privileges Person as the owner of the
+team.
+
+    >>> len(stub.test_emails)
+    2
+    >>> print_emails(include_reply_to=True)
+    From: Team One <noreply@launchpad.net>
+    To: anne.person@example.com
+    Reply-To: Team One <noreply@launchpad.net>
+    Subject: New Mailing List for Team One
+    Hello Anne Person,
+    <BLANKLINE>
+    A new mailing list has been created for Team One (team-one).
+    <BLANKLINE>
+    If you would like to subscribe to the list, please use the link below
+    to update your Mailing List Subscription preferences.
+    <BLANKLINE>
+      To subscribe:
+    <BLANKLINE>
+          http://launchpad.dev/~anne/+editemails
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+    From: Team One <noreply@launchpad.net>
+    To: no-priv@canonical.com
+    Reply-To: Team One <noreply@launchpad.net>
+    Subject: New Mailing List for Team One
+    Hello No Privileges Person,
+    <BLANKLINE>
+    A new mailing list has been created for Team One (team-one).
+    <BLANKLINE>
+    If you would like to subscribe to the list, please use the link below
+    to update your Mailing List Subscription preferences.
+    <BLANKLINE>
+      To subscribe:
+    <BLANKLINE>
+          http://launchpad.dev/~no-priv/+editemails
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+
+That notification is also sent to the individual members of all
+sub-teams.  If a sub-team has a primary contact email address, that
+address will be ignored, and the message will be sent to the
+individual team members.
+
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> salgado = getUtility(IPersonSet).getByName('salgado')
+
+    >>> super_team = new_team('super-team', with_list=False)
+    >>> sub_team = new_team('sub-team', with_list=False)
+    >>> ignored = super_team.addMember(sub_team, salgado, force_team_add=True)
+    >>> anne.join(super_team)
+    >>> lars = factory.makePersonByName('Lars')
+    >>> lars.join(sub_team)
+
+    # Cris should receive a single email, even though she is a member
+    # of both teams.
+    >>> cris = factory.makePersonByName('Cris')
+    >>> cris.join(super_team)
+    >>> cris.join(sub_team)
+
+    # Clear out the team-membership status emails.
+    >>> pop_notifications()
+    [...]
+
+    # Make sure the sub-team has a preferred email, so we can show
+    # that it is being bypassed.
+    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+    >>> emailset = getUtility(IEmailAddressSet)
+    >>> email = emailset.new('foo@baz.com', sub_team)
+    >>> transaction.commit()
+    >>> sub_team.setContactAddress(email)
+    >>> sub_team.preferredemail.email
+    u'foo@baz.com'
+
+    # This will take our team through the entire list creation
+    # process, generating notification emails along the way.
+    >>> super_list = new_list_for_team(super_team)
+    >>> super_list.status.name
+    'ACTIVE'
+
+    # Send the emails.
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    4
+    >>> print_emails(include_reply_to=True)
+    From: Super Team <noreply@launchpad.net>
+    To: anne.person@example.com
+    Reply-To: Super Team <noreply@launchpad.net>
+    Subject: New Mailing List for Super Team
+    Hello Anne Person,
+    <BLANKLINE>
+    A new mailing list has been created for Super Team (super-team).
+    <BLANKLINE>
+    If you would like to subscribe to the list, please use the link below
+    to update your Mailing List Subscription preferences.
+    <BLANKLINE>
+      To subscribe:
+    <BLANKLINE>
+          http://launchpad.dev/~anne/+editemails
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+    From: Super Team <noreply@launchpad.net>
+    To: cris.person@example.com
+    Reply-To: Super Team <noreply@launchpad.net>
+    Subject: New Mailing List for Super Team
+    Hello Cris Person,
+    <BLANKLINE>
+    A new mailing list has been created for Super Team (super-team).
+    <BLANKLINE>
+    If you would like to subscribe to the list, please use the link below
+    to update your Mailing List Subscription preferences.
+    <BLANKLINE>
+      To subscribe:
+    <BLANKLINE>
+          http://launchpad.dev/~cris/+editemails
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+    From: Super Team <noreply@launchpad.net>
+    To: lars.person@example.com
+    Reply-To: Super Team <noreply@launchpad.net>
+    Subject: New Mailing List for Super Team
+    Hello Lars Person,
+    <BLANKLINE>
+    A new mailing list has been created for Super Team (super-team).
+    <BLANKLINE>
+    If you would like to subscribe to the list, please use the link below
+    to update your Mailing List Subscription preferences.
+    <BLANKLINE>
+      To subscribe:
+    <BLANKLINE>
+          http://launchpad.dev/~lars/+editemails
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+    From: Super Team <noreply@launchpad.net>
+    To: no-priv@canonical.com
+    Reply-To: Super Team <noreply@launchpad.net>
+    Subject: New Mailing List for Super Team
+    Hello No Privileges Person,
+    <BLANKLINE>
+    A new mailing list has been created for Super Team (super-team).
+    <BLANKLINE>
+    If you would like to subscribe to the list, please use the link below
+    to update your Mailing List Subscription preferences.
+    <BLANKLINE>
+      To subscribe:
+    <BLANKLINE>
+          http://launchpad.dev/~no-priv/+editemails
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+
+
+== Reactivated lists ==
+
+Notification messages are not sent out when a list is reactivated.
+
+    >>> renewed_team, renewed_list = new_team('renewed-team', with_list=True)
+    >>> anne.join(renewed_team)
+
+    # Clear out the team-membership status emails, and the new
+    # list invitation emails.
+    >>> pop_notifications()
+    [...]
+
+    # Fully rebuild our list from the ground up.
+    >>> renewed_list.deactivate()
+    >>> from lp.registry.interfaces.mailinglist import MailingListStatus
+    >>> renewed_list.transitionToStatus(MailingListStatus.INACTIVE)
+    >>> renewed_list.reactivate()
+    >>> renewed_list.startConstructing()
+    >>> renewed_list.transitionToStatus(MailingListStatus.ACTIVE)
+    >>> renewed_list.status.name
+    'ACTIVE'
+
+    # Send any outstanding emails.
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    0

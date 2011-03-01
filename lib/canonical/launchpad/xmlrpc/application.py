@@ -1,4 +1,7 @@
-# Copyright 2006-2007 Canonical Ltd., all rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=E0211,E0213
 
 """XML-RPC API to the application roots."""
 
@@ -15,11 +18,24 @@ __all__ = [
 import xmlrpclib
 
 from zope.component import getUtility
-from zope.interface import Interface, implements
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
-from canonical.launchpad.interfaces import (
-    ILaunchBag, IMailingListApplication, IPrivateApplication)
+from canonical.launchpad.interfaces.launchpad import (
+    IAuthServerApplication,
+    IPrivateApplication,
+    IPrivateMaloneApplication,
+    )
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.code.interfaces.codehosting import ICodehostingApplication
+from lp.code.interfaces.codeimportscheduler import (
+    ICodeImportSchedulerApplication,
+    )
+from lp.registry.interfaces.mailinglist import IMailingListApplication
+from lp.registry.interfaces.person import ISoftwareCenterAgentApplication
 
 
 class PrivateApplication:
@@ -27,7 +43,33 @@ class PrivateApplication:
 
     @property
     def mailinglists(self):
+        """See `IPrivateApplication`."""
         return getUtility(IMailingListApplication)
+
+    @property
+    def authserver(self):
+        """See `IPrivateApplication`."""
+        return getUtility(IAuthServerApplication)
+
+    @property
+    def codehosting(self):
+        """See `IPrivateApplication`."""
+        return getUtility(ICodehostingApplication)
+
+    @property
+    def codeimportscheduler(self):
+        """See `IPrivateApplication`."""
+        return getUtility(ICodeImportSchedulerApplication)
+
+    @property
+    def bugs(self):
+        """See `IPrivateApplication`."""
+        return getUtility(IPrivateMaloneApplication)
+
+    @property
+    def softwarecenteragent(self):
+        """See `IPrivateApplication`."""
+        return getUtility(ISoftwareCenterAgentApplication)
 
 
 class ISelfTest(Interface):

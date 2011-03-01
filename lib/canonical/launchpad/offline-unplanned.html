@@ -3,13 +3,24 @@
   <head>
     <title>Please try again</title>
     <style type="text/css" media="screen, print">
-      @import url(https://launchpad.net/+icing/rev5/+style-slimmer.css);
+      html, body {
+        font-family: UbuntuBeta, Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
+        }
+      .offline {
+        text-align: center;
+        max-width: 60em;
+        }
+      .offline > * {
+        margin-left: auto;
+        margin-right: auto;
+        }
     </style>
   </head>
   <body>
     <div id="topline"></div>
     <div id="locationbar"></div>
-      <div id="nonhelp" class="offline">
+    <div class="offline">
+
         <h1>Please try again</h1>
         <p>
           Sorry, there was a problem connecting to the Launchpad server.
@@ -21,7 +32,7 @@
           >the #launchpad IRC channel on Freenode</a>.
         </p>
         <p>Thanks for your patience.</p>
-      </div>
+
     </div>
   </body>
 </html>

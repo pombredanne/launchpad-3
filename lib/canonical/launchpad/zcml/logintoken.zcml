@@ -1,3 +1,7 @@
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -7,24 +11,24 @@
 <facet facet="overview">
 
     <!-- LoginToken -->
-    <content class="canonical.launchpad.database.LoginToken">
+    <class class="canonical.launchpad.database.logintoken.LoginToken">
         <require
             permission="zope.Public"
-            interface="canonical.launchpad.interfaces.ILoginToken" />
-    </content>
+            interface="canonical.launchpad.interfaces.logintoken.ILoginToken" />
+    </class>
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.ILoginToken"
+        for="canonical.launchpad.interfaces.logintoken.ILoginToken"
         name="+index" />
 
     <browser:url
-        for="canonical.launchpad.interfaces.ILoginToken"
+        for="canonical.launchpad.interfaces.logintoken.ILoginToken"
         path_expression="token"
-        parent_utility="canonical.launchpad.interfaces.ILoginTokenSet"
+        parent_utility="canonical.launchpad.interfaces.logintoken.ILoginTokenSet"
         />
 
     <browser:page
-        for="canonical.launchpad.interfaces.ILoginToken"
+        for="canonical.launchpad.interfaces.logintoken.ILoginToken"
         name="+index"
         permission="zope.Public"
         class="canonical.launchpad.browser.LoginTokenView"
@@ -32,23 +36,23 @@
         />
 
     <browser:page
-        for="canonical.launchpad.interfaces.ILoginToken"
+        for="canonical.launchpad.interfaces.logintoken.ILoginToken"
         name="+validateemail"
         permission="zope.Public"
-        class="canonical.launchpad.browser.ValidateEmailView"
-        template="../templates/logintoken-validateemail.pt"
+        class="canonical.launchpad.browser.logintoken.ValidateEmailView"
+        template="../../launchpad/templates/logintoken-validateemail.pt"
         />
 
     <browser:page
-        for="canonical.launchpad.interfaces.ILoginToken"
+        for="canonical.launchpad.interfaces.logintoken.ILoginToken"
         name="+validateteamemail"
         permission="zope.Public"
-        class="canonical.launchpad.browser.ValidateEmailView"
+        class="canonical.launchpad.browser.logintoken.ValidateTeamEmailView"
         template="../templates/logintoken-validateteamemail.pt"
         />
 
     <browser:page
-        for="canonical.launchpad.interfaces.ILoginToken"
+        for="canonical.launchpad.interfaces.logintoken.ILoginToken"
         name="+validategpg"
         permission="zope.Public"
         class="canonical.launchpad.browser.ValidateGPGKeyView"
@@ -56,7 +60,7 @@
         />
 
     <browser:page
-        for="canonical.launchpad.interfaces.ILoginToken"
+        for="canonical.launchpad.interfaces.logintoken.ILoginToken"
         name="+validatesignonlygpg"
         permission="zope.Public"
         class="canonical.launchpad.browser.ValidateGPGKeyView"
@@ -64,15 +68,7 @@
         />
 
     <browser:page
-        for="canonical.launchpad.interfaces.ILoginToken"
-        name="+resetpassword"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.ResetPasswordView"
-        template="../templates/logintoken-resetpassword.pt"
-        />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.ILoginToken"
+        for="canonical.launchpad.interfaces.logintoken.ILoginToken"
         name="+accountmerge"
         permission="zope.Public"
         class="canonical.launchpad.browser.MergePeopleView"
@@ -80,29 +76,28 @@
         />
 
     <browser:page
-        for="canonical.launchpad.interfaces.ILoginToken"
-        name="+claimprofile"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.ClaimProfileView"
-        template="../templates/logintoken-claimprofile.pt" />
+        for="canonical.launchpad.interfaces.logintoken.ILoginToken"
+        name="+claimteam"
+        permission="launchpad.AnyPerson"
+        class="canonical.launchpad.browser.ClaimTeamView"
+        template="../templates/logintoken-claimteam.pt" />
 
     <browser:page
-        name="+newaccount"
-        for="canonical.launchpad.interfaces.ILoginToken"
-        class="canonical.launchpad.browser.NewAccountView"
+        name="+bugtracker-handshake"
+        for="canonical.launchpad.interfaces.logintoken.ILoginToken"
+        class="canonical.launchpad.browser.BugTrackerHandshakeView"
         permission="zope.Public"
-        template="../templates/logintoken-newaccount.pt"
         />
 
     <!-- LoginTokenSet -->
-    <content class="canonical.launchpad.database.LoginTokenSet">
-        <allow interface="canonical.launchpad.interfaces.ILoginTokenSet" />
-    </content>
+    <class class="canonical.launchpad.database.logintoken.LoginTokenSet">
+        <allow interface="canonical.launchpad.interfaces.logintoken.ILoginTokenSet" />
+    </class>
 
     <securedutility
-        class="canonical.launchpad.database.LoginTokenSet"
-        provides="canonical.launchpad.interfaces.ILoginTokenSet">
-        <allow interface="canonical.launchpad.interfaces.ILoginTokenSet" />
+        class="canonical.launchpad.database.logintoken.LoginTokenSet"
+        provides="canonical.launchpad.interfaces.logintoken.ILoginTokenSet">
+        <allow interface="canonical.launchpad.interfaces.logintoken.ILoginTokenSet" />
     </securedutility>
 
     <browser:navigation

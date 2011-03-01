@@ -6,23 +6,11 @@
 <tal:do-this-first tal:content="view/processForm" />
 
 <html
-  xmlns="http://www.w3.org/1999/xhtml"
-  xmlns:tal="http://xml.zope.org/namespaces/tal"
-  xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/freeform" 
-  i18n:domain="launchpad"
+  metal:use-macro="view/macro:page/locationless"
 >
-  <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Merge accounts</h1>
-    </metal:heading>
-
-<div metal:fill-slot="main">
-
+<body>
+  <div class="top-portlet" metal:fill-slot="main">
+    <h1>Merge accounts</h1>
     <div tal:condition="not: view/successfullyProcessed">
 
       <p>You&#8217;re trying to merge the Launchpad account named

@@ -9,9 +9,4 @@ ensure the redirects are in place and working correctly.
   >>> 'Help and support' in anon_browser.contents
   True
 
-  >>> anon_browser.open(
-  ... 'http://launchpad.dev/distros/ubuntu/hoary/+source/evolution/+translate'
-  ... )
-  >>> 'Help translate' in anon_browser.contents
-  True
-  
+

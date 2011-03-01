@@ -1,5 +1,7 @@
-#!/usr/bin/python2.4
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Populate some new columns on the Person table."""
 
@@ -11,7 +13,7 @@ import _pythonpath
 from optparse import OptionParser
 import sys
 
-from canonical.database.sqlbase import connect, AUTOCOMMIT_ISOLATION
+from canonical.database.sqlbase import connect, ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.launchpad.scripts import db_options
 from canonical.launchpad.scripts.logger import log, logger_options
 
@@ -38,7 +40,7 @@ logger_options(parser)
 db_options(parser)
 options, args = parser.parse_args()
 
-con = connect(options.dbuser, isolation=AUTOCOMMIT_ISOLATION)
+con = connect(options.dbuser, isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
 #  People have so far updated translation credits, often mis-crediting people,
 #  or removing credits to upstream translators: we want to disable all of these
@@ -52,7 +54,7 @@ update_until_done(con, 'posubmission', """
              pomsgid
         WHERE
             posubmission.active IS TRUE AND
-            posubmission.pomsgset=pomsgset.id AND 
+            posubmission.pomsgset=pomsgset.id AND
             potmsgset=potmsgset.id AND
             primemsgid=pomsgid.id AND
             published IS NOT TRUE AND
@@ -75,7 +77,7 @@ update_until_done(con, 'posubmission', """
              pomsgid
         WHERE
             posubmission.active IS FALSE AND
-            posubmission.pomsgset=pomsgset.id AND 
+            posubmission.pomsgset=pomsgset.id AND
             pomsgset.potmsgset=potmsgset.id AND
             potmsgset.primemsgid=pomsgid.id AND
             posubmission.published IS TRUE AND

@@ -1,4 +1,7 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=E0211,E0213
 
 """Vocabularies pulling stuff from the database.
 
@@ -9,25 +12,54 @@ docstring in __init__.py for details.
 __metaclass__ = type
 
 __all__ = [
+    'ForgivingSimpleVocabulary',
     'IHugeVocabulary',
     'SQLObjectVocabularyBase',
     'NamedSQLObjectVocabulary',
     'NamedSQLObjectHugeVocabulary',
-    'sortkey_ordered_vocab_factory',
     'CountableIterator',
     'BatchedCountableIterator',
-    'vocab_factory'
 ]
 
-from sqlobject import AND, CONTAINSSTRING
-
-from zope.interface import implements, Attribute
-from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
-from zope.schema.vocabulary import SimpleTerm
+from sqlobject import (
+    AND,
+    CONTAINSSTRING,
+    )
+from zope.interface import (
+    Attribute,
+    implements,
+    Interface,
+    )
+from zope.schema.interfaces import (
+    IVocabulary,
+    IVocabularyTokenized,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 from zope.security.proxy import isinstance as zisinstance
-from zope.schema.vocabulary import SimpleVocabulary
 
 from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.helpers import ensure_unicode
+
+
+class ForgivingSimpleVocabulary(SimpleVocabulary):
+    """A vocabulary that returns a default term for unrecognized values."""
+
+    def __init__(self, *args, **kws):
+        missing = object()
+        self._default_term = kws.pop('default_term', missing)
+        if self._default_term is missing:
+            raise TypeError('required argument "default_term" not provided')
+        return super(ForgivingSimpleVocabulary, self).__init__(*args, **kws)
+
+    def getTerm(self, value):
+        """Look up a value, returning the default if it is not found."""
+        try:
+            return super(ForgivingSimpleVocabulary, self).getTerm(value)
+        except LookupError:
+            return self._default_term
 
 
 class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
@@ -38,7 +70,10 @@ class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
     """
 
     displayname = Attribute(
-        'A name for this vocabulary, to be displayed in the popup window.')
+        'A name for this vocabulary, to be displayed in the picker window.')
+
+    step_title = Attribute(
+        'The search step title in the picker window.')
 
     def searchForTerms(query=None):
         """Return a `CountableIterator` of `SimpleTerm`s that match the query.
@@ -48,9 +83,37 @@ class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
         """
 
 
-# XXX flacoste 2007-07-06: A proper interface should be implemented for
-# this, either ISelectResults or define an interface expressing the
-# required subset.
+class ICountableIterator(Interface):
+    """An iterator that knows how many items it has."""
+
+    # XXX: JonathanLange 2009-02-23: This should probably be fused with or at
+    # least adapted from storm.zope.interfaces.IResultSet. Or maybe just
+    # deleted in favour of passing around Storm ResultSets.
+    def count():
+        """Return the number of items in the iterator."""
+
+    def __iter__():
+        """Iterate over items."""
+
+    def __getitem__(argument):
+        """Return a slice or item of the collection."""
+
+    def __len__():
+        """Synonym for `ICountableIterator.count`."""
+        # XXX kiko 2007-01-16: __len__ is required to make BatchNavigator
+        # work; we should probably change that to either check for the
+        # presence of a count() method, or for a simpler interface than
+        # ISelectResults, but I'm not going to do that today.
+        pass
+
+    def __getslice__(argument):
+        """Return a slice of the collection."""
+        # Python will use __getitem__ if this method is not implemented,
+        # but it is convenient to define it in the interface for
+        # allowing access to the attributes through the security proxy.
+        pass
+
+
 class CountableIterator:
     """Implements a wrapping iterator with a count() method.
 
@@ -58,6 +121,8 @@ class CountableIterator:
     namely the portion required to have it work as part of a
     BatchNavigator.
     """
+
+    implements(ICountableIterator)
 
     def __init__(self, count, iterator, item_wrapper=None):
         """Construct a CountableIterator instance.
@@ -104,15 +169,11 @@ class CountableIterator:
                 yield item
 
     def __len__(self):
-        # XXX kiko 2007-01-16: __len__ is required to make BatchNavigator
-        # work; we should probably change that to either check for the
-        # presence of a count() method, or for a simpler interface than
-        # ISelectResults, but I'm not going to do that today.
         return self._count
 
 
 class BatchedCountableIterator(CountableIterator):
-    """A wrapping iterator with a hook to create descriptions for its terms."""
+    """A wrapping iterator with hook to create descriptions for its terms."""
     # XXX kiko 2007-01-18: note that this class doesn't use the item_wrapper
     # at all. I hate compatibility shims. We can't remove it from the __init__
     # because it is always supplied by NamedSQLObjectHugeVocabulary, and
@@ -159,6 +220,7 @@ class SQLObjectVocabularyBase:
     implements(IVocabulary, IVocabularyTokenized)
     _orderBy = None
     _filter = None
+    _clauseTables = None
 
     def __init__(self, context=None):
         self.context = context
@@ -190,8 +252,10 @@ class SQLObjectVocabularyBase:
     def __iter__(self):
         """Return an iterator which provides the terms from the vocabulary."""
         params = {}
-        if self._orderBy:
+        if self._orderBy is not None:
             params['orderBy'] = self._orderBy
+        if self._clauseTables is not None:
+            params['clauseTables'] = self._clauseTables
         for obj in self._table.select(self._filter, **params):
             yield self.toTerm(obj)
 
@@ -291,7 +355,7 @@ class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
     def search(self, query):
         """Return terms where query is a subtring of the name."""
         if query:
-            clause = CONTAINSSTRING(self._table.q.name, query)
+            clause = CONTAINSSTRING(self._table.q.name, ensure_unicode(query))
             if self._filter:
                 clause = AND(clause, self._filter)
             return self._table.select(clause, orderBy=self._orderBy)
@@ -304,6 +368,7 @@ class NamedSQLObjectHugeVocabulary(NamedSQLObjectVocabulary):
     implements(IHugeVocabulary)
     _orderBy = 'name'
     displayname = None
+    step_title = 'Search'
     # The iterator class will be used to wrap the results; its iteration
     # methods should return SimpleTerms, as the reference implementation
     # CountableIterator does.
@@ -320,49 +385,13 @@ class NamedSQLObjectHugeVocabulary(NamedSQLObjectVocabulary):
         # the NamedSQLObjectHugeVocabulary.
         raise NotImplementedError
 
-    def searchForTerms(self, query):
+    def searchForTerms(self, query=None):
         if not query:
             return self.emptySelectResults()
 
-        query = query.lower()
+        query = ensure_unicode(query).lower()
         clause = CONTAINSSTRING(self._table.q.name, query)
         if self._filter:
             clause = AND(clause, self._filter)
         results = self._table.select(clause, orderBy=self._orderBy)
         return self.iterator(results.count(), results, self.toTerm)
-
-
-# TODO: Make DBSchema classes provide an interface, so we can directly
-# adapt IDBSchema to IVocabulary
-def vocab_factory(schema, noshow=None):
-    """Factory for IDBSchema -> IVocabulary adapters.
-
-    This function returns a callable object that creates vocabularies
-    from dbschemas.
-
-    The items appear in value order, lowest first.
-    """
-    if noshow is None:
-        noshow = []
-    def factory(context, schema=schema, noshow=noshow):
-        """Adapt IDBSchema to IVocabulary."""
-        items = [(item.title, item) for item in schema.items
-                 if item not in noshow]
-        return SimpleVocabulary.fromItems(items)
-    return factory
-
-def sortkey_ordered_vocab_factory(schema, noshow=None):
-    """Another factory for IDBSchema -> IVocabulary.
-
-    This function returns a callable object that creates a vocabulary
-    from a dbschema ordered by that schema's sortkey.
-    """
-    if noshow is None:
-        noshow = []
-    def factory(context, schema=schema, noshow=noshow):
-        """Adapt IDBSchema to IVocabulary."""
-        items = [(item.title, item)
-                 for item in schema.items
-                 if item not in noshow]
-        return SimpleVocabulary.fromItems(items)
-    return factory

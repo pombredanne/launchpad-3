@@ -1,14 +1,23 @@
-#!/usr/bin/python2.4
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python -S
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+# pylint: disable-msg=C0103,W0403
 
 import _pythonpath
 
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.lp import AUTOCOMMIT_ISOLATION
-from canonical.launchpad.interfaces import IKarmaCacheManager, NotFoundError
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from canonical.database.sqlbase import (
+    cursor,
+    ISOLATION_LEVEL_AUTOCOMMIT,
+    flush_database_updates,
+    )
+from lp.app.errors import NotFoundError
+from lp.registry.interfaces.karma import IKarmaCacheManager
+from lp.services.scripts.base import LaunchpadCronScript
 
 
 class KarmaCacheUpdater(LaunchpadCronScript):
@@ -27,14 +36,7 @@ class KarmaCacheUpdater(LaunchpadCronScript):
         """
         self.logger.info("Updating Launchpad karma caches")
 
-        # We use the autocommit transaction isolation level to minimize
-        # contention. It also allows us to not bother explicitly calling
-        # COMMIT all the time. However, if we interrupt this script mid-run
-        # it will need to be re-run as the data will be inconsistent (only
-        # part of the caches will have been recalculated).
-        self.txn.set_isolation_level(AUTOCOMMIT_ISOLATION)
-
-        self.cur = self.txn.conn().cursor()
+        self.cur = cursor()
         self.karmacachemanager = getUtility(IKarmaCacheManager)
 
         # This method ordering needs to be preserved. In particular,
@@ -79,6 +81,7 @@ class KarmaCacheUpdater(LaunchpadCronScript):
         scaling = self.calculate_scaling(results)
         for entry in results:
             self.update_one_karma_cache_entry(entry, scaling)
+        flush_database_updates()
 
         # Delete the entries we're going to replace.
         self.cur.execute("DELETE FROM KarmaCache WHERE category IS NULL")
@@ -117,7 +120,7 @@ class KarmaCacheUpdater(LaunchpadCronScript):
         # VACUUM KarmaTotalCache since we have just touched every row in it.
         self.cur.execute("""VACUUM KarmaTotalCache""")
 
-        # Insert new records into the KarmaTotalCache table. 
+        # Insert new records into the KarmaTotalCache table.
 
         # XXX: salgado 2007-02-06:
         # If deadlocks ever become a problem, first LOCK the
@@ -142,7 +145,7 @@ class KarmaCacheUpdater(LaunchpadCronScript):
 
     def C_add_karmacache_sums(self):
         self.logger.info("Step C: Calculating KarmaCache sums")
-        # We must issue some SUM queries to insert the karma totals for: 
+        # We must issue some SUM queries to insert the karma totals for:
         # - All actions of a person on a given product.
         # - All actions of a person on a given distribution.
         # - All actions of a person on a given project.
@@ -152,7 +155,7 @@ class KarmaCacheUpdater(LaunchpadCronScript):
 
         # - All actions with a specific category of a person.
         self.cur.execute("""
-            INSERT INTO KarmaCache 
+            INSERT INTO KarmaCache
                 (person, category, karmavalue, product, distribution,
                  sourcepackagename, project)
             SELECT person, category, SUM(karmavalue), NULL, NULL, NULL, NULL
@@ -163,7 +166,7 @@ class KarmaCacheUpdater(LaunchpadCronScript):
 
         # - All actions of a person on a given product.
         self.cur.execute("""
-            INSERT INTO KarmaCache 
+            INSERT INTO KarmaCache
                 (person, category, karmavalue, product, distribution,
                  sourcepackagename, project)
             SELECT person, NULL, SUM(karmavalue), product, NULL, NULL, NULL
@@ -174,7 +177,7 @@ class KarmaCacheUpdater(LaunchpadCronScript):
 
         # - All actions of a person on a given distribution.
         self.cur.execute("""
-            INSERT INTO KarmaCache 
+            INSERT INTO KarmaCache
                 (person, category, karmavalue, product, distribution,
                  sourcepackagename, project)
             SELECT person, NULL, SUM(karmavalue), NULL, distribution, NULL, NULL
@@ -185,7 +188,7 @@ class KarmaCacheUpdater(LaunchpadCronScript):
 
         # - All actions of a person on a given project.
         self.cur.execute("""
-            INSERT INTO KarmaCache 
+            INSERT INTO KarmaCache
                 (person, category, karmavalue, product, distribution,
                  sourcepackagename, project)
             SELECT person, NULL, SUM(karmavalue), NULL, NULL, NULL,
@@ -202,7 +205,7 @@ class KarmaCacheUpdater(LaunchpadCronScript):
         # inserted here will be included in the calculation of the overall
         # karma of a person on a given project.
         self.cur.execute("""
-            INSERT INTO KarmaCache 
+            INSERT INTO KarmaCache
                 (person, category, karmavalue, product, distribution,
                  sourcepackagename, project)
             SELECT person, category, SUM(karmavalue), NULL, NULL, NULL,
@@ -240,15 +243,18 @@ class KarmaCacheUpdater(LaunchpadCronScript):
                 scaling[category] = 1
             else:
                 scaling[category] = float(largest_total) / float(points)
-            self.logger.debug('Scaling %s by a factor of %0.4f'
-                              % (categories[category], scaling[category]))
             max_scaling = config.karmacacheupdater.max_scaling
             if scaling[category] > max_scaling:
+                self.logger.info(
+                    'Scaling %s by a factor of %0.4f (capped to %0.4f)'
+                    % (categories[category], scaling[category], max_scaling))
                 scaling[category] = max_scaling
-                self.logger.debug('Reducing %s scaling to %d to avoid spikes' 
-                                  % (categories[category], max_scaling))
+            else:
+                self.logger.info(
+                    'Scaling %s by a factor of %0.4f'
+                    % (categories[category], scaling[category]))
         return scaling
-    
+
     def update_one_karma_cache_entry(self, entry, scaling):
         """Updates an individual (non-summed) KarmaCache entry.
 
@@ -258,7 +264,7 @@ class KarmaCacheUpdater(LaunchpadCronScript):
         """
         (person_id, category_id, product_id, distribution_id, points) = entry
         points *= scaling[category_id] # Scaled. wow.
-        self.logger.debug("Setting person_id=%d, category_id=%d, points=%d" 
+        self.logger.debug("Setting person_id=%d, category_id=%d, points=%d"
                           % (person_id, category_id, points))
 
         points = int(points)
@@ -281,7 +287,12 @@ class KarmaCacheUpdater(LaunchpadCronScript):
 
 
 if __name__ == '__main__':
-    script = KarmaCacheUpdater('karma-update', 
+    script = KarmaCacheUpdater(
+        'karma-update',
         dbuser=config.karmacacheupdater.dbuser)
-    script.lock_and_run(implicit_begin=True)
-
+    # We use the autocommit transaction isolation level to minimize
+    # contention. It also allows us to not bother explicitly calling
+    # COMMIT all the time. However, if we interrupt this script mid-run
+    # it will need to be re-run as the data will be inconsistent (only
+    # part of the caches will have been recalculated).
+    script.lock_and_run(isolation=ISOLATION_LEVEL_AUTOCOMMIT)

@@ -1,0 +1,1369 @@
+= Introduction =
+
+Bugs are problems in software. When a bug gets assigned to a specific
+upstream or distro/sourcepackagename, a bug /task/ is created. In
+essence, a bug task is a bug that needs to be fixed in a specific
+place. Where a bug has things like a title, comments and subscribers,
+it's the bug task that tracks importance, assignee, etc.
+
+= Working with Bug Tasks in Launchpad =
+
+
+== Creating Bug Tasks ==
+
+All BugTask creation and retrieval is done through an IBugTaskSet utility.
+
+    >>> from zope.component import getUtility
+    >>> import transaction
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+    >>> bugtaskset = getUtility(IBugTaskSet)
+
+To create a bug task, you have to be logged in:
+
+    >>> from canonical.launchpad.ftests import login, ANONYMOUS
+    >>> login('foo.bar@canonical.com')
+
+There are three kinds of bug tasks. We need to pass the bug task creation
+methods some other objects to create a task, so lets get the utilities we need
+to access those other objects:
+
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.distroseries import IDistroSeriesSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet)
+    >>> productset = getUtility(IProductSet)
+    >>> distroset = getUtility(IDistributionSet)
+    >>> distoseriesset = getUtility(IDistroSeriesSet)
+    >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
+    >>> bugset = getUtility(IBugSet)
+    >>> personset = getUtility(IPersonSet)
+    >>> bug_one = bugset.get(1)
+    >>> mark = personset.getByEmail('mark@example.com')
+
+Next, we need to grab some values to provide for importance and status.
+
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     BugTaskImportance,
+    ...     BugTaskStatus,
+    ...     )
+    >>> STATUS_NEW = BugTaskStatus.NEW
+    >>> STATUS_CONFIRMED = BugTaskStatus.CONFIRMED
+    >>> STATUS_FIXRELEASED = BugTaskStatus.FIXRELEASED
+    >>> IMPORTANCE_MEDIUM = BugTaskImportance.MEDIUM
+
+  i. Upstream -- a bug that has to be fixed in an upstream product
+
+    >>> evolution = productset.get(5)
+    >>> upstream_task = bugtaskset.createTask(
+    ...     bug=bug_one, product=evolution, owner=mark,
+    ...     status=STATUS_NEW, importance=IMPORTANCE_MEDIUM)
+    >>> upstream_task.product == evolution
+    True
+
+    >>> from lp.bugs.interfaces.bugtask import IUpstreamBugTask
+    >>> IUpstreamBugTask.providedBy(upstream_task)
+    True
+
+  ii. Distro -- a bug that has to be fixed in a specific distro
+
+    >>> ubuntu = distroset.get(1)
+    >>> distro_task = bugtaskset.createTask(
+    ...     bug=bug_one, distribution=ubuntu, owner=mark,
+    ...     status=STATUS_NEW, importance=IMPORTANCE_MEDIUM)
+    >>> distro_task.distribution == ubuntu
+    True
+
+    >>> from lp.bugs.interfaces.bugtask import IDistroBugTask
+    >>> IDistroBugTask.providedBy(distro_task)
+    True
+
+  ii. Distro Series -- a bug that has to be fixed in a specific distro
+  series. These tasks are used for release management and backporting.
+
+    >>> warty = distoseriesset.get(1)
+    >>> distro_series_task = bugtaskset.createTask(
+    ...     bug=bug_one, distroseries=warty, owner=mark,
+    ...     status=STATUS_NEW, importance=IMPORTANCE_MEDIUM)
+    >>> distro_series_task.distroseries == warty
+    True
+
+    >>> from lp.bugs.interfaces.bugtask import IDistroSeriesBugTask
+    >>> IDistroSeriesBugTask.providedBy(distro_series_task)
+    True
+
+The created bugtasks are guaranteed to implement the correct interface.
+
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> verifyObject(IDistroSeriesBugTask, distro_series_task)
+    True
+    >>> verifyObject(IDistroBugTask, distro_task)
+    True
+    >>> verifyObject(IUpstreamBugTask, upstream_task)
+    True
+
+# XXX: Brad Bollenbach 2005-02-24: See the bottom of this file for a chunk of
+# test documentation that is missing from here, due to problems with resetting
+# the connection after a ProgrammingError is raised. ARGH.
+
+
+== Bug Task Targets ==
+
+    >>> from lp.registry.interfaces.distributionsourcepackage import IDistributionSourcePackage
+    >>> from lp.registry.model.distributionsourcepackage import DistributionSourcePackage
+
+The "target" of an IBugTask can be one of the items in the following
+list.
+
+  * an upstream product
+
+    >>> upstream_task.target == evolution
+    True
+
+  * a product series
+
+    >>> from lp.bugs.interfaces.bugtask import IProductSeriesBugTask
+
+    >>> firefox = productset['firefox']
+    >>> firefox_1_0 = firefox.getSeries("1.0")
+
+    >>> productseries_task = bugtaskset.createTask(
+    ...     owner=mark, bug=bug_one, productseries=firefox_1_0)
+    >>> IProductSeriesBugTask.providedBy(productseries_task)
+    True
+
+    >>> productseries_task.target == firefox_1_0
+    True
+
+  * a distribution
+
+    >>> distro_task.target == ubuntu
+    True
+
+  * a distroseries
+
+    >>> distro_series_task.target == warty
+    True
+
+  * a distribution sourcepackage
+
+    >>> def get_expected_target(distro_sp_task):
+    ...      expected_target = DistributionSourcePackage(
+    ...         distro_sp_task.distribution,
+    ...         distro_sp_task.sourcepackagename)
+    ...      return distro_sp_task.target
+    ...
+    >>> debian_ff_task = bugtaskset.get(4)
+    >>> IDistributionSourcePackage.providedBy(debian_ff_task.target)
+    True
+    >>> target = get_expected_target(debian_ff_task)
+    >>> target.distribution.name, target.sourcepackagename.name
+    (u'debian', u'mozilla-firefox')
+
+    >>> ubuntu_linux_task = bugtaskset.get(25)
+    >>> IDistributionSourcePackage.providedBy(ubuntu_linux_task.target)
+    True
+    >>> target = get_expected_target(ubuntu_linux_task)
+    >>> target.distribution.name, target.sourcepackagename.name
+    (u'ubuntu', u'linux-source-2.6.15')
+
+  * a distroseries sourcepackage
+
+    >>> from lp.registry.interfaces.sourcepackage import ISourcePackage
+    >>> from lp.registry.model.sourcepackage import SourcePackage
+    >>> distro_series_sp_task = bugtaskset.get(16)
+    >>> expected_target = SourcePackage(
+    ...     distroseries=distro_series_sp_task.distroseries,
+    ...     sourcepackagename=distro_series_sp_task.sourcepackagename)
+    >>> got_target = distro_series_sp_task.target
+    >>> ISourcePackage.providedBy(distro_series_sp_task.target)
+    True
+    >>> got_target.distroseries == expected_target.distroseries
+    True
+    >>> got_target.sourcepackagename == expected_target.sourcepackagename
+    True
+
+Each task has a "bugtargetdisplayname" and a "bugtargetname", strings
+describing the site of the task. They concatenate the names of the distribution,
+
+    >>> bugtask = bugtaskset.get(17)
+    >>> bugtask.bugtargetdisplayname
+    u'mozilla-firefox (Ubuntu)'
+    >>> bugtask.bugtargetname
+    u'mozilla-firefox (Ubuntu)'
+
+distro series, or product;
+
+    >>> bugtask = bugtaskset.get(2)
+    >>> bugtask.bugtargetdisplayname
+    u'Mozilla Firefox'
+    >>> bugtask.bugtargetname
+    u'firefox'
+
+the name of the source package (if any); and the name of the binary
+package (but only if it's named differently from the source
+package).
+
+
+=== getPackageComponent ===
+
+We offer a convenience method on IBugTask which allows you to look up
+the archive component associated to the bugtask's target. Obviously, it
+only applies to tasks that specify package information:
+
+    >>> print upstream_task.getPackageComponent()
+    None
+    >>> print productseries_task.getPackageComponent()
+    None
+    >>> print distro_task.getPackageComponent()
+    None
+    >>> print distro_series_task.getPackageComponent()
+    None
+
+And it only applies to tasks whose packages which are published in
+IDistribution.currentseries (for bugtasks on IDistributions) or the
+bugtask's series (for bugtasks on IDistroSeries)
+
+    >>> print debian_ff_task.getPackageComponent()
+    None
+    >>> print ubuntu_linux_task.getPackageComponent().name
+    main
+    >>> print distro_series_sp_task.getPackageComponent().name
+    main
+
+
+== Editing Bug Tasks ==
+
+When changing status we must pass the user making the change. Some
+statuses are restricted to Bug Supervisors only.
+
+
+=== Upstream Bug Tasks ===
+
+To edit an upstream task, you must be logged in. Anonymous users
+cannot edit upstream tasks.
+
+    >>> login(ANONYMOUS)
+    >>> upstream_task.transitionToStatus(
+    ...     STATUS_CONFIRMED, getUtility(ILaunchBag).user)
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (..., 'transitionToStatus', 'launchpad.Edit')
+
+Let's login and try again.
+
+    >>> login('jeff.waugh@ubuntulinux.com')
+    >>> upstream_task.transitionToStatus(
+    ...     STATUS_FIXRELEASED, getUtility(ILaunchBag).user)
+
+
+=== Distro and Distro Series Bug Tasks ===
+
+Any logged-in user can edit tasks filed on distros as long as the bug
+is not marked private. So, as an anonymous user, we cannot edit
+anything:
+
+    >>> login(ANONYMOUS)
+    >>> distro_task.transitionToStatus(
+    ...     STATUS_FIXRELEASED, getUtility(ILaunchBag).user)
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (..., 'transitionToStatus', 'launchpad.Edit')
+
+    >>> sample_person = personset.getByEmail('test@canonical.com')
+    >>> distro_series_task.transitionToAssignee(sample_person)
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (..., 'transitionToAssignee', 'launchpad.Edit')
+
+But once authenticated:
+
+    >>> login('test@canonical.com')
+
+We can edit the task:
+
+    >>> distro_task.transitionToStatus(
+    ...     STATUS_FIXRELEASED, getUtility(ILaunchBag).user)
+    >>> distro_series_task.transitionToAssignee(sample_person)
+
+
+=== Conjoined Bug Tasks ===
+
+A bugtask open on the current development series for a distro is kept
+in sync with the "generic" bugtask for that distro, because they
+represent the same piece of work. The same is true for product and
+productseries tasks, when the productseries task is targeted to the
+IProduct.developmentfocus. The following attributes are synched:
+
+    * status
+    * assignee
+    * importance
+    * milestone
+    * sourcepackagename
+    * date_confirmed
+    * date_inprogress
+    * date_assigned
+    * date_closed
+    * date_left_new
+    * date_triaged
+    * date_fix_committed
+    * date_fix_released
+
+We'll open a bug on just the distribution, and also a bug on a specific
+package.
+
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> launchbag = getUtility(ILaunchBag)
+    >>> params = CreateBugParams(
+    ...     owner=launchbag.user,
+    ...     title="a test bug",
+    ...     comment="test bug description")
+    >>> ubuntu_netapplet = ubuntu.getSourcePackage("netapplet")
+    >>> ubuntu_netapplet_bug = ubuntu_netapplet.createBug(params)
+    >>> generic_netapplet_task = ubuntu_netapplet_bug.bugtasks[0]
+
+    >>> ubuntu_bug = ubuntu.createBug(params)
+    >>> generic_ubuntu_task = ubuntu_bug.bugtasks[0]
+
+First, we'll target the bug for the current Ubuntu series, Hoary. Note
+that the synched attributes are copied when the series-specific tasks are
+created. We'll set non-default attribute values for each generic task to
+demonstrate.
+
+    >>> print ubuntu.currentseries.name
+    hoary
+
+    # Only owners, experts, or admins can create a milestone.
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu_edgy_milestone = ubuntu.currentseries.newMilestone("knot1")
+    >>> login('test@canonical.com')
+
+    >>> generic_netapplet_task.transitionToStatus(
+    ...     BugTaskStatus.INPROGRESS, getUtility(ILaunchBag).user)
+    >>> generic_netapplet_task.transitionToAssignee(sample_person)
+    >>> generic_netapplet_task.milestone = ubuntu_edgy_milestone
+    >>> generic_netapplet_task.transitionToImportance(
+    ...     BugTaskImportance.CRITICAL, ubuntu.owner)
+
+    >>> current_series_ubuntu_task = bugtaskset.createTask(
+    ...     bug=ubuntu_bug, owner=launchbag.user,
+    ...     distroseries=ubuntu.currentseries)
+
+    >>> current_series_netapplet_task = bugtaskset.createTask(
+    ...     bug=ubuntu_netapplet_bug, owner=launchbag.user,
+    ...     distroseries=ubuntu.currentseries,
+    ...     sourcepackagename=ubuntu_netapplet.sourcepackagename)
+
+(The attributes were synched with the generic task.)
+
+    >>> print current_series_netapplet_task.status.title
+    In Progress
+    >>> print current_series_netapplet_task.assignee.displayname
+    Sample Person
+    >>> print current_series_netapplet_task.milestone.name
+    knot1
+    >>> print current_series_netapplet_task.importance.title
+    Critical
+
+    >>> current_series_netapplet_task.date_assigned == (
+    ...     generic_netapplet_task.date_assigned)
+    True
+
+    >>> current_series_netapplet_task.date_confirmed == (
+    ...     generic_netapplet_task.date_confirmed)
+    True
+
+    >>> current_series_netapplet_task.date_inprogress == (
+    ...     generic_netapplet_task.date_inprogress)
+    True
+
+    >>> current_series_netapplet_task.date_closed == (
+    ...     generic_netapplet_task.date_closed)
+    True
+
+We'll also add some product and productseries tasks.
+
+    >>> alsa_utils = productset['alsa-utils']
+
+    >>> print alsa_utils.development_focus.name
+    trunk
+
+    >>> generic_alsa_utils_task = bugtaskset.createTask(
+    ...     bug=ubuntu_netapplet_bug, owner=launchbag.user,
+    ...     product=alsa_utils)
+
+    >>> devel_focus_alsa_utils_task = bugtaskset.createTask(
+    ...     bug=ubuntu_netapplet_bug, owner=launchbag.user,
+    ...     productseries=alsa_utils.getSeries("trunk"))
+
+A conjoined bugtask involves a master and slave in the conjoined
+relationship. The slave is the generic product or distribution task; the
+master is the series-specific task. These tasks are accessed through the
+conjoined_master and conjoined_slave properties.
+
+    >>> current_series_netapplet_task.conjoined_slave == (
+    ...     generic_netapplet_task)
+    True
+    >>> current_series_netapplet_task.conjoined_master is None
+    True
+
+    >>> generic_netapplet_task.conjoined_slave is None
+    True
+    >>> generic_netapplet_task.conjoined_master == (
+    ...     current_series_netapplet_task)
+    True
+
+    >>> current_series_ubuntu_task.conjoined_slave == (
+    ...     generic_ubuntu_task)
+    True
+    >>> current_series_ubuntu_task.conjoined_master is None
+    True
+    >>> generic_ubuntu_task.conjoined_master == (
+    ...     current_series_ubuntu_task)
+    True
+    >>> generic_ubuntu_task.conjoined_slave is None
+    True
+
+    >>> devel_focus_alsa_utils_task.conjoined_slave == (
+    ...     generic_alsa_utils_task)
+    True
+    >>> devel_focus_alsa_utils_task.conjoined_master is None
+    True
+
+    >>> generic_alsa_utils_task.conjoined_slave is None
+    True
+    >>> generic_alsa_utils_task.conjoined_master == (
+    ...     devel_focus_alsa_utils_task)
+    True
+
+A distroseries/productseries task that isn't the current development
+focus, doesn't have any conjoined masters or slaves.
+
+    >>> from storm.store import Store
+
+    # Only owners, experts, or admins can create a series.
+    >>> login('foo.bar@canonical.com')
+    >>> alsa_utils_stable = alsa_utils.newSeries(
+    ...     launchbag.user, 'stable', 'The stable series.')
+    >>> login('test@canonical.com')
+    >>> Store.of(alsa_utils_stable).flush()
+    >>> alsa_utils.development_focus == alsa_utils_stable
+    False
+    >>> stable_netapplet_task = bugtaskset.createTask(
+    ...     bug=ubuntu_netapplet_bug, owner=launchbag.user,
+    ...     productseries=alsa_utils_stable)
+    >>> stable_netapplet_task.conjoined_master is None
+    True
+    >>> stable_netapplet_task.conjoined_slave is None
+    True
+
+    >>> warty = ubuntu.getSeries('warty')
+    >>> warty == ubuntu.currentseries
+    False
+    >>> warty_netapplet_task = bugtaskset.createTask(
+    ...     bug=ubuntu_netapplet_bug, owner=launchbag.user,
+    ...     distroseries=warty,
+    ...     sourcepackagename=ubuntu_netapplet.sourcepackagename)
+    >>> warty_netapplet_task.conjoined_master is None
+    True
+    >>> warty_netapplet_task.conjoined_slave is None
+    True
+
+If a distribution doesn't have a current series, its tasks don't have a
+conjoined master or slave.
+
+    >>> gentoo = getUtility(IDistributionSet).getByName('gentoo')
+    >>> gentoo.currentseries is None
+    True
+
+    >>> gentoo_netapplet_task = bugtaskset.createTask(
+    ...     bug=ubuntu_netapplet_bug, owner=launchbag.user,
+    ...     distribution=gentoo,
+    ...     sourcepackagename=ubuntu_netapplet.sourcepackagename)
+    >>> gentoo_netapplet_task.conjoined_master is None
+    True
+    >>> gentoo_netapplet_task.conjoined_slave is None
+    True
+
+
+Now the attributes are kept in sync. Here are examples of each:
+
+(Login as Foo Bar, because the milestone and importance examples
+require extra privileges.)
+
+    >>> login("foo.bar@canonical.com")
+
+1. Status
+
+    >>> print generic_netapplet_task.status.title
+    In Progress
+    >>> print current_series_netapplet_task.status.title
+    In Progress
+    >>> generic_netapplet_task.date_closed is None
+    True
+    >>> current_series_netapplet_task.date_closed is None
+    True
+
+    >>> current_series_netapplet_task.transitionToStatus(
+    ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
+
+    >>> generic_netapplet_task.date_left_new
+    datetime.datetime...
+    >>> generic_netapplet_task.date_left_new == (
+    ...     current_series_netapplet_task.date_left_new)
+    True
+
+    >>> generic_netapplet_task.date_triaged
+    datetime.datetime...
+    >>> generic_netapplet_task.date_triaged == (
+    ...     current_series_netapplet_task.date_triaged)
+    True
+
+    >>> generic_netapplet_task.date_fix_committed
+    datetime.datetime...
+    >>> generic_netapplet_task.date_fix_committed == (
+    ...     current_series_netapplet_task.date_fix_committed)
+    True
+
+    >>> print generic_netapplet_task.status.title
+    Fix Released
+    >>> print current_series_netapplet_task.status.title
+    Fix Released
+
+    >>> generic_netapplet_task.date_closed
+    datetime.datetime...
+    >>> generic_netapplet_task.date_closed == (
+    ...     current_series_netapplet_task.date_closed)
+    True
+
+    >>> generic_netapplet_task.date_fix_released
+    datetime.datetime...
+    >>> generic_netapplet_task.date_fix_released == (
+    ...     current_series_netapplet_task.date_fix_released)
+    True
+
+2. Assignee
+
+    >>> no_priv = personset.getByEmail('no-priv@canonical.com')
+
+    >>> generic_alsa_utils_task.assignee is None
+    True
+    >>> devel_focus_alsa_utils_task.assignee is None
+    True
+    >>> generic_alsa_utils_task.date_assigned is None
+    True
+    >>> devel_focus_alsa_utils_task.date_assigned is None
+    True
+
+    >>> devel_focus_alsa_utils_task.transitionToAssignee(no_priv)
+
+    >>> print generic_alsa_utils_task.assignee.displayname
+    No Privileges Person
+    >>> print devel_focus_alsa_utils_task.assignee.displayname
+    No Privileges Person
+
+    >>> generic_alsa_utils_task.date_assigned
+    datetime.datetime...
+    >>> generic_alsa_utils_task.date_assigned == (
+    ...     devel_focus_alsa_utils_task.date_assigned)
+    True
+
+3. Importance
+
+    >>> print generic_netapplet_task.importance.title
+    Critical
+    >>> print current_series_netapplet_task.importance.title
+    Critical
+
+    >>> current_series_netapplet_task.transitionToImportance(
+    ...     BugTaskImportance.MEDIUM, ubuntu.owner)
+
+    >>> print generic_netapplet_task.importance.title
+    Medium
+    >>> print current_series_netapplet_task.importance.title
+    Medium
+
+Not everyone can edit the importance, though. If an unauthorised user
+is passed to transitionToImportance an exception is raised.
+
+    >>> current_series_netapplet_task.transitionToImportance(
+    ...     BugTaskImportance.LOW, no_priv)
+    Traceback (most recent call last):
+    ...
+    UserCannotEditBugTaskImportance:
+      User does not have sufficient permissions to edit the bug task importance.
+
+    >>> print generic_netapplet_task.importance.title
+    Medium
+
+4. Milestone
+
+    >>> test_milestone = alsa_utils.development_focus.newMilestone("test")
+    >>> noway_milestone = alsa_utils.development_focus.newMilestone("noway")
+    >>> Store.of(test_milestone).flush()
+
+    >>> generic_alsa_utils_task.milestone is None
+    True
+    >>> devel_focus_alsa_utils_task.milestone is None
+    True
+
+    >>> devel_focus_alsa_utils_task.transitionToMilestone(
+    ...     test_milestone, alsa_utils.owner)
+
+    >>> print generic_alsa_utils_task.milestone.name
+    test
+    >>> print devel_focus_alsa_utils_task.milestone.name
+    test
+
+But a normal unprivileged user can't set the milestone.
+
+    >>> devel_focus_alsa_utils_task.transitionToMilestone(
+    ...     noway_milestone, no_priv)
+    Traceback (most recent call last):
+    ...
+    UserCannotEditBugTaskMilestone:
+      User does not have sufficient permissions to edit the bug task milestone.
+
+    >>> print devel_focus_alsa_utils_task.milestone.name
+    test
+
+5. Source package name
+
+    >>> ubuntu_pmount = ubuntu.getSourcePackage("pmount")
+
+    >>> print generic_netapplet_task.sourcepackagename.name
+    netapplet
+    >>> print current_series_netapplet_task.sourcepackagename.name
+    netapplet
+
+    >>> current_series_netapplet_task.sourcepackagename = (
+    ...     ubuntu_pmount.sourcepackagename)
+
+    >>> print generic_netapplet_task.sourcepackagename.name
+    pmount
+    >>> print current_series_netapplet_task.sourcepackagename.name
+    pmount
+
+The generic tasks are not directly editable.
+
+    >>> generic_netapplet_task.transitionToStatus(
+    ...     BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
+    Traceback (most recent call last):
+      ...
+    ConjoinedBugTaskEditError: This task cannot be edited directly, it
+                               should be edited through its conjoined_master.
+
+    >>> generic_alsa_utils_task.transitionToAssignee(launchbag.user)
+    Traceback (most recent call last):
+      ...
+    ConjoinedBugTaskEditError: This task cannot be edited directly, it
+                               should be edited through its conjoined_master.
+
+
+A conjoined relationship can be broken, though. If the development
+task (i.e the conjoined master) is Won't Fix, it means that the bug is
+deferred to the next series. In this case the development task should
+be Won't Fix, while the generic task keeps the value it had before,
+allowing it to stay open.
+
+First let's change the status from Fix Released, since it doesn't make
+sense to reject such a task.
+
+    >>> current_series_netapplet_task.transitionToStatus(
+    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
+    >>> print generic_netapplet_task.status.title
+    Confirmed
+    >>> print current_series_netapplet_task.status.title
+    Confirmed
+    >>> generic_netapplet_task.date_closed is None
+    True
+    >>> current_series_netapplet_task.date_closed is None
+    True
+
+
+Now, if we set the current series task to Won't Fix, the generic task
+will still be confirmed.
+
+    >>> netapplet_owner = current_series_netapplet_task.pillar.owner
+
+    >>> current_series_netapplet_task.transitionToStatus(
+    ...     BugTaskStatus.WONTFIX, netapplet_owner)
+
+    >>> print generic_netapplet_task.status.title
+    Confirmed
+    >>> print current_series_netapplet_task.status.title
+    Won't Fix
+
+    >>> generic_netapplet_task.date_closed is None
+    True
+    >>> current_series_netapplet_task.date_closed is None
+    False
+
+And the bugtasks are no longer conjoined:
+
+    >>> generic_netapplet_task.conjoined_master is None
+    True
+    >>> current_series_netapplet_task.conjoined_slave is None
+    True
+
+If the current development release is marked as Invalid, then the
+bug is invalid for all future series too, and so the general bugtask
+is therefore Invalid also. In other words, conjoined again.
+
+    >>> current_series_netapplet_task.transitionToStatus(
+    ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
+
+    # XXX Gavin Panella 2007-06-06 bug=112746:
+    # We must make two transitions.
+    >>> current_series_netapplet_task.transitionToStatus(
+    ...     BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
+
+    >>> print generic_netapplet_task.status.title
+    Invalid
+    >>> print current_series_netapplet_task.status.title
+    Invalid
+
+    >>> generic_netapplet_task.date_closed is None
+    False
+    >>> current_series_netapplet_task.date_closed is None
+    False
+
+
+== Null Bug Tasks ==
+
+Sometimes we need to be able to render a page for a bug in a context,
+when the bug hasn't actually been filed yet in that context. For cases
+like these, use the NullBugTask object.
+
+
+    >>> from lp.bugs.interfaces.bugtask import INullBugTask
+    >>> netapplet = productset.get(11)
+    >>> null_bugtask = bug_one.getNullBugTask(product=netapplet)
+    >>> verifyObject(INullBugTask, null_bugtask)
+    True
+    >>> IUpstreamBugTask.providedBy(null_bugtask)
+    True
+
+    >>> null_bugtask.id is None
+    True
+    >>> null_bugtask.title
+    u'Bug #1 is not in NetApplet: "Firefox does not support SVG"'
+    >>> null_bugtask.product is netapplet
+    True
+    >>> null_bugtask.bug == bug_one
+    True
+    >>> null_bugtask.datecreated is None
+    True
+    >>> null_bugtask.date_assigned is None
+    True
+    >>> null_bugtask.age is None
+    True
+    >>> null_bugtask.status is None
+    True
+    >>> null_bugtask.sourcepackagename is None
+    True
+    >>> null_bugtask.distribution is None
+    True
+    >>> null_bugtask.distroseries is None
+    True
+    >>> null_bugtask.milestone is None
+    True
+    >>> null_bugtask.importance is None
+    True
+    >>> null_bugtask.assignee is None
+    True
+    >>> null_bugtask.bugwatch is None
+    True
+    >>> null_bugtask.owner is None
+    True
+    >>> null_bugtask.target == netapplet
+    True
+    >>> null_bugtask.bugtargetname
+    u'netapplet'
+    >>> expected_related_task_ids = [
+    ...     task.id for task in null_bugtask.related_tasks]
+    >>> actual_related_task_ids = [task.id for task in bug_one.bugtasks]
+    >>> expected_related_task_ids.sort()
+    >>> actual_related_task_ids.sort()
+    >>> expected_related_task_ids == actual_related_task_ids
+    True
+
+    >>> null_bugtask.conjoined_slave is None
+    True
+    >>> null_bugtask.conjoined_master is None
+    True
+
+The astute reader will have noticed that NullBugTask automatically
+"marked" itself as providing the correct IBugTask interface. Let's see
+two more examples:
+
+    >>> ubuntu_null_bugtask = bug_one.getNullBugTask(distribution=ubuntu)
+    >>> IDistroBugTask.providedBy(ubuntu_null_bugtask)
+    True
+
+    >>> warty_null_bugtask = bug_one.getNullBugTask(distroseries=warty)
+    >>> IDistroSeriesBugTask.providedBy(warty_null_bugtask)
+    True
+
+
+= Bug Privacy =
+
+A bug is either private or public. Private bugs are only visible (e.g. in search
+listings) to explicit subscribers and Launchpad admins. Public bugs are visible
+to anyone.
+
+    >>> from zope.event import notify
+    >>> from lazr.lifecycle.event import ObjectModifiedEvent
+
+
+== Privacy and Unprivileged Users ==
+
+Let's log in as the user Foo Bar (to be allowed to edit bugs):
+
+    >>> login('foo.bar@canonical.com')
+    >>> foobar = launchbag.user
+
+and mark one of the Firefox bugs private. While we do this, we're also
+going to subscribe the Ubuntu team to the bug report to help demonstrate
+later on the interaction between privacy and teams (see the section
+entitled _Privacy and Team Awareness_):
+
+    >>> from lazr.lifecycle.snapshot import Snapshot
+    >>> from lp.bugs.interfaces.bug import IBug
+
+    >>> bug_upstream_firefox_no_svg_support = bugtaskset.get(2)
+
+    >>> ubuntu_team = personset.getByEmail('support@ubuntu.com')
+    >>> subscription = bug_upstream_firefox_no_svg_support.bug.subscribe(
+    ...     ubuntu_team, ubuntu_team)
+
+    >>> old_state = Snapshot(
+    ...     bug_upstream_firefox_no_svg_support.bug, providing=IBug)
+    >>> bug_upstream_firefox_no_svg_support.bug.setPrivate(
+    ...     True, getUtility(ILaunchBag).user)
+    True
+    >>> bug_set_private = ObjectModifiedEvent(
+    ...     bug_upstream_firefox_no_svg_support.bug, old_state,
+    ...     ["id", "title", "private"])
+    >>> notify(bug_set_private)
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+
+If we now login as someone who was neither implicitly nor explicitly subscribed
+to this bug, e.g. No Privileges Person, they will not be able to access or set
+properties of the bugtask.
+
+    >>> login("no-priv@canonical.com")
+    >>> mr_no_privs = launchbag.user
+
+    >>> bug_upstream_firefox_no_svg_support.status
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (..., 'status', 'launchpad.View')
+
+    >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
+    ...     BugTaskStatus.FIXCOMMITTED, getUtility(ILaunchBag).user)
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (..., 'transitionToStatus', 'launchpad.Edit')
+
+The private bugs will be invisible to No Privileges Person in the search
+results:
+
+    >>> from canonical.launchpad.searchbuilder import any
+    >>> from lp.bugs.interfaces.bugtask import BugTaskSearchParams
+    >>> params = BugTaskSearchParams(
+    ...     status=any(STATUS_NEW, STATUS_CONFIRMED),
+    ...     orderby="id", user=mr_no_privs)
+    >>> upstream_mozilla = productset.getByName('firefox')
+    >>> bugtasks = upstream_mozilla.searchTasks(params)
+    >>> print bugtasks.count()
+    3
+    >>> bug_ids = [bt.bug.id for bt in bugtasks]
+    >>> print sorted(bug_ids)
+    [4, 5, 6]
+
+Likewise when the No Privileges Person tries to do a search on tasks
+maintained by Foo Bar.
+
+    >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
+    ...     foobar, user=mr_no_privs)
+    >>> [bugtask.bug.id for bugtask in foobar_maintained_tasks]
+    [2]
+
+
+== Open bugtask count for a given list of projects ==
+
+IBugTaskSet.getOpenBugTasksPerProduct() will return a dictionary
+of product_id:count entries for bugs in an open status that
+the user given as a parameter is allowed to see. If a product,
+such as id=3 does not have any open bugs, it will not appear
+in the result.
+
+    >>> products = [productset.get(id) for id in (3, 5, 20)]
+    >>> bugtask_counts = bugtaskset.getOpenBugTasksPerProduct(
+    ...     sample_person, products)
+    >>> for product_id, count in sorted(bugtask_counts.items()):
+    ...     print 'product_id=%d count=%d' % (product_id, count)
+    product_id=5 count=1
+    product_id=20 count=2
+
+A Launchpad admin will get a higher count for the product with id=20
+because he can see the private bug.
+
+    >>> bugtask_counts = bugtaskset.getOpenBugTasksPerProduct(
+    ...     foobar, products)
+    >>> for product_id, count in sorted(bugtask_counts.items()):
+    ...     print 'product_id=%d count=%d' % (product_id, count)
+    product_id=5 count=1
+    product_id=20 count=3
+
+Someone subscribed to the private bug on the product with id=20
+will also have it added to the count.
+
+    >>> karl = personset.getByName('karl')
+    >>> bugtask_counts = bugtaskset.getOpenBugTasksPerProduct(
+    ...     karl, products)
+    >>> for product_id, count in sorted(bugtask_counts.items()):
+    ...     print 'product_id=%d count=%d' % (product_id, count)
+    product_id=5 count=1
+    product_id=20 count=3
+
+
+== Privacy and Priviledged Users ==
+
+Now, we'll log in as Mark Shuttleworth, who was assigned to this bug
+when it was marked private:
+
+    >>> login("mark@example.com")
+
+And note that he can access and set the bugtask attributes:
+
+    >>> bug_upstream_firefox_no_svg_support.status.title
+    'New'
+
+    >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
+    ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
+
+
+== Privacy and Team Awareness ==
+
+No Privileges Person can't see the private bug, because he's not a subscriber:
+
+    >>> login("no-priv@canonical.com")
+    >>> params = BugTaskSearchParams(
+    ...     status=any(STATUS_NEW, STATUS_CONFIRMED), user=no_priv)
+    >>> firefox_bugtasks = firefox.searchTasks(params)
+    >>> [bugtask.bug.id for bugtask in firefox_bugtasks]
+    [4, 5, 6]
+
+
+But if we add No Privileges Person to the Ubuntu Team, and because the Ubuntu
+Team *is* subscribed to the bug, No Privileges Person will see the private bug.
+
+    >>> login("mark@example.com")
+    >>> ignored = ubuntu_team.addMember(
+    ...     no_priv, reviewer=ubuntu_team.teamowner)
+
+    >>> login("no-priv@canonical.com")
+    >>> params = BugTaskSearchParams(
+    ...     status=any(STATUS_NEW, STATUS_CONFIRMED), user=foobar)
+    >>> firefox_bugtasks = firefox.searchTasks(params)
+    >>> [bugtask.bug.id for bugtask in firefox_bugtasks]
+    [1, 4, 5, 6]
+
+
+If we query for all bugtasks reported on all packages/products that
+Sample Person maintains, we'll see that bug 1 is there (we'll not see it
+if we query logged in as a user who can't see that bug).
+
+    >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
+    ...     sample_person, user=foobar)
+    >>> sorted(bugtask.bug.id for bugtask in foobar_maintained_tasks)
+    [1, 4, 5, 7, 13, 15, 15]
+
+
+== Privacy and Launchpad Admins ==
+
+Let's log in as Daniel Henrique Debonzi:
+
+    >>> login("daniel.debonzi@canonical.com")
+    >>> debonzi = launchbag.user
+
+The same search as above yields the same result, because Daniel Debonzi is an
+administrator.
+
+    >>> firefox = productset.get(4)
+    >>> params = BugTaskSearchParams(status=any(STATUS_NEW,
+    ...                                         STATUS_CONFIRMED),
+    ...                              user=debonzi)
+    >>> firefox_bugtasks = firefox.searchTasks(params)
+    >>> [bugtask.bug.id for bugtask in firefox_bugtasks]
+    [1, 4, 5, 6]
+
+If, still logged in as Daniel Debonzi, we query for all bugtasks
+reported on packages/products for which Sample Person is the maintainer,
+we'll also see bug 1 again in the results, even though it's private.
+
+    >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
+    ...     sample_person, user=debonzi)
+    >>> sorted(bugtask.bug.id for bugtask in foobar_maintained_tasks)
+    [1, 4, 5, 7, 13, 15, 15]
+
+Trying to retrieve the bug directly will work fine:
+
+    >>> bug_upstream_firefox_no_svg_support = bugtaskset.get(2)
+
+As will attribute access:
+
+    >>> bug_upstream_firefox_no_svg_support.status.title
+    'New'
+
+And attribute setting:
+
+    >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
+    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
+    >>> bug_upstream_firefox_no_svg_support.transitionToStatus(
+    ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
+
+
+
+== Sorting Bug Tasks ==
+
+Bug tasks need to sort in a very particular order. We want product tasks
+first, then ubuntu tasks, then other distro-related tasks. In the
+distro-related tasks we want a distribution-task first, then
+distroseries-tasks for that same distribution. The distroseries tasks
+should be sorted by distroseries version.
+
+Phew.
+
+Let's just make sure that the tasks on bug_one sort correctly.
+
+    >>> tasks = bug_one.bugtasks
+    >>> for task in tasks:
+    ...     print task.bugtargetdisplayname
+    Evolution
+    Mozilla Firefox
+    Mozilla Firefox 1.0
+    Ubuntu
+    mozilla-firefox (Ubuntu)
+    Ubuntu Warty
+    mozilla-firefox (Debian)
+
+
+== BugTask Adaptation ==
+
+An IBugTask can be adapted to an IBug.
+
+   >>> from lp.bugs.interfaces.bug import IBug
+
+   >>> bugtask_four = bugtaskset.get(4)
+   >>> bug = IBug(bugtask_four)
+   >>> bug.title
+   u'Firefox does not support SVG'
+
+
+== The targetnamecache attribute of BugTask ==
+
+The BugTask table has this targetnamecache attribute which stores a computed
+value to allow us to sort and search on that value without having to do lots
+of SQL joins. This cached value gets updated daily by the
+update-bugtask-targetnamecaches cronscript and whenever the bugtask is changed.
+Of course, it's also computed and set when a bugtask is created.
+
+`BugTask.bugtargetdisplayname` simply returns `targetnamecache`, and
+the latter is not exposed in `IBugTask`, so the `bugtargetdisplayname`
+is used here.
+
+    >>> upstream_task = bugtaskset.createTask(
+    ...     bug=bug_one, product=netapplet, owner=mark,
+    ...     status=STATUS_NEW, importance=IMPORTANCE_MEDIUM)
+    >>> upstream_task.bugtargetdisplayname
+    u'NetApplet'
+
+    >>> thunderbird = productset.get(8)
+    >>> upstream_task_id = upstream_task.id
+    >>> upstream_task.product = thunderbird
+    >>> upstream_task.bugtargetdisplayname
+    u'Mozilla Thunderbird'
+
+    >>> thunderbird.name = 'thunderbird-ng'
+    >>> thunderbird.displayname = 'Mozilla Thunderbird NG'
+
+    # XXX Guilherme Salgado 2005-11-07 bug=3989:
+    # This flush_database_updates() shouldn't be needed because we
+    # already have the transaction.commit() here, but without it
+    # (flush_database_updates), the cronscript won't see the thunderbird name
+    # change.
+    >>> flush_database_updates()
+    >>> transaction.commit()
+
+    >>> import subprocess
+    >>> process = subprocess.Popen(
+    ...     'cronscripts/update-bugtask-targetnamecaches.py', shell=True,
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.PIPE)
+    >>> (out, err) = process.communicate()
+
+    >>> print err
+    INFO Creating lockfile: /var/lock/launchpad-launchpad-targetnamecacheupdater.lock
+    INFO Updating targetname cache of bugtasks.
+    INFO Calculating targets.
+    INFO Will check ... targets.
+    ...
+    INFO Updating (u'Mozilla Thunderbird',) to 'Mozilla Thunderbird NG'.
+    ...
+    INFO Updated 1 target names.
+    INFO Finished updating targetname cache of bugtasks.
+
+    >>> process.returncode
+    0
+
+    # XXX Guilherme Salgado 2005-11-07:
+    # If we don't call flush_database_caches() here, we won't see the
+    # changes made by the cronscript in objects we already have cached.
+    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> flush_database_caches()
+    >>> transaction.commit()
+
+    >>> bugtaskset.get(upstream_task_id).bugtargetdisplayname
+    u'Mozilla Thunderbird NG'
+
+With sourcepackage bugtasks that have accepted nominations to a
+series, additional sourcepackage bugtasks are automatically nominated
+to the same series. The nominations are implicitly accepted and have
+targetnamecache updated.
+
+    >>> new_bug, new_bug_event = bugset.createBugWithoutTarget(
+    ...     CreateBugParams(mark, 'New Bug', comment='New Bug'))
+
+    The first message of a new bug has index 0.
+    >>> new_bug.bug_messages[0].index
+    0
+
+    >>> bugtaskset.createTask(
+    ...     bug=new_bug, owner=mark,
+    ...     distribution=ubuntu,
+    ...     sourcepackagename=(
+    ...         sourcepackagenameset.queryByName('mozilla-firefox')))
+    <BugTask at ...>
+
+    >>> new_bug.addNomination(mark, ubuntu.currentseries).approve(mark)
+
+The first task has been created and successfully nominated to Hoary.
+
+    >>> for task in new_bug.bugtasks:
+    ...     print task.bugtargetdisplayname
+    mozilla-firefox (Ubuntu)
+    mozilla-firefox (Ubuntu Hoary)
+
+    >>> bugtaskset.createTask(
+    ...     bug=new_bug, owner=mark,
+    ...     distribution=ubuntu,
+    ...     sourcepackagename=(
+    ...         sourcepackagenameset.queryByName('alsa-utils')))
+    <BugTask at ...>
+
+The second task has been created and has also been successfully
+nominated to Hoary.
+
+    >>> for task in new_bug.bugtasks:
+    ...     print task.bugtargetdisplayname
+    alsa-utils (Ubuntu)
+    mozilla-firefox (Ubuntu)
+    alsa-utils (Ubuntu Hoary)
+    mozilla-firefox (Ubuntu Hoary)
+
+The updating of targetnamecaches is usually done by the cronjob, however
+it can also be invoked directly.
+
+    >>> thunderbird.name = 'thunderbird'
+    >>> thunderbird.displayname = 'Mozilla Thunderbird'
+    >>> transaction.commit()
+
+    >>> upstream_task.bugtargetdisplayname
+    u'Mozilla Thunderbird NG'
+
+    >>> from lp.bugs.scripts.bugtasktargetnamecaches import (
+    ...     BugTaskTargetNameCacheUpdater)
+    >>> from lp.services.log.logger import FakeLogger
+    >>> logger = FakeLogger()
+    >>> updater = BugTaskTargetNameCacheUpdater(transaction, logger)
+    >>> updater.run()
+    INFO Updating targetname cache of bugtasks.
+    INFO Calculating targets.
+    ...
+    INFO Updating (u'Mozilla Thunderbird NG',) to 'Mozilla Thunderbird'.
+    ...
+    INFO Updated 1 target names.
+    INFO Finished updating targetname cache of bugtasks.
+
+    >>> flush_database_caches()
+    >>> transaction.commit()
+    >>> upstream_task.bugtargetdisplayname
+    u'Mozilla Thunderbird'
+
+
+== Target Uses Malone ==
+
+Bug tasks have a flag, target_uses_malone, that says whether the bugtask
+target uses Malone as its official bugtracker.
+
+    >>> for bugtask in bug_one.bugtasks:
+    ...     print "%-30s %s" % (
+    ...         bugtask.bugtargetdisplayname, bugtask.target_uses_malone)
+    Evolution                      True
+    Mozilla Firefox                True
+    Mozilla Firefox 1.0            True
+    Mozilla Thunderbird            False
+    Ubuntu                         True
+    mozilla-firefox (Ubuntu)       True
+    Ubuntu Warty                   True
+    mozilla-firefox (Debian)       False
+
+
+== BugTask badges ==
+
+A bug can have certain properties, which results in a badge being
+displayed in bug listings. BugTaskSet has a method,
+getBugTaskBadgeProperties(), which calculates these properties for
+multiple bug tasks in one go.
+
+    >>> from operator import attrgetter
+    >>> def print_badge_properties(badge_properties):
+    ...     bugtasks = sorted(badge_properties.keys(), key=attrgetter('id'))
+    ...     for bugtask in bugtasks:
+    ...         print "Properties for bug %s:" % (bugtask.bug.id)
+    ...         for key, value in sorted(badge_properties[bugtask].items()):
+    ...             print " %s: %s" % (key, value)
+
+    >>> bug_two = getUtility(IBugSet).get(2)
+    >>> bug_three = getUtility(IBugSet).get(3)
+    >>> some_bugtask = bug_two.bugtasks[0]
+    >>> another_bugtask = bug_three.bugtasks[0]
+    >>> badge_properties = getUtility(IBugTaskSet).getBugTaskBadgeProperties(
+    ...     [some_bugtask, another_bugtask])
+    >>> print_badge_properties(badge_properties)
+    Properties for bug 2:
+     has_branch: False
+     has_patch: False
+     has_specification: False
+    Properties for bug 3:
+     has_branch: False
+     has_patch: False
+     has_specification: False
+
+..., a specification gets linked...
+
+    >>> from lp.blueprints.interfaces.specification import ISpecificationSet
+    >>> spec = getUtility(ISpecificationSet).all_specifications[0]
+    >>> spec.linkBug(bug_two)
+    <SpecificationBug at ...>
+
+... or a branch gets linked to the bug...
+
+    >>> branch = factory.makeAnyBranch()
+    >>> bug_three.linkBranch(branch, no_priv)
+    <BugBranch at ...>
+
+... the properties for the bugtasks reflect this.
+
+    >>> badge_properties = getUtility(IBugTaskSet).getBugTaskBadgeProperties(
+    ...     [some_bugtask, another_bugtask])
+    >>> print_badge_properties(badge_properties)
+    Properties for bug 2:
+     has_branch: False
+     has_patch: False
+     has_specification: True
+    Properties for bug 3:
+     has_branch: True
+     has_patch: False
+     has_specification: False
+
+
+== Similar bugs ==
+
+It's possible to get a list of bugs similar to the current bug by
+accessing the similar_bugs property of its bug tasks.
+
+    >>> new_ff_bug = factory.makeBug(product=firefox, title="Firefox")
+    >>> ff_bugtask = new_ff_bug.bugtasks[0]
+
+    >>> similar_bugs = ff_bugtask.findSimilarBugs(user=sample_person)
+    >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
+    ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
+    1: Firefox does not support SVG
+    5: Firefox install instructions should be complete
+
+This also works for distributions...
+
+    >>> ubuntu_bugtask = factory.makeBugTask(bug=new_ff_bug, target=ubuntu)
+    >>> similar_bugs = ubuntu_bugtask.findSimilarBugs(user=sample_person)
+    >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
+    ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
+    1: Firefox does not support SVG
+
+
+... and for SourcePackages.
+
+    >>> firefox_package = ubuntu.getSourcePackage('mozilla-firefox')
+    >>> firefox_package_bugtask = factory.makeBugTask(
+    ...     bug=new_ff_bug, target=firefox_package)
+
+    >>> similar_bugs = firefox_package_bugtask.findSimilarBugs(
+    ...     user=sample_person)
+    >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
+    ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
+    1: Firefox does not support SVG
+
+Private bugs won't show up in the list of similar bugs unless the user
+is a direct subscriber. We'll demonstrate this by creating a new bug
+against Firefox.
+
+    >>> second_ff_bug = factory.makeBug(
+    ...     product=firefox, title="Yet another Firefox bug")
+    >>> similar_bugs = ff_bugtask.findSimilarBugs(user=no_priv)
+    >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
+    ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
+    1: Firefox does not support SVG
+    5: Firefox install instructions should be complete
+    ...Yet another Firefox bug
+
+If we mark the new bug as private, it won't appear in the similar bugs
+list for no_priv any more, since they're not a direct subscriber.
+
+    >>> second_ff_bug.setPrivate(True, foobar)
+    True
+
+    >>> similar_bugs = ff_bugtask.findSimilarBugs(user=no_priv)
+    >>> for similar_bug in sorted(similar_bugs, key=attrgetter('id')):
+    ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
+    1: Firefox does not support SVG
+    5: Firefox install instructions should be complete
+
+
+== Handling IntegrityError and ProgrammingError ==
+
+# XXX: Brad Bollenbach 2005-02-24: This bit testing the IntegrityError
+# should be higher up in the file (under the explanation about creating
+# tasks), but I can't figure out how to reset the connection properly after
+# an IntegrityError is raised. ARGH.
+
+Note that a task filed on a specific distro series does *not* have its
+distribution column set. In fact, a task must have exactly one of its product,
+distribution or distroseries fields set, otherwise the database integrity
+constraints will be violated.
+
+    >>> bad_task = bugtaskset.createTask(
+    ...     bug=bug_one, distribution=ubuntu, distroseries=warty,
+    ...     owner=mark, status=STATUS_NEW,
+    ...     importance=IMPORTANCE_MEDIUM)
+    Traceback (most recent call last):
+    ...
+    IntegrityError: new row for relation "bugtask" violates check
+                    constraint "bugtask_assignment_checks"

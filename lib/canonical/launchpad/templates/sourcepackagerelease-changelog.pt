@@ -1,3 +1,0 @@
-<pre tal:attributes="id string:${context/name}_${context/version}">
-  <span tal:replace="structure view/changelog"/>
-</pre>

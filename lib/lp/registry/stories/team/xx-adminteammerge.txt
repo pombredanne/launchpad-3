@@ -1,0 +1,101 @@
+= Merging Teams =
+
+There's a separate page for merging teams.  We can't merge teams with
+active members, so the user will first have to confirm that the
+members should be deactivated before the teams are merged.
+
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> login('foo.bar@canonical.com')
+    >>> registry_expert = factory.makePerson(
+    ...     email='reg@example.com', password='test')
+    >>> new_team = factory.makeTeam(
+    ...     name="new-team", email="new_team@example.com")
+    >>> registry_experts = getUtility(IPersonSet).getByName('registry')
+    >>> ignored = registry_experts.addMember(
+    ...     registry_expert, registry_experts.teamowner)
+    >>> logout()
+    >>> registry_browser = setupBrowser(auth='Basic reg@example.com:test')
+    >>> registry_browser.open('http://launchpad.dev/people/+adminteammerge')
+    >>> registry_browser.getControl('Duplicated Team').value = (
+    ...     'new-team')
+    >>> registry_browser.getControl('Target Team').value = 'guadamen'
+    >>> registry_browser.getControl('Merge').click()
+
+    >>> registry_browser.url
+    'http://launchpad.dev/people/+adminteammerge'
+    >>> print get_feedback_messages(registry_browser.contents)[0]
+    New Team has 1 active members which will have to be deactivated
+    before the teams can be merged.
+
+    >>> registry_browser.getControl('Deactivate Members and Merge').click()
+    >>> registry_browser.url
+    'http://launchpad.dev/~guadamen'
+
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.mailinglist import IMailingListSet
+    >>> login(ANONYMOUS)
+    >>> new_team.merged.name
+    u'guadamen'
+    >>> logout()
+
+
+==  Non-display of merged teams ==
+
+Merged teams are not visible anymore.
+
+    >>> browser.open("http://launchpad.dev/~new-team-merged")
+    Traceback (most recent call last):
+    ...
+    NotFound:...
+
+
+== Corner cases ==
+
+If the duplicated team is associated with a mailing list, it can't be
+merged, though.
+
+    >>> login(ANONYMOUS)
+    >>> guadamen = getUtility(IPersonSet).getByName('guadamen')
+    >>> mailing_list = getUtility(IMailingListSet).new(guadamen)
+    >>> logout()
+
+    >>> registry_browser.open('http://launchpad.dev/people/+adminteammerge')
+    >>> registry_browser.getControl('Duplicated Team').value = 'guadamen'
+    >>> registry_browser.getControl('Target Team').value = 'ubuntu-team'
+    >>> registry_browser.getControl('Merge').click()
+
+    >>> registry_browser.url
+    'http://launchpad.dev/people/+adminteammerge'
+
+    >>> print get_feedback_messages(registry_browser.contents)
+    [u'There is 1 error.',
+     u"guadamen is associated with a Launchpad mailing list;
+       we can't merge it."]
+
+We also can't (for obvious reasons) merge any person/team into itself.
+
+    >>> registry_browser.getControl('Duplicated Team').value = 'shipit-admins'
+    >>> registry_browser.getControl('Target Team').value = 'shipit-admins'
+    >>> registry_browser.getControl('Merge').click()
+
+    >>> registry_browser.url
+    'http://launchpad.dev/people/+adminteammerge'
+
+    >>> print get_feedback_messages(registry_browser.contents)
+    [u'There is 1 error.', u"You can't merge shipit-admins into itself."]
+
+Nor can we merge a person into a team or a team into a person.
+
+    >>> registry_browser.getControl('Duplicated Team').value = 'ubuntu-team'
+    >>> registry_browser.getControl('Target Team').value = 'salgado'
+    >>> registry_browser.getControl('Merge').click()
+
+    >>> registry_browser.url
+    'http://launchpad.dev/people/+adminteammerge'
+
+    # Yes, the error message is not of much help, but this UI is only for
+    # admins and they're supposed to know what they're doing.
+    >>> print get_feedback_messages(registry_browser.contents)
+    [u'There is 1 error.', u'Constraint not satisfied']

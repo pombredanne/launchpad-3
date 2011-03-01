@@ -1,12 +1,9 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-import unittest
-
-from zope.testing.doctest import DocFileSuite
-
+from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.librarian.libraryprotocol import FileUploadProtocol
 from canonical.librarian.storage import WrongDatabaseError
 
@@ -57,9 +54,6 @@ def upload_request(request):
     """Librarian upload server test helper, process a request and report what
     happens.
 
-    Inspired by the canonical.functional.http function used by the Launchpad
-    page tests.
-
     Hands a request to a librarian file upload protocol, and prints the reply
     from the server, a summary of the file uploaded, and whether the connection
     closed, e.g.::
@@ -89,8 +83,8 @@ def upload_request(request):
     # Create a FileUploadProtocol, and instrument it for testing:
     server = FileUploadProtocol()
 
-    #  * hook _storeFile to dispatch straight to newFile.store without spawning
-    #    a thread.
+    #  * hook _storeFile to dispatch straight to newFile.store without
+    #    spawning a thread.
     from twisted.internet import defer
     server._storeFile = lambda: defer.maybeDeferred(server.newFile.store)
 
@@ -99,7 +93,8 @@ def upload_request(request):
     server.connectionMade()
 
     #  * give it a fake factory (itself!), and a fake library.
-    server.factory = server; server.fileLibrary = MockLibrary()
+    server.factory = server
+    server.fileLibrary = MockLibrary()
 
     # Feed in the request
     server.dataReceived(request.replace('\n', '\r\n'))
@@ -120,9 +115,7 @@ def upload_request(request):
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(
-        DocFileSuite("./test_upload.txt",
-                     globs={'upload_request': upload_request}))
-    return suite
+    return LayeredDocFileSuite(
+        'test_upload.txt', globs={'upload_request': upload_request},
+        stdout_logging=False)
 

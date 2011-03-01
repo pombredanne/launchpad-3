@@ -1,3 +1,7 @@
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -5,26 +9,26 @@
     xmlns:zope="http://namespaces.zope.org/zope"
     i18n_domain="launchpad">
 
-    <content class="canonical.launchpad.utilities.GPGHandler">
-        <allow interface="canonical.launchpad.interfaces.IGPGHandler" />
-    </content>
+    <class class="canonical.launchpad.utilities.GPGHandler">
+        <allow interface="canonical.launchpad.interfaces.gpghandler.IGPGHandler" />
+    </class>
 
     <securedutility
         class="canonical.launchpad.utilities.GPGHandler"
-        provides="canonical.launchpad.interfaces.IGPGHandler">
-        <allow interface="canonical.launchpad.interfaces.IGPGHandler" />
+        provides="canonical.launchpad.interfaces.gpghandler.IGPGHandler">
+        <allow interface="canonical.launchpad.interfaces.gpghandler.IGPGHandler" />
     </securedutility>
 
-    <content class="canonical.launchpad.utilities.PymeSignature">
-        <allow interface="canonical.launchpad.interfaces.IPymeSignature" />
-    </content>
+    <class class="canonical.launchpad.utilities.PymeSignature">
+        <allow interface="canonical.launchpad.interfaces.gpghandler.IPymeSignature" />
+    </class>
 
-    <content class="canonical.launchpad.utilities.PymeKey">
-        <allow interface="canonical.launchpad.interfaces.IPymeKey" />
-    </content>
+    <class class="canonical.launchpad.utilities.PymeKey">
+        <allow interface="canonical.launchpad.interfaces.gpghandler.IPymeKey" />
+    </class>
 
-    <content class="canonical.launchpad.utilities.PymeUserId">
-        <allow interface="canonical.launchpad.interfaces.IPymeUserId" />
-    </content>
+    <class class="canonical.launchpad.utilities.PymeUserId">
+        <allow interface="canonical.launchpad.interfaces.gpghandler.IPymeUserId" />
+    </class>
 
 </configure>

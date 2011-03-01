@@ -1,0 +1,218 @@
+==========================
+Mailing list subscriptions
+==========================
+
+Both direct and indirect members of a team may subscribe to a team's mailing
+list.  First, create the mailing list, which will send a notification messages
+to all the members of the mailing list.  We can ignore these messages.
+
+    >>> from lp.services.mailman.testing import helpers
+    >>> list_one = helpers.create_list('itest-one')
+
+Anne registers with Launchpad and decides to subscribe to the mailing list.
+
+    >>> helpers.subscribe('Anne', 'itest-one')
+    >>> helpers.subscribe('Bart', 'itest-one', use_alt_address=True)
+
+Both Anne and Bart are now members of the mailing list.  Both have two
+subscribed addresses (because both are validated with Launchpad), but only one
+of them is enabled.  No Privileges Person is also a disabled member of the
+mailing list because he created the team (and thus is a postings-enabled
+member).
+
+    >>> import re
+    >>> from Mailman.MailList import MailList
+    >>> from Mailman.MemberAdaptor import ENABLED
+    >>> def print_members(mailing_list, pattern=None):
+    ...     for key in sorted(mailing_list.getMembers()):
+    ...         address = mailing_list.getMemberCPAddress(key)
+    ...         if (pattern is not None and
+    ...             not re.search(pattern, address, re.IGNORECASE)):
+    ...             continue
+    ...         fullname = mailing_list.getMemberName(key)
+    ...         if mailing_list.getDeliveryStatus(key) == ENABLED:
+    ...             status = 'ENABLED'
+    ...         else:
+    ...             status = 'DISABLED'
+    ...         print fullname, '<%s>' % address, status
+
+    >>> mailing_list = MailList('itest-one', lock=False)
+    >>> print_members(mailing_list)
+    Anne Person             <anne.person@example.com>   ENABLED
+    Anne Person             <aperson@example.org>       DISABLED
+                            <archive@mail-archive.dev>  ENABLED
+    Bart Person             <bart.person@example.com>   DISABLED
+    Bart Person             <bperson@example.org>       ENABLED
+    No Privileges Person    <no-priv@canonical.com>     DISABLED
+
+Cris and Dirk now subscribe to the team and its list.  Anne changes her
+preferred email address, and Bart unsubscribes from the mailing list.  Because
+Bart does not leave the team though, his subscription merely gets disabled.
+
+    >>> helpers.subscribe('Cris', 'itest-one')
+    >>> helpers.subscribe('Dirk', 'itest-one')
+    >>> helpers.unsubscribe('Bart', 'itest-one')
+
+    # Change Anne's email address to her alternative.
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.tests import mailinglists_helper
+
+    >>> login('admin@canonical.com')
+    >>> person_set = getUtility(IPersonSet)
+
+    >>> anne = person_set.getByName('anne')
+    >>> alternative = mailinglists_helper.get_alternative_email(anne)
+    >>> anne.setPreferredEmail(alternative)
+    >>> transaction.commit()
+    >>> logout()
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> helpers.ensure_addresses_are_enabled(
+    ...     'itest-one', removeSecurityProxy(alternative).email)
+
+Anne is now subscribed with her alternate email address, and Cris and Dirk are
+the only other members.
+
+    # Reload the list data.
+    >>> mailing_list.Load()
+    >>> print_members(mailing_list)
+    Anne Person             <anne.person@example.com>   DISABLED
+    Anne Person             <aperson@example.org>       ENABLED
+                            <archive@mail-archive.dev>  ENABLED
+    Bart Person             <bart.person@example.com>   DISABLED
+    Bart Person             <bperson@example.org>       DISABLED
+    Cris Person             <cperson@example.org>       DISABLED
+    Cris Person             <cris.person@example.com>   ENABLED
+    Dirk Person             <dirk.person@example.com>   ENABLED
+    Dirk Person             <dperson@example.org>       DISABLED
+    No Privileges Person    <no-priv@canonical.com>     DISABLED
+
+Bart now leaves the team.  His subscription is removed.
+
+    >>> login('admin@canonical.com')
+    >>> bart = person_set.getByName('bart')
+    >>> team_one = person_set.getByName('itest-one')
+    >>> bart.leave(team_one)
+    >>> transaction.commit()
+    >>> logout()
+    >>> helpers.ensure_nonmembership('itest-one', bart)
+
+
+Alternative addresses
+=====================
+
+Now Anne decides to register another email address with Launchpad, however
+before she can validate this address, subscriptions for the list are
+synchronized with Mailman.  Anne's non-validated address does not appear in
+the membership list, either as an enabled or disabled address.
+
+    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+    >>> login('admin@canonical.com')
+    >>> email_set = getUtility(IEmailAddressSet)
+    >>> email = email_set.new(
+    ...     'anne.x.person@example.net', anne, account=anne.account)
+    >>> transaction.commit()
+    >>> helpers.ensure_membership('itest-one', anne)
+
+    # Reload the list data.
+    >>> mailing_list.Load()
+    >>> print_members(mailing_list)
+    Anne Person             <anne.person@example.com>   DISABLED
+    Anne Person             <aperson@example.org>       ENABLED
+                            <archive@mail-archive.dev>  ENABLED
+    Cris Person             <cperson@example.org>       DISABLED
+    Cris Person             <cris.person@example.com>   ENABLED
+    Dirk Person             <dirk.person@example.com>   ENABLED
+    Dirk Person             <dperson@example.org>       DISABLED
+    No Privileges Person    <no-priv@canonical.com>     DISABLED
+
+Once Anne validates her address though, she may post from it.
+
+    >>> from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+    >>> email.status = EmailAddressStatus.VALIDATED
+    >>> transaction.commit()
+    >>> logout()
+    >>> helpers.ensure_membership('itest-one', anne)
+
+    >>> mailing_list.Load()
+    >>> print_members(mailing_list)
+    Anne Person             <anne.person@example.com>   DISABLED
+    Anne Person             <anne.x.person@example.net> DISABLED
+    Anne Person             <aperson@example.org>       ENABLED
+                            <archive@mail-archive.dev>  ENABLED
+    Cris Person             <cperson@example.org>       DISABLED
+    Cris Person             <cris.person@example.com>   ENABLED
+    Dirk Person             <dirk.person@example.com>   ENABLED
+    Dirk Person             <dperson@example.org>       DISABLED
+    No Privileges Person    <no-priv@canonical.com>     DISABLED
+
+
+Case-preservation
+=================
+
+Mailing lists preserve the case of the subscribed email address,
+although for subscription purposes, two email addresses that differs
+only in case are the same address.
+
+Emma joins Launchpad as normal, then subscribes a mixed-case alternative
+email address.
+
+    >>> login('admin@canonical.com')
+    >>> emma = factory.makePersonByName('Emma')
+    >>> email = email_set.new(
+    ...     'EmmaXPerson@example.org', emma, account=emma.account)
+    >>> email.status = EmailAddressStatus.VALIDATED
+    >>> transaction.commit()
+    >>> from lp.registry.interfaces.mailinglist import IMailingListSet
+    >>> emma.join(team_one)
+    >>> list_one = getUtility(IMailingListSet).get('itest-one')
+    >>> list_one.subscribe(emma, email)
+    >>> transaction.commit()
+    >>> logout()
+    >>> helpers.ensure_membership('itest-one', emma)
+
+Emma is now a member of the mailing list, using her case-preserved email
+address.
+
+    >>> mailing_list.Load()
+    >>> print_members(mailing_list)
+    Anne Person             <anne.person@example.com>   DISABLED
+    Anne Person             <anne.x.person@example.net> DISABLED
+    Anne Person             <aperson@example.org>       ENABLED
+                            <archive@mail-archive.dev>  ENABLED
+    Cris Person             <cperson@example.org>       DISABLED
+    Cris Person             <cris.person@example.com>   ENABLED
+    Dirk Person             <dirk.person@example.com>   ENABLED
+    Dirk Person             <dperson@example.org>       DISABLED
+    Emma Person             <emma.person@example.com>   DISABLED
+    Emma Person             <EmmaXPerson@example.org>   ENABLED
+    Emma Person             <eperson@example.org>       DISABLED
+    No Privileges Person    <no-priv@canonical.com>     DISABLED
+
+Emma decides to change the case of her alternative email address, and Mailman
+accurately tracks these changes in case.
+
+    >>> removeSecurityProxy(email).email = 'emmaXperson@example.org'
+    >>> transaction.commit()
+    >>> helpers.ensure_membership('itest-one', 'emmaXperson@example.org')
+    >>> mailing_list.Load()
+    >>> print_members(mailing_list, 'emma')
+    Emma Person <emma.person@example.com>   DISABLED
+    Emma Person <emmaXperson@example.org>   ENABLED
+
+    >>> removeSecurityProxy(email).email = 'emmaxperson@example.org'
+    >>> transaction.commit()
+    >>> helpers.ensure_membership('itest-one', 'emmaxperson@example.org')
+    >>> mailing_list.Load()
+    >>> print_members(mailing_list, 'emma')
+    Emma Person <emma.person@example.com>   DISABLED
+    Emma Person <emmaxperson@example.org>   ENABLED
+
+    >>> removeSecurityProxy(email).email = 'EMMAXPERSON@example.org'
+    >>> transaction.commit()
+    >>> helpers.ensure_membership('itest-one', 'EMMAXPERSON@example.org')
+    >>> mailing_list.Load()
+    >>> print_members(mailing_list, 'emma')
+    Emma Person <emma.person@example.com>   DISABLED
+    Emma Person <EMMAXPERSON@example.org>   ENABLED

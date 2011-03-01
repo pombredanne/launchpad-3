@@ -1,0 +1,149 @@
+= Bugs Fixed Elsewhere =
+
+The +bugtarget-portlet-bugfilters-info view for a distribution or
+product contains a property for a URL to a list of bugs fixed
+elsewhere.
+
+    >>> from zope.component import getMultiAdapter
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+    >>> view = getMultiAdapter(
+    ...     (bugtarget, LaunchpadTestRequest()),
+    ...     name='+bugtarget-portlet-bugfilters-info')
+    >>> view.initialize()
+
+    >>> view.bugs_fixed_elsewhere_url
+    u'http://.../+bugs?field.status_upstream=resolved_upstream'
+
+The +bugtarget-portlet-bugfilters-stats view for a distribution or
+product contains the URL as above in addition to a count of how many
+bugs that are fixed elsewhere. This count can take a while to
+calculate, so it is put on this separate view which can be requested
+asyncronously.
+
+    >>> view = getMultiAdapter(
+    ...     (bugtarget, LaunchpadTestRequest()),
+    ...     name='+bugtarget-portlet-bugfilters-stats')
+    >>> view.initialize()
+
+    >>> view.bugs_fixed_elsewhere_url
+    u'http://.../+bugs?field.status_upstream=resolved_upstream'
+    >>> view.bugs_fixed_elsewhere_count
+    0
+
+Simply opening a bug elsewhere won't increase the count.
+
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
+    >>> evolution != bugtarget
+    True
+
+    >>> bug = filebug(bugtarget, 'Example Bug')
+
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+    >>> elsewhere = getUtility(IBugTaskSet).createTask(
+    ...     bug, owner=getUtility(ILaunchBag).user, product=evolution)
+    >>> view.bugs_fixed_elsewhere_count
+    0
+
+But if we mark the bug as fixed in the other, the count will increase
+by one.
+
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
+    >>> elsewhere.transitionToStatus(
+    ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
+    >>> syncUpdate(elsewhere)
+
+    >>> view.bugs_fixed_elsewhere_count
+    1
+
+Bugs fixed elsewhere also show up when we perform an advanced bug
+search, using the appropriate query string parameter to ask for "bugs
+resolved elsewhere":
+
+    >>> search_view = getMultiAdapter(
+    ...     (bugtarget,
+    ...      LaunchpadTestRequest(
+    ...         form={'field.status_upstream': 'resolved_upstream'})),
+    ...     name='+bugs')
+    >>> search_view.initialize()
+    >>> navigator = search_view.search()
+
+    >>> for task in search_view.search().batch:
+    ...     for related_task in task.related_tasks:
+    ...         print related_task.target.name
+    ...         print related_task.status.name
+    evolution
+    FIXRELEASED
+
+
+== Private Bugs ==
+
+Only bugs that the user has permission to view are included in the count.
+
+    >>> another_bug = filebug(bugtarget, 'Example Bug')
+    >>> another_bug.setPrivate(True, getUtility(ILaunchBag).user)
+    True
+    >>> syncUpdate(another_bug)
+
+    >>> another_elsewhere = getUtility(IBugTaskSet).createTask(
+    ...     another_bug, owner=getUtility(ILaunchBag).user, product=evolution)
+    >>> another_elsewhere.transitionToStatus(
+    ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
+    >>> syncUpdate(another_elsewhere)
+
+    >>> view.bugs_fixed_elsewhere_count
+    2
+
+This means that No Privileges Person will see that there is only one bug
+fixed elsewhere.
+
+    >>> login('no-priv@canonical.com')
+    >>> view = getMultiAdapter(
+    ...     (bugtarget, LaunchpadTestRequest()),
+    ...     name='+bugtarget-portlet-bugfilters-stats')
+    >>> view.initialize()
+
+    >>> view.bugs_fixed_elsewhere_count
+    1
+
+If the private bug is made public again, he will of course see that
+there are two bugs fixed.
+
+    >>> login('foo.bar@canonical.com')
+    >>> another_bug.setPrivate(False, getUtility(ILaunchBag).user)
+    True
+    >>> syncUpdate(another_bug)
+
+    >>> login('no-priv@canonical.com')
+    >>> view.bugs_fixed_elsewhere_count
+    2
+
+
+== Duplicate Bugs ==
+
+Bugs that are duplicate of other bugs aren't included in the count.
+
+    >>> another_bug.markAsDuplicate(bug)
+    >>> syncUpdate(another_bug)
+
+    >>> view.bugs_fixed_elsewhere_count
+    1
+
+
+== Resolved Bugs ==
+
+The count includes only bugs that are open in the current context.
+
+    >>> for bugtask in bug.bugtasks:
+    ...     if bugtask.target == bugtarget:
+    ...         break
+    ... else:
+    ...     print "Couldn't find a bugtasks for %r" % bugtarget
+    >>> bugtask.transitionToStatus(
+    ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
+    >>> syncUpdate(bugtask)
+
+    >>> view.bugs_fixed_elsewhere_count
+    0

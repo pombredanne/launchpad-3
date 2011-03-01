@@ -1,0 +1,83 @@
+= Deleting an archive =
+
+When deleting an archive, the user calls IArchive.delete(), passing in
+the IPerson who is requesting the deletion.
+
+All of the publishing records will be marked as DELETED, the archive is
+disabled and the status is set to DELETING.
+
+This status tells the publisher to then delete the repository area.  Once
+it completes that task it will set the status to DELETED.
+
+    >>> from lp.soyuz.enums import ArchiveStatus
+    >>> from lp.soyuz.interfaces.archive import (
+    ...     IArchiveSet, IArchive)
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    >>> login("admin@canonical.com")
+    >>> stp = SoyuzTestPublisher()
+    >>> stp.prepareBreezyAutotest()
+    >>> owner = factory.makePerson(name='archive-owner')
+    >>> archive = factory.makeArchive(owner=owner)
+
+The archive is currently active:
+
+    >>> print archive.enabled
+    True
+
+    >>> print archive.status.name
+    ACTIVE
+
+We can create some packages in it using the test publisher:
+
+    >>> from lp.soyuz.enums import PackagePublishingStatus
+    >>> ignore = stp.getPubBinaries(
+    ...     archive=archive, binaryname="foo-bin1",
+    ...     status=PackagePublishingStatus.PENDING)
+    >>> ignore = stp.getPubBinaries(
+    ...     archive=archive, binaryname="foo-bin2",
+    ...     status=PackagePublishingStatus.PUBLISHED)
+    >>> from storm.store import Store
+    >>> Store.of(archive).flush()
+
+Calling delete() will now do the deletion.  It is only callable by someone
+with launchpad.Edit permission on the archive.  Here, "duderino" who is
+some random dude is refused:
+
+    >>> person = factory.makePerson(name="duderino")
+    >>> login_person(person)
+    >>> archive.delete(person)
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+However we can delete it using the owner of the archive:
+
+    >>> login_person(archive.owner)
+    >>> archive.delete(archive.owner)
+
+The deletion code uses a store.execute() command to speed up the operation
+where many records need to be updated.  Therefore we need to invalidate
+the cache to make Storm re-read the database objects.
+
+    >>> Store.of(archive).invalidate()
+
+Now, all the publications are DELETED, the archive is disabled and the
+status is DELETING to tell the publisher to remove the repository:
+
+    >>> publications = list(archive.getPublishedSources())
+    >>> publications.extend(list(archive.getAllPublishedBinaries()))
+    >>> for pub in publications:
+    ...     print "%s, %s by %s" % (
+    ...         pub.displayname, pub.status.name, pub.removed_by.name)
+    foo 666 in breezy-autotest, DELETED by archive-owner
+    foo 666 in breezy-autotest, DELETED by archive-owner
+    foo-bin1 666 in breezy-autotest i386, DELETED by archive-owner
+    foo-bin1 666 in breezy-autotest hppa, DELETED by archive-owner
+    foo-bin2 666 in breezy-autotest i386, DELETED by archive-owner
+    foo-bin2 666 in breezy-autotest hppa, DELETED by archive-owner
+
+    >>> print archive.enabled
+    False
+
+    >>> print archive.status.name
+    DELETING

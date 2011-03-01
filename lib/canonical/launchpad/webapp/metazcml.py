@@ -1,51 +1,66 @@
-# (c) Canonical Software Ltd. 2004-2007, all rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-import os
 import inspect
 
-from zope.interface import Interface, implements
-from zope.component import getUtility
-import zope.component.servicenames
-from zope.component.interfaces import IDefaultViewName
-from zope.schema import TextLine
-from zope.configuration.exceptions import ConfigurationError
-from zope.configuration.fields import (
-    MessageID, GlobalObject, PythonIdentifier, Path, Tokens)
-
-from zope.security.checker import CheckerPublic, Checker, defineChecker
-from zope.security.proxy import ProxyFactory
-from zope.publisher.interfaces.browser import (
-    IBrowserPublisher, IBrowserRequest)
-from zope.app.component.metaconfigure import (
-    handler, adapter, utility, view, PublicPermission)
-
-from zope.app.component.contentdirective import ContentDirective
-from zope.app.component.interface import provideInterface
-from zope.app.pagetemplate.engine import Engine
-from zope.app.component.fields import LayerField
+import z3c.ptcompat.zcml
+from z3c.ptcompat.zcml import (
+    page_directive as original_page,
+    pages_directive as original_pages,
+    )
+from zope.app.component.contentdirective import ClassDirective
 from zope.app.file.image import Image
-import zope.app.publisher.browser.metadirectives
-from zope.app.publisher.browser.menumeta import menuItemDirective
-import zope.app.form.browser.metaconfigure
-from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
-from zope.publisher.interfaces.browser import IDefaultBrowserLayer
-from zope.app.publisher.browser.viewmeta import (
-    pages as original_pages,
-    page as original_page)
+import zope.app.form.browser.metadirectives
+from zope.app.pagetemplate.engine import TrustedEngine
+from zope.app.publication.metaconfigure import publisher
+import zope.browserpage.metadirectives
+from zope.component import getUtility
+from zope.component.security import PublicPermission
+from zope.component.zcml import (
+    adapter,
+    handler,
+    utility,
+    view,
+    )
+import zope.configuration.config
+from zope.configuration.fields import (
+    GlobalInterface,
+    GlobalObject,
+    Path,
+    PythonIdentifier,
+    Tokens,
+    )
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.publisher.interfaces.browser import (
+    IBrowserPublisher,
+    IBrowserRequest,
+    IDefaultBrowserLayer,
+    )
+from zope.schema import TextLine
+from zope.security.checker import (
+    Checker,
+    CheckerPublic,
+    )
+from zope.security.interfaces import IPermission
+from zope.security.permission import Permission
+from zope.security.proxy import ProxyFactory
+from zope.security.zcml import IPermissionDirective
 
-from zope.app.publisher.browser.metaconfigure import (
-    defaultView as original_defaultView)
-
-from canonical.launchpad.webapp.generalform import (
-    GeneralFormView, GeneralFormViewFactory)
-
+from canonical.config import config
+from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData, IFacetMenu, IApplicationMenu,
-    IContextMenu, IBreadcrumb, IAuthorization,
-    IBreadcrumbProvider)
-from canonical.launchpad.webapp.launchpadtour import LaunchpadTourView
+    IApplicationMenu,
+    IAuthorization,
+    ICanonicalUrlData,
+    IContextMenu,
+    IFacetMenu,
+    INavigationMenu,
+    )
 from canonical.launchpad.webapp.publisher import RenamedView
 
 
@@ -54,9 +69,11 @@ class IAuthorizationsDirective(Interface):
 
     module = GlobalObject(title=u'module', required=True)
 
+
 def _isAuthorization(module_member):
     return (type(module_member) is type and
             IAuthorization.implementedBy(module_member))
+
 
 def authorizations(_context, module):
     if not inspect.ismodule(module):
@@ -84,6 +101,8 @@ class ISecuredUtilityDirective(Interface):
 
     component = GlobalObject(title=u'component', required=False)
 
+    name = TextLine(title=u"Name", required=False)
+
 
 class PermissionCollectingContext:
 
@@ -101,11 +120,14 @@ class PermissionCollectingContext:
                 elif discriminator_name == 'protectSetAttribute':
                     self.set_permissions[name] = permission
                 else:
-                    raise RuntimeError("unrecognised discriminator name", name)
+                    raise RuntimeError(
+                        "unrecognised discriminator name", name)
+
 
 class SecuredUtilityDirective:
 
-    def __init__(self, _context, provides, class_=None, component=None):
+    def __init__(self, _context, provides, class_=None, component=None,
+                 name=''):
         if class_ is not None:
             assert component is None, "Both class and component specified"
             self.component = class_()
@@ -115,8 +137,9 @@ class SecuredUtilityDirective:
             self.component = component
         self._context = _context
         self.provides = provides
+        self.name = name
         self.permission_collector = PermissionCollectingContext()
-        self.contentdirective = ContentDirective(
+        self.contentdirective = ClassDirective(
             self.permission_collector, class_)
 
     def require(self, _context, **kw):
@@ -132,10 +155,10 @@ class SecuredUtilityDirective:
         # of the zcml.
         checker = Checker(
             self.permission_collector.get_permissions,
-            self.permission_collector.set_permissions
-            )
+            self.permission_collector.set_permissions)
         component = ProxyFactory(self.component, checker=checker)
-        utility(self._context, self.provides, component=component)
+        utility(
+            self._context, self.provides, component=component, name=self.name)
         return ()
 
 
@@ -144,29 +167,24 @@ class IURLDirective(Interface):
 
     for_ = GlobalObject(
         title=u"Specification of the object that has this canonical url",
-        required=True
-        )
+        required=True)
 
     urldata = GlobalObject(
         title=u"Adapter to ICanonicalUrlData for this object.",
-        required=False
-        )
+        required=False)
 
     path_expression = TextLine(
         title=u"TALES expression that evaluates to the path"
                " relative to the parent object.",
-        required=False
-        )
+        required=False)
 
     attribute_to_parent = PythonIdentifier(
         title=u"Name of the attribute that gets you to the parent object",
-        required=False
-        )
+        required=False)
 
     parent_utility = GlobalObject(
         title=u"Interface of the utility that is the parent of the object",
-        required=False
-        )
+        required=False)
 
     rootsite = PythonIdentifier(
         title=u"Name of the site this URL has as its root."
@@ -174,57 +192,56 @@ class IURLDirective(Interface):
         required=False)
 
 
-class IMenusDirective(Interface):
+class IGlueDirective(Interface):
+    """ZCML glue to register some classes perform an action.
+
+    For each class in the classes list, found in the specified module, the
+    handler will hookup the class to do something.  Since this is a fairly
+    generic mechanism, what that 'something' is isn't important.
+    """
+    module = GlobalObject(
+        title=u"Module in which the classes are found.")
+
+    classes = Tokens(
+        value_type=PythonIdentifier(),
+        title=u"Space separated list of classes to register.",
+        required=True)
+
+
+class IMenusDirective(IGlueDirective):
     """Hook up facets and menus."""
 
-    module = GlobalObject(
-        title=u"Module in which menu classes are found.",
-        required=True
-        )
 
-    classes = Tokens(
-        value_type=PythonIdentifier(),
-        title=u"Space separated list of classes to be registered as menus.",
-        required=True
-        )
-
-
-class INavigationDirective(Interface):
+class INavigationDirective(IGlueDirective):
     """Hook up traversal etc."""
 
-    module = GlobalObject(
-        title=u"Module in which menu classes are found.",
-        required=True
-        )
+    layer = GlobalInterface(
+        title=u"The layer where this navigation is going to be available.",
+        required=False)
 
-    classes = Tokens(
-        value_type=PythonIdentifier(),
-        title=u"Space separated list of classes to be registered as navigation"
-               " components",
-        required=True
-        )
+
+class IFeedsDirective(IGlueDirective):
+    """Hook up feeds."""
 
 
 class IFaviconDirective(Interface):
 
     for_ = GlobalObject(
         title=u"Specification of the object that has this favicon",
-        required=True
-        )
+        required=True)
 
     file = Path(
         title=u"Path to the image file",
-        required=True
-        )
+        required=True)
 
 
 def menus(_context, module, classes):
-    """Handler for the IMenusDirective."""
+    """Handler for the `IMenusDirective`."""
     if not inspect.ismodule(module):
         raise TypeError("module attribute must be a module: %s, %s" %
                         module, type(module))
-    menutypes = [IFacetMenu, IApplicationMenu, IContextMenu]
-    applicationmenutypes = [IApplicationMenu]
+    menutypes = [IFacetMenu, IApplicationMenu, IContextMenu, INavigationMenu]
+    applicationmenutypes = [IApplicationMenu, INavigationMenu]
     for menuname in classes:
         menuclass = getattr(module, menuname)
         implemented = None
@@ -252,8 +269,32 @@ def menus(_context, module, classes):
                 permission=PublicPermission)
 
 
-def navigation(_context, module, classes):
-    """Handler for the INavigationDirective."""
+def feeds(_context, module, classes):
+    """Handler for the `IFeedsDirective`."""
+    if not inspect.ismodule(module):
+        raise TypeError("module attribute must be a module: %s, %s" %
+                        module, type(module))
+
+    for feedclassname in classes:
+        feedclass = getattr(module, feedclassname)
+
+        for_ = feedclass.usedfor
+
+        feedname = feedclass.feedname
+
+        atom_name = '%s.atom' % feedname
+        html_fragment_name = '%s.html' % feedname
+        javascript_name = '%s.js' % feedname
+
+        layer = FeedsLayer
+
+        for name in atom_name, html_fragment_name, javascript_name:
+            original_page(_context, name, PublicPermission, for_,
+                          layer=layer, class_=feedclass)
+
+
+def navigation(_context, module, classes, layer=IDefaultBrowserLayer):
+    """Handler for the `INavigationDirective`."""
     if not inspect.ismodule(module):
         raise TypeError("module attribute must be a module: %s, %s" %
                         module, type(module))
@@ -266,35 +307,17 @@ def navigation(_context, module, classes):
         for_ = [navclass.usedfor]
 
         # Register the navigation as the traversal component.
-        layer = IDefaultBrowserLayer
         provides = IBrowserPublisher
         name = ''
-        view(_context, factory, IBrowserRequest, name, for_, layer,
+        view(_context, factory, layer, name, for_,
                 permission=PublicPermission, provides=provides,
                 allowed_interface=[IBrowserPublisher])
-        #view(_context, factory, layer, name, for_,
-        #     permission=PublicPermission, provides=provides)
-
-        # Also register the navigation as a traversal component for XMLRPC.
-        xmlrpc_layer = IXMLRPCRequest
-        view(_context, factory, xmlrpc_layer, name, for_,
-             permission=PublicPermission, provides=provides)
-
-        # Register the navigation a breadcrumb provider.
-        # This needs to be named to avoid the issue with a kind of overlap
-        # with the main IBrowserPublisher registration, and how the publisher
-        # looks up views without asking for a specific interface.
-        layer = IDefaultBrowserLayer
-        provides = IBreadcrumbProvider
-        name = 'breadcrumb'
-        view(_context, factory, IBrowserRequest, name, for_, layer,
-                permission=PublicPermission, provides=provides,
-                allowed_interface=[IBreadcrumbProvider])
 
 
 class InterfaceInstanceDispatcher:
     """Dispatch getitem on names that appear in the interface to the instance.
     """
+
     def __init__(self, interface, instance):
         self.interface = interface
         self.instance = instance
@@ -355,7 +378,7 @@ def url(_context, for_, path_expression=None, urldata=None,
             raise AttributeError('The name "%s" is not in %s.%s'
                 % (attribute_to_parent, for_.__module__, for_.__name__))
     if path_expression is not None:
-        compiled_path_expression = Engine.compile(path_expression)
+        compiled_path_expression = TrustedEngine.compile(path_expression)
 
     # Dead chicken for the namespace gods.
     rootsite_ = rootsite
@@ -367,6 +390,7 @@ def url(_context, for_, path_expression=None, urldata=None,
             _for = for_
             _compiled_path_expression = compiled_path_expression
             rootsite = rootsite_
+
             @property
             def inside(self):
                 return getattr(self.context, attribute_to_parent)
@@ -375,6 +399,7 @@ def url(_context, for_, path_expression=None, urldata=None,
             _for = for_
             _compiled_path_expression = compiled_path_expression
             rootsite = rootsite_
+
             @property
             def inside(self):
                 return getUtility(parent_utility)
@@ -385,17 +410,18 @@ def url(_context, for_, path_expression=None, urldata=None,
 
 
 class FaviconRendererBase:
-
     # subclasses must provide a 'fileobj' member that has 'contentType'
     # and 'data' attributes.
 
     def __call__(self):
-        self.request.response.setHeader('Content-type',
-                                        self.file.contentType)
+        self.request.response.setHeader(
+            'Content-type', self.file.contentType)
         return self.file.data
+
 
 def favicon(_context, for_, file):
     fileobj = Image(open(file, 'rb').read())
+
     class Favicon(FaviconRendererBase):
         file = fileobj
 
@@ -413,7 +439,7 @@ class IAssociatedWithAFacet(Interface):
 
 
 class IPageDirective(
-    zope.app.publisher.browser.metadirectives.IPageDirective,
+    zope.browserpage.metadirectives.IPageDirective,
     IAssociatedWithAFacet):
     """Extended browser:page directive to have an extra 'facet' attribute."""
 
@@ -422,8 +448,7 @@ def page(_context, name, permission, for_,
          layer=IDefaultBrowserLayer, template=None, class_=None,
          allowed_interface=None, allowed_attributes=None,
          attribute='__call__', menu=None, title=None,
-         facet=None
-         ):
+         facet=None):
     """Like the standard 'page' directive, but with an added 'facet' optional
     argument.
 
@@ -448,26 +473,27 @@ def page(_context, name, permission, for_,
 
 
 class IPagesPageSubdirective(
-    zope.app.publisher.browser.metadirectives.IPagesPageSubdirective,
+    zope.browserpage.metadirectives.IPagesPageSubdirective,
     IAssociatedWithAFacet):
     """Extended complex browser:pages directive to have an extra 'facet'
     attribute on the inner <browser:page> element."""
 
 
 class IPagesDirective(
-    zope.app.publisher.browser.metadirectives.IPagesDirective,
+    zope.browserpage.metadirectives.IPagesDirective,
     IAssociatedWithAFacet):
     """Extend the complex browser:pages directive to have an extra 'facet'
     attribute on the outer <browser:pages> element."""
 
 
 class pages(original_pages):
+    """Override the browser:pages directive to set a facet on it."""
 
-    def __init__(self, _context, for_, permission,
+    def __init__(self, _context, permission, for_,
         layer=IDefaultBrowserLayer, class_=None,
         allowed_interface=None, allowed_attributes=None,
         facet=None):
-        original_pages.__init__(self, _context, for_, permission,
+        original_pages.__init__(self, _context, permission, for_,
             layer=layer, class_=class_,
             allowed_interface=allowed_interface,
             allowed_attributes=allowed_attributes)
@@ -482,20 +508,23 @@ class pages(original_pages):
 
 
 class IRenamedPageDirective(Interface):
-    """Schema for the browser:renamed-page directive."""
+    """Schema for the browser:renamed-page directive.
+
+    Use this directive to do redirects instead of the classic way of putting a
+    redirect method in a view, hooked in by a browser:page directive.
+    """
 
     for_ = GlobalObject(
         title=u"Specification of the object that has the renamed page",
-        required=True )
+        required=True)
 
-    layer = LayerField(
+    layer = GlobalInterface(
         title=u"The layer the renamed page is in.",
         description=u"""
         A skin is composed of layers. It is common to put skin
         specific views in a layer named after the skin. If the 'layer'
         attribute is not supplied, it defaults to 'default'.""",
-        required=False,
-        )
+        required=False)
 
     name = zope.schema.TextLine(
         title=u"The name of the old page.",
@@ -515,7 +544,8 @@ class IRenamedPageDirective(Interface):
 
 def renamed_page(_context, for_, name, new_name, layer=IDefaultBrowserLayer,
                  rootsite=None):
-    """Will provide a RedirectView that will redirect to the new_name."""
+    """Will provide a `RedirectView` that will redirect to the new_name."""
+
     def renamed_factory(context, request):
         return RenamedView(
             context, request, new_name=new_name, rootsite=rootsite)
@@ -523,72 +553,9 @@ def renamed_page(_context, for_, name, new_name, layer=IDefaultBrowserLayer,
     _context.action(
         discriminator = ('view', for_, name, IBrowserRequest, layer),
         callable = handler,
-        args = ('provideAdapter',
-                (for_, layer), Interface, name, renamed_factory, _context.info),
-        )
-
-
-class ITourPageDirective(Interface):
-    """Schema for the browser:tour directive."""
-
-    for_ = GlobalObject(
-        title=u"Specification of the object that has the tour page",
-        required=True )
-
-    layer = LayerField(
-        title=u"The layer the tour page is in.",
-        description=u"""
-        A skin is composed of layers. It is common to put skin
-        specific views in a layer named after the skin. If the 'layer'
-        attribute is not supplied, it defaults to 'default'.""",
-        required=False,
-        )
-
-    name = zope.schema.TextLine(
-        title=u"The name of tour page.",
-        description=u"The name shows up in URLs/paths. For example 'foo'.",
-        required=True)
-
-    tour = Path(
-        title=u"Path to the tour XML description.",
-        description=u"The tour description is held in an XML file.",
-        required=True)
-
-
-def tour_page(_context, for_, name, tour, layer=IDefaultBrowserLayer):
-    """Register a new LaunchpadTourView.
-
-    This actually register a dynamically generated subclass that is protected
-    with the configured permission.
-    """
-    tour = os.path.abspath(str(_context.path(tour)))
-    if not os.path.isfile(tour):
-        raise ConfigurationError("No such file", tour)
-
-    cdict = {
-        '__name__' : name,
-        '__tour_file__' : tour,
-        '__init__' : (
-            lambda self, context, request: LaunchpadTourView.__init__(
-                self, context, request, self.__tour_file__))
-        }
-
-    new_class = type(
-        "SimpleLaunchpadTourView for %s" % tour, (LaunchpadTourView, ), cdict)
-
-    # Tours are always public.
-    required = {'__call__': CheckerPublic}
-    for n in IBrowserPublisher.names(all=True):
-        required[n] = CheckerPublic
-
-    defineChecker(new_class, Checker(required))
-
-    _context.action(
-        discriminator = ('view', for_, name, IBrowserRequest, layer),
-        callable = handler,
-        args = ('provideAdapter',
-                (for_, layer), Interface, name, new_class, _context.info),
-        )
+        args = (
+            'registerAdapter',
+            renamed_factory, (for_, layer), Interface, name, _context.info))
 
 
 class IEditFormDirective(
@@ -599,7 +566,7 @@ class IEditFormDirective(
 
 
 class EditFormDirective(
-    zope.app.form.browser.metaconfigure.EditFormDirective):
+    z3c.ptcompat.zcml.EditFormDirective):
 
     # This makes 'facet' a valid attribute for the directive.
     facet = None
@@ -613,7 +580,7 @@ class EditFormDirective(
             new_class = type('SimpleLaunchpadViewClass', (), cdict)
             self.bases += (new_class, )
 
-        zope.app.form.browser.metaconfigure.EditFormDirective.__call__(self)
+        z3c.ptcompat.zcml.EditFormDirective.__call__(self)
 
 
 class IAddFormDirective(
@@ -624,7 +591,7 @@ class IAddFormDirective(
 
 
 class AddFormDirective(
-    zope.app.form.browser.metaconfigure.AddFormDirective):
+    z3c.ptcompat.zcml.AddFormDirective):
 
     # This makes 'facet' a valid attribute for the directive.
     facet = None
@@ -638,117 +605,7 @@ class AddFormDirective(
             new_class = type('SimpleLaunchpadViewClass', (), cdict)
             self.bases += (new_class, )
 
-        zope.app.form.browser.metaconfigure.AddFormDirective.__call__(self)
-
-
-class IGeneralFormDirective(
-    zope.app.form.browser.metadirectives.ICommonFormInformation,
-    IAssociatedWithAFacet):
-    """
-    Define a general form
-
-    The standard Zope addform and editform make many assumptions about the
-    type of data you are expecting, and the sorts of results you want (in
-    particular, they conflate the "interface" of the schema you are using
-    for the rendered form with the interface of any resulting object).
-
-    The Launchpad GeneralForm is simpler - it provides the same ability to
-    render a form automatically but then it allows you to process the
-    user input and do whatever you want with it.
-    """
-
-    description = MessageID(
-        title=u"A longer description of the form.",
-        description=u"""
-        A UI may display this with the item or display it when the
-        user requests more assistance.""",
-        required=False
-        )
-
-    arguments = Tokens(
-        title=u"Arguments",
-        description=u"""
-        A list of field names to supply as positional arguments to the
-        factory.""",
-        required=False,
-        value_type=PythonIdentifier()
-        )
-
-    keyword_arguments = Tokens(
-        title=u"Keyword arguments",
-        description=u"""
-        A list of field names to supply as keyword arguments to the
-        factory.""",
-        required=False,
-        value_type=PythonIdentifier()
-        )
-
-
-class GeneralFormDirective(
-    zope.app.form.browser.metaconfigure.BaseFormDirective):
-
-    view = GeneralFormView
-    default_template = '../templates/template-generalform.pt'
-
-    # This makes 'facet' a valid attribute for the directive:
-    facet = None
-
-    # default form information
-    description = None
-    arguments = None
-    keyword_arguments = None
-
-    def _handle_menu(self):
-        if self.menu or self.title:
-            menuItemDirective(
-                self._context, self.menu, self.for_, '@@' + self.name,
-                self.title, permission=self.permission,
-                description=self.description)
-
-    def _handle_arguments(self, leftover=None):
-        schema = self.schema
-        fields = self.fields
-        arguments = self.arguments
-        keyword_arguments = self.keyword_arguments
-
-        if leftover is None:
-            leftover = fields
-
-        if arguments:
-            missing = [n for n in arguments if n not in fields]
-            if missing:
-                raise ValueError("Some arguments are not included in the form",
-                                 missing)
-            optional = [n for n in arguments if not schema[n].required]
-            if optional:
-                raise ValueError("Some arguments are optional, use"
-                                 " keyword_arguments for them",
-                                 optional)
-            leftover = [n for n in leftover if n not in arguments]
-
-        if keyword_arguments:
-            missing = [n for n in keyword_arguments if n not in fields]
-            if missing:
-                raise ValueError(
-                    "Some keyword_arguments are not included in the form",
-                    missing)
-            leftover = [n for n in leftover if n not in keyword_arguments]
-
-    def __call__(self):
-        facet = self.facet or getattr(self._context, 'facet', None)
-        if facet is not None:
-            cdict = {'__launchpad_facetname__': facet}
-            new_class = type('SimpleLaunchpadViewClass', (), cdict)
-            self.bases += (new_class, )
-        self._processWidgets()
-        #self._handle_menu()
-        self._handle_arguments()
-        self._context.action(
-            discriminator=self._discriminator(),
-            callable=GeneralFormViewFactory,
-            args=self._args()+(self.arguments, self.keyword_arguments),
-            kw={'menu': self.menu},
-            )
+        z3c.ptcompat.zcml.AddFormDirective.__call__(self)
 
 
 class IGroupingFacet(IAssociatedWithAFacet):
@@ -766,7 +623,7 @@ class ISchemaDisplayDirective(
 
 
 class SchemaDisplayDirective(
-    zope.app.form.browser.metaconfigure.SchemaDisplayDirective):
+    z3c.ptcompat.zcml.SchemaDisplayDirective):
 
     # This makes 'facet' a valid attribute for the directive.
     facet = None
@@ -780,6 +637,74 @@ class SchemaDisplayDirective(
             new_class = type('SimpleLaunchpadViewClass', (), cdict)
             self.bases += (new_class, )
 
-        zope.app.form.browser.metaconfigure.SchemaDisplayDirective.__call__(
+        z3c.ptcompat.zcml.SchemaDisplayDirective.__call__(
             self)
 
+
+class ICallDirective(Interface):
+    """Call the given callable.
+
+    This is useful when you have something that you want to call at startup
+    but don't want it tied to a specific zope event.  Or when you need to
+    register utilities in python at the time the zcml is processed.
+    """
+
+    callable = GlobalObject(
+        title=u"The thing that will be called.", required=True)
+
+
+def call(_context, callable):
+    callable()
+
+
+class IDefineLaunchpadPermissionDirective(IPermissionDirective):
+
+    access_level = TextLine(
+        title=u"Access level", required=False,
+        description=u"Either read or write")
+
+
+class ILaunchpadPermission(IPermission):
+
+    access_level = IDefineLaunchpadPermissionDirective['access_level']
+
+
+class LaunchpadPermission(Permission):
+    implements(ILaunchpadPermission)
+
+    def __init__(self, id, title, access_level, description):
+        assert access_level in ["read", "write"], (
+            "Unknown access level (%s). Must be either read or write."
+            % access_level)
+        super(LaunchpadPermission, self).__init__(id, title, description)
+        self.access_level = access_level
+
+
+def definePermission(_context, id, title, access_level="write",
+                     description=''):
+    permission = LaunchpadPermission(id, title, access_level, description)
+    utility(_context, ILaunchpadPermission, permission, name=id)
+
+
+_arbitrary_priority = 12
+
+
+def launchpadPublisher(_context, name, factory, methods=['*'],
+                       mimetypes=['*'], priority=None, vhost_name=None):
+    # This overrides zope's definition of the <publisher> directive to
+    # supply an arbitrary unique priority if none is explicitly
+    # supplied -- we don't care about the priority in Launchpad but it
+    # needs to be unique -- and to do nothing if no hostname is
+    # configured for this publisher.
+
+    # shipit, uniquely, uses a different name in its <publisher>
+    # directives to the name of the section in the config.
+    if not name.startswith('shipit'):
+        section = getattr(config.vhost, name, None)
+        if section is None or section.hostname is None:
+            return
+    global _arbitrary_priority
+    if priority is None:
+        _arbitrary_priority += 1
+        priority = _arbitrary_priority
+    publisher(_context, name, factory, methods, mimetypes, priority)

@@ -8,14 +8,14 @@ internal port for these private XML-RPC end points.  These internal-only end
 points are not available on the public XML-RPC port.
 
     >>> public_root = 'http://test@canonical.com:test@xmlrpc.launchpad.dev/'
-    >>> private_root = 'http://xmlrpc.launchpad.dev:8087/'
+    >>> private_root = 'http://xmlrpc-private.launchpad.dev:8087/'
 
 For example, the team mailing list feature requires a connection between an
 internal Mailman server and Launchpad.  This end point is not available on the
 external XML-RPC port.
 
     >>> import xmlrpclib
-    >>> from canonical.functional import XMLRPCTestTransport
+    >>> from lp.testing.xmlrpc import XMLRPCTestTransport
     >>> external_api = xmlrpclib.ServerProxy(
     ...    public_root + 'mailinglists/',
     ...    transport=XMLRPCTestTransport())
@@ -43,9 +43,10 @@ the external port.
     ...    transport=XMLRPCTestTransport())
     >>> external_api.filebug(dict(
     ...     product='firefox', summary='the summary', comment='the comment'))
-    'http://bugs.launchpad.dev/bugs/15'
+    'http://bugs.launchpad.dev/bugs/16'
 
-But it is not available on the internal port.
+There is an interal bugs api, too, but that doesn't share the same
+methods as those exposed publicly.
 
     >>> internal_api = xmlrpclib.ServerProxy(
     ...     private_root + 'bugs/',
@@ -54,5 +55,13 @@ But it is not available on the internal port.
     ...     product='firefox', summary='the summary', comment='the comment'))
     Traceback (most recent call last):
     ...
-    ProtocolError: <ProtocolError for xmlrpc.launchpad.dev:8087/bugs/:
+    ProtocolError: <ProtocolError for xmlrpc-private.launchpad.dev:8087/bugs/:
     404 404 Not Found>
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+    >>> token_string = internal_api.newBugTrackerToken()
+    >>> token = getUtility(ILoginTokenSet)[token_string]
+    >>> token
+    <LoginToken at ...>
+

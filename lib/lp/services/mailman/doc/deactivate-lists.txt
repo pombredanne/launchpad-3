@@ -1,0 +1,52 @@
+==========================
+Deactivating mailing lists
+==========================
+
+A team administrator can also deactivate a mailing list.  Mailman handles this
+by archiving and deleting the mailing list data, which allows for easy
+reconstitution later.
+
+First, create the mailing list, which will send notification messages
+to all the members of the mailing list.  We can ignore these messages.
+
+    >>> from lp.services.mailman.testing import helpers
+    >>> list_one = helpers.create_list('itest-one')
+
+Because the mailing list is active, there is no archived backup file.
+
+    >>> from Mailman import mm_cfg
+    >>> import os
+    >>> backup_file = os.path.join(mm_cfg.VAR_PREFIX,
+    ...                            'backups', 'itest-one.tgz')
+    >>> os.path.exists(backup_file)
+    False
+
+The team administrator can deactivate the list through the web.
+
+    >>> from canonical.testing.layers import BaseLayer
+    >>> root_url = BaseLayer.appserver_root_url()
+    >>> browser = Browser('no-priv@canonical.com:test')
+    >>> browser.open('%s/~itest-one/+mailinglist' % root_url)
+    >>> browser.getControl('Deactivate this Mailing List').click()
+    >>> xmlrpc_watcher.wait_for_deactivation('itest-one')
+
+As far as Mailman is concerned, the mailing list no longer exists.
+
+    >>> from Mailman.Utils import list_names
+    >>> sorted(name for name in list_names() if name.startswith('itest-'))
+    []
+
+The list data has been backed up into the archive directory.  The backup is a
+gzip'd tarfile containing the list's pickle data.
+
+    >>> os.path.exists(backup_file)
+    True
+    >>> import tarfile
+    >>> tarball = tarfile.open(backup_file, 'r:gz')
+    >>> for name in sorted(tarball.getnames()):
+    ...     # XXX: 2010-04-26, Salgado, bug=570244: The .rstrip('/') is to
+    ...     # make this pass on python2.5 and 2.6.
+    ...     print name.rstrip('/')
+    itest-one
+    itest-one/config.pck
+    itest-one/config.pck.last
