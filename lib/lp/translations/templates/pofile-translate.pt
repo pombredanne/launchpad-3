@@ -63,10 +63,9 @@
       <!-- Sharing information -->
       <div tal:condition="features/translations.sharing_information.enabled">
         <div id="sharing-information"
-             tal:condition="view/is_sharing"
-             tal:define="sharing_pofile view/sharing_pofile;
+             tal:condition="view/is_sharing">
+          <p tal:define="sharing_pofile view/sharing_pofile;
                          template sharing_pofile/potemplate">
-          <p>
             These translations are shared with
               <a class="sprite package-source"
                 tal:condition="view/is_upstream_pofile"
