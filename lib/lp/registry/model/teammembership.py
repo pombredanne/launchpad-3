@@ -227,10 +227,10 @@ class TeamMembership(SQLBase):
 
     def sendExpirationWarningEmail(self):
         """See `ITeamMembership`."""
-        # XXX sinzui 2011-02-28:  Change to a test and raise.
-        # Show the team and person
-        assert self.dateexpires is not None, (
-            'This membership has no expiration date')
+        if self.dateexpires is None:
+            raise AssertionError(
+                'This membership has no expiration date: %s in %s' %
+                (self.person.name, self.team.name))
         # XXX sinzui 2011-02-28: Give the date some wiggle room
         # Show the team and person
         assert self.dateexpires > datetime.now(pytz.timezone('UTC')), (

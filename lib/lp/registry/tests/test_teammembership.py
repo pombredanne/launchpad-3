@@ -793,6 +793,14 @@ class TestTeamMembershipSendExpirationWarningEmail(TestCaseWithFactory):
             self.member, self.team)
         pop_notifications()
 
+    def test_error_raised_when_no_expiration(self):
+        # An exception is raised if the membership does not have an
+        # expiration date.
+        self.assertEqual(None, self.tm.dateexpires)
+        message = 'This membership has no expiration date: green in red'
+        self.assertRaisesWithContent(
+            AssertionError, message, self.tm.sendExpirationWarningEmail)
+
     def test_message_sent_for_future_expiration(self):
         # An email is sent to the user whose membership will expire.
         now = datetime.now(pytz.UTC)
