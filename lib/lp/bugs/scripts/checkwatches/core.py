@@ -27,6 +27,7 @@ import socket
 import sys
 import threading
 import time
+from xmlrpclib import ProtocolError
 
 import pytz
 from twisted.internet import reactor
@@ -404,7 +405,7 @@ class CheckwatchesMaster(WorkingBase):
             try:
                 trackers_and_watches = self._getExternalBugTrackersAndWatches(
                     bug_tracker, bug_watches_to_update)
-            except UnknownBugTrackerTypeError, error:
+            except (UnknownBugTrackerTypeError, ProtocolError), error:
                 # We update all the bug watches to reflect the fact that
                 # this error occurred. We also update their last checked
                 # date to ensure that they don't get checked for another
