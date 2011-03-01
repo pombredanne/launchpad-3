@@ -30,9 +30,14 @@
     </li>
     <tal:sourcepackagerecipe condition="view/is_source">
       <li tal:define="sprb context/sourcepackagerelease/source_package_recipe_build" tal:condition="sprb">
-        <a tal:attributes="href sprb/fmt:url">Built</a> by recipe 
-        <a tal:attributes="href sprb/recipe/fmt:url" tal:content="sprb/recipe/name" ></a> for 
-        <a tal:attributes="href sprb/requester/fmt:url" tal:content="sprb/requester/displayname" ></a>.
+        <a tal:attributes="href sprb/fmt:url">Built</a> by
+        <tal:existingrecipe condition="sprb/recipe">
+         recipe <a tal:attributes="href sprb/recipe/fmt:url" tal:content="sprb/recipe/name" ></a>
+        </tal:existingrecipe>
+        <tal:deletedrecipe condition="not: sprb/recipe">
+         deleted recipe
+        </tal:deletedrecipe>
+         for <a tal:attributes="href sprb/requester/fmt:url" tal:content="sprb/requester/displayname" ></a>.
       </li>
     </tal:sourcepackagerecipe>
     <li tal:condition="context/datepublished">

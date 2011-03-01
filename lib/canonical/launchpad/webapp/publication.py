@@ -85,6 +85,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.services import features
 from lp.services.features.flags import NullFeatureController
+from lp.services.osutils import open_for_writing
 
 
 METHOD_WRAPPER_TYPE = type({}.__setitem__)
@@ -245,7 +246,8 @@ class LaunchpadBrowserPublication(
         notify(StartRequestEvent(request))
         request._traversalticks_start = tickcount.tickcount()
         threadid = thread.get_ident()
-        threadrequestfile = open('logs/thread-%s.request' % threadid, 'w')
+        threadrequestfile = open_for_writing(
+            'logs/thread-%s.request' % threadid, 'w')
         try:
             request_txt = unicode(request).encode('UTF-8')
         except Exception:

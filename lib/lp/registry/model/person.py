@@ -163,14 +163,14 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
-from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.validators.name import (
-    sanitize_name,
-    valid_name,
-    )
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.lazr.utils import get_current_browser_request
+from lp.app.validators.email import valid_email
+from lp.app.validators.name import (
+    sanitize_name,
+    valid_name,
+    )
 from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
@@ -4485,7 +4485,7 @@ def _is_nick_registered(nick):
 def generate_nick(email_addr, is_registered=_is_nick_registered):
     """Generate a LaunchPad nick from the email address provided.
 
-    See canonical.launchpad.validators.name for the definition of a
+    See lp.app.validators.name for the definition of a
     valid nick.
 
     It is technically possible for this function to raise a

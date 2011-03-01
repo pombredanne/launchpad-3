@@ -294,6 +294,9 @@ from lp.translations.interfaces.translator import ITranslatorSet
 from lp.translations.model.translationimportqueue import (
     TranslationImportQueueEntry,
     )
+from lp.translations.model.translationtemplateitem import (
+    TranslationTemplateItem,
+    )
 from lp.translations.utilities.sanitize import (
     sanitize_translations_from_webui,
     )
@@ -1670,6 +1673,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(IBugTrackerSet).ensureBugTracker(
             base_url, owner, bugtrackertype, title=title, name=name)
 
+    def makeBugTrackerWithWatches(self, base_url=None, count=2):
+        """Make a new bug tracker with some watches."""
+        bug_tracker = self.makeBugTracker(base_url=base_url)
+        bug_watches = [
+            self.makeBugWatch(bugtracker=bug_tracker)
+            for i in range(count)]
+        return (bug_tracker, bug_watches)
+
     def makeBugTrackerComponentGroup(self, name=None, bug_tracker=None):
         """Make a new bug tracker component group."""
         if name is None:
@@ -2841,6 +2852,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             'Cannot specify both language and pofile.')
         assert None in (side, pofile), (
             'Cannot specify both side and pofile.')
+        link_potmsgset_with_potemplate = (
+            (pofile is None and potemplate is None) or potmsgset is None)
         if pofile is None:
             pofile = self.makePOFile(
                 language=language, side=side, potemplate=potemplate)
@@ -2850,6 +2863,19 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         potemplate = pofile.potemplate
         if potmsgset is None:
             potmsgset = self.makePOTMsgSet(potemplate)
+        if link_potmsgset_with_potemplate:
+            # If we have a new pofile or a new potmsgset, we must link
+            # the potmsgset to the pofile's potemplate.
+            potmsgset.setSequence(
+                pofile.potemplate, self.getUniqueInteger())
+        else:
+            # Otherwise it is the duty of the callsite to ensure
+            # consistency.
+            store = IStore(TranslationTemplateItem)
+            tti_for_message_in_template = store.find(
+                TranslationTemplateItem.potmsgset == potmsgset,
+                TranslationTemplateItem.potemplate == pofile.potemplate).any()
+            assert tti_for_message_in_template is not None
         if translator is None:
             translator = self.makePerson()
         if reviewer is None:

@@ -23,8 +23,8 @@ from zope.app.form.interfaces import (
 from zope.component import getUtility
 from zope.schema.interfaces import ConstraintNotSatisfied
 
-from canonical.launchpad.validators import LaunchpadValidationError
 from lp.app.errors import NotFoundError
+from lp.app.validators import LaunchpadValidationError
 from lp.bugs.interfaces.bug import IBugSet
 
 

@@ -364,6 +364,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         self.assertEquals(
             self.potmsgset.getExternallyUsedTranslationMessages(language),
             [])
+        self.assertEquals(
+            self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                language)[1],
+            [])
 
         # If there are only suggestions on the external POTMsgSet,
         # no externally used suggestions are returned.
@@ -374,6 +378,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         self.assertEquals(
             self.potmsgset.getExternallyUsedTranslationMessages(language),
+            [])
+        self.assertEquals(
+            self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                language)[1],
             [])
 
         # If there is a translation for the other side on the external
@@ -387,6 +395,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         self.assertEquals(
             self.potmsgset.getExternallyUsedTranslationMessages(language),
             [other_translation])
+        self.assertEquals(
+            self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                language)[1],
+            [other_translation])
 
         # If there is a current translation on the external POTMsgSet,
         # it is returned as the externally used suggestion as well.
@@ -397,6 +409,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         self.assertContentEqual(
             self.potmsgset.getExternallyUsedTranslationMessages(language),
+            [other_translation, current_translation])
+        self.assertEquals(
+            self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                language)[1],
             [other_translation, current_translation])
 
     def test_getExternallySuggestedTranslationMessages(self):
@@ -422,6 +438,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             self.potmsgset.getExternallySuggestedTranslationMessages(
                 language),
             [])
+        self.assertEquals(
+            self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                language)[0],
+            [])
 
         # If there is a suggestion on the external POTMsgSet,
         # it is returned.
@@ -433,6 +453,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         self.assertEquals(
             self.potmsgset.getExternallySuggestedTranslationMessages(
                 language),
+            [external_suggestion])
+        self.assertEquals(
+            self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                language)[0],
             [external_suggestion])
 
         # If there is a translation for the other side on the external
@@ -446,6 +470,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             self.potmsgset.getExternallySuggestedTranslationMessages(
                 language),
             [external_suggestion])
+        self.assertEquals(
+            self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                language)[0],
+            [external_suggestion])
 
         # A current translation on the external POTMsgSet is not
         # considered an external suggestion.
@@ -457,6 +485,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         self.assertEquals(
             self.potmsgset.getExternallySuggestedTranslationMessages(
                 language),
+            [external_suggestion])
+        self.assertEquals(
+            self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                language)[0],
             [external_suggestion])
 
     def test_hasTranslationChangedInLaunchpad(self):
@@ -920,6 +952,8 @@ class TestPOTMsgSetResetTranslation(TestCaseWithFactory):
 
         message_this = self.factory.makeCurrentTranslationMessage(
             pofile=self.pofile, potmsgset=self.potmsgset)
+        self.potmsgset.setSequence(
+            other_potemplate, self.factory.getUniqueInteger())
         message_other = self.factory.makeCurrentTranslationMessage(
             pofile=other_pofile, potmsgset=self.potmsgset)
         traits = getUtility(ITranslationSideTraitsSet).getTraits(
@@ -1323,6 +1357,7 @@ class TestPOTMsgSet_submitSuggestion(TestCaseWithFactory):
             productseries=series2, name=pofile.potemplate.name)
         pofile2 = template2.getPOFileByLang(pofile.language.code)
         translation = {0: self.factory.getUniqueString()}
+        potmsgset.setSequence(template2, self.factory.getUniqueInteger())
         diverged_message = self.factory.makeCurrentTranslationMessage(
             pofile=pofile2, potmsgset=potmsgset, translator=owner,
             translations=translation, diverged=True)
@@ -1771,6 +1806,8 @@ class TestFindTranslationMessage(TestCaseWithFactory):
         diverged = self.factory.makeDivergedTranslationMessage(
             pofile=pofile, potmsgset=potmsgset,
             translations=translations)
+        potmsgset.setSequence(
+            other_pofile.potemplate, self.factory.getUniqueInteger())
         shared = self.factory.makeCurrentTranslationMessage(
             pofile=other_pofile, potmsgset=potmsgset,
             translations=translations)
@@ -1839,6 +1876,8 @@ class TestFindTranslationMessage(TestCaseWithFactory):
         other_pofile = self.factory.makePOFile(pofile.language.code)
         potmsgset.setSequence(pofile.potemplate, 1)
 
+        potmsgset.setSequence(
+            other_pofile.potemplate, self.factory.getUniqueInteger())
         self.factory.makeCurrentTranslationMessage(
             pofile=other_pofile, potmsgset=potmsgset,
             translations=translations, diverged=True)

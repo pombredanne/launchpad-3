@@ -12,7 +12,7 @@ __all__ = [
 
 import os
 
-from canonical.launchpad.validators.name import sanitize_name
+from lp.app.validators.name import sanitize_name
 
 
 GENERIC_TEMPLATE_NAMES = [
