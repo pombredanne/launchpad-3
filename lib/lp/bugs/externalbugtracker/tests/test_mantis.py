@@ -5,11 +5,19 @@
 
 __metaclass__ = type
 
-from testtools.matchers import Equals
+from testtools.matchers import Equals, Is
+import urllib2
 
+from canonical.testing.layers import ZopelessLayer
 from lp.bugs.externalbugtracker import UnparsableBugData
-from lp.bugs.externalbugtracker.mantis import MantisBugBatchParser
-from lp.testing import TestCase
+from lp.bugs.externalbugtracker.mantis import (
+    Mantis,
+    MantisBugBatchParser,
+    )
+from lp.testing import (
+    monkey_patch,
+    TestCase,
+    )
 from lp.services.log.logger import BufferLogger
 
 
@@ -84,3 +92,19 @@ class TestMantisBugBatchParser(TestCase):
         log = self.logger.getLogBuffer()
         self.assertThat(
             log, Equals("WARNING Encountered invalid bug ID: 'bar'.\n"))
+
+
+class TestMantisBugTracker(TestCase):
+    """Tests for various methods of the Manits bug tracker."""
+
+    layer = ZopelessLayer
+
+    def test_csv_data_on_post_404(self):
+        # If the 'view_all_set.php' request raises a 404, then the csv_data
+        # attribute is None.
+        base_url = "http://example.com/"
+        def raise404(self, request, data):
+            raise urllib2.HTTPError('url', 404, 'Not Found', None, None)
+        with monkey_patch(Mantis, urlopen=raise404):
+            bugtracker = Mantis(base_url)
+            self.assertThat(bugtracker.csv_data, Is(None))

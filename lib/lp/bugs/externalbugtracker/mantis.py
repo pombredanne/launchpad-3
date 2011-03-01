@@ -244,7 +244,10 @@ class Mantis(ExternalBugTracker):
            'search': '',
            'filter': 'Apply Filter',
         }
-        self.page = self._postPage("view_all_set.php?f=3", data)
+        try:
+            self._postPage("view_all_set.php?f=3", data)
+        except BugTrackerConnectError:
+            return None
 
         # Finally grab the full CSV export, which uses the
         # MANTIS_VIEW_ALL_COOKIE set in the previous step to specify
