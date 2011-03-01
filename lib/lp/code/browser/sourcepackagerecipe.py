@@ -15,7 +15,6 @@ __all__ = [
     ]
 
 import itertools
-import simplejson
 
 from bzrlib.plugins.builder.recipe import (
     ForbiddenInstructionError,
@@ -25,6 +24,7 @@ from bzrlib.plugins.builder.recipe import (
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import use_template
+import simplejson
 from storm.locals import Store
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser.widget import Widget
@@ -38,8 +38,8 @@ from zope.interface import (
     providedBy,
     )
 from zope.schema import (
-    Field,
     Choice,
+    Field,
     List,
     Text,
     TextLine,
@@ -52,7 +52,6 @@ from zope.schema.vocabulary import (
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad.browser.launchpad import Hierarchy
-from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,
@@ -78,6 +77,7 @@ from lp.app.browser.lazrjs import (
     TextAreaEditorWidget,
     )
 from lp.app.browser.tales import format_link
+from lp.app.validators.name import name_validator
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadRadioWidget,
