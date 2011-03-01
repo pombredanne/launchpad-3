@@ -555,6 +555,7 @@ BugMessage""" % sqlvalues(self.id))
     def bugtasks(self):
         """See `IBug`."""
         # \o/ circular imports.
+        from lp.bugs.model.bugwatch import BugWatch
         from lp.registry.model.distribution import Distribution
         from lp.registry.model.distroseries import DistroSeries
         from lp.registry.model.product import Product
@@ -570,7 +571,8 @@ BugMessage""" % sqlvalues(self.id))
         IDs = set(map(operator.attrgetter('assigneeID'), tasks))
         IDs.discard(None)
         if IDs:
-            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(IDs))
+            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                IDs, need_validity=True))
         def load_something(attrname, klass):
             IDs = set(map(operator.attrgetter(attrname), tasks))
             IDs.discard(None)
@@ -582,6 +584,7 @@ BugMessage""" % sqlvalues(self.id))
         load_something('distributionID', Distribution)
         load_something('distroseriesID', DistroSeries)
         load_something('sourcepackagenameID', SourcePackageName)
+        list(store.find(BugWatch, BugWatch.bugID == self.id))
         return sorted(tasks, key=bugtask_sort_key)
 
     @property
