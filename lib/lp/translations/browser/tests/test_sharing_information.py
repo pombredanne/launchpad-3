@@ -33,6 +33,23 @@ def enable_translations_on_distroseries(distroseries):
 class TestSharingInfoMixin:
     """Test display of sharing info."""
 
+    def _makePackagingAndTemplates(self, side):
+        """Create a packaging links and the templates on each side of it.
+
+        Returns the template for the requested side.
+        """
+        upstream_template = self.factory.makePOTemplate()
+        packaging = self.factory.makePackagingLink(
+            productseries=upstream_template.productseries, in_ubuntu=True)
+        ubuntu_template = self.factory.makePOTemplate(
+            distroseries=packaging.distroseries,
+            sourcepackagename=packaging.sourcepackagename,
+            name=upstream_template.name)
+        if side == TranslationSide.UPSTREAM:
+            return upstream_template
+        else:
+            return ubuntu_template
+
     def makeNotSharingObject(self):
         """Create an object that is not sharing."""
         raise NotImplementedError
@@ -81,13 +98,7 @@ class TestUpstreamPOTemplateSharingInfo(BrowserTestCase,
         Ubuntu source package."""
 
     def makeSharingObject(self):
-        template = self.factory.makePOTemplate()
-        packaging = self.factory.makePackagingLink(
-            productseries=template.productseries, in_ubuntu=True)
-        self.factory.makePOTemplate(
-            distroseries=packaging.distroseries,
-            sourcepackagename=packaging.sourcepackagename,
-            name=template.name)
+        template = self._makePackagingAndTemplates(TranslationSide.UPSTREAM)
         return template
 
     SHARING_TEXT = """
@@ -106,15 +117,10 @@ class TestPOFileSharingInfo(BrowserTestCase,
     NOT_SHARING_TEXT = None
 
     def makeSharingObject(self):
-        pofile = self.factory.makePOFile()
-        packaging = self.factory.makePackagingLink(
-            productseries=pofile.potemplate.productseries,
-            in_ubuntu=True)
-        # This will also create a copy of pofile.
-        self.factory.makePOTemplate(
-            distroseries=packaging.distroseries,
-            sourcepackagename=packaging.sourcepackagename,
-            name=pofile.potemplate.name)
+        template = self._makePackagingAndTemplates(TranslationSide.UPSTREAM)
+        # This will also create a copy of pofile in the sharing template.
+        pofile = self.factory.makePOFile(
+            potemplate=template, create_sharing=True)
         return pofile
 
     SHARING_TEXT = """
@@ -136,13 +142,7 @@ class TestUpstreamSharingInfo(BrowserTestCase, TestSharingInfoMixin):
         package."""
 
     def makeSharingObject(self):
-        template = self.factory.makePOTemplate()
-        packaging = self.factory.makePackagingLink(
-            productseries=template.productseries, in_ubuntu=True)
-        self.factory.makePOTemplate(
-            distroseries=packaging.distroseries,
-            sourcepackagename=packaging.sourcepackagename,
-            name=template.name)
+        template = self._makePackagingAndTemplates(TranslationSide.UPSTREAM)
         return template.productseries
 
     SHARING_TEXT = """
@@ -164,14 +164,8 @@ class TestUbuntuPOTemplateSharingInfo(BrowserTestCase, TestSharingInfoMixin):
         upstream project."""
 
     def makeSharingObject(self):
-        upstream_template = self.factory.makePOTemplate()
-        packaging = self.factory.makePackagingLink(
-            productseries=upstream_template.productseries, in_ubuntu=True)
-        template = self.factory.makePOTemplate(
-            distroseries=packaging.distroseries,
-            sourcepackagename=packaging.sourcepackagename,
-            name=upstream_template.name)
-        enable_translations_on_distroseries(packaging.distroseries)
+        template = self._makePackagingAndTemplates(TranslationSide.UBUNTU)
+        enable_translations_on_distroseries(template.distroseries)
         return template
 
     SHARING_TEXT = """
@@ -194,15 +188,9 @@ class TestUbuntuSharingInfo(BrowserTestCase, TestSharingInfoMixin):
         project."""
 
     def makeSharingObject(self):
-        upstream_template = self.factory.makePOTemplate()
-        packaging = self.factory.makePackagingLink(
-            productseries=upstream_template.productseries, in_ubuntu=True)
-        self.factory.makePOTemplate(
-            distroseries=packaging.distroseries,
-            sourcepackagename=packaging.sourcepackagename,
-            name=upstream_template.name)
-        enable_translations_on_distroseries(packaging.distroseries)
-        return packaging.sourcepackage
+        template = self._makePackagingAndTemplates(TranslationSide.UBUNTU)
+        enable_translations_on_distroseries(template.distroseries)
+        return template.sourcepackage
 
     SHARING_TEXT = """
         This source package is sharing translations with .*"""
