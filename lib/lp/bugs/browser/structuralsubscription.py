@@ -359,10 +359,7 @@ def expose_enum_to_js(request, enum, name):
     """Make a list of enum titles and value available to JavaScript."""
     info = []
     for item in enum:
-        info.append({
-            'title': item.title,
-            'value': item.value.value,
-        })
+        info.append(item.title)
     IJSONRequestCache(request).objects[name] = info
 
 
