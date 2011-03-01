@@ -26,7 +26,10 @@ import datetime
 from itertools import chain
 from operator import attrgetter
 
-from lazr.enum import DBItem
+from lazr.enum import (
+    DBItem,
+    Item,
+    )
 import pytz
 from sqlobject import (
     ForeignKey,
@@ -144,7 +147,10 @@ from lp.registry.interfaces.distroseries import (
     IDistroSeries,
     IDistroSeriesSet,
     )
-from lp.registry.interfaces.milestone import IProjectGroupMilestone
+from lp.registry.interfaces.milestone import (
+    IMilestoneSet,
+    IProjectGroupMilestone,
+    )
 from lp.registry.interfaces.person import (
     IPerson,
     validate_person,
@@ -1558,6 +1564,13 @@ class BugTaskSet:
             SpecificationBug.bugID.is_in(bug_ids)))
         bug_ids_with_branches = set(IStore(BugBranch).find(
                 BugBranch.bugID, BugBranch.bugID.is_in(bug_ids)))
+        # Badging looks up milestones too : eager load into the storm cache.
+        milestoneset = getUtility(IMilestoneSet)
+        # And trigger a load:
+        milestone_ids = set(map(attrgetter('milestoneID'), bugtasks))
+        milestone_ids.discard(None)
+        if milestone_ids:
+            list(milestoneset.getByIds(milestone_ids))
 
         # Check if the bugs are cached. If not, cache all uncached bugs
         # at once to avoid one query per bugtask. We could rely on the
@@ -1913,7 +1926,9 @@ class BugTaskSet:
                 ssub_match_milestone)
 
             join_tables.append(
-                (Product, LeftJoin(Product, BugTask.productID == Product.id)))
+                (Product, LeftJoin(Product, And(
+                                BugTask.productID == Product.id,
+                                Product.active))))
             join_tables.append(
                 (StructuralSubscription,
                  Join(StructuralSubscription, join_clause)))
@@ -1921,6 +1936,28 @@ class BugTaskSet:
                 'StructuralSubscription.subscriber = %s'
                 % sqlvalues(params.structural_subscriber))
             has_duplicate_results = True
+
+
+        # Remove bugtasks from deactivated products, if necessary.
+        # We don't have to do this if
+        # 1) We're searching on bugtasks for a specific product
+        # 2) We're searching on bugtasks for a specific productseries
+        # 3) We're searching on bugtasks for a distribution
+        # 4) We're searching for bugtasks for a distroseries
+        # because in those instances we don't have arbitrary products which
+        # may be deactivated showing up in our search.
+        if (params.product is None and
+            params.distribution is None and
+            params.productseries is None and
+            params.distroseries is None):
+            # Prevent circular import problems.
+            from lp.registry.model.product import Product
+            extra_clauses.append(
+                "(Bugtask.product IS NULL OR Product.active = TRUE)")
+            join_tables.append(
+                (Product, LeftJoin(Product, And(
+                                BugTask.productID == Product.id,
+                                Product.active))))
 
         if params.component:
             clauseTables += [SourcePackagePublishingHistory,
@@ -2053,20 +2090,24 @@ class BugTaskSet:
         if hw_clause is not None:
             extra_clauses.append(hw_clause)
 
-        if params.linked_branches == BugBranchSearch.BUGS_WITH_BRANCHES:
+        if zope_isinstance(params.linked_branches, Item):
+            if params.linked_branches == BugBranchSearch.BUGS_WITH_BRANCHES:
+                extra_clauses.append(
+                    """EXISTS (
+                        SELECT id FROM BugBranch WHERE BugBranch.bug=Bug.id)
+                    """)
+            elif params.linked_branches == BugBranchSearch.BUGS_WITHOUT_BRANCHES:
+                extra_clauses.append(
+                    """NOT EXISTS (
+                        SELECT id FROM BugBranch WHERE BugBranch.bug=Bug.id)
+                    """)
+        elif zope_isinstance(params.linked_branches, (any, all, int)):
+            # A specific search term has been supplied.
             extra_clauses.append(
                 """EXISTS (
-                    SELECT id FROM BugBranch WHERE BugBranch.bug=Bug.id)
-                """)
-        elif params.linked_branches == BugBranchSearch.BUGS_WITHOUT_BRANCHES:
-            extra_clauses.append(
-                """NOT EXISTS (
-                    SELECT id FROM BugBranch WHERE BugBranch.bug=Bug.id)
-                """)
-        else:
-            # If no branch specific search restriction is specified,
-            # we don't need to add any clause.
-            pass
+                    SELECT TRUE FROM BugBranch WHERE BugBranch.bug=Bug.id AND
+                    BugBranch.branch %s)
+                """ % search_value_to_where_condition(params.linked_branches))
 
         linked_blueprints_clause = self._buildBlueprintRelatedClause(params)
         if linked_blueprints_clause is not None:
@@ -2089,7 +2130,6 @@ class BugTaskSet:
         if not decorators:
             decorator = lambda x: x
         else:
-
             def decorator(obj):
                 for decor in decorators:
                     obj = decor(obj)
@@ -2226,7 +2266,8 @@ class BugTaskSet:
                 AND MessageChunk.fti @@ ftq(%s))""" % searchtext_quoted
         text_search_clauses = [
             "Bug.fti @@ ftq(%s)" % searchtext_quoted,
-            "BugTask.fti @@ ftq(%s)" % searchtext_quoted]
+            "BugTask.fti @@ ftq(%s)" % searchtext_quoted,
+            ]
         no_targetnamesearch = bool(features.getFeatureFlag(
             'malone.disable_targetnamesearch'))
         if not no_targetnamesearch:
@@ -2364,8 +2405,9 @@ class BugTaskSet:
         origin = [BugTask]
         already_joined = set(origin)
         for table, join in join_tables:
-            origin.append(join)
-            already_joined.add(table)
+            if table not in already_joined:
+                origin.append(join)
+                already_joined.add(table)
         for table, join in prejoin_tables:
             if table not in already_joined:
                 origin.append(join)

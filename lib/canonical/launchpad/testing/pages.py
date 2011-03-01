@@ -679,6 +679,21 @@ def setupBrowser(auth=None):
     return browser
 
 
+def setupBrowserForUser(user, password='test'):
+    """Setup a browser grabbing details from a user.
+
+    :param user: The user to use.
+    :param password: The password to use.
+    """
+    naked_user = removeSecurityProxy(user)
+    email = naked_user.preferredemail.email
+    if hasattr(naked_user, '_password_cleartext_cached'):
+        password = naked_user._password_cleartext_cached
+    logout()
+    return setupBrowser(
+        auth="Basic %s:%s" % (str(email), password))
+
+
 def safe_canonical_url(*args, **kwargs):
     """Generate a bytestring URL for an object"""
     return str(canonical_url(*args, **kwargs))

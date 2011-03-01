@@ -856,7 +856,7 @@ def html_report(
         <script language="javascript" type="text/javascript"
             src="http://people.canonical.com/~stub/sorttable.js"></script>
         <style type="text/css">
-            h3 { font-weight: normal; font-size: 100%%; }
+            h3 { font-weight: normal; font-size: 1em; }
             thead th { padding-left: 1em; padding-right: 1em; }
             .category-title { text-align: right; padding-right: 2em; }
             .regexp { font-size: x-small; font-weight: normal; }

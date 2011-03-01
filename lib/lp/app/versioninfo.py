@@ -20,12 +20,8 @@ If that file exists, and contains valid Python, revno, date and branch_nick
 will have appropriate values from version_info.
 
 If that file exists, and contains invalid Python, there will be an error when
-this module is loaded.  This module is imported into
-canonical/launchpad/__init__.py so that such errors are caught at start-up.
-
-This module also reads version.txt at the top of the tree (i.e. a sibling of
-bzr-version-info.py), which contains the Launchpad release number.  If that
-file does not exist, we make something up.
+this module is loaded.  This module is imported into lp/app/__init__.py so
+that such errors are caught at start-up.
 """
 
 __all__ = [
@@ -56,15 +52,3 @@ else:
     revno = versioninfo.get('revno')
     date = versioninfo.get('date')
     branch_nick = versioninfo.get('branch_nick')
-
-
-try:
-    version_file = open('version.txt')
-except IOError:
-    release = 'x.y.z'
-else:
-    try:
-        version_data = version_file.read()
-        release = version_data.strip()
-    finally:
-        version_file.close()
