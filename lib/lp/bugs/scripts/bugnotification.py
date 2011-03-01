@@ -33,17 +33,17 @@ from lp.services.mail.mailwrapper import MailWrapper
 
 def get_activity_key(notification):
     """Given a notification, return a key for the activity if it exists.
-    
+
     The key will be used to determine whether changes for the activity are
     undone within the same batch of notifications (which are supposed to
     be all for the same bug when they get to this function).  Therefore,
     the activity's attribute is a good start for the key.
-    
+
     If the activity was on a bugtask, we will also want to distinguish
     by bugtask, because, for instance, changing a status from INPROGRESS
     to FIXCOMMITED on one bug task is not undone if the status changes
     from FIXCOMMITTED to INPROGRESS on another bugtask.
-    
+
     Similarly, if the activity is about adding or removing something
     that we can have multiple of, like a branch or an attachment, the
     key should include information on that value, because adding one
@@ -163,6 +163,14 @@ def construct_email_notifications(bug_notifications):
         reason = recipient.reason_body
         rationale = recipient.reason_header
 
+        filters = set()
+        for notification in filtered_notifications:
+            notification_filters = notification.getFiltersByRecipient(
+                email_person)
+            for notification_filter in notification_filters:
+                if notification_filter.description is not None:
+                    filters.add(notification_filter.description)
+
         # XXX deryck 2009-11-17 Bug #484319
         # This should be refactored to add a link inside the
         # code where we build `reason`.  However, this will
@@ -203,7 +211,7 @@ def construct_email_notifications(bug_notifications):
         body = (get_email_template(email_template) % body_data).strip()
         msg = bug_notification_builder.build(
             from_address, address, body, subject, email_date,
-            rationale, references, msgid)
+            rationale, references, msgid, filters=filters)
         messages.append(msg)
 
     return filtered_notifications, omitted_notifications, messages
