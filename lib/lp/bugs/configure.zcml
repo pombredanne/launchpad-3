@@ -902,6 +902,7 @@
                     productseries
                     bug
                     owner
+                    ownerID
                     decider
                     target
                     status

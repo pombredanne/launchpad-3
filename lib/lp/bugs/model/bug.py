@@ -569,6 +569,7 @@ BugMessage""" % sqlvalues(self.id))
         # the related products, series, distros, distroseries and source
         # package names to be loaded.
         IDs = set(map(operator.attrgetter('assigneeID'), tasks))
+        IDs.update(map(operator.attrgetter('ownerID'), tasks))
         IDs.discard(None)
         if IDs:
             list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
