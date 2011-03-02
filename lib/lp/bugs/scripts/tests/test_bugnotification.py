@@ -14,7 +14,10 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.database.sqlbase import flush_database_updates
+from canonical.database.sqlbase import (
+    flush_database_updates,
+    sqlvalues,
+    )
 from canonical.launchpad.ftests import login
 from canonical.launchpad.helpers import get_contact_email_addresses
 from canonical.launchpad.interfaces.message import IMessageSet
@@ -133,10 +136,13 @@ class MockBugNotification:
         self.recipients = [MockBugNotificationRecipient()]
         self.activity = None
 
+    def getFiltersByRecipient(self, recipient):
+        return []
+
 
 class FakeNotification:
     """An even simpler fake notification.
-    
+
     Used by TestGetActivityKey, TestNotificationCommentBatches and
     TestNotificationBatches."""
 
@@ -153,6 +159,7 @@ class FakeNotification:
 
 class MockBugActivity:
     """A mock BugActivity used for testing."""
+
     def __init__(self, target=None, attribute=None,
                  oldvalue=None, newvalue=None):
         self.target = target
@@ -868,3 +875,180 @@ class TestEmailNotificationsAttachments(
                 BugAttachmentChange(
                     self.ten_minutes_ago, self.person, 'attachment',
                     item, None))
+
+from lp.bugs.model.bugnotification import (
+    BugNotification,
+    BugNotificationFilter,
+#    BugNotificationRecipient,
+    )
+from lp.bugs.scripts.bugnotification import construct_email_notifications
+from storm.store import Store
+
+
+class TestEmailNotificationsWithFilters(TestCaseWithFactory):
+    """Ensure outgoing mails have corresponding mail headers.
+
+    Every filter that could have potentially caused a notification to
+    go off has a `BugNotificationFilter` record linking a `BugNotification`
+    and a `BugSubscriptionFilter`.
+
+    From those records, we include all BugSubscriptionFilter.description
+    in X-Subscription-Filter-Description headers in each email.
+    """
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestEmailNotificationsWithFilters, self).setUp()
+        self.bug=self.factory.makeBug()
+        subscriber = self.factory.makePerson()
+        self.subscription = self.bug.default_bugtask.target.addSubscription(
+            subscriber, subscriber)
+        self.filter_count = 0
+        self.notification = self.addNotification(subscriber)
+
+    def addNotificationRecipient(self, notification, person):
+        # Manually insert BugNotificationRecipient for
+        # construct_email_notifications to work.
+        # Not sure why using SQLObject constructor doesn't work (it
+        # tries to insert a row with only the ID which fails).
+        Store.of(notification).execute("""
+            INSERT INTO BugNotificationRecipient
+              (bug_notification, person, reason_header, reason_body)
+              VALUES (%s, %s, %s, %s)""" % sqlvalues(
+                          notification, person,
+                          u'reason header', u'reason body'))
+
+    def addNotification(self, person):
+        # Add a notification along with recipient data.
+        # This is generally done with BugTaskSet.addNotification()
+        # but that requires a more complex set-up.
+        message = self.factory.makeMessage()
+        notification = BugNotification(
+            message=message, activity=None, bug=self.bug,
+            is_comment=False, date_emailed=None)
+        self.addNotificationRecipient(notification, person)
+        return notification
+
+    def addFilter(self, description, subscription=None):
+        if subscription is None:
+            subscription = self.subscription
+            filter_count = self.filter_count
+            self.filter_count += 1
+        else:
+            # For a non-default subscription, always use
+            # the initial filter.
+            filter_count = 0
+
+        # If no filters have been requested before,
+        # use the initial auto-created filter for a subscription.
+        if filter_count == 0:
+            bug_filter = subscription.bug_filters.one()
+        else:
+            bug_filter = subscription.newBugFilter()
+        bug_filter.description = description
+        BugNotificationFilter(
+            bug_notification=self.notification,
+            bug_subscription_filter=bug_filter)
+
+    def getSubscriptionEmailHeaders(self, by_person=False):
+        filtered, omitted, messages = construct_email_notifications(
+            [self.notification])
+        if by_person:
+            headers = {}
+        else:
+            headers = set()
+        for message in messages:
+            if by_person:
+                headers[message['to']] = message.get_all(
+                    "X-Launchpad-Subscription-Filter", [])
+            else:
+                headers = headers.union(
+                    set(message.get_all(
+                        "X-Launchpad-Subscription-Filter", [])))
+        return headers
+
+    def getSubscriptionEmailBody(self, by_person=False):
+        filtered, omitted, messages = construct_email_notifications(
+            [self.notification])
+        if by_person:
+            filter_texts = {}
+        else:
+            filter_texts = set()
+        for message in messages:
+            filters_line = None
+            for line in message.get_payload().splitlines():
+                if line.startswith("Matching filters: "):
+                    filters_line = line
+                    break
+            if filters_line is not None:
+                if by_person:
+                    filter_texts[message['to']] = filters_line
+                else:
+                    filter_texts.add(filters_line)
+        return filter_texts
+
+    def test_header_empty(self):
+        # An initial filter with no description doesn't cause any
+        # headers to be added.
+        self.assertContentEqual([],
+                                self.getSubscriptionEmailHeaders())
+
+    def test_header_single(self):
+        # A single filter with a description makes all emails
+        # include that particular filter description in a header.
+        bug_filter = self.addFilter(u"Test filter")
+
+        self.assertContentEqual([u"Test filter"],
+                                self.getSubscriptionEmailHeaders())
+
+    def test_header_multiple(self):
+        # Multiple filters with a description make all emails
+        # include all filter descriptions in the header.
+        bug_filter = self.addFilter(u"First filter")
+        bug_filter = self.addFilter(u"Second filter")
+
+        self.assertContentEqual([u"First filter", u"Second filter"],
+                                self.getSubscriptionEmailHeaders())
+
+    def test_header_other_subscriber_by_person(self):
+        # Filters for a different subscribers are included only
+        # in email messages relevant to them, even if they might
+        # all be for the same notification.
+        other_person = self.factory.makePerson()
+        other_subscription = self.bug.default_bugtask.target.addSubscription(
+            other_person, other_person)
+        bug_filter = self.addFilter(u"Someone's filter", other_subscription)
+        self.addNotificationRecipient(self.notification, other_person)
+
+        this_filter = self.addFilter(u"Test filter")
+
+        the_subscriber = self.subscription.subscriber
+        self.assertEquals(
+            {other_person.preferredemail.email: [u"Someone's filter"],
+             the_subscriber.preferredemail.email: [u"Test filter"]},
+            self.getSubscriptionEmailHeaders(by_person=True))
+
+    def test_body_empty(self):
+        # An initial filter with no description doesn't cause any
+        # text to be added to the email body.
+        self.assertContentEqual([],
+                                self.getSubscriptionEmailBody())
+
+    def test_body_single(self):
+        # A single filter with a description makes all emails
+        # include that particular filter description in the body.
+        bug_filter = self.addFilter(u"Test filter")
+
+        self.assertContentEqual([u"Matching filters: Test filter"],
+                                self.getSubscriptionEmailBody())
+
+    def test_body_multiple(self):
+        # Multiple filters with description make all emails
+        # include them in the email body.
+        bug_filter = self.addFilter(u"First filter")
+        bug_filter = self.addFilter(u"Second filter")
+
+        self.assertContentEqual(
+            [u"Matching filters: First filter, Second filter"],
+            self.getSubscriptionEmailBody())
