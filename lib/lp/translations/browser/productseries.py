@@ -49,6 +49,9 @@ from lp.services.propertycache import cachedproperty
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.potemplate import BaseSeriesTemplatesView
 from lp.translations.browser.translations import TranslationsMixin
+from lp.translations.browser.translationsharing import (
+    TranslationSharingDetailsMixin,
+    )
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguageSet,
     )
@@ -344,7 +347,9 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
         return check_permission("launchpad.Edit", self.context)
 
 
-class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
+class ProductSeriesView(LaunchpadView,
+                        ProductSeriesTranslationsMixin,
+                        TranslationSharingDetailsMixin):
     """A view to show a series with translations."""
 
     label = "Translation status by language"
@@ -462,30 +467,11 @@ class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
         sourcepackage, template = infos[0]
         return sourcepackage
 
-    def sharing_details(self):
-        """Construct the link to the sharing details page."""
-        tag_template = (
-            '<a class="sprite %(icon)s" id="sharing-details"'
-            ' href="%(href)s">%(text)s</a>')
+    def getTranslationTarget(self):
+        """See `TranslationSharingDetailsMixin`."""
+        return self.context
 
-        if self.can_configure_translations():
-            icon = 'edit'
-            if self.is_sharing():
-                text = "Edit sharing details"
-            else:
-                text = "Set up sharing now!"
-        else:
-            if self.is_sharing():
-                icon = 'info'
-                text = "View sharing details"
-            else:
-                return ""
-        href = canonical_url(
-            self.context,
-            rootsite='translations',
-            #view_name='+sharing-details'
-            )
-        return tag_template % dict(icon=icon, text=text, href=href)
+    can_edit_sharing_details = can_configure_translations
 
 
 class SettingsRadioWidget(LaunchpadRadioWidgetWithDescription):
