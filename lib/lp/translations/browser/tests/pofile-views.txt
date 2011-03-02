@@ -259,7 +259,7 @@ their sequence is 0.
 
     >>> from lp.translations.model.potmsgset import POTMsgSet
     >>> potmsgset = POTMsgSet.get(161)
-    >>> potmsgset.setSequence(pofile_es.potemplate, 0)
+    >>> item = potmsgset.setSequence(pofile_es.potemplate, 0)
     >>> potmsgset.getSequence(pofile_es.potemplate)
     0
     >>> form = {

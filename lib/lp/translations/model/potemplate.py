@@ -853,7 +853,8 @@ class POTemplate(SQLBase, RosettaStats):
 
         return potmsgset
 
-    def getOrCreatePOMsgID(self, text):
+    @staticmethod
+    def getOrCreatePOMsgID(text):
         """Creates or returns existing POMsgID for given `text`."""
         try:
             msgid = POMsgID.byMsgid(text)

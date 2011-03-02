@@ -36,19 +36,19 @@ import traceback
 import unittest
 from xml.sax.saxutils import escape
 
-import simplejson
-
 import bzrlib.branch
 import bzrlib.config
-import bzrlib.errors
-import bzrlib.workingtree
-
 from bzrlib.email_message import EmailMessage
+import bzrlib.errors
 from bzrlib.smtp_connection import SMTPConnection
-
+import bzrlib.workingtree
+import simplejson
 import subunit
-
 from testtools import MultiTestResult
+
+# We need to be able to unpickle objects from bzr-pqm, so make sure we
+# can import it.
+bzrlib.plugin.load_plugins()
 
 
 class NonZeroExitCode(Exception):
@@ -281,15 +281,16 @@ class LaunchpadTester:
     def _gather_test_output(self, input_stream, logger):
         """Write the testrunner output to the logs."""
         summary_stream = logger.get_summary_stream()
+        summary_result = SummaryResult(summary_stream)
         result = MultiTestResult(
-            SummaryResult(summary_stream),
+            summary_result,
             FailureUpdateResult(logger))
         subunit_server = subunit.TestProtocolServer(result, summary_stream)
         for line in input_stream:
             subunit_server.lineReceived(line)
             logger.got_line(line)
             summary_stream.flush()
-        return result
+        return summary_result
 
 
 # XXX: Publish a JSON file that includes the relevant details from this

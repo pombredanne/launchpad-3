@@ -21,11 +21,18 @@ from twisted.protocols import ftp
 from twisted.python import filepath
 
 from zope.interface import implements
+from zope.component import getUtility
+
+from canonical.launchpad.interfaces.gpghandler import (
+    GPGVerificationError,
+    IGPGHandler,
+    )
 
 from canonical.config import config
 from lp.poppy import get_poppy_root
 from lp.poppy.filesystem import UploadFileSystem
 from lp.poppy.hooks import Hooks
+from lp.registry.interfaces.gpg import IGPGKeySet
 
 
 class PoppyAccessCheck:
@@ -72,7 +79,15 @@ class PoppyAnonymousShell(ftp.FTPShell):
         """
         filename = os.sep.join(file_segments)
         self._create_missing_directories(filename)
-        return super(PoppyAnonymousShell, self).openForWriting(file_segments)
+        path = self._path(file_segments)
+        try:
+            fObj = path.open("w")
+        except (IOError, OSError), e:
+            return ftp.errnoToFailure(e.errno, path)
+        except:
+            # Push any other error up to Twisted to deal with.
+            return defer.fail()
+        return defer.succeed(PoppyFileWriter(fObj))
 
     def makeDirectory(self, path):
         """Make a directory using the secure `UploadFileSystem`."""
@@ -126,6 +141,43 @@ class FTPRealm:
                     avatar, 'logout', lambda: None)
         raise NotImplementedError(
             "Only IFTPShell interface is supported by this realm")
+
+
+class PoppyFileWriter(ftp._FileWriter):
+    """An `IWriteFile` that checks for signed changes files."""
+
+    def close(self):
+        """Called after the file has been completely downloaded."""
+        if self.fObj.name.endswith(".changes"):
+            error = self.validateGPG(self.fObj.name)
+            if error is not None:
+                # PermissionDeniedError is one of the few ftp exceptions
+                # that lets us pass an error string back to the client.
+                return defer.fail(ftp.PermissionDeniedError(error))
+        return defer.succeed(None)
+
+    def validateGPG(self, signed_file):
+        """Check the GPG signature in the file referenced by signed_file.
+
+        Return an error string if there's a problem, or None.
+        """
+        try:
+            sig = getUtility(IGPGHandler).getVerifiedSignatureResilient(
+                file(signed_file, "rb").read())
+        except GPGVerificationError, error:
+            return ("Changes file must be signed with a valid GPG "
+                    "signature: %s" % error)
+
+        key = getUtility(IGPGKeySet).getByFingerprint(sig.fingerprint)
+        if key is None:
+            return (
+                "Signing key %s not registered in launchpad."
+                % sig.fingerprint)
+
+        if key.active == False:
+            return "Changes file is signed with a deactivated key"
+
+        return None
 
 
 class FTPServiceFactory(service.Service):
