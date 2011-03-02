@@ -57,3 +57,13 @@ class TestMaloneView(TestCaseWithFactory):
         self.assertEqual(
             "Bug 'fnord' is not registered.", view.error_message)
         self.assertEqual(None, view.request.response.getHeader('Location'))
+
+    def test_redirect_list_of_bug_fail(self):
+        # The view reports an error and does not redirect if list is provided
+        # instead of a string.
+        form = dict(id=['fnord', 'pting'])
+        view = create_initialized_view(
+            self.application, name='+index', layer=BugsLayer, form=form)
+        self.assertEqual(
+            "Bug ['fnord', 'pting'] is not registered.", view.error_message)
+        self.assertEqual(None, view.request.response.getHeader('Location'))
