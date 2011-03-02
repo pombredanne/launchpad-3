@@ -231,9 +231,7 @@ class TargetBranchWidget(SuggestionWidget):
         collection = branch.target.collection.targetedBy(logged_in_user,
             since)
         collection = collection.visibleByUser(logged_in_user)
-        # May actually need some eager loading, but the API isn't fine grained
-        # yet.
-        branches = collection.getBranches(eager_load=False).config(distinct=True)
+        branches = collection.getBranches().config(distinct=True)
         target_branches = list(branches.config(limit=5))
         # If there is a development focus branch, make sure it is always
         # shown, and as the first item.

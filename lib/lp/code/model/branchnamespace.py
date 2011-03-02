@@ -218,7 +218,7 @@ class _BaseNamespace:
             name = "%s-%s" % (prefix, count)
         return name
 
-    def getBranches(self, eager_load=False):
+    def getBranches(self):
         """See `IBranchNamespace`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(Branch, self._getBranchesClause())

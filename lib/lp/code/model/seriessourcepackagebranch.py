@@ -101,15 +101,10 @@ class SeriesSourcePackageBranchSet:
 
     def findForBranch(self, branch):
         """See `IFindOfficialBranchLinks`."""
-        return self.findForBranches([branch])
-
-    def findForBranches(self, branches):
-        """See `IFindOfficialBranchLinks`."""
-        branch_ids = set(branch.id for branch in branches)
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(
             SeriesSourcePackageBranch,
-            SeriesSourcePackageBranch.branchID.is_in(branch_ids))
+            SeriesSourcePackageBranch.branch == branch.id)
 
     def findForSourcePackage(self, sourcepackage):
         """See `IFindOfficialBranchLinks`."""
