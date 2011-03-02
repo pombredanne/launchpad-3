@@ -67,7 +67,7 @@ class TestSharingInfoMixin:
         raise NotImplementedError
 
     SHARING_DETAILS_INFO = "View sharing details"
-    SHARING_DETAILS_SETUP = "Setup sharing now!"
+    SHARING_DETAILS_SETUP = "Set up sharing now!"
     SHARING_DETAILS_EDIT = "Edit sharing details"
 
     def _test_sharing_information(self, obj,

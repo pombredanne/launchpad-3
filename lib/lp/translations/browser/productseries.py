@@ -473,7 +473,7 @@ class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
             if self.is_sharing():
                 text = "Edit sharing details"
             else:
-                text = "Setup sharing now!"
+                text = "Set up sharing now!"
         else:
             if self.is_sharing():
                 icon = 'info'
