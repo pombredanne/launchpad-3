@@ -23,7 +23,10 @@ from zope.interface import (
     implements,
     providedBy,
     )
-from zope.schema import ValidationError
+from zope.schema.interfaces import (
+    TooLong,
+    ValidationError,
+    )
 
 from canonical.launchpad.interfaces.mail import (
     BugTargetNotFound,
@@ -48,6 +51,7 @@ from lp.app.validators.name import valid_name
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBug,
+    IBugAddForm,
     IBugSet,
     )
 from lp.bugs.interfaces.bugtask import (
@@ -154,8 +158,27 @@ class BugEmailCommand(EmailCommand):
         bugid = self.string_args[0]
 
         if bugid == 'new':
+            # Check the message validator.
+            comment = parsed_msg.as_string()
+            validator = IBugAddForm['comment'].validate
+            # The validator is very strict on the unicode aspect.
+            if not isinstance(comment, unicode):
+                comment = unicode(comment)
+            try:
+                validator(comment)
+            except TooLong:
+                raise EmailProcessingError(
+                    'The description is too long. If you have lots '
+                    'text to add, use an attachment instead.',
+                    stop_processing=True)
+            except ValidationError as e:
+                # More a just in case than any real expectation of getting
+                # something.
+                raise EmailProcessingError(
+                    str(e),
+                    stop_processing=True)
             message = getUtility(IMessageSet).fromEmail(
-                parsed_msg.as_string(),
+                comment,
                 owner=getUtility(ILaunchBag).user,
                 filealias=filealias,
                 parsed_message=parsed_msg)
