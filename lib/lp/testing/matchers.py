@@ -50,26 +50,31 @@ from lp.testing._webservice import QueryCollector
 
 class BrowsesWithQueryLimit(Matcher):
     """Matches the rendering of an objects default view with a query limit.
-    
+
     This is a wrapper for HasQueryCount which does the heavy lifting on the
     query comparison - BrowsesWithQueryLimit simply provides convenient
     glue to use a userbrowser and view an object.
     """
 
-    def __init__(self, query_limit, user):
+    def __init__(self, query_limit, user, view_name="+index", **kwargs):
         """Create a BrowsesWithQueryLimit checking for limit query_limit.
-        
+
         :param query_limit: The number of queries permited for the page.
         :param user: The user to use to render the page.
-        """    
+        :param view_name: The name of the view to use to render tha page.
+        :param kwargs: Additional options for view generation eg rootsite.
+        """
         self.query_limit = query_limit
         self.user = user
+        self.view_name = view_name
+        self.kwargs = kwargs
 
     def match(self, context):
         # circular dependencies.
         from canonical.launchpad.testing.pages import setupBrowserForUser
         with person_logged_in(self.user):
-            context_url = canonical_url(context)
+            context_url = canonical_url(
+                context, view_name=self.view_name, **self.kwargs)
         browser = setupBrowserForUser(self.user)
         collector = QueryCollector()
         collector.register()

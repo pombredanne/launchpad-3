@@ -8,12 +8,9 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from testtools.matchers import LessThan
-
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_tag_by_id,
-    setupBrowserForUser
     )
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.launchpad.webapp.publisher import canonical_url
@@ -24,8 +21,7 @@ from lp.testing import (
     login,
     TestCaseWithFactory,
     )
-from lp.testing._webservice import QueryCollector
-from lp.testing.matchers import HasQueryCount
+from lp.testing.matchers import BrowsesWithQueryLimit
 from lp.testing.views import create_initialized_view
 
 
@@ -102,13 +98,9 @@ class TestRecipeBuildListing(BrowserTestCase):
         # number of records.
         self.factory.makeRecipeBuildRecords(5, 0)
         root = getUtility(ILaunchpadRoot)
-        url = canonical_url(root, view_name='+daily-builds', rootsite='code')
-        browser = setupBrowserForUser(self.user)
-        collector = QueryCollector()
-        collector.register()
-        browser.open(url)
-        counter = HasQueryCount(LessThan(35))
-        self.assertThat(collector, counter)
+        browser_query_limit = BrowsesWithQueryLimit(
+            35, self.user, view_name='+daily-builds', rootsite='code')
+        self.assertThat(root, browser_query_limit)
 
     def test_recipebuild_url(self):
         # Check the browser URL is as expected.
