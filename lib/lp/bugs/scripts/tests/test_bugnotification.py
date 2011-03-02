@@ -136,6 +136,9 @@ class MockBugNotification:
         self.recipients = [MockBugNotificationRecipient()]
         self.activity = None
 
+    def getFiltersByRecipient(self, recipient):
+        return []
+
 
 class FakeNotification:
     """An even simpler fake notification.
