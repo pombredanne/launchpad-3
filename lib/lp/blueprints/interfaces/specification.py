@@ -47,6 +47,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.validation import valid_webref
 from lp.app.validators import LaunchpadValidationError
 from lp.blueprints.enums import (
+    NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
     SpecificationGoalStatus,
     SpecificationImplementationStatus,
@@ -168,8 +169,8 @@ class INewSpecification(Interface):
     definition_status = exported(
         Choice(
             title=_('Definition Status'),
-            vocabulary=SpecificationDefinitionStatus,
-            default=SpecificationDefinitionStatus.NEW,
+            vocabulary=NewSpecificationDefinitionStatus,
+            default=NewSpecificationDefinitionStatus.NEW,
             description=_(
                 "The current status of the process to define the "
                 "feature and get approval for the implementation plan.")),
@@ -274,6 +275,17 @@ class ISpecificationPublic(
     #      specification to an attribute of another SQL object
     #      referencing it.
     id = Int(title=_("Database ID"), required=True, readonly=True)
+
+    # Redefine definition_status to support all definition statues.
+    definition_status = exported(
+        Choice(
+            title=_('Definition Status'),
+            vocabulary=SpecificationDefinitionStatus,
+            default=SpecificationDefinitionStatus.NEW,
+            description=_(
+                "The current status of the process to define the "
+                "feature and get approval for the implementation plan.")),
+        ('devel', dict(exported=True, readonly=True)), exported=False)
 
     priority = exported(
         Choice(

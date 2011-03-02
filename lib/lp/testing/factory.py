@@ -104,6 +104,7 @@ from lp.app.enums import ServiceUsage
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
 from lp.blueprints.enums import (
+    NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
     SpecificationPriority,
     )
@@ -1882,7 +1883,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeSpecification(self, product=None, title=None, distribution=None,
                           name=None, summary=None, owner=None,
-                          status=SpecificationDefinitionStatus.NEW,
+                          status=NewSpecificationDefinitionStatus.NEW,
                           implementation_status=None, goal=None, specurl=None,
                           assignee=None, drafter=None, approver=None,
                           priority=None, whiteboard=None, milestone=None):
