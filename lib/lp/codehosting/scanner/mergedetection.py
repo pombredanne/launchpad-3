@@ -97,7 +97,7 @@ def auto_merge_branches(scan_completed):
         BranchLifecycleStatus.DEVELOPMENT,
         BranchLifecycleStatus.EXPERIMENTAL,
         BranchLifecycleStatus.MATURE,
-        BranchLifecycleStatus.ABANDONED).getBranches(eager_load=False)
+        BranchLifecycleStatus.ABANDONED).getBranches()
     for branch in branches:
         last_scanned = branch.last_scanned_id
         # If the branch doesn't have any revisions, not any point setting

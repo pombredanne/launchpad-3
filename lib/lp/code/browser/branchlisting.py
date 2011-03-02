@@ -650,7 +650,7 @@ class BranchListingView(LaunchpadFormView, FeedsMixin,
         if lifecycle_status is not None:
             collection = collection.withLifecycleStatus(*lifecycle_status)
         collection = collection.visibleByUser(self.user)
-        return collection.getBranches(eager_load=False).order_by(
+        return collection.getBranches().order_by(
             self._listingSortToOrderBy(self.sort_by))
 
     @property
@@ -809,7 +809,7 @@ class NoContextBranchListingView(BranchListingView):
         if lifecycle_status is not None:
             collection = collection.withLifecycleStatus(*lifecycle_status)
         collection = collection.visibleByUser(self.user)
-        return collection.getBranches(eager_load=False).order_by(
+        return collection.getBranches().order_by(
             self._branch_order)
 
 
@@ -1501,7 +1501,7 @@ class GroupedDistributionSourcePackageBranchesView(LaunchpadView,
         # We're only interested in active branches.
         collection = self.getBranchCollection().withLifecycleStatus(
             *DEFAULT_BRANCH_STATUS_IN_LISTING)
-        for branch in collection.getBranches(eager_load=False):
+        for branch in collection.getBranches():
             branches.setdefault(branch.distroseries, []).append(branch)
         return branches
 

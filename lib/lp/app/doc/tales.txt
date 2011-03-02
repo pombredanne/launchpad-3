@@ -498,8 +498,6 @@ The bzr-link formatter uses the bzr identity.
 
     >>> login_person(fooix.owner, LaunchpadTestRequest())
     >>> fooix.development_focus.branch = branch
-    >>> from lp.services.propertycache import clear_property_cache
-    >>> clear_property_cache(branch)
     >>> print test_tales("branch/fmt:bzr-link", branch=branch)
     <a href=".../~eric/fooix/bar" class="sprite branch">lp://dev/fooix</a>
 

@@ -35,7 +35,6 @@ class TestMakeProjectCloudData(TestCaseWithFactory):
         self.assertIsNot(None, fooix)
         # There should be one branch with one commit.
         [branch] = list(
-            getUtility(IAllBranches).inProduct(fooix).getBranches(
-                eager_load=False))
+            getUtility(IAllBranches).inProduct(fooix).getBranches())
         self.assertEqual(1, branch.revision_count)
         self.assertEqual(commit_time, branch.getTipRevision().revision_date)
