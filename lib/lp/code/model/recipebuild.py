@@ -31,6 +31,7 @@ from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.interfaces.lpstorm import ISlaveStore
+from canonical.launchpad.webapp.publisher import canonical_url
 
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
@@ -72,6 +73,14 @@ class RecipeBuildRecord(namedtuple(
     def distro_source_package(self):
         return self.archive.distribution.getSourcePackage(
             self.sourcepackagename)
+
+    @property
+    def recipe_name(self):
+        return self.recipe.name
+
+    @property
+    def recipe_url(self):
+        return canonical_url(self.recipe, rootsite='code')
 
 
 class RecipeBuildRecordSet:

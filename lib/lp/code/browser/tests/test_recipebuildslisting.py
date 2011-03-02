@@ -8,10 +8,12 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
+from testtools.matchers import LessThan
+
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_tag_by_id,
-    )
+    setupBrowserForUser)
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -21,6 +23,8 @@ from lp.testing import (
     login,
     TestCaseWithFactory,
     )
+from lp.testing._webservice import QueryCollector
+from lp.testing.matchers import HasQueryCount
 from lp.testing.views import create_initialized_view
 
 
@@ -89,6 +93,21 @@ class TestRecipeBuildListing(BrowserTestCase):
     def test_recipebuild_listing_with_user(self):
         # Ensure we can see the listing when we are logged in.
         self._test_recipebuild_listing()
+
+    def test_recipebuild_listing_querycount(self):
+        # The query count on the recipe build listing page is small enough.
+        # There's a base query count of approx 30, but if the page template
+        # is not set up right, the query count can increases linearly with the
+        # number of records.
+        self.factory.makeRecipeBuildRecords(5, 0)
+        root = getUtility(ILaunchpadRoot)
+        url = canonical_url(root, view_name='+daily-builds', rootsite='code')
+        browser = setupBrowserForUser(self.user)
+        collector = QueryCollector()
+        collector.register()
+        browser.open(url)
+        counter = HasQueryCount(LessThan(35))
+        self.assertThat(collector, counter)
 
     def test_recipebuild_url(self):
         # Check the browser URL is as expected.
