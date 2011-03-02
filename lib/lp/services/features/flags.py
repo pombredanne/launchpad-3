@@ -77,6 +77,10 @@ flag_info = sorted([
      'boolean',
      'Shows the server-side page render time in the login widget.',
      ''),
+    ('bugs.private_notification.enabled',
+     'boolean',
+     'Changes the appearance of notifications on private bugs.',
+     ''),
     ])
 
 # The set of all flag names that are documented.

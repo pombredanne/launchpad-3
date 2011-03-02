@@ -3,7 +3,7 @@
 {
     "../images/arrowLeft.png": [
         0, 
-        -14754
+        -14918
     ], 
     "../images/cancel.png": [
         0, 
@@ -43,7 +43,7 @@
     ], 
     "../images/arrowTop.png": [
         0, 
-        -14426
+        -14590
     ], 
     "../images/zoom-in.png": [
         0, 
@@ -55,11 +55,11 @@
     ], 
     "../images/blue-bar.png": [
         0, 
-        -14918
+        -15082
     ], 
     "../images/arrowStart.png": [
         0, 
-        -14098
+        -14262
     ], 
     "../images/ppa-icon-inactive.png": [
         0, 
@@ -67,11 +67,11 @@
     ], 
     "../images/build-needed.png": [
         0, 
-        -13278
+        -13442
     ], 
     "../images/purple-bar.png": [
         0, 
-        -15246
+        -15410
     ], 
     "../images/bullet.png": [
         0, 
@@ -79,11 +79,11 @@
     ], 
     "../images/info-large.png": [
         0, 
-        -17340
+        -17504
     ], 
     "../images/trash-logo.png": [
         0, 
-        -20176
+        -20340
     ], 
     "../images/warning.png": [
         0, 
@@ -95,35 +95,35 @@
     ], 
     "../images/build-failure.png": [
         0, 
-        -13442
+        -13606
     ], 
     "../images/branch-large.png": [
         0, 
-        -16066
+        -16230
     ], 
     "../images/download-large.png": [
         0, 
-        -17158
+        -17322
     ], 
     "../images/private-large.png": [
         0, 
-        -18068
+        -18232
     ], 
     "../images/launchpad-large.png": [
         0, 
-        -17522
+        -17686
     ], 
     "../images/translation-file.png": [
         0, 
         -10818
     ], 
-    "../images/read-only.png": [
+    "../images/source-package-recipe.png": [
         0, 
-        -9998
+        -12622
     ], 
     "../images/project-logo.png": [
         0, 
-        -18678
+        -18842
     ], 
     "../images/bug-medium.png": [
         0, 
@@ -135,7 +135,7 @@
     ], 
     "../images/tour-icon": [
         0, 
-        -15902
+        -16066
     ], 
     "../images/trash-icon.png": [
         0, 
@@ -147,7 +147,7 @@
     ], 
     "../images/arrowBottom.png": [
         0, 
-        -14590
+        -14754
     ], 
     "../images/project.png": [
         0, 
@@ -175,11 +175,11 @@
     ], 
     "../images/person-logo.png": [
         0, 
-        -19106
+        -19270
     ], 
     "../images/distribution-logo.png": [
         0, 
-        -18464
+        -18628
     ], 
     "../images/retry.png": [
         0, 
@@ -195,7 +195,7 @@
     ], 
     "../images/merge-proposal-icon.png": [
         0, 
-        -12786
+        -12950
     ], 
     "../images/download.png": [
         0, 
@@ -203,7 +203,7 @@
     ], 
     "../images/arrowDown.png": [
         0, 
-        -13934
+        -14098
     ], 
     "../images/package-binary.png": [
         0, 
@@ -215,11 +215,11 @@
     ], 
     "../images/bug-status-expand.png": [
         0, 
-        -12622
+        -12786
     ], 
     "../images/crowd-large.png": [
         0, 
-        -16430
+        -16594
     ], 
     "../images/blueprint.png": [
         0, 
@@ -247,7 +247,7 @@
     ], 
     "../images/flame-large.png": [
         0, 
-        -16976
+        -17140
     ], 
     "../images/bug-dupe-icon.png": [
         0, 
@@ -259,11 +259,11 @@
     ], 
     "../images/build-success.png": [
         0, 
-        -13114
+        -13278
     ], 
     "../images/haspatch-icon.png": [
         0, 
-        -15738
+        -15902
     ], 
     "../images/person-inactive-badge.png": [
         0, 
@@ -279,7 +279,7 @@
     ], 
     "../images/team-logo.png": [
         0, 
-        -19534
+        -19698
     ], 
     "../images/arrowRight.png": [
         0, 
@@ -311,7 +311,7 @@
     ], 
     "../images/arrowUp.png": [
         0, 
-        -13770
+        -13934
     ], 
     "../images/distribution.png": [
         0, 
@@ -319,11 +319,11 @@
     ], 
     "../images/error-large.png": [
         0, 
-        -16794
+        -16958
     ], 
     "../images/news.png": [
         0, 
-        -15574
+        -15738
     ], 
     "../images/treeExpanded.png": [
         0, 
@@ -331,7 +331,7 @@
     ], 
     "../images/build-depwait.png": [
         0, 
-        -13606
+        -13770
     ], 
     "../images/blueprint-essential.png": [
         0, 
@@ -351,7 +351,7 @@
     ], 
     "../images/product-logo.png": [
         0, 
-        -18892
+        -19056
     ], 
     "../images/blueprint-medium.png": [
         0, 
@@ -367,11 +367,11 @@
     ], 
     "../images/launchpad-logo.png": [
         0, 
-        -18250
+        -18414
     ], 
     "../images/flame-logo.png": [
         0, 
-        -19962
+        -20126
     ], 
     "../images/translation-template.png": [
         0, 
@@ -383,7 +383,7 @@
     ], 
     "../images/meeting-logo.png": [
         0, 
-        -19748
+        -19912
     ], 
     "../images/treeCollapsed.png": [
         0, 
@@ -391,19 +391,19 @@
     ], 
     "../images/green-bar.png": [
         0, 
-        -15082
+        -15246
     ], 
     "../images/build-superseded.png": [
         0, 
-        -12950
+        -13114
     ], 
     "../images/trash-large.png": [
         0, 
-        -17886
+        -18050
     ], 
     "../images/red-bar.png": [
         0, 
-        -15410
+        -15574
     ], 
     "../images/add.png": [
         0, 
@@ -413,9 +413,13 @@
         0, 
         -328
     ], 
+    "../images/read-only.png": [
+        0, 
+        -9998
+    ], 
     "../images/person-inactive-logo.png": [
         0, 
-        -19320
+        -19484
     ], 
     "../images/edit.png": [
         0, 
@@ -427,11 +431,11 @@
     ], 
     "../images/warning-large.png": [
         0, 
-        -16248
+        -16412
     ], 
     "../images/arrowEnd.png": [
         0, 
-        -14262
+        -14426
     ], 
     "../images/cve.png": [
         0, 
@@ -439,11 +443,11 @@
     ], 
     "../images/notification-close.png": [
         0, 
-        -20561
+        -20725
     ], 
     "../images/merge-proposal-large.png": [
         0, 
-        -17704
+        -17868
     ], 
     "../images/branch.png": [
         0, 
@@ -455,7 +459,7 @@
     ], 
     "../images/notification-private.png": [
         0, 
-        -20390
+        -20554
     ], 
     "../images/bug.png": [
         0, 

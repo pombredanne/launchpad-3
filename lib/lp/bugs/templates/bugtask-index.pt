@@ -70,7 +70,7 @@
 
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
       <tal:if condition="context/bug/private">
-        <tal:if condition="request/features/private_object_notification">
+        <tal:if condition="request/features/bugs.private_notification.enabled">
             <script type="text/javascript">
                 LPS.use('anim-base', function(Y) {
                   Y.on('domready', function() {
@@ -78,7 +78,7 @@
                          this is because we have no way to use feature flags in
                          css directly. This should be remove if the feature
                          is accepted. */
-                      Y.one('body').addClass('feature-flag-private_object_notification');
+                      Y.one('body').addClass('feature-flag-bugs-private-notification-enabled');
                       /* Set the visible flag so that the content moves down. */
                       Y.one('body').addClass('global-notification-visible');
                       var fade_out = new Y.Anim({
@@ -120,7 +120,7 @@
                   });
                 });
             </script>
-            <div class="global-notification" tal:condition="request/features/private_object_notification">
+            <div class="global-notification" tal:condition="request/features/bugs.private_notification.enabled">
               <span class="sprite notification-private"></span>
               This bug is private
               <a href="#" class="global-notification-close">
