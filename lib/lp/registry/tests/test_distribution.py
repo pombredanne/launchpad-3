@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from lazr.lifecycle.snapshot import Snapshot
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import (
@@ -14,6 +15,7 @@ from canonical.testing.layers import (
     )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.person import IPersonSet 
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.tests.test_distroseries import (
     TestDistroSeriesCurrentSourceReleases,
@@ -23,7 +25,10 @@ from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing import login_person
+from lp.testing.views import create_initialized_view 
 
+from canonical.launchpad.testing.pages import find_tags_by_class 
 
 class TestDistribution(TestCaseWithFactory):
 
@@ -47,6 +52,30 @@ class TestDistribution(TestCaseWithFactory):
         ignore, displayname, name = repr(distro).rsplit(' ', 2)
         self.assertEqual("'\\u0170-distro'", displayname)
 
+    def test_distribution_addseries_link(self):
+        # Verify that an admin sees the +addseries link
+        distro = self.factory.makeDistribution(
+            name="distro", displayname=u'distro')
+        admin = getUtility(IPersonSet).getByEmail(
+            'admin@canonical.com')
+        login_person(admin) 
+        view = create_initialized_view(distro, '+index', 
+            principal=admin)
+        addserieslinks = find_tags_by_class(view(), 
+            'menu-link-addseries')
+        self.assertEqual(len(addserieslinks),1)
+
+    def test_distribution_addseries_link_nopriv(self):
+        # Verify that a non-admin does not see the +addseries link
+        distro = self.factory.makeDistribution(
+            name="distro", displayname=u'distro')
+        simple_user = self.factory.makePerson()
+        login_person(simple_user)
+        view = create_initialized_view(distro, '+index',
+            principal=simple_user)
+        addserieslinks = find_tags_by_class(view(),
+            'menu-link-addseries')
+        self.assertEqual(len(addserieslinks),0)
 
 class TestDistributionCurrentSourceReleases(
     TestDistroSeriesCurrentSourceReleases):
