@@ -118,7 +118,7 @@ class TestSpecificationSet(TestCaseWithFactory):
         self.specification_set = getUtility(ISpecificationSet)
         self.new_names = NewSpecificationDefinitionStatus.items.mapping.keys()
 
-    def test_new_with_open_defintion_status_creates_specification(self):
+    def test_new_with_open_definition_status_creates_specification(self):
         # Calling new() with an open definition status will will create
         # a specification.
         self.assertTrue(
@@ -131,7 +131,7 @@ class TestSpecificationSet(TestCaseWithFactory):
         self.assertEqual(
             SpecificationDefinitionStatus.NEW, spec.definition_status)
 
-    def test_new_with_closed_defintion_status_raises_error(self):
+    def test_new_with_closed_definition_status_raises_error(self):
         # Calling new() with a obsolete or superseded definition status
         # raises an error.
         self.assertTrue(
