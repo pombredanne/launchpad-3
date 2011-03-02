@@ -541,7 +541,7 @@ class CustomisedSearchTestCase(TestCaseWithFactory):
     # Test that a custom resultset decorator is called as expected.
         expected_tasks = []
 
-        def result_decorator(row):
+        def resultset_decorator(row):
             expected_tasks.append(row[0])
             return row[0]
 
@@ -549,7 +549,7 @@ class CustomisedSearchTestCase(TestCaseWithFactory):
         bug = self.factory.makeBug()
         params = BugTaskSearchParams(user=None, bug=bug)
         found_tasks = list(bugtask_set.search(
-            params, user_result_decorator=result_decorator))
+            params, user_resultset_decorator=resultset_decorator))
         self.assertEqual(found_tasks, [bug.default_bugtask])
         self.assertEqual(expected_tasks, [bug.default_bugtask])
 
