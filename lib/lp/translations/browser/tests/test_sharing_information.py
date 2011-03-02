@@ -15,6 +15,7 @@ from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     BrowserTestCase,
     celebrity_logged_in,
+    login_celebrity,
     )
 from lp.translations.interfaces.side import TranslationSide
 
@@ -61,13 +62,22 @@ class TestSharingInfoMixin:
         raise NotImplementedError
 
     SHARING_TEXT = None
+    
+    SHARING_DETAILS_INFO = "View sharing details"
+    SHARING_DETAILS_SETUP = "Setup sharing now!"
+    SHARING_DETAILS_EDIT = "Edit sharing details"
 
-    def _test_sharing_information(self, obj, expected_text):
+    def _test_sharing_information(self, obj,
+                                  id_under_test, expected_text,
+                                  no_login=True):
         self.useFixture(FeatureFixture(
             {'translations.sharing_information.enabled': 'on'}))
+        if not no_login:
+            login_celebrity('admin')
         browser = self.getViewBrowser(
-            obj, no_login=True, rootsite="translations")
-        sharing_info = find_tag_by_id(browser.contents, 'sharing-information')
+            obj, no_login=no_login, rootsite="translations")
+            
+        sharing_info = find_tag_by_id(browser.contents, id_under_test)
         if expected_text is None:
             self.assertIs(None, sharing_info)
         else:
@@ -77,11 +87,36 @@ class TestSharingInfoMixin:
 
     def test_not_sharing(self):
         self._test_sharing_information(
-            self.makeNotSharingObject(), self.NOT_SHARING_TEXT)
+            self.makeNotSharingObject(),
+            'sharing-information', self.NOT_SHARING_TEXT)
 
     def test_sharing(self):
         self._test_sharing_information(
-            self.makeSharingObject(), self.SHARING_TEXT)
+            self.makeSharingObject(),
+            'sharing-information', self.SHARING_TEXT)
+
+    def test_sharing_details_info(self):
+        # For unauthorized users, the link to the sharing details page is
+        # informational.
+        self._test_sharing_information(
+            self.makeSharingObject(),
+            'sharing-details', self.SHARING_DETAILS_INFO)
+
+    def test_sharing_details_setup(self):
+        # For authorized users of not sharing objects, the link to the
+        # sharing details page encourages action.
+        self._test_sharing_information(
+            self.makeNotSharingObject(),
+            'sharing-details', self.SHARING_DETAILS_SETUP,
+            no_login=False)
+
+    def test_sharing_details_edit(self):
+        # For authorized users, the link to the sharing details page is for
+        # editing
+        self._test_sharing_information(
+            self.makeNotSharingObject(),
+            'sharing-details', self.SHARING_DETAILS_EDIT,
+            no_login=False)
 
 
 class TestUpstreamPOTemplateSharingInfo(BrowserTestCase,
