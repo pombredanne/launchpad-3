@@ -1,7 +1,7 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Test the ppa-add-missing-builds.py script. """
+"""Test the add-missing-builds.py script. """
 
 import os
 import subprocess
@@ -18,13 +18,13 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
     )
-from lp.soyuz.scripts.ppa_add_missing_builds import PPAMissingBuilds
+from lp.soyuz.scripts.add_missing_builds import AddMissingBuilds
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
 
-class TestPPAAddMissingBuilds(TestCaseWithFactory):
-    """Test the ppa-add-missing-builds.py script. """
+class TestAddMissingBuilds(TestCaseWithFactory):
+    """Test the add-missing-builds.py script. """
 
     layer = LaunchpadZopelessLayer
     dbuser = config.builddmaster.dbuser
@@ -60,7 +60,7 @@ class TestPPAAddMissingBuilds(TestCaseWithFactory):
         if test_args is None:
             test_args = []
         script = os.path.join(
-            config.root, "scripts", "ppa-add-missing-builds.py")
+            config.root, "scripts", "add-missing-builds.py")
         args = [sys.executable, script]
         args.extend(test_args)
         process = subprocess.Popen(
@@ -70,7 +70,7 @@ class TestPPAAddMissingBuilds(TestCaseWithFactory):
 
     def getScript(self):
         """Return an instance of the script object."""
-        script = PPAMissingBuilds("test", test_args=[])
+        script = AddMissingBuilds("test", test_args=[])
         script.logger = BufferLogger()
         return script
 
@@ -153,6 +153,6 @@ class TestPPAAddMissingBuilds(TestCaseWithFactory):
         self.any.requestDeletion(self.ppa.owner)
 
         script = self.getScript()
-        script.add_missing_ppa_builds(
+        script.add_missing_builds(
             self.ppa, self.required_arches, self.stp.breezy_autotest)
         self.assertNoBuilds()

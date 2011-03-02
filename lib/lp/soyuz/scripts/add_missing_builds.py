@@ -11,14 +11,14 @@ from lp.services.scripts.base import LaunchpadScript
 from lp.soyuz.enums import PackagePublishingStatus
 
 
-class PPAMissingBuilds(LaunchpadScript):
+class AddMissingBuilds(LaunchpadScript):
     """Helper class to create builds in PPAs for requested architectures."""
 
-    def add_missing_ppa_builds(self, ppa, required_arches, distroseries):
-        """For a PPA, create builds as necessary.
+    def add_missing_builds(self, archive, required_arches, distroseries):
+        """Create builds in an archive as necessary.
 
-        :param ppa: The PPA
-        :param required_arches: A list of `DistroArchSeries`
+        :param archive: The `Archive`.
+        :param required_arches: A list of `DistroArchSeries`.
         :param distroseries: The context `DistroSeries` in which to create
             builds.
         """
@@ -50,7 +50,7 @@ class PPAMissingBuilds(LaunchpadScript):
             self.logger.error("Requested architectures not available")
             return
 
-        sources = ppa.getPublishedSources(
+        sources = archive.getPublishedSources(
             distroseries=distroseries,
             status=PackagePublishingStatus.PUBLISHED)
         if not bool(sources):
@@ -124,7 +124,7 @@ class PPAMissingBuilds(LaunchpadScript):
 
         # I'm tired of parsing options.  Let's do it.
         try:
-            self.add_missing_ppa_builds(ppa, arches, distroseries)
+            self.add_missing_builds(ppa, arches, distroseries)
             self.txn.commit()
             self.logger.info("Finished adding builds.")
         except Exception, err:
@@ -132,5 +132,4 @@ class PPAMissingBuilds(LaunchpadScript):
             self.txn.abort()
             self.logger.info("Errors, aborted transaction.")
             sys.exit(1)
-
 
