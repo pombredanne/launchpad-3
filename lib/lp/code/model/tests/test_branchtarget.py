@@ -53,7 +53,7 @@ class BaseBranchTargetTests:
         # branches related to the branch target.
         self.assertEqual(self.target.collection.getBranches().count(), 0)
         branch = self.makeBranchForTarget()
-        branches = self.target.collection.getBranches(eager_load=False)
+        branches = self.target.collection.getBranches()
         self.assertEqual([branch], list(branches))
 
     def test_retargetBranch_packageBranch(self):

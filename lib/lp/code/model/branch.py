@@ -142,7 +142,6 @@ from lp.registry.interfaces.person import (
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
-from lp.services.propertycache import cachedproperty
 
 
 class Branch(SQLBase, BzrIdentityMixin):
@@ -725,19 +724,13 @@ class Branch(SQLBase, BzrIdentityMixin):
             DeleteCodeImport(self.code_import)()
         Store.of(self).flush()
 
-    @cachedproperty
-    def _associatedProductSeries(self):
-        """Helper for eager loading associatedProductSeries."""
-        # This is eager loaded by BranchCollection.getBranches.
+    def associatedProductSeries(self):
+        """See `IBranch`."""
         # Imported here to avoid circular import.
         from lp.registry.model.productseries import ProductSeries
         return Store.of(self).find(
             ProductSeries,
             ProductSeries.branch == self)
-
-    def associatedProductSeries(self):
-        """See `IBranch`."""
-        return self._associatedProductSeries
 
     def getProductSeriesPushingTranslations(self):
         """See `IBranch`."""
@@ -747,20 +740,13 @@ class Branch(SQLBase, BzrIdentityMixin):
             ProductSeries,
             ProductSeries.translations_branch == self)
 
-    @cachedproperty
-    def _associatedSuiteSourcePackages(self):
-        """Helper for associatedSuiteSourcePackages."""
-        # This is eager loaded by BranchCollection.getBranches.
+    def associatedSuiteSourcePackages(self):
+        """See `IBranch`."""
         series_set = getUtility(IFindOfficialBranchLinks)
-        # Order by the pocket to get the release one first. If changing this be
-        # sure to also change BranchCollection.getBranches.
+        # Order by the pocket to get the release one first.
         links = series_set.findForBranch(self).order_by(
             SeriesSourcePackageBranch.pocket)
         return [link.suite_sourcepackage for link in links]
-
-    def associatedSuiteSourcePackages(self):
-        """See `IBranch`."""
-        return self._associatedSuiteSourcePackages
 
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines,
@@ -1325,8 +1311,7 @@ class BranchSet:
         branches = all_branches.visibleByUser(
             visible_by_user).withLifecycleStatus(*lifecycle_statuses)
         branches = branches.withBranchType(
-            BranchType.HOSTED, BranchType.MIRRORED).scanned().getBranches(
-                eager_load=False)
+            BranchType.HOSTED, BranchType.MIRRORED).scanned().getBranches()
         branches.order_by(
             Desc(Branch.date_last_modified), Desc(Branch.id))
         if branch_count is not None:
@@ -1342,7 +1327,7 @@ class BranchSet:
         branches = all_branches.visibleByUser(
             visible_by_user).withLifecycleStatus(*lifecycle_statuses)
         branches = branches.withBranchType(
-            BranchType.IMPORTED).scanned().getBranches(eager_load=False)
+            BranchType.IMPORTED).scanned().getBranches()
         branches.order_by(
             Desc(Branch.date_last_modified), Desc(Branch.id))
         if branch_count is not None:
@@ -1356,8 +1341,7 @@ class BranchSet:
         """See `IBranchSet`."""
         all_branches = getUtility(IAllBranches)
         branches = all_branches.withLifecycleStatus(
-            *lifecycle_statuses).visibleByUser(visible_by_user).getBranches(
-                eager_load=False)
+            *lifecycle_statuses).visibleByUser(visible_by_user).getBranches()
         branches.order_by(
             Desc(Branch.date_created), Desc(Branch.id))
         if branch_count is not None:
@@ -1376,10 +1360,10 @@ class BranchSet:
         """See `IBranchSet`."""
         return getUtility(IBranchLookup).getByUrls(urls)
 
-    def getBranches(self, limit=50, eager_load=True):
+    def getBranches(self, limit=50):
         """See `IBranchSet`."""
         anon_branches = getUtility(IAllBranches).visibleByUser(None)
-        branches = anon_branches.scanned().getBranches(eager_load=eager_load)
+        branches = anon_branches.scanned().getBranches()
         branches.order_by(
             Desc(Branch.date_last_modified), Desc(Branch.id))
         branches.config(limit=limit)
