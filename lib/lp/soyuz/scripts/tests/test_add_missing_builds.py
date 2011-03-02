@@ -13,6 +13,7 @@ from canonical.database.sqlbase import (
     flush_database_updates,
     )
 from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -40,7 +41,8 @@ class TestAddMissingBuilds(TestCaseWithFactory):
         self.stp.breezy_autotest_hppa.supports_virtualized = True
 
         # Create an arch-any and an arch-all source in a PPA.
-        self.ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.ppa = self.factory.makeArchive(
+            purpose=ArchivePurpose.PPA, distribution=self.stp.ubuntutest)
         self.all = self.stp.getPubSource(
             sourcename="all", architecturehintlist="all", archive=self.ppa,
             status=PackagePublishingStatus.PUBLISHED)
@@ -121,8 +123,8 @@ class TestAddMissingBuilds(TestCaseWithFactory):
             "-s", "breezy-autotest",
             "-a", "i386",
             "-a", "hppa",
-            "--owner", "%s" % self.ppa.owner.name,
-            "--ppa", self.ppa.name,
+            "--ppa", "%s" % self.ppa.owner.name,
+            "--ppa-name", self.ppa.name,
             ]
         code, stdout, stderr = self.runScript(args)
         self.assertEqual(
@@ -154,5 +156,6 @@ class TestAddMissingBuilds(TestCaseWithFactory):
 
         script = self.getScript()
         script.add_missing_builds(
-            self.ppa, self.required_arches, self.stp.breezy_autotest)
+            self.ppa, self.required_arches, self.stp.breezy_autotest,
+            PackagePublishingPocket.RELEASE)
         self.assertNoBuilds()

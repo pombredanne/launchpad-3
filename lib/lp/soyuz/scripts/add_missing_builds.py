@@ -7,20 +7,26 @@ import sys
 from zope.component import getUtility
 
 from lp.app.errors import NotFoundError
-from lp.services.scripts.base import LaunchpadScript
+from lp.services.scripts.base import LaunchpadScriptFailure
+from lp.soyuz.scripts.ftpmasterbase import (
+    SoyuzScript,
+    SoyuzScriptError,
+    )
 from lp.soyuz.enums import PackagePublishingStatus
 
 
-class AddMissingBuilds(LaunchpadScript):
+class AddMissingBuilds(SoyuzScript):
     """Helper class to create builds in PPAs for requested architectures."""
 
-    def add_missing_builds(self, archive, required_arches, distroseries):
+    def add_missing_builds(self, archive, required_arches, distroseries,
+                           pocket):
         """Create builds in an archive as necessary.
 
         :param archive: The `Archive`.
         :param required_arches: A list of `DistroArchSeries`.
         :param distroseries: The context `DistroSeries` in which to create
             builds.
+        :param pocket: The context `PackagePublishingPocket`.
         """
         # Listify the architectures to avoid hitting this MultipleJoin
         # multiple times.
@@ -52,6 +58,7 @@ class AddMissingBuilds(LaunchpadScript):
 
         sources = archive.getPublishedSources(
             distroseries=distroseries,
+            pocket=pocket,
             status=PackagePublishingStatus.PUBLISHED)
         if not bool(sources):
             self.logger.info("No sources published, nothing to do.")
@@ -69,62 +76,36 @@ class AddMissingBuilds(LaunchpadScript):
 
     def add_my_options(self):
         """Command line options for this script."""
+        self.add_archive_options()
+        self.add_distro_options()
         self.parser.add_option(
             "-a", action="append", dest='arch_tags', default=[])
-        self.parser.add_option("-s", action="store", dest='distroseries_name')
-        self.parser.add_option(
-            "-d", action="store", dest='distribution_name', default="ubuntu")
-        self.parser.add_option(
-            "--owner", action="store", dest='ppa_owner_name')
-        self.parser.add_option(
-            "--ppa", action="store", dest='ppa_name', default="ppa")
 
     def main(self):
         """Entry point for `LaunchpadScript`s."""
+        try:
+            self.setupLocation()
+        except SoyuzScriptError, err:
+            raise LaunchpadScriptFailure(err)
+
         if not self.options.arch_tags:
             self.parser.error("Specify at least one architecture.")
-
-        if not self.options.distroseries_name:
-            self.parser.error("Specify a distroseries.")
-
-        if not self.options.ppa_owner_name:
-            self.parser.error("Specify a PPA owner name.")
-
-        # Avoid circular imports by importing here.
-        from lp.registry.interfaces.distribution import IDistributionSet
-        distro = getUtility(IDistributionSet).getByName(
-            self.options.distribution_name)
-        if distro is None:
-            self.parser.error("%s not found" % self.options.distribution_name)
-
-        try:
-            distroseries = distro.getSeries(self.options.distroseries_name)
-        except NotFoundError:
-            self.parser.error("%s not found" % self.options.distroseries_name)
 
         arches = []
         for arch_tag in self.options.arch_tags:
             try:
-                das = distroseries.getDistroArchSeries(arch_tag)
+                das = self.location.distroseries.getDistroArchSeries(arch_tag)
                 arches.append(das)
             except NotFoundError:
                 self.parser.error(
                     "%s not a valid architecture for %s" % (
-                        arch_tag, self.options.distroseries_name))
-
-        from lp.registry.interfaces.person import IPersonSet
-        owner = getUtility(IPersonSet).getByName(self.options.ppa_owner_name)
-        if owner is None:
-            self.parser.error("%s not found" % self.options.ppa_owner_name)
-
-        try:
-            ppa = owner.getPPAByName(self.options.ppa_name)
-        except NotFoundError:
-            self.parser.error("%s not found" % self.options.ppa_name)
+                        arch_tag, self.location.distroseries.name))
 
         # I'm tired of parsing options.  Let's do it.
         try:
-            self.add_missing_builds(ppa, arches, distroseries)
+            self.add_missing_builds(
+                self.location.archive, arches, self.location.distroseries,
+                self.location.pocket)
             self.txn.commit()
             self.logger.info("Finished adding builds.")
         except Exception, err:
