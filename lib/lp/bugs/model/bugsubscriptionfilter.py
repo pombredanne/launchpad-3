@@ -210,13 +210,13 @@ class BugSubscriptionFilter(StormBase):
     def delete(self):
         """See `IBugSubscriptionFilter`."""
         self.importances = self.statuses = self.tags = ()
-        # Revert all attributes to their default values from the inteface.
+        # Revert attributes to their default values from the interface.
         for attribute in ['bug_notification_level', 'find_all_tags',
                           'include_any_tags', 'exclude_any_tags']:
-            setattr(
-                self, attribute,
-                IBugSubscriptionFilter.getDescriptionFor(
-                    attribute).default)
+            default_value = IBugSubscriptionFilter.getDescriptionFor(
+                attribute).default
+            setattr(self, attribute, default_value)
+
         self.description = None
 
         if self._has_other_filters():
