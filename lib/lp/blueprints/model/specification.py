@@ -905,13 +905,13 @@ class SpecificationSet(HasSpecificationsMixin):
         """See ISpecificationSet."""
         # Adapt the NewSpecificationDefinitionStatus item to a
         # SpecificationDefinitionStatus item.
-        name = definition_status.name
-        new_names = NewSpecificationDefinitionStatus.items.mapping.keys()
-        if name not in new_names:
+        status_name = definition_status.name
+        status_names = NewSpecificationDefinitionStatus.items.mapping.keys()
+        if status_name not in status_names:
             raise AssertionError(
                 "definition_status must an item found in "
                 "NewSpecificationDefinitionStatus.")
-        definition_status = SpecificationDefinitionStatus.items[name]
+        definition_status = SpecificationDefinitionStatus.items[status_name]
         return Specification(name=name, title=title, specurl=specurl,
             summary=summary, priority=priority,
             definition_status=definition_status, owner=owner,

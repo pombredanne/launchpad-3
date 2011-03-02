@@ -276,7 +276,8 @@ class ISpecificationPublic(
     #      referencing it.
     id = Int(title=_("Database ID"), required=True, readonly=True)
 
-    # Redefine definition_status to support all definition statues.
+    # Redefine definition_status to support all definition statuses for
+    # life cycle events.
     definition_status = exported(
         Choice(
             title=_('Definition Status'),

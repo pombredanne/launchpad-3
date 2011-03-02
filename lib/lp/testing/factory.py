@@ -1904,12 +1904,18 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             owner = self.makePerson()
         if priority is None:
             priority = SpecificationPriority.UNDEFINED
+        status_names = NewSpecificationDefinitionStatus.items.mapping.keys()
+        if status.name in status_names:
+            definition_status = status
+        else:
+            # This is to satisfy life cycle requirements.
+            definition_status = NewSpecificationDefinitionStatus.NEW
         spec = getUtility(ISpecificationSet).new(
             name=name,
             title=title,
             specurl=None,
             summary=summary,
-            definition_status=status,
+            definition_status=definition_status,
             whiteboard=whiteboard,
             owner=owner,
             assignee=assignee,
@@ -1919,6 +1925,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             distribution=distribution,
             priority=priority)
         naked_spec = removeSecurityProxy(spec)
+        if status.name not in status_names:
+            # Set the closed status after the status has a sane initial state.
+            naked_spec.definition_status = status
         if status == SpecificationDefinitionStatus.OBSOLETE:
             # This is to satisfy a DB constraint of obsolete specs.
             naked_spec.completer = owner
