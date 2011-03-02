@@ -52,6 +52,7 @@ the watch.
     DEBUG   No watches to update on http://bugzilla.gnome.org/
     DEBUG   No watches to update on http://bugzilla.gnome.org/bugs
     DEBUG   No watches to update on https://bugzilla.mozilla.org/
+    INFO    'Unsupported Bugtracker' error updating http://savannah.gnu.org/: SAVANE
     WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
     (OOPS-...)
     DEBUG   No watches to update on http://sourceforge.net/
@@ -273,7 +274,7 @@ requests are actually made.
     ...     urllib2.urlopen = urlopen
     DEBUG No global batch size specified.
     INFO Updating 5 watches for 5 bugs on http://bugs.example.com
-    INFO Connection timed out when updating ... (OOPS-...)
+    INFO Connection timed out when updating ...
 
 
 Updating all the watches on a bug tracker
@@ -318,6 +319,7 @@ CheckwatchesMaster's logger.
     >>> update_all('savannah', batch_size)
     INFO Resetting 1 bug watches for bug tracker 'savannah'
     INFO Updating 1 watches on bug tracker 'savannah'
+    INFO 'Unsupported Bugtracker' error updating http://savannah.gnu.org/: SAVANE
     WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
     (OOPS-...)
     INFO 0 watches left to check on bug tracker 'savannah'

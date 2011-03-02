@@ -21,15 +21,14 @@ __all__ = [
 
 
 from lazr.restful.declarations import (
-    exported,
     export_as_webservice_entry,
+    exported,
     )
 from lazr.restful.fields import (
     CollectionField,
     Reference,
     ReferenceChoice,
     )
-
 from zope.component import getUtility
 from zope.interface import (
     Attribute,
@@ -46,7 +45,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.validation import valid_webref
-from canonical.launchpad.validators import LaunchpadValidationError
+from lp.app.validators import LaunchpadValidationError
 from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationGoalStatus,
@@ -58,8 +57,8 @@ from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications,
     ISpecificationTarget,
     )
-from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.blueprints.interfaces.sprint import ISprint
+from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.code.interfaces.branchlink import IHasLinkedBranches
 from lp.registry.interfaces.milestone import IMilestone
 from lp.registry.interfaces.projectgroup import IProjectGroup

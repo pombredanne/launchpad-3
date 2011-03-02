@@ -23,20 +23,26 @@ from storm.expr import (
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
 from canonical.launchpad.webapp.vocabulary import CountableIterator
+from canonical.lazr.utils import safe_hasattr
+from lp.bugs.model.bug import Bug
+from lp.bugs.model.bugbranch import BugBranch
 from lp.code.interfaces.branch import user_has_special_branch_access
 from lp.code.interfaces.branchcollection import (
     IBranchCollection,
     InvalidFilter,
     )
-
-from lp.bugs.model.bug import Bug
-from lp.bugs.model.bugbranch import BugBranch
+from lp.code.interfaces.seriessourcepackagebranch import (
+    IFindOfficialBranchLinks,
+    )
 from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
@@ -55,6 +61,7 @@ from lp.registry.model.person import (
 from lp.registry.model.product import Product
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.propertycache import get_property_cache
 
 
 class GenericBranchCollection:
@@ -89,7 +96,7 @@ class GenericBranchCollection:
 
     def count(self):
         """See `IBranchCollection`."""
-        return self.getBranches().count()
+        return self.getBranches(eager_load=False).count()
 
     def ownerCounts(self):
         """See `IBranchCollection`."""
@@ -136,7 +143,7 @@ class GenericBranchCollection:
 
     def _getBranchIdQuery(self):
         """Return a Storm 'Select' for the branch IDs in this collection."""
-        select = self.getBranches()._get_select()
+        select = self.getBranches(eager_load=False)._get_select()
         select.columns = (Branch.id,)
         return select
 
@@ -144,11 +151,43 @@ class GenericBranchCollection:
         """Return the where expressions for this collection."""
         return self._branch_filter_expressions
 
-    def getBranches(self):
+    def getBranches(self, eager_load=False):
         """See `IBranchCollection`."""
         tables = [Branch] + self._tables.values()
         expressions = self._getBranchExpressions()
-        return self.store.using(*tables).find(Branch, *expressions)
+        resultset = self.store.using(*tables).find(Branch, *expressions)
+        if not eager_load:
+            return resultset
+        def do_eager_load(rows):
+            branch_ids = set(branch.id for branch in rows)
+            if not branch_ids:
+                return
+            branches = dict((branch.id, branch) for branch in rows)
+            caches = dict((branch.id, get_property_cache(branch))
+                for branch in rows)
+            for cache in caches.values():
+                if not safe_hasattr(cache, '_associatedProductSeries'):
+                    cache._associatedProductSeries = []
+                if not safe_hasattr(cache, '_associatedSuiteSourcePackages'):
+                    cache._associatedSuiteSourcePackages = []
+            # associatedProductSeries
+            # Imported here to avoid circular import.
+            from lp.registry.model.productseries import ProductSeries
+            for productseries in self.store.find(
+                ProductSeries,
+                ProductSeries.branchID.is_in(branch_ids)):
+                cache = caches[productseries.branchID]
+                cache._associatedProductSeries.append(productseries)
+            # associatedSuiteSourcePackages
+            series_set = getUtility(IFindOfficialBranchLinks)
+            # Order by the pocket to get the release one first. If changing
+            # this be sure to also change BranchCollection.getBranches.
+            links = series_set.findForBranches(rows).order_by(
+                SeriesSourcePackageBranch.pocket)
+            for link in links:
+                cache = caches[link.branchID]
+                cache._associatedSuiteSourcePackages.append(link)
+        return DecoratedResultSet(resultset, pre_iter_hook=do_eager_load)
 
     def getMergeProposals(self, statuses=None, for_branches=None,
                           target_branch=None, merged_revnos=None):
@@ -364,7 +403,7 @@ class GenericBranchCollection:
         # of the unique name and sort based on relevance.
         branch = self._getExactMatch(search_term)
         if branch is not None:
-            if branch in self.getBranches():
+            if branch in self.getBranches(eager_load=False):
                 return CountableIterator(1, [branch])
             else:
                 return CountableIterator(0, [])
@@ -397,7 +436,8 @@ class GenericBranchCollection:
 
         # Get the results.
         collection = self._filterBy([Branch.id.is_in(Union(*queries))])
-        results = collection.getBranches().order_by(Branch.name, Branch.id)
+        results = collection.getBranches(eager_load=False).order_by(
+            Branch.name, Branch.id)
         return CountableIterator(results.count(), results)
 
     def scanned(self):

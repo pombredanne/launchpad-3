@@ -46,13 +46,12 @@ from zope.schema import (
     Choice,
     Datetime,
     Int,
-    Object,
     Text,
     TextLine,
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.validators.name import name_validator
+from lp.app.validators.name import name_validator
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -77,14 +76,16 @@ MINIMAL_RECIPE_TEXT = dedent(u'''\
 class ISourcePackageRecipeData(Interface):
     """A recipe as database data, not text."""
 
-    base_branch = Object(
-        schema=IBranch, title=_("Base branch"), description=_(
-            "The base branch to use when building the recipe."))
+    base_branch = exported(
+        Reference(
+            IBranch, title=_("The base branch used by this recipe."),
+            required=True, readonly=True))
 
-    deb_version_template = TextLine(
-        title=_('deb-version template'),
-        description = _(
-            'The template that will be used to generate a deb version.'),)
+    deb_version_template = exported(
+        TextLine(
+            title=_('deb-version template'), readonly=True,
+            description = _(
+                'The template that will be used to generate a deb version.')))
 
     def getReferencedBranches():
         """An iterator of the branches referenced by this recipe."""
@@ -238,9 +239,6 @@ class ISourcePackageRecipe(ISourcePackageRecipeData,
     debianized source tree.
     """
     export_as_webservice_entry()
-    base_branch = Reference(
-        IBranch, title=_("The base branch used by this recipe."),
-        required=True, readonly=True)
 
 
 class ISourcePackageRecipeSource(Interface):

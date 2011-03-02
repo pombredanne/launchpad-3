@@ -26,7 +26,10 @@ import datetime
 from itertools import chain
 from operator import attrgetter
 
-from lazr.enum import DBItem
+from lazr.enum import (
+    DBItem,
+    Item,
+    )
 import pytz
 from sqlobject import (
     ForeignKey,
@@ -2087,20 +2090,24 @@ class BugTaskSet:
         if hw_clause is not None:
             extra_clauses.append(hw_clause)
 
-        if params.linked_branches == BugBranchSearch.BUGS_WITH_BRANCHES:
+        if zope_isinstance(params.linked_branches, Item):
+            if params.linked_branches == BugBranchSearch.BUGS_WITH_BRANCHES:
+                extra_clauses.append(
+                    """EXISTS (
+                        SELECT id FROM BugBranch WHERE BugBranch.bug=Bug.id)
+                    """)
+            elif params.linked_branches == BugBranchSearch.BUGS_WITHOUT_BRANCHES:
+                extra_clauses.append(
+                    """NOT EXISTS (
+                        SELECT id FROM BugBranch WHERE BugBranch.bug=Bug.id)
+                    """)
+        elif zope_isinstance(params.linked_branches, (any, all, int)):
+            # A specific search term has been supplied.
             extra_clauses.append(
                 """EXISTS (
-                    SELECT id FROM BugBranch WHERE BugBranch.bug=Bug.id)
-                """)
-        elif params.linked_branches == BugBranchSearch.BUGS_WITHOUT_BRANCHES:
-            extra_clauses.append(
-                """NOT EXISTS (
-                    SELECT id FROM BugBranch WHERE BugBranch.bug=Bug.id)
-                """)
-        else:
-            # If no branch specific search restriction is specified,
-            # we don't need to add any clause.
-            pass
+                    SELECT TRUE FROM BugBranch WHERE BugBranch.bug=Bug.id AND
+                    BugBranch.branch %s)
+                """ % search_value_to_where_condition(params.linked_branches))
 
         linked_blueprints_clause = self._buildBlueprintRelatedClause(params)
         if linked_blueprints_clause is not None:
