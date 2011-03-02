@@ -865,7 +865,7 @@
             interface="lp.bugs.interfaces.bugmessage.IBugMessage"/>
         <require
             permission="launchpad.Admin"
-            set_attributes="remote_comment_id bugwatch visible index"/>
+            set_attributes="remote_comment_id bugwatch index"/>
     </class>
 
     <!-- BugMessageSet -->
