@@ -80,6 +80,9 @@
                tal:content="template/name"
              >evolution-2.2</a>.
         </p>
+        <a tal:replace="structure view/sharing_details">
+          View sharing details
+        </a>       
       </div>
     </div>
 

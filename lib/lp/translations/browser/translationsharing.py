@@ -28,7 +28,7 @@ class TranslationSharingDetailsMixin:
         """Construct the link to the sharing details page."""
         tag_template = (
             '<a class="sprite %(icon)s" id="sharing-details"'
-            ' href="%(href)s">%(text)s/+sharing-details</a>')
+            ' href="%(href)s/+sharing-details">%(text)s</a>')
     
         if self.can_edit_sharing_details():
             icon = 'edit'
