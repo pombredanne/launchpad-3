@@ -2426,6 +2426,8 @@ body.global-notification-visible .login-logout {
     background-color: rgba(125,0,0,0.9);
     color: #fff;
     text-shadow: 0 -1px 0 #631616;
+    font-size: 14px;
+    line-height: 21px;
     font-weight: bold;
     -moz-box-shadow: 0 0 5px #333;
     -webkit-box-shadow: 0 0 5px #333;
@@ -2448,8 +2450,9 @@ body.global-notification-visible .login-logout {
     position: absolute;
     top: 11px;
     right: 20px;
-    font-size: 85%;
+    font-size: 12px;
     font-weight: normal;
+    line-height: 14px;
     }
 .global-notification-close .sprite.notification-close {
     float: right;
