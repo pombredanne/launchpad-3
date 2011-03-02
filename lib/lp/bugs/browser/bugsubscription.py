@@ -31,7 +31,6 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
-from zope.security.proxy import removeSecurityProxy
 from zope.traversing.browser import absoluteURL
 
 from canonical.launchpad import _
@@ -50,6 +49,9 @@ from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.bugs.browser.structuralsubscription import (
+    expose_user_subscriptions_to_js,
+    )
 from lp.services import features
 from lp.services.propertycache import cachedproperty
 
@@ -553,58 +555,13 @@ class SubscriptionAttrDecorator:
         return 'subscriber-%s' % self.subscription.person.id
 
 
-
-def get_user_subscriptions(user, bugtasks):
-    # TODO move this to a more general location
-    bugtaskset = getUtility(IBugTaskSet)
-    targets = [target for (bugtask, target)
-        in bugtaskset.getStructuralSubscriptionTargets(bugtasks)]
-
-    if len(targets) == 0:
-        return EmptyResultSet()
-
-    result = {}
-    for target in targets:
-        result.setdefault(target, []).extend(
-            list(removeSecurityProxy(target).getSubscriptions(user)))
-
-    # The user may not have subscriptions to all of the targets, filter
-    # those out.
-    deletable = [target for target in result if len(result[target]) == 0]
-    for target in deletable:
-        del result[target]
-
-    def key((target, subscriptions)):
-        """Sort on the title of the target."""
-        return target.title
-
-    return sorted(result.items(), key=key)
-
-
-def expose_user_subscription_status_to_js(user_subscriptions, request):
-    """Make the user's subscriptions available to JavaScript."""
-
-    info = []
-    for target, subscriptions in user_subscriptions:
-        record = {}
-        record['target_title'] = target.title
-        record['target_url'] = absoluteURL(target, request)
-        record['filters'] = []
-        for subscription in subscriptions:
-            record['filters'].extend(subscription.bug_filters)
-        info.append(record)
-
-    IJSONRequestCache(request).objects['subscription_info'] = info
-
-
 class BugSubscriptionListView(LaunchpadView):
     """A view to show all a person's subscriptions to a bug."""
 
     def __init__(self, context, request):
         super(BugSubscriptionListView, self).__init__(context, request)
-        expose_user_subscription_status_to_js(
-            get_user_subscriptions(self.user, self.context.bug.bugtasks),
-            request)
+        expose_user_subscriptions_to_js(
+            self.user, self.context.bug.bugtasks, request)
 
     @property
     def label(self):
