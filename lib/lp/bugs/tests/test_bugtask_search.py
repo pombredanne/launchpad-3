@@ -533,6 +533,27 @@ class SearchTestBase:
         self.assertSearchFinds(params, self.bugtasks[:1])
 
 
+class CustomisedSearchTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_search_with_user_decorator(self):
+    # Test that a custom resultset decorator is called as expected.
+        expected_tasks = []
+
+        def result_decorator(row):
+            expected_tasks.append(row[0])
+            return row[0]
+
+        bugtask_set = getUtility(IBugTaskSet)
+        bug = self.factory.makeBug()
+        params = BugTaskSearchParams(user=None, bug=bug)
+        found_tasks = list(bugtask_set.search(
+            params, user_result_decorator=result_decorator))
+        self.assertEqual(found_tasks, [bug.default_bugtask])
+        self.assertEqual(expected_tasks, [bug.default_bugtask])
+
+
 class DeactivatedProductBugTaskTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -607,7 +628,7 @@ class ProjectGroupAndDistributionTests:
 
 class BugTargetTestBase:
     """A base class for the bug target mixin classes.
-    
+
     :ivar searchtarget: A bug context to search within.
     :ivar searchtarget2: A sibling bug context for testing cross-context
         searches. Created on demand when
