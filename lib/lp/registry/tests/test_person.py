@@ -277,6 +277,27 @@ class TestPerson(TestCaseWithFactory):
             user.getOwnedOrDrivenPillars()]
         self.assertEqual(expected_pillars, received_pillars)
 
+    def test_no_merge_pending(self):
+        # is_merge_pending returns False when this person is not the "from"
+        # person of an active merge job.
+        person = self.factory.makePerson()
+        self.assertFalse(person.is_merge_pending)
+
+    def test_merge_pending(self):
+        # is_merge_pending returns True when this person is the "from" person
+        # of an active merge job.
+        from_person = self.factory.makePerson()
+        to_person = self.factory.makePerson()
+        getUtility(IPersonSet).mergeAsync(from_person, to_person)
+        self.assertTrue(from_person.is_merge_pending)
+        self.assertFalse(to_person.is_merge_pending)
+
+    def test_selfgenerated_bugnotifications_none_by_default(self):
+        # Default for new accounts is to not get any
+        # self-generated bug notifications by default.
+        user = self.factory.makePerson()
+        self.assertFalse(user.selfgenerated_bugnotifications)
+
 
 class TestPersonStates(TestCaseWithFactory):
 
@@ -749,6 +770,15 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         descriptions = [r.description for r in recipes]
         self.assertEqual([u'TO', u'FROM'], descriptions)
         self.assertEqual(u'foo-1', recipes[1].name)
+
+    def test_mergeAsync(self):
+        # mergeAsync() creates a new `PersonMergeJob`.
+        from_person = self.factory.makePerson()
+        to_person = self.factory.makePerson()
+        login_person(from_person)
+        job = self.person_set.mergeAsync(from_person, to_person)
+        self.assertEqual(from_person, job.from_person)
+        self.assertEqual(to_person, job.to_person)
 
 
 class TestPersonSetCreateByOpenId(TestCaseWithFactory):
