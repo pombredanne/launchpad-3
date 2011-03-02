@@ -11,22 +11,28 @@ __all__ = [
     'DistroSeriesBreadcrumb',
     'DistroSeriesEditView',
     'DistroSeriesFacets',
+    'DistroSeriesInitializeView',
     'DistroSeriesLocalDifferences',
+    'DistroSeriesNavigation',
     'DistroSeriesPackageSearchView',
     'DistroSeriesPackagesView',
-    'DistroSeriesNavigation',
     'DistroSeriesView',
     ]
 
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
-from zope.interface import Interface
+from zope.interface import (
+    alsoProvides,
+    Interface,
+    )
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import (
+    Bool,
     Choice,
     List,
     )
+from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
@@ -37,7 +43,10 @@ from canonical.launchpad import (
     _,
     helpers,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchBag
+from canonical.launchpad.interfaces.launchpad import (
+    ILaunchBag,
+    ILaunchpadCelebrities,
+    )
 from canonical.launchpad.webapp import (
     action,
     custom_widget,
@@ -65,7 +74,9 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.errors import NotFoundError
 from lp.app.widgets.itemswidgets import (
+    CheckBoxMatrixWidget,
     LabeledMultiCheckBoxWidget,
+    LaunchpadBooleanRadioWidget,
     LaunchpadDropdownWidget,
     )
 from lp.blueprints.browser.specificationtarget import (
@@ -77,11 +88,13 @@ from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin,
     )
 from lp.registry.browser import MilestoneOverlayMixin
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
 from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.vocabularies import DistroSeriesVocabulary
 from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountry
@@ -481,7 +494,7 @@ class DistroSeriesAdminView(LaunchpadEditFormView, SeriesStatusMixin):
 
 
 class DistroSeriesAddView(LaunchpadFormView):
-    """A view to creat an `IDistrobutionSeries`."""
+    """A view to create an `IDistroSeries`."""
     schema = IDistroSeries
     field_names = [
         'name', 'displayname', 'title', 'summary', 'description', 'version',
@@ -512,6 +525,89 @@ class DistroSeriesAddView(LaunchpadFormView):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
+
+
+def derived_from_series_source(context):
+    """A vocabulary source for series to derive from.
+
+    If the distro doesn't have any series yet, then we allow it to be derived
+    from another distro.
+    """
+    distribution = IDistribution(context)
+    serieses = list(distribution)
+    # XXX: Change to select all series we consider ok to derive from.
+    if len(serieses) == 0:
+        serieses.extend(getUtility(ILaunchpadCelebrities).ubuntu)
+    return SimpleVocabulary(
+        [DistroSeriesVocabulary.toTerm(series) for series in serieses])
+
+alsoProvides(derived_from_series_source, IContextSourceBinder)
+
+
+class IDistroSeriesInitializeForm(IDistroSeries):
+
+    derived_from_series = Choice(
+        title=_('Derived from distribution series'),
+        default=None,
+        source=derived_from_series_source,
+        description=_(
+            "Select the distribution series you "
+            "want to derive from."),
+        required=True)
+
+    all_architectures = Bool(
+        title=_('Architectures to initialize'),
+        default=True,
+        required=True)
+
+    rebuild = Bool(
+        title=_('Copy options'),
+        description=_(
+            "Choose whether to rebuild all the sources "
+            "copied from the parent, or to copy their "
+            "binaries."),
+        default=False,
+        required=True)
+
+
+class DistroSeriesInitializeView(LaunchpadFormView):
+    """A view to initialize an `IDistroSeries`."""
+
+    schema = IDistroSeriesInitializeForm
+    field_names = [
+        "derived_from_series",
+        ]
+
+    custom_widget('derived_from_series', LaunchpadDropdownWidget)
+    custom_widget(
+        'all_architectures', LaunchpadBooleanRadioWidget,
+        true_label='Use all architectures in parent series',
+        false_label='Specify architectures below')
+    custom_widget('architectures', CheckBoxMatrixWidget, column_count=5)
+    custom_widget(
+        'all_packagesets', LaunchpadBooleanRadioWidget,
+        true_label='Copy all packagesets in parent series',
+        false_label='Specify packagesets below')
+    custom_widget('packagesets', CheckBoxMatrixWidget, column_count=5)
+    custom_widget(
+        'rebuild', LaunchpadBooleanRadioWidget,
+        true_label='Copy source and rebuild',
+        false_label='Copy source and binaries')
+
+    label = 'Initialize series'
+    page_title = label
+
+    @action(_('Commence initialization'), name='initialize')
+    def initialize_series(self, action, data):
+        """Initialize the Distribution Series."""
+        owner = getUtility(ILaunchBag).user
+        assert owner is not None
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class DistroSeriesPackagesView(LaunchpadView):

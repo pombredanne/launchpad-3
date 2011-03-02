@@ -1429,7 +1429,8 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
         for series in sorted(series, key=attrgetter('sortkey')):
             yield self.toTerm(series)
 
-    def toTerm(self, obj):
+    @staticmethod
+    def toTerm(obj):
         """See `IVocabulary`."""
         # NB: We use '/' as the separator because '-' is valid in
         # a distribution.name
