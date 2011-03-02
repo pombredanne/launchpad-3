@@ -120,6 +120,8 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         # Final remaining `BugSubscriptionFilter` can't be deleted.
         # Only the linked data is removed.
         bug_subscription_filter = self.subscription.bug_filters.one()
+        bug_subscription_filter.bug_notification_level = (
+            BugNotificationLevel.LIFECYCLE)
         bug_subscription_filter.importances = [BugTaskImportance.LOW]
         bug_subscription_filter.statuses = [BugTaskStatus.NEW]
         bug_subscription_filter.tags = [u"foo"]
@@ -129,6 +131,8 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         bug_subscription_filter.delete()
         IStore(bug_subscription_filter).flush()
         self.assertIsNot(None, Store.of(bug_subscription_filter))
+        self.assertEquals(BugNotificationLevel.COMMENTS,
+                          bug_subscription_filter.bug_notification_level)
         self.assertContentEqual([], bug_subscription_filter.statuses)
         self.assertContentEqual([], bug_subscription_filter.importances)
         self.assertContentEqual([], bug_subscription_filter.tags)

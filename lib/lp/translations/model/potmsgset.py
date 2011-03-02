@@ -372,6 +372,10 @@ class POTMsgSet(SQLBase):
 
         Suggestions are read-only, so these objects come from the slave
         store.
+
+        :param used: If None, return both used and unused messages.
+            Otherwise, return only used (if bool(used)) or unused (if not
+            bool(used)) messages.
         """
         if not config.rosetta.global_suggestions_enabled:
             return []
@@ -385,7 +389,9 @@ class POTMsgSet(SQLBase):
         # Also note that there is a NOT(in_use_clause) index.
         in_use_clause = (
             "(is_current_ubuntu IS TRUE OR is_current_upstream IS TRUE)")
-        if used:
+        if used is None:
+            query = []
+        elif used:
             query = [in_use_clause]
         else:
             query = ["(NOT %s)" % in_use_clause]
@@ -439,6 +445,23 @@ class POTMsgSet(SQLBase):
     def getExternallySuggestedTranslationMessages(self, language):
         """See `IPOTMsgSet`."""
         return self._getExternalTranslationMessages(language, used=False)
+
+    def getExternallySuggestedOrUsedTranslationMessages(self, language):
+        """See `IPOTMsgSet`."""
+        # This method exists because suggestions + used == all external
+        # messages : its better not to do the work twice. We could use a
+        # temp table and query twice, but as the list length is capped at
+        # 2000, doing a single pass in python should be insignificantly
+        # slower.
+        suggested_messages = []
+        used_messages = []
+        for message in self._getExternalTranslationMessages(language, used=None):
+            in_use = message.is_current_ubuntu or message.is_current_upstream
+            if in_use:
+                used_messages.append(message)
+            else:
+                suggested_messages.append(message)
+        return suggested_messages, used_messages
 
     @property
     def flags(self):

@@ -33,7 +33,10 @@ from lazr.restful.fields import (
     Reference,
     ReferenceChoice,
     )
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
     Choice,
     Datetime,
@@ -130,6 +133,7 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
     owner = exported(PublicPersonChoice(
         title=_('Submitter'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam'))
+    ownerID = Attribute('The db id of the owner.')
     decider = exported(PublicPersonChoice(
         title=_('Decided By'), required=False, readonly=True,
         vocabulary='ValidPersonOrTeam'))

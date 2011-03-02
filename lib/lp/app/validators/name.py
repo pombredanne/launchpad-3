@@ -10,11 +10,12 @@ import re
 from textwrap import dedent
 
 from canonical.launchpad import _
-from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.menu import structured
+from lp.app.validators import LaunchpadValidationError
 
 
 valid_name_pattern = re.compile(r"^[a-z0-9][a-z0-9\+\.\-]+$")
+valid_bug_name_pattern = re.compile(r"^[a-z][a-z0-9\+\.\-]+$")
 invalid_name_pattern = re.compile(r"^[^a-z0-9]+|[^a-z0-9\\+\\.\\-]+")
 
 
@@ -57,6 +58,13 @@ def valid_name(name):
     return False
 
 
+def valid_bug_name(name):
+    """Return True if the bug name is valid, otherwise False."""
+    if valid_bug_name_pattern.match(name):
+        return True
+    return False
+
+
 def name_validator(name):
     """Return True if the name is valid, or raise a
     LaunchpadValidationError.
@@ -65,6 +73,22 @@ def name_validator(name):
         message = _(dedent("""
             Invalid name '${name}'. Names must be at least two characters long
             and start with a letter or number. All letters must be lower-case.
+            The characters <samp>+</samp>, <samp>-</samp> and <samp>.</samp>
+            are also allowed after the first character."""),
+            mapping={'name': escape(name)})
+
+        raise LaunchpadValidationError(structured(message))
+    return True
+
+
+def bug_name_validator(name):
+    """Return True if the name is valid, or raise a
+    LaunchpadValidationError.
+    """
+    if not valid_bug_name(name):
+        message = _(dedent("""
+            Invalid name '${name}'. Names must be at least two characters long
+            and start with a letter. All letters must be lower-case.
             The characters <samp>+</samp>, <samp>-</samp> and <samp>.</samp>
             are also allowed after the first character."""),
             mapping={'name': escape(name)})
