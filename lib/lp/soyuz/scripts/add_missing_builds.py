@@ -4,10 +4,10 @@
 
 import sys
 
-from zope.component import getUtility
-
+from canonical.config import config
 from lp.app.errors import NotFoundError
 from lp.services.scripts.base import LaunchpadScriptFailure
+from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript,
     SoyuzScriptError,
@@ -18,8 +18,8 @@ from lp.soyuz.enums import PackagePublishingStatus
 class AddMissingBuilds(SoyuzScript):
     """Helper class to create builds in PPAs for requested architectures."""
 
-    def add_missing_builds(self, archive, required_arches, distroseries,
-                           pocket):
+    def add_missing_builds(self, archive, required_arches, pas_verify,
+                           distroseries, pocket):
         """Create builds in an archive as necessary.
 
         :param archive: The `Archive`.
@@ -70,7 +70,8 @@ class AddMissingBuilds(SoyuzScript):
         for pubrec in sources:
             self.logger.info("Considering %s" % pubrec.displayname)
             builds = pubrec.createMissingBuilds(
-                architectures_available=doable_arch_set, logger=self.logger)
+                architectures_available=doable_arch_set,
+                pas_verify=pas_verify, logger=self.logger)
             if len(builds) > 0:
                 self.logger.info("Created %s build(s)" % len(builds))
 
@@ -101,11 +102,14 @@ class AddMissingBuilds(SoyuzScript):
                     "%s not a valid architecture for %s" % (
                         arch_tag, self.location.distroseries.name))
 
+        pas_verify = BuildDaemonPackagesArchSpecific(
+            config.builddmaster.root, self.location.distroseries)
+
         # I'm tired of parsing options.  Let's do it.
         try:
             self.add_missing_builds(
-                self.location.archive, arches, self.location.distroseries,
-                self.location.pocket)
+                self.location.archive, arches, pas_verify,
+                self.location.distroseries, self.location.pocket)
             self.txn.commit()
             self.logger.info("Finished adding builds.")
         except Exception, err:
