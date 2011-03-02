@@ -268,9 +268,15 @@ class TestLPForkingService(TestCaseWithLPForkingService):
     def test_child_connection_timeout(self):
         self.assertEqual(self.service.CHILD_CONNECT_TIMEOUT,
                          self.service._child_connect_timeout)
-        response = self.send_message_to_service('child_connect_timeout 1.0\n')
+        response = self.send_message_to_service('child_connect_timeout 1\n')
         self.assertEqual('ok\n', response)
-        self.assertEqual(1.0, self.service._child_connect_timeout)
+        self.assertEqual(1, self.service._child_connect_timeout)
+
+    def test_child_connection_timeout_bad_float(self):
+        self.assertEqual(self.service.CHILD_CONNECT_TIMEOUT,
+                         self.service._child_connect_timeout)
+        response = self.send_message_to_service('child_connect_timeout 1.2\n')
+        self.assertStartsWith(response, 'FAILURE:')
 
     def test_child_connection_timeout_no_val(self):
         response = self.send_message_to_service('child_connect_timeout \n')
@@ -281,12 +287,17 @@ class TestLPForkingService(TestCaseWithLPForkingService):
         self.assertStartsWith(response, 'FAILURE:')
 
     def test__open_handles_will_timeout(self):
-        self.service._child_connect_timeout = 0.1
+        # signal.alarm() has only 1-second granularity. :(
+        self.service._child_connect_timeout = 1
         tempdir = tempfile.mkdtemp(prefix='testlpserve-')
         self.addCleanup(shutil.rmtree, tempdir, ignore_errors=True)
         os.mkfifo(os.path.join(tempdir, 'stdin'))
         os.mkfifo(os.path.join(tempdir, 'stdout'))
         os.mkfifo(os.path.join(tempdir, 'stderr'))
+        def noop_on_alarm(signal, frame):
+            return
+        signal.signal(signal.SIGALRM, noop_on_alarm)
+        self.addCleanup(signal.signal, signal.SIGALRM, signal.SIG_DFL)
         e = self.assertRaises(errors.BzrError,
             self.service._open_handles, tempdir)
         self.assertContainsRe(str(e), r'After \d+.\d+s we failed to open.*')
@@ -593,7 +604,8 @@ class TestLPServiceInSubprocess(TestCaseWithLPForkingServiceSubprocess):
         # We won't ever bind to the socket the child wants, and after some
         # time, the child should exit cleanly.
         # First, tell the subprocess that we want children to exit quickly.
-        response = self.send_message_to_service('child_connect_timeout 0.05\n')
+        # *sigh* signal.alarm only has 1s resolution, so this test is slow.
+        response = self.send_message_to_service('child_connect_timeout 1\n')
         self.assertEqual('ok\n', response)
         # Now request a fork
         path, pid, sock = self.send_fork_request('rocks')
@@ -602,13 +614,14 @@ class TestLPServiceInSubprocess(TestCaseWithLPForkingServiceSubprocess):
         stdout_path = os.path.join(path, 'stdout')
         stderr_path = os.path.join(path, 'stderr')
         child_stdin = open(stdin_path, 'wb')
-        # # I hate adding time.sleep here, but I don't see a better way, yet
-        for i in xrange(10):
-            if not os.path.exists(path):
-                break
-            time.sleep(0.01)
-        else:
-            self.fail('Child process failed to cleanup after timeout.')
+        # We started opening the child, but stop before we get all handles
+        # open. After 1 second, the child should get signaled and die.
+        # The master process should notice, and tell us the status of the
+        # exited child.
+        val = sock.recv(4096)
+        self.assertEqual('exited\n%s\n' % (signal.SIGALRM,), val)
+        # The master process should clean up after the now deceased child.
+        self.failIfExists(path)
 
 
 class TestCaseWithLPForkingServiceDaemon(
@@ -733,39 +746,3 @@ class TestCaseWithLPForkingServiceDaemon(
         # We're done, shut it down
         self.stop_service()
         self.failIf(os.path.isfile(self.service_pid_filename))
-
-
-class Test_WakeUp(tests.TestCaseInTempDir):
-
-    def test_wakeup_interrupts_fifo_open(self):
-        os.mkfifo('test-fifo')
-        self.addCleanup(os.remove, 'test-fifo')
-        cancel, t = lpserve._wake_me_up_in_a_few(0.01)
-        e = self.assertRaises(OSError, os.open, 'test-fifo', os.O_RDONLY)
-        self.assertEqual(errno.EINTR, e.errno)
-        t.join()
-
-    def test_custom_callback_called(self):
-        called = []
-        def _sigusr1_called(sig, frame):
-            called.append(sig)
-            signal.signal(signal.SIGUSR1, signal.SIG_DFL)
-        cancel, t = lpserve._wake_me_up_in_a_few(0.01, _sigusr1_called)
-        time.sleep(0.1)
-        self.assertEqual([signal.SIGUSR1], called)
-        t.join()
-
-    def test_cancel_aborts_interrupt(self):
-        called = []
-        def _sigusr1_called(sig, frame):
-            called.append(sig, frame)
-        cancel, t = lpserve._wake_me_up_in_a_few(0.01)
-        cancel()
-        time.sleep(0.1)
-        # The signal should not have been fired, and we should have reset the
-        # signal handler
-        self.assertEqual([], called)
-        self.assertEqual(signal.SIG_DFL,
-                         signal.signal(signal.SIGUSR1, signal.SIG_DFL))
-        # Should have already been joined in cancel()
-        t.join()

@@ -133,31 +133,6 @@ class cmd_launchpad_server(Command):
 register_command(cmd_launchpad_server)
 
 
-def _handle_sigusr1(signum, frame):
-    """This is used by _wake_me_up_in_a_few to just ignore the signal"""
-    # We only want to handle the signal one time
-    signal.signal(signal.SIGUSR1, signal.SIG_DFL)
-    return
-
-
-def _wake_me_up_in_a_few(sleep_time, sig_handler=_handle_sigusr1):
-    """Start a thread that will send a signal to the current process.
-
-    :param sleep_time: The number of seconds to wait before firing SIGUSR1.
-    :return: cancel() A callable which will cancel the signal.
-    """
-    # Set up the signal handler
-    timer = threading.Timer(sleep_time, os.kill,
-                            args=(os.getpid(), signal.SIGUSR1))
-    signal.signal(signal.SIGUSR1, sig_handler)
-    timer.start()
-    def cancel():
-        timer.cancel()
-        signal.signal(signal.SIGUSR1, signal.SIG_DFL)
-        timer.join()
-    return cancel, timer
-
-
 class LPForkingService(object):
     """A service that can be asked to start a new bzr subprocess via fork.
 
@@ -336,7 +311,7 @@ class LPForkingService(object):
     SLEEP_FOR_CHILDREN_TIMEOUT = 1.0
     WAIT_FOR_REQUEST_TIMEOUT = 1.0 # No request should take longer than this to
                                    # be read
-    CHILD_CONNECT_TIMEOUT = 120.0 # If we get a fork() request, but nobody
+    CHILD_CONNECT_TIMEOUT = 120   # If we get a fork() request, but nobody
                                   # connects just exit
                                   # On a heavily loaded server, it could take a
                                   # couple secs, but it should never take
@@ -423,6 +398,17 @@ class LPForkingService(object):
         flags = flags & (~os.O_NONBLOCK)
         fcntl.fcntl(fd, fcntl.F_SETFD, flags)
 
+    def _get_child_connect_timeout(self):
+        """signal.alarm only supports 1s granularity.
+
+        We have to make sure we don't ever send 0, which would not generate an
+        alarm.
+        """
+        timeout = int(self._child_connect_timeout)
+        if timeout <= 0:
+            timeout = 1
+        return timeout
+
     def _open_handles(self, base_path):
         """Open the given file handles.
 
@@ -439,7 +425,7 @@ class LPForkingService(object):
         fids = []
         to_open = [(stdin_path, os.O_RDONLY), (stdout_path, os.O_WRONLY),
                    (stderr_path, os.O_WRONLY)]
-        cancel, _ = _wake_me_up_in_a_few(self._child_connect_timeout)
+        signal.alarm(self._get_child_connect_timeout())
         tstart = time.time()
         for path, flags in to_open:
             try:
@@ -459,7 +445,7 @@ class LPForkingService(object):
                 raise
         # If we get to here, that means all the handles were opened
         # successfully, so cancel the wakeup call.
-        cancel()
+        signal.alarm(0)
         return fids
 
     def _cleanup_fifos(self, base_path):
@@ -806,7 +792,7 @@ class LPForkingService(object):
             conn.close()
         elif request.startswith('child_connect_timeout '):
             try:
-                value = float(request.split(' ', 1)[1])
+                value = int(request.split(' ', 1)[1])
             except ValueError, e:
                 conn.sendall('FAILURE: %r\n' % (e,))
             else:
