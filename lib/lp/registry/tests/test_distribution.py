@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import soupmatchers
 from lazr.lifecycle.snapshot import Snapshot
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -15,7 +16,7 @@ from canonical.testing.layers import (
     )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.person import IPersonSet 
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.tests.test_distroseries import (
     TestDistroSeriesCurrentSourceReleases,
@@ -26,9 +27,10 @@ from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     )
 from lp.testing import TestCaseWithFactory
 from lp.testing import login_person
-from lp.testing.views import create_initialized_view 
+from lp.testing.views import create_initialized_view
 
-from canonical.launchpad.testing.pages import find_tags_by_class 
+from canonical.launchpad.testing.pages import find_tags_by_class
+from canonical.launchpad.webapp import canonical_url
 
 class TestDistribution(TestCaseWithFactory):
 
@@ -58,24 +60,46 @@ class TestDistribution(TestCaseWithFactory):
             name="distro", displayname=u'distro')
         admin = getUtility(IPersonSet).getByEmail(
             'admin@canonical.com')
-        login_person(admin) 
-        view = create_initialized_view(distro, '+index', 
+        login_person(admin)
+        view = create_initialized_view(distro, '+index',
             principal=admin)
-        addserieslinks = find_tags_by_class(view(), 
-            'menu-link-addseries')
-        self.assertEqual(len(addserieslinks),1)
+        series_matches = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'link to add a series', 'a',
+                attrs={'href':
+                    canonical_url(distro, view_name='+addseries')},
+                text='Add series'),
+            soupmatchers.Tag(
+                'Series and milestones widget', 'h2',
+                text='Series and milestones'),
+            )
+        self.assertThat(view.render(), series_matches)
 
     def test_distribution_addseries_link_nopriv(self):
         # Verify that a non-admin does not see the +addseries link
+        # nor the series header (since there is no series yet)
         distro = self.factory.makeDistribution(
             name="distro", displayname=u'distro')
         simple_user = self.factory.makePerson()
         login_person(simple_user)
         view = create_initialized_view(distro, '+index',
             principal=simple_user)
-        addserieslinks = find_tags_by_class(view(),
-            'menu-link-addseries')
-        self.assertEqual(len(addserieslinks),0)
+        add_series_match = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'link to add a series', 'a',
+                attrs={'href':
+                    canonical_url(distro, view_name='+addseries')},
+                text='Add series'))
+        series_header_match = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Series and milestones widget', 'h2',
+                text='Series and milestones'))
+        self.expectFailure(
+            "The link to add a series should not be there",
+            self.assertThat, view.render(), add_series_match)
+        self.expectFailure(
+            "The series header should not be there",
+            self.assertThat, view.render(), series_header_match)
 
 class TestDistributionCurrentSourceReleases(
     TestDistroSeriesCurrentSourceReleases):
