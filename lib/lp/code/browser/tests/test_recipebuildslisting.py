@@ -13,7 +13,8 @@ from testtools.matchers import LessThan
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_tag_by_id,
-    setupBrowserForUser)
+    setupBrowserForUser
+    )
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
