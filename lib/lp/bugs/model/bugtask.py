@@ -3154,6 +3154,12 @@ class BugTaskSet:
         # are other values from the same table as the group-by key, or
         # values of a table linked by a foreign key from the same table
         # as the group-by key...but that's dreaming.)
+        # If there are no bugtasks, this is an easy out.  This happens in
+        # lp/bugs/tests/bugs-emailinterface.txt; I'm not sure if it is
+        # actually possible when Launchpad is functioning normally, but I
+        # doubt it.  In any case, it's safe enough.
+        if not bugtasks:
+            return None, None
         # We assume that the bug of the first bugtask will be the bug
         # for all of the bugtasks.  That assumption suggests that the
         # method should eventually go on the bug class and maybe the
@@ -3165,7 +3171,7 @@ class BugTaskSet:
         if len(query_arguments) == 0:
             # This is unlikely to ever happen unless the bugtasks list itself
             # is empty, but it's a shortcut nonetheless.
-            return None
+            return None, None
         # With large numbers of filters in the system, it's fastest in
         # our tests if we get a set of structural subscriptions
         # pertinent to the given targets, and then work with that.  It also
@@ -3182,7 +3188,7 @@ class BugTaskSet:
         if not candidates:
             # If there are no structural subscriptions for these targets,
             # then we don't need to look at the filters.  We're done.
-            return None
+            return None, None
         # The "select_args" dictionary holds the arguments that we will
         # pass to one or more SELECT clauses.  We start with what will
         # become the FROM clause.  We always want the following Joins,
@@ -3280,7 +3286,7 @@ class BugTaskSet:
             select_args['having'] = Count(
                 SQL('CASE WHEN BugSubscriptionFilterTag.include '
                     'THEN BugSubscriptionFilterTag.tag END'))==0
-            return Select(BugSubscriptionFilter.id, **select_args)
+            return candidates, Select(BugSubscriptionFilter.id, **select_args)
         else:
             # The bug has some tags.  This will require a bit of fancy
             # footwork. First, though, we will simply want to leave out
@@ -3387,7 +3393,7 @@ class BugTaskSet:
                                'THEN BugSubscriptionFilterTag.tag END')))))
             # Everything is ready.  Make our second SELECT statement, UNION
             # it, and return it.
-            return Union(
+            return candidates, Union(
                 first_select,
                 Select(
                     BugSubscriptionFilter.id,
@@ -3395,25 +3401,40 @@ class BugTaskSet:
 
     def getStructuralSubscribers(self, bugtasks, recipients=None, level=None):
         """See `IBugTaskSet`."""
-        filter_id_query = self._getStructuralSubscriptionFilterIdQuery(
-            bugtasks, level)
-        if filter_id_query is None:
+        candidates, filter_id_query = (
+            self._getStructuralSubscriptionFilterIdQuery(bugtasks, level))
+        if not candidates:
             return EmptyResultSet()
         # This is here because of a circular import.  Please reconsider if
         # this code is moved to another module.
         from lp.registry.model.person import Person
+        source = IStore(StructuralSubscription).using(
+            StructuralSubscription,
+            # We need to do this LeftJoin because we still have structural
+            # subscriptions without filters in qastaging and production.
+            # Once we do not, we can just use a Join.  Also see constraints
+            # below.
+            LeftJoin(BugSubscriptionFilter,
+                 BugSubscriptionFilter.structural_subscription_id ==
+                 StructuralSubscription.id),
+            Join(Person,
+                 Person.id == StructuralSubscription.subscriberID),
+            )
         constraints = [
-            Person.id == StructuralSubscription.subscriberID,
-            BugSubscriptionFilter.structural_subscription_id ==
-            StructuralSubscription.id,
-            In(BugSubscriptionFilter.id, filter_id_query)]
-        store = IStore(StructuralSubscription)
+            # We need to do this Or because we still have structural
+            # subscriptions without filters in qastaging and production.
+            # Once we do not, we can simplify this to just
+            # "In(BugSubscriptionFilter.id, filter_id_query)".  Also see
+            # LeftJoin above.
+            Or(In(BugSubscriptionFilter.id, filter_id_query),
+               And(In(StructuralSubscription.id, candidates),
+                   BugSubscriptionFilter.id == None))]
         if recipients is None:
-            return store.find(
+            return source.find(
                 Person, *constraints).config(distinct=True).order_by()
         else:
             subscribers = []
-            query_results = store.find(
+            query_results = source.find(
                 (Person, StructuralSubscription),
                 *constraints
                 ).config(distinct=True)
@@ -3427,9 +3448,13 @@ class BugTaskSet:
 
     def getStructuralSubscriptions(self, bugtasks, level=None):
         """See `IBugTaskSet`."""
-        filter_id_query = self._getStructuralSubscriptionFilterIdQuery(
-            bugtasks, level)
-        if filter_id_query is None:
+        # Note that this method does not take into account
+        # structural subscriptions without filters.  Since it is only
+        # used for tests at this point, that's not a problem; moreover,
+        # we intend all structural subscriptions to have filters.
+        candidates, filter_id_query = (
+            self._getStructuralSubscriptionFilterIdQuery(bugtasks, level))
+        if not candidates:
             return EmptyResultSet()
         return IStore(StructuralSubscription).find(
             StructuralSubscription,
