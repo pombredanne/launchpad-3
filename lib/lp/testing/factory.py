@@ -1681,6 +1681,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(IBugTrackerSet).ensureBugTracker(
             base_url, owner, bugtrackertype, title=title, name=name)
 
+    def makeBugTrackerWithWatches(self, base_url=None, count=2):
+        """Make a new bug tracker with some watches."""
+        bug_tracker = self.makeBugTracker(base_url=base_url)
+        bug_watches = [
+            self.makeBugWatch(bugtracker=bug_tracker)
+            for i in range(count)]
+        return (bug_tracker, bug_watches)
+
     def makeBugTrackerComponentGroup(self, name=None, bug_tracker=None):
         """Make a new bug tracker component group."""
         if name is None:
@@ -2534,11 +2542,19 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             sourcepackagename=sourcepackagename,
             distroseries=distroseries)
 
-        records = []
-        records_outside_epoch = []
+        records_inside_epoch = []
+        all_records = []
         for x in range(num_recent_records+num_records_outside_epoch):
+
+            # We want some different source package names occasionally
+            if not x % 3:
+                sourcepackagename = self.makeSourcePackageName()
+                sourcepackage = self.makeSourcePackage(
+                    sourcepackagename=sourcepackagename,
+                    distroseries=distroseries)
+
             # Ensure we have both ppa and primary archives
-            if x%2 == 0:
+            if not x % 2:
                 purpose = ArchivePurpose.PPA
             else:
                 purpose = ArchivePurpose.PRIMARY
@@ -2577,13 +2593,19 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     naked_build.queueBuild()
                     naked_build.status = build_status
 
-                    from random import randrange
-                    offset = randrange(0, epoch_days)
                     now = datetime.now(UTC)
-                    if x >= num_recent_records:
-                        offset = epoch_days + 1 + offset
-                    naked_build.date_finished = (
-                        now - timedelta(days=offset))
+                    # We want some builds to be created in ascending order
+                    if x < num_recent_records:
+                        naked_build.date_finished = (
+                            now - timedelta(
+                                days=epoch_days-1,
+                                hours=-x))
+                    # And others is descending order
+                    else:
+                        days_offset = epoch_days + 1 + x
+                        naked_build.date_finished = (
+                            now - timedelta(days=days_offset))
+
                     naked_build.date_started = (
                         naked_build.date_finished - timedelta(minutes=5))
                     rbr = RecipeBuildRecord(
@@ -2596,13 +2618,21 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     # Only return fully completed daily builds.
                     if daily and build_status == BuildStatus.FULLYBUILT:
                         if x < num_recent_records:
-                            records.append(rbr)
-                        else:
-                            records_outside_epoch.append(rbr)
+                            records_inside_epoch.append(rbr)
+                        all_records.append(rbr)
         # We need to explicitly commit because if don't, the records don't
         # appear in the slave datastore.
         transaction.commit()
-        return records, records_outside_epoch
+
+        # We need to ensure our results are sorted by correctly
+        def _sort_records(records):
+            records.sort(lambda x, y:
+                cmp(x.sourcepackagename.name, y.sourcepackagename.name) or
+                -cmp(x.most_recent_build_time, y.most_recent_build_time))
+
+        _sort_records(all_records)
+        _sort_records(records_inside_epoch)
+        return all_records, records_inside_epoch
 
     def makeDscFile(self, tempdir_path=None):
         """Make a DscFile.

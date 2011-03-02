@@ -4,7 +4,7 @@
 
 <configure xmlns="http://namespaces.zope.org/zope">
 
-    <class class="canonical.launchpad.validators.LaunchpadValidationError">
+    <class class="lp.app.validators.LaunchpadValidationError">
         <require permission="zope.Public"
             interface=".ILaunchpadValidationError" />
     </class>
@@ -12,7 +12,7 @@
     <!-- We define the permissions here, but register the actual view
     in the zcml overrides, becase we need to replace the standard Z3
     implementation with our own -->
-    <class class="canonical.launchpad.validators.WidgetInputErrorView">
+    <class class="lp.app.validators.WidgetInputErrorView">
         <require permission="zope.Public"
             interface=".ILaunchpadWidgetInputErrorView" />
     </class>

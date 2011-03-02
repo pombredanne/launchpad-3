@@ -51,6 +51,28 @@ COMMENT ON FUNCTION null_count(anyarray) IS
 'Return the number of NULLs in the first row of the given array.';
 
 
+CREATE OR REPLACE FUNCTION cursor_fetch(cur refcursor, n integer)
+RETURNS SETOF record LANGUAGE plpgsql AS
+$$
+DECLARE
+    r record;
+    count integer;
+BEGIN
+    FOR count IN 1..n LOOP
+        FETCH FORWARD FROM cur INTO r;
+        IF NOT FOUND THEN
+            RETURN;
+        END IF;
+        RETURN NEXT r;
+    END LOOP;
+END;
+$$;
+
+COMMENT ON FUNCTION cursor_fetch(refcursor, integer) IS
+'Fetch the next n items from a cursor. Work around for not being able to use FETCH inside a SELECT statement.';
+
+
+
 CREATE OR REPLACE FUNCTION replication_lag() RETURNS interval
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO public AS
 $$
