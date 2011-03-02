@@ -193,5 +193,7 @@ class TestAddMissingBuilds(TestCaseWithFactory):
         script.add_missing_builds(
             archive, self.required_arches, verifier,
             self.stp.breezy_autotest, PackagePublishingPocket.RELEASE)
+
+        # any gets i386 and hppa builds, but pas-any is restricted to hppa.
         self.assertEquals(len(any.getBuilds()), 2)
         self.assertEquals(len(pas_any.getBuilds()), 1)
