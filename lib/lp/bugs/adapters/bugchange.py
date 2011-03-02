@@ -37,8 +37,14 @@ from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.webapp.publisher import canonical_url
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugchange import IBugChange
-from lp.bugs.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    IBugTask,
+    RESOLVED_BUGTASK_STATUSES,
+    UNRESOLVED_BUGTASK_STATUSES,
+    )
 from lp.registry.interfaces.product import IProduct
 
 
@@ -109,6 +115,9 @@ class BugChangeBase:
     """An abstract base class for Bug[Task]Changes."""
 
     implements(IBugChange)
+
+    # Most changes will be at METADATA level.
+    change_level = BugNotificationLevel.METADATA
 
     def __init__(self, when, person):
         self.person = person
@@ -341,8 +350,49 @@ class BugDescriptionChange(AttributeChange):
         return {'text': notification_text}
 
 
+def _is_status_change_lifecycle_change(old_status, new_status):
+    """Is a status change a lifecycle change?"""
+    # Bug is moving from one of unresolved bug statuses (like
+    # 'in progress') to one of resolved ('fix released').
+    bug_is_closed = (old_status in UNRESOLVED_BUGTASK_STATUSES and
+                     new_status in RESOLVED_BUGTASK_STATUSES)
+
+    # Bug is moving back from one of resolved bug statuses (reopening).
+    bug_is_reopened = (old_status in RESOLVED_BUGTASK_STATUSES and
+                       new_status in UNRESOLVED_BUGTASK_STATUSES)
+    return bug_is_closed or bug_is_reopened
+
+
 class BugDuplicateChange(AttributeChange):
     """Describes a change to a bug's duplicate marker."""
+
+    @property
+    def change_level(self):
+        lifecycle = False
+        old_bug = self.old_value
+        new_bug = self.new_value
+        if old_bug is not None and new_bug is not None:
+            # Bug was already a duplicate of one bug,
+            # and we are changing it to be a duplicate of another bug.
+            lifecycle = _is_status_change_lifecycle_change(
+                old_bug.default_bugtask.status,
+                new_bug.default_bugtask.status)
+        elif new_bug is not None:
+            # old_bug is None here, so we are just adding a duplicate marker.
+            lifecycle = (new_bug.default_bugtask.status in
+                         RESOLVED_BUGTASK_STATUSES)
+        elif old_bug is not None:
+            # Unmarking a bug as duplicate.  This is lifecycle change
+            # only if bug has been reopened as a result.
+            lifecycle = (old_bug.default_bugtask.status in
+                         RESOLVED_BUGTASK_STATUSES)
+        else:
+            pass
+
+        if lifecycle:
+            return BugNotificationLevel.LIFECYCLE
+        else:
+            return BugNotificationLevel.METADATA
 
     def getBugActivity(self):
         if self.old_value is not None and self.new_value is not None:
@@ -722,6 +772,18 @@ class BugTaskStatusChange(BugTaskAttributeChange):
     # Use `status.title` in activity records and notifications.
     display_attribute = 'title'
 
+    @property
+    def change_level(self):
+        """See `IBugChange`."""
+        # Is bug being closed or reopened?
+        lifecycle_change = _is_status_change_lifecycle_change(
+            self.old_value, self.new_value)
+
+        if lifecycle_change:
+            return BugNotificationLevel.LIFECYCLE
+        else:
+            return BugNotificationLevel.METADATA
+
 
 class BugTaskMilestoneChange(BugTaskAttributeChange):
     """Represents a change in BugTask.milestone."""
@@ -752,6 +814,7 @@ class BugTaskAssigneeChange(AttributeChange):
 
     def getBugActivity(self):
         """See `IBugChange`."""
+
         def assignee_for_display(assignee):
             if assignee is None:
                 return None
@@ -766,6 +829,7 @@ class BugTaskAssigneeChange(AttributeChange):
 
     def getBugNotification(self):
         """See `IBugChange`."""
+
         def assignee_for_display(assignee):
             if assignee is None:
                 return "(unassigned)"

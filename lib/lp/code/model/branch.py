@@ -15,6 +15,7 @@ import simplejson
 
 from bzrlib import urlutils
 from bzrlib.revision import NULL_REVISION
+from lazr.restful.error import expose
 import pytz
 from sqlobject import (
     BoolCol,
@@ -664,7 +665,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             map(ClearOfficialPackageBranch, series_set.findForBranch(self)))
         deletion_operations.extend(
             DeletionCallable.forSourcePackageRecipe(recipe)
-            for recipe in self.getRecipes())
+            for recipe in self.recipes)
         return (alteration_operations, deletion_operations)
 
     def deletionRequirements(self):
@@ -929,8 +930,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def getScannerData(self):
         """See `IBranch`."""
-        columns = (
-            BranchRevision.id, BranchRevision.sequence, Revision.revision_id)
+        columns = (BranchRevision.sequence, Revision.revision_id)
         rows = Store.of(self).using(Revision, BranchRevision).find(
             columns,
             Revision.id == BranchRevision.revision_id,
@@ -938,7 +938,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         rows = rows.order_by(BranchRevision.sequence)
         ancestry = set()
         history = []
-        for branch_revision_id, sequence, revision_id in rows:
+        for sequence, revision_id in rows:
             ancestry.add(revision_id)
             if sequence is not None:
                 history.append(revision_id)
@@ -1026,7 +1026,12 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def destroySelfBreakReferences(self):
         """See `IBranch`."""
-        return self.destroySelf(break_references=True)
+        try:
+            return self.destroySelf(break_references=True)
+        except CannotDeleteBranch, e:
+            # Reraise and expose exception here so that the webservice_error
+            # is propogated.
+            raise expose(CannotDeleteBranch(e.message))
 
     def _deleteBranchSubscriptions(self):
         """Delete subscriptions for this branch prior to deleting branch."""
@@ -1155,7 +1160,8 @@ class Branch(SQLBase, BzrIdentityMixin):
                     user, checked_branches)
         return can_access
 
-    def getRecipes(self):
+    @property
+    def recipes(self):
         """See `IHasRecipes`."""
         from lp.code.model.sourcepackagerecipedata import (
             SourcePackageRecipeData)

@@ -14,6 +14,7 @@ import StringIO
 
 from bzrlib.lsprof import BzrProfiler
 from chameleon.zpt.template import PageTemplateFile
+from zope.app.publication.interfaces import IBeforeTraverseEvent
 from zope.app.publication.interfaces import IEndRequestEvent
 from zope.component import (
     adapter,
@@ -25,11 +26,15 @@ from zope.traversing.namespace import view
 
 from canonical.config import config
 import canonical.launchpad.webapp.adapter as da
-from canonical.launchpad.webapp.interfaces import IStartRequestEvent
-from canonical.mem import (
+from canonical.launchpad.webapp.interfaces import (
+    DisallowedStore,
+    IStartRequestEvent,
+    )
+from lp.services.profile.mem import (
     memory,
     resident,
     )
+from lp.services.features import getFeatureFlag
 
 
 class ProfilingOops(Exception):
@@ -38,21 +43,50 @@ class ProfilingOops(Exception):
 
 _profilers = threading.local()
 
+def before_traverse(event):
+    """Handle profiling when enabled via the profiling.enabled feature flag."""
+    # This event is raised on each step of traversal so needs to be lightweight
+    # and not assume that profiling has not started - but this is equally well
+    # done in _maybe_profile so that function takes care of it. We have to use
+    # this event (or add a new one) because we depend on the feature flags
+    # system being configured and usable, and on the principal being known.
+    try:
+        if getFeatureFlag('profiling.enabled'):
+            _maybe_profile(event)
+    except DisallowedStore:
+        pass
+
 
 @adapter(IStartRequestEvent)
 def start_request(event):
-    """Handle profiling.
-
-    If profiling is enabled, start a profiler for this thread. If memory
-    profiling is requested, save the VSS and RSS.
-    """
+    """Handle profiling when configured as permitted."""
     if not config.profiling.profiling_allowed:
         return
+    _maybe_profile(event)
+
+
+def _maybe_profile(event):
+    """Setup profiling as requested.
+    
+    If profiling is enabled, start a profiler for this thread. If memory
+    profiling is requested, save the VSS and RSS.
+
+    If already profiling, this is a no-op.
+    """
+    try:
+        if _profilers.profiling:
+            # Already profiling - e.g. called in from both start_request and
+            # before_traverse, or by successive before_traverse on one request.
+            return
+    except AttributeError:
+        # The first call in on a new thread cannot be profiling at the start.
+        pass
     actions = get_desired_profile_actions(event.request)
     if config.profiling.profile_all_requests:
         actions.add('log')
     _profilers.actions = actions
     _profilers.profiler = None
+    _profilers.profiling = True
     if actions:
         if actions.difference(('help', )):
             # If this assertion has reason to fail, we'll need to add code
@@ -71,14 +105,15 @@ template = PageTemplateFile(
 @adapter(IEndRequestEvent)
 def end_request(event):
     """If profiling is turned on, save profile data for the request."""
-    if not config.profiling.profiling_allowed:
-        return
     try:
-        actions = _profilers.actions
+        if not _profilers.profiling:
+            return
+        _profilers.profiling = False
     except AttributeError:
         # Some tests don't go through all the proper motions, like firing off
         # a start request event.  Just be quiet about it.
         return
+    actions = _profilers.actions
     del _profilers.actions
     request = event.request
     # Create a timestamp including milliseconds.

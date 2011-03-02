@@ -11,6 +11,7 @@ from urllib2 import (
     )
 from urlparse import urlparse
 
+from lazr.uri import URI
 import pytz
 from storm.expr import SQL
 import transaction
@@ -37,6 +38,12 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+
+
+def uri_path_replace(url, old, new):
+    """Replace a substring of a URL's path."""
+    parsed = URI(url)
+    return str(parsed.replace(path=parsed.path.replace(old, new)))
 
 
 class LibrarianWebTestCase(unittest.TestCase):
@@ -149,23 +156,12 @@ class LibrarianWebTestCase(unittest.TestCase):
         url = client.getURLForAlias(aid)
         self.assertEqual(urlopen(url).read(), 'sample')
 
-        old_url = 'http://%s:%d/42/%d/%s' % (
-                config.librarian.download_host,
-                config.librarian.download_port,
-                aid, filename)
+        old_url = uri_path_replace(url, str(aid), '42/%d' % aid)
         self.assertEqual(urlopen(old_url).read(), 'sample')
 
         # If the content id is not an integer, a 404 is raised
-        old_url = 'http://%s:%d/foo/%d/%s' % (
-                config.librarian.download_host,
-                config.librarian.download_port,
-                aid, filename)
-        self.require404(self._makeURL(aid, 'different.txt'))
-
-    def _makeURL(self, aliasID, filename):
-        host = config.librarian.download_host
-        port = config.librarian.download_port
-        return 'http://%s:%d/%d/%s' % (host, port, aliasID, filename)
+        old_url = uri_path_replace(url, str(aid), 'foo/%d' % aid)
+        self.require404(old_url)
 
     def test_404(self):
         client = LibrarianClient()
@@ -175,13 +171,15 @@ class LibrarianWebTestCase(unittest.TestCase):
         url = client.getURLForAlias(aid)
         self.assertEqual(urlopen(url).read(), 'sample')
 
-        # Ensure our helper is working
-        self.failUnlessEqual(url, self._makeURL(aid, filename))
-
         # Change the aliasid and assert we get a 404
-        self.require404(self._makeURL(aid+1, filename))
+        self.failUnless(str(aid) in url)
+        bad_id_url = uri_path_replace(url, str(aid), str(aid+1))
+        self.require404(bad_id_url)
+
         # Change the filename and assert we get a 404
-        self.require404(self._makeURL(aid, 'different.txt'))
+        self.failUnless(filename in url)
+        bad_name_url = uri_path_replace(url, filename, 'different.txt')
+        self.require404(bad_name_url)
 
     def test_duplicateuploads(self):
         client = LibrarianClient()
@@ -284,7 +282,7 @@ class LibrarianWebTestCase(unittest.TestCase):
         connection.request("GET", path, headers={'Host': good_host})
         response = connection.getresponse()
         response.read()
-        self.assertEqual(200, response.status)
+        self.assertEqual(200, response.status, response)
         # A subdomain based URL trying to put fileAlias into the restricted
         # domain of fileAlias2 must not work.
         hostile_host = template_host % fileAlias2

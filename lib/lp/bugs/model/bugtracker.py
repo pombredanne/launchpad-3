@@ -24,7 +24,6 @@ from urllib import (
     splittype,
     )
 
-from storm.base import Storm
 from storm.locals import (
         Int,
         Reference,
@@ -86,6 +85,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     validate_public_person,
     )
+from lp.services.database.stormbase import StormBase
 
 
 def normalise_leading_slashes(rest):
@@ -175,7 +175,7 @@ def make_bugtracker_title(uri):
         return base_uri.host + base_uri.path
 
 
-class BugTrackerComponent(Storm):
+class BugTrackerComponent(StormBase):
     """The software component in the remote bug tracker.
 
     Most bug trackers organize bug reports by the software 'component'
@@ -229,7 +229,7 @@ class BugTrackerComponent(Storm):
         """The distribution's source package for this component""")
 
 
-class BugTrackerComponentGroup(Storm):
+class BugTrackerComponentGroup(StormBase):
     """A collection of components in a remote bug tracker.
 
     Some bug trackers organize sets of components into higher level

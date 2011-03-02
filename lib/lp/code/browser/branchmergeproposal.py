@@ -38,13 +38,11 @@ from lazr.delegates import delegates
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import (
-    IFieldHTMLRenderer,
     IWebServiceClientRequest,
     )
 import simplejson
 from zope.app.form.browser import TextAreaWidget
 from zope.component import (
-    adapter,
     adapts,
     getMultiAdapter,
     getUtility,
@@ -52,7 +50,6 @@ from zope.component import (
 from zope.event import notify as zope_notify
 from zope.formlib import form
 from zope.interface import (
-    implementer,
     implements,
     Interface,
     )
@@ -62,7 +59,6 @@ from zope.schema import (
     Int,
     Text,
     )
-from zope.schema.interfaces import IText
 from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
@@ -91,12 +87,11 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
    )
-from lp.app.browser.tales import DateTimeFormatterAPI
-from canonical.widgets.lazrjs import (
+from lp.app.browser.lazrjs import (
     TextAreaEditorWidget,
     vocabulary_to_choice_edit_items,
     )
-from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from lp.code.browser.decorations import (
@@ -695,40 +690,36 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                 for bug in self.context.related_bugs]
 
     @property
+    def edit_description_link_class(self):
+        if self.context.description:
+            return "unseen"
+        else:
+            return ""
+
+    @property
     def description_html(self):
         """The description as widget HTML."""
-        description = self.context.description
-        if description is None:
-            description = ''
-        formatter = FormattersAPI
-        hide_email = formatter(description).obfuscate_email()
-        description = formatter(hide_email).text_to_html()
+        mp = self.context
+        description = IBranchMergeProposal['description']
+        title = "Description of the Change"
         return TextAreaEditorWidget(
-            self.context,
-            'description',
-            canonical_url(self.context, view_name='+edit-description'),
-            id="edit-description",
-            title="Description of the Change",
-            value=description,
-            accept_empty=True)
+            mp, description, title, edit_view='+edit-description')
+
+    @property
+    def edit_commit_message_link_class(self):
+        if self.context.commit_message:
+            return "unseen"
+        else:
+            return ""
 
     @property
     def commit_message_html(self):
         """The commit message as widget HTML."""
-        commit_message = self.context.commit_message
-        if commit_message is None:
-            commit_message = ''
-        formatter = FormattersAPI
-        hide_email = formatter(commit_message).obfuscate_email()
-        commit_message = formatter(hide_email).text_to_html()
+        mp = self.context
+        commit_message = IBranchMergeProposal['commit_message']
+        title = "Commit Message"
         return TextAreaEditorWidget(
-            self.context,
-            'commit_message',
-            canonical_url(self.context, view_name='+edit-commit-message'),
-            id="edit-commit_message",
-            title="Commit Message",
-            value=commit_message,
-            accept_empty=True)
+            mp, commit_message, title, edit_view='+edit-commit-message')
 
     @property
     def status_config(self):
@@ -1489,19 +1480,6 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
         return canonical_url(self.context)
 
     cancel_url = next_url
-
-
-@adapter(IBranchMergeProposal, IText, IWebServiceClientRequest)
-@implementer(IFieldHTMLRenderer)
-def text_xhtml_representation(context, field, request):
-    """Render an `IText` as XHTML using the webservice."""
-    formatter = FormattersAPI
-
-    def renderer(value):
-        nomail = formatter(value).obfuscate_email()
-        html = formatter(nomail).text_to_html()
-        return html.encode('utf-8')
-    return renderer
 
 
 class FormatPreviewDiffView(LaunchpadView, DiffRenderingMixin):

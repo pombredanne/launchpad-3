@@ -724,6 +724,12 @@
             template="../templates/bug-remove-question.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bugtask.IBugTask"
+            name="+subscriptions"
+            class="lp.bugs.browser.bugsubscription.BugSubscriptionListView"
+            permission="launchpad.AnyPerson"
+            template="../templates/bug-subscription-list.pt"/>
+        <browser:page
+            for="lp.bugs.interfaces.bugtask.IBugTask"
             name="+subscribe"
             class="lp.bugs.browser.bugsubscription.BugSubscriptionSubscribeSelfView"
             permission="launchpad.AnyPerson"
@@ -912,7 +918,8 @@
         <browser:url
             for="lp.bugs.interfaces.cve.ICve"
             path_expression="sequence"
-            parent_utility="lp.bugs.interfaces.cve.ICveSet"/>
+            parent_utility="lp.bugs.interfaces.cve.ICveSet"
+            rootsite="bugs" />
         <browser:defaultView
             for="lp.bugs.interfaces.cve.ICve"
             name="+index"/>
@@ -1121,14 +1128,16 @@
         <browser:url
             for="lp.bugs.interfaces.bugnomination.IBugNomination"
             path_expression="string:nominations/${id}"
-            attribute_to_parent="bug"/>
+            attribute_to_parent="bug"
+            rootsite="bugs" />
     </facet>
     <facet
         facet="bugs">
         <browser:url
             for="lp.bugs.interfaces.bugwatch.IBugWatch"
             path_expression="string:+watch/${id}"
-            attribute_to_parent="bug"/>
+            attribute_to_parent="bug"
+            rootsite="bugs"/>
         <browser:defaultView
             for="lp.bugs.interfaces.bugwatch.IBugWatch"
             name="+edit"/>
@@ -1176,6 +1185,31 @@
                 BugWatchSetNavigation"/>
     </facet>
 
+    <!-- Structural subscriptions -->
+    <facet
+        facet="bugs">
+        <browser:page
+            for="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTarget"
+            name="+subscribe"
+            permission="launchpad.AnyPerson"
+            class="lp.bugs.browser.structuralsubscription.StructuralSubscriptionView"
+            template="../templates/structural-subscriptions-manage.pt"/>
+        <browser:page
+            for="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTarget"
+            name="+portlet-structural-subscribers"
+            permission="zope.Public"
+            class="lp.bugs.browser.structuralsubscription.StructuralSubscribersPortletView"
+            template="../templates/structural-subscription-target-portlet-subscribers.pt"/>
+    </facet>
+
+    <browser:url
+        for="lp.bugs.interfaces.structuralsubscription.IStructuralSubscription"
+        path_expression="string:+subscription/${subscriber/name}"
+        attribute_to_parent="target"/>
+    <browser:navigation
+        module="lp.bugs.browser.structuralsubscription"
+        classes="StructuralSubscriptionNavigation"/>
+
     <!-- Bug Subscription Filters -->
     <facet facet="bugs">
       <browser:url
@@ -1192,9 +1226,15 @@
       <browser:page
           for="lp.bugs.interfaces.bugsubscriptionfilter.IBugSubscriptionFilter"
           class=".bugsubscriptionfilter.BugSubscriptionFilterEditView"
-          template="../templates/bug-subscription-filter-edit.pt"
+          template="../../app/templates/generic-edit.pt"
           permission="launchpad.Edit"
           name="+edit" />
+      <browser:page
+          for="lp.bugs.interfaces.structuralsubscription.IStructuralSubscription"
+          class=".bugsubscriptionfilter.BugSubscriptionFilterCreateView"
+          template="../../app/templates/generic-edit.pt"
+          permission="launchpad.View"
+          name="+new-filter" />
     </facet>
 
     <!-- Widgets -->

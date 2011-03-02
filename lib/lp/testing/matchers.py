@@ -4,19 +4,26 @@
 __metaclass__ = type
 __all__ = [
     'Contains',
+    'DocTestMatches',
     'DoesNotCorrectlyProvide',
     'DoesNotProvide',
     'HasQueryCount',
     'IsNotProxied',
     'IsProxied',
+    'MatchesPickerText',
+    'MatchesTagText',
+    'MissingElement',
+    'MultipleElements',
     'Provides',
     'ProvidesAndIsProxied',
     ]
 
+from lazr.lifecycle.snapshot import Snapshot
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
 from testtools.matchers import (
     Equals,
+    DocTestMatches as OriginalDocTestMatches,
     Matcher,
     Mismatch,
     MismatchesAll,
@@ -141,7 +148,7 @@ class _MismatchedQueryCount(Mismatch):
         result = []
         for query in self.query_collector.queries:
             result.append(unicode(query).encode('utf8'))
-        return {'queries': Content(UTF8_TEXT, lambda:['\n'.join(result)])}
+        return {'queries': Content(UTF8_TEXT, lambda: ['\n'.join(result)])}
 
 
 class IsNotProxied(Mismatch):
@@ -265,3 +272,119 @@ class IsConfiguredBatchNavigator(Matcher):
                 mismatches.append(mismatch)
         if mismatches:
             return MismatchesAll(mismatches)
+
+
+class WasSnapshotted(Mismatch):
+
+    def __init__(self, matchee, attribute):
+        self.matchee = matchee
+        self.attribute = attribute
+
+    def describe(self):
+        return "Snapshot of %s should not include %s" % (
+            self.matchee, self.attribute)
+
+
+class DoesNotSnapshot(Matcher):
+    """Checks that certain fields are skipped on Snapshots."""
+
+    def __init__(self, attr_list, interface, error_msg=None):
+        self.attr_list = attr_list
+        self.interface = interface
+        self.error_msg = error_msg
+
+    def __str__(self):
+        return "Does not include %s when Snapshot is provided %s." % (
+            ', '.join(self.attr_list), self.interface)
+
+    def match(self, matchee):
+        snapshot = Snapshot(matchee, providing=self.interface)
+        mismatches = []
+        for attribute in self.attr_list:
+            if hasattr(snapshot, attribute):
+                mismatches.append(WasSnapshotted(matchee, attribute))
+
+        if len(mismatches) == 0:
+            return None
+        else:
+            return MismatchesAll(mismatches)
+
+
+def DocTestMatches(example):
+    """See if a string matches a doctest example.
+
+    Uses the default doctest flags used across Launchpad.
+    """
+    from canonical.launchpad.testing.systemdocs import default_optionflags
+    return OriginalDocTestMatches(example, default_optionflags)
+
+
+class SoupMismatch(Mismatch):
+
+    def __init__(self, widget_id, soup_content):
+        self.widget_id = widget_id
+        self.soup_content = soup_content
+
+    def get_details(self):
+        return {'content': self.soup_content}
+
+
+class MissingElement(SoupMismatch):
+
+    def describe(self):
+        return 'No HTML element found with id %r' % self.widget_id
+
+
+class MultipleElements(SoupMismatch):
+
+    def describe(self):
+        return 'HTML id %r found multiple times in document' % self.widget_id
+
+
+class MatchesTagText(Matcher):
+    """Match against the extracted text of the tag."""
+
+    def __init__(self, soup_content, tag_id):
+        """Construct the matcher with the soup content."""
+        self.soup_content = soup_content
+        self.tag_id = tag_id
+
+    def __str__(self):
+        return "matches widget %r text" % self.tag_id
+
+    def match(self, matchee):
+        # Here to avoid circular dependancies.
+        from canonical.launchpad.testing.pages import extract_text
+        widgets = self.soup_content.findAll(id=self.tag_id)
+        if len(widgets) == 0:
+            return MissingElement(self.tag_id, self.soup_content)
+        elif len(widgets) > 1:
+            return MultipleElements(self.tag_id, self.soup_content)
+        widget = widgets[0]
+        text_matcher = DocTestMatches(extract_text(widget))
+        return text_matcher.match(matchee)
+
+
+class MatchesPickerText(Matcher):
+    """Match against the text in a widget."""
+
+    def __init__(self, soup_content, widget_id):
+        """Construct the matcher with the soup content."""
+        self.soup_content = soup_content
+        self.widget_id = widget_id
+
+    def __str__(self):
+        return "matches widget %r text" % self.widget_id
+
+    def match(self, matchee):
+        # Here to avoid circular dependancies.
+        from canonical.launchpad.testing.pages import extract_text
+        widgets = self.soup_content.findAll(id=self.widget_id)
+        if len(widgets) == 0:
+            return MissingElement(self.widget_id, self.soup_content)
+        elif len(widgets) > 1:
+            return MultipleElements(self.widget_id, self.soup_content)
+        widget = widgets[0]
+        text = widget.findAll(attrs={'class': 'yui3-activator-data-box'})[0]
+        text_matcher = DocTestMatches(extract_text(text))
+        return text_matcher.match(matchee)

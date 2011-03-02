@@ -171,7 +171,7 @@ followed by a link to edit the subscription.
     >>> subscriptions = find_tag_by_id(
     ...     admin_browser.contents, 'structural-subscriptions')
     >>> for subscription in subscriptions.findAll("li"):
-    ...     structure_link, modify_link = subscription.findAll("a")
+    ...     structure_link, modify_link = subscription.findAll("a")[:2]
     ...     print "%s <%s>" % (
     ...         extract_text(structure_link), structure_link.get("href"))
     ...     print "--> %s" % modify_link.get("href")
@@ -188,7 +188,7 @@ permission to modify those subscriptions.
     >>> subscriptions = find_tag_by_id(
     ...     subscriber_browser.contents, 'structural-subscriptions')
     >>> for subscription in subscriptions.findAll("li"):
-    ...     [structure_link] = subscription.findAll("a")
+    ...     structure_link = subscription.find("a")
     ...     print "%s <%s>" % (
     ...         extract_text(structure_link), structure_link.get("href"))
     mozilla-firefox in ubuntu </ubuntu/+source/mozilla-firefox>
@@ -208,6 +208,48 @@ structural subscriptions.
     >>> print extract_text(find_tag_by_id(
     ...     subscriber_browser.contents, "structural-subscriptions"))
     Webster does not have any structural subscriptions.
+
+
+Creating Bug Filters
+~~~~~~~~~~~~~~~~~~~~
+
+Every structural subscription also has a link to create a new bug
+subscription filter.
+
+    >>> import re
+
+    >>> def show_create_links(browser):
+    ...     subscriptions = find_tag_by_id(
+    ...         browser.contents, 'structural-subscriptions')
+    ...     for subscription in subscriptions.findAll("li"):
+    ...         structure_link = subscription.find("a")
+    ...         print extract_text(structure_link)
+    ...         create_text = subscription.find(text=re.compile("Create"))
+    ...         if create_text is None:
+    ...             print "* No create link."
+    ...         else:
+    ...             print "* %s --> %s" % (
+    ...                 create_text.strip(),
+    ...                 create_text.parent.get("href"))
+
+    >>> admin_browser.open(
+    ...     "http://launchpad.dev/people/+me/+structural-subscriptions")
+    >>> show_create_links(admin_browser)
+    mozilla-firefox in ubuntu
+    * Create a new filter --> /ubuntu/.../name16/+new-filter
+    pmount in ubuntu
+    * Create a new filter --> /ubuntu/.../name16/+new-filter
+
+If the user does not have the necessary rights to create new bug
+filters the "Create" link is not shown.
+
+    >>> subscriber_browser.open(
+    ...     "http://launchpad.dev/~name16/+structural-subscriptions")
+    >>> show_create_links(subscriber_browser)
+    mozilla-firefox in ubuntu
+    * No create link.
+    pmount in ubuntu
+    * No create link.
 
 
 Subscriptions with Bug Filters
@@ -234,17 +276,22 @@ filters are shown with a message stating that there is no filtering.
     ...     subscriptions = find_tag_by_id(
     ...         nigel_browser.contents, 'structural-subscriptions')
     ...     for subscription in subscriptions.findAll("li"):
-    ...         print extract_text(subscription.div)
+    ...         print extract_text(subscription.p)
+    ...         if subscription.dl is not None:
+    ...             print extract_text(subscription.dl)
 
     >>> show_nigels_subscriptions()
-    Bug mail is not filtered; mail for Nigel about Scofflaw will
-    always be sent.
+    Bug mail for Nigel about Scofflaw is filtered;
+    ...
+    This filter allows all mail through.
+    There are no filter conditions!
+    (edit)
 
 If a bug mail filter exists for a structural subscription it is
 displayed immediately after the subscription.
 
     >>> with person_logged_in(nigel):
-    ...     nigel_bug_filter1 = nigel_subscription.newBugFilter()
+    ...     nigel_bug_filter1 = nigel_subscription.bug_filters.one()
     ...     nigel_bug_filter1.description = u"First"
     ...     nigel_bug_filter1.tags = [u"foo"]
 

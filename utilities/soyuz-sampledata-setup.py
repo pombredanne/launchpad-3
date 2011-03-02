@@ -169,13 +169,6 @@ def retire_ppas(distribution):
         removeSecurityProxy(ppa).publish = False
 
 
-def set_lucille_config(distribution):
-    """Set lucilleconfig on all series of `distribution`."""
-    for series in distribution.series:
-        removeSecurityProxy(series).lucilleconfig = '''[publishing]
-components = main restricted universe multiverse'''
-
-
 def add_architecture(distroseries, architecture_name):
     """Add a DistroArchSeries for the given architecture to `distroseries`."""
     # Avoid circular import.
@@ -299,10 +292,6 @@ def set_source_package_format(distroseries):
 def populate(distribution, parent_series_name, uploader_name, options, log):
     """Set up sample data on `distribution`."""
     parent_series = distribution.getSeries(parent_series_name)
-
-    # Set up lucilleconfig on all series.  The sample data lacks this.
-    log.info("Setting lucilleconfig...")
-    set_lucille_config(distribution)
 
     log.info("Configuring sections...")
     create_sections(parent_series)

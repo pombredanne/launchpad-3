@@ -56,7 +56,6 @@ import errno
 import gc
 import logging
 import os
-import shutil
 import signal
 import socket
 import subprocess
@@ -69,7 +68,10 @@ from textwrap import dedent
 from unittest import TestCase, TestResult
 from urllib import urlopen
 
-from fixtures import Fixture
+from fixtures import (
+    Fixture,
+    MonkeyPatch,
+    )
 import psycopg2
 from storm.zope.interfaces import IZStorm
 import transaction
@@ -93,7 +95,7 @@ from zope.security.simplepolicies import PermissiveSecurityPolicy
 from zope.server.logger.pythonlogger import PythonLogger
 from zope.testing.testrunner.runner import FakeInputContinueGenerator
 
-from canonical.ftests.pgsql import PgTestSetup
+import canonical.launchpad.webapp.session
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr import pidfile
 from canonical.config import CanonicalConfig, config, dbconfig
@@ -124,17 +126,22 @@ from canonical.lazr.testing.layers import MockRootFolder
 from canonical.lazr.timeout import (
     get_default_timeout_function, set_default_timeout_function)
 from canonical.lp import initZopeless
-from canonical.librarian.testing.server import LibrarianTestSetup
+from canonical.librarian.testing.server import LibrarianServerFixture
 from canonical.testing import reset_logging
 from canonical.testing.profiled import profiled
 from canonical.testing.smtpd import SMTPController
 from lp.services.memcache.client import memcache_client_factory
 from lp.services.osutils import kill_by_pidfile
+from lp.testing.pgsql import PgTestSetup
 
 
 orig__call__ = zope.app.testing.functional.HTTPCaller.__call__
 COMMA = ','
 WAIT_INTERVAL = datetime.timedelta(seconds=180)
+
+
+def set_up_functional_test():
+    return FunctionalTestSetup('zcml/ftesting.zcml')
 
 
 class LayerError(Exception):
@@ -595,8 +602,8 @@ class MemcachedLayer(BaseLayer):
             time.sleep(0.1)
 
         # Store the pidfile for other processes to kill.
-        pidfile = MemcachedLayer.getPidFile()
-        open(pidfile, 'w').write(str(MemcachedLayer._memcached_process.pid))
+        pid_file = MemcachedLayer.getPidFile()
+        open(pid_file, 'w').write(str(MemcachedLayer._memcached_process.pid))
 
     @classmethod
     @profiled
@@ -820,13 +827,21 @@ class LibrarianLayer(DatabaseLayer):
                     "_reset_between_tests changed before LibrarianLayer "
                     "was actually used."
                     )
-        cls.librarian_fixture = LibrarianTestSetup()
+        cls.librarian_fixture = LibrarianServerFixture(
+            BaseLayer.config_fixture)
         cls.librarian_fixture.setUp()
         cls._check_and_reset()
+
+        # Make sure things using the appserver config know the
+        # correct Librarian port numbers.
+        cls.appserver_config_fixture.add_section(
+            cls.librarian_fixture.service_config)
 
     @classmethod
     @profiled
     def tearDown(cls):
+        # Permit multiple teardowns while we sort out the layering
+        # responsibilities : not desirable though.
         if cls.librarian_fixture is None:
             return
         try:
@@ -837,9 +852,8 @@ class LibrarianLayer(DatabaseLayer):
             try:
                 if not cls._reset_between_tests:
                     raise LayerInvariantError(
-                            "_reset_between_tests not reset before LibrarianLayer "
-                            "shutdown"
-                            )
+                        "_reset_between_tests not reset before "
+                        "LibrarianLayer shutdown")
             finally:
                 librarian.cleanUp()
 
@@ -943,7 +957,7 @@ class LaunchpadLayer(LibrarianLayer, MemcachedLayer):
     @profiled
     def tearDown(cls):
         pass
-    
+
     @classmethod
     @profiled
     def testSetUp(cls):
@@ -1009,7 +1023,7 @@ def wsgi_application(environ, start_response):
     # zope.publisher.paste.Application.
     request_cls, publication_cls = chooseClasses(
         environ['REQUEST_METHOD'], environ)
-    publication = publication_cls(FunctionalTestSetup().db)
+    publication = publication_cls(set_up_functional_test().db)
     request = request_cls(environ['wsgi.input'], environ)
     request.setPublication(publication)
     # The rest of this function is an amalgam of
@@ -1039,14 +1053,17 @@ class FunctionalLayer(BaseLayer):
     @profiled
     def setUp(cls):
         FunctionalLayer.isSetUp = True
-        FunctionalTestSetup().setUp()
+        set_up_functional_test().setUp()
 
-        # Assert that FunctionalTestSetup did what it says it does
+        # Assert that set_up_functional_test did what it says it does
         if not is_ca_available():
             raise LayerInvariantError("Component architecture failed to load")
 
+        # Access the cookie manager's secret to get the cache populated.
+        # If we don't, it may issue extra queries depending on test order.
+        canonical.launchpad.webapp.session.idmanager.secret
         # If our request publication factories were defined using ZCML,
-        # they'd be set up by FunctionalTestSetup().setUp(). Since
+        # they'd be set up by set_up_functional_test().setUp(). Since
         # they're defined by Python code, we need to call that code
         # here.
         register_launchpad_request_publication_factories()
@@ -1074,7 +1091,7 @@ class FunctionalLayer(BaseLayer):
         transaction.begin()
 
         # Fake a root folder to keep Z3 ZODB dependencies happy.
-        fs = FunctionalTestSetup()
+        fs = set_up_functional_test()
         if not fs.connection:
             fs.connection = fs.db.open()
         root = fs.connection.root()
@@ -1212,6 +1229,14 @@ class TwistedLayer(BaseLayer):
         TwistedLayer._save_signals()
         from twisted.internet import interfaces, reactor
         from twisted.python import threadpool
+        # zope.exception demands more of frame objects than
+        # twisted.python.failure provides in its fake frames.  This is enough
+        # to make it work with them as of 2009-09-16.  See
+        # https://bugs.launchpad.net/bugs/425113.
+        cls._patch = MonkeyPatch(
+            'twisted.python.failure._Frame.f_locals',
+            property(lambda self: {}))
+        cls._patch.setUp()
         if interfaces.IReactorThreads.providedBy(reactor):
             pool = getattr(reactor, 'threadpool', None)
             # If the Twisted threadpool has been obliterated (probably by
@@ -1233,6 +1258,7 @@ class TwistedLayer(BaseLayer):
             if pool is not None:
                 reactor.threadpool.stop()
                 reactor.threadpool = None
+        cls._patch.cleanUp()
         TwistedLayer._restore_signals()
 
 
@@ -2006,6 +2032,10 @@ class BaseWindmillLayer(AppServerLayer):
             cls.config_file.close()
         config.reloadConfig()
         reset_logging()
+        # XXX: deryck 2011-01-28 bug=709438
+        # Windmill mucks about with the default timeout and this is
+        # a fix until the library itself can be cleaned up.
+        socket.setdefaulttimeout(None)
 
     @classmethod
     @profiled

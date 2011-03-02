@@ -211,7 +211,7 @@ if __name__ == '__main__':
     else:
         csvfile = open(args[0], 'rb')
 
-    ztm = initZopeless(implicitBegin=True)
+    ztm = initZopeless()
 
     if options.create:
         # Create the table if it doesn't exist. Unfortunately, this is broken

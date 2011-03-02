@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bugzilla ExternalBugTracker utility."""
@@ -21,7 +21,6 @@ import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical import encoding
 from canonical.config import config
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.webapp.url import (
@@ -37,8 +36,8 @@ from lp.bugs.externalbugtracker.base import (
     LookupTree,
     UnknownRemoteImportanceError,
     UnknownRemoteStatusError,
-    UnparseableBugData,
-    UnparseableBugTrackerVersion,
+    UnparsableBugData,
+    UnparsableBugTrackerVersion,
     )
 from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 from lp.bugs.externalbugtracker.xmlrpc import UrlLib2Transport
@@ -52,6 +51,7 @@ from lp.bugs.interfaces.externalbugtracker import (
     ISupportsCommentPushing,
     UNKNOWN_REMOTE_IMPORTANCE,
     )
+from lp.services import encoding
 
 
 class Bugzilla(ExternalBugTracker):
@@ -102,7 +102,7 @@ class Bugzilla(ExternalBugTracker):
                 return False
             else:
                 raise
-        except xmlrpclib.ResponseError:
+        except (xmlrpclib.ResponseError, xml.parsers.expat.ExpatError):
             # The server returned an unparsable response.
             return False
         else:
@@ -145,7 +145,7 @@ class Bugzilla(ExternalBugTracker):
                 return False
             else:
                 raise
-        except xmlrpclib.ResponseError:
+        except (xmlrpclib.ResponseError, xml.parsers.expat.ExpatError):
             # The server returned an unparsable response.
             return False
         else:
@@ -176,7 +176,7 @@ class Bugzilla(ExternalBugTracker):
         """Retrieve and return a remote bugzilla version.
 
         If the version cannot be parsed from the remote server
-        `UnparseableBugTrackerVersion` will be raised. If the remote
+        `UnparsableBugTrackerVersion` will be raised. If the remote
         server cannot be reached `BugTrackerConnectError` will be
         raised.
         """
@@ -194,7 +194,7 @@ class Bugzilla(ExternalBugTracker):
             if bugzilla:
                 self.is_issuezilla = True
             else:
-                raise UnparseableBugTrackerVersion(
+                raise UnparsableBugTrackerVersion(
                     'Failed to parse version from xml.cgi for %s: could '
                     'not find top-level bugzilla element'
                     % self.baseurl)
@@ -209,7 +209,7 @@ class Bugzilla(ExternalBugTracker):
         as (2, 15).
 
         If the passed version is None, None will be returned.
-        If the version cannot be parsed `UnparseableBugTrackerVersion`
+        If the version cannot be parsed `UnparsableBugTrackerVersion`
         will be raised.
         """
         if version is None:
@@ -217,25 +217,33 @@ class Bugzilla(ExternalBugTracker):
 
         version_numbers = re.findall('[0-9]+', version)
         if len(version_numbers) == 0:
-            raise UnparseableBugTrackerVersion(
+            raise UnparsableBugTrackerVersion(
                 'Failed to parse version %r for %s' %
                 (version, self.baseurl))
 
         return tuple(int(number) for number in version_numbers)
 
     _importance_lookup = {
-        'blocker':     BugTaskImportance.CRITICAL,
-        'critical':    BugTaskImportance.CRITICAL,
-        'immediate':   BugTaskImportance.CRITICAL,
-        'urgent':      BugTaskImportance.CRITICAL,
-        'major':       BugTaskImportance.HIGH,
-        'high':        BugTaskImportance.HIGH,
-        'normal':      BugTaskImportance.MEDIUM,
-        'medium':      BugTaskImportance.MEDIUM,
-        'minor':       BugTaskImportance.LOW,
-        'low':         BugTaskImportance.LOW,
-        'trivial':     BugTaskImportance.LOW,
+        'blocker': BugTaskImportance.CRITICAL,
+        'critical': BugTaskImportance.CRITICAL,
+        'immediate': BugTaskImportance.CRITICAL,
+        'urgent': BugTaskImportance.CRITICAL,
+        'p5': BugTaskImportance.CRITICAL,
+        'crash': BugTaskImportance.HIGH,
+        'grave': BugTaskImportance.HIGH,
+        'major': BugTaskImportance.HIGH,
+        'high': BugTaskImportance.HIGH,
+        'p4': BugTaskImportance.HIGH,
+        'normal': BugTaskImportance.MEDIUM,
+        'medium': BugTaskImportance.MEDIUM,
+        'p3': BugTaskImportance.MEDIUM,
+        'minor': BugTaskImportance.LOW,
+        'low': BugTaskImportance.LOW,
+        'trivial': BugTaskImportance.LOW,
+        'p2': BugTaskImportance.LOW,
+        'p1': BugTaskImportance.LOW,
         'enhancement': BugTaskImportance.WISHLIST,
+        'wishlist': BugTaskImportance.WISHLIST,
         }
 
     def convertRemoteImportance(self, remote_importance):
@@ -254,7 +262,7 @@ class Bugzilla(ExternalBugTracker):
     _status_lookup = LookupTree(
         ('ASSIGNED', 'ON_DEV', 'FAILS_QA', 'STARTED',
          BugTaskStatus.INPROGRESS),
-        ('NEEDINFO', 'NEEDINFO_REPORTER', 'WAITING', 'SUSPENDED',
+        ('NEEDINFO', 'NEEDINFO_REPORTER', 'NEEDSINFO', 'WAITING', 'SUSPENDED',
          'PLEASETEST',
          BugTaskStatus.INCOMPLETE),
         ('PENDINGUPLOAD', 'MODIFIED', 'RELEASE_PENDING', 'ON_QA',
@@ -271,9 +279,8 @@ class Bugzilla(ExternalBugTracker):
                 ('OBSOLETE', 'INSUFFICIENT_DATA', 'INCOMPLETE', 'EXPIRED',
                  BugTaskStatus.EXPIRED),
                 ('INVALID', 'WORKSFORME', 'NOTABUG', 'CANTFIX',
-                 'UNREPRODUCIBLE',
-                 BugTaskStatus.INVALID),
-                (BugTaskStatus.UNKNOWN,))),
+                 'UNREPRODUCIBLE', 'DUPLICATE',
+                 BugTaskStatus.INVALID))),
         ('REOPENED', 'NEW', 'UPSTREAM', 'DEFERRED',
          BugTaskStatus.CONFIRMED),
         ('UNCONFIRMED', BugTaskStatus.NEW),
@@ -305,6 +312,20 @@ class Bugzilla(ExternalBugTracker):
         """See `ExternalBugTracker`."""
         return (bug_id, self.getRemoteBugBatch([bug_id]))
 
+    def _checkBugSearchResult(self, document):
+        """Does `document` appear to be a bug search result page?
+
+        :param document: An `xml.dom.Document` built from a bug search result
+            on the bugzilla instance.
+        :raise UnparsableBugData: If `document` does not appear to be a bug
+            search result.
+        """
+        root = document.documentElement
+        if root.tagName == 'html':
+            raise UnparsableBugData(
+                "Bug search on %s returned a <%s> instead of an RDF page." % (
+                    self.baseurl, root.tagName))
+
     def getRemoteBugBatch(self, bug_ids):
         """See `ExternalBugTracker`."""
         # XXX: GavinPanella 2007-10-25 bug=153532: The modification of
@@ -316,12 +337,13 @@ class Bugzilla(ExternalBugTracker):
         # getRemoteStatus.
         if self.is_issuezilla:
             buglist_page = 'xml.cgi'
-            data = {'download_type' : 'browser',
-                    'output_configured' : 'true',
-                    'include_attachments' : 'false',
-                    'include_dtd' : 'true',
-                    'id'      : ','.join(bug_ids),
-                    }
+            data = {
+                'download_type': 'browser',
+                'output_configured': 'true',
+                'include_attachments': 'false',
+                'include_dtd': 'true',
+                'id': ','.join(bug_ids),
+                }
             bug_tag = 'issue'
             id_tag = 'issue_id'
             status_tag = 'issue_status'
@@ -339,15 +361,18 @@ class Bugzilla(ExternalBugTracker):
             severity_tag = 'bug_severity'
         else:
             buglist_page = 'buglist.cgi'
-            data = {'form_name'   : 'buglist.cgi',
-                    'bug_id_type' : 'include',
-                    'columnlist'  : 'id,product,bug_status,resolution',
-                    'bug_id'      : ','.join(bug_ids),
-                    }
+            data = {
+                'form_name': 'buglist.cgi',
+                'bug_id_type': 'include',
+                'columnlist':
+                    ('id,product,bug_status,resolution,'
+                     'priority,bug_severity'),
+                'bug_id': ','.join(bug_ids),
+                }
             if self.version < (2, 17, 1):
-                data.update({'format' : 'rdf'})
+                data.update({'format': 'rdf'})
             else:
-                data.update({'ctype'  : 'rdf'})
+                data.update({'ctype': 'rdf'})
             bug_tag = 'bz:bug'
             id_tag = 'bz:id'
             status_tag = 'bz:bug_status'
@@ -355,12 +380,16 @@ class Bugzilla(ExternalBugTracker):
             priority_tag = 'bz:priority'
             severity_tag = 'bz:bug_severity'
 
-        buglist_xml = self._postPage(buglist_page, data)
+        buglist_xml = self._postPage(
+            buglist_page, data, repost_on_redirect=True)
+
         try:
             document = self._parseDOMString(buglist_xml)
         except xml.parsers.expat.ExpatError, e:
-            raise UnparseableBugData('Failed to parse XML description for '
-                '%s bugs %s: %s' % (self.baseurl, bug_ids, e))
+            raise UnparsableBugData(
+                "Failed to parse XML description for %s bugs %s: %s"
+                % (self.baseurl, bug_ids, e))
+        self._checkBugSearchResult(document)
 
         bug_nodes = document.getElementsByTagName(bug_tag)
         for bug_node in bug_nodes:
@@ -448,10 +477,6 @@ class Bugzilla(ExternalBugTracker):
                 product_node = product_nodes[0]
                 self.remote_bug_product[bug_id] = (
                     product_node.childNodes[0].data)
-
-    def initializeRemoteImportance(self, bug_ids):
-        for bug_id in bug_ids:
-            self.remote_bug_importance[bug_id] = "NORMAL NORMAL"
 
     def getRemoteImportance(self, bug_id):
         """See `ExternalBugTracker`."""
@@ -659,8 +684,8 @@ class BugzillaAPI(Bugzilla):
             status = self._bugs[actual_bug_id]['status']
             resolution = self._bugs[actual_bug_id]['resolution']
         except KeyError:
-            raise UnparseableBugData('No status or resolution defined '
-                'for bug %i' % (bug_id))
+            raise UnparsableBugData(
+                "No status or resolution defined for bug %i" % (bug_id))
 
         if resolution != '':
             return "%s %s" % (status, resolution)
@@ -677,8 +702,8 @@ class BugzillaAPI(Bugzilla):
             priority = self._bugs[actual_bug_id]['priority']
             severity = self._bugs[actual_bug_id]['severity']
         except KeyError:
-            raise UnparseableBugData('No priority or severity defined '
-                'for bug %i' % (bug_id))
+            raise UnparsableBugData(
+                "No priority or severity defined for bug %i" % bug_id)
 
         if severity != '':
             return "%s %s" % (priority, severity)

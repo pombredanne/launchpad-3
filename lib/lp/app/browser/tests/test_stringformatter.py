@@ -264,6 +264,15 @@ class TestLinkifyingProtocols(TestCase):
         self.assertEqual(expected_html, html)
 
 
+class TestLastParagraphClass(TestCase):
+
+    def test_last_paragraph_class(self):
+        self.assertEqual(
+            '<p>Foo</p>\n<p class="last">Bar</p>',
+            FormattersAPI("Foo\n\nBar").text_to_html(
+                last_paragraph_class="last"))
+
+
 class TestDiffFormatter(TestCase):
     """Test the string formatter fmt:diff."""
     layer = DatabaseFunctionalLayer

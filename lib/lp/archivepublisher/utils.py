@@ -31,7 +31,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.mem import resident
+from lp.services.profile.mem import resident
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import (
     default_name_by_purpose,
@@ -74,13 +74,11 @@ def count_alive(store, logger):
 # 1 StupidCache + clear_current_connection_caches() [this];
 # 2 storm.Cache + clear_current_connection_caches() [no difference];
 # 3 StupidCache + store.invalidate(obj) [references left behind];
-# 4 stormCache + store.invlaidate(obj)  [references left behind];
+# 4 stormCache + store.invalidate(obj)  [references left behind];
 # 5 No batches [memory exhausted].
 
-# XXX cprov 20080630: If we decide to keep this code/functionality, which
-# I think we should, independently of the need to cleanup the cache after
-# processing each batch, we should generalize and test it as suggested in
-# bug #244328.
+# XXX JeroenVermeulen 2011-02-03 bug=244328: That was mid-2008.  We have
+# the GenerationalCache now.  We may not need any of this any more.
 
 class PublishingTunableLoop(object):
     """An `ITunableLoop` for dealing with huge publishing result sets."""

@@ -25,8 +25,8 @@ Mozilla's Bugzilla is an Issuezilla instance here:
     >>> for bug_watch in mozilla_bugzilla.watches:
     ...     print "%s: %s %s" % (bug_watch.remotebug,
     ...         bug_watch.remotestatus, bug_watch.remote_importance)
-    2000:  
-    123543:  
+    2000:
+    123543:
     42: FUBAR BAZBAZ
     42: FUBAR BAZBAZ
     >>> transaction.commit()
@@ -34,8 +34,8 @@ Mozilla's Bugzilla is an Issuezilla instance here:
     >>> bug_watch_updater.updateBugWatches(
     ...     issuezilla, mozilla_bugzilla.watches)
     INFO:...:Updating 4 watches for 3 bugs on https://bugzilla.mozilla.org
-    WARNING:...:Didn't find bug u'42' on https://bugzilla.mozilla.org
-    (local bugs: 1, 2). (OOPS-...)
+    INFO:...:Didn't find bug u'42' on https://bugzilla.mozilla.org
+    (local bugs: 1, 2).
 
     >>> for bug_watch in mozilla_bugzilla.watches:
     ...     print "%s: %s %s" % (bug_watch.remotebug,
@@ -136,5 +136,5 @@ invalid XML:
     >>> broken_bugzilla.initializeRemoteBugDB(remote_bugs)
     Traceback (most recent call last):
     ...
-    UnparseableBugData: Failed to parse XML description...
+    UnparsableBugData: Failed to parse XML description...
 

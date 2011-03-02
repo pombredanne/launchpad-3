@@ -25,6 +25,22 @@ country.
     Germany: 1 mirror(s)
     United Kingdom: 1 mirror(s)
 
+Lists of archive mirrors
+------------------------
+
+    >>> ubuntu_archivemirrors = create_view(ubuntu, name="+archivemirrors")
+    >>> country_and_mirrors = (
+    ...     ubuntu_archivemirrors.getMirrorsGroupedByCountry())
+    >>> for country_and_mirror in country_and_mirrors:
+    ...     country = country_and_mirror['country']
+    ...     mirrors = country_and_mirror['mirrors']
+    ...     for mirror in mirrors:
+    ...         assert mirror.country.name == country
+    ...     print "%s: %d mirror(s)" % (country, len(mirrors))
+    Antarctica: 1 mirror(s)
+    France: 2 mirror(s)
+    United Kingdom: 1 mirror(s)
+
 
 Distribution modification views
 ===============================

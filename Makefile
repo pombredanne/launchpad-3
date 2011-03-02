@@ -1,7 +1,7 @@
 # This file modified from Zope3/Makefile
 # Licensed under the ZPL, (c) Zope Corporation and contributors.
 
-PYTHON=python
+PYTHON=python2.6
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
 PYTHONPATH:=$(WD)/lib:$(WD)/lib/mailman:${PYTHONPATH}
@@ -71,14 +71,18 @@ $(API_INDEX): $(BZR_VERSION_INFO) $(PY)
 
 apidoc: compile $(API_INDEX)
 
+# Used to generate HTML developer documentation for Launchpad.
+doc:
+	$(MAKE) -C doc/ html
+
 # Run by PQM.
 check_merge: $(BUILDOUT_BIN)
 	[ `PYTHONPATH= bzr status -S database/schema/ | \
 		grep -v "\(^P\|pending\|security.cfg\|Makefile\|unautovacuumable\|_pythonpath.py\)" | wc -l` -eq 0 ]
-	${PY} lib/canonical/tests/test_no_conflict_marker.py
+	${PY} lib/lp/tests/test_no_conflict_marker.py
 
 check_db_merge: $(PY)
-	${PY} lib/canonical/tests/test_no_conflict_marker.py
+	${PY} lib/lp/tests/test_no_conflict_marker.py
 
 check_config: build
 	bin/test -m canonical.config.tests -vvt test_config
@@ -121,6 +125,9 @@ lint: ${PY}
 lint-verbose: ${PY}
 	@bash ./bin/lint.sh -v
 
+logs:
+	mkdir logs
+
 xxxreport: $(PY)
 	${PY} -t ./utilities/xxxreport.py -f csv -o xxx-report.csv ./
 
@@ -130,7 +137,7 @@ check-configs: $(PY)
 pagetests: build
 	env PYTHONPATH=$(PYTHONPATH) bin/test test_pages
 
-inplace: build
+inplace: build logs clean_logs
 	mkdir -p $(CODEHOSTING_ROOT)/mirrors
 	mkdir -p $(CODEHOSTING_ROOT)/config
 	mkdir -p /var/tmp/bzrsync
@@ -256,17 +263,17 @@ merge-proposal-jobs:
 	$(PY) cronscripts/merge-proposal-jobs.py -v
 
 run: check_schema inplace stop
-	$(RM) logs/thread*.request
 	bin/run -r librarian,google-webservice,memcached -i $(LPCONFIG)
 
-start-gdb: check_schema inplace stop support_files
-	$(RM) logs/thread*.request
+run.gdb:
+	echo 'run' > run.gdb
+
+start-gdb: check_schema inplace stop support_files run.gdb
 	nohup gdb -x run.gdb --args bin/run -i $(LPCONFIG) \
 		-r librarian,google-webservice
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
 run_all: check_schema inplace stop
-	$(RM) logs/thread*.request
 	bin/run -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached \
 	    -i $(LPCONFIG)
 
@@ -280,7 +287,6 @@ stop_codebrowse:
 	$(PY) scripts/stop-loggerhead.py
 
 run_codehosting: check_schema inplace stop
-	$(RM) logs/thread*.request
 	bin/run -r librarian,sftp,forker,codebrowse -i $(LPCONFIG)
 
 start_librarian: compile
@@ -356,7 +362,10 @@ clean_buildout:
 	$(RM) -r build
 	$(RM) _pythonpath.py
 
-clean: clean_js clean_buildout
+clean_logs:
+	$(RM) logs/thread*.request
+
+clean: clean_js clean_buildout clean_logs
 	$(MAKE) -C sourcecode/pygettextpo clean
 	# XXX gary 2009-11-16 bug 483782
 	# The pygettextpo Makefile should have this next line in it for its make
@@ -370,7 +379,6 @@ clean: clean_js clean_buildout
 	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' -o \
 	    -name '*.pt.py' \) \
 	    -print0 | xargs -r0 $(RM)
-	$(RM) logs/thread*.request
 	$(RM) -r lib/mailman
 	$(RM) -rf lib/canonical/launchpad/icing/build/*
 	$(RM) -rf $(CODEHOSTING_ROOT)
@@ -383,18 +391,17 @@ clean: clean_js clean_buildout
 			  /var/tmp/bzrsync \
 			  /var/tmp/codehosting.test \
 			  /var/tmp/codeimport \
-			  /var/tmp/fatsam.appserver \
+			  /var/tmp/fatsam.test \
 			  /var/tmp/lperr \
 			  /var/tmp/lperr.test \
 			  /var/tmp/mailman \
 			  /var/tmp/mailman-xmlrpc.test \
 			  /var/tmp/ppa \
 			  /var/tmp/ppa.test \
-			  /var/tmp/zeca
+			  /var/tmp/testkeyserver
 	# /var/tmp/launchpad_mailqueue is created read-only on ec2test
 	# instances.
 	if [ -w /var/tmp/launchpad_mailqueue ]; then $(RM) -rf /var/tmp/launchpad_mailqueue; fi
-	$(RM) -f lp.sfood lp-clustered.sfood lp-clustered.dot lp-clustered.svg
 
 
 realclean: clean
@@ -449,33 +456,6 @@ ID: compile
 	# idutils ID file
 	bin/tags -i
 
-lp.sfood:
-	# Generate import dependency graph
-	sfood -i -u -I lib/sqlobject -I lib/schoolbell -I lib/devscripts \
-	-I lib/contrib -I lib/canonical/not-used lib/canonical \
-	lib/lp 2>/dev/null | grep -v contrib/ \
-	| grep -v sqlobject | grep -v BeautifulSoup | grep -v psycopg \
-	| grep -v schoolbell > lp.sfood.tmp
-	mv lp.sfood.tmp lp.sfood
-
-
-lp-clustered.sfood: lp.sfood lp-sfood-packages
-	# Cluster the import dependency graph
-	sfood-cluster -f lp-sfood-packages < lp.sfood > lp-clustered.sfood.tmp
-	mv lp-clustered.sfood.tmp lp-clustered.sfood
-
-
-lp-clustered.dot: lp-clustered.sfood
-	# Build the visual graph
-	sfood-graph -p < lp-clustered.sfood > lp-clustered.dot.tmp
-	mv lp-clustered.dot.tmp lp-clustered.dot
-
-
-lp-clustered.svg: lp-clustered.dot
-	# Render to svg
-	dot -Tsvg < lp-clustered.dot > lp-clustered.svg.tmp
-	mv lp-clustered.svg.tmp lp-clustered.svg
-
 PYDOCTOR = pydoctor
 PYDOCTOR_OPTIONS =
 
@@ -485,10 +465,10 @@ pydoctor:
 		--docformat restructuredtext --verbose-about epytext-summary \
 		$(PYDOCTOR_OPTIONS)
 
-.PHONY: apidoc buildout_bin check tags TAGS zcmldocs realclean clean debug \
+.PHONY: apidoc buildout_bin check doc tags TAGS zcmldocs realclean clean debug \
 	stop start run ftest_build ftest_inplace test_build test_inplace \
 	pagetests check check_merge schema default launchpad.pot \
 	check_merge_ui pull scan sync_branches reload-apache hosted_branches \
 	check_db_merge check_mailman check_config jsbuild jsbuild_lazr \
 	clean_js clean_buildout buildonce_eggs build_eggs sprite_css \
-	sprite_image css_combine compile check_schema pydoctor
+	sprite_image css_combine compile check_schema pydoctor clean_logs \

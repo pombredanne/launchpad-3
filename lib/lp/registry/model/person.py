@@ -36,6 +36,7 @@ import re
 import subprocess
 import weakref
 
+from lazr.delegates import delegates
 import pytz
 from sqlobject import (
     BoolCol,
@@ -50,6 +51,7 @@ from sqlobject.sqlbuilder import (
     OR,
     SQLConstant,
     )
+from storm.base import Storm
 from storm.expr import (
     Alias,
     And,
@@ -65,6 +67,10 @@ from storm.expr import (
     Upper,
     )
 from storm.info import ClassAlias
+from storm.locals import (
+    Int,
+    Reference,
+    )
 from storm.store import (
     EmptyResultSet,
     Store,
@@ -77,6 +83,7 @@ from zope.component.interfaces import ComponentLookupError
 from zope.event import notify
 from zope.interface import (
     alsoProvides,
+    classImplements,
     implementer,
     implements,
     )
@@ -110,6 +117,7 @@ from canonical.launchpad.database.emailaddress import (
     EmailAddress,
     HasOwnerMixin,
     )
+from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.oauth import (
     OAuthAccessToken,
@@ -181,6 +189,8 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.model.bugtarget import HasBugsBase
 from lp.bugs.model.bugtask import get_related_bugtasks_search_params
+from lp.bugs.model.structuralsubscription import StructuralSubscription
+from lp.code.interfaces.branchcollection import IBranchCollection
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
     HasMergeProposalsMixin,
@@ -215,6 +225,7 @@ from lp.registry.interfaces.person import (
     InvalidName,
     IPerson,
     IPersonSet,
+    IPersonSettings,
     ITeam,
     PersonalStanding,
     PersonCreationRationale,
@@ -253,7 +264,6 @@ from lp.registry.model.karma import (
     )
 from lp.registry.model.personlocation import PersonLocation
 from lp.registry.model.pillar import PillarName
-from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.registry.model.teammembership import (
     TeamMembership,
     TeamMembershipSet,
@@ -351,12 +361,97 @@ def person_sort_key(person):
     return "%s, %s" % (displayname.strip(), person.name)
 
 
+class PersonSettings(Storm):
+    "The relatively rarely used settings for person (not a team)."
+
+    implements(IPersonSettings)
+
+    __storm_table__ = 'PersonSettings'
+
+    personID = Int("person", default=None, primary=True)
+    person = Reference(personID, "Person.id")
+
+    selfgenerated_bugnotifications = BoolCol(notNull=True, default=False)
+
+
+def readonly_settings(message, interface):
+    """Make an object that disallows writes to values on the interface.
+
+    When you write, the message is raised in a NotImplementedError.
+    """
+    # We will make a class that has properties for each field on the
+    # interface (we expect every name on the interface to correspond to a
+    # zope.schema field).  Each property will have a getter that will
+    # return the interface default for that name; and it will have a
+    # setter that will raise a hopefully helpful error message
+    # explaining why writing is not allowed.
+    # This is the setter we are going to use for every property.
+    def unwritable(self, value):
+        raise NotImplementedError(message)
+    # This will become the dict of the class.
+    data = {}
+    # The interface.names() method returns the names on the interface.  If
+    # "all" is True, then you will also get the names on base
+    # interfaces.  That is unlikely to be needed here, but would be the
+    # expected behavior if it were.
+    for name in interface.names(all=True):
+        # This next line is a work-around for a classic problem of
+        # closures in a loop. Closures are bound (indirectly) to frame
+        # locals, which are a mutable collection. Therefore, if we
+        # naively make closures for each different value within a loop,
+        # each closure will be bound to the value as it is at the *end
+        # of the loop*. That's usually not what we want. To prevent
+        # this, we make a helper function (which has its own locals)
+        # that returns the actual closure we want.
+        closure_maker = lambda result: lambda self: result
+        # Now we make a property with the name-specific getter and the generic
+        # setter, and put it in the dictionary of the class we are making.
+        data[name] = property(
+            closure_maker(interface[name].default), unwritable)
+    # Now we have all the attributes we want.  We will make the class...
+    cls = type('Unwritable' + interface.__name__, (), data)
+    # ...specify that the class implements the interface that we are working
+    # with...
+    classImplements(cls, interface)
+    # ...and return an instance.  We should only need one, since it is
+    # read-only.
+    return cls()
+
+_readonly_person_settings = readonly_settings(
+    'Teams do not support changing this attribute.', IPersonSettings)
+
+
 class Person(
     SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin,
     HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin):
     """A Person."""
 
     implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
+
+    def __init__(self, *args, **kwargs):
+        super(Person, self).__init__(*args, **kwargs)
+        # Initialize our PersonSettings object/record.
+        if not self.is_team:
+            # This is a Person, not a team.  Teams may want a TeamSettings
+            # in the future.
+            settings = PersonSettings()
+            settings.person = self
+
+    @cachedproperty
+    def _person_settings(self):
+        if self.is_team:
+            # Teams need to provide these attributes for reading in order for
+            # things like snapshots to work, but they are not actually
+            # pertinent to teams, so they are not actually implemented for
+            # writes.
+            return _readonly_person_settings
+        else:
+            # This is a person.
+            return IStore(PersonSettings).find(
+                PersonSettings,
+                PersonSettings.person == self).one()
+
+    delegates(IPersonSettings, context='_person_settings')
 
     sortingColumns = SQLConstant(
         "person_sort_key(Person.displayname, Person.name)")
@@ -1272,7 +1367,8 @@ class Person(
 
         if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
             raise JoinNotAllowed("This is a restricted team")
-        elif team.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
+        elif (team.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED
+            or team.subscriptionpolicy == TeamSubscriptionPolicy.DELEGATED):
             status = proposed
         elif team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
             status = approved
@@ -1697,10 +1793,15 @@ class Person(
             TeamParticipation.team == self.id,
             # But not the team itself.
             TeamParticipation.person != self.id)
-        return PersonSet()._getPrecachedPersons(
+        # Use a PersonSet object that is not security proxied to allow
+        # manipulation of the object.
+        person_set = PersonSet()
+        return person_set._getPrecachedPersons(
             origin, conditions, store=Store.of(self),
-            need_karma=need_karma, need_ubuntu_coc=need_ubuntu_coc,
-            need_location=need_location, need_archive=need_archive,
+            need_karma=need_karma,
+            need_ubuntu_coc=need_ubuntu_coc,
+            need_location=need_location,
+            need_archive=need_archive,
             need_preferred_email=need_preferred_email,
             need_validity=need_validity)
 
@@ -2058,6 +2159,7 @@ class Person(
             ('logintoken', 'requester'),
             ('personlanguage', 'person'),
             ('personlocation', 'person'),
+            ('personsettings', 'person'),
             ('persontransferjob', 'minor_person'),
             ('persontransferjob', 'major_person'),
             ('signedcodeofconduct', 'owner'),
@@ -2614,8 +2716,7 @@ class Person(
         store = Store.of(self)
         query = And(SignedCodeOfConduct.ownerID == self.id,
             Person._is_ubuntu_coc_signer_condition())
-        # TODO: Using exists would be faster than count().
-        return bool(store.find(SignedCodeOfConduct, query).count())
+        return not store.find(SignedCodeOfConduct, query).is_empty()
 
     @staticmethod
     def _is_ubuntu_coc_signer_condition():
@@ -2709,8 +2810,10 @@ class Person(
     @property
     def structural_subscriptions(self):
         """See `IPerson`."""
-        return StructuralSubscription.selectBy(
-            subscriber=self, orderBy=['-date_created'])
+        return IStore(self).find(
+            StructuralSubscription,
+            StructuralSubscription.subscriberID==self.id).order_by(
+                Desc(StructuralSubscription.date_created))
 
     def autoSubscribeToMailingList(self, mailinglist, requester=None):
         """See `IPerson`."""
@@ -2748,7 +2851,8 @@ class Person(
         from lp.hardwaredb.model.hwdb import HWSubmissionSet
         return HWSubmissionSet().search(owner=self)
 
-    def getRecipes(self):
+    @property
+    def recipes(self):
         """See `IHasRecipes`."""
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         store = Store.of(self)
@@ -2764,11 +2868,16 @@ class PersonSet:
     def __init__(self):
         self.title = 'People registered with Launchpad'
 
-    def isNameBlacklisted(self, name):
+    def isNameBlacklisted(self, name, user=None):
         """See `IPersonSet`."""
+        if user is None:
+            user_id = 0
+        else:
+            user_id = user.id
         cur = cursor()
-        cur.execute("SELECT is_blacklisted_name(%(name)s)" % sqlvalues(
-            name=name.encode('UTF-8')))
+        cur.execute(
+            "SELECT is_blacklisted_name(%(name)s, %(user_id)s)" % sqlvalues(
+            name=name.encode('UTF-8'), user_id=user_id))
         return bool(cur.fetchone()[0])
 
     def getTopContributors(self, limit=50):
@@ -3333,37 +3442,30 @@ class PersonSet:
         skip.append(
             (decorator_table.lower(), person_pointer_column.lower()))
 
-    def _mergeBranches(self, cur, from_id, to_id):
-        # XXX MichaelHudson 2010-01-13 bug=506630: This code does not account
-        # for package branches.
-        cur.execute('''
-            SELECT product, name FROM Branch WHERE owner = %(to_id)d
-            ''' % vars())
-        possible_conflicts = set(tuple(r) for r in cur.fetchall())
-        cur.execute('''
-            SELECT id, product, name FROM Branch WHERE owner = %(from_id)d
-            ORDER BY id
-            ''' % vars())
-        for id, product, name in list(cur.fetchall()):
-            new_name = name
-            suffix = 1
-            while (product, new_name) in possible_conflicts:
-                new_name = '%s-%d' % (name, suffix)
-                suffix += 1
-            possible_conflicts.add((product, new_name))
-            new_name = new_name.encode('US-ASCII')
-            name = name.encode('US-ASCII')
-            cur.execute('''
-                UPDATE Branch SET owner = %(to_id)s, name = %(new_name)s
-                WHERE owner = %(from_id)s AND name = %(name)s
-                    AND (%(product)s IS NULL OR product = %(product)s)
-                ''', dict(to_id=to_id, from_id=from_id,
-                          name=name, new_name=new_name, product=product))
+    def _mergeBranches(self, from_person, to_person):
+        # This shouldn't use removeSecurityProxy.
+        branches = getUtility(IBranchCollection).ownedBy(from_person)
+        for branch in branches.getBranches():
+            removeSecurityProxy(branch).setOwner(to_person, to_person)
 
     def _mergeBranchMergeQueues(self, cur, from_id, to_id):
         cur.execute('''
             UPDATE BranchMergeQueue SET owner = %(to_id)s WHERE owner =
             %(from_id)s''', dict(to_id=to_id, from_id=from_id))
+
+    def _mergeSourcePackageRecipes(self, from_person, to_person):
+        # This shouldn't use removeSecurityProxy.
+        recipes = from_person.recipes
+        existing_names = [r.name for r in to_person.recipes]
+        for recipe in recipes:
+            new_name = recipe.name
+            count = 1
+            while new_name in existing_names:
+                new_name = '%s-%s' % (recipe.name, count)
+                count += 1
+            naked_recipe = removeSecurityProxy(recipe)
+            naked_recipe.owner = to_person
+            naked_recipe.name = new_name
 
     def _mergeMailingListSubscriptions(self, cur, from_id, to_id):
         # Update MailingListSubscription. Note that since all the from_id
@@ -3804,6 +3906,7 @@ class PersonSet:
             ('teamparticipation', 'team'),
             ('personlanguage', 'person'),
             ('person', 'merged'),
+            ('personsettings', 'person'),
             ('emailaddress', 'person'),
             # Polls are not carried over when merging teams.
             ('poll', 'team'),
@@ -3859,14 +3962,13 @@ class PersonSet:
 
         # Update the Branches that will not conflict, and fudge the names of
         # ones that *do* conflict.
-        self._mergeBranches(cur, from_id, to_id)
+        self._mergeBranches(from_person, to_person)
         skip.append(('branch', 'owner'))
 
         self._mergeBranchMergeQueues(cur, from_id, to_id)
         skip.append(('branchmergequeue', 'owner'))
 
-        # XXX MichaelHudson 2010-01-13: Write _mergeSourcePackageRecipes!
-        #self._mergeSourcePackageRecipes(cur, from_id, to_id))
+        self._mergeSourcePackageRecipes(from_person, to_person)
         skip.append(('sourcepackagerecipe', 'owner'))
 
         self._mergeMailingListSubscriptions(cur, from_id, to_id)
@@ -4049,7 +4151,6 @@ class PersonSet:
 
     def cacheBrandingForPeople(self, people):
         """See `IPersonSet`."""
-        from canonical.launchpad.database.librarian import LibraryFileAlias
         aliases = []
         aliases.extend(person.iconID for person in people
                        if person.iconID is not None)
@@ -4066,7 +4167,7 @@ class PersonSet:
     def getPrecachedPersonsFromIDs(
         self, person_ids, need_karma=False, need_ubuntu_coc=False,
         need_location=False, need_archive=False,
-        need_preferred_email=False, need_validity=False):
+        need_preferred_email=False, need_validity=False, need_icon=False):
         """See `IPersonSet`."""
         origin = [Person]
         conditions = [
@@ -4076,13 +4177,13 @@ class PersonSet:
             need_karma=need_karma, need_ubuntu_coc=need_ubuntu_coc,
             need_location=need_location, need_archive=need_archive,
             need_preferred_email=need_preferred_email,
-            need_validity=need_validity)
+            need_validity=need_validity, need_icon=need_icon)
 
     def _getPrecachedPersons(
         self, origin, conditions, store=None,
         need_karma=False, need_ubuntu_coc=False,
         need_location=False, need_archive=False, need_preferred_email=False,
-        need_validity=False):
+        need_validity=False, need_icon=False):
         """Lookup all members of the team with optional precaching.
 
         :param store: Provide ability to specify the store.
@@ -4097,6 +4198,8 @@ class PersonSet:
         :param need_preferred_email: The preferred email attribute will be
             cached.
         :param need_validity: The is_valid attribute will be cached.
+        :param need_icon: Cache the persons' icons so that their URLs can
+            be generated without further reference to the database.
         """
         if store is None:
             store = IStore(Person)
@@ -4120,18 +4223,24 @@ class PersonSet:
                     PersonLocation.person == Person.id))
             columns.append(PersonLocation)
         if need_archive:
-            # Not everyone has PPA's
+            # Not everyone has PPAs.
             # It would be nice to cleanly expose the soyuz rules for this to
             # avoid duplicating the relationships.
+            archive_conditions = Or(
+                Archive.id == None,
+                And(
+                    Archive.owner == Person.id,
+                    Archive.id == Select(
+                        tables=Archive,
+                        columns=Min(Archive.id),
+                        where=And(
+                            Archive.purpose == ArchivePurpose.PPA,
+                            Archive.owner == Person.id))))
             origin.append(
-                LeftJoin(Archive, Archive.owner == Person.id))
+                LeftJoin(Archive, archive_conditions))
             columns.append(Archive)
-            conditions = And(conditions,
-                Or(Archive.id == None, And(
-                Archive.id == Select(Min(Archive.id),
-                    Archive.owner == Person.id, Archive),
-                Archive.purpose == ArchivePurpose.PPA)))
-        # checking validity requires having a preferred email.
+
+        # Checking validity requires having a preferred email.
         if need_preferred_email and not need_validity:
             # Teams don't have email, so a left join
             origin.append(
@@ -4139,16 +4248,20 @@ class PersonSet:
             columns.append(EmailAddress)
             conditions = And(conditions,
                 Or(EmailAddress.status == None,
-                    EmailAddress.status == EmailAddressStatus.PREFERRED))
+                   EmailAddress.status == EmailAddressStatus.PREFERRED))
         if need_validity:
             valid_stuff = Person._validity_queries()
             origin.extend(valid_stuff["joins"])
             columns.extend(valid_stuff["tables"])
             decorators.extend(valid_stuff["decorators"])
+        if need_icon:
+            IconAlias = ClassAlias(LibraryFileAlias, "LibraryFileAlias")
+            origin.append(LeftJoin(IconAlias, Person.icon == IconAlias.id))
+            columns.append(IconAlias)
         if len(columns) == 1:
-            columns = columns[0]
+            column = columns[0]
             # Return a simple ResultSet
-            return store.using(*origin).find(columns, conditions)
+            return store.using(*origin).find(column, conditions)
         # Adapt the result into a cached Person.
         columns = tuple(columns)
         raw_result = store.using(*origin).find(columns, conditions)

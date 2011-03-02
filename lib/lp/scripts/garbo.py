@@ -431,9 +431,12 @@ class PersonPruner(TunableLoop):
                 postgresql.listReferences(cursor(), 'person', 'id')):
             # Skip things that don't link to Person.id or that link to it from
             # TeamParticipation or EmailAddress, as all Person entries will be
-            # linked to from these tables.
+            # linked to from these tables.  Similarly, PersonSettings can
+            # simply be deleted if it exists, because it has a 1 (or 0) to 1
+            # relationship with Person.
             if (to_table != 'person' or to_column != 'id'
-                or from_table in ('teamparticipation', 'emailaddress')):
+                or from_table in ('teamparticipation', 'emailaddress',
+                                  'personsettings')):
                 continue
             self.log.debug(
                 "Populating LinkedPeople from %s.%s"
@@ -509,6 +512,7 @@ class PersonPruner(TunableLoop):
                 UPDATE EmailAddress SET person=NULL
                 WHERE person IN (%s)
                 """ % people_ids)
+            # This cascade deletes any PersonSettings records.
             self.store.execute("""
                 DELETE FROM Person
                 WHERE id IN (%s)

@@ -6,9 +6,14 @@
 """Module docstring goes here."""
 
 __metaclass__ = type
-__all__ = ['DistributionMirror', 'MirrorDistroArchSeries',
-           'MirrorDistroSeriesSource', 'MirrorProbeRecord',
-           'DistributionMirrorSet', 'MirrorCDImageDistroSeries']
+__all__ = [
+    'DistributionMirror',
+    'MirrorDistroArchSeries',
+    'MirrorDistroSeriesSource',
+    'MirrorProbeRecord',
+    'DistributionMirrorSet',
+    'MirrorCDImageDistroSeries',
+    ]
 
 from datetime import (
     datetime,
@@ -23,7 +28,12 @@ from sqlobject import (
     StringCol,
     )
 from sqlobject.sqlbuilder import AND
-from storm.expr import Func
+from storm.store import Store
+from storm.expr import (
+    And,
+    Desc,
+    Func,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -85,6 +95,7 @@ from lp.registry.interfaces.pocket import (
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.services.worlddata.model.country import Country
+from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import (
     BinaryPackageFileType,
     PackagePublishingStatus,
@@ -181,6 +192,36 @@ class DistributionMirror(SQLBase):
         return (self.ftp_base_url is not None
                 or self.rsync_base_url is not None)
 
+    @cachedproperty
+    def arch_mirror_freshness(self):
+        """See IDistributionMirror"""
+        store = Store.of(self)
+        mirror = store.find(
+            MirrorDistroArchSeries,
+            And(
+                MirrorDistroArchSeries.distribution_mirror == self,
+                MirrorDistroArchSeries.freshness != MirrorFreshness.UNKNOWN)
+                ).order_by(Desc(MirrorDistroArchSeries.freshness)).first()
+        if not mirror:
+            return None
+        else:
+            return mirror.freshness
+
+    @cachedproperty
+    def source_mirror_freshness(self):
+        """See IDistributionMirror"""
+        store = Store.of(self)
+        mirror = store.find(
+            MirrorDistroSeriesSource,
+            And(
+                MirrorDistroSeriesSource.distribution_mirror == self,
+                MirrorDistroSeriesSource.freshness != MirrorFreshness.UNKNOWN)
+                ).order_by(Desc(MirrorDistroSeriesSource.freshness)).first()
+        if not mirror:
+            return None
+        else:
+            return mirror.freshness
+
     def destroySelf(self):
         """Delete this mirror from the database.
 
@@ -261,28 +302,34 @@ class DistributionMirror(SQLBase):
                 return MirrorFreshness.UP
             else:
                 return MirrorFreshness.UNKNOWN
+
         elif self.content == MirrorContent.ARCHIVE:
             # Return the worst (i.e. highest valued) mirror freshness out of
             # all mirrors (binary and source) for this distribution mirror.
-            query = ("distribution_mirror = %s AND freshness != %s"
-                     % sqlvalues(self, MirrorFreshness.UNKNOWN))
-            arch_mirror = MirrorDistroArchSeries.selectFirst(
-                query, orderBy='-freshness')
-            source_mirror = MirrorDistroSeriesSource.selectFirst(
-                query, orderBy='-freshness')
-            if arch_mirror is None and source_mirror is None:
-                # No content.
+            arch_mirror_freshness = self.arch_mirror_freshness
+            source_mirror_freshness = self.source_mirror_freshness
+        
+            # Return unknown if no content
+            if (arch_mirror_freshness is None and
+                source_mirror_freshness is None):
                 return MirrorFreshness.UNKNOWN
-            elif arch_mirror is not None and source_mirror is None:
-                return arch_mirror.freshness
-            elif source_mirror is not None and arch_mirror is None:
-                return source_mirror.freshness
+
+            
+            # Return arch_mirror freshness if we have no source mirror.
+            if  (arch_mirror_freshness is not None and
+                  source_mirror_freshness is None):
+                return arch_mirror_freshness
+            
+            # Return source_mirror freshness if we have no arch mirror.
+            if (arch_mirror_freshness is None and
+                source_mirror_freshness is not None):
+                return source_mirror_freshness
+
+            # Return the freshest data if we have data for both.
+            if source_mirror_freshness > arch_mirror_freshness:
+                return source_mirror_freshness
             else:
-                # Arch and Source mirror
-                if source_mirror.freshness > arch_mirror.freshness:
-                    return source_mirror.freshness
-                else:
-                    return arch_mirror.freshness
+                return arch_mirror_freshness
         else:
             raise AssertionError(
                 'DistributionMirror.content is not ARCHIVE nor RELEASE: %r'
@@ -340,7 +387,8 @@ class DistributionMirror(SQLBase):
 
         if notify_owner:
             owner_address = get_contact_email_addresses(self.owner)
-            simple_sendmail(fromaddress, owner_address, subject, message)
+            if len(owner_address) > 0:
+                simple_sendmail(fromaddress, owner_address, subject, message)
 
     def newProbeRecord(self, log_file):
         """See IDistributionMirror"""

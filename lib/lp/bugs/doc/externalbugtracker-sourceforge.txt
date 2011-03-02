@@ -96,7 +96,7 @@ resolution, to demonstrate this:
     >>> sourceforge.initializeRemoteBugDB([0])
     Traceback (most recent call last):
       ...
-    UnparseableBugData: Remote bug 0 does not define a status.
+    UnparsableBugData: Remote bug 0 does not define a status.
 
 Some SourceForge bugs are marked private. Although we can't import a
 status from them, we don't raise an error when trying to initialize the
@@ -141,7 +141,8 @@ SourceForge instance which has several bugs that we wish to watch:
 Launchpad.dev bug #10 is the same bug as reported in example.com bug
 #1722250, so we add a watch against the remote bug.
 
-    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
