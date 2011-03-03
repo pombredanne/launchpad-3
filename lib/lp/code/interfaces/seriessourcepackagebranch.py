@@ -45,6 +45,7 @@ class ISeriesSourcePackageBranch(Interface):
     sourcepackagename = Choice(
         title=_("Package"), required=True, vocabulary='SourcePackageName')
 
+    branchID = Attribute('The ID of the branch.')
     branch = Choice(
         title=_("Branch"), vocabulary="Branch", required=True, readonly=True)
 

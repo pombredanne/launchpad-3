@@ -6,6 +6,7 @@ import logging
 import os
 import unittest
 
+from testtools.matchers import Is
 import transaction
 from zope.security.management import setSecurityPolicy
 
@@ -103,6 +104,19 @@ class TestIncoming(TestCaseWithFactory):
             helpers.IncomingEmailError,
             authenticateEmail,
             msg, fail_all_timestamps)
+
+    def test_unknown_email(self):
+        # An unknown email address returns no principal.
+        unknown = 'random-unknown@example.com'
+        mail = self.factory.makeSignedMessage(email_address=unknown)
+        self.assertThat(authenticateEmail(mail), Is(None))
+
+    def test_accounts_without_person(self):
+        # An account without a person should be the same as an unknown email.
+        email = 'non-person@example.com'
+        self.factory.makeAccount(email=email)
+        mail = self.factory.makeSignedMessage(email_address=email)
+        self.assertThat(authenticateEmail(mail), Is(None))
 
 
 def setUp(test):

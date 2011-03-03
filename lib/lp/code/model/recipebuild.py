@@ -31,6 +31,7 @@ from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.interfaces.lpstorm import ISlaveStore
+from canonical.launchpad.webapp.publisher import canonical_url
 
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
@@ -50,6 +51,17 @@ class RecipeBuildRecord(namedtuple(
     'RecipeBuildRecord',
     """sourcepackagename, recipeowner, archive, recipe,
         most_recent_build_time""")):
+
+    def __new__(cls, sourcepackagename, recipeowner, archive, recipe,
+                most_recent_build_time):
+        # Ensure that a valid (not None) recipe is used. This may change in
+        # future if we support build records with no recipe.
+        assert recipe is not None, "RecipeBuildRecord requires a recipe."
+        self = super(RecipeBuildRecord, cls).__new__(
+            cls, sourcepackagename, recipeowner, archive, recipe,
+            most_recent_build_time)
+        return self
+
     # We need to implement our own equality check since __eq__ is broken on
     # SourcePackageRecipe. It's broken there because __eq__ is broken,
     # or not supported, on storm's ReferenceSet implementation.
@@ -72,6 +84,14 @@ class RecipeBuildRecord(namedtuple(
     def distro_source_package(self):
         return self.archive.distribution.getSourcePackage(
             self.sourcepackagename)
+
+    @property
+    def recipe_name(self):
+        return self.recipe.name
+
+    @property
+    def recipe_url(self):
+        return canonical_url(self.recipe, rootsite='code')
 
 
 class RecipeBuildRecordSet:

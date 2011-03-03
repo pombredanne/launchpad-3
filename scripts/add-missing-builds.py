@@ -7,10 +7,10 @@
 
 import _pythonpath
 
-from lp.soyuz.scripts.ppa_add_missing_builds import PPAMissingBuilds
+from lp.soyuz.scripts.add_missing_builds import AddMissingBuilds
 from canonical.config import config
 
 if __name__ == "__main__":
-    script = PPAMissingBuilds(
-        "ppa-add-missing-builds", dbuser=config.uploader.dbuser)
+    script = AddMissingBuilds(
+        "add-missing-builds", dbuser=config.uploader.dbuser)
     script.lock_and_run()
