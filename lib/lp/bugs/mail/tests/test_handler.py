@@ -17,7 +17,6 @@ from canonical.launchpad.mail.commands import BugEmailCommand
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
-    ZopelessAppServerLayer,
     )
 from lp.bugs.mail.handler import MaloneHandler
 from lp.services.mail import stub
@@ -33,7 +32,7 @@ from lp.testing.mail_helpers import pop_notifications
 class TestMaloneHandler(TestCaseWithFactory):
     """Test that the Malone/bugs handler works."""
 
-    layer = ZopelessAppServerLayer
+    layer = LaunchpadZopelessLayer
 
     def test_getCommandsEmpty(self):
         """getCommands returns an empty list for messages with no command."""
