@@ -352,8 +352,6 @@ class SourcePublishingRecordView(BasePublishingRecordView):
         """Return a linkified string containing details about a
         SourcePackageRecipeBuild.
         """
-        if self.is_source is False:
-            return None
         sprb = self.context.sourcepackagerelease.source_package_recipe_build
         if sprb is not None:
             if sprb.recipe is None:

@@ -28,7 +28,7 @@
             tal:content="context/datesuperseded/fmt:displaydate"/>
       by <span tal:replace="context/supersededby/title" />
     </li>
-    <li tal:content="structure view/recipe_build_details" />
+    <li tal:content="structure view/recipe_build_details" tal:condition="view/is_source" />
     <li tal:condition="context/datepublished">
       Published
       <span tal:attributes="title context/datepublished/fmt:datetime"
