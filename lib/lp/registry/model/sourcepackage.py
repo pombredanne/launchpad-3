@@ -529,7 +529,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             'BugTask.distroseries = %s AND BugTask.sourcepackagename = %s' %
                 sqlvalues(self.distroseries, self.sourcepackagename))
 
-    def setPackaging(self, productseries, user):
+    def setPackaging(self, productseries, owner):
         target = self.direct_packaging
         if target is not None:
             # we should update the current packaging
@@ -541,7 +541,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             Packaging(
                 distroseries=self.distroseries,
                 sourcepackagename=self.sourcepackagename,
-                productseries=productseries, owner=user,
+                productseries=productseries, owner=owner,
                 packaging=PackagingType.PRIME)
         # and make sure this change is immediately available
         flush_database_updates()

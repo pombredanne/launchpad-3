@@ -54,6 +54,7 @@ from lp.code.interfaces.hasbranches import (
     IHasCodeImports,
     IHasMergeProposals,
     )
+from lp.registry.interfaces.productseries import IProductSeries
 from lp.soyuz.interfaces.component import IComponent
 from lp.translations.interfaces.hastranslationtemplates import (
     IHasTranslationTemplates,
@@ -195,6 +196,9 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
         sourcepackagename compare not equal.
         """
 
+    @operation_parameters(productseries=Reference(schema=IProductSeries))
+    @call_with(owner=REQUEST_USER)
+    @export_write_operation()
     def setPackaging(productseries, owner):
         """Update the existing packaging record, or create a new packaging
         record, that links the source package to the given productseries,

@@ -785,6 +785,20 @@ class WindmillTestCase(TestCaseWithFactory):
         return client, obj_url
 
 
+class WebServiceTestCase(TestCaseWithFactory):
+
+    from canonical.testing.layers import AppServerLayer
+
+    layer = AppServerLayer
+
+    def setUp(self):
+        super(WebServiceTestCase, self).setUp()
+        self.service = self.factory.makeLaunchpadService()
+
+    def wsObject(self, obj):
+        return ws_object(self.service, obj)
+
+
 def quote_jquery_expression(expression):
     """jquery requires meta chars used in literals escaped with \\"""
     return re.sub(
@@ -1155,11 +1169,8 @@ def ws_object(launchpad, obj):
     :param obj: The object to convert.
     :return: A launchpadlib Entry object.
     """
-    api_request = WebServiceTestRequest()
-    obj_url = canonical_url(obj, request=api_request)
-    return launchpad.load(
-        obj_url.replace('http://api.launchpad.dev/',
-        str(launchpad._root_uri)))
+    api_request = WebServiceTestRequest(SERVER_URL=str(launchpad._root_uri))
+    return launchpad.load(canonical_url(obj, request=api_request))
 
 
 @contextmanager

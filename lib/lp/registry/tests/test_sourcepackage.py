@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for ISourcePackage implementations."""
@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import unittest
 
+import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -31,6 +32,7 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
+    WebServiceTestCase,
     )
 from lp.testing.views import create_initialized_view
 
@@ -253,6 +255,21 @@ class TestSourcePackage(TestCaseWithFactory):
             u'mozilla-firefox-data: No summary available for '
             u'mozilla-firefox-data in ubuntu warty.')
         self.assertEqual(''.join(expected_summary), sp.summary)
+
+
+class TestSourcePackageWebService(WebServiceTestCase):
+
+    def test_setPackaging(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        self.assertIs(None, sourcepackage.direct_packaging)
+        productseries = self.factory.makeProductSeries()
+        transaction.commit()
+        ws_sourcepackage = self.wsObject(sourcepackage)
+        ws_productseries = self.wsObject(productseries)
+        ws_sourcepackage.setPackaging(productseries=ws_productseries)
+        transaction.commit()
+        self.assertEqual(
+            productseries, sourcepackage.direct_packaging.productseries)
 
 
 class TestSourcePackageSecurity(TestCaseWithFactory):
