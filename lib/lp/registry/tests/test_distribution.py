@@ -204,8 +204,8 @@ class TestDistributionPage(TestCaseWithFactory):
     def test_distributionpage_addseries_link(self):
         """ Verify that an admin sees the +addseries link."""
         login_person(self.admin)
-        view = create_initialized_view(self.distro, '+index',
-            principal=self.admin)
+        view = create_initialized_view(
+            self.distro, '+index', principal=self.admin)
         series_matches = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'link to add a series', 'a',
@@ -223,8 +223,8 @@ class TestDistributionPage(TestCaseWithFactory):
         nor the series header (since there is no series yet).
         """
         login_person(self.simple_user)
-        view = create_initialized_view(self.distro, '+index',
-            principal=self.simple_user)
+        view = create_initialized_view(
+            self.distro, '+index', principal=self.simple_user)
         add_series_match = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'link to add a series', 'a',
@@ -246,8 +246,8 @@ class TestDistributionPage(TestCaseWithFactory):
         series = self.factory.makeDistroSeries(distribution=self.distro,
             status=SeriesStatus.CURRENT)
         login_person(self.simple_user)
-        view = create_initialized_view(self.distro, '+index',
-            principal=self.simple_user)
+        view = create_initialized_view(
+            self.distro, '+index', principal=self.simple_user)
         add_series_match = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'link to add a series', 'a',
