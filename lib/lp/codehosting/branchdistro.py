@@ -146,7 +146,8 @@ class DistroBrancher:
         """
         branches = getUtility(IAllBranches)
         distroseries_branches = branches.inDistroSeries(self.old_distroseries)
-        return distroseries_branches.officialBranches().getBranches()
+        return distroseries_branches.officialBranches().getBranches(
+            eager_load=False)
 
     def checkConsistentOfficialPackageBranch(self, db_branch):
         """Check that `db_branch` is a consistent official package branch.
