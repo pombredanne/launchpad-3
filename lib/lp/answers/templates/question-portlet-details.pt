@@ -4,10 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<div class="portlet" id="portlet-details" xml:lang="en" lang="en" dir="ltr">
-
-  <h2>Question information</h2>
-
+<div id="portlet-details" xml:lang="en" lang="en" dir="ltr">
   <div class="two-column-list">
     <dl id="question-lang">
       <dt>Language:</dt>

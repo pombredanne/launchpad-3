@@ -158,6 +158,9 @@ h3 {
     font-size: 16px;
     line-height: 20px;
     }
+.yui-u > div > h3:first-child {
+    margin-top: 0;
+    }
 p {
     width: auto;
     margin-bottom: 0.8em;
@@ -401,6 +404,10 @@ ol.subordinate {
     float: left;
     display: inline;
     margin: 0 0.25em 0 0;
+    }
+.two-column-list dl:first-child dt,
+.two-column-list dl:first-child + dl dt {
+    margin-top: 0;
     }
 .three-column-list dl {
     width: 31%;
