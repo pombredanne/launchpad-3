@@ -169,6 +169,9 @@ from lp.bugs.model.bugtask import (
     NullBugTask,
     )
 from lp.bugs.model.bugwatch import BugWatch
+from lp.bugs.model.structuralsubscription import (
+    get_all_structural_subscriptions,
+    )
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -2155,29 +2158,7 @@ class BugSubscriptionInfo:
     @freeze(StructuralSubscriptionSet)
     def structural_subscriptions(self):
         """Structural subscriptions to the bug's targets."""
-        query_arguments = []
-        for bugtask in self.bug.bugtasks:
-            if IStructuralSubscriptionTarget.providedBy(bugtask.target):
-                query_arguments.append((bugtask.target, bugtask))
-                if bugtask.target.parent_subscription_target is not None:
-                    query_arguments.append(
-                        (bugtask.target.parent_subscription_target, bugtask))
-            if ISourcePackage.providedBy(bugtask.target):
-                # Distribution series bug tasks with a package have the source
-                # package set as their target, so we add the distroseries
-                # explicitly to the set of subscription targets.
-                query_arguments.append((bugtask.distroseries, bugtask))
-            if bugtask.milestone is not None:
-                query_arguments.append((bugtask.milestone, bugtask))
-        # Build the query.
-        empty = EmptyResultSet()
-        union = lambda left, right: (
-            removeSecurityProxy(left).union(
-                removeSecurityProxy(right)))
-        queries = (
-            target.getSubscriptionsForBugTask(bugtask, self.level)
-            for target, bugtask in query_arguments)
-        return reduce(union, queries, empty)
+        return get_all_structural_subscriptions(self.bug.bugtasks)
 
     @cachedproperty
     @freeze(BugSubscriberSet)
