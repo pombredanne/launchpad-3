@@ -169,9 +169,6 @@ from lp.bugs.model.bugtask import (
     NullBugTask,
     )
 from lp.bugs.model.bugwatch import BugWatch
-from lp.bugs.model.structuralsubscription import (
-    get_all_structural_subscriptions,
-    )
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -950,39 +947,47 @@ BugMessage""" % sqlvalues(self.id))
         if self.private:
             return []
 
-        # Direct subscriptions always take precedence over indirect
-        # subscriptions.
-        direct_subscribers = set(self.getDirectSubscribers())
-
         also_notified_subscribers = set()
 
         for bugtask in self.bugtasks:
-            if (bugtask.assignee and
-                bugtask.assignee not in direct_subscribers):
-                # We have an assignee that is not a direct subscriber.
+            if bugtask.assignee:
                 also_notified_subscribers.add(bugtask.assignee)
                 if recipients is not None:
                     recipients.addAssignee(bugtask.assignee)
 
-            # If the target's bug supervisor isn't set...
+            # If the target's bug supervisor isn't set,
+            # we add the owner as a subscriber.
             pillar = bugtask.pillar
-            if (pillar.bug_supervisor is None and
-                pillar.official_malone and
-                pillar.owner not in direct_subscribers):
-                # ...we add the owner as a subscriber.
-                also_notified_subscribers.add(pillar.owner)
-                if recipients is not None:
-                    recipients.addRegistrant(pillar.owner, pillar)
+            if pillar.bug_supervisor is None and pillar.official_malone:
+                    also_notified_subscribers.add(pillar.owner)
+                    if recipients is not None:
+                        recipients.addRegistrant(pillar.owner, pillar)
 
-        # This structural subscribers code omits direct subscribers itself.
+        # Structural subscribers.
+        if recipients is None:
+            temp_recipients = None
+        else:
+            temp_recipients = BugNotificationRecipients(
+                duplicateof=recipients.duplicateof)
         also_notified_subscribers.update(
             getUtility(IBugTaskSet).getStructuralSubscribers(
-                self.bugtasks, recipients=recipients, level=level))
+                self.bugtasks, recipients=temp_recipients, level=level))
+
+        # Direct subscriptions always take precedence over indirect
+        # subscriptions.
+        direct_subscribers = set(self.getDirectSubscribers())
+        if recipients is not None:
+            # A direct subscriber may have muted this notification.
+            # Therefore, we want to remove any direct subscribers from the
+            # structural subscription recipients before we merge.
+            temp_recipients.remove(direct_subscribers)
+            recipients.update(temp_recipients)
 
         # Remove security proxy for the sort key, but return
         # the regular proxied object.
-        return sorted(also_notified_subscribers,
-                      key=lambda x: removeSecurityProxy(x).displayname)
+        return sorted(
+            (also_notified_subscribers - direct_subscribers),
+            key=lambda x: removeSecurityProxy(x).displayname)
 
     def getBugNotificationRecipients(self, duplicateof=None, old_bug=None,
                                      level=None,
@@ -2150,7 +2155,29 @@ class BugSubscriptionInfo:
     @freeze(StructuralSubscriptionSet)
     def structural_subscriptions(self):
         """Structural subscriptions to the bug's targets."""
-        return get_all_structural_subscriptions(self.bug.bugtasks)
+        query_arguments = []
+        for bugtask in self.bug.bugtasks:
+            if IStructuralSubscriptionTarget.providedBy(bugtask.target):
+                query_arguments.append((bugtask.target, bugtask))
+                if bugtask.target.parent_subscription_target is not None:
+                    query_arguments.append(
+                        (bugtask.target.parent_subscription_target, bugtask))
+            if ISourcePackage.providedBy(bugtask.target):
+                # Distribution series bug tasks with a package have the source
+                # package set as their target, so we add the distroseries
+                # explicitly to the set of subscription targets.
+                query_arguments.append((bugtask.distroseries, bugtask))
+            if bugtask.milestone is not None:
+                query_arguments.append((bugtask.milestone, bugtask))
+        # Build the query.
+        empty = EmptyResultSet()
+        union = lambda left, right: (
+            removeSecurityProxy(left).union(
+                removeSecurityProxy(right)))
+        queries = (
+            target.getSubscriptionsForBugTask(bugtask, self.level)
+            for target, bugtask in query_arguments)
+        return reduce(union, queries, empty)
 
     @cachedproperty
     @freeze(BugSubscriberSet)
