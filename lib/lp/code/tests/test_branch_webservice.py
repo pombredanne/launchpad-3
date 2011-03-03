@@ -72,3 +72,12 @@ class TestSlashBranches(TestCaseWithFactory):
         logout()
         lp = launchpadlib_for("test")
         list(lp.branches)
+
+    def test_renders_with_series_branch(self):
+        branch = self.factory.makeBranch()
+        login_person(branch.product.owner)
+        branch.product.development_focus.branch = branch
+        branch.updateScannedDetails(None, 0)
+        logout()
+        lp = launchpadlib_for("test")
+        list(lp.branches)
