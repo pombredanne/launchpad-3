@@ -435,5 +435,6 @@ class TestPopulateDistroSeriesDiffScript(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_script(self):
+# XXX: Log in.
 # XXX: Test!
         pass
