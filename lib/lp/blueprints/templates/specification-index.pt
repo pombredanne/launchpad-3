@@ -51,10 +51,9 @@
     </div>
 
     <div class="yui-g">
-      <div class="yui-u first">
         <div class="portlet">
           <h2>Blueprint information</h2>
-
+          <div class="yui-u first">
           <div class="two-column-list">
             <dl>
               <dt>Priority:</dt>
@@ -196,13 +195,12 @@
               </dd>
             </dl>
           </div>
-        </div>
+
       </div>
 
       <div class="yui-u">
-        <div class="portlet">
           <div id="linked_branches">
-            <h2>Related branches</h2>
+            <h3>Related branches</h3>
 
             <ul
               tal:define="branches view/linked_branches"
@@ -225,8 +223,8 @@
             </ul>
           </div>
 
-          <div id="bug_links" style="margin-top: 1.5em;">
-            <h2>Related bugs</h2>
+          <div id="bug_links">
+            <h3>Related bugs</h3>
 
             <ul tal:condition="view/bug_links">
               <li tal:repeat="link view/bug_links">
@@ -246,8 +244,8 @@
             </ul>
           </div>
 
-            <div style="margin-top: 1.5em;">
-              <h2>Sprints</h2>
+            <div>
+              <h3>Sprints</h3>
               <ul
                 tal:define="sprint_links context/sprint_links"
                 tal:condition="sprint_links">
@@ -270,9 +268,10 @@
                 </li>
               </ul>
             </div>
+          </div>
 
-            <div class="portlet" style="border-top: none;">
-              <h2 tal:condition="not:context/feedbackrequests">Feedback requests</h2>
+            <div>
+              <h3 tal:condition="not:context/feedbackrequests">Feedback requests</h3>
 
               <div tal:replace="structure context/@@+portlet-feedbackqueue" />
 
@@ -287,9 +286,7 @@
                 </li>
               </ul>
             </div>
-
         </div>
-      </div>
     </div>
 
     <div class="portlet">
