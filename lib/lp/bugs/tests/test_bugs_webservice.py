@@ -318,7 +318,7 @@ class TestEditConjoinedBugtask(TestCaseWithFactory):
             bug=bug, target=product.development_focus)
 
         # Try to edit it through the web service.
-        launchpad = launchpadlib_for('test', bug.owner, version='devel')
+        launchpad = launchpadlib_for('test', bug.owner)
         lp_task = launchpad.load(api_url(conjoined_bugtask))
         lp_task.status = 'Invalid'
         try:
