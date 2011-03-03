@@ -53,7 +53,8 @@ class PPAMissingBuilds(LaunchpadScript):
         sources = ppa.getPublishedSources(
             distroseries=distroseries,
             status=PackagePublishingStatus.PUBLISHED)
-        if not bool(sources):
+        sources = list(sources)
+        if sources:
             self.logger.info("No sources published, nothing to do.")
             return
 
