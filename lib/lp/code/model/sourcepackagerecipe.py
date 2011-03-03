@@ -53,10 +53,7 @@ from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.code.errors import (
     BuildAlreadyPending,
     BuildNotAllowedForDistro,
-    NoSuchBranch,
-    PrivateBranchRecipe,
     TooManyBuilds,
-    TooNewRecipeFormat,
     )
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,

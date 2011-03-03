@@ -22,7 +22,6 @@ from sqlobject import (
     DateCol,
     ForeignKey,
     SQLMultipleJoin,
-    SQLObjectNotFound,
     StringCol,
     )
 from storm.locals import (
