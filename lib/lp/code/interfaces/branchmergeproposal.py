@@ -278,10 +278,6 @@ class IBranchMergeProposal(IPrivacy):
             value_type=Reference(schema=Interface), # ICodeReviewComment
             readonly=True))
 
-    related_bugs = CollectionField(
-        title=_("Bugs related to this merge proposal."),
-        value_type=Reference(schema=IBug), readonly=True)
-
     address = exported(
         TextLine(
             title=_('The email address for this proposal.'),

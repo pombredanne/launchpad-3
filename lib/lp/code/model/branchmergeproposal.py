@@ -236,19 +236,6 @@ class BranchMergeProposal(SQLBase):
         storm_validator=validate_public_person, notNull=False,
         default=None)
 
-    @property
-    def related_bugs(self):
-        """Bugs which are linked to the source but not the target.
-
-        Implies that these bugs would be fixed, in the target, by the merge.
-        """
-        from operator import attrgetter
-        bugtasks = self.getRelatedBugTasks(self.registrant)
-        bugs = set()
-        for bugtask in bugtasks:
-            bugs.add(bugtask.bug)
-        return sorted(bugs, attrgetter('id'))
-
     def getRelatedBugTasks(self, user):
         """Bug tasks which are linked to the source but not the target.
 

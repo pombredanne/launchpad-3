@@ -1243,30 +1243,6 @@ class TestBranchMergeProposalBugs(TestCaseWithFactory):
         self.user = self.factory.makePerson()
         login_person(self.user)
 
-    def test_related_bugs_includes_source_bugs(self):
-        """related_bugs includes bugs linked to the source branch."""
-        bmp = self.factory.makeBranchMergeProposal()
-        source_branch = bmp.source_branch
-        bug = self.factory.makeBug()
-        source_branch.linkBug(bug, bmp.registrant)
-        self.assertEqual(
-            list(source_branch.linked_bugs), list(bmp.related_bugs))
-
-    def test_related_bugs_excludes_target_bugs(self):
-        """related_bugs ignores bugs linked to the source branch."""
-        bmp = self.factory.makeBranchMergeProposal()
-        bug = self.factory.makeBug()
-        bmp.target_branch.linkBug(bug, bmp.registrant)
-        self.assertEqual([], list(bmp.related_bugs))
-
-    def test_related_bugs_excludes_mutual_bugs(self):
-        """related_bugs ignores bugs linked to both branches."""
-        bmp = self.factory.makeBranchMergeProposal()
-        bug = self.factory.makeBug()
-        bmp.source_branch.linkBug(bug, bmp.registrant)
-        bmp.target_branch.linkBug(bug, bmp.registrant)
-        self.assertEqual([], list(bmp.related_bugs))
-
     def test_related_bugtasks_includes_source_bugtasks(self):
         """related_bugtasks includes bugtasks linked to the source branch."""
         bmp = self.factory.makeBranchMergeProposal()
