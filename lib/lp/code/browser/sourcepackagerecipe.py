@@ -75,6 +75,7 @@ from lp.app.browser.lazrjs import (
     BooleanChoiceWidget,
     InlineEditPickerWidget,
     TextAreaEditorWidget,
+    TextLineEditorWidget,
     )
 from lp.app.browser.tales import format_link
 from lp.app.validators.name import name_validator
@@ -287,6 +288,12 @@ class SourcePackageRecipeView(LaunchpadView):
         description = ISourcePackageRecipe['description']
         return TextAreaEditorWidget(
             self.context, description, title="")
+
+    @property
+    def name_widget(self):
+        name = ISourcePackageRecipe['name']
+        title = "Edit the recipe name"
+        return TextLineEditorWidget(self.context, name, title, 'h1')
 
 
 def builds_for_recipe(recipe):

@@ -64,7 +64,7 @@ class IBugSubscriptionFilterAttributes(Interface):
         Choice(
             title=_("Bug notification level"), required=True,
             vocabulary=BugNotificationLevel,
-            default=BugNotificationLevel.NOTHING,
+            default=BugNotificationLevel.COMMENTS,
             description=_("The volume and type of bug notifications "
                           "this subscription will generate.")))
 

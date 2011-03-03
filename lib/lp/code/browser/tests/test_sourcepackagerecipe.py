@@ -310,7 +310,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser.getControl('Create Recipe').click()
 
         content = find_main_content(browser.contents)
-        self.assertEqual('daily', content.h1.string)
+        self.assertEqual('daily', extract_text(content.h1))
         self.assertThat(
             'Make some food!', MatchesTagText(content, 'edit-description'))
         self.assertThat(
@@ -812,7 +812,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         browser.getControl('Update Recipe').click()
 
         content = find_main_content(browser.contents)
-        self.assertEqual('fings', content.h1.string)
+        self.assertEqual('fings', extract_text(content.h1))
         self.assertThat(
             'This is stuff', MatchesTagText(content, 'edit-description'))
         self.assertThat(

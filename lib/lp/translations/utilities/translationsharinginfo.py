@@ -152,9 +152,10 @@ def find_upstream_sharing_info(sourcepackage,
 
 def get_ubuntu_sharing_info(productseries, templatename=None):
     """Return a list of sharing information for the given target."""
-    for result in find_ubuntu_sharing_info(productseries, templatename):
-        distroseries, sourcepackagename, templatename = result
-        yield (SourcePackage(sourcepackagename, distroseries), templatename)
+    return [
+        (SourcePackage(packagename, series), name)
+        for series, packagename, name in find_ubuntu_sharing_info(
+            productseries, templatename)]
 
 
 def get_upstream_sharing_info(sourcepackage, templatename=None):

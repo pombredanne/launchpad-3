@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -227,17 +227,21 @@ class TeamMembership(SQLBase):
 
     def sendExpirationWarningEmail(self):
         """See `ITeamMembership`."""
-        assert self.dateexpires is not None, (
-            'This membership has no expiration date')
-        assert self.dateexpires > datetime.now(pytz.timezone('UTC')), (
-            "This membership's expiration date must be in the future: %s"
-            % self.dateexpires.strftime('%Y-%m-%d'))
+        if self.dateexpires is None:
+            raise AssertionError(
+                '%s in team %s has no membership expiration date.' %
+                (self.person.name, self.team.name))
         if self.team.renewal_policy == TeamMembershipRenewalPolicy.AUTOMATIC:
             # An email will be sent later by handleMembershipsExpiringToday()
             # when the membership is automatically renewed.
             raise AssertionError(
-                'Team %r with automatic renewals should not send expiration '
+                'Team %s with automatic renewals should not send expiration '
                 'warnings.' % self.team.name)
+        if self.dateexpires < datetime.now(pytz.timezone('UTC')):
+            # The membership has reached expiration. Silently return because
+            # there is nothing to do. The member will have received emails
+            # from previous calls by flag-expired-memberships.py
+            return
         member = self.person
         team = self.team
         if member.isTeam():
