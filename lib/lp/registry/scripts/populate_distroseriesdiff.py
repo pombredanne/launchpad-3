@@ -54,7 +54,9 @@ def compose_sql_find_differences(derived_distroseries):
     }
     return """
         SELECT DISTINCT
-            COALESCE(parent.sourcepackagename, derived.sourcepackagename),
+            COALESCE(
+                parent.sourcepackagename,
+                derived.sourcepackagename) AS sourcepackagename,
             derived.version AS source_version,
             parent.version AS parent_source_version
         FROM (%(parent_query)s) AS parent
@@ -110,9 +112,10 @@ def compose_sql_populate_distroseriesdiff(derived_distroseries, temp_table):
             source_version,
             parent_source_version
         FROM %(temp_table)s
-        WHERE (derived_series, source_package_name) NOT IN (
-            SELECT derived_series, source_package_name
-            FROM DistroSeriesDifference)
+        WHERE sourcepackagename NOT IN (
+            SELECT source_package_name
+            FROM DistroSeriesDifference
+            WHERE derived_series = %(derived_series)s)
         """ % parameters
 
 
