@@ -158,17 +158,26 @@ class BugEmailCommand(EmailCommand):
         bugid = self.string_args[0]
 
         if bugid == 'new':
+            message = getUtility(IMessageSet).fromEmail(
+                parsed_msg.as_string(),
+                owner=getUtility(ILaunchBag).user,
+                filealias=filealias,
+                parsed_message=parsed_msg)
+            description = message.text_contents
+            if description.strip() == '':
+                # The report for a new bug must contain an affects command,
+                # since the bug must have at least one task
+                raise EmailProcessingError(
+                    get_error_message('no-affects-target-on-submit.txt'),
+                    stop_processing=True)
+
             # Check the message validator.
-            comment = parsed_msg.as_string()
             validator = IBugAddForm['comment'].validate
-            # The validator is very strict on the unicode aspect.
-            if not isinstance(comment, unicode):
-                comment = unicode(comment)
             try:
-                validator(comment)
+                validator(description)
             except TooLong:
                 raise EmailProcessingError(
-                    'The description is too long. If you have lots '
+                    'The description is too long. If you have lots of '
                     'text to add, use an attachment instead.',
                     stop_processing=True)
             except ValidationError as e:
@@ -176,17 +185,6 @@ class BugEmailCommand(EmailCommand):
                 # something.
                 raise EmailProcessingError(
                     str(e),
-                    stop_processing=True)
-            message = getUtility(IMessageSet).fromEmail(
-                comment,
-                owner=getUtility(ILaunchBag).user,
-                filealias=filealias,
-                parsed_message=parsed_msg)
-            if message.text_contents.strip() == '':
-                # The report for a new bug must contain an affects command,
-                # since the bug must have at least one task
-                raise EmailProcessingError(
-                    get_error_message('no-affects-target-on-submit.txt'),
                     stop_processing=True)
 
             params = CreateBugParams(
