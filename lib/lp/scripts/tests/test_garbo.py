@@ -10,7 +10,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-import operator
 import time
 
 from pytz import UTC
@@ -70,12 +69,15 @@ from lp.registry.interfaces.person import (
     )
 from lp.scripts.garbo import (
     BulkPruner,
+    AntiqueSessionPruner,
+    UnusedSessionPruner,
     DailyDatabaseGarbageCollector,
     HourlyDatabaseGarbageCollector,
     OpenIDConsumerAssociationPruner,
     )
 from lp.services.job.model.job import Job
 from lp.services.log.logger import BufferLogger
+from lp.services.session.model import SessionData, SessionPkgData
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
@@ -179,6 +181,82 @@ class TestBulkPruner(TestCase):
         pruner = BulkFooPruner(log)
         while not pruner.isDone():
             pruner(chunk_size)
+
+
+class TestSessionPruner(TestCase):
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestCase, self).setUp()
+        IMasterStore(SessionData).find(SessionData).remove()
+
+        recent = datetime.utcnow().replace(tzinfo=UTC) - timedelta(minutes=1)
+        yesterday = recent - timedelta(days=1)
+        ancient = recent - timedelta(days=61)
+
+        def make_session(client_id, accessed, authenticated=None):
+            session_data = SessionData()
+            session_data.client_id = client_id
+            session_data.last_accessed = accessed
+            IMasterStore(SessionData).add(session_data)
+
+            if authenticated:
+                session_pkg_data = SessionPkgData()
+                session_pkg_data.client_id = client_id
+                session_pkg_data.product_id = u'launchpad.authenticateduser'
+                session_pkg_data.key = u'logintime'
+                session_pkg_data.pickle = 'value is ignored'
+                IMasterStore(SessionPkgData).add(session_pkg_data)
+
+        make_session(u'recent_auth', recent, True)
+        make_session(u'recent_unauth', recent, False)
+        make_session(u'yesterday_auth', yesterday, True)
+        make_session(u'yesterday_unauth', yesterday, False)
+        make_session(u'ancient_auth', ancient, True)
+        make_session(u'ancient_unauth', ancient, False)
+
+    def tearDown(self):
+        IMasterStore(SessionData).find(SessionData).remove()
+        super(TestCase, self).tearDown()
+
+    def sessionExists(self, client_id):
+        store = IMasterStore(SessionData)
+        store.flush()
+        return not store.find(SessionData.client_id == client_id).is_empty()
+
+    def test_antique_session_pruner(self):
+        chunk_size = 2
+        log = BufferLogger()
+        pruner = AntiqueSessionPruner(log)
+        try:
+            while not pruner.isDone():
+                pruner(chunk_size)
+        finally:
+            pruner.cleanUp()
+
+        self.assertTrue(self.sessionExists(u'recent_auth'))
+        self.assertTrue(self.sessionExists(u'recent_unauth'))
+        self.assertTrue(self.sessionExists(u'yesterday_auth'))
+        self.assertTrue(self.sessionExists(u'yesterday_unauth'))
+        self.assertFalse(self.sessionExists(u'ancient_auth'))
+        self.assertFalse(self.sessionExists(u'ancient_unauth'))
+
+    def test_unused_session_pruner(self):
+        chunk_size = 2
+        log = BufferLogger()
+        pruner = UnusedSessionPruner(log)
+        try:
+            while not pruner.isDone():
+                pruner(chunk_size)
+        finally:
+            pruner.cleanUp()
+
+        self.assertTrue(self.sessionExists(u'recent_auth'))
+        self.assertTrue(self.sessionExists(u'recent_unauth'))
+        self.assertTrue(self.sessionExists(u'yesterday_auth'))
+        self.assertFalse(self.sessionExists(u'yesterday_unauth'))
+        self.assertTrue(self.sessionExists(u'ancient_auth'))
+        self.assertFalse(self.sessionExists(u'ancient_unauth'))
 
 
 class TestGarbo(TestCaseWithFactory):

@@ -74,6 +74,7 @@ from lp.services.scripts.base import (
     LaunchpadCronScript,
     SilentLaunchpadScriptFailure,
     )
+from lp.services.session.model import SessionData
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.potranslation import POTranslation
 
@@ -208,25 +209,6 @@ class POTranslationPruner(BulkPruner):
             )
         """
 
-from storm.locals import Pickle, Storm, Unicode
-from canonical.database.datetimecol import UtcDateTimeCol
-
-
-class SessionData(Storm):
-    __storm_table__ = 'SessionData'
-    client_id = Unicode(primary=True)
-    created = UtcDateTimeCol()
-    last_accessed = UtcDateTimeCol()
-
-
-class SessionPkgData(Storm):
-    __storm_table__ = 'SessionPkgData'
-    __storm_primary__ = 'client_id', 'product_id', 'key'
-    client_id = Unicode()
-    product_id = Unicode()
-    key = Unicode()
-    pickle = Pickle()
-
 
 class SessionPruner(BulkPruner):
     """Base class for session removal."""
@@ -234,9 +216,6 @@ class SessionPruner(BulkPruner):
     target_table_class = SessionData
     target_table_key = 'client_id'
     target_table_key_type = 'text'
-
-    def getStore(self):
-        return session_store()
 
 
 class AntiqueSessionPruner(SessionPruner):
