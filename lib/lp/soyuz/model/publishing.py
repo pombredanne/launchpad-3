@@ -482,22 +482,23 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         clauseTables = [
             'BinaryPackageBuild', 'BinaryPackageRelease', 'DistroArchSeries']
         orderBy = ['-BinaryPackagePublishingHistory.id']
-        preJoins = ['binarypackagerelease']
 
         results = BinaryPackagePublishingHistory.select(
-            clauses, orderBy=orderBy, clauseTables=clauseTables,
-            prejoins=preJoins)
+            clauses, orderBy=orderBy, clauseTables=clauseTables)
         binary_publications = list(results)
 
-        unique_binary_ids = set(
-            [pub.binarypackagerelease.id for pub in binary_publications])
+        # Preload attached BinaryPackageReleases.
+        bpr_ids = set(
+            [pub.binarypackagereleaseID for pub in binary_publications])
+        list(Store.of(self).find(
+            BinaryPackageRelease, BinaryPackageRelease.id.is_in(bpr_ids)))
 
         unique_binary_publications = []
         for pub in binary_publications:
-            if pub.binarypackagerelease.id in unique_binary_ids:
+            if pub.binarypackagerelease.id in bpr_ids:
                 unique_binary_publications.append(pub)
-                unique_binary_ids.remove(pub.binarypackagerelease.id)
-                if len(unique_binary_ids) == 0:
+                bpr_ids.remove(pub.binarypackagerelease.id)
+                if len(bpr_ids) == 0:
                     break
 
         return unique_binary_publications
