@@ -546,6 +546,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         # and make sure this change is immediately available
         flush_database_updates()
 
+    def deletePackaging(self):
+        if self.direct_packaging is None:
+            return None
+        self.direct_packaging.destroySelf()
+
     def __hash__(self):
         """See `ISourcePackage`."""
         return hash(self.distroseries.id) ^ hash(self.sourcepackagename.id)

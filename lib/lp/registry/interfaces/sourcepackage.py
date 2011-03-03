@@ -205,6 +205,10 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
         and record that it was done by the owner.
         """
 
+    @export_write_operation()
+    def deletePackaging():
+        """Delete the packaging for this sourcepackage."""
+
     def getSuiteSourcePackage(pocket):
         """Return the `ISuiteSourcePackage` for this package in 'pocket'.
 

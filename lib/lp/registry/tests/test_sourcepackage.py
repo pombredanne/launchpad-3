@@ -271,6 +271,23 @@ class TestSourcePackageWebService(WebServiceTestCase):
         self.assertEqual(
             productseries, sourcepackage.direct_packaging.productseries)
 
+    def test_deletePackaging(self):
+        """Deleting a packaging should work."""
+        packaging = self.factory.makePackagingLink()
+        sourcepackage = packaging.sourcepackage
+        transaction.commit()
+        self.wsObject(sourcepackage).deletePackaging()
+        transaction.commit()
+        self.assertIs(None, sourcepackage.direct_packaging)
+
+    def test_deletePackaging_with_no_packaging(self):
+        """Deleting when there's no packaging should be a no-op."""
+        sourcepackage = self.factory.makeSourcePackage()
+        transaction.commit()
+        self.wsObject(sourcepackage).deletePackaging()
+        transaction.commit()
+        self.assertIs(None, sourcepackage.direct_packaging)
+
 
 class TestSourcePackageSecurity(TestCaseWithFactory):
     """Tests for source package branch linking security."""
