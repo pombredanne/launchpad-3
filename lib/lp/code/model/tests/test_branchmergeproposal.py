@@ -1277,14 +1277,14 @@ class TestBranchMergeProposalBugs(TestCaseWithFactory):
             bug.bugtasks, list(bmp.getRelatedBugTasks(self.user)))
 
     def test_related_bugtasks_excludes_target_bugs(self):
-        """related_bugs ignores bugs linked to the source branch."""
+        """related_bugtasks ignores bugs linked to the source branch."""
         bmp = self.factory.makeBranchMergeProposal()
         bug = self.factory.makeBug()
         bmp.target_branch.linkBug(bug, bmp.registrant)
         self.assertEqual([], list(bmp.getRelatedBugTasks(self.user)))
 
     def test_related_bugtasks_excludes_mutual_bugs(self):
-        """related_bugs ignores bugs linked to both branches."""
+        """related_bugtasks ignores bugs linked to both branches."""
         bmp = self.factory.makeBranchMergeProposal()
         bug = self.factory.makeBug()
         bmp.source_branch.linkBug(bug, bmp.registrant)
@@ -1292,7 +1292,7 @@ class TestBranchMergeProposalBugs(TestCaseWithFactory):
         self.assertEqual([], list(bmp.getRelatedBugTasks(self.user)))
 
     def test_related_bugtasks_excludes_private_bugs(self):
-        """related_bugs ignores private bugs for non-authorised users."""
+        """related_bugtasks ignores private bugs for non-authorised users."""
         bmp = self.factory.makeBranchMergeProposal()
         bug = self.factory.makeBug()
         bmp.source_branch.linkBug(bug, bmp.registrant)
