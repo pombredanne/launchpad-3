@@ -2787,7 +2787,7 @@ class TestWebservice(TestCaseWithFactory):
             db_queue = self.factory.makeBranchMergeQueue()
             db_branch = self.factory.makeBranch()
             launchpad = launchpadlib_for('test', db_branch.owner,
-                service_root="http://api.launchpad.dev:8085")
+                service_root=self.layer.appserver_root_url('api'))
 
         configuration = simplejson.dumps({'test': 'make check'})
 
@@ -2804,7 +2804,7 @@ class TestWebservice(TestCaseWithFactory):
         with person_logged_in(ANONYMOUS):
             db_branch = self.factory.makeBranch()
             launchpad = launchpadlib_for('test', db_branch.owner,
-                service_root="http://api.launchpad.dev:8085")
+                service_root=self.layer.appserver_root_url('api'))
 
         configuration = simplejson.dumps({'test': 'make check'})
 
@@ -2814,20 +2814,3 @@ class TestWebservice(TestCaseWithFactory):
 
         branch2 = ws_object(launchpad, db_branch)
         self.assertEqual(branch2.merge_queue_config, configuration)
-
-    def test_getMergeProposals_with_merged_revnos(self):
-        """Specifying merged revnos selects the correct merge proposal."""
-        mp = self.factory.makeBranchMergeProposal()
-        launchpad = launchpadlib_for('test', mp.registrant,
-            service_root="http://api.launchpad.dev:8085")
-        with person_logged_in(mp.registrant):
-            mp.markAsMerged(merged_revno=123)
-            transaction.commit()
-            target = ws_object(launchpad, mp.target_branch)
-            mp = ws_object(launchpad, mp)
-        self.assertEqual([mp], list(target.getMergeProposals(
-            status=['Merged'], merged_revnos=[123])))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
