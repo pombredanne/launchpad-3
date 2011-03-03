@@ -21,7 +21,6 @@ from canonical.testing.layers import (
     )
 from lp.bugs.mail.handler import MaloneHandler
 from lp.services.mail import stub
-from lp.services.mail.incoming import authenticateEmail
 from lp.testing import (
     login,
     person_logged_in,
