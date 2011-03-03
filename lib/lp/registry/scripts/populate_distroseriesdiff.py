@@ -4,9 +4,16 @@
 """Populate `DistroSeriesDifference` table."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = [
+    'PopulateDistroSeriesDiff',
+    ]
 
+from optparse import (
+    Option,
+    OptionValueError,
+    )
 from storm.info import ClassAlias
+from zope.component import getUtility
 
 from canonical.database.sqlbase import (
     quote,
@@ -17,6 +24,7 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
 from lp.services.scripts.base import LaunchpadScript
@@ -205,6 +213,36 @@ def find_derived_series():
 
 class PopulateDistroSeriesDiff(LaunchpadScript):
 
+    def add_my_options(self):
+        self.parser.add_options([
+            Option(
+                '-a', '--all', dest='all', action='store_true',
+                help="Populate all derived distribution series."),
+            Option(
+                '-d', '--distribution', dest='distribution',
+                help="Derived distribution."),
+            Option('-s', '--series', dest='series',
+                help="Derived distribution series.")])
+
+    def getDistroSeries(self):
+        if self.options.all:
+            return list(find_derived_series)
+        else:
+            distro = getUtility(IDistributionSet).getByName(
+                self.options.distribution)
+            return [distro.getSeries(self.options.series)]
+
     def main(self):
-# XXX: Implement.
-        pass
+        specified_distro = (self.options.distribution is not None)
+        specified_series = (self.options.series is not None)
+        if specified_distro != specified_series:
+            raise OptionValueError(
+                "Specify neither a distribution or a series, or both.")
+        if specified_distro == self.options.all:
+            raise OptionValueError(
+                "Either specify a distribution series, or use --all.")
+
+        self.distroseries = self.getDistroSeries()
+        for series in self.distroseries:
+            self.logger.info("Looking for differences in %s.", series)
+            populate_distroseriesdiff(series)

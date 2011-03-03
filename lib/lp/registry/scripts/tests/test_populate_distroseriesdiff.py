@@ -80,6 +80,12 @@ class FactoryHelper:
         return self.factory.makeDistroSeries(
             parent_series=self.factory.makeDistroSeries())
 
+    def getDistroSeriesDiff(self, distroseries):
+        """Find the `DistroSeriesDifference` records for `distroseries`."""
+        return Store.of(distroseries).find(
+            DistroSeriesDifference,
+            DistroSeriesDifference.derived_series == distroseries)
+
 
 class TestFindLatestSourcePackageReleases(TestCaseWithFactory, FactoryHelper):
     """Test finding of latest `SourcePackageRelease`s for a series' packages.
@@ -388,12 +394,6 @@ class TestPopulateDistroSeriesDiff(TestCaseWithFactory, FactoryHelper):
 
     layer = ZopelessDatabaseLayer
 
-    def getDistroSeriesDiff(self, distroseries):
-        """Find the `DistroSeriesDifference` records for `distroseries`."""
-        return Store.of(distroseries).find(
-            DistroSeriesDifference,
-            DistroSeriesDifference.derived_series == distroseries).one()
-
     def test_baseline(self):
         distroseries = self.factory.makeDistroSeries()
         query = compose_sql_populate_distroseriesdiff(distroseries, "tmp")
@@ -404,7 +404,7 @@ class TestPopulateDistroSeriesDiff(TestCaseWithFactory, FactoryHelper):
         spph = self.makeSPPH(distroseries=distroseries)
         populate_distroseriesdiff(distroseries)
         store = Store.of(distroseries)
-        dsd = self.getDistroSeriesDiff(distroseries)
+        dsd = self.getDistroSeriesDiff(distroseries).one()
         spr = spph.sourcepackagerelease
         self.assertEqual(spr.sourcepackagename, dsd.source_package_name)
         self.assertEqual(
@@ -423,7 +423,7 @@ class TestPopulateDistroSeriesDiff(TestCaseWithFactory, FactoryHelper):
             derived_series=distroseries,
             source_package_name_str=spr.sourcepackagename.name,
             versions=existing_versions)
-        dsd = self.getDistroSeriesDiff(distroseries)
+        dsd = self.getDistroSeriesDiff(distroseries).one()
         self.assertEqual(existing_versions['base'], dsd.base_version)
         self.assertEqual(
             existing_versions['parent'], dsd.parent_source_version)
@@ -444,7 +444,11 @@ class TestPopulateDistroSeriesDiffScript(TestCaseWithFactory, FactoryHelper):
             distroseries=distroseries.parent_series,
             sourcepackagerelease=shared_spph.sourcepackagerelease)
 
-        script = PopulateDistroSeriesDiff(test_args=[])
+        script = PopulateDistroSeriesDiff(test_args=[
+            '--distribution', distroseries.distribution.name,
+            '--series', distroseries.name,
+            ])
         script.main()
-# XXX: Test!
-        pass
+
+        self.assertEqual([distroseries], script.distroseries)
+        self.assertNotEqual(0, self.getDistroSeriesDiff(distroseries).count())
