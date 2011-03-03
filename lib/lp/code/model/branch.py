@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'Branch',
     'BranchSet',
+    'filter_one_task_per_bug',
     ]
 
 from datetime import datetime
@@ -308,31 +309,14 @@ class Branch(SQLBase, BzrIdentityMixin):
         'Bug', joinColumn='branch', otherColumn='bug',
         intermediateTable='BugBranch', orderBy='id')
 
-    def getLinkedBugTasks(self, user, status_filter):
+    def getLinkedBugTasks(self, user, status_filter=None):
         """See `IBranch`."""
         params = BugTaskSearchParams(user=user, linked_branches=self.id,
             status=status_filter)
         tasks = shortlist(getUtility(IBugTaskSet).search(params), 1000)
         # Post process to discard irrelevant tasks: we only return one task per
         # bug, and cannot easily express this in sql (yet).
-        order = {}
-        bugtarget = self.target.context
-        # First pass calculates the order and selects the bugtasks that match
-        # our target.
-        # Second pass selects the earliest bugtask where the bug has no task on
-        # our target.
-        for task in tasks:
-            if task.bug not in order:
-                order[task.bug] = [len(order) + 1, None]
-            if task.target == bugtarget:
-                order[task.bug][1] = task
-        for task in tasks:
-            if order[task.bug][1] is None:
-                order[task.bug][1] = task
-        # Now we pull out the tasks
-        result = order.values()
-        result.sort()
-        return [task for pos, task in result]
+        return filter_one_task_per_bug(self, tasks)
 
     def linkBug(self, bug, registrant):
         """See `IBranch`."""
@@ -1404,3 +1388,28 @@ def branch_modified_subscriber(branch, event):
     """
     update_trigger_modified_fields(branch)
     send_branch_modified_notifications(branch, event)
+
+
+def filter_one_task_per_bug(branch, tasks):
+    """Given bug tasks for a branch, discard irrelevant ones.
+
+    Cannot easily be expressed in SQL yet, so we need this helper method.
+    """
+    order = {}
+    bugtarget = branch.target.context
+    # First pass calculates the order and selects the bugtasks that match
+    # our target.
+    # Second pass selects the earliest bugtask where the bug has no task on
+    # our target.
+    for task in tasks:
+        if task.bug not in order:
+            order[task.bug] = [len(order) + 1, None]
+        if task.target == bugtarget:
+            order[task.bug][1] = task
+    for task in tasks:
+        if order[task.bug][1] is None:
+            order[task.bug][1] = task
+    # Now we pull out the tasks
+    result = order.values()
+    result.sort()
+    return [task for pos, task in result]

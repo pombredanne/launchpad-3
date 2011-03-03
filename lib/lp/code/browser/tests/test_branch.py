@@ -508,7 +508,8 @@ class TestBranchView(BrowserTestCase):
             for x in range(0, 2):
                 bug = self.factory.makeBug()
                 mp.source_branch.linkBug(bug, branch.owner)
-                linked_bug_urls.append(canonical_url(bug, rootsite='bugs'))
+                linked_bug_urls.append(
+                    canonical_url(bug.default_bugtask, rootsite='bugs'))
                 bug_text = "Bug #%s: %s" % (bug.id, bug.title)
                 linked_bug_text.append(bug_text)
 

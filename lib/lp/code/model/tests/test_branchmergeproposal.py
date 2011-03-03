@@ -3,7 +3,6 @@
 
 # pylint: disable-msg=F0401
 
-from __future__ import with_statement
 
 """Tests for BranchMergeProposals."""
 
@@ -28,10 +27,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import (
-    import_secret_test_key,
-    syncUpdate,
-    )
+from canonical.launchpad.ftests import import_secret_test_key
 from canonical.launchpad.interfaces.launchpad import IPrivacy
 from canonical.launchpad.interfaces.message import IMessageJob
 from canonical.launchpad.webapp import canonical_url
@@ -83,7 +79,6 @@ from lp.code.tests.helpers import (
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.testing import (
-    ANONYMOUS,
     login,
     login_person,
     person_logged_in,
@@ -1271,6 +1266,46 @@ class TestBranchMergeProposalBugs(TestCaseWithFactory):
         bmp.source_branch.linkBug(bug, bmp.registrant)
         bmp.target_branch.linkBug(bug, bmp.registrant)
         self.assertEqual([], list(bmp.related_bugs))
+
+    def test_related_bugtasks_includes_source_bugtasks(self):
+        """related_bugtasks includes bugtasks linked to the source branch."""
+        bmp = self.factory.makeBranchMergeProposal()
+        source_branch = bmp.source_branch
+        bug = self.factory.makeBug()
+        source_branch.linkBug(bug, bmp.registrant)
+        self.assertEqual(
+            bug.bugtasks, list(bmp.getRelatedBugTasks(self.user)))
+
+    def test_related_bugtasks_excludes_target_bugs(self):
+        """related_bugs ignores bugs linked to the source branch."""
+        bmp = self.factory.makeBranchMergeProposal()
+        bug = self.factory.makeBug()
+        bmp.target_branch.linkBug(bug, bmp.registrant)
+        self.assertEqual([], list(bmp.getRelatedBugTasks(self.user)))
+
+    def test_related_bugtasks_excludes_mutual_bugs(self):
+        """related_bugs ignores bugs linked to both branches."""
+        bmp = self.factory.makeBranchMergeProposal()
+        bug = self.factory.makeBug()
+        bmp.source_branch.linkBug(bug, bmp.registrant)
+        bmp.target_branch.linkBug(bug, bmp.registrant)
+        self.assertEqual([], list(bmp.getRelatedBugTasks(self.user)))
+
+    def test_related_bugtasks_excludes_private_bugs(self):
+        """related_bugs ignores private bugs for non-authorised users."""
+        bmp = self.factory.makeBranchMergeProposal()
+        bug = self.factory.makeBug()
+        bmp.source_branch.linkBug(bug, bmp.registrant)
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            private_bug = self.factory.makeBug(private=True, owner=person)
+            bmp.source_branch.linkBug(private_bug, person)
+        self.assertEqual(
+            bug.bugtasks, list(bmp.getRelatedBugTasks(self.user)))
+        all_bugtasks = list(bug.bugtasks)
+        all_bugtasks.extend(private_bug.bugtasks)
+        self.assertEqual(
+            all_bugtasks, list(bmp.getRelatedBugTasks(person)))
 
 
 class TestNotifyModified(TestCaseWithFactory):

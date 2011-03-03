@@ -242,8 +242,21 @@ class BranchMergeProposal(SQLBase):
 
         Implies that these bugs would be fixed, in the target, by the merge.
         """
-        return (bug for bug in self.source_branch.linked_bugs
-                if bug not in self.target_branch.linked_bugs)
+        from operator import attrgetter
+        bugtasks = self.getRelatedBugTasks(self.registrant)
+        bugs = set()
+        for bugtask in bugtasks:
+            bugs.add(bugtask.bug)
+        return sorted(bugs, attrgetter('id'))
+
+    def getRelatedBugTasks(self, user):
+        """Bug tasks which are linked to the source but not the target.
+
+        Implies that these would be fixed, in the target, by the merge.
+        """
+        return (bugtask
+            for bugtask in self.source_branch.getLinkedBugTasks(user)
+            if bugtask not in self.target_branch.getLinkedBugTasks(user))
 
     @property
     def address(self):

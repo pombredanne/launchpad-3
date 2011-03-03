@@ -2417,15 +2417,12 @@ class BugTaskSet:
                 origin.append(table)
         return origin
 
-    def _search(self, resultrow, prejoins, user_resultset_decorator,
-                pre_iter_hook, params, *args):
+    def _search(self, resultrow, prejoins, pre_iter_hook, params, *args):
         """Return a Storm result set for the given search parameters.
 
         :param resultrow: The type of data returned by the query.
         :param prejoins: A sequence of Storm SQL row instances which are
             pre-joined.
-        :param user_resultset_decorator: An optional decorator used to extract
-            the required data from the result set.
         :param pre_iter_hook: An optional pre-iteration hook used for eager
             loading bug targets for list views.
         :param params: A BugTaskSearchParams instance.
@@ -2444,16 +2441,13 @@ class BugTaskSet:
             else:
                 origin = self.buildOrigin(join_tables, prejoins, clauseTables)
                 resultset = store.using(*origin).find(resultrow, query)
-            default_decorator = user_resultset_decorator
-            if not default_decorator:
-                if prejoins:
-                    default_decorator = lambda row: bugtask_decorator(row[0])
-                else:
-                    default_decorator = bugtask_decorator
+            if prejoins:
+                decorator = lambda row: bugtask_decorator(row[0])
+            else:
+                decorator = bugtask_decorator
 
             resultset.order_by(orderby)
-            return DecoratedResultSet(resultset,
-                result_decorator=default_decorator,
+            return DecoratedResultSet(resultset, result_decorator=decorator,
                 pre_iter_hook=pre_iter_hook)
 
         bugtask_fti = SQL('BugTask.fti')
@@ -2461,10 +2455,7 @@ class BugTaskSet:
         origin = self.buildOrigin(join_tables, [], clauseTables)
         resultset = store.using(*origin).find(inner_resultrow, query)
 
-        default_decorator = user_resultset_decorator
-        if not default_decorator:
-            default_decorator = bugtask_decorator
-        decorators = [default_decorator]
+        decorators = [bugtask_decorator]
         for arg in args:
             [query, clauseTables, ignore, decorator, join_tables,
              has_duplicate_results] = self.buildQuery(arg)
@@ -2513,8 +2504,6 @@ class BugTaskSet:
         from lp.registry.model.product import Product
         from lp.bugs.model.bug import Bug
         _noprejoins = kwargs.get('_noprejoins', False)
-        user_resultset_decorator = kwargs.get(
-            'user_resultset_decorator', None)
         if _noprejoins:
             prejoins = []
             resultrow = BugTask
@@ -2545,19 +2534,17 @@ class BugTaskSet:
                 table for table, join in requested_joins
                 if table not in resultrow]
             resultrow = resultrow + tuple(additional_result_objects)
-        return self._search(
-            resultrow, prejoins, user_resultset_decorator, eager_load,
-            params, *args)
+        return self._search(resultrow, prejoins, eager_load, params, *args)
 
     def searchBugIds(self, params):
         """See `IBugTaskSet`."""
-        return self._search(BugTask.bugID, [], None, None, params).result_set
+        return self._search(BugTask.bugID, [], None, params).result_set
 
     def countBugs(self, params, group_on):
         """See `IBugTaskSet`."""
         resultset = self._search(
             group_on + (SQL("COUNT(Distinct BugTask.bug)"),),
-            [], None, None, params).result_set
+            [], None, params).result_set
         # We group on the related field:
         resultset.group_by(*group_on)
         resultset.order_by()

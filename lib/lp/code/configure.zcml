@@ -248,6 +248,7 @@
                     votes
                     all_comments
                     related_bugs
+                    getRelatedBugTasks
                     revision_end_date
                     isMergable
                     getComment
