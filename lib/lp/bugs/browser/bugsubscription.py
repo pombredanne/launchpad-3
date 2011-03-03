@@ -563,3 +563,7 @@ class BugSubscriptionListView(LaunchpadView):
     @property
     def is_directly_subscribed(self):
         return self.context.bug.isSubscribed(self.user)
+
+    @property
+    def is_reporter(self):
+        return self.context.bug.owner == self.user

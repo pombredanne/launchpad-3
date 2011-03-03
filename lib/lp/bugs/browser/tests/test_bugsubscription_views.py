@@ -308,3 +308,13 @@ class BugSubscriptionsListViewTestCase(TestCaseWithFactory):
         with person_logged_in(self.subscriber):
             self.bug.subscribe(team, self.subscriber)
             self.assertFalse(self.view.is_directly_subscribed)
+
+    def test_is_reporter(self):
+        # Bug owner is the actual reporter of the bug.
+        with person_logged_in(self.bug.owner):
+            self.assertTrue(self.view.is_reporter)
+
+    def test_is_reporter_not(self):
+        # A person different from a bug owner is not the reporter.
+        with person_logged_in(self.subscriber):
+            self.assertFalse(self.view.is_reporter)
