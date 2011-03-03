@@ -289,12 +289,6 @@ class IBranchMergeProposal(IPrivacy):
             description=_('Any emails sent to this address will result'
                           'in comments being added.')))
 
-    @call_with(user=REQUEST_USER)
-    @operation_returns_collection_of(Interface) # IBugTask
-    @export_read_operation()
-    def getRelatedBugTasks(user):
-        """Return the Bug tasks related to this merge proposal."""
-
     @operation_parameters(
         id=Int(
             title=_("A CodeReviewComment ID.")))
@@ -303,6 +297,9 @@ class IBranchMergeProposal(IPrivacy):
     def getComment(id):
         """Return the CodeReviewComment with the specified ID."""
 
+    @call_with(user=REQUEST_USER)
+    @operation_returns_collection_of(Interface) # IBugTask
+    @export_read_operation()
     def getRelatedBugTasks(user):
         """Return the Bug tasks related to this merge proposal."""
 
