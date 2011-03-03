@@ -3,12 +3,12 @@
 
 import unittest
 
-from canonical.launchpad.windmill.testing import (
+from lp.bugs.windmill.testing import BugsWindmillLayer
+from lp.testing import WindmillTestCase
+from lp.testing.windmill import (
     constants,
     lpuser,
     )
-from lp.bugs.windmill.testing import BugsWindmillLayer
-from lp.testing import WindmillTestCase
 
 
 FORM_OVERLAY = u'//div[@id="duplicate-overlay-bug-4"]/div'
@@ -116,7 +116,7 @@ class TestDupeFinder(WindmillTestCase):
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.asserts.assertText(
             xpath=u'//div[@class="message"]',
-            validator="Required input is missing.")
+            validator="Provide details about the issue.")
 
 
 def test_suite():

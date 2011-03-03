@@ -132,7 +132,7 @@ With no-one logged in, there are no edit buttons.
     >>> print widget()
     <div id="edit-description" class="lazr-multiline-edit">
       <div class="clearfix">
-        <h2>A title</h2>
+        <h3>A title</h3>
       </div>
       <div class="yui3-editable_text-text"><p>short description</p></div>
     </div>
@@ -154,7 +154,7 @@ editor.
           <a class="yui3-editable_text-trigger sprite edit"
              href="http://launchpad.dev/~eric/+archive/ppa/+edit"></a>
         </div>
-        <h2>A title</h2>
+        <h3>A title</h3>
       </div>
       <div class="yui3-editable_text-text"><p>short description</p></div>
       <script>...</script>
@@ -268,3 +268,61 @@ type vocabularies), a link is shown "Assign me'.
 
 If the field is optional, a "Remove" link is shown.  The "Remove" text is
 customizable thought the "remove_button_text" parameter.
+
+
+BooleanChoiceWidget
+-------------------
+
+This widget provides a simple popup with two options for the user to choose
+from.
+
+    >>> from lp.app.browser.lazrjs import BooleanChoiceWidget
+
+As with the other widgets, this one requires a context object and a Bool type
+field.  The rendering of the widget hooks up to the lazr ChoiceSource with the
+standard patch plugin.
+
+The surrounding tag is customisable, and a prefix may be given.  The prefix is
+passed through to the ChoiceSource and is rendered as part of the widget, but
+isn't updated when the value changes.
+
+If the user does not have edit rights, the widget just renders the text based
+on the current value of the field on the object:
+
+    >>> login(ANONYMOUS)
+    >>> from lp.registry.interfaces.person import IPerson
+    >>> hide_email = IPerson['hide_email_addresses']
+    >>> widget = BooleanChoiceWidget(
+    ...     eric, hide_email, 'span',
+    ...     false_text="Don't hide it",
+    ...     true_text="Keep it secret",
+    ...     prefix="My email: ")
+    >>> print widget()
+    <span id="edit-hide_email_addresses">
+    My email: <span class="value">Don't hide it</span>
+    </span>
+
+If the user has edit rights, an edit icon is rendered and some javascript is
+rendered to hook up the widget.
+
+    >>> login_person(eric)
+    >>> print widget()
+    <span id="edit-hide_email_addresses">
+    My email: <span class="value">Don't hide it</span>
+      <span>
+        &nbsp;
+        <a class="editicon sprite edit"
+           href="http://launchpad.dev/~eric/+edit"></a>
+      </span>
+    </span>
+    <script>
+    LPS.use('lp.app.choice', function(Y) {
+    ...
+    </script>
+
+
+Changing the edit link
+**********************
+
+The edit link can be changed in exactly the same way as for the
+TextLineEditorWidget above.

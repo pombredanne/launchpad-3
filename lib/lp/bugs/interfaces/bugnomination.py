@@ -33,7 +33,10 @@ from lazr.restful.fields import (
     Reference,
     ReferenceChoice,
     )
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
     Choice,
     Datetime,
@@ -105,7 +108,7 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
 
     A nomination can apply to an IDistroSeries or an IProductSeries.
     """
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     # We want to customize the titles and descriptions of some of the
     # attributes of our parent interfaces, so we redefine those specific
@@ -130,6 +133,7 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
     owner = exported(PublicPersonChoice(
         title=_('Submitter'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam'))
+    ownerID = Attribute('The db id of the owner.')
     decider = exported(PublicPersonChoice(
         title=_('Decided By'), required=False, readonly=True,
         vocabulary='ValidPersonOrTeam'))

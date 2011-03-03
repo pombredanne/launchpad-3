@@ -69,7 +69,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # Create a single POTMsgSet that is used across all tests,
         # and add it to only one of the POTemplates.
         self.potmsgset = self.factory.makePOTMsgSet(
-            self.devel_potemplate, sequence=1)
+            self.devel_potemplate)
 
     def _refreshSuggestiveTemplatesCache(self):
         """Refresh the `SuggestivePOTemplate` cache."""
@@ -270,6 +270,20 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
                 serbian, self.stable_potemplate.translation_side),
             shared_translation)
 
+    def test_approveExistingShared(self):
+        """"Existing shared translation become current when approved."""
+        pofile = self.factory.makePOFile()
+        shared = self.factory.makeCurrentTranslationMessage(pofile=pofile)
+        potmsgset = shared.potmsgset
+        diverged = self.factory.makeCurrentTranslationMessage(
+            pofile=pofile, potmsgset=potmsgset, diverged=True)
+        potemplate = diverged.potemplate
+        removeSecurityProxy(potmsgset).approveSuggestion(
+            pofile, shared, shared.reviewer)
+        current = potmsgset.getCurrentTranslation(
+            potemplate, pofile.language, potemplate.translation_side)
+        self.assertEqual(shared, current)
+
     def test_getLocalTranslationMessages(self):
         """Test retrieval of local suggestions."""
         # Share a POTMsgSet in two templates, and get a Serbian POFile.
@@ -337,8 +351,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         product = external_template.productseries.product
         product.translations_usage = ServiceUsage.LAUNCHPAD
         external_potmsgset = self.factory.makePOTMsgSet(
-            external_template, singular=self.potmsgset.singular_text,
-            sequence=1)
+            external_template, singular=self.potmsgset.singular_text)
         external_pofile = self.factory.makePOFile(
             potemplate=external_template)
         language = external_pofile.language
@@ -351,6 +364,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         self.assertEquals(
             self.potmsgset.getExternallyUsedTranslationMessages(language),
             [])
+        self.assertEquals(
+            self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                language)[1],
+            [])
 
         # If there are only suggestions on the external POTMsgSet,
         # no externally used suggestions are returned.
@@ -361,6 +378,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         self.assertEquals(
             self.potmsgset.getExternallyUsedTranslationMessages(language),
+            [])
+        self.assertEquals(
+            self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                language)[1],
             [])
 
         # If there is a translation for the other side on the external
@@ -374,6 +395,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         self.assertEquals(
             self.potmsgset.getExternallyUsedTranslationMessages(language),
             [other_translation])
+        self.assertEquals(
+            self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                language)[1],
+            [other_translation])
 
         # If there is a current translation on the external POTMsgSet,
         # it is returned as the externally used suggestion as well.
@@ -385,6 +410,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         self.assertContentEqual(
             self.potmsgset.getExternallyUsedTranslationMessages(language),
             [other_translation, current_translation])
+        self.assertEquals(
+            self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                language)[1],
+            [other_translation, current_translation])
 
     def test_getExternallySuggestedTranslationMessages(self):
         """Test retrieval of externally suggested translations."""
@@ -395,8 +424,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         product = external_template.productseries.product
         product.translations_usage = ServiceUsage.LAUNCHPAD
         external_potmsgset = self.factory.makePOTMsgSet(
-            external_template, singular=self.potmsgset.singular_text,
-            sequence=1)
+            external_template, singular=self.potmsgset.singular_text)
         external_pofile = self.factory.makePOFile(
             potemplate=external_template)
         language = external_pofile.language
@@ -410,6 +438,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             self.potmsgset.getExternallySuggestedTranslationMessages(
                 language),
             [])
+        self.assertEquals(
+            self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                language)[0],
+            [])
 
         # If there is a suggestion on the external POTMsgSet,
         # it is returned.
@@ -421,6 +453,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         self.assertEquals(
             self.potmsgset.getExternallySuggestedTranslationMessages(
                 language),
+            [external_suggestion])
+        self.assertEquals(
+            self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                language)[0],
             [external_suggestion])
 
         # If there is a translation for the other side on the external
@@ -434,6 +470,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             self.potmsgset.getExternallySuggestedTranslationMessages(
                 language),
             [external_suggestion])
+        self.assertEquals(
+            self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                language)[0],
+            [external_suggestion])
 
         # A current translation on the external POTMsgSet is not
         # considered an external suggestion.
@@ -445,6 +485,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         self.assertEquals(
             self.potmsgset.getExternallySuggestedTranslationMessages(
                 language),
+            [external_suggestion])
+        self.assertEquals(
+            self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                language)[0],
             [external_suggestion])
 
     def test_hasTranslationChangedInLaunchpad(self):
@@ -617,8 +661,7 @@ class TestPOTMsgSetSuggestions(TestCaseWithFactory):
 
         self.potemplate = self.factory.makePOTemplate(
             productseries=self.foo_main, name="messages")
-        self.potmsgset = self.factory.makePOTMsgSet(self.potemplate,
-                                                    sequence=1)
+        self.potmsgset = self.factory.makePOTMsgSet(self.potemplate)
         self.pofile = self.factory.makePOFile('eo', self.potemplate)
         # Set up some translation messages with dummy timestamps that will be
         # changed in the tests.
@@ -816,7 +859,7 @@ class TestPOTMsgSetResetTranslation(TestCaseWithFactory):
 
         template = self.potemplate = self.factory.makePOTemplate(
             productseries=self.foo_main, name="messages")
-        self.potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
+        self.potmsgset = self.factory.makePOTMsgSet(template)
         self.pofile = self.factory.makePOFile('eo', template)
 
     def test_resetCurrentTranslation_shared(self):
@@ -909,6 +952,8 @@ class TestPOTMsgSetResetTranslation(TestCaseWithFactory):
 
         message_this = self.factory.makeCurrentTranslationMessage(
             pofile=self.pofile, potmsgset=self.potmsgset)
+        self.potmsgset.setSequence(
+            other_potemplate, self.factory.getUniqueInteger())
         message_other = self.factory.makeCurrentTranslationMessage(
             pofile=other_pofile, potmsgset=self.potmsgset)
         traits = getUtility(ITranslationSideTraitsSet).getTraits(
@@ -946,8 +991,7 @@ class TestPOTMsgSetText(TestCaseWithFactory):
         """
         potemplate = self.factory.makePOTemplate(productseries=productseries)
         potemplate.source_file_format = format
-        potmsgset = self.factory.makePOTMsgSet(
-            potemplate, msgid_text, sequence=1)
+        potmsgset = self.factory.makePOTMsgSet(potemplate, msgid_text)
         return (potmsgset, potemplate)
 
     def _makePOTMsgSet(self, msgid_text, format, productseries=None):
@@ -1087,7 +1131,7 @@ class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
         sr_pofile = self.factory.makePOFile('sr', potemplate=self.potemplate)
 
         credits = self.factory.makePOTMsgSet(
-            self.potemplate, u'translator-credits', sequence=1)
+            self.potemplate, u'translator-credits')
 
         eo_translation = credits.getCurrentTranslation(
             self.potemplate, eo_pofile.language,
@@ -1106,7 +1150,7 @@ class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
         # Normal messages do not receive a dummy translation.
         eo_pofile = self.factory.makePOFile('eo', potemplate=self.potemplate)
 
-        potmsgset = self.factory.makePOTMsgSet(self.potemplate, sequence=1)
+        potmsgset = self.factory.makePOTMsgSet(self.potemplate)
         eo_translation = potmsgset.getCurrentTranslation(
             self.potemplate, eo_pofile.language,
             self.potemplate.translation_side)
@@ -1119,7 +1163,7 @@ class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
         imported_credits = u'Imported credits.'
 
         credits = self.factory.makePOTMsgSet(
-            self.potemplate, u'translator-credits', sequence=1)
+            self.potemplate, u'translator-credits')
         self.factory.makeCurrentTranslationMessage(
             eo_pofile, credits, translations=[imported_credits],
             current_other=True)
@@ -1135,7 +1179,7 @@ class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
         # all translation credits messages.
 
         credits = self.factory.makePOTMsgSet(
-            self.potemplate, u'translator-credits', sequence=1)
+            self.potemplate, u'translator-credits')
         eo_pofile = self.factory.makePOFile('eo', potemplate=self.potemplate)
 
         eo_translation = credits.getCurrentTranslation(
@@ -1313,6 +1357,7 @@ class TestPOTMsgSet_submitSuggestion(TestCaseWithFactory):
             productseries=series2, name=pofile.potemplate.name)
         pofile2 = template2.getPOFileByLang(pofile.language.code)
         translation = {0: self.factory.getUniqueString()}
+        potmsgset.setSequence(template2, self.factory.getUniqueInteger())
         diverged_message = self.factory.makeCurrentTranslationMessage(
             pofile=pofile2, potmsgset=potmsgset, translator=owner,
             translations=translation, diverged=True)
@@ -1379,6 +1424,29 @@ class TestPOTMsgSet_submitSuggestion(TestCaseWithFactory):
         karma_listener = self._listenForKarma(pofile)
 
         suggestion = potmsgset.submitSuggestion(pofile, owner, translation)
+
+        self.assertEqual([], karma_listener.karma_events)
+
+    def test_from_import_origin(self):
+        # With from_import set, the origin is set to SCM.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        owner = pofile.potemplate.owner
+        translation = {0: self.factory.getUniqueString()}
+
+        suggestion = potmsgset.submitSuggestion(
+            pofile, owner, translation, from_import=True)
+
+        self.assertEqual(RosettaTranslationOrigin.SCM, suggestion.origin)
+
+    def test_from_import_karma(self):
+        # No karma is assigned if from_import is set.
+        pofile, potmsgset = self._makePOFileAndPOTMsgSet()
+        owner = pofile.potemplate.owner
+        translation = {0: self.factory.getUniqueString()}
+        karma_listener = self._listenForKarma(pofile)
+
+        potmsgset.submitSuggestion(
+            pofile, owner, translation, from_import=True)
 
         self.assertEqual([], karma_listener.karma_events)
 
@@ -1690,7 +1758,7 @@ class TestCheckForConflict(TestCaseWithFactory):
         # If there is no current translation, _checkForConflict accepts
         # that as conflict-free.
         potemplate = self.factory.makePOTemplate()
-        potmsgset = self.factory.makePOTMsgSet(potemplate, sequence=1)
+        potmsgset = self.factory.makePOTMsgSet(potemplate)
         old = datetime.now(pytz.UTC) - timedelta(days=366)
 
         removeSecurityProxy(potmsgset)._checkForConflict(None, old)
@@ -1738,6 +1806,8 @@ class TestFindTranslationMessage(TestCaseWithFactory):
         diverged = self.factory.makeDivergedTranslationMessage(
             pofile=pofile, potmsgset=potmsgset,
             translations=translations)
+        potmsgset.setSequence(
+            other_pofile.potemplate, self.factory.getUniqueInteger())
         shared = self.factory.makeCurrentTranslationMessage(
             pofile=other_pofile, potmsgset=potmsgset,
             translations=translations)
@@ -1806,6 +1876,8 @@ class TestFindTranslationMessage(TestCaseWithFactory):
         other_pofile = self.factory.makePOFile(pofile.language.code)
         potmsgset.setSequence(pofile.potemplate, 1)
 
+        potmsgset.setSequence(
+            other_pofile.potemplate, self.factory.getUniqueInteger())
         self.factory.makeCurrentTranslationMessage(
             pofile=other_pofile, potmsgset=potmsgset,
             translations=translations, diverged=True)
@@ -1847,3 +1919,33 @@ class TestFindTranslationMessage(TestCaseWithFactory):
         found = potmsgset.findTranslationMessage(
             pofile, translations=translations, prefer_shared=True)
         self.assertEqual(shared, found)
+
+
+class TestClone(TestCaseWithFactory):
+    """Test the clone() method."""
+
+    layer = ZopelessDatabaseLayer
+
+    def test_clone(self):
+        """Cloning a POTMsgSet should produce a near-identical copy."""
+        msgset = self.factory.makePOTMsgSet(
+            context=self.factory.getUniqueString('context'),
+            plural=self.factory.getUniqueString('plural'),
+            singular=self.factory.getUniqueString('singular'),
+            commenttext=self.factory.getUniqueString('comment'),
+            filereferences=self.factory.getUniqueString('filereferences'),
+            sourcecomment=self.factory.getUniqueString('sourcecomment'),
+            flagscomment=self.factory.getUniqueString('flagscomment'),
+        )
+        new_msgset = msgset.clone()
+        naked_msgset = removeSecurityProxy(msgset)
+        naked_new_msgset = removeSecurityProxy(new_msgset)
+        self.assertNotEqual(msgset.id, new_msgset.id)
+        self.assertEqual(msgset.context, new_msgset.context)
+        self.assertEqual(msgset.msgid_singular, new_msgset.msgid_singular)
+        self.assertEqual(msgset.msgid_plural, new_msgset.msgid_plural)
+        self.assertEqual(
+            msgset.commenttext, new_msgset.commenttext)
+        self.assertEqual(msgset.filereferences, new_msgset.filereferences)
+        self.assertEqual(msgset.sourcecomment, new_msgset.sourcecomment)
+        self.assertEqual(msgset.flagscomment, new_msgset.flagscomment)

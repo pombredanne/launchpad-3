@@ -169,7 +169,7 @@ Foo bar doesn't have any questions written in Spanish.
 But Carlos has one.
 
     # Because not everyone uses a real editor <wink>
-    >>> from canonical.encoding import ascii_smash
+    >>> from lp.services.encoding import ascii_smash
     >>> carlos_raw = personset.getByName('carlos')
     >>> carlos = IQuestionsPerson(carlos_raw)
     >>> for question in carlos.searchQuestions(

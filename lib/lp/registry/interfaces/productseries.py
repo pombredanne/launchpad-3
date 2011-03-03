@@ -47,15 +47,18 @@ from zope.schema import (
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IHasAppointedDriver
 from canonical.launchpad.interfaces.validation import validate_url
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.url import urlparse
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.name import name_validator
 from lp.blueprints.interfaces.specificationtarget import ISpecificationGoal
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
     IHasOfficialBugTags,
+    )
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
     )
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.milestone import (
@@ -67,9 +70,6 @@ from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.series import (
     ISeriesMixin,
     SeriesStatus,
-    )
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
     )
 from lp.services.fields import (
     ContentNameField,

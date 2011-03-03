@@ -11,7 +11,7 @@ __all__ = [
 import urlparse
 
 from canonical.config import config
-from canonical.widgets.textwidgets import URIComponentWidget
+from lp.app.widgets.textwidgets import URIComponentWidget
 
 
 class PPANameWidget(URIComponentWidget):

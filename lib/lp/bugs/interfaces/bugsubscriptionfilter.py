@@ -25,11 +25,12 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
-from lp.registry.interfaces.structuralsubscription import (
+from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscription,
     )
 from lp.services.fields import SearchTag
@@ -59,6 +60,13 @@ class IBugSubscriptionFilterAttributes(Interface):
     exclude_any_tags = Bool(
         title=_("Exclude all tags"),
         required=True, default=False)
+    bug_notification_level = exported(
+        Choice(
+            title=_("Bug notification level"), required=True,
+            vocabulary=BugNotificationLevel,
+            default=BugNotificationLevel.COMMENTS,
+            description=_("The volume and type of bug notifications "
+                          "this subscription will generate.")))
 
     description = exported(
         Text(

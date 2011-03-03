@@ -49,9 +49,9 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasLogo,
     IHasMugshot,
     )
-from canonical.launchpad.validators.name import name_validator
 from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.validators.name import name_validator
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
 from lp.blueprints.interfaces.sprint import IHasSprints
 from lp.bugs.interfaces.bugtarget import (
@@ -59,6 +59,9 @@ from lp.bugs.interfaces.bugtarget import (
     IHasOfficialBugTags,
     )
 from lp.bugs.interfaces.bugtracker import IBugTracker
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
 from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy,
     )
@@ -74,9 +77,6 @@ from lp.registry.interfaces.milestone import (
     )
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.role import IHasOwner
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
-    )
 from lp.services.fields import (
     IconImageUpload,
     LogoImageUpload,

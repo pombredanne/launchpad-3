@@ -100,9 +100,12 @@ class DecoratedBranch(BzrIdentityMixin):
         tasks, we get them all at once, and provide decorated bugs (that have
         their tasks cached).
         """
+        # To whomever it may concern, this function should be pushed down to
+        # the model, and the related visibility checks made part of the query.
+        # Alternatively it may be unused at this stage.
         bugs = defaultdict(list)
-        for bug, task in self.branch.getLinkedBugsAndTasks():
-            bugs[bug].append(task)
+        for bug in self.branch.linked_bugs:
+            bugs[bug.id].extend(bug.bugtasks)
         return [DecoratedBug(bug, self.branch, tasks)
                 for bug, tasks in bugs.iteritems()
                 if check_permission('launchpad.View', bug)]

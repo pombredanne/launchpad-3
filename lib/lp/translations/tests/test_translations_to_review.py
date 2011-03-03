@@ -78,7 +78,7 @@ class ReviewTestMixin:
         self.pofile = removeSecurityProxy(self.factory.makePOFile(
             potemplate=self.potemplate, language_code='nl'))
         self.potmsgset = self.factory.makePOTMsgSet(
-            potemplate=self.potemplate, singular='hi', sequence=1)
+            potemplate=self.potemplate, singular='hi')
         self.translation = self.factory.makeCurrentTranslationMessage(
             potmsgset=self.potmsgset, pofile=self.pofile,
             translator=self.person, translations=['bi'],

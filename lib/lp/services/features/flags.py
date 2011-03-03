@@ -6,6 +6,7 @@ __all__ = [
     'flag_info',
     'NullFeatureController',
     'undocumented_flags',
+    'value_domain_info',
     ]
 
 
@@ -17,29 +18,69 @@ from lp.services.features.rulesource import (
 
 __metaclass__ = type
 
+
+value_domain_info = sorted([
+    ('boolean',
+     'Any non-empty value is true; an empty value is false.'),
+    ('float',
+     'The flag value is set to the given floating point number.'),
+    ])
+
 # This table of flag name, value domain, and prose documentation is used to
 # generate the web-visible feature flag documentation.
 flag_info = sorted([
+    ('code.branchmergequeue',
+     'boolean',
+     'Enables merge queue pages and lists them on branch pages.',
+     ''),
+    ('code.incremental_diffs.enabled',
+     'boolean',
+     'Shows incremental diffs on merge proposals.',
+     ''),
     ('code.recipes_enabled',
-     '[on|off]',
-     'enable recipes',
-     'off'),
+     'boolean',
+     'Enables source package recipes in the API and UI.',
+     ''),
+    ('code.recipes.beta',
+     'boolean',
+     'True if recipes are still in beta',
+     ''),
     ('hard_timeout',
      'float',
-     'sets the hard timeout in seconds',
+     'Sets the hard request timeout in milliseconds.',
      ''),
     ('malone.advanced-subscriptions.enabled',
-     '[on|off]',
-     'enables advanced subscriptions features',
-     'off'),
+     'boolean',
+     'Enables advanced bug subscription features.',
+     ''),
+    ('malone.disable_targetnamesearch',
+     'boolean',
+     'If true, disables consultation of target names during bug text search.',
+     ''),
     ('memcache',
-     '[enabled|disabled]',
-     'enables/disables memcache',
+     'boolean',
+     'Enables use of memcached where it is supported.',
      'enabled'),
+    ('profiling.enabled',
+     'boolean',
+     'Overrides config.profiling.profiling_allowed to permit profiling.',
+     ''),
     ('publicrestrictedlibrarian',
-     '[on|off]',
-     'redirect to private URLs instead of proxying',
-     'off'),
+     'boolean',
+     'Redirects to private librarian files instead of proxying them.',
+     ''),
+    ('soyuz.derived-series-ui.enabled',
+     'boolean',
+     'Enables derivative distributions pages.',
+     ''),
+    ('translations.sharing_information.enabled',
+     'boolean',
+     'Enables display of sharing information on translation pages.',
+     ''),
+    ('visible_render_time',
+     'boolean',
+     'Shows the server-side page render time in the login widget.',
+     ''),
     ])
 
 # The set of all flag names that are documented.

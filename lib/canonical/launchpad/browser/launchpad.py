@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser code for the launchpad application."""
@@ -93,7 +93,6 @@ from canonical.lazr import (
     ExportedFolder,
     ExportedImageFolder,
     )
-from canonical.widgets.project import ProjectScopeWidget
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.app.browser.launchpadform import (
     custom_widget,
@@ -115,6 +114,7 @@ from lp.app.errors import (
     POSTToNonCanonicalURL,
     )
 from lp.app.interfaces.headings import IMajorHeadingView
+from lp.app.widgets.project import ProjectScopeWidget
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
 from lp.bugs.interfaces.bug import IBugSet
@@ -668,7 +668,8 @@ class LaunchpadRootNavigation(Navigation):
             if pillar.name != name:
                 # This pillar was accessed through one of its aliases, so we
                 # must redirect to its canonical URL.
-                return self.redirectSubTree(canonical_url(pillar), status=301)
+                return self.redirectSubTree(
+                    canonical_url(pillar, self.request), status=301)
             return pillar
         return None
 

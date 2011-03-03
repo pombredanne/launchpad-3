@@ -10,12 +10,26 @@
       <script type='text/javascript' tal:content="string:var yui_base='${yui}';" />
       <script type='text/javascript' id='available-official-tags-js'
               tal:content="view/available_official_tags_js" />
+      <tal:subscriptions-js
+          define="enabled features/malone.advanced-subscriptions.enabled">
+        <script type="text/javascript" id="use-advanced-subscriptions"
+            tal:condition="enabled">
+          use_advanced_subscriptions = true;
+        </script>
+        <script type="text/javascript" id="use-advanced-subscriptions"
+            tal:condition="not:enabled">
+          use_advanced_subscriptions = false;
+        </script>
+      </tal:subscriptions-js>
       <script type="text/javascript">
         LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.bugtask_index',
+                  'lp.bugs.bugtask_index.portlets',
                   'lp.code.branchmergeproposal.diff', function(Y) {
+            Y.lp.bugs.bugtask_index.portlets.use_advanced_subscriptions =
+                use_advanced_subscriptions;
             Y.lp.bugs.bugtask_index.setup_bugtask_index();
             Y.on('load', function(e) {
-              Y.lp.code.branchmergeproposal.diff.connect_diff_links();
+                Y.lp.code.branchmergeproposal.diff.connect_diff_links();
             }, window);
         });
       </script>
@@ -106,14 +120,13 @@
         <tal:widget replace="structure view/bug_description_html"/>
 
         <div style="margin:-20px 0 20px 5px" class="clearfix">
-          <span tal:condition="view/wasDescriptionModified" class="discreet"
+          <span tal:condition="view/wasDescriptionModified"
           >See <a href="comments/0">original description</a></span>
         </div>
 
           <div id="bug-tags"
-               tal:attributes="class python: ('tags-container ' +
-                                              (context.bug.tags and
-                                               'tags-show' or 'tags-hide'))">
+               tal:attributes="class python: (context.bug.tags and
+                                             'tags-show' or 'tags-hide')">
             Tags:
             <span id="tag-list">
               <a tal:repeat="tag view/official_tags"
@@ -126,7 +139,7 @@
                  tal:attributes="href string:${context/target/fmt:url}/+bugs?field.tag=${tag}">tag</a>
             </span>
             <form id="tags-form" style="display: inline">
-                <input type="text" id="tag-input" style="display: none; width: 15em;" />
+                <input type="text" id="tag-input" style="display: none; width: 35em;" />
                 <img src="/@@/spinner" id="tags-edit-spinner" style="display: none" />
                 <a href="+edit" title="Edit tags" id="edit-tags-trigger" class="sprite edit"></a>
               <script type="text/javascript">
@@ -138,7 +151,7 @@
                       // that user doesn't click the trigger and navigates to the
                       // non-JS form, we first disable the link. This is awful and
                       // must be fixed as soon as YUI3 is fixed.
-                      if (LP.client.links['me'] !== undefined) {
+                      if (LP.links['me'] !== undefined) {
                           Y.one('#edit-tags-trigger').on('click', function(e) {
                               e.halt();
                           });
@@ -163,9 +176,8 @@
              <span class="invisible-link">Tag help</span></a>
           </div>
           <div id="add-bug-tags"
-               tal:attributes="class python: ('tags-container ' +
-                                              (not(context.bug.tags) and
-                                              'tags-show' or 'tags-hide'))">
+               tal:attributes="class python: (not(context.bug.tags) and
+                                             'tags-show' or 'tags-hide')">
             <a href="+edit" title="Add tags" id="add-tags-trigger" class="sprite add">
               Add tags
             </a>
@@ -308,16 +320,16 @@
             tal:condition="view/visible_comments_truncated_for_display">
           <div class="informational message">
             Displaying first <span
-            tal:replace="view/visible_oldest_comments_for_display/count:len">23</span>
+            tal:replace="view/visible_initial_comments">23</span>
             and last <span
-            tal:replace="view/visible_recent_comments_for_display/count:len">32</span>
+            tal:replace="view/visible_recent_comments">32</span>
             comments.
             <tal:what-next
                 define="view_all_href
                         string:${context/fmt:url}?comments=all">
               <a href="#" tal:attributes="href view_all_href">
                 View all <span
-                tal:replace="view/visible_comments/count:len" />
+                tal:replace="view/total_comments" />
                 comments</a> or <a href="#" tal:attributes="href
                 view_all_href">add a comment</a>.
             </tal:what-next>

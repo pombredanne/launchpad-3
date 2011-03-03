@@ -100,8 +100,9 @@ from zope.schema.interfaces import (
 from zope.security.interfaces import ForbiddenAttribute
 
 from canonical.launchpad import _
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import (
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.name import (
     name_validator,
     valid_name,
     )
@@ -252,15 +253,30 @@ class Title(StrippedTextLine):
 class StrippableText(Text):
     """A text that can be configured to strip when setting."""
 
-    def __init__(self, strip_text=False, **kwargs):
+    def __init__(self, strip_text=False, trailing_only=False, **kwargs):
         super(StrippableText, self).__init__(**kwargs)
         self.strip_text = strip_text
+        self.trailing_only = trailing_only
+
+    def normalize(self, value):
+        """Strip the leading and trailing whitespace."""
+        if self.strip_text and value is not None:
+            if self.trailing_only:
+                value = value.rstrip()
+            else:
+                value = value.strip()
+        return value
 
     def set(self, object, value):
         """Strip the value and pass up."""
-        if self.strip_text and value is not None:
-            value = value.strip()
+        value = self.normalize(value)
         super(StrippableText, self).set(object, value)
+
+    def validate(self, value):
+        """See `IField`."""
+        value = self.normalize(value)
+        return super(StrippableText, self).validate(value)
+
 
 
 # Summary
@@ -506,7 +522,8 @@ class BlacklistableContentNameField(ContentNameField):
 
         # Need a local import because of circular dependencies.
         from lp.registry.interfaces.person import IPersonSet
-        if getUtility(IPersonSet).isNameBlacklisted(input):
+        user = getUtility(ILaunchBag).user
+        if getUtility(IPersonSet).isNameBlacklisted(input, user):
             raise LaunchpadValidationError(
                 "The name '%s' has been blocked by the Launchpad "
                 "administrators." % input)
@@ -714,7 +731,7 @@ class BaseImageUpload(Bytes):
                 This image exceeds the maximum allowed size in bytes.""")))
         try:
             pil_image = PIL.Image.open(StringIO(image))
-        except IOError:
+        except (IOError, ValueError):
             raise LaunchpadValidationError(_(dedent("""
                 The file uploaded was not recognized as an image; please
                 check it and retry.""")))

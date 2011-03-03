@@ -457,6 +457,22 @@ class TestAsBuildmaster(TestCaseWithFactory):
         self.assertEqual(
             expected.body, message.get_payload(decode=True))
 
+    def test_notify_when_recipe_deleted(self):
+        """Notify does nothing if recipe has been deleted."""
+        person = self.factory.makePerson(name='person')
+        cake = self.factory.makeSourcePackageRecipe(
+            name=u'recipe', owner=person)
+        pantry = self.factory.makeArchive(name='ppa')
+        secret = self.factory.makeDistroSeries(name=u'distroseries')
+        build = self.factory.makeSourcePackageRecipeBuild(
+            recipe=cake, distroseries=secret, archive=pantry)
+        removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
+        cake.destroySelf()
+        IStore(build).flush()
+        build.notify()
+        notifications = pop_notifications()
+        self.assertEquals(0, len(notifications))
+
     def test_handleStatusNotifies(self):
         """"handleStatus causes notification, even if OK."""
 

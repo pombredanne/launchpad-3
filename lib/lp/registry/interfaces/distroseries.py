@@ -52,16 +52,19 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IHasAppointedDriver
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.email import email_validator
-from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.validators.version import sane_version
 from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.email import email_validator
+from lp.app.validators.name import name_validator
+from lp.app.validators.version import sane_version
 from lp.blueprints.interfaces.specificationtarget import ISpecificationGoal
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
     IHasBugs,
     IHasOfficialBugTags,
+    )
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
     )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.milestone import (
@@ -75,9 +78,6 @@ from lp.registry.interfaces.series import (
     SeriesStatus,
     )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
-    )
 from lp.services.fields import (
     ContentNameField,
     Description,
@@ -914,6 +914,15 @@ class IDistroSeriesSet(Interface):
         :param suite: A string that forms the name of a suite.
         :return: (`IDistroSeries`, `DBItem`) where the item is from
             `PackagePublishingPocket`.
+        """
+
+    def getCurrentSourceReleases(distro_series_source_packagenames):
+        """Lookup many distroseries source package releases.
+
+        :param distro_series_to_source_packagenames: A dictionary with
+            its keys being `IDistroSeries` and its values a list of
+            `ISourcePackageName`.
+        :return: A dict as per `IDistroSeries.getCurrentSourceReleases`
         """
 
     def search(distribution=None, released=None, orderBy=None):

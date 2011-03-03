@@ -45,9 +45,7 @@ __all__ = [
     'default_name_by_purpose',
     ]
 
-from lazr.enum import (
-    DBEnumeratedType,
-    )
+from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
@@ -84,8 +82,8 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IPrivacy
-from canonical.launchpad.validators.name import name_validator
 from lp.app.errors import NameLookupFailed
+from lp.app.validators.name import name_validator
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
@@ -282,7 +280,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
 
     publish = Bool(
         title=_("Publish"), required=False,
-        description=_("Update the APT archive."))
+        description=_("Whether or not to update the APT repository.  If "
+            "disabled, nothing will be published.  If the archive is "
+            "private then additionally no builds will be dispatched."))
 
     # This is redefined from IPrivacy.private because the attribute is
     # read-only. The value is guarded by a validator.
@@ -888,6 +888,8 @@ class IArchivePublic(IHasOwner, IPrivacy):
             given name could not be found.
         :return: True if the person is allowed to upload the source package.
         """
+
+    num_pkgs_building = Attribute("Tuple of packages building and waiting to build")
 
     def getSourcePackageReleases(build_status=None):
         """Return the releases for this archive.
