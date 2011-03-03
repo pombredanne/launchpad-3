@@ -400,13 +400,13 @@ ol.subordinate {
     width: 48%;
     float: left;
     display: inline;
-    margin: 0 0.25em 0.75em 0;
+    margin: 0 0.25em 0 0;
     }
 .three-column-list dl {
     width: 31%;
     float: left;
     display: inline;
-    margin: 0 0.25em 0.75em 0;
+    margin: 0 0.25em 0 0;
     }
 .two-column-list li {
     width: 48%;
