@@ -59,3 +59,16 @@ class TestBranchDeletes(TestCaseWithFactory):
             target_branch.lp_delete)
         self.assertIn('Cannot delete', api_error.content)
         self.assertEqual(httplib.BAD_REQUEST, api_error.response.status)
+
+
+class TestSlashBranches(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_renders_with_source_package_branch(self):
+        source_package = self.factory.makeSourcePackage()
+        branch = self.factory.makeBranch(sourcepackage=source_package)
+        branch.updateScannedDetails(None, 0)
+        logout()
+        lp = launchpadlib_for("test")
+        list(lp.branches)
