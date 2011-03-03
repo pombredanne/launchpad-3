@@ -21,6 +21,7 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.product import (
     IProduct,
     License,
@@ -36,6 +37,7 @@ from lp.testing import (
     login,
     login_person,
     TestCaseWithFactory,
+    WebServiceTestCase,
     )
 
 
@@ -352,6 +354,16 @@ class BugSupervisorTestCase(TestCaseWithFactory):
             "Instead, bug supervisor for firefox is %s" % (
             self.person.name, self.product.name,
             self.product.bug_supervisor.name))
+
+class TestWebService(WebServiceTestCase):
+
+    def test_translations_usage(self):
+        """The translations_usage field should be writable."""
+        series = self.factory.makeProduct()
+        transaction.commit()
+        ws_series = self.wsObject(series, series.owner)
+        ws_series.translations_usage = ServiceUsage.EXTERNAL.title
+        ws_series.lp_save()
 
 
 def test_suite():
