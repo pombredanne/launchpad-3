@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functions dealing with mails coming into Launchpad."""
@@ -188,7 +188,7 @@ def authenticateEmail(mail,
         setupInteraction(authutil.unauthenticatedPrincipal())
         return None
 
-    # People with accounts but no related person will have a principle, but
+    # People with accounts but no related person will have a principal, but
     # the person adaptation will fail.
     person = IPerson(principal, None)
     if person is None:

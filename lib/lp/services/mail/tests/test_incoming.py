@@ -106,7 +106,7 @@ class TestIncoming(TestCaseWithFactory):
             msg, fail_all_timestamps)
 
     def test_unknown_email(self):
-        # An unknown email address returns no principle.
+        # An unknown email address returns no principal.
         unknown = 'random-unknown@example.com'
         mail = self.factory.makeSignedMessage(email_address=unknown)
         self.assertThat(authenticateEmail(mail), Is(None))
