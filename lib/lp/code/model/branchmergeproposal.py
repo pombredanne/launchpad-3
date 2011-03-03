@@ -243,8 +243,8 @@ class BranchMergeProposal(SQLBase):
         """
         source_tasks = self.source_branch.getLinkedBugTasks(user)
         target_tasks = self.target_branch.getLinkedBugTasks(user)
-        return (bugtask
-            for bugtask in source_tasks if bugtask not in target_tasks)
+        return [bugtask
+            for bugtask in source_tasks if bugtask not in target_tasks]
 
     @property
     def address(self):
