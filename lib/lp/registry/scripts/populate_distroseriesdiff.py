@@ -1,7 +1,15 @@
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Populate `DistroSeriesDifference` table."""
+"""Populate `DistroSeriesDifference` table.
+
+This script creates `DistroSeriesDifference` entries for the package
+version differences between a derived `DistroSeries` and its parent.
+
+The entries will still need to be processed by the cron job that works
+out the exact differences.  Any pre-existing `DistroSeriesDifference`
+entries remain untouched.
+"""
 
 __metaclass__ = type
 __all__ = [
