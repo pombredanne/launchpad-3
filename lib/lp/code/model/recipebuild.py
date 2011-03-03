@@ -52,12 +52,14 @@ class RecipeBuildRecord(namedtuple(
     """sourcepackagename, recipeowner, archive, recipe,
         most_recent_build_time""")):
 
-    def __new__(cls, *args):
+    def __new__(cls, sourcepackagename, recipeowner, archive, recipe,
+                most_recent_build_time):
         # Ensure that a valid (not None) recipe is used. This may change in
         # future if we support build records with no recipe.
-        recipe = args[3]
         assert recipe is not None, "RecipeBuildRecord requires a recipe."
-        self = super(RecipeBuildRecord, cls).__new__(cls, *args)
+        self = super(RecipeBuildRecord, cls).__new__(
+            cls, sourcepackagename, recipeowner, archive, recipe,
+            most_recent_build_time)
         return self
 
     # We need to implement our own equality check since __eq__ is broken on
