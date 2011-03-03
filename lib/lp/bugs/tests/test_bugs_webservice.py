@@ -18,6 +18,8 @@ from testtools.matchers import (
     )
 from zope.component import getMultiAdapter
 
+from lazr.restfulclient.errors import BadRequest
+
 from canonical.launchpad.ftests import (
     login,
     logout,
@@ -31,7 +33,11 @@ from canonical.testing.layers import (
     )
 from lp.bugs.browser.bugtask import get_comments_for_bugtask
 from lp.bugs.interfaces.bug import IBug
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    api_url,
+    launchpadlib_for,
+    TestCaseWithFactory,
+    )
 from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import (
     ADMIN_EMAIL,
@@ -295,3 +301,27 @@ class TestPostBugWithLargeCollections(TestCaseWithFactory):
             self.failUnlessEqual(200, response.status)
         finally:
             snapshot.HARD_LIMIT_FOR_SNAPSHOT = real_hard_limit_for_snapshot
+
+
+class TestEditConjoinedBugtask(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_edit_conjoined_bugtask_gives_bad_request_error(self):
+        # Create the conjoined bugtask.
+        bug = self.factory.makeBug()
+        product = self.factory.makeProduct()
+        conjoined_bugtask = self.factory.makeBugTask(
+            bug=bug, target=product.development_focus)
+
+        # Try to edit it through the web service.
+        launchpad = launchpadlib_for('test', bug.owner, version='devel')
+        lp_task = launchpad.load(api_url(conjoined_bugtask))
+        lp_task.status = 'Invalid'
+        try:
+            lp_task.lp_save()
+        except BadRequest, e:
+            self.assertEquals(
+                e.contents,
+                "This task cannot be edited directly, it should be edited "
+                "through its conjoined_master.")

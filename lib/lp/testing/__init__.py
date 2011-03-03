@@ -9,6 +9,7 @@ __metaclass__ = type
 __all__ = [
     'ANONYMOUS',
     'anonymous_logged_in',
+    'api_url',
     'build_yui_unittest_suite',
     'BrowserTestCase',
     'capture_events',
@@ -152,6 +153,7 @@ from lp.testing._login import (
 # XXX: JonathanLange 2010-01-01: Why?!
 from lp.testing._tales import test_tales
 from lp.testing._webservice import (
+    api_url,
     launchpadlib_credentials_for,
     launchpadlib_for,
     oauth_access_token_for,

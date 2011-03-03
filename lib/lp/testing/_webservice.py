@@ -15,6 +15,8 @@ __all__ = [
 import shutil
 import tempfile
 
+from lazr.restful.utils import get_current_web_service_request
+
 from launchpadlib.credentials import (
     AccessToken,
     AnonymousAccessToken,
@@ -31,11 +33,25 @@ from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.webapp.adapter import get_request_statements
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import OAuthPermission
+from canonical.launchpad.webapp.publisher import canonical_url
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing._login import (
     login,
     logout,
     )
+
+
+def api_url(obj):
+    """Find the web service URL of a data model object.
+
+    This makes it easy to load up the factory object you just created
+    in launchpadlib.
+
+    :param: Which web service version to use.
+
+    :return: A relative URL suitable for passing into Launchpad.load().
+    """
+    return canonical_url(obj, force_local_path=True)
 
 
 def oauth_access_token_for(consumer_name, person, permission, context=None):
@@ -121,7 +137,7 @@ def _clean_up_cache(cache):
 
 def launchpadlib_for(
     consumer_name, person=None, permission=OAuthPermission.WRITE_PRIVATE,
-    context=None, version=None, service_root="http://api.launchpad.dev/"):
+    context=None, version="devel", service_root="http://api.launchpad.dev/"):
     """Create a Launchpad object for the given person.
 
     :param consumer_name: An OAuth consumer name.
@@ -142,7 +158,6 @@ def launchpadlib_for(
         credentials = launchpadlib_credentials_for(
             consumer_name, person, permission, context)
     transaction.commit()
-    version = version or Launchpad.DEFAULT_VERSION
     cache = tempfile.mkdtemp(prefix='launchpadlib-cache-')
     zope.testing.cleanup.addCleanUp(_clean_up_cache, (cache,))
     return Launchpad(credentials, None, None, service_root=service_root,
