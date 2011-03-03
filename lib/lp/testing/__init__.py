@@ -795,8 +795,12 @@ class WebServiceTestCase(TestCaseWithFactory):
         super(WebServiceTestCase, self).setUp()
         self.service = self.factory.makeLaunchpadService()
 
-    def wsObject(self, obj):
-        return ws_object(self.service, obj)
+    def wsObject(self, obj, user=None):
+        if user is not None:
+            service = self.factory.makeLaunchpadService(user)
+        else:
+            service = self.service
+        return ws_object(service, obj)
 
 
 def quote_jquery_expression(expression):
