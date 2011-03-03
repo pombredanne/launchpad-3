@@ -59,7 +59,7 @@
 </metal:side>
 
 <metal:heading fill-slot="heading">
-  <h1 tal:content="context/name">
+  <h1 tal:replace="structure view/name_widget">
     recipe name
   </h1>
 </metal:heading>
