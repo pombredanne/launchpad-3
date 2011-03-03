@@ -8,9 +8,6 @@ __all__ = [
     'DecoratedBranch',
     ]
 
-
-from collections import defaultdict
-
 from lazr.delegates import delegates
 
 from lp.code.interfaces.branch import (

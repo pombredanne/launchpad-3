@@ -672,7 +672,6 @@ class TestExtendedBranchRevisionDetails(TestCaseWithFactory):
             branch.owner, branch_revisions)
         self.assertEqual(sorted(expected_rev_details), sorted(result))
 
-
     def test_some_revisions_with_private_bugs(self):
         branch = self.factory.makeBranch()
         merge_proposals = [

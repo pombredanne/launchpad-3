@@ -3,7 +3,6 @@
 
 # pylint: disable-msg=F0401
 
-
 """Tests for BranchMergeProposals."""
 
 __metaclass__ = type

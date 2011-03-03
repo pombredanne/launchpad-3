@@ -2,8 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of `IBranchCollection`."""
-from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.bugs.model.bugtask import BugTask
 
 __metaclass__ = type
 __all__ = [
@@ -22,19 +20,18 @@ from storm.expr import (
     Select,
     Union,
     )
-from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp.vocabulary import CountableIterator
 from canonical.lazr.utils import safe_hasattr
@@ -42,8 +39,8 @@ from lp.bugs.interfaces.bugtask import (\
     IBugTaskSet,
     BugTaskSearchParams,
     )
-from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugbranch import BugBranch
+from lp.bugs.model.bugtask import BugTask
 from lp.code.interfaces.branch import user_has_special_branch_access
 from lp.code.interfaces.branchcollection import (
     IBranchCollection,
@@ -167,6 +164,7 @@ class GenericBranchCollection:
         resultset = self.store.using(*tables).find(Branch, *expressions)
         if not eager_load:
             return resultset
+
         def do_eager_load(rows):
             branch_ids = set(branch.id for branch in rows)
             if not branch_ids:
