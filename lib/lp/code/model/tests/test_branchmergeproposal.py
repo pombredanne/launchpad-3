@@ -1995,7 +1995,7 @@ class TestWebservice(TestCaseWithFactory):
         """Test the getRelatedBugTasks API."""
         db_bmp = self.factory.makeBranchMergeProposal()
         launchpad = launchpadlib_for(
-            'test', db_bmp.registrant,
+            'test', db_bmp.registrant, version="devel",
             service_root=self.layer.appserver_root_url('api'))
 
         with person_logged_in(db_bmp.registrant):

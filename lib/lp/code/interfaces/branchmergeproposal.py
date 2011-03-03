@@ -39,6 +39,7 @@ from lazr.restful.declarations import (
     export_read_operation,
     export_write_operation,
     exported,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
@@ -296,6 +297,7 @@ class IBranchMergeProposal(IPrivacy):
     @call_with(user=REQUEST_USER)
     @operation_returns_collection_of(Interface) # IBugTask
     @export_read_operation()
+    @operation_for_version('devel')
     def getRelatedBugTasks(user):
         """Return the Bug tasks related to this merge proposal."""
 
