@@ -238,21 +238,21 @@ class TestBugMessages(TestCaseWithFactory):
         self.message2 = self.factory.makeMessage(parent=self.message1)
         # Only link message2 to the bug.
         self.bug.linkMessage(self.message2)
-        self.webservice = LaunchpadWebServiceCaller(
-            'launchpad-library', 'salgado-change-anything')
+        self.webservice = launchpadlib_for('launchpad-library', 'salgado')
 
     def test_messages(self):
         # When one of the messages on a bug is linked to a parent that
-        # isn't linked to the bug, the webservice should still return
-        # the correct collection link for the bug's messages.
-        response = self.webservice.get('/bugs/%d/messages' % self.bug.id)
-        self.failUnlessEqual(response.status, 200)
+        # isn't linked to the bug, the webservice should still include
+        # that message in the bug's associated messages.
+        bug = self.webservice.load(api_url(self.bug))
+        messages = bug.messages
+        latest_message = [message for message in messages][-1]
+        self.failUnlessEqual(self.message2.subject, latest_message.subject)
+
         # The parent_link for the latest message should be None
         # because the parent is not a member of this bug's messages
         # collection itself.
-        latest_message = response.jsonBody()['entries'][-1]
-        self.failUnlessEqual(self.message2.subject, latest_message['subject'])
-        self.failUnlessEqual(None, latest_message['parent_link'])
+        self.failUnlessEqual(None, latest_message.parent)
 
 
 class TestPostBugWithLargeCollections(TestCaseWithFactory):
@@ -285,20 +285,23 @@ class TestPostBugWithLargeCollections(TestCaseWithFactory):
     def test_many_subscribers(self):
         # Many subscriptions do not cause an OOPS for IBug POSTs.
         bug = self.factory.makeBug()
-        webservice = LaunchpadWebServiceCaller(
-            'launchpad-library', 'salgado-change-anything')
+
         real_hard_limit_for_snapshot = snapshot.HARD_LIMIT_FOR_SNAPSHOT
         snapshot.HARD_LIMIT_FOR_SNAPSHOT = 3
+
+        webservice = launchpadlib_for('test', 'salgado')
         try:
             login(ADMIN_EMAIL)
             for count in range(snapshot.HARD_LIMIT_FOR_SNAPSHOT + 1):
                 person = self.factory.makePerson()
                 bug.subscribe(person, person)
             logout()
-            response = webservice.named_post(
-                '/bugs/%d' % bug.id, 'subscribe',
-                person='http://api.launchpad.dev/beta/~name12')
-            self.failUnlessEqual(200, response.status)
+            lp_bug = webservice.load(api_url(bug))
+
+            # Adding one more subscriber through the web service
+            # doesn't cause an OOPS.
+            person_to_subscribe = webservice.load('/~name12')
+            lp_bug.subscribe(person=person_to_subscribe)
         finally:
             snapshot.HARD_LIMIT_FOR_SNAPSHOT = real_hard_limit_for_snapshot
 
