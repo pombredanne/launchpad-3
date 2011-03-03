@@ -29,7 +29,7 @@ class TestBugNotificationBuilder(TestCaseWithFactory):
         message = self.builder.build('from', 'to', 'body', 'subject',
                                      utc_now, filters=[])
         self.assertIs(None,
-                      message.get("X-Subscription-Filter-Description", None))
+                      message.get("X-Launchpad-Subscription-Filter", None))
 
     def test_build_filters_single(self):
         """Filters are added."""
@@ -38,7 +38,7 @@ class TestBugNotificationBuilder(TestCaseWithFactory):
                                      utc_now, filters=[u"Testing filter"])
         self.assertContentEqual(
             [u"Testing filter"],
-            message.get_all("X-Subscription-Filter-Description"))
+            message.get_all("X-Launchpad-Subscription-Filter"))
 
     def test_build_filters_multiple(self):
         """Filters are added."""
@@ -48,4 +48,4 @@ class TestBugNotificationBuilder(TestCaseWithFactory):
             filters=[u"Testing filter", u"Second testing filter"])
         self.assertContentEqual(
             [u"Testing filter", u"Second testing filter"],
-            message.get_all("X-Subscription-Filter-Description"))
+            message.get_all("X-Launchpad-Subscription-Filter"))
