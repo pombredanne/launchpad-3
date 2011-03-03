@@ -28,13 +28,14 @@ from lp.testing import TestCaseWithFactory
 from lp.testing import login_person
 from lp.testing.views import create_initialized_view
 
-from testtools.matchers import MatchesAny 
-from testtools.matchers import Not 
+from testtools.matchers import MatchesAny
+from testtools.matchers import Not
 
 import soupmatchers
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
+
 
 class TestDistribution(TestCaseWithFactory):
 
@@ -236,7 +237,7 @@ class TestDistributionPage(TestCaseWithFactory):
                 text='Series and milestones'))
         self.assertThat(
             view.render(),
-            Not(MatchesAny(add_series_match,series_header_match)))
+            Not(MatchesAny(add_series_match, series_header_match)))
 
     def test_distributionpage_series_list_noadmin(self):
         """Verify that a non-admin does see the series list
