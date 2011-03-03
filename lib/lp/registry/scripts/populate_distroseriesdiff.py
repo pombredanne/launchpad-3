@@ -216,17 +216,17 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
     def add_my_options(self):
         self.parser.add_options([
             Option(
-                '-a', '--all', dest='all', action='store_true',
+                '-a', '--all', dest='all', action='store_true', default=False,
                 help="Populate all derived distribution series."),
             Option(
-                '-d', '--distribution', dest='distribution',
+                '-d', '--distribution', dest='distribution', default=None,
                 help="Derived distribution."),
-            Option('-s', '--series', dest='series',
+            Option('-s', '--series', dest='series', default=None,
                 help="Derived distribution series.")])
 
     def getDistroSeries(self):
         if self.options.all:
-            return list(find_derived_series)
+            return list(find_derived_series())
         else:
             distro = getUtility(IDistributionSet).getByName(
                 self.options.distribution)

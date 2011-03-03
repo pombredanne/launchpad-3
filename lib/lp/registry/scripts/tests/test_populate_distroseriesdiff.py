@@ -30,6 +30,7 @@ from lp.registry.scripts.populate_distroseriesdiff import (
     populate_distroseriesdiff,
     PopulateDistroSeriesDiff,
     )
+from lp.services.log.logger import DevNullLogger
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     inactive_publishing_status,
@@ -435,7 +436,12 @@ class TestPopulateDistroSeriesDiffScript(TestCaseWithFactory, FactoryHelper):
 
     layer = DatabaseFunctionalLayer
 
-    def test_script(self):
+    def makeScript(self, test_args):
+        script = PopulateDistroSeriesDiff(test_args=test_args)
+        script.logger = DevNullLogger()
+        return script
+
+    def test_script_populates_for_distroseries(self):
         distroseries = self.makeDerivedDistroSeries()
         self.makeSPPH(distroseries=distroseries)
         self.makeSPPH(distroseries=distroseries.parent_series)
@@ -444,7 +450,7 @@ class TestPopulateDistroSeriesDiffScript(TestCaseWithFactory, FactoryHelper):
             distroseries=distroseries.parent_series,
             sourcepackagerelease=shared_spph.sourcepackagerelease)
 
-        script = PopulateDistroSeriesDiff(test_args=[
+        script = self.makeScript([
             '--distribution', distroseries.distribution.name,
             '--series', distroseries.name,
             ])
@@ -452,3 +458,11 @@ class TestPopulateDistroSeriesDiffScript(TestCaseWithFactory, FactoryHelper):
 
         self.assertEqual([distroseries], script.distroseries)
         self.assertNotEqual(0, self.getDistroSeriesDiff(distroseries).count())
+
+    def test_script_populates_for_all_distroseries(self):
+        distroseries = [
+            self.makeDerivedDistroSeries() for counter in xrange(2)]
+        script = self.makeScript(['--all'])
+        script.main()
+        for series in distroseries:
+            self.assertIn(series, script.distroseries)
