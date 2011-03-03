@@ -100,7 +100,6 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
-from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
@@ -2098,7 +2097,8 @@ class BugTaskSet:
                     """EXISTS (
                         SELECT id FROM BugBranch WHERE BugBranch.bug=Bug.id)
                     """)
-            elif params.linked_branches == BugBranchSearch.BUGS_WITHOUT_BRANCHES:
+            elif (params.linked_branches ==
+                  BugBranchSearch.BUGS_WITHOUT_BRANCHES):
                 extra_clauses.append(
                     """NOT EXISTS (
                         SELECT id FROM BugBranch WHERE BugBranch.bug=Bug.id)
@@ -2132,6 +2132,7 @@ class BugTaskSet:
         if not decorators:
             decorator = lambda x: x
         else:
+
             def decorator(obj):
                 for decor in decorators:
                     obj = decor(obj)

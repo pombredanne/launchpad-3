@@ -20,13 +20,10 @@ from storm.locals import (
 
 from storm.base import Storm
 from storm.expr import (
-    Alias,
     And,
     CompoundOper,
     Count,
-    Except,
     In,
-    Intersect,
     Join,
     LeftJoin,
     NamedFunc,
@@ -50,8 +47,6 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import quote
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.bugs.enum import BugNotificationLevel
-from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscription,
     IStructuralSubscriptionTarget,
@@ -496,8 +491,9 @@ class StructuralSubscriptionTargetMixin:
             StructuralSubscription,
             BugSubscriptionFilter.structural_subscription_id ==
             StructuralSubscription.id,
-            In(BugSubscriptionFilter.id, filter_id_query)
-            ).config(distinct=True)
+            In(BugSubscriptionFilter.id,
+               filter_id_query)).config(distinct=True)
+
 
 def get_structural_subscription_targets(bugtasks):
     """Return (bugtask, target) pairs for each target of the bugtasks.
@@ -518,6 +514,7 @@ def get_structural_subscription_targets(bugtasks):
         if bugtask.milestone is not None:
             yield (bugtask, bugtask.milestone)
 
+
 def _get_all_structural_subscriptions(find, targets, *conditions):
     """Find the structural subscriptions for the given targets.
 
@@ -536,6 +533,7 @@ def _get_all_structural_subscriptions(find, targets, *conditions):
                         in targets)]),
             *conditions))
 
+
 def get_all_structural_subscriptions(bugtasks, person=None):
     if not bugtasks:
         return EmptyResultSet()
@@ -547,6 +545,7 @@ def get_all_structural_subscriptions(bugtasks, person=None):
         StructuralSubscription,
         get_structural_subscription_targets(bugtasks),
         *conditions)
+
 
 def _get_structural_subscribers(candidates, filter_id_query, recipients):
     if not candidates:
@@ -581,8 +580,7 @@ def _get_structural_subscribers(candidates, filter_id_query, recipients):
         subscribers = []
         query_results = source.find(
             (Person, StructuralSubscription),
-            *constraints
-            ).config(distinct=True)
+            *constraints).config(distinct=True)
         for person, subscription in query_results:
             # Set up results.
             if person not in recipients:
@@ -590,6 +588,7 @@ def _get_structural_subscribers(candidates, filter_id_query, recipients):
                 recipients.addStructuralSubscriber(
                     person, subscription.target)
         return subscribers
+
 
 def get_structural_subscribers_for_bugtasks(bugtasks,
                                             recipients=None,
@@ -697,8 +696,7 @@ def _get_structural_subscription_filter_id_query(bug, bugtasks, level):
                      BugSubscriptionFilter.id),
             LeftJoin(BugSubscriptionFilterTag,
                      BugSubscriptionFilterTag.filter_id ==
-                     BugSubscriptionFilter.id)
-            ]}
+                     BugSubscriptionFilter.id)]}
     # The "conditions" list will eventually be passed to a Storm
     # "And" function, and then become the WHERE clause of our SELECT.
     conditions = [In(StructuralSubscription.id, candidates)]
@@ -725,6 +723,7 @@ def _get_structural_subscription_filter_id_query(bug, bugtasks, level):
     # The "or_target_conditions" list holds the clauses for each target,
     # and is reset for each new bugtask.
     or_target_conditions = []
+
     def handle_bugtask_conditions(bugtask):
         """Helper function for building status and importance clauses.
 
@@ -734,7 +733,8 @@ def _get_structural_subscription_filter_id_query(bug, bugtasks, level):
         if or_target_conditions:
             outer_or_conditions.append(
                 And(Or(*or_target_conditions),
-                    Or(BugSubscriptionFilterImportance.importance == bugtask.importance,
+                    Or(BugSubscriptionFilterImportance.importance ==
+                       bugtask.importance,
                        BugSubscriptionFilterImportance.importance == None),
                     Or(BugSubscriptionFilterStatus.status == bugtask.status,
                        BugSubscriptionFilterStatus.status == None)))
