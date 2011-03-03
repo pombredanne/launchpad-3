@@ -19,10 +19,24 @@ from lp.registry.enum import (
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
+from lp.services.scripts.base import LaunchpadScript
 from lp.soyuz.interfaces.publishing import active_publishing_status
 
 
 def compose_sql_find_latest_source_package_releases(distroseries):
+    """Produce SQL that gets the last-published `SourcePackageRelease`s.
+
+    Within `distroseries`, looks for the `SourcePackageRelease`
+    belonging to each respective `SourcePackageName`'s respective latest
+    `SourcePackagePublishingHistory`.
+
+    For each of those, it produces a tuple consisting of:
+     * `SourcePackageName` id: sourcepackagename
+     * `SourcePackageRelease` id: sourcepackagerelease
+     * Source package version: version.
+
+    :return: SQL query, as a string.
+    """
     parameters = {
         'active_status': quote(active_publishing_status),
         'distroseries': quote(distroseries),
@@ -46,6 +60,17 @@ def compose_sql_find_latest_source_package_releases(distroseries):
 
 
 def compose_sql_find_differences(derived_distroseries):
+    """Produce SQL that finds differences for a `DistroSeries`.
+
+    The query compares `derived_distroseries` and its `parent_series`
+    and for each package whose latest `SourcePackageRelease`s in the
+    respective series differ, produces a tuple of:
+     * `SourcePackageName` id: sourcepackagename
+     * Source package version in derived series: source_version
+     * Source package version in parent series: parent_source_version.
+
+    :return: SQL query, as a string.
+    """
     parameters = {
         'derived_query': compose_sql_find_latest_source_package_releases(
             derived_distroseries),
@@ -69,6 +94,13 @@ def compose_sql_find_differences(derived_distroseries):
 
 
 def compose_sql_difference_type():
+    """Produce SQL to compute a difference's `DistroSeriesDifferenceType`.
+
+    Works with the parent_source_version and source_version fields as
+    produced by the SQL from `compose_sql_find_differences`.
+
+    :return: SQL query, as a string.
+    """
     parameters = {
         'unique_to_derived_series': quote(
             DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES),
@@ -89,6 +121,21 @@ def compose_sql_difference_type():
 
 
 def compose_sql_populate_distroseriesdiff(derived_distroseries, temp_table):
+    """Create `DistroSeriesDifference` rows based on found differences.
+
+    Uses field values that describe the difference, as produced by the
+    SQL from `compose_sql_find_differences`:
+     * sourcepackagename
+     * source_version
+     * parent_source_version
+
+    Existing `DistroSeriesDifference` rows are not affected.
+
+    :param derived_distroseries: A derived `DistroSeries`.
+    :param temp_table: The name of a table to select the input fields
+        from.
+    :return: SQL query, as a string.
+    """
     parameters = {
         'derived_series': quote(derived_distroseries),
         'difference_type_expression': compose_sql_difference_type(),
@@ -120,10 +167,16 @@ def compose_sql_populate_distroseriesdiff(derived_distroseries, temp_table):
 
 
 def drop_table(store, table):
+    """Drop `table`, if it exists."""
     store.execute("DROP TABLE IF EXISTS %s" % quote_identifier(table))
 
 
 def populate_distroseriesdiff(derived_distroseries):
+    """Compare `derived_distroseries` to parent, and register differences.
+
+    The differences are registered by creating `DistroSeriesDifference`
+    records, insofar as they do not yet exist.
+    """
     temp_table = "temp_potentialdistroseriesdiff"
 
     store = IStore(derived_distroseries)
@@ -138,8 +191,20 @@ def populate_distroseriesdiff(derived_distroseries):
 
 
 def find_derived_series():
+    """Find all derived `DistroSeries`.
+
+    Derived `DistroSeries` are ones that have a `parent_series`, but
+    where the `parent_series` is not in the same distribution.
+    """
     Parent = ClassAlias(DistroSeries, "Parent")
     return IStore(DistroSeries).find(
         DistroSeries,
         Parent.id == DistroSeries.parent_seriesID,
         Parent.distributionID != DistroSeries.distributionID)
+
+
+class PopulateDistroSeriesDiff(LaunchpadScript):
+
+    def main(self):
+# XXX: Implement.
+        pass

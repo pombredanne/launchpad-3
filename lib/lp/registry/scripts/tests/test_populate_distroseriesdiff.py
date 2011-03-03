@@ -28,6 +28,7 @@ from lp.registry.scripts.populate_distroseriesdiff import (
     compose_sql_populate_distroseriesdiff,
     find_derived_series,
     populate_distroseriesdiff,
+    PopulateDistroSeriesDiff,
     )
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
@@ -429,12 +430,21 @@ class TestPopulateDistroSeriesDiff(TestCaseWithFactory, FactoryHelper):
         self.assertEqual(existing_versions['derived'], dsd.source_version)
 
 
-class TestPopulateDistroSeriesDiffScript(TestCaseWithFactory):
+class TestPopulateDistroSeriesDiffScript(TestCaseWithFactory, FactoryHelper):
     """Test the `populate-distroseriesdiff` script."""
 
     layer = DatabaseFunctionalLayer
 
     def test_script(self):
-# XXX: Log in.
+        distroseries = self.makeDerivedDistroSeries()
+        self.makeSPPH(distroseries=distroseries)
+        self.makeSPPH(distroseries=distroseries.parent_series)
+        shared_spph = self.makeSPPH(distroseries=distroseries)
+        self.makeSPPH(
+            distroseries=distroseries.parent_series,
+            sourcepackagerelease=shared_spph.sourcepackagerelease)
+
+        script = PopulateDistroSeriesDiff(test_args=[])
+        script.main()
 # XXX: Test!
         pass
