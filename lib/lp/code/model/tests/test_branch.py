@@ -12,7 +12,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-from unittest import TestLoader
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.revision import NULL_REVISION
