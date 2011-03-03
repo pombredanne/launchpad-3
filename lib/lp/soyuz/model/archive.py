@@ -1467,11 +1467,8 @@ class Archive(SQLBase):
             published_sources = from_archive.getPublishedSources(
                 name=name, exact_match=True,
                 status=PackagePublishingStatus.PUBLISHED)
-            try:
-                first_source = published_sources[0]
-            except IndexError:
-                pass
-            else:
+            first_source = published_sources.first()
+            if first_source is not None:
                 sources.append(first_source)
         return sources
 
