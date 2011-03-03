@@ -47,6 +47,14 @@ class TopLevelMenuMixin:
         text = 'Register a team'
         return Link('/people/+newteam', text, icon='add')
 
+    # TODO: rvb 20110103 DISTRO.PERMISSIONS
+    # this should be checked against the right permission once
+    # the permission model for distributions is in place
+    @enabled_with_permission('launchpad.Admin')
+    def register_distribution(self):
+        text = 'Register a distribution'
+        return Link('/distros/+add', text, icon='add')
+
     def create_account(self):
         text = 'Create an account'
         # Only enable this link for anonymous users.
