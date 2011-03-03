@@ -759,10 +759,13 @@ class BugTask(SQLBase, BugTaskMixin):
             conjoined_master = None
         return conjoined_master
 
+    def _get_shortlisted_bugtasks(self):
+        return shortlist(self.bug.bugtasks, longest_expected=200)
+
     @property
     def conjoined_master(self):
         """See `IBugTask`."""
-        return self.getConjoinedMaster(shortlist(self.bug.bugtasks))
+        return self.getConjoinedMaster(self._get_shortlisted_bugtasks())
 
     @property
     def conjoined_slave(self):
@@ -773,7 +776,7 @@ class BugTask(SQLBase, BugTaskMixin):
             if self.distroseries != distribution.currentseries:
                 # Only current series tasks are conjoined.
                 return None
-            for bugtask in shortlist(self.bug.bugtasks):
+            for bugtask in self._get_shortlisted_bugtasks():
                 if (bugtask.distribution == distribution and
                     bugtask.sourcepackagename == self.sourcepackagename):
                     conjoined_slave = bugtask
@@ -783,7 +786,7 @@ class BugTask(SQLBase, BugTaskMixin):
             if self.productseries != product.development_focus:
                 # Only development focus tasks are conjoined.
                 return None
-            for bugtask in shortlist(self.bug.bugtasks):
+            for bugtask in self._get_shortlisted_bugtasks():
                 if bugtask.product == product:
                     conjoined_slave = bugtask
                     break
