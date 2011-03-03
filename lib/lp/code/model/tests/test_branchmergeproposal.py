@@ -15,7 +15,6 @@ from datetime import (
 from difflib import unified_diff
 from unittest import (
     TestCase,
-    TestLoader,
     )
 
 from lazr.lifecycle.event import ObjectModifiedEvent
@@ -33,6 +32,7 @@ from canonical.launchpad.interfaces.message import IMessageJob
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
+    AppServerLayer,
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -79,10 +79,12 @@ from lp.code.tests.helpers import (
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.testing import (
+    launchpadlib_for,
     login,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
+    ws_object,
     )
 from lp.testing.factory import (
     GPGSigningContext,
@@ -1970,5 +1972,38 @@ class TestGetUnlandedSourceBranchRevisions(TestCaseWithFactory):
         self.assertNotIn(r1, partial_revisions)
 
 
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+class TestWebservice(TestCaseWithFactory):
+    """Tests for the webservice."""
+
+    layer = AppServerLayer
+
+    def test_getMergeProposals_with_merged_revnos(self):
+        """Specifying merged revnos selects the correct merge proposal."""
+        mp = self.factory.makeBranchMergeProposal()
+        launchpad = launchpadlib_for(
+            'test', mp.registrant,
+            service_root=self.layer.appserver_root_url('api'))
+
+        with person_logged_in(mp.registrant):
+            mp.markAsMerged(merged_revno=123)
+            transaction.commit()
+            target = ws_object(launchpad, mp.target_branch)
+            mp = ws_object(launchpad, mp)
+        self.assertEqual([mp], list(target.getMergeProposals(
+            status=['Merged'], merged_revnos=[123])))
+
+    def test_getRelatedBugTasks(self):
+        """Test the getRelatedBugTasks API."""
+        db_bmp = self.factory.makeBranchMergeProposal()
+        launchpad = launchpadlib_for(
+            'test', db_bmp.registrant,
+            service_root=self.layer.appserver_root_url('api'))
+
+        with person_logged_in(db_bmp.registrant):
+            db_bug = self.factory.makeBug()
+            db_bmp.source_branch.linkBug(db_bug, db_bmp.registrant)
+            transaction.commit()
+            bmp = ws_object(launchpad, db_bmp)
+            bugtask = ws_object(launchpad, db_bug.default_bugtask)
+        self.assertEqual(
+            [bugtask], list(bmp.getRelatedBugTasks()))
