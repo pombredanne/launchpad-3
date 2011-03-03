@@ -48,6 +48,7 @@ __all__ = [
     ]
 
 import httplib
+
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,

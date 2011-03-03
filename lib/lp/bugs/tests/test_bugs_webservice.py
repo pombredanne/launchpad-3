@@ -9,7 +9,10 @@ import re
 
 from BeautifulSoup import BeautifulSoup
 from lazr.lifecycle.interfaces import IDoNotSnapshot
-from lazr.restfulclient.errors import HTTPError
+from lazr.restfulclient.errors import (
+    BadRequest,
+    HTTPError,
+    )
 from simplejson import dumps
 from storm.store import Store
 from testtools.matchers import (
@@ -17,8 +20,6 @@ from testtools.matchers import (
     LessThan,
     )
 from zope.component import getMultiAdapter
-
-from lazr.restfulclient.errors import BadRequest
 
 from canonical.launchpad.ftests import (
     login,
@@ -38,12 +39,12 @@ from lp.testing import (
     launchpadlib_for,
     TestCaseWithFactory,
     )
+from lp.testing._webservice import QueryCollector
 from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import (
     ADMIN_EMAIL,
     USER_EMAIL,
     )
-from lp.testing._webservice import QueryCollector
 
 
 class TestBugConstraints(TestCaseWithFactory):

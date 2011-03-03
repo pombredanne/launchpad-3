@@ -69,12 +69,11 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
-from lp.registry.model.distroseries import DistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.distroseries import DistroSeries
 from lp.services.database.stormexpr import Greatest
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.model.archive import Archive
-
 
 # "Slam" a 400 response code onto RecipeParseError so that it will behave
 # properly when raised in a web service context.

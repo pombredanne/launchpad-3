@@ -72,11 +72,11 @@ import tempfile
 import time
 import unittest
 
+from bzrlib import trace
 from bzrlib.bzrdir import (
     BzrDir,
     format_registry,
     )
-from bzrlib import trace
 from bzrlib.transport import get_transport
 import fixtures
 import pytz
@@ -161,7 +161,10 @@ from lp.testing._webservice import (
 from lp.testing.fixture import ZopeEventHandlerFixture
 from lp.testing.karma import KarmaRecorder
 from lp.testing.matchers import Provides
-from lp.testing.windmill import constants, lpuser
+from lp.testing.windmill import (
+    constants,
+    lpuser,
+    )
 
 
 class FakeTime:

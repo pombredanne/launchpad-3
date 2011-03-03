@@ -15,14 +15,13 @@ __all__ = [
 import shutil
 import tempfile
 
-from lazr.restful.utils import get_current_web_service_request
-
 from launchpadlib.credentials import (
     AccessToken,
     AnonymousAccessToken,
     Credentials,
     )
 from launchpadlib.launchpad import Launchpad
+from lazr.restful.utils import get_current_web_service_request
 import transaction
 from zope.app.publication.interfaces import IEndRequestEvent
 from zope.app.testing import ztapi
