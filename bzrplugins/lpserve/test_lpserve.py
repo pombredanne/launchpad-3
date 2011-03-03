@@ -294,6 +294,8 @@ class TestLPForkingService(TestCaseWithLPForkingService):
         os.mkfifo(os.path.join(tempdir, 'stdin'))
         os.mkfifo(os.path.join(tempdir, 'stdout'))
         os.mkfifo(os.path.join(tempdir, 'stderr'))
+        # catch SIGALRM so we don't stop the test suite. It will still
+        # interupt the blocking open() calls.
         def noop_on_alarm(signal, frame):
             return
         signal.signal(signal.SIGALRM, noop_on_alarm)
@@ -301,8 +303,6 @@ class TestLPForkingService(TestCaseWithLPForkingService):
         e = self.assertRaises(errors.BzrError,
             self.service._open_handles, tempdir)
         self.assertContainsRe(str(e), r'After \d+.\d+s we failed to open.*')
-        # Even though it timed out, we still cleanup the temp dir
-        self.assertFalse(os.path.exists(tempdir))
 
 
 

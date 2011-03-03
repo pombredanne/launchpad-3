@@ -398,17 +398,6 @@ class LPForkingService(object):
         flags = flags & (~os.O_NONBLOCK)
         fcntl.fcntl(fd, fcntl.F_SETFD, flags)
 
-    def _get_child_connect_timeout(self):
-        """signal.alarm only supports 1s granularity.
-
-        We have to make sure we don't ever send 0, which would not generate an
-        alarm.
-        """
-        timeout = int(self._child_connect_timeout)
-        if timeout <= 0:
-            timeout = 1
-        return timeout
-
     def _open_handles(self, base_path):
         """Open the given file handles.
 
@@ -425,7 +414,8 @@ class LPForkingService(object):
         fids = []
         to_open = [(stdin_path, os.O_RDONLY), (stdout_path, os.O_WRONLY),
                    (stderr_path, os.O_WRONLY)]
-        signal.alarm(self._get_child_connect_timeout())
+        # If we set it to 0, we won't get an alarm, so require some time > 0.
+        signal.alarm(max(1, self._child_connect_timeout))
         tstart = time.time()
         for path, flags in to_open:
             try:
