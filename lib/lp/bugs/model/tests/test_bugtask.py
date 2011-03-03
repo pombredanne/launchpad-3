@@ -1432,7 +1432,6 @@ class TestGetAllStructuralSubscriptions(TestCaseWithFactory):
     def test_no_subscriptions(self):
         subscriptions = self.getAllStructuralSubscriptions(
             self.bug.bugtasks, self.subscriber)
-        self.assertIsInstance(subscriptions, ResultSet)
         self.assertEqual([], list(subscriptions))
 
     def test_one_subscription(self):

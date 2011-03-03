@@ -499,7 +499,7 @@ class StructuralSubscriptionTargetMixin:
             In(BugSubscriptionFilter.id, filter_id_query)
             ).config(distinct=True)
 
-def get_structural_subscription_targets(*bugtasks):
+def get_structural_subscription_targets(bugtasks):
     """Return (bugtask, target) pairs for each target of the bugtasks.
 
     Each bugtask may be responsible theoretically for 0 or more targets.
@@ -545,7 +545,7 @@ def get_all_structural_subscriptions(bugtasks, person=None):
             StructuralSubscription.subscriber == person)
     return _get_all_structural_subscriptions(
         StructuralSubscription,
-        get_structural_subscription_targets(*bugtasks),
+        get_structural_subscription_targets(bugtasks),
         *conditions)
 
 def _get_structural_subscribers(candidates, filter_id_query, recipients):
@@ -659,7 +659,7 @@ def _get_structural_subscription_filter_id_query(bug, bugtasks, level):
     # as the group-by key...but that's dreaming.)
     # See the docstring of get_structural_subscription_targets.
     query_arguments = list(
-        get_structural_subscription_targets(*bugtasks))
+        get_structural_subscription_targets(bugtasks))
     assert len(query_arguments) > 0, (
         'Programmer error: expected query arguments')
     # With large numbers of filters in the system, it's fastest in our
