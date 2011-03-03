@@ -132,7 +132,7 @@ With no-one logged in, there are no edit buttons.
     >>> print widget()
     <div id="edit-description" class="lazr-multiline-edit">
       <div class="clearfix">
-        <h2>A title</h2>
+        <h3>A title</h3>
       </div>
       <div class="yui3-editable_text-text"><p>short description</p></div>
     </div>
@@ -154,7 +154,7 @@ editor.
           <a class="yui3-editable_text-trigger sprite edit"
              href="http://launchpad.dev/~eric/+archive/ppa/+edit"></a>
         </div>
-        <h2>A title</h2>
+        <h3>A title</h3>
       </div>
       <div class="yui3-editable_text-text"><p>short description</p></div>
       <script>...</script>

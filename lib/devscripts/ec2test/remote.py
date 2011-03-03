@@ -281,15 +281,16 @@ class LaunchpadTester:
     def _gather_test_output(self, input_stream, logger):
         """Write the testrunner output to the logs."""
         summary_stream = logger.get_summary_stream()
+        summary_result = SummaryResult(summary_stream)
         result = MultiTestResult(
-            SummaryResult(summary_stream),
+            summary_result,
             FailureUpdateResult(logger))
         subunit_server = subunit.TestProtocolServer(result, summary_stream)
         for line in input_stream:
             subunit_server.lineReceived(line)
             logger.got_line(line)
             summary_stream.flush()
-        return result
+        return summary_result
 
 
 # XXX: Publish a JSON file that includes the relevant details from this

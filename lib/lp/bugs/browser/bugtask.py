@@ -144,7 +144,6 @@ from canonical.launchpad.searchbuilder import (
     any,
     NULL,
     )
-from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
     canonical_url,
     enabled_with_permission,
@@ -185,6 +184,7 @@ from lp.app.errors import (
     UnexpectedFormData,
     )
 from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.app.widgets.project import ProjectScopeWidget
 from lp.bugs.browser.bug import (
@@ -509,7 +509,7 @@ class BugTargetTraversalMixin:
         # anonymous user is presented with a login screen at the correct URL,
         # rather than making it look as though this task was "not found",
         # because it was filtered out by privacy-aware code.
-        for bugtask in list(bug.bugtasks):
+        for bugtask in bug.bugtasks:
             if bugtask.target == context:
                 # Security proxy this object on the way out.
                 return getUtility(IBugTaskSet).get(bugtask.id)
@@ -650,6 +650,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             self.context = getUtility(ILaunchBag).bugtask
         else:
             self.context = context
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            [self.context.bug.ownerID], need_validity=True))
 
     @property
     def page_title(self):
@@ -3166,6 +3168,13 @@ class BugTasksAndNominationsView(LaunchpadView):
         distro_series_set = getUtility(IDistroSeriesSet)
         self.target_releases.update(
             distro_series_set.getCurrentSourceReleases(distro_series_packages))
+        ids = set()
+        for release_person_ids in map(attrgetter('creatorID', 'maintainerID'),
+            self.target_releases.values()):
+            ids.update(release_person_ids)
+        ids.discard(None)
+        if ids:
+            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(ids))
 
     def getTargetLinkTitle(self, target):
         """Return text to put as the title for the link to the target."""
@@ -3246,6 +3255,13 @@ class BugTasksAndNominationsView(LaunchpadView):
         # nominations here, so we can pass it to getNominations() later
         # on.
         nominations = list(bug.getNominations())
+        # Eager load validity for all the persons we know of that will be
+        # displayed.
+        ids = set(map(attrgetter('ownerID'), nominations))
+        ids.discard(None)
+        if ids:
+            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                ids, need_validity=True))
 
         # Build a cache we can pass on to getConjoinedMaster(), so that
         # it doesn't have to iterate over all the bug tasks in each loop
@@ -3270,16 +3286,6 @@ class BugTasksAndNominationsView(LaunchpadView):
                     nomination, is_converted_to_question, False)
                 for nomination in target_nominations
                 if nomination.status != BugNominationStatus.APPROVED)
-
-        # Fill the ValidPersonOrTeamCache cache (using getValidPersons()),
-        # so that checking person.is_valid_person, when rendering the
-        # link, won't issue a DB query.
-        assignees = set(
-            bugtask.assignee for bugtask in all_bugtasks
-            if bugtask.assignee is not None)
-        reporters = set(
-            bugtask.owner for bugtask in all_bugtasks)
-        getUtility(IPersonSet).getValidPersons(assignees.union(reporters))
 
         return bugtask_and_nomination_views
 

@@ -57,8 +57,7 @@ class TestSourcePublicationListingExtra(BrowserTestCase):
         spph.sourcepackagerelease.source_package_recipe_build = sprb
         recipe_link_matches = soupmatchers.HTMLContains(
             soupmatchers.Tag(
-                'link to build', 'a',
-                attrs={'href': canonical_url(sprb, force_local_path=True)},
+                'link to build', 'a', attrs={'href': canonical_url(sprb)},
                 text='Built'),
             soupmatchers.Tag(
                 'recipe name', 'a', attrs={'href': canonical_url(recipe)},
@@ -66,7 +65,7 @@ class TestSourcePublicationListingExtra(BrowserTestCase):
             soupmatchers.Tag(
                 'requester', 'a',
                 attrs={
-                    'href': canonical_url(requester, force_local_path=True)},
+                    'href': canonical_url(requester)},
                 text=requester.displayname))
         browser = self.getViewBrowser(spph, '+listing-archive-extra')
         self.assertThat(browser.contents, recipe_link_matches)
@@ -78,3 +77,29 @@ class TestSourcePublicationListingExtra(BrowserTestCase):
             archive=self.archive, status=PackagePublishingStatus.PUBLISHED)
         browser = self.getViewBrowser(spph, '+listing-archive-extra')
         self.assertNotIn('Built by recipe', browser.contents)
+        
+    def test_view_with_deleted_source_package_recipe(self):
+        # If a SourcePackageRelease is linked to a deleted recipe, the text
+        # 'deleted recipe' is displayed, rather than a link.
+        sprb = self.factory.makeSourcePackageRecipeBuild(
+            archive=self.archive)
+        recipe = sprb.recipe
+        requester = sprb.requester
+        spph = self.publisher.getPubSource(
+            archive=self.archive, status=PackagePublishingStatus.PUBLISHED)
+        spph.sourcepackagerelease.source_package_recipe_build = sprb
+        with person_logged_in(recipe.owner):
+            recipe.destroySelf()
+        recipe_link_matches = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'link to build', 'a',
+                attrs={'href': canonical_url(sprb)},
+                text='Built'),
+            soupmatchers.Tag(
+                'requester', 'a',
+                attrs={
+                    'href': canonical_url(requester)},
+                text=requester.displayname))
+        browser = self.getViewBrowser(spph, '+listing-archive-extra')
+        self.assertThat(browser.contents, recipe_link_matches)
+        self.assertIn('deleted recipe', browser.contents)

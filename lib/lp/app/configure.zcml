@@ -9,6 +9,6 @@
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     xmlns:lp="http://namespaces.canonical.com/lp"
     i18n_domain="launchpad">
-    <include
-        package=".browser"/>
+    <include package=".browser"/>
+    <include package="lp.app.validators" />
 </configure>

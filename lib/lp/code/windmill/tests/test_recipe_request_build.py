@@ -7,16 +7,19 @@ __metaclass__ = type
 __all__ = []
 
 import transaction
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.testing.windmill.constants import (
     FOR_ELEMENT,
     PAGE_LOAD,
+    SLEEP,
     )
 from lp.testing.windmill.lpuser import login_person
 from lp.app.browser.tales import PPAFormatterAPI
 from lp.code.windmill.testing import CodeWindmillLayer
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import WindmillTestCase, quote_jquery_expression
 
@@ -53,10 +56,11 @@ class TestRecipeBuild(WindmillTestCase):
         transaction.commit()
         login_person(self.chef, "chef@example.com", "test", self.client)
 
-    def makeRecipeBuild(self):
-        """Create and return a specific recipe."""
-        build = self.factory.makeSourcePackageRecipeBuild(recipe=self.recipe)
-        return build
+    def _check_build_renders(self, ppa):
+        self.client.waits.forElement(
+            jquery=u"('tr.package-build a[href$=\"%s\"]')"
+            % quote_jquery_expression(PPAFormatterAPI(ppa).url()),
+            timeout=FOR_ELEMENT)
 
     def test_recipe_build_request(self):
         """Request a recipe build."""
@@ -72,25 +76,75 @@ class TestRecipeBuild(WindmillTestCase):
         client.click(name=u'field.actions.request')
 
         # Ensure it shows up.
-        client.waits.forElement(
-            jquery=u"('tr.package-build a[href$=\"%s\"]')"
-            % quote_jquery_expression(PPAFormatterAPI(self.ppa).url()),
-            timeout=FOR_ELEMENT)
+        self._check_build_renders(self.ppa)
 
-        # And try the same one again.
+    def test_recipe_build_request_already_pending(self):
+        """Test that already pending builds are correctly highlighted.
+
+        If all possible builds are pending, the the Request Builds button
+        should be hidden.
+        """
+
+        client = self.client
+        client.open(url=canonical_url(self.recipe))
+        client.waits.forElement(
+            id=u'request-builds', timeout=PAGE_LOAD)
+
+        # Request a new build.
         client.click(id=u'request-builds')
         client.waits.forElement(id=u'field.archive')
         client.click(name=u'field.actions.request')
 
-        # And check that there's an error.
-        client.waits.forElement(
-            jquery=u"('div.yui3-lazr-formoverlay-errors ul li')",
-            timeout=FOR_ELEMENT)
+        # Give the new build a chance to be queued.
+        client.waits.sleep(milliseconds=SLEEP)
 
-        client.asserts.assertTextIn(
-            jquery=u"('div.yui3-lazr-formoverlay-errors ul li')[0]",
-            validator=u'An identical build is already pending for %s %s.'
-                        % (self.ppa.distribution.name, self.squirrel.name))
+        # And open the request form again.
+        client.click(id=u'request-builds')
+        client.waits.forElement(id=u'field.archive')
+
+        def check_build_pending(field_id, build_name):
+            client.asserts.assertTextIn(
+                jquery=u"('label[for=\"field.distros.%d\"]')[0]" % field_id,
+                validator=u'%s (build pending)' % build_name)
+
+        # We need just a little time for the ajax call to complete
+        client.waits.sleep(milliseconds=SLEEP)
+
+        # Check that previous build is marked as pending
+        check_build_pending(0, self.squirrel.displayname)
+
+        # Now request builds for all the remaining distro series
+        client.click(id=u'field.distros.1')
+        client.click(id=u'field.distros.2')
+        client.click(name=u'field.actions.request')
+
+        # Give the new builds a chance to be queued.
+        client.waits.sleep(milliseconds=SLEEP)
+
+        distribution_set = getUtility(IDistributionSet)
+        ubuntu_hoary = distribution_set.getByName('ubuntu').getSeries('hoary')
+        ubuntu_warty = distribution_set.getByName('ubuntu').getSeries('warty')
+
+        # Ensure new builds shows up.
+        self._check_build_renders(ubuntu_hoary)
+        self._check_build_renders(ubuntu_warty)
+
+        # And open the request form again.
+        client.click(id=u'request-builds')
+        client.waits.forElement(id=u'field.archive')
+
+        # We need just a little time for the ajax call to complete
+        client.waits.sleep(milliseconds=SLEEP)
+
+        # Check that previous builds are marked as pending
+        check_build_pending(0, self.squirrel.displayname)
+        check_build_pending(1, ubuntu_hoary.displayname)
+        check_build_pending(2, ubuntu_warty.displayname)
+
+        # Check that the Request Builds button is hidden
+        client.asserts.assertNode(
+            jquery=(u"('div.yui3-lazr-formoverlay-actions button[name=\""
+                    "field.actions.request display=\"None\"\"]')"))
 
     def test_recipe_daily_build_request(self):
         """Request a recipe build."""

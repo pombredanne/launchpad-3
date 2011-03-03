@@ -902,6 +902,7 @@
                     productseries
                     bug
                     owner
+                    ownerID
                     decider
                     target
                     status
@@ -1097,14 +1098,6 @@
     <class class="lp.bugs.model.bug.FileBugData">
         <allow interface="lp.bugs.interfaces.bug.IFileBugData" />
     </class>
-
-  <class class="lp.bugs.mail.bugnotificationrecipients.BugNotificationRecipientReason">
-    <allow attributes="
-        bug
-        getReason
-        mail_header
-        recipient"/>
-  </class>
 
     <!-- StructuralSubscription -->
 
