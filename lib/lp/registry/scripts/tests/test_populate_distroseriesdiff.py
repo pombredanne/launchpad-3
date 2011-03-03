@@ -111,7 +111,7 @@ class TestFindLatestSourcePackageReleases(TestCaseWithFactory):
         primary_spr = spphs[ArchivePurpose.PRIMARY]
         query = compose_sql_find_latest_source_package_releases(distroseries)
         self.assertContentEqual(
-            [self.getExpectedResultFor(spphs[ArchivePurpose.PRIMARY])], 
+            [self.getExpectedResultFor(spphs[ArchivePurpose.PRIMARY])],
             Store.of(distroseries).execute(query))
 
     def test_does_not_find_publication_outside_release_pocket(self):
@@ -358,13 +358,17 @@ class TestFindDerivedSeries(TestCaseWithFactory):
 
 class TestComposePopulateDistroSeriesDiff(TestCaseWithFactory):
 
-    layer = ZopelessDatabaseLayer
-
 # XXX: Test!
+    layer = ZopelessDatabaseLayer
 
 
 class TestPopulateDistroSeriesDiff(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+# XXX: Test!
+    layer = ZopelessDatabaseLayer
+
+
+class TestPopulateDistroSeriesDiffScript(TestCaseWithFactory):
 
 # XXX: Test!
+    layer = DatabaseFunctionalLayer

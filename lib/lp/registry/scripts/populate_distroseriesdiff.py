@@ -27,7 +27,7 @@ def compose_sql_find_latest_source_package_releases(distroseries):
         'active_status': quote(active_publishing_status),
         'distroseries': quote(distroseries),
         'main_archive': quote(distroseries.distribution.main_archive),
-        'release_pocket': quote(PackagePublishingPocket.RELEASE)
+        'release_pocket': quote(PackagePublishingPocket.RELEASE),
     }
     return """
         SELECT DISTINCT ON (SPR.sourcepackagename)
