@@ -122,7 +122,9 @@ class AdvancedSubscriptionMixin:
         bug_notification_vocabulary = SimpleVocabulary(
             bug_notification_level_terms)
 
-        if self.current_user_subscription is not None:
+        if (self.current_user_subscription is not None and
+            self.current_user_subscription.bug_notification_level in
+                bug_notification_level_terms):
             default_value = (
                 self.current_user_subscription.bug_notification_level)
         else:
