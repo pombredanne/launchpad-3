@@ -39,8 +39,10 @@ from lp.testing import TestCaseWithFactory
 
 
 class FactoryHelper:
+    """Some helper methods for making stuff that only make sense here."""
 
     def getArchive(self, distribution, purpose):
+        """Get an existing `Archive`, or create one."""
         archive = Store.of(distribution).find(
             Archive,
             Archive.distribution == distribution,
@@ -53,6 +55,12 @@ class FactoryHelper:
     def makeSPPH(self, distroseries=None, archive_purpose=None,
                  pocket=PackagePublishingPocket.RELEASE, status=None,
                  sourcepackagerelease=None):
+        """Create a `SourcePackagePublishingHistory` for derivation.
+
+        Has slightly different defaults from the `LaunchpadObjectFactory`
+        method for this, so that the SPPH will be picked up as a
+        `DistroSeriesDifference`.
+        """
         if distroseries is None:
             distroseries = self.factory.makeDistroSeries()
 
@@ -67,15 +75,24 @@ class FactoryHelper:
             status=status, sourcepackagerelease=sourcepackagerelease)
 
     def makeDerivedDistroSeries(self):
+        """Create a `DistroSeries` that's derived from another distro."""
         return self.factory.makeDistroSeries(
             parent_series=self.factory.makeDistroSeries())
 
 
 class TestFindLatestSourcePackageReleases(TestCaseWithFactory, FactoryHelper):
+    """Test finding of latest `SourcePackageRelease`s for a series' packages.
+    """
 
     layer = ZopelessDatabaseLayer
 
     def getExpectedResultFor(self, spph):
+        """Compose what the query should return for `spph`.
+
+        :param spph: A `SourcePackagePublishingHistory`.
+        :return: The tuple of data that we'd expect the latest-spr query
+            to return for `spph`.
+        """
         spr = spph.sourcepackagerelease
         return (spr.sourcepackagenameID, spr.id, spr.version)
 
@@ -178,6 +195,7 @@ class TestFindLatestSourcePackageReleases(TestCaseWithFactory, FactoryHelper):
 
 
 class TestFindDifferences(TestCaseWithFactory, FactoryHelper):
+    """Test the finding of differences between a distroseries and parent."""
 
     layer = ZopelessDatabaseLayer
 
@@ -300,6 +318,14 @@ class TestDifferenceTypeExpression(TestCaseWithFactory):
     layer = ZopelessDatabaseLayer
 
     def selectDifferenceType(self, parent_version=None, derived_version=None):
+        """Execute the SQL expression to compute `DistroSeriesDifferenceType`.
+
+        :param parent_version: The parent series' last released version
+            of a package, if any.
+        :param derived_version: The derived series' last released
+            version of the same package, if any.
+        :return: A numeric `DistroSeriesDifferenceType` value.
+        """
         query = """
             SELECT %s FROM (
                 SELECT %s AS source_version, %s AS parent_source_version
@@ -310,7 +336,10 @@ class TestDifferenceTypeExpression(TestCaseWithFactory):
             )
         cur = cursor()
         cur.execute(query)
-        return cur.fetchall()
+        result = cur.fetchall()
+        self.assertEqual(1, len(result))
+        self.assertEqual(1, len(result[0]))
+        return result[0][0]
 
     def test_baseline(self):
         query = compose_sql_difference_type()
@@ -319,23 +348,22 @@ class TestDifferenceTypeExpression(TestCaseWithFactory):
     def test_no_parent_version_means_unique_to_derived_series(self):
         expected = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
         self.assertEqual(
-            [(expected.value, )],
-            self.selectDifferenceType(derived_version=1))
+            expected.value, self.selectDifferenceType(derived_version=1))
 
     def test_no_derived_version_means_missing_in_derived_series(self):
         expected = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
         self.assertEqual(
-            [(expected.value, )],
-            self.selectDifferenceType(parent_version=1))
+            expected.value, self.selectDifferenceType(parent_version=1))
 
     def test_two_versions_means_different_versions(self):
         expected = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
         self.assertEqual(
-            [(expected.value, )],
+            expected.value,
             self.selectDifferenceType(parent_version=1, derived_version=2))
 
 
 class TestFindDerivedSeries(TestCaseWithFactory, FactoryHelper):
+    """Test finding of all derived `DistroSeries`."""
 
     layer = ZopelessDatabaseLayer
 
@@ -355,10 +383,12 @@ class TestFindDerivedSeries(TestCaseWithFactory, FactoryHelper):
 
 
 class TestPopulateDistroSeriesDiff(TestCaseWithFactory, FactoryHelper):
+    """Test `populate_distroseriesdiff`."""
 
     layer = ZopelessDatabaseLayer
 
     def getDistroSeriesDiff(self, distroseries):
+        """Find the `DistroSeriesDifference` records for `distroseries`."""
         return Store.of(distroseries).find(
             DistroSeriesDifference,
             DistroSeriesDifference.derived_series == distroseries).one()
@@ -400,6 +430,10 @@ class TestPopulateDistroSeriesDiff(TestCaseWithFactory, FactoryHelper):
 
 
 class TestPopulateDistroSeriesDiffScript(TestCaseWithFactory):
+    """Test the `populate-distroseriesdiff` script."""
 
-# XXX: Test!
     layer = DatabaseFunctionalLayer
+
+    def test_script(self):
+# XXX: Test!
+        pass
