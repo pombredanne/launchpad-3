@@ -186,9 +186,14 @@ def authenticateEmail(mail,
     # Check that sender is registered in Launchpad and the email is signed.
     if principal is None:
         setupInteraction(authutil.unauthenticatedPrincipal())
-        return
+        return None
 
-    person = IPerson(principal)
+    # People with accounts but no related person will have a principle, but
+    # the person adaptation will fail.
+    person = IPerson(principal, None)
+    if person is None:
+        setupInteraction(authutil.unauthenticatedPrincipal())
+        return None
 
     if person.account_status != AccountStatus.ACTIVE:
         raise InactiveAccount(
