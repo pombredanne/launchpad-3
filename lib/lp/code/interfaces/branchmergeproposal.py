@@ -296,6 +296,9 @@ class IBranchMergeProposal(IPrivacy):
     def getComment(id):
         """Return the CodeReviewComment with the specified ID."""
 
+    def getRelatedBugTasks(user):
+        """Return the Bug tasks related to this merge proposal."""
+
     def getRevisionsSinceReviewStart():
         """Return all the revisions added since the review began.
 

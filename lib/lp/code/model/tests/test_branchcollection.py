@@ -613,17 +613,14 @@ class TestExtendedBranchRevisionDetails(TestCaseWithFactory):
         self.all_branches = getUtility(IAllBranches)
 
     def test_empty_revisions(self):
-        rev_details = self.all_branches.getExtendedRevisionDetails([])
+        person = self.factory.makePerson()
+        rev_details = self.all_branches.getExtendedRevisionDetails(person, [])
         self.assertEqual([], rev_details)
-        rev_details = self.all_branches.getExtendedRevisionDetails(None)
+        rev_details = self.all_branches.getExtendedRevisionDetails(
+            person, None)
         self.assertEqual([], rev_details)
 
-    def test_some_revisions(self):
-        branch = self.factory.makeBranch()
-        merge_proposals = [
-            self.factory.makeBranchMergeProposal(target_branch=branch)
-            for x in range(0, 2)]
-
+    def _makeBranchRevisions(self, merge_proposals, branch):
         expected_rev_details = []
         with person_logged_in(branch.owner):
             self.factory.makeRevisionsForBranch(branch, 3)
@@ -632,7 +629,7 @@ class TestExtendedBranchRevisionDetails(TestCaseWithFactory):
                 branch_revision = branch_revisions[x]
                 rev_info = {
                     'revision': branch_revision,
-                    'linked_bugs': None,
+                    'linked_bugtasks': None,
                     'merge_proposal': None,
                     }
                 if x < len(merge_proposals):
@@ -640,20 +637,65 @@ class TestExtendedBranchRevisionDetails(TestCaseWithFactory):
                             branch_revision.sequence)
                     rev_info['merge_proposal'] = merge_proposals[x]
                 expected_rev_details.append(rev_info)
+        return expected_rev_details, branch_revisions
+
+    def test_some_revisions_with_no_bugs(self):
+        branch = self.factory.makeBranch()
+        merge_proposals = [
+            self.factory.makeBranchMergeProposal(target_branch=branch)
+            for x in range(0, 2)]
+
+        expected_rev_details, branch_revisions = (
+            self._makeBranchRevisions(merge_proposals, branch))
 
         result = self.all_branches.getExtendedRevisionDetails(
-            branch_revisions)
+            branch.owner, branch_revisions)
         self.assertEqual(sorted(expected_rev_details), sorted(result))
 
-        linked_bugs = []
+    def test_some_revisions_with_bugs(self):
+        branch = self.factory.makeBranch()
+        merge_proposals = [
+            self.factory.makeBranchMergeProposal(target_branch=branch)
+            for x in range(0, 2)]
+
+        expected_rev_details, branch_revisions = (
+            self._makeBranchRevisions(merge_proposals, branch))
+
+        linked_bugtasks = []
         with person_logged_in(branch.owner):
             for x in range(0, 2):
                 bug = self.factory.makeBug()
                 merge_proposals[0].source_branch.linkBug(bug, branch.owner)
-                linked_bugs.append(bug)
-        expected_rev_details[0]['linked_bugs'] = linked_bugs
+                linked_bugtasks.append(bug.default_bugtask)
+        expected_rev_details[0]['linked_bugtasks'] = linked_bugtasks
         result = self.all_branches.getExtendedRevisionDetails(
-            branch_revisions)
+            branch.owner, branch_revisions)
+        self.assertEqual(sorted(expected_rev_details), sorted(result))
+
+
+    def test_some_revisions_with_private_bugs(self):
+        branch = self.factory.makeBranch()
+        merge_proposals = [
+            self.factory.makeBranchMergeProposal(target_branch=branch)
+            for x in range(0, 2)]
+
+        expected_rev_details, branch_revisions = (
+            self._makeBranchRevisions(merge_proposals, branch))
+
+        linked_bugtasks = []
+        with person_logged_in(branch.owner):
+            for x in range(0, 4):
+                private = x%2
+                bug = self.factory.makeBug(
+                    owner=branch.owner, private=private)
+                merge_proposals[0].source_branch.linkBug(bug, branch.owner)
+                if not private:
+                    linked_bugtasks.append(bug.default_bugtask)
+        expected_rev_details[0]['linked_bugtasks'] = linked_bugtasks
+
+        person = self.factory.makePerson()
+        result = self.all_branches.getExtendedRevisionDetails(
+            person, branch_revisions)
         self.assertEqual(sorted(expected_rev_details), sorted(result))
 
 
