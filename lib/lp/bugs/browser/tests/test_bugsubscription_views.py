@@ -280,6 +280,10 @@ class BugSubscriptionsListViewTestCase(TestCaseWithFactory):
             name='widgetsrus', displayname='Widgets R Us')
         self.bug = self.factory.makeBug(product=self.product)
         self.subscriber = self.factory.makePerson()
+        harness = LaunchpadFormHarness(
+            self.bug.default_bugtask, BugSubscriptionListView)
+        self.view = harness.view
+
 
     def test_identify_structural_subscriptions(self):
         # This shows simply that we can identify the structural
@@ -287,7 +291,20 @@ class BugSubscriptionsListViewTestCase(TestCaseWithFactory):
         with person_logged_in(self.subscriber):
             sub = self.product.addBugSubscription(
                 self.subscriber, self.subscriber)
-            harness = LaunchpadFormHarness(
-                self.bug.default_bugtask, BugSubscriptionListView)
             self.assertEqual(
-                list(harness.view.structural_subscriptions), [sub])
+                list(self.view.structural_subscriptions), [sub])
+
+    def test_is_directly_subscribed(self):
+        # Is the user directly subscribed to the bug.
+        with person_logged_in(self.subscriber):
+            self.assertFalse(self.view.is_directly_subscribed)
+            self.bug.subscribe(self.subscriber, self.subscriber)
+            self.assertTrue(self.view.is_directly_subscribed)
+
+    def test_is_directly_subscribed_team_is_not(self):
+        # Subscription through team membership is not
+        # a direct subscription.
+        team = self.factory.makeTeam(owner=self.subscriber)
+        with person_logged_in(self.subscriber):
+            self.bug.subscribe(team, self.subscriber)
+            self.assertFalse(self.view.is_directly_subscribed)
