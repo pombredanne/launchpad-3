@@ -221,8 +221,8 @@ class TestSessionPruner(TestCase):
 
     def sessionExists(self, client_id):
         store = IMasterStore(SessionData)
-        store.flush()
-        return not store.find(SessionData.client_id == client_id).is_empty()
+        return not store.find(
+            SessionData, SessionData.client_id == client_id).is_empty()
 
     def test_antique_session_pruner(self):
         chunk_size = 2
@@ -234,12 +234,19 @@ class TestSessionPruner(TestCase):
         finally:
             pruner.cleanUp()
 
-        self.assertTrue(self.sessionExists(u'recent_auth'))
-        self.assertTrue(self.sessionExists(u'recent_unauth'))
-        self.assertTrue(self.sessionExists(u'yesterday_auth'))
-        self.assertTrue(self.sessionExists(u'yesterday_unauth'))
-        self.assertFalse(self.sessionExists(u'ancient_auth'))
-        self.assertFalse(self.sessionExists(u'ancient_unauth'))
+        expected_sessions = set([
+            u'recent_auth',
+            u'recent_unauth',
+            u'yesterday_auth',
+            u'yesterday_unauth',
+            # u'ancient_auth',
+            # u'ancient_unauth',
+            ])
+
+        found_sessions = set(
+            IMasterStore(SessionData).find(SessionData.client_id))
+
+        self.assertEqual(expected_sessions, found_sessions)
 
     def test_unused_session_pruner(self):
         chunk_size = 2
@@ -251,12 +258,19 @@ class TestSessionPruner(TestCase):
         finally:
             pruner.cleanUp()
 
-        self.assertTrue(self.sessionExists(u'recent_auth'))
-        self.assertTrue(self.sessionExists(u'recent_unauth'))
-        self.assertTrue(self.sessionExists(u'yesterday_auth'))
-        self.assertFalse(self.sessionExists(u'yesterday_unauth'))
-        self.assertTrue(self.sessionExists(u'ancient_auth'))
-        self.assertFalse(self.sessionExists(u'ancient_unauth'))
+        expected_sessions = set([
+            u'recent_auth',
+            u'recent_unauth',
+            u'yesterday_auth',
+            # u'yesterday_unauth',
+            u'ancient_auth',
+            # u'ancient_unauth',
+            ])
+
+        found_sessions = set(
+            IMasterStore(SessionData).find(SessionData.client_id))
+
+        self.assertEqual(expected_sessions, found_sessions)
 
 
 class TestGarbo(TestCaseWithFactory):
