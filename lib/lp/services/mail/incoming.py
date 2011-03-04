@@ -143,19 +143,19 @@ def _authenticateDkim(signed_message):
     # in addition to the dkim signature being valid, we have to check that it
     # was actually signed by the user's domain.
     if len(signing_details) != 1:
-        log.errors(
+        log.info(
             'expected exactly one DKIM details record: %r'
             % (signing_details,))
         return False
     signing_domain = signing_details[0]['d']
     from_domain = extract_address_domain(signed_message['From'])
     if signing_domain != from_domain:
-        log.warning("DKIM signing domain %s doesn't match From address %s; "
+        log.info("DKIM signing domain %s doesn't match From address %s; "
             "disregarding signature"
             % (signing_domain, from_domain))
         return False
     if not _isDkimDomainTrusted(signing_domain):
-        log.warning("valid DKIM signature from untrusted domain %s"
+        log.info("valid DKIM signature from untrusted domain %s"
             % (signing_domain,))
         return False
     return True
@@ -260,13 +260,12 @@ class MailErrorUtility(ErrorReportingUtility):
 ORIGINAL_TO_HEADER = 'X-Launchpad-Original-To'
 
 
-def extract_addresses(mail, raw_mail, file_alias_url):
+def extract_addresses(mail, raw_mail, file_alias_url, log):
     # Extract the domain the mail was sent to.  Mails sent to
     # Launchpad should have an X-Launchpad-Original-To header.
     if ORIGINAL_TO_HEADER in mail:
         return [mail[ORIGINAL_TO_HEADER]]
 
-    log = logging.getLogger('lp.services.mail')
     if ORIGINAL_TO_HEADER in raw_mail:
         # Almost certainly a spam email with a blank line in the email headers
         log.info('Suspected spam: %s' % file_alias_url)
