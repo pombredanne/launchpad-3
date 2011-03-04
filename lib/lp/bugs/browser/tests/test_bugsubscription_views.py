@@ -386,3 +386,40 @@ class BugSubscriptionsListViewTestCase(TestCaseWithFactory):
         with person_logged_in(self.subscriber):
             duplicate.subscribe(team, self.subscriber)
             self.assertTrue(view.is_through_team)
+
+    def test_is_team_admin_no_team(self):
+        # A person is not a team admin if they have a direct subscription.
+        view = self.getView()
+        with person_logged_in(self.subscriber):
+            self.bug.subscribe(self.subscriber, self.subscriber)
+            self.assertFalse(view.is_team_admin)
+
+    def test_is_team_admin_no(self):
+        # A person is not a team admin if they are just a regular
+        # team member.
+        team = self.factory.makeTeam(members=[self.subscriber])
+        view = self.getView()
+        with person_logged_in(self.subscriber):
+            self.bug.subscribe(team, self.subscriber)
+            self.assertFalse(view.is_team_admin)
+
+    def test_is_team_admin(self):
+        # A person is a team admin if they are a team admin.
+        team = self.factory.makeTeam()
+        view = self.getView()
+        with person_logged_in(team.teamowner):
+            self.bug.subscribe(team, team.teamowner)
+            self.assertTrue(view.is_team_admin)
+
+    def test_is_team_admin_duplicate(self):
+        # A person is a team admin if they admin the team
+        # that is subscribed to the duplicate.
+        team = self.factory.makeTeam()
+        duplicate = self.factory.makeBug()
+        with person_logged_in(self.bug.owner):
+            duplicate.markAsDuplicate(self.bug)
+
+        view = self.getView()
+        with person_logged_in(team.teamowner):
+            duplicate.subscribe(team, team.teamowner)
+            self.assertTrue(view.is_team_admin)

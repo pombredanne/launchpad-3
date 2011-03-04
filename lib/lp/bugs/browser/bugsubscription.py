@@ -582,3 +582,11 @@ class BugSubscriptionListView(LaunchpadView):
             if subscriber.isTeam():
                 return True
         return False
+
+    @property
+    def is_team_admin(self):
+        subscribers = self.context.bug.getSubscribersForPerson(self.user)
+        for subscriber in subscribers:
+            if subscriber.isTeam() and self.user in subscriber.adminmembers:
+                return True
+        return False
