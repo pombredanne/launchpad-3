@@ -7,8 +7,8 @@ ALTER TABLE Message
 --Migrate the data, rebuilding indexes afterwards.
 UPDATE Message SET visible = FALSE
     FROM BugMessage
-    WHERE BugMessage.message = Message.id AND BugMessage.visible IS FALSE
-CLUSTER Message USING message_pkey
+    WHERE BugMessage.message = Message.id AND BugMessage.visible IS FALSE;
+CLUSTER Message USING message_pkey;
 
 --And kill the old column
 ALTER TABLE BugMessage
