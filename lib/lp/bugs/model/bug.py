@@ -927,18 +927,17 @@ BugMessage""" % sqlvalues(self.id))
             else:
                 self._subscriber_dups_cache.add(subscriber)
             return subscriber
-        return DecoratedResultSet(Store.of(self).find(
-            # XXX: RobertCollins 2010-09-22 bug=374777: This SQL(...) is a
-            # hack; it does not seem to be possible to express DISTINCT ON
-            # with Storm.
-            (SQL("DISTINCT ON (Person.name, BugSubscription.person) "
-                 "0 AS ignore"),
-             # Return people and subscriptions
-             Person, BugSubscription),
-            # For this bug or its duplicates
-            Or(
-                Bug.id == self.id,
-                Bug.duplicateof == self.id),
+
+        clauses = []
+        if only_duplicates:
+            clauses.append(Bug.duplicateof == self.id)
+        else:
+            clauses.append(
+                Or(
+                    Bug.id == self.id,
+                    Bug.duplicateof == self.id))
+
+        clauses.extend([
             # Get subscriptions for these bugs
             BugSubscription.bug_id == Bug.id,
             # Filter by subscriptions to any team person is in.
@@ -948,6 +947,17 @@ BugMessage""" % sqlvalues(self.id))
             TeamParticipation.teamID == BugSubscription.person_id,
             # Join in the Person rows we want
             Person.id == TeamParticipation.teamID,
+            ])
+
+        return DecoratedResultSet(Store.of(self).find(
+            # XXX: RobertCollins 2010-09-22 bug=374777: This SQL(...) is a
+            # hack; it does not seem to be possible to express DISTINCT ON
+            # with Storm.
+            (SQL("DISTINCT ON (Person.name, BugSubscription.person) "
+                 "0 AS ignore"),
+             # Return people and subscriptions
+             Person, BugSubscription),
+            *clauses
             ).order_by(Person.name),
             cache_subscriber, pre_iter_hook=cache_unsubscribed)
 
