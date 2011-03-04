@@ -410,7 +410,7 @@ class CopyChecker:
                 raise CannotCopy('source contains expired files')
 
         if self.include_binaries:
-            built_binaries = source.getBuiltBinaries()
+            built_binaries = source.getBuiltBinaries(want_files=True)
             if len(built_binaries) == 0:
                 raise CannotCopy("source has no binaries to be copied")
             # Deny copies of binary publications containing files with

@@ -464,40 +464,51 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 for source, binary_pub, binary, binary_name, arch
                 in result_set]
 
-    def getBuiltBinaries(self):
+    def getBuiltBinaries(self, want_files=False):
         """See `ISourcePackagePublishingHistory`."""
-        clauses = """
-            BinaryPackagePublishingHistory.binarypackagerelease=
-                BinaryPackageRelease.id AND
-            BinaryPackagePublishingHistory.distroarchseries=
-                DistroArchSeries.id AND
-            BinaryPackageRelease.build=BinaryPackageBuild.id AND
-            BinaryPackageBuild.source_package_release=%s AND
-            DistroArchSeries.distroseries=%s AND
-            BinaryPackagePublishingHistory.archive=%s AND
-            BinaryPackagePublishingHistory.pocket=%s
-        """ % sqlvalues(self.sourcepackagerelease, self.distroseries,
-                        self.archive, self.pocket)
+        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+        binary_publications = list(Store.of(self).find(
+            BinaryPackagePublishingHistory,
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageRelease.id,
+            BinaryPackagePublishingHistory.distroarchseriesID ==
+                DistroArchSeries.id,
+            BinaryPackagePublishingHistory.archiveID == self.archiveID,
+            BinaryPackagePublishingHistory.pocket == self.pocket,
+            BinaryPackageBuild.id == BinaryPackageRelease.buildID,
+            BinaryPackageBuild.source_package_release_id ==
+                self.sourcepackagereleaseID,
+            DistroArchSeries.distroseriesID == self.distroseriesID))
 
-        clauseTables = [
-            'BinaryPackageBuild', 'BinaryPackageRelease', 'DistroArchSeries']
-        orderBy = ['-BinaryPackagePublishingHistory.id']
-        preJoins = ['binarypackagerelease']
+        # Preload attached BinaryPackageReleases.
+        bpr_ids = set(
+            pub.binarypackagereleaseID for pub in binary_publications)
+        list(Store.of(self).find(
+            BinaryPackageRelease, BinaryPackageRelease.id.is_in(bpr_ids)))
 
-        results = BinaryPackagePublishingHistory.select(
-            clauses, orderBy=orderBy, clauseTables=clauseTables,
-            prejoins=preJoins)
-        binary_publications = list(results)
+        if want_files:
+            # Preload BinaryPackageFiles.
+            bpfs = list(Store.of(self).find(
+                BinaryPackageFile,
+                BinaryPackageFile.binarypackagereleaseID.is_in(bpr_ids)))
+            bpfs_by_bpr = defaultdict(list)
+            for bpf in bpfs:
+                bpfs_by_bpr[bpf.binarypackagerelease].append(bpf)
+            for bpr in bpfs_by_bpr:
+                get_property_cache(bpr).files = bpfs_by_bpr[bpr]
 
-        unique_binary_ids = set(
-            [pub.binarypackagerelease.id for pub in binary_publications])
+            # Preload LibraryFileAliases.
+            lfa_ids = set(bpf.libraryfileID for bpf in bpfs)
+            list(Store.of(self).find(
+                LibraryFileAlias, LibraryFileAlias.id.is_in(lfa_ids)))
 
         unique_binary_publications = []
         for pub in binary_publications:
-            if pub.binarypackagerelease.id in unique_binary_ids:
+            if pub.binarypackagerelease.id in bpr_ids:
                 unique_binary_publications.append(pub)
-                unique_binary_ids.remove(pub.binarypackagerelease.id)
-                if len(unique_binary_ids) == 0:
+                bpr_ids.remove(pub.binarypackagerelease.id)
+                if len(bpr_ids) == 0:
                     break
 
         return unique_binary_publications
