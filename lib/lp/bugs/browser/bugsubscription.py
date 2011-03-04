@@ -567,3 +567,7 @@ class BugSubscriptionListView(LaunchpadView):
     @property
     def is_reporter(self):
         return self.context.bug.owner == self.user
+
+    @property
+    def is_from_duplicate(self):
+        return False

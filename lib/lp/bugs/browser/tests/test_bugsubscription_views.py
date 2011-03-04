@@ -284,7 +284,6 @@ class BugSubscriptionsListViewTestCase(TestCaseWithFactory):
             self.bug.default_bugtask, BugSubscriptionListView)
         self.view = harness.view
 
-
     def test_identify_structural_subscriptions(self):
         # This shows simply that we can identify the structural
         # subscriptions for the page.  The content will come later.
@@ -318,3 +317,13 @@ class BugSubscriptionsListViewTestCase(TestCaseWithFactory):
         # A person different from a bug owner is not the reporter.
         with person_logged_in(self.subscriber):
             self.assertFalse(self.view.is_reporter)
+
+    def test_is_from_duplicate(self):
+        # Is a person subscribed through a duplicate.
+        duplicate = self.factory.makeBug()
+        with person_logged_in(self.bug.owner):
+            duplicate.markAsDuplicate(self.bug)
+
+        with person_logged_in(self.subscriber):
+            duplicate.subscribe(self.subscriber, self.subscriber)
+            self.assertTrue(self.view.is_from_duplicate)
