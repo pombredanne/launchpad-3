@@ -31,7 +31,10 @@ from lp.registry.scripts.populate_distroseriesdiff import (
     populate_distroseriesdiff,
     PopulateDistroSeriesDiff,
     )
-from lp.services.log.logger import DevNullLogger
+from lp.services.log.logger import (
+    BufferLogger,
+    DevNullLogger,
+    )
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     inactive_publishing_status,
@@ -501,3 +504,12 @@ class TestPopulateDistroSeriesDiffScript(TestCaseWithFactory, FactoryHelper):
         script.main()
         self.assertContentEqual(
             [], self.getDistroSeriesDiff(spph.distroseries))
+
+    def test_list(self):
+        spph = self.makeSPPH(distroseries=self.makeDerivedDistroSeries())
+        script = self.makeScript(['--list'])
+        script.logger = BufferLogger()
+        script.main()
+        expected_series_name = "%s %s" % (
+            spph.distroseries.distribution.name, spph.distroseries.name)
+        self.assertIn(expected_series_name, script.logger.getLogBuffer())

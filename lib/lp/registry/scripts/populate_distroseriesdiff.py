@@ -221,8 +221,10 @@ def find_derived_series():
 
 
 class PopulateDistroSeriesDiff(LaunchpadScript):
+    """Populate `DistroSeriesDifference` for pre-existing differences."""
 
     def add_my_options(self):
+        """Register options specific to this script."""
         self.parser.add_options([
             Option(
                 '-a', '--all', dest='all', action='store_true', default=False,
@@ -230,6 +232,9 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
             Option(
                 '-d', '--distribution', dest='distribution', default=None,
                 help="Derived distribution."),
+            Option(
+                '-l', '--list', dest='list', action='store_true',
+                default=False, help="List derived distroseries, then exit."),
             Option(
                 '-s', '--series', dest='series', default=None,
                 help="Derived distribution series."),
@@ -269,7 +274,15 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
         else:
             transaction.commit()
 
-    def main(self):
+    def listDerivedSeries(self):
+        """Log all `DistroSeries` that the --all option would cover."""
+        for series in self.getDistroSeries():
+            self.logger.info("%s %s", series.distribution.name, series.name)
+
+    def checkOptions(self):
+        """Verify command-line options."""
+        if self.options.list:
+            return
         specified_distro = (self.options.distribution is not None)
         specified_series = (self.options.series is not None)
         if specified_distro != specified_series:
@@ -278,6 +291,15 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
         if specified_distro == self.options.all:
             raise OptionValueError(
                 "Either specify a distribution series, or use --all.")
+
+    def main(self):
+        """Do the script's work."""
+        self.checkOptions()
+
+        if self.options.list:
+            self.options.all = True
+            self.listDerivedSeries()
+            return
 
         if self.options.dry_run:
             self.logger.info("Dry run requested.  Not committing changes.")
