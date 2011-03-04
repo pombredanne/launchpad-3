@@ -535,7 +535,7 @@ class TestBranchView(BrowserTestCase):
             .*
             Testing the email address in revisions\n
             email Bob \(bob@example.com\) for details.
-            Merged branch %s with linked bugs
+            Merged branch %s
             %s
             """ % (branch_display_name, linked_bug_rendered_text)
 

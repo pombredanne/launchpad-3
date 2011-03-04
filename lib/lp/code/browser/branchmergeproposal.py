@@ -683,7 +683,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     @cachedproperty
     def linked_bugtasks(self):
         """Return BugTasks linked to the source branch."""
-        return self.context.source_branch.getLinkedBugTasks(self.user)
+        return self.context.getRelatedBugTasks(self.user)
 
     @property
     def edit_description_link_class(self):
