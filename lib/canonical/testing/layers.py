@@ -116,7 +116,7 @@ from lp.testing import ANONYMOUS, login, logout, is_logged_in
 import lp.services.mail.stub
 from lp.services.mail.mailbox import TestMailBox
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.testing.tests.googleserviceharness import (
+from lp.services.search.tests.googleserviceharness import (
     GoogleServiceTestSetup)
 from canonical.launchpad.webapp.interfaces import (
         DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
