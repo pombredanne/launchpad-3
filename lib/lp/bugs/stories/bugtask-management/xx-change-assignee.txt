@@ -138,7 +138,7 @@ Once no_priv is a member of a team, the option is shown.
     >>> user_browser.getControl("Save Changes", index=0).click()
     >>> print_errors(user_browser.contents)
 
-But if he treis to set other persons or teams, he gets an error message.
+But if he tries to set other persons or teams, he gets an error message.
 
     >>> user_browser.open("http://bugs.launchpad.dev/jokosher/+bug/11")
     >>> assignee_control = user_browser.getControl(
