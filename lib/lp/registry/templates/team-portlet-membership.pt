@@ -139,7 +139,7 @@
       <td id="recently-proposed"
           tal:attributes="class view/recently_proposed_hidden">
         <h3>Pending approval</h3>
-        
+
         <ul id="recently-proposed-ul">
           <li tal:repeat="person view/recently_proposed_members"
               tal:content="structure person/fmt:link" />
