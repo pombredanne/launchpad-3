@@ -26,7 +26,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
 from zope.interface import (
-    alsoProvides,
+    implements,
     Interface,
     )
 from zope.lifecycleevent import ObjectCreatedEvent
@@ -530,7 +530,7 @@ class DistroSeriesAddView(LaunchpadFormView):
         return canonical_url(self.context)
 
 
-def derived_from_series_source(context):
+class DistroSeriesDerivationVocabularyFactory:
     """A vocabulary source for series to derive from.
 
     Once a distribution has a series that has derived from a series in another
@@ -544,34 +544,37 @@ def derived_from_series_source(context):
     It is permissible for a distribution to have both derived and non-derived
     series at the same time.
     """
-    all_serieses = getUtility(IDistroSeriesSet).search()
-    context_serieses = set(IDistribution(context))
-    if len(context_serieses) == 0:
-        # Derive from any series.
-        serieses = set(all_serieses)
-    else:
-        for series in context_serieses:
-            if (series.parent_series is not None and
-                series.parent_series not in context_serieses):
-                # Derive only from series in the same distribution as other
-                # derived series in this distribution.
-                serieses = set(series.parent_series.distribution)
-                break
-        else:
-            # Derive from any series, except those in this distribution.
-            serieses = set(all_serieses) - context_serieses
-    # Sort the series before generating the vocabulary. We want newest series
-    # first so we must compose the key with the difference from a reference
-    # date to the creation date.
-    reference = datetime.now(utc)
-    serieses = sorted(
-        serieses, key=lambda series: (
-            series.distribution.displayname,
-            reference - series.date_created))
-    return SimpleVocabulary(
-        [DistroSeriesVocabulary.toTerm(series) for series in serieses])
 
-alsoProvides(derived_from_series_source, IContextSourceBinder)
+    implements(IContextSourceBinder)
+
+    def __call__(self, context):
+        """Return a vocabulary tailored to `context`."""
+        all_serieses = getUtility(IDistroSeriesSet).search()
+        context_serieses = set(IDistribution(context))
+        if len(context_serieses) == 0:
+            # Derive from any series.
+            serieses = set(all_serieses)
+        else:
+            for series in context_serieses:
+                if (series.parent_series is not None and
+                    series.parent_series not in context_serieses):
+                    # Derive only from series in the same distribution as
+                    # other derived series in this distribution.
+                    serieses = set(series.parent_series.distribution)
+                    break
+            else:
+                # Derive from any series, except those in this distribution.
+                serieses = set(all_serieses) - context_serieses
+        # Sort the series before generating the vocabulary. We want newest
+        # series first so we must compose the key with the difference from a
+        # reference date to the creation date.
+        reference = datetime.now(utc)
+        serieses = sorted(
+            serieses, key=lambda series: (
+                series.distribution.displayname,
+                reference - series.date_created))
+        return SimpleVocabulary(
+            [DistroSeriesVocabulary.toTerm(series) for series in serieses])
 
 
 class IDistroSeriesInitializeForm(IDistroSeries):
@@ -579,7 +582,7 @@ class IDistroSeriesInitializeForm(IDistroSeries):
     derived_from_series = Choice(
         title=_('Derived from distribution series'),
         default=None,
-        source=derived_from_series_source,
+        source=DistroSeriesDerivationVocabularyFactory(),
         description=_(
             "Select the distribution series you "
             "want to derive from."),
