@@ -16,25 +16,25 @@ from canonical.launchpad.interfaces.lpstorm import (
     ISlaveStore,
     IStore,
     )
-from lp.services.session.interfaces import ISessionStormClass
+from lp.services.session.interfaces import IUseSessionStore
 
 
-@adapter(ISessionStormClass)
+@adapter(IUseSessionStore)
 @implementer(IMasterStore)
 def session_master_store(cls):
-    """Adapt a Session database class to an `IMasterStore`."""
+    """Adapt a Session database object to an `IMasterStore`."""
     return session_store()
 
 
-@adapter(ISessionStormClass)
+@adapter(IUseSessionStore)
 @implementer(ISlaveStore)
 def session_slave_store(cls):
-    """Adapt a Session database class to an `ISlaveStore`."""
+    """Adapt a Session database object to an `ISlaveStore`."""
     return session_store()
 
 
-@adapter(ISessionStormClass)
+@adapter(IUseSessionStore)
 @implementer(IStore)
 def session_default_store(cls):
-    """Adapt an Session database class to an `IStore`."""
+    """Adapt an Session database object to an `IStore`."""
     return session_store()

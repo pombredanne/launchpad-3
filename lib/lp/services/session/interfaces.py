@@ -4,12 +4,12 @@
 """Session interfaces."""
 
 __metaclass__ = type
-__all__ = ['ISessionStormClass']
+__all__ = ['IUseSessionStore']
 
 
 from zope.interface import Interface
 
 
-class ISessionStormClass(Interface):
-    """Marker interface for Session Storm database classes."""
+class IUseSessionStore(Interface):
+    """Marker interface for Session Storm database classes and instances."""
     pass
