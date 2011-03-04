@@ -5,5 +5,13 @@
 <configure xmlns="http://namespaces.zope.org/zope">
     <include package="lp.archivepublisher.zcml"
              file="archivesigningkey.zcml" />
+
+    <securedutility
+        class="lp.archivepublisher.model.publisherconfig.PublisherConfigSet"
+        provides="lp.archivepublisher.interfaces.publisherconfig.IPublisherConfigSet">
+        <allow
+            interface="lp.archivepublisher.interfaces.publisherconfig.IPublisherConfigSet"/>
+    </securedutility>
+
 </configure>
 
