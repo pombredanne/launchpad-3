@@ -13,12 +13,10 @@ __all__ = [
 
 from operator import attrgetter
 
-from sqlobject.sqlbuilder import SQLConstant
 from storm.locals import (
     And,
     Desc,
     Select,
-    SQL,
     Store,
     )
 from zope.component import getUtility

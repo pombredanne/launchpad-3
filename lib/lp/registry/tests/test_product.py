@@ -356,6 +356,7 @@ class BugSupervisorTestCase(TestCaseWithFactory):
             self.person.name, self.product.name,
             self.product.bug_supervisor.name))
 
+
 class TestWebService(WebServiceTestCase):
 
     def test_translations_usage(self):
