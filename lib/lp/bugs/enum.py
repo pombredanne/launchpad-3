@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'BugNotificationLevel',
+    'HIDDEN_BUG_NOTIFICATION_LEVELS',
     ]
 
 from lazr.enum import (
@@ -47,3 +48,7 @@ class BugNotificationLevel(DBEnumeratedType):
         notifications about new events in the bugs's discussion, like new
         comments.
         """)
+
+
+# The set of bug notification levels that won't be displayed in the UI.
+HIDDEN_BUG_NOTIFICATION_LEVELS = [BugNotificationLevel.NOTHING]
