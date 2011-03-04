@@ -1425,11 +1425,18 @@ class TestPublishBinary(TestCaseWithFactory):
             'pocket': PackagePublishingPocket.BACKPORTS,
             }
 
-    def test_simple(self):
+    def test_architecture_dependent(self):
         # Architecture-dependent binaries get created as PENDING in the
-        # destination DAS and pocket, with the given overrides.
-        bpr = self.factory.makeBinaryPackageRelease()
-        target_das = self.factory.makeDistroArchSeries()
+        # corresponding architecture of the destination series and pocket,
+        # with the given overrides.
+        arch_tag = self.factory.getUniqueString('arch-')
+        orig_das = self.factory.makeDistroArchSeries(
+            architecturetag=arch_tag)
+        target_das = self.factory.makeDistroArchSeries(
+            architecturetag=arch_tag)
+        build = self.factory.makeBinaryPackageBuild(distroarchseries=orig_das)
+        bpr = self.factory.makeBinaryPackageRelease(
+            build=build, architecturespecific=True)
         args = self.makeArgs(bpr, target_das.distroseries)
         [new_bpph] = getUtility(IPublishingSet).publishBinary(**args)
         keys, values = zip(*args.items())
