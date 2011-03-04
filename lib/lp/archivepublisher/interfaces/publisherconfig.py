@@ -48,6 +48,9 @@ class IPublisherConfig(Interface):
 class IPublisherConfigSet(Interface):
     """`PublisherConfigSet` interface."""
 
+    def new(distribution, root_dir, base_url, copy_base_url):
+        """Create a new `PublisherConfig`."""
+
     def getByDistribution(distribution):
         """Get the config for a a distribution.
 

@@ -49,6 +49,13 @@ class PublisherConfigSet:
     implements(IPublisherConfigSet)
     title = "Soyuz Publisher Configurations"
 
+    def new(distribution, root_dir, base_url, copy_base_url):
+        return PublisherConfig(
+            distribution=distribution,
+            root_dir=root_dir,
+            base_url=base_url,
+            copy_base_url=copy_base_url
+            )
     def getByDistribution(self, distribution):
         """See `IArchiveAuthTokenSet`."""
         store = IMasterStore(PublisherConfig)
