@@ -48,9 +48,9 @@ class TestBug(TestCaseWithFactory):
             bug.subscribe(team1, person)
             bug.subscribe(team2, person)
             bug.subscribe(person, person)
-        self.assertEqual(
-            set([person, team1, team2]),
-            set(bug.getSubscribersForPerson(person)))
+        self.assertContentEqual(
+            [person, team1, team2],
+            bug.getSubscribersForPerson(person))
 
     def test_get_subscribers_for_person_from_duplicates_too(self):
         bug = self.factory.makeBug()
@@ -63,9 +63,24 @@ class TestBug(TestCaseWithFactory):
             bug.subscribe(team2, person)
             bug.subscribe(person, person)
             bug.markAsDuplicate(real_bug)
-        self.assertEqual(
-            set([person, team1, team2]),
-            set(real_bug.getSubscribersForPerson(person)))
+        self.assertContentEqual(
+            [person, team1, team2],
+            real_bug.getSubscribersForPerson(person))
+
+    def test_get_subscribers_for_person_from_duplicates_only(self):
+        bug = self.factory.makeBug()
+        real_bug = self.factory.makeBug()
+        person = self.factory.makePerson()
+        team1 = self.factory.makeTeam(members=[person])
+        team2 = self.factory.makeTeam(members=[person])
+        with person_logged_in(person):
+            real_bug.subscribe(team1, person)
+            bug.subscribe(team2, person)
+            bug.subscribe(person, person)
+            bug.markAsDuplicate(real_bug)
+        self.assertContentEqual(
+            [person, team2],
+            real_bug.getSubscribersForPerson(person, only_duplicates=True))
 
     def test_getSubscriptionsFromDuplicates(self):
         # getSubscriptionsFromDuplicates() will return only the earliest
