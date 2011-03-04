@@ -29,8 +29,10 @@ from sqlobject import (
     StringCol,
     )
 from storm.expr import (
+    And,
     Desc,
     LeftJoin,
+    Or,
     Sum,
     )
 from storm.store import Store
@@ -1313,7 +1315,31 @@ class PublishingSet:
     def publishBinaries(self, archive, distroseries, pocket,
                         bprs_and_overrides):
         """See `IPublishingSet`."""
+        # Expand the list of binaries to include the architecture.
         expanded = expand_binary_requests(distroseries, bprs_and_overrides)
+
+        # Find existing publications.
+        # We should really be able to just compare BPR.id, but
+        # CopyChecker doesn't seem to ensure that there are no
+        # conflicting binaries from other sources.
+        candidates = (And(
+                BinaryPackagePublishingHistory.distroarchseriesID == das.id,
+                BinaryPackageRelease.binarypackagenameID ==
+                    bpr.binarypackagenameID,
+                BinaryPackageRelease.version == bpr.version)
+             for das, bpr, c, s, p in expanded)
+        already_published = IMasterStore(BinaryPackagePublishingHistory).find(
+            (BinaryPackagePublishingHistory.distroarchseriesID,
+             BinaryPackageRelease.binarypackagenameID,
+             BinaryPackageRelease.version),
+            BinaryPackagePublishingHistory.archiveID == archive.id,
+            BinaryPackagePublishingHistory.pocket == pocket,
+            BinaryPackagePublishingHistory.status.is_in(
+                active_publishing_status),
+            BinaryPackageRelease.id ==
+                BinaryPackagePublishingHistory.binarypackagereleaseID,
+            Or(*candidates)).config(distinct=True)
+        already_published = frozenset(already_published)
 
         publications = []
         for das, bpr, component, section, priority in expanded:
@@ -1325,11 +1351,8 @@ class PublishingSet:
             # We only publish the binary if it doesn't already exist in
             # the destination. Note that this means we don't support
             # override changes on their own.
-            binaries_in_destination = archive.getAllPublishedBinaries(
-                name=bpr.name, exact_match=True, version=bpr.version,
-                status=active_publishing_status, pocket=pocket,
-                distroarchseries=das)
-            if not bool(binaries_in_destination):
+            if (das.id, bpr.binarypackagenameID, bpr.version) \
+                not in already_published:
                 publications.append(
                     getUtility(IPublishingSet).newBinaryPublication(
                         archive, bpr, das, component, section, priority,
