@@ -101,9 +101,9 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.sorting import sorted_version_numbers
 from lp.app.enums import ServiceUsage
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
-from lp.archiveuploader.publisherconfig import IPublisherConfig
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
@@ -3862,7 +3862,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             base_url = self.getUniqueString()
         if copy_base_url is None:
             copy_base_url = self.getUniqueString()
-        return getUtility(IPublisherConfig).new(
+        return getUtility(IPublisherConfigSet).new(
             distribution, root_dir, base_url, copy_base_url)
 
 

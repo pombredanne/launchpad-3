@@ -14,7 +14,7 @@ from storm.locals import (
     Int,
     Reference,
     Storm,
-    Unicode,
+    RawStr,
     )
 from zope.interface import implements
 
@@ -37,11 +37,11 @@ class PublisherConfig(Storm):
     distribution_id = Int(name='distribution', allow_none=False)
     distribution = Reference(distribution_id, 'Distribution.id')
 
-    root_dir = Unicode(name='root_dir', allow_none=False)
+    root_dir = RawStr(name='root_dir', allow_none=False)
 
-    base_url = Unicode(name='base_url', allow_none=False)
+    base_url = RawStr(name='base_url', allow_none=False)
 
-    copy_base_url = Unicode(name='copy_base_url', allow_none=False)
+    copy_base_url = RawStr(name='copy_base_url', allow_none=False)
 
 
 class PublisherConfigSet:
@@ -49,13 +49,17 @@ class PublisherConfigSet:
     implements(IPublisherConfigSet)
     title = "Soyuz Publisher Configurations"
 
-    def new(distribution, root_dir, base_url, copy_base_url):
-        return PublisherConfig(
-            distribution=distribution,
-            root_dir=root_dir,
-            base_url=base_url,
-            copy_base_url=copy_base_url
-            )
+    def new(self, distribution, root_dir, base_url, copy_base_url):
+        """Make and return a new `PublisherConfig`."""
+        store = IMasterStore(PublisherConfig)
+        pubconf = PublisherConfig()
+        pubconf.distribution = distribution
+        pubconf.root_dir = root_dir
+        pubconf.base_url = base_url
+        pubconf.copy_base_url = copy_base_url
+        store.add(pubconf)
+        return pubconf
+
     def getByDistribution(self, distribution):
         """See `IArchiveAuthTokenSet`."""
         store = IMasterStore(PublisherConfig)

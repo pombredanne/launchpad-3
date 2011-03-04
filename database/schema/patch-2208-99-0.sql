@@ -2,8 +2,7 @@ SET client_min_messages=ERROR;
 
 CREATE TABLE PublisherConfig (
     id serial PRIMARY KEY,
-    distribution NOT NULL
-        CONSTRAINT publisherconfig__distribution__fk REFERENCES distribution,
+    distribution integer NOT NULL CONSTRAINT publisherconfig__distribution__fk REFERENCES distribution,
     root_dir text NOT NULL,
     base_url text NOT NULL,
     copy_base_url text NOT NULL

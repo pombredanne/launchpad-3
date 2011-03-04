@@ -1,0 +1,49 @@
+# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+"""Tests for publisherConfig model class."""
+
+__metaclass__ = type
+
+
+from zope.interface.verify import verifyObject
+from zope.component import getUtility
+
+from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.archivepublisher.interfaces.publisherconfig import (
+    IPublisherConfig,
+    IPublisherConfigSet,
+    )
+from lp.testing import TestCaseWithFactory
+
+
+class TestPublisherConfig(TestCaseWithFactory):
+    """Test the `PublisherConfig` model."""
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.distribution = self.factory.makeDistribution(name='conftest')
+
+    def test_verify_interface(self):
+        # Test the interface for the model.
+        pubconf = self.factory.makePublisherConfig()
+        verified = verifyObject(IPublisherConfig, pubconf)
+        self.assertTrue(verified)
+
+    def test_properties(self):
+        # Test the model properties.
+        ROOT_DIR = "rootdir/test"
+        BASE_URL = "http://base.url"
+        COPY_BASE_URL = "http://base.url"
+        pubconf = self.factory.makePublisherConfig(
+            distribution=self.distribution,
+            root_dir=ROOT_DIR,
+            base_url=BASE_URL,
+            copy_base_url=COPY_BASE_URL,
+            )
+
+        self.assertEqual(self.distribution.name, pubconf.distribution.name)
+        self.assertEqual(ROOT_DIR, pubconf.root_dir)
+        self.assertEqual(BASE_URL, pubconf.base_url)
+        self.assertEqual(COPY_BASE_URL, pubconf.copy_base_url)
