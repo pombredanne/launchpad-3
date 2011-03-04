@@ -6,12 +6,12 @@
   xmlns="http://namespaces.zope.org/zope">
 
   <class
-    class="canonical.launchpad.utilities.PageMatch">
+    class="lp.services.search.google.PageMatch">
     <allow interface="lp.services.search.interfaces.ISearchResult" />
   </class>
 
   <class
-    class="canonical.launchpad.utilities.PageMatches">
+    class="lp.services.search.google.PageMatches">
     <allow interface="lp.services.search.interfaces.ISearchResults" />
   </class>
 
