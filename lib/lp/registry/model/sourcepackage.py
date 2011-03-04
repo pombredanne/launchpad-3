@@ -530,11 +530,12 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                 sqlvalues(self.distroseries, self.sourcepackagename))
 
     def setPackaging(self, productseries, owner):
+        """See `ISourcePackage`."""
         target = self.direct_packaging
         if target is not None:
             # we should update the current packaging
             target.productseries = productseries
-            target.owner = user
+            target.owner = owner
             target.datecreated = UTC_NOW
         else:
             # ok, we need to create a new one
@@ -547,8 +548,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         flush_database_updates()
 
     def deletePackaging(self):
+        """See `ISourcePackage`."""
         if self.direct_packaging is None:
-            return None
+            return
         self.direct_packaging.destroySelf()
 
     def __hash__(self):

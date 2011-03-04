@@ -20,7 +20,10 @@ from lp.registry.interfaces.productseries import (
     IProductSeries,
     IProductSeriesSet,
     )
-from lp.testing import TestCaseWithFactory, WebServiceTestCase
+from lp.testing import (
+    TestCaseWithFactory,
+    WebServiceTestCase,
+    )
 from lp.testing.matchers import DoesNotSnapshot
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
