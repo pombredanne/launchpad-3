@@ -512,7 +512,7 @@ class IBug(IPrivacy, IHasLinkedBranches):
     def getSubscribersFromDuplicates():
         """Return IPersons subscribed from dupes of this bug."""
 
-    def getSubscribersForPerson(person):
+    def getSubscribersForPerson(person, only_duplicates=False):
         """Find the persons or teams by which person is subscribed.
 
         This call should be quite cheap to make and performs a single query.

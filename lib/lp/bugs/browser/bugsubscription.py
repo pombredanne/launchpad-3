@@ -570,4 +570,7 @@ class BugSubscriptionListView(LaunchpadView):
 
     @property
     def is_from_duplicate(self):
-        return self.context.bug.isSubscribedToDupes(self.user)
+        return (
+            self.context.bug.isSubscribedToDupes(self.user) or
+            self.context.bug.getSubscribersForPerson(
+                self.user, only_duplicates=True).any())
