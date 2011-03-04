@@ -43,24 +43,25 @@ class TestGoogleSearchService(TestCase):
 
     layer = FunctionalLayer
 
+    def setUp(self):
+        super(TestGoogleSearchService, self).setUp()
+        self.search_service = GoogleSearchService()
+
     def test_search_converts_HTTPError(self):
         # The method converts HTTPError to GoogleResponseError.
-        search_service = GoogleSearchService()
         args = ('url', 500, 'oops', {}, None)
         with urlfetch_exception(HTTPError, *args):
             self.assertRaises(
-                GoogleResponseError, search_service.search, 'fnord')
+                GoogleResponseError, self.search_service.search, 'fnord')
 
     def test_search_converts_URLError(self):
         # The method converts URLError to GoogleResponseError.
-        search_service = GoogleSearchService()
         with urlfetch_exception(URLError, 'oops'):
             self.assertRaises(
-                GoogleResponseError, search_service.search, 'fnord')
+                GoogleResponseError, self.search_service.search, 'fnord')
 
     def test_search_converts_TimeoutError(self):
         # The method converts TimeoutError to GoogleResponseError.
-        search_service = GoogleSearchService()
         with urlfetch_exception(TimeoutError, 'oops'):
             self.assertRaises(
-                GoogleResponseError, search_service.search, 'fnord')
+                GoogleResponseError, self.search_service.search, 'fnord')
