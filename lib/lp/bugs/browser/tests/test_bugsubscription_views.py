@@ -280,43 +280,50 @@ class BugSubscriptionsListViewTestCase(TestCaseWithFactory):
             name='widgetsrus', displayname='Widgets R Us')
         self.bug = self.factory.makeBug(product=self.product)
         self.subscriber = self.factory.makePerson()
+
+    def getView(self):
         harness = LaunchpadFormHarness(
             self.bug.default_bugtask, BugSubscriptionListView)
-        self.view = harness.view
+        return harness.view
 
     def test_identify_structural_subscriptions(self):
         # This shows simply that we can identify the structural
         # subscriptions for the page.  The content will come later.
+        view = self.getView()
         with person_logged_in(self.subscriber):
             sub = self.product.addBugSubscription(
                 self.subscriber, self.subscriber)
             self.assertEqual(
-                list(self.view.structural_subscriptions), [sub])
+                list(view.structural_subscriptions), [sub])
 
     def test_is_directly_subscribed(self):
         # Is the user directly subscribed to the bug.
+        view = self.getView()
         with person_logged_in(self.subscriber):
-            self.assertFalse(self.view.is_directly_subscribed)
+            self.assertFalse(view.is_directly_subscribed)
             self.bug.subscribe(self.subscriber, self.subscriber)
-            self.assertTrue(self.view.is_directly_subscribed)
+            self.assertTrue(view.is_directly_subscribed)
 
     def test_is_directly_subscribed_team_is_not(self):
         # Subscription through team membership is not
         # a direct subscription.
         team = self.factory.makeTeam(owner=self.subscriber)
+        view = self.getView()
         with person_logged_in(self.subscriber):
             self.bug.subscribe(team, self.subscriber)
-            self.assertFalse(self.view.is_directly_subscribed)
+            self.assertFalse(view.is_directly_subscribed)
 
     def test_is_reporter(self):
         # Bug owner is the actual reporter of the bug.
+        view = self.getView()
         with person_logged_in(self.bug.owner):
-            self.assertTrue(self.view.is_reporter)
+            self.assertTrue(view.is_reporter)
 
     def test_is_reporter_not(self):
         # A person different from a bug owner is not the reporter.
+        view = self.getView()
         with person_logged_in(self.subscriber):
-            self.assertFalse(self.view.is_reporter)
+            self.assertFalse(view.is_reporter)
 
     def test_is_from_duplicate(self):
         # Is a person subscribed through a duplicate.
@@ -324,6 +331,20 @@ class BugSubscriptionsListViewTestCase(TestCaseWithFactory):
         with person_logged_in(self.bug.owner):
             duplicate.markAsDuplicate(self.bug)
 
+        view = self.getView()
         with person_logged_in(self.subscriber):
             duplicate.subscribe(self.subscriber, self.subscriber)
-            self.assertTrue(self.view.is_from_duplicate)
+            self.assertTrue(view.is_from_duplicate)
+
+    def test_is_from_duplicate_team(self):
+        # Is a person subscribed through a duplicate
+        # when it is but through team membership.
+        team = self.factory.makeTeam(members=[self.subscriber])
+        duplicate = self.factory.makeBug()
+        with person_logged_in(self.bug.owner):
+            duplicate.markAsDuplicate(self.bug)
+
+        view = self.getView()
+        with person_logged_in(self.subscriber):
+            duplicate.subscribe(team, self.subscriber)
+            self.assertTrue(view.is_from_duplicate)
