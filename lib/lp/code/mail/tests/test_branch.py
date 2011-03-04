@@ -263,7 +263,7 @@ class TestBranchMailerSubject(TestCaseWithFactory):
             'Testing %j foo')
         branch_owner_email = removeSecurityProxy(branch.owner).preferredemail.email
         self.assertEqual('Testing %j foo', mailer._getSubject(
-                branch_owner_email))
+                branch_owner_email, branch.owner))
 
 
 def test_suite():

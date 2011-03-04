@@ -122,7 +122,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         mailer = CodeReviewCommentMailer.forCreation(comment)
         self.assertEqual(
             'A %(carefully)s constructed subject',
-            mailer._getSubject(email=None))
+            mailer._getSubject(email=None, recipient=subscriber))
 
     def test_getReplyAddress(self):
         """Ensure that the reply-to address is reasonable."""
