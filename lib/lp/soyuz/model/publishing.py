@@ -1299,41 +1299,36 @@ class PublishingSet:
                         bprs_and_overrides):
         publications = []
         for bpr, component, section, priority in bprs_and_overrides:
-            publications.extend(
-                self.publishBinary(
-                    archive, bpr, distroseries, component, section, priority,
-                    pocket))
+            target_archs = get_target_distroarchseries(bpr, distroseries)
+            if len(target_archs) == 0:
+                return
+
+            # DDEBs targeted to the PRIMARY archive are published in the
+            # corresponding DEBUG archive.
+            if bpr.binpackageformat == BinaryPackageFormat.DDEB:
+                archive = get_debug_archive(archive)
+
+            for target_arch in target_archs:
+                # We only publish the binary if it doesn't already exist in
+                # the destination. Note that this means we don't support
+                # override changes on their own.
+                binaries_in_destination = archive.getAllPublishedBinaries(
+                    name=bpr.name, exact_match=True, version=bpr.version,
+                    status=active_publishing_status, pocket=pocket,
+                    distroarchseries=target_arch)
+                if not bool(binaries_in_destination):
+                    publications.append(
+                        getUtility(IPublishingSet).newBinaryPublication(
+                            archive, bpr, target_arch, component, section,
+                            priority, pocket))
         return publications
 
     def publishBinary(self, archive, binarypackagerelease, distroseries,
                       component, section, priority, pocket):
         """See `IPublishingSet`."""
-        target_archs = get_target_distroarchseries(
-            binarypackagerelease, distroseries)
-        if len(target_archs) == 0:
-            return
-
-        # DDEBs targeted to the PRIMARY archive are published in the
-        # corresponding DEBUG archive.
-        if binarypackagerelease.binpackageformat == BinaryPackageFormat.DDEB:
-            archive = get_debug_archive(archive)
-
-        published_binaries = []
-        for target_arch in target_archs:
-            # We only publish the binary if it doesn't already exist in
-            # the destination. Note that this means we don't support
-            # override changes on their own.
-            binaries_in_destination = archive.getAllPublishedBinaries(
-                name=binarypackagerelease.name, exact_match=True,
-                version=binarypackagerelease.version,
-                status=active_publishing_status, pocket=pocket,
-                distroarchseries=target_arch)
-            if not bool(binaries_in_destination):
-                published_binaries.append(
-                    getUtility(IPublishingSet).newBinaryPublication(
-                        archive, binarypackagerelease, target_arch, component,
-                        section, priority, pocket))
-        return published_binaries
+        return self.publishBinaries(
+            archive, distroseries, pocket,
+            [(binarypackagerelease, component, section, priority)])
 
     def newBinaryPublication(self, archive, binarypackagerelease,
                              distroarchseries, component, section, priority,
