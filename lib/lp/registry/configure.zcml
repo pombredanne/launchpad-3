@@ -87,19 +87,27 @@
 
     <!-- IPersonTransferJob -->
     <securedutility
-        component="lp.registry.model.persontransferjob.MembershipNotificationJob"
-        provides="lp.registry.interfaces.persontransferjob.IMembershipNotificationJobSource">
-        <allow
-            interface="lp.registry.interfaces.persontransferjob.IMembershipNotificationJobSource"/>
+        component=".model.persontransferjob.MembershipNotificationJob"
+        provides=".interfaces.persontransferjob.IMembershipNotificationJobSource">
+      <allow interface=".interfaces.persontransferjob.IMembershipNotificationJobSource"/>
     </securedutility>
 
-    <class class="lp.registry.model.persontransferjob.PersonTransferJob">
-        <allow interface="lp.registry.interfaces.persontransferjob.IPersonTransferJob"/>
+    <securedutility
+        component=".model.persontransferjob.PersonMergeJob"
+        provides=".interfaces.persontransferjob.IPersonMergeJobSource">
+      <allow interface=".interfaces.persontransferjob.IPersonMergeJobSource"/>
+    </securedutility>
+
+    <class class=".model.persontransferjob.PersonTransferJob">
+        <allow interface=".interfaces.persontransferjob.IPersonTransferJob"/>
     </class>
 
-    <class class="lp.registry.model.persontransferjob.MembershipNotificationJob">
-        <allow
-            interface="lp.registry.interfaces.persontransferjob.IMembershipNotificationJob"/>
+    <class class=".model.persontransferjob.MembershipNotificationJob">
+      <allow interface=".interfaces.persontransferjob.IMembershipNotificationJob"/>
+    </class>
+
+    <class class=".model.persontransferjob.PersonMergeJob">
+      <allow interface=".interfaces.persontransferjob.IPersonMergeJob"/>
     </class>
 
     <!-- INameBlacklist -->

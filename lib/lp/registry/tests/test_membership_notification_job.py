@@ -1,7 +1,7 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Test that MembershipNotificationJobs are created appropriately."""
+"""Tests of `MembershipNotificationJob`."""
 
 __metaclass__ = type
 
@@ -20,17 +20,18 @@ from lp.registry.model.persontransferjob import MembershipNotificationJob
 from lp.services.job.interfaces.job import JobStatus
 from lp.testing import (
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.sampledata import ADMIN_EMAIL
 
 
-class CreateMembershipNotificationJobTest(TestCaseWithFactory):
-    """Test that MembershipNotificationJobs are created appropriately."""
+class MembershipNotificationJobTest(TestCaseWithFactory):
+
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        super(CreateMembershipNotificationJobTest, self).setUp()
+        super(MembershipNotificationJobTest, self).setUp()
         self.person = self.factory.makePerson(name='murdock')
         self.team = self.factory.makeTeam(name='a-team')
         self.job_source = getUtility(IMembershipNotificationJobSource)
@@ -63,3 +64,18 @@ class CreateMembershipNotificationJobTest(TestCaseWithFactory):
         tm.setStatus(
             TeamMembershipStatus.ADMIN, admin, silent=True)
         self.assertEqual([], list(self.job_source.iterReady()))
+
+    def test_repr(self):
+        # A useful representation is available for MembershipNotificationJob
+        # instances.
+        with person_logged_in(self.team.teamowner):
+            self.team.addMember(self.person, self.team.teamowner)
+            membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+                self.person, self.team)
+            membership.setStatus(
+                TeamMembershipStatus.ADMIN, self.team.teamowner)
+        [job] = self.job_source.iterReady()
+        self.assertEqual(
+            ("<MembershipNotificationJob about "
+             "~murdock in ~a-team; status=Waiting>"),
+            repr(job))
