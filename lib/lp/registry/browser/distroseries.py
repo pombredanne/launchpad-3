@@ -19,6 +19,9 @@ __all__ = [
     'DistroSeriesView',
     ]
 
+from datetime import datetime
+
+from pytz import utc
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
@@ -541,25 +544,29 @@ def derived_from_series_source(context):
     It is permissible for a distribution to have both derived and non-derived
     series at the same time.
     """
-    distribution = IDistribution(context)
-    serieses = list(distribution)
-    if len(serieses) == 0:
+    all_serieses = getUtility(IDistroSeriesSet).search()
+    context_serieses = set(IDistribution(context))
+    if len(context_serieses) == 0:
         # Derive from any series.
-        serieses = getUtility(IDistroSeriesSet).search()
+        serieses = set(all_serieses)
     else:
-        for series in serieses:
+        for series in context_serieses:
             if series.parent_series is not None:
                 # Derive only from series in the same distribution as other
                 # derived series in this distribution.
-                serieses = getUtility(IDistroSeriesSet).search(
-                    distribution=series.parent_series.distribution)
+                serieses = set(series.parent_series.distribution)
                 break
         else:
             # Derive from any series, except those in this distribution.
-            serieses = (
-                series for series in getUtility(IDistroSeriesSet).search()
-                if series.distribution != distribution)
-    # XXX: Need to sort the terms.
+            serieses = set(all_serieses) - context_serieses
+    # Sort the series before generating the vocabulary. We want newest series
+    # first so we must compose the key with the difference from a reference
+    # date to the creation date.
+    reference = datetime.now(utc)
+    serieses = sorted(
+        serieses, key=lambda series: (
+            series.distribution.displayname,
+            reference - series.date_created))
     return SimpleVocabulary(
         [DistroSeriesVocabulary.toTerm(series) for series in serieses])
 

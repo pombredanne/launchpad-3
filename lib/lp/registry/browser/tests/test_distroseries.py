@@ -5,8 +5,15 @@
 
 __metaclass__ = type
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
+
+from pytz import utc
 from zope.component import getUtility
 from zope.schema.interfaces import IContextSourceBinder
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.browser.distroseries import derived_from_series_source
@@ -69,6 +76,44 @@ class TestDerivedFromSeriesSource(TestCaseWithFactory):
         expected_distroseries = (
             set(self.all_distroseries) - set(distroseries.distribution))
         observed_distroseries = set(term.value for term in vocabulary)
+        self.assertEqual(expected_distroseries, observed_distroseries)
+
+    def test_ordering(self):
+        # The vocabulary is sorted by distribution display name then by the
+        # date the distroseries was created, newest first.
+        now = datetime.now(utc)
+        two_days_ago = now - timedelta(2)
+        six_days_ago = now - timedelta(7)
+
+        aaa = self.factory.makeDistribution(displayname="aaa")
+        aaa_series_older = self.factory.makeDistroSeries(
+            name="aaa-series-older", distribution=aaa)
+        removeSecurityProxy(aaa_series_older).date_created = six_days_ago
+        aaa_series_newer = self.factory.makeDistroSeries(
+            name="aaa-series-newer", distribution=aaa)
+        removeSecurityProxy(aaa_series_newer).date_created = two_days_ago
+
+        bbb = self.factory.makeDistribution(displayname="bbb")
+        bbb_series_older = self.factory.makeDistroSeries(
+            name="bbb-series-older", distribution=bbb)
+        removeSecurityProxy(bbb_series_older).date_created = six_days_ago
+        bbb_series_newer = self.factory.makeDistroSeries(
+            name="bbb-series-newer", distribution=bbb)
+        removeSecurityProxy(bbb_series_newer).date_created = two_days_ago
+
+        ccc = self.factory.makeDistribution(displayname="ccc")
+
+        vocabulary = derived_from_series_source(ccc)
+        expected_distroseries = [
+            aaa_series_newer, aaa_series_older,
+            bbb_series_newer, bbb_series_older]
+        observed_distroseries = list(term.value for term in vocabulary)
+        # observed_distroseries will contain distroseries from the sample
+        # data, so we must only look at the set of distroseries we have
+        # created.
+        observed_distroseries = [
+            series for series in observed_distroseries
+            if series in expected_distroseries]
         self.assertEqual(expected_distroseries, observed_distroseries)
 
 
