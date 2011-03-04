@@ -10,6 +10,7 @@ __metaclass__ = type
 __all__ = [
     'ITranslationGroup',
     'ITranslationGroupSet',
+    'TranslationPermission',
     ]
 
 from lazr.restful.declarations import (
