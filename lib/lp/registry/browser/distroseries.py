@@ -722,8 +722,7 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
         for its own vocabulary, we set it up after all the others.
         """
         super(DistroSeriesLocalDifferences, self).setUpFields()
-        has_edit = check_permission('launchpad.Edit', self.context)
-
+        check_permission('launchpad.Edit', self.context)
         terms = [
             SimpleTerm(diff, diff.source_package_name.name,
                 diff.source_package_name.name)
