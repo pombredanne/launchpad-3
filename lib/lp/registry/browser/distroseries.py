@@ -19,23 +19,16 @@ __all__ = [
     'DistroSeriesView',
     ]
 
-from datetime import datetime
-
-from pytz import utc
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
-from zope.interface import (
-    implements,
-    Interface,
-    )
+from zope.interface import Interface
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import (
     Bool,
     Choice,
     List,
     )
-from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
@@ -88,16 +81,12 @@ from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin,
     )
 from lp.registry.browser import MilestoneOverlayMixin
-from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import (
-    IDistroSeries,
-    IDistroSeriesSet,
-    )
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
 from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.vocabularies import DistroSeriesVocabulary
+from lp.registry.vocabularies import DistroSeriesDerivationVocabularyFactory
 from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountry
@@ -528,53 +517,6 @@ class DistroSeriesAddView(LaunchpadFormView):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
-
-
-class DistroSeriesDerivationVocabularyFactory:
-    """A vocabulary source for series to derive from.
-
-    Once a distribution has a series that has derived from a series in another
-    distribution, all other derived series must also derive from a series in
-    the same distribution.
-
-    A distribution can have non-derived series. Any of these can be changed to
-    derived at a later date, but as soon as this happens, the above rule
-    applies.
-
-    It is permissible for a distribution to have both derived and non-derived
-    series at the same time.
-    """
-
-    implements(IContextSourceBinder)
-
-    def __call__(self, context):
-        """Return a vocabulary tailored to `context`."""
-        all_serieses = getUtility(IDistroSeriesSet).search()
-        context_serieses = set(IDistribution(context))
-        if len(context_serieses) == 0:
-            # Derive from any series.
-            serieses = set(all_serieses)
-        else:
-            for series in context_serieses:
-                if (series.parent_series is not None and
-                    series.parent_series not in context_serieses):
-                    # Derive only from series in the same distribution as
-                    # other derived series in this distribution.
-                    serieses = set(series.parent_series.distribution)
-                    break
-            else:
-                # Derive from any series, except those in this distribution.
-                serieses = set(all_serieses) - context_serieses
-        # Sort the series before generating the vocabulary. We want newest
-        # series first so we must compose the key with the difference from a
-        # reference date to the creation date.
-        reference = datetime.now(utc)
-        serieses = sorted(
-            serieses, key=lambda series: (
-                series.distribution.displayname,
-                reference - series.date_created))
-        return SimpleVocabulary(
-            [DistroSeriesVocabulary.toTerm(series) for series in serieses])
 
 
 class IDistroSeriesInitializeForm(IDistroSeries):

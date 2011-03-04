@@ -31,6 +31,7 @@ __all__ = [
     'DistributionOrProductOrProjectGroupVocabulary',
     'DistributionOrProductVocabulary',
     'DistributionVocabulary',
+    'DistroSeriesDerivationVocabularyFactory',
     'DistroSeriesVocabulary',
     'FeaturedProjectVocabulary',
     'FilteredDistroSeriesVocabulary',
@@ -38,28 +39,30 @@ __all__ = [
     'KarmaCategoryVocabulary',
     'MilestoneVocabulary',
     'NonMergedPeopleAndTeamsVocabulary',
+    'person_team_participations_vocabulary_factory',
     'PersonAccountToMergeVocabulary',
     'PersonActiveMembershipVocabulary',
     'ProductReleaseVocabulary',
     'ProductSeriesVocabulary',
     'ProductVocabulary',
+    'project_products_vocabulary_factory',
     'ProjectGroupVocabulary',
     'SourcePackageNameVocabulary',
-    'UserTeamsParticipationVocabulary',
     'UserTeamsParticipationPlusSelfVocabulary',
+    'UserTeamsParticipationVocabulary',
     'ValidPersonOrClosedTeamVocabulary',
     'ValidPersonOrTeamVocabulary',
     'ValidPersonVocabulary',
     'ValidTeamMemberVocabulary',
     'ValidTeamOwnerVocabulary',
     'ValidTeamVocabulary',
-    'person_team_participations_vocabulary_factory',
-    'project_products_vocabulary_factory',
     ]
 
 
+from datetime import datetime
 from operator import attrgetter
 
+from pytz import utc
 from sqlobject import (
     AND,
     CONTAINSSTRING,
@@ -77,7 +80,10 @@ from storm.expr import (
     )
 from zope.component import getUtility
 from zope.interface import implements
-from zope.schema.interfaces import IVocabularyTokenized
+from zope.schema.interfaces import (
+    IContextSourceBinder,
+    IVocabularyTokenized,
+    )
 from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
@@ -130,7 +136,10 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
-from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseries import (
+    IDistroSeries,
+    IDistroSeriesSet,
+    )
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet,
     MailingListStatus,
@@ -1470,6 +1479,53 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
                         CONTAINSSTRING(DistroSeries.q.name, query))),
                     orderBy=self._orderBy)
         return objs
+
+
+class DistroSeriesDerivationVocabularyFactory:
+    """A vocabulary source for series to derive from.
+
+    Once a distribution has a series that has derived from a series in another
+    distribution, all other derived series must also derive from a series in
+    the same distribution.
+
+    A distribution can have non-derived series. Any of these can be changed to
+    derived at a later date, but as soon as this happens, the above rule
+    applies.
+
+    It is permissible for a distribution to have both derived and non-derived
+    series at the same time.
+    """
+
+    implements(IContextSourceBinder)
+
+    def __call__(self, context):
+        """Return a vocabulary tailored to `context`."""
+        all_serieses = getUtility(IDistroSeriesSet).search()
+        context_serieses = set(IDistribution(context))
+        if len(context_serieses) == 0:
+            # Derive from any series.
+            serieses = set(all_serieses)
+        else:
+            for series in context_serieses:
+                if (series.parent_series is not None and
+                    series.parent_series not in context_serieses):
+                    # Derive only from series in the same distribution as
+                    # other derived series in this distribution.
+                    serieses = set(series.parent_series.distribution)
+                    break
+            else:
+                # Derive from any series, except those in this distribution.
+                serieses = set(all_serieses) - context_serieses
+        # Sort the series before generating the vocabulary. We want newest
+        # series first so we must compose the key with the difference from a
+        # reference date to the creation date.
+        reference = datetime.now(utc)
+        serieses = sorted(
+            serieses, key=lambda series: (
+                series.distribution.displayname,
+                reference - series.date_created))
+        return SimpleVocabulary(
+            [DistroSeriesVocabulary.toTerm(series) for series in serieses])
 
 
 class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
