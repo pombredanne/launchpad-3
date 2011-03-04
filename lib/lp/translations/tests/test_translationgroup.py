@@ -70,7 +70,15 @@ class TestTranslationGroupSet(TestCaseWithFactory):
 
 class TestWebService(WebServiceTestCase):
 
+    def test_getByName(self):
+        """getByName returns the TranslationGroup for the specified name."""
+        group = self.factory.makeTranslationGroup()
+        transaction.commit()
+        ws_group = self.service.translation_groups.getByName(name=group.name)
+        self.assertEqual(group.name, ws_group.name)
+
     def test_attrs(self):
+        """TranslationGroup provides the expected attributes."""
         group = self.factory.makeTranslationGroup()
         transaction.commit()
         ws_group = self.wsObject(group)

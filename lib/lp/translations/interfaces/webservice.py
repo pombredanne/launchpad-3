@@ -25,7 +25,10 @@ from lp.translations.interfaces.hastranslationimports import (
     )
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import IPOTemplate
-from lp.translations.interfaces.translationgroup import ITranslationGroup
+from lp.translations.interfaces.translationgroup import (
+    ITranslationGroup,
+    ITranslationGroupSet,
+)
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     ITranslationImportQueueEntry,

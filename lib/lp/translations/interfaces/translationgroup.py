@@ -14,8 +14,14 @@ __all__ = [
     ]
 
 from lazr.restful.declarations import (
+    collection_default_content,
     exported,
     export_as_webservice_entry,
+    export_as_webservice_collection,
+    export_read_operation,
+    export_operation_as,
+    operation_parameters,
+    operation_returns_entry,
     )
 from zope.interface import (
     Attribute,
@@ -42,7 +48,8 @@ from lp.translations.enums import TranslationPermission
 class ITranslationGroup(IHasOwner):
     """A TranslationGroup."""
 
-    export_as_webservice_entry('translation_group')
+    export_as_webservice_entry(
+        singular_name='translation_group', plural_name='translation_groups')
 
     id = Int(
             title=_('Translation Group ID'), required=True, readonly=True,
@@ -155,10 +162,21 @@ class ITranslationGroup(IHasOwner):
 class ITranslationGroupSet(Interface):
     """A container for translation groups."""
 
+    export_as_webservice_collection(ITranslationGroup)
+
     title = Attribute('Title')
 
-    def __getitem__(key):
+    @operation_parameters(
+        name=TextLine(title=_("Name of the translation group"),))
+    @operation_returns_entry(ITranslationGroup)
+    @export_operation_as('getByName')
+    @export_read_operation()
+    def __getitem__(name):
         """Get a translation group by name."""
+
+    @collection_default_content()
+    def _get():
+        """Return a collection of all entries."""
 
     def __iter__():
         """Iterate through the translation groups in this set."""
