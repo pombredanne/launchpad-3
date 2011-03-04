@@ -47,9 +47,6 @@ class TopLevelMenuMixin:
         text = 'Register a team'
         return Link('/people/+newteam', text, icon='add')
 
-    # XXX: rvb 2011-01-03: this should be checked against the right
-    # permission once the permission model for distributions is
-    # in place
     @enabled_with_permission('launchpad.Admin')
     def register_distribution(self):
         text = 'Register a distribution'
