@@ -260,6 +260,7 @@ class TestSourcePackage(TestCaseWithFactory):
 class TestSourcePackageWebService(WebServiceTestCase):
 
     def test_setPackaging(self):
+        """setPackaging is accessible and works."""
         sourcepackage = self.factory.makeSourcePackage()
         self.assertIs(None, sourcepackage.direct_packaging)
         productseries = self.factory.makeProductSeries()
