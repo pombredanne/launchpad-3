@@ -356,3 +356,33 @@ class BugSubscriptionsListViewTestCase(TestCaseWithFactory):
         with person_logged_in(self.subscriber):
             duplicate.subscribe(team, self.subscriber)
             self.assertTrue(view.is_from_duplicate)
+
+    def test_is_through_team_no(self):
+        # A person is not subscribed through team
+        # if they have a direct subscription.
+        view = self.getView()
+        with person_logged_in(self.subscriber):
+            self.bug.subscribe(self.subscriber, self.subscriber)
+            self.assertFalse(view.is_through_team)
+
+    def test_is_through_team(self):
+        # A person is subscribed through team if they are
+        # part of a team that is directly subscribed.
+        team = self.factory.makeTeam(members=[self.subscriber])
+        view = self.getView()
+        with person_logged_in(self.subscriber):
+            self.bug.subscribe(team, self.subscriber)
+            self.assertTrue(view.is_through_team)
+
+    def test_is_through_team_duplicate(self):
+        # A person is subscribed through team if they are
+        # part of a team that is subscribed to a duplicate.
+        team = self.factory.makeTeam(members=[self.subscriber])
+        duplicate = self.factory.makeBug()
+        with person_logged_in(self.bug.owner):
+            duplicate.markAsDuplicate(self.bug)
+
+        view = self.getView()
+        with person_logged_in(self.subscriber):
+            duplicate.subscribe(team, self.subscriber)
+            self.assertTrue(view.is_through_team)

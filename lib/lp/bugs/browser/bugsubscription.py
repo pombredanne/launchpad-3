@@ -574,3 +574,7 @@ class BugSubscriptionListView(LaunchpadView):
             self.context.bug.isSubscribedToDupes(self.user) or
             self.context.bug.getSubscribersForPerson(
                 self.user, only_duplicates=True).any())
+
+    @property
+    def is_through_team(self):
+        return False
