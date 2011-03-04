@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from storm.store import Store
+import transaction
 
 from canonical.database.sqlbase import (
     cursor,
@@ -468,3 +469,35 @@ class TestPopulateDistroSeriesDiffScript(TestCaseWithFactory, FactoryHelper):
         script.main()
         self.assertNotEqual(
             0, self.getDistroSeriesDiff(spph.distroseries).count())
+
+    def test_commits_changes(self):
+        spph = self.makeSPPH(distroseries=self.makeDerivedDistroSeries())
+        script = self.makeScript([
+            '--distribution', spph.distroseries.distribution.name,
+            '--series', spph.distroseries.name,
+            ])
+        script.main()
+        transaction.abort()
+        # The changes are still in the database despite the abort,
+        # because the script already committed them.
+        self.assertNotEqual(
+            0, self.getDistroSeriesDiff(spph.distroseries).count())
+
+    def test_dry_run_goes_through_the_motions(self):
+        spph = self.makeSPPH(distroseries=self.makeDerivedDistroSeries())
+        script = self.makeScript(['--all', '--dry-run'])
+        script.processDistroSeries = FakeMethod
+        script.main()
+        self.assertNotEqual(0, script.processDistroSeries.call_count)
+
+    def test_dry_run_does_not_commit_changes(self):
+        spph = self.makeSPPH(distroseries=self.makeDerivedDistroSeries())
+        transaction.commit()
+        script = self.makeScript([
+            '--distribution', spph.distroseries.distribution.name,
+            '--series', spph.distroseries.name,
+            '--dry-run',
+            ])
+        script.main()
+        self.assertContentEqual(
+            [], self.getDistroSeriesDiff(spph.distroseries))

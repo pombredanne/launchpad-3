@@ -21,6 +21,7 @@ from optparse import (
     OptionValueError,
     )
 from storm.info import ClassAlias
+import transaction
 from zope.component import getUtility
 
 from canonical.database.sqlbase import (
@@ -231,7 +232,10 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
                 help="Derived distribution."),
             Option(
                 '-s', '--series', dest='series', default=None,
-                help="Derived distribution series.")])
+                help="Derived distribution series."),
+            Option(
+                '-x', '--dry-run', dest='dry_run', action='store_true',
+                default=False, help="Pretend; don't commit changes.")])
 
     def getDistroSeries(self):
         """Return the `DistroSeries` that are to be processed."""
@@ -255,6 +259,15 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
         """Generate `DistroSeriesDifference`s for `distroseries`."""
         self.logger.info("Looking for differences in %s.", distroseries)
         populate_distroseriesdiff(distroseries)
+        self.commit()
+        self.logger.info("Done with %s.", distroseries)
+
+    def commit(self):
+        """Commit (or if doing a dry run, abort instead)."""
+        if self.options.dry_run:
+            transaction.abort()
+        else:
+            transaction.commit()
 
     def main(self):
         specified_distro = (self.options.distribution is not None)
@@ -265,6 +278,9 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
         if specified_distro == self.options.all:
             raise OptionValueError(
                 "Either specify a distribution series, or use --all.")
+
+        if self.options.dry_run:
+            self.logger.info("Dry run requested.  Not committing changes.")
 
         for series in self.getDistroSeries():
             self.processDistroSeries(series)
