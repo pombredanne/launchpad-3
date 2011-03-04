@@ -8,11 +8,13 @@ __metaclass__ = type
 
 from storm.store import Store
 from storm.exceptions import IntegrityError
+from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.archivepublisher.interfaces.publisherconfig import (
     IPublisherConfig,
+    IPublisherConfigSet,
     )
 from lp.testing import TestCaseWithFactory
 
@@ -54,3 +56,11 @@ class TestPublisherConfig(TestCaseWithFactory):
         pubconf2 = self.factory.makePublisherConfig(self.distribution)
         store = Store.of(pubconf)
         self.assertRaises(IntegrityError, store.flush)
+
+    def test_getByDistribution(self):
+        # Test that IPublisherConfigSet.getByDistribution works.
+        pubconf = self.factory.makePublisherConfig(
+            distribution=self.distribution)
+        pubconf = getUtility(IPublisherConfigSet).getByDistribution(
+            self.distribution)
+        self.assertEqual(self.distribution.name, pubconf.distribution.name)
