@@ -252,6 +252,9 @@ class TestUbuntuPOTemplateSharingInfo(BrowserTestCase, TestSharingInfoMixin):
         This template is sharing translations with .*"""
 
     def getAuthorizedUser(self, potemplate):
+        with celebrity_logged_in('admin'):
+            potemplate.distroseries.owner = self.factory.makePerson(
+                password='test')
         return potemplate.distroseries.owner
 
 
@@ -279,4 +282,7 @@ class TestUbuntuSharingInfo(BrowserTestCase, TestSharingInfoMixin):
         This source package is sharing translations with .*"""
 
     def getAuthorizedUser(self, sourcepackage):
-        return sourcepackage.owner
+        with celebrity_logged_in('admin'):
+            sourcepackage.distroseries.owner = self.factory.makePerson(
+                password='test')
+        return sourcepackage.distroseries.owner
