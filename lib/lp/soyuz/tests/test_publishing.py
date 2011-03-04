@@ -11,6 +11,8 @@ from StringIO import StringIO
 import tempfile
 
 import pytz
+from storm.store import Store
+from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -58,9 +60,10 @@ from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory,
     )
 from lp.testing import (
-    login_as,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.matchers import HasQueryCount
 from lp.testing.factory import LaunchpadObjectFactory
 
 
@@ -1362,3 +1365,37 @@ class TestSPPHModel(TestCaseWithFactory):
         spph = self.factory.makeSourcePackagePublishingHistory(
             ancestor=ancestor)
         self.assertEquals(spph.ancestor.displayname, ancestor.displayname)
+
+
+class TestGetBuiltBinaries(TestNativePublishingBase):
+    """Test SourcePackagePublishingHistory.getBuiltBinaries() works."""
+
+    def test_flat_query_count(self):
+        spph = self.getPubSource(architecturehintlist='any')
+        store = Store.of(spph)
+        store.flush()
+        store.invalidate()
+
+        # An initial invocation issues one query for the each of the
+        # SPPH, BPPHs and BPRs.
+        with StormStatementRecorder() as recorder:
+            bins = spph.getBuiltBinaries()
+        self.assertEquals(0, len(bins))
+        self.assertThat(recorder, HasQueryCount(Equals(3)))
+
+        self.getPubBinaries(pub_source=spph)
+        store.flush()
+        store.invalidate()
+
+        # A subsequent invocation with files preloaded queries the SPPH,
+        # BPPHs, BPRs, BPFs and LFAs. Checking the filenames of each
+        # BPF has no query penalty.
+        with StormStatementRecorder() as recorder:
+            bins = spph.getBuiltBinaries(want_files=True)
+            self.assertEquals(2, len(bins))
+            for bpph in bins:
+                files = bpph.binarypackagerelease.files
+                self.assertEqual(1, len(files))
+                for bpf in files:
+                    bpf.libraryfile.filename
+        self.assertThat(recorder, HasQueryCount(Equals(5)))

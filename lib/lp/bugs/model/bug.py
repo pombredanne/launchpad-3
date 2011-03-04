@@ -143,7 +143,6 @@ from lp.bugs.interfaces.bugnomination import (
     )
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams,
     BugTaskStatus,
     IBugTaskSet,
     UNRESOLVED_BUGTASK_STATUSES,
@@ -151,9 +150,6 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
-from lp.bugs.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
-    )
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
@@ -170,6 +166,9 @@ from lp.bugs.model.bugtask import (
     NullBugTask,
     )
 from lp.bugs.model.bugwatch import BugWatch
+from lp.bugs.model.structuralsubscription import (
+    get_all_structural_subscriptions,
+    )
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -441,8 +440,8 @@ class Bug(SQLBase):
     @property
     def indexed_messages(self):
         """See `IMessageTarget`."""
-        # Note that this is a decorated result set, so will cache its value (in
-        # the absence of slices)
+        # Note that this is a decorated result set, so will cache its
+        # value (in the absence of slices)
         return self._indexed_messages(include_content=True)
 
     def _indexed_messages(self, include_content=False, include_parents=True):
@@ -554,7 +553,6 @@ BugMessage""" % sqlvalues(self.id))
     def bugtasks(self):
         """See `IBug`."""
         # \o/ circular imports.
-        from lp.bugs.model.bugwatch import BugWatch
         from lp.registry.model.distribution import Distribution
         from lp.registry.model.distroseries import DistroSeries
         from lp.registry.model.product import Product
@@ -562,17 +560,18 @@ BugMessage""" % sqlvalues(self.id))
         from lp.registry.model.sourcepackagename import SourcePackageName
         store = Store.of(self)
         tasks = list(store.find(BugTask, BugTask.bugID == self.id))
-        # The bugtasks attribute is iterated in the API and web services, so it
-        # needs to preload all related data otherwise late evaluation is
-        # triggered in both places. Separately, bugtask_sort_key requires
-        # the related products, series, distros, distroseries and source
-        # package names to be loaded.
+        # The bugtasks attribute is iterated in the API and web
+        # services, so it needs to preload all related data otherwise
+        # late evaluation is triggered in both places. Separately,
+        # bugtask_sort_key requires the related products, series,
+        # distros, distroseries and source package names to be loaded.
         ids = set(map(operator.attrgetter('assigneeID'), tasks))
         ids.update(map(operator.attrgetter('ownerID'), tasks))
         ids.discard(None)
         if ids:
             list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
                 ids, need_validity=True))
+
         def load_something(attrname, klass):
             ids = set(map(operator.attrgetter(attrname), tasks))
             ids.discard(None)
@@ -1401,8 +1400,8 @@ BugMessage""" % sqlvalues(self.id))
 
     def getMessagesForView(self, slice_info):
         """See `IBug`."""
-        # Note that this function and indexed_messages have significant overlap
-        # and could stand to be refactored.
+        # Note that this function and indexed_messages have significant
+        # overlap and could stand to be refactored.
         slices = []
         if slice_info is not None:
             # NB: This isn't a full implementation of the slice protocol,
@@ -1438,6 +1437,7 @@ BugMessage""" % sqlvalues(self.id))
             BugMessage.bug==self.id,
             *ranges)
         result.order_by(BugMessage.index, MessageChunk.sequence)
+
         def eager_load_owners(rows):
             owners = set()
             for row in rows:
@@ -2183,29 +2183,7 @@ class BugSubscriptionInfo:
     @freeze(StructuralSubscriptionSet)
     def structural_subscriptions(self):
         """Structural subscriptions to the bug's targets."""
-        query_arguments = []
-        for bugtask in self.bug.bugtasks:
-            if IStructuralSubscriptionTarget.providedBy(bugtask.target):
-                query_arguments.append((bugtask.target, bugtask))
-                if bugtask.target.parent_subscription_target is not None:
-                    query_arguments.append(
-                        (bugtask.target.parent_subscription_target, bugtask))
-            if ISourcePackage.providedBy(bugtask.target):
-                # Distribution series bug tasks with a package have the source
-                # package set as their target, so we add the distroseries
-                # explicitly to the set of subscription targets.
-                query_arguments.append((bugtask.distroseries, bugtask))
-            if bugtask.milestone is not None:
-                query_arguments.append((bugtask.milestone, bugtask))
-        # Build the query.
-        empty = EmptyResultSet()
-        union = lambda left, right: (
-            removeSecurityProxy(left).union(
-                removeSecurityProxy(right)))
-        queries = (
-            target.getSubscriptionsForBugTask(bugtask, self.level)
-            for target, bugtask in query_arguments)
-        return reduce(union, queries, empty)
+        return get_all_structural_subscriptions(self.bug.bugtasks)
 
     @cachedproperty
     @freeze(BugSubscriberSet)
