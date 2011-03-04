@@ -15,6 +15,7 @@ __all__ = [
 
 import xml.etree.cElementTree as ET
 import urllib
+import urllib2
 from urlparse import urlunparse
 
 from lazr.restful.utils import get_current_browser_request
@@ -22,6 +23,7 @@ from lazr.uri import URI
 from zope.interface import implements
 
 from canonical.config import config
+from canonical.lazr.timeout import TimeoutError
 from lp.services.search.interfaces import (
     GoogleResponseError,
     GoogleWrongGSPVersion,
@@ -196,6 +198,11 @@ class GoogleSearchService:
         action = timeline.start("google-search-api", search_url)
         try:
             gsp_xml = urlfetch(search_url)
+        except (TimeoutError, urllib2.HTTPError, urllib2.URLError), error:
+            # Google search service errors are not code errors. Let the
+            # call site choose to handle the unavailable service.
+            raise GoogleResponseError(
+                "The response errored: %s" % str(error))
         finally:
             action.finish()
         page_matches = self._parse_google_search_protocol(gsp_xml)
@@ -268,6 +275,8 @@ class GoogleSearchService:
             gsp_doc = ET.fromstring(gsp_xml)
         except SyntaxError:
             raise GoogleResponseError("The response was incomplete, no xml.")
+        # XXX sinzui 2011-03-04: this can fail.
+        # IndexError
         start_param = self._getElementByAttributeValue(
             gsp_doc, './PARAM', 'name', 'start')
         try:
