@@ -579,7 +579,7 @@ class BugSubscriptionListView(LaunchpadView):
     def is_through_team(self):
         subscribers = self.context.bug.getSubscribersForPerson(self.user)
         for subscriber in subscribers:
-            if subscriber.isTeam():
+            if subscriber.is_team:
                 return True
         return False
 
@@ -587,8 +587,10 @@ class BugSubscriptionListView(LaunchpadView):
     def is_team_admin(self):
         subscribers = self.context.bug.getSubscribersForPerson(self.user)
         for subscriber in subscribers:
-            if subscriber.isTeam() and self.user in subscriber.adminmembers:
-                return True
+            if subscriber.is_team:
+                for admin in subscriber.adminmembers:
+                    if self.user.inTeam(admin):
+                        return True
         return False
 
     @property

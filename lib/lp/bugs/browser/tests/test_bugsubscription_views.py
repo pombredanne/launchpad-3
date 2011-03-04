@@ -14,6 +14,7 @@ from lp.bugs.browser.bugsubscription import (
     BugSubscriptionSubscribeSelfView,
     )
 from lp.bugs.enum import BugNotificationLevel
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.testing import (
     feature_flags,
     person_logged_in,
@@ -403,12 +404,38 @@ class BugSubscriptionsListViewTestCase(TestCaseWithFactory):
             self.bug.subscribe(team, self.subscriber)
             self.assertFalse(view.is_team_admin)
 
-    def test_is_team_admin(self):
-        # A person is a team admin if they are a team admin.
+    def test_is_team_admin_owner(self):
+        # A person is a team admin if they are a team owner.
         team = self.factory.makeTeam()
         view = self.getView()
         with person_logged_in(team.teamowner):
             self.bug.subscribe(team, team.teamowner)
+            self.assertTrue(view.is_team_admin)
+
+    def test_is_team_admin_member(self):
+        # A person is a team admin if they are a member with admin status.
+        team = self.factory.makeTeam()
+        with person_logged_in(team.teamowner):
+            team.addMember(
+                self.subscriber, team.teamowner,
+                status=TeamMembershipStatus.ADMIN)
+        view = self.getView()
+        with person_logged_in(self.subscriber):
+            self.bug.subscribe(team, self.subscriber)
+            self.assertTrue(view.is_team_admin)
+
+    def test_is_team_admin_indirect(self):
+        # A person is a team admin if they are part of
+        # that team's administration team.
+        admin_team = self.factory.makeTeam(members=[self.subscriber])
+        team = self.factory.makeTeam()
+        with person_logged_in(team.teamowner):
+            team.addMember(
+                admin_team, team.teamowner, status=TeamMembershipStatus.ADMIN,
+                force_team_add=True)
+        view = self.getView()
+        with person_logged_in(self.subscriber):
+            self.bug.subscribe(team, self.subscriber)
             self.assertTrue(view.is_team_admin)
 
     def test_is_team_admin_duplicate(self):
