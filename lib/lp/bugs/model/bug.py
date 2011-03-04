@@ -945,15 +945,9 @@ BugMessage""" % sqlvalues(self.id))
             # Note that teamparticipation includes self-participation entries
             # (person X is in the team X)
             TeamParticipation.person == person.id,
-            # XXX: Storm fails to compile this, so manually done.
-            # bug=https://bugs.launchpad.net/storm/+bug/627137
-            # RBC 20100831
-            SQL("""TeamParticipation.team = BugSubscription.person"""),
+            TeamParticipation.teamID == BugSubscription.person_id,
             # Join in the Person rows we want
-            # XXX: Storm fails to compile this, so manually done.
-            # bug=https://bugs.launchpad.net/storm/+bug/627137
-            # RBC 20100831
-            SQL("""Person.id = TeamParticipation.team"""),
+            Person.id == TeamParticipation.teamID,
             ).order_by(Person.name),
             cache_subscriber, pre_iter_hook=cache_unsubscribed)
 
