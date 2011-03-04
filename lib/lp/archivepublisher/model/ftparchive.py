@@ -167,14 +167,12 @@ class FTPArchiveHandler:
         spawner = CommandSpawner()
 
         returncodes = {}
-        for arch_tag in self._getArchitectureTags().union(set(["source"])):
-            completion_handler = ReturnCodeReceiver()
-            returncodes[arch_tag] = completion_handler
-            command = base_command + ["--arch", arch_tag]
-            spawner.start(
-                command, stdout_handler=stdout_handler,
-                stderr_handler=stderr_handler,
-                completion_handler=completion_handler)
+        completion_handler = ReturnCodeReceiver()
+        returncodes['all'] = completion_handler
+        spawner.start(
+            base_command, stdout_handler=stdout_handler,
+            stderr_handler=stderr_handler,
+            completion_handler=completion_handler)
 
         spawner.complete()
         stdout_handler.finalize()
