@@ -257,6 +257,32 @@ class MailErrorUtility(ErrorReportingUtility):
         self.setOopsToken('EMAIL')
 
 
+ORIGINAL_TO_HEADER = 'X-Launchpad-Original-To'
+
+
+def extract_addresses(mail, raw_mail, file_alias_url):
+    # Extract the domain the mail was sent to.  Mails sent to
+    # Launchpad should have an X-Launchpad-Original-To header.
+    if ORIGINAL_TO_HEADER in mail:
+        return [mail[ORIGINAL_TO_HEADER]]
+
+    log = logging.getLogger('lp.services.mail')
+    if ORIGINAL_TO_HEADER in raw_mail:
+        # Almost certainly a spam email with a blank line in the email headers
+        log.info('Suspected spam: %s' % file_alias_url)
+    else:
+        # This most likely means a email configuration problem, and it should
+        # log an oops.
+        log.warn(
+            "No X-Launchpad-Original-To header was present "
+            "in email: %s" % file_alias_url)
+    # Process all addresses found as a fall back.
+    cc = mail.get_all('cc') or []
+    to = mail.get_all('to') or []
+    names_addresses = getaddresses(to + cc)
+    return [addr for name, addr in names_addresses]
+
+
 def report_oops(file_alias_url=None, error_msg=None):
     """Record an OOPS for the current exception and return the OOPS ID."""
     info = sys.exc_info()
@@ -275,7 +301,7 @@ def report_oops(file_alias_url=None, error_msg=None):
 
 
 def handleMail(trans=transaction,
-    signature_timestamp_checker=None):
+               signature_timestamp_checker=None):
     # First we define an error handler. We define it as a local
     # function, to avoid having to pass a lot of parameters.
     # pylint: disable-msg=W0631
@@ -389,21 +415,8 @@ def handleMail(trans=transaction,
                         file_alias_url, notify=False)
                     continue
 
-                # Extract the domain the mail was sent to.  Mails sent to
-                # Launchpad should have an X-Launchpad-Original-To header.
-                if 'X-Launchpad-Original-To' in mail:
-                    addresses = [mail['X-Launchpad-Original-To']]
-                else:
-                    log = logging.getLogger('lp.services.mail')
-                    log.warn(
-                        "No X-Launchpad-Original-To header was present "
-                        "in email: %s" %
-                         file_alias_url)
-                    # Process all addresses found as a fall back.
-                    cc = mail.get_all('cc') or []
-                    to = mail.get_all('to') or []
-                    names_addresses = getaddresses(to + cc)
-                    addresses = [addr for name, addr in names_addresses]
+                addresses = extract_addresses(
+                    mail, raw_mail, file_alias_url, log)
 
                 try:
                     do_paranoid_envelope_to_validation(addresses)
@@ -459,7 +472,6 @@ def handleMail(trans=transaction,
                 # from being processed.
                 _handle_error(
                     "Unhandled exception", file_alias_url)
-                log = logging.getLogger('canonical.launchpad.mail')
                 if file_alias_url is not None:
                     email_info = file_alias_url
                 else:
