@@ -1457,3 +1457,8 @@ class TestPublishBinary(TestCaseWithFactory):
         args = self.makeArgs(bpr, target_das)
         [new_bpph] = getUtility(IPublishingSet).publishBinary(**args)
         [] = getUtility(IPublishingSet).publishBinary(**args)
+
+        # But changing the target (eg. to RELEASE instead of BACKPORTS)
+        # causes a new publication to be created.
+        args['pocket'] = PackagePublishingPocket.RELEASE
+        [another_bpph] = getUtility(IPublishingSet).publishBinary(**args)
