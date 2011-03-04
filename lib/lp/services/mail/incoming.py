@@ -266,13 +266,18 @@ ORIGINAL_TO_HEADER = 'X-Launchpad-Original-To'
 
 
 def extract_addresses(mail, raw_mail, file_alias_url, log):
-    # Extract the domain the mail was sent to.  Mails sent to
-    # Launchpad should have an X-Launchpad-Original-To header.
+    """Extract the domain the mail was sent to.
+
+    Mails sent to Launchpad should have an X-Launchpad-Original-To header.
+    This is added by the MTA before it ends up the mailbox for Launchpad.
+    """
     if ORIGINAL_TO_HEADER in mail:
         return [mail[ORIGINAL_TO_HEADER]]
 
     if ORIGINAL_TO_HEADER in raw_mail:
-        # Almost certainly a spam email with a blank line in the email headers
+        # Doesn't have an X-Launchpad-Original-To in the headers, but does
+        # have one in the body, because of a forwarding loop or attempted
+        # spam.  See <https://bugs.launchpad.net/launchpad/+bug/701976>
         log.info('Suspected spam: %s' % file_alias_url)
     else:
         # This most likely means a email configuration problem, and it should
