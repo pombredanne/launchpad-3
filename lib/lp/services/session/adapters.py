@@ -12,7 +12,10 @@ from zope.interface import implementer
 
 from canonical.database.sqlbase import session_store
 from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore, ISlaveStore, IStore)
+    IMasterStore,
+    ISlaveStore,
+    IStore,
+    )
 from lp.services.session.interfaces import ISessionStormClass
 
 

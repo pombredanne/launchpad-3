@@ -17,7 +17,10 @@ from storm.expr import (
     Min,
     SQL,
     )
-from storm.locals import Storm, Int
+from storm.locals import (
+    Int,
+    Storm,
+    )
 from storm.store import Store
 import transaction
 from zope.component import getUtility
@@ -68,16 +71,19 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     )
 from lp.scripts.garbo import (
-    BulkPruner,
     AntiqueSessionPruner,
-    UnusedSessionPruner,
+    BulkPruner,
     DailyDatabaseGarbageCollector,
     HourlyDatabaseGarbageCollector,
     OpenIDConsumerAssociationPruner,
+    UnusedSessionPruner,
     )
 from lp.services.job.model.job import Job
 from lp.services.log.logger import BufferLogger
-from lp.services.session.model import SessionData, SessionPkgData
+from lp.services.session.model import (
+    SessionData,
+    SessionPkgData,
+    )
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,

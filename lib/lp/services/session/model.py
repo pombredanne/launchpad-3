@@ -6,7 +6,11 @@
 __metaclass__ = type
 __all__ = ['SessionData', 'SessionPkgData']
 
-from storm.locals import Pickle, Storm, Unicode
+from storm.locals import (
+    Pickle,
+    Storm,
+    Unicode,
+    )
 from zope.interface import classProvides
 
 from canonical.database.datetimecol import UtcDateTimeCol
