@@ -421,18 +421,18 @@ class LPForkingService(object):
             try:
                 fids.append(os.open(path, flags))
             except OSError, e:
-                if e.errno == errno.EINTR:
-                    error = ('After %.3fs we failed to open %s, exiting'
-                             % (time.time() - tstart, path,))
-                    trace.warning(error)
-                    for fid in fids:
-                        try:
-                            os.close(fid)
-                        except OSError:
-                            pass
-                    self._cleanup_fifos(base_path)
-                    raise errors.BzrError(error)
-                raise
+                # In production code, signal.alarm will generally just kill
+                # us. But if something installs a signal handler for SIGALRM,
+                # do what we can to die gracefully.
+                error = ('After %.3fs we failed to open %s, exiting'
+                         % (time.time() - tstart, path,))
+                trace.warning(error)
+                for fid in fids:
+                    try:
+                        os.close(fid)
+                    except OSError:
+                        pass
+                raise errors.BzrError(error)
         # If we get to here, that means all the handles were opened
         # successfully, so cancel the wakeup call.
         signal.alarm(0)
@@ -690,6 +690,13 @@ class LPForkingService(object):
             c_path, sock = self._child_processes.pop(c_id)
             trace.mutter('%s exited %s and usage: %s'
                          % (c_id, exit_code, rusage))
+            # Cleanup the child path, before mentioning it exited to the
+            # caller. This avoids a race condition in the test suite.
+            if os.path.exists(c_path):
+                # The child failed to cleanup after itself, do the work here
+                trace.warning('Had to clean up after child %d: %s\n'
+                              % (c_id, c_path))
+                shutil.rmtree(c_path, ignore_errors=True)
             # See [Decision #4]
             try:
                 sock.sendall('exited\n%s\n' % (exit_code,))
@@ -699,11 +706,6 @@ class LPForkingService(object):
                 trace.mutter('%s\'s socket already closed: %s' % (c_id, e))
             else:
                 sock.close()
-            if os.path.exists(c_path):
-                # The child failed to cleanup after itself, do the work here
-                trace.warning('Had to clean up after child %d: %s\n'
-                              % (c_id, c_path))
-                shutil.rmtree(c_path, ignore_errors=True)
 
     def _wait_for_children(self, secs):
         start = time.time()
