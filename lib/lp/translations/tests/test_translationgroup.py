@@ -7,6 +7,8 @@ __metaclass__ = type
 
 from unittest import TestLoader
 
+from lazr.restfulclient.errors import Unauthorized
+import transaction
 from zope.component import getUtility
 
 from canonical.testing.layers import ZopelessDatabaseLayer
@@ -14,7 +16,10 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCaseWithFactory,
+    WebServiceTestCase,
+    )
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 
 
@@ -61,6 +66,19 @@ class TestTranslationGroupSet(TestCaseWithFactory):
         self.assertEqual(
             [group],
             list(getUtility(ITranslationGroupSet).getByPerson(person)))
+
+
+class TestWebService(WebServiceTestCase):
+
+    def test_attrs(self):
+        group = self.factory.makeTranslationGroup()
+        transaction.commit()
+        ws_group = self.wsObject(group)
+        self.assertEqual(group.name, ws_group.name)
+        self.assertEqual(group.title, ws_group.title)
+        ws_group.name = 'foo'
+        e = self.assertRaises(Unauthorized, ws_group.lp_save)
+        self.assertIn("'name', 'launchpad.Edit'", str(e))
 
 
 def test_suite():
