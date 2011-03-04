@@ -1406,12 +1406,18 @@ class TestPublishBinary(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def makeArgs(self, binarypackagerelease, distroarchseries, archive=None):
+    def makeArgs(self, binarypackagerelease, distroseries, archive=None):
+        """Create a dict of arguments for publishBinary.
+
+        These can also be used to check values on the resulting
+        BinaryPackagePublishingHistory, but the DistroArchSeries will need to
+        be checked manually; publishBinary only takes a DistroSeries.
+        """
         if archive is None:
-            archive = distroarchseries.distroseries.main_archive
+            archive = distroseries.main_archive
         return {
             'binarypackagerelease': binarypackagerelease,
-            'distroarchseries': distroarchseries,
+            'distroseries': distroseries,
             'archive': archive,
             'component': self.factory.makeComponent(),
             'section': self.factory.makeSection(),
@@ -1424,10 +1430,11 @@ class TestPublishBinary(TestCaseWithFactory):
         # destination DAS and pocket, with the given overrides.
         bpr = self.factory.makeBinaryPackageRelease()
         target_das = self.factory.makeDistroArchSeries()
-        args = self.makeArgs(bpr, target_das)
+        args = self.makeArgs(bpr, target_das.distroseries)
         [new_bpph] = getUtility(IPublishingSet).publishBinary(**args)
         keys, values = zip(*args.items())
         self.assertEqual(operator.attrgetter(*keys)(new_bpph), values)
+        self.assertEqual(target_das, new_bpph.distroarchseries)
         self.assertEqual(PackagePublishingStatus.PENDING, new_bpph.status)
 
     def test_architecture_independent(self):
@@ -1442,7 +1449,7 @@ class TestPublishBinary(TestCaseWithFactory):
             distroseries=target_das_a.distroseries)
         target_das_c = self.factory.makeDistroArchSeries(
             distroseries=target_das_a.distroseries, enabled=False)
-        args = self.makeArgs(bpr, target_das_a)
+        args = self.makeArgs(bpr, target_das_a.distroseries)
         bpphs = getUtility(IPublishingSet).publishBinary(
             **args)
         self.assertEquals(2, len(bpphs))
@@ -1454,7 +1461,7 @@ class TestPublishBinary(TestCaseWithFactory):
         # An attempt to copy sometimes for a second time is ignored.
         bpr = self.factory.makeBinaryPackageRelease()
         target_das = self.factory.makeDistroArchSeries()
-        args = self.makeArgs(bpr, target_das)
+        args = self.makeArgs(bpr, target_das.distroseries)
         [new_bpph] = getUtility(IPublishingSet).publishBinary(**args)
         [] = getUtility(IPublishingSet).publishBinary(**args)
 

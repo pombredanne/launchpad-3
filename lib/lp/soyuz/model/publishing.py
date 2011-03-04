@@ -914,18 +914,23 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             binarypackagepublishing=self).prejoin(preJoins)
 
     @property
+    def distroseries(self):
+        """See `IBinaryPackagePublishingHistory`"""
+        return self.distroarchseries.distroseries
+
+    @property
     def binary_package_name(self):
-        """See `ISourcePackagePublishingHistory`"""
+        """See `IBinaryPackagePublishingHistory`"""
         return self.binarypackagerelease.name
 
     @property
     def binary_package_version(self):
-        """See `ISourcePackagePublishingHistory`"""
+        """See `IBinaryPackagePublishingHistory`"""
         return self.binarypackagerelease.version
 
     @property
     def priority_name(self):
-        """See `ISourcePackagePublishingHistory`"""
+        """See `IBinaryPackagePublishingHistory`"""
         return self.priority.name
 
     @property
@@ -1254,32 +1259,30 @@ class PublishingSet:
         """See `IPublishingSet`."""
         secure_copies = []
         for binary in binaries:
-            # This will go wrong if nominatedarchindep gets deleted in a
-            # future series -- it will attempt to retrieve i386 from the
-            # new series, fail, and skip the publication instead of
-            # publishing the remaining archs.
-            try:
-                build = binary.binarypackagerelease.build
-                target_architecture = distroseries[
-                    build.distro_arch_series.architecturetag]
-            except NotFoundError:
-                continue
-            if not target_architecture.enabled:
-                continue
             secure_copies.extend(
                 getUtility(IPublishingSet).publishBinary(
-                    archive, binary.binarypackagerelease, target_architecture,
+                    archive, binary.binarypackagerelease, distroseries,
                     binary.component, binary.section, binary.priority,
                     pocket))
         return secure_copies
 
-    def publishBinary(self, archive, binarypackagerelease, distroarchseries,
+    def publishBinary(self, archive, binarypackagerelease, distroseries,
                       component, section, priority, pocket):
         """See `IPublishingSet`."""
         if not binarypackagerelease.architecturespecific:
-            target_archs = distroarchseries.distroseries.enabled_architectures
+            target_archs = distroseries.enabled_architectures
         else:
-            target_archs = [distroarchseries]
+            # Find the DAS in this series corresponding to the original
+            # build arch tag. If it does not exist or is disabled, we should
+            # not publish.
+            build = binarypackagerelease.build
+            try:
+                das = distroseries[build.distro_arch_series.architecturetag]
+            except NotFoundError:
+                return []
+            if not das.enabled:
+                return []
+            target_archs = [das]
 
         # DDEBs targeted to the PRIMARY archive are published in the
         # corresponding DEBUG archive.

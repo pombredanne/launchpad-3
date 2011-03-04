@@ -674,6 +674,7 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
             required=False, readonly=False,
             ),
         exported_as="distro_arch_series")
+    distroseries = Attribute("The distroseries being published into")
     component = Int(
             title=_('The component being published into'),
             required=False, readonly=False,
