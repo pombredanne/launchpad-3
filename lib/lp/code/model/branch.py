@@ -1401,15 +1401,14 @@ def filter_one_task_per_bug(branch, tasks):
     # our target.
     # Second pass selects the earliest bugtask where the bug has no task on
     # our target.
-    for task in tasks:
-        if task.bug not in order:
-            order[task.bug] = [len(order) + 1, None]
+    for pos, task in enumerate(tasks):
+        bug = task.bug
+        if bug not in order:
+            order[bug] = [pos, None]
         if task.target == bugtarget:
-            order[task.bug][1] = task
+            order[bug][1] = task
     for task in tasks:
-        if order[task.bug][1] is None:
-            order[task.bug][1] = task
-    # Now we pull out the tasks
-    result = order.values()
-    result.sort()
-    return [task for pos, task in result]
+        index = order[task.bug]
+        if index[1] is None:
+            index[1] = task
+    return [task for pos, task in sorted(order.values())]
