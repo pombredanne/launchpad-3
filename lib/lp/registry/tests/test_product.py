@@ -39,6 +39,7 @@ from lp.testing import (
     TestCaseWithFactory,
     WebServiceTestCase,
     )
+from lp.translations.enums import TranslationPermission
 
 
 class TestProduct(TestCaseWithFactory):
@@ -359,11 +360,28 @@ class TestWebService(WebServiceTestCase):
 
     def test_translations_usage(self):
         """The translations_usage field should be writable."""
-        series = self.factory.makeProduct()
+        product = self.factory.makeProduct()
         transaction.commit()
-        ws_series = self.wsObject(series, series.owner)
-        ws_series.translations_usage = ServiceUsage.EXTERNAL.title
-        ws_series.lp_save()
+        ws_product = self.wsObject(product, product.owner)
+        ws_product.translations_usage = ServiceUsage.EXTERNAL.title
+        ws_product.lp_save()
+
+    def test_translationpermission(self):
+        """The translationpermission field should be writable."""
+        product = self.factory.makeProduct()
+        transaction.commit()
+        ws_product = self.wsObject(product, product.owner)
+        ws_product.translationpermission = TranslationPermission.OPEN.title
+        ws_product.lp_save()
+
+    def test_translationgroup(self):
+        product = self.factory.makeProduct()
+        group = self.factory.makeTranslationGroup()
+        transaction.commit()
+        ws_product = self.wsObject(product, product.owner)
+        ws_group = self.wsObject(group)
+        ws_product.translationgroup = ws_group
+        ws_product.lp_save()
 
 
 def test_suite():

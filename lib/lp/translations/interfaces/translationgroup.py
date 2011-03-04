@@ -12,6 +12,9 @@ __all__ = [
     'ITranslationGroupSet',
     ]
 
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    )
 from zope.interface import (
     Attribute,
     Interface,
@@ -36,6 +39,8 @@ from lp.translations.enums import TranslationPermission
 
 class ITranslationGroup(IHasOwner):
     """A TranslationGroup."""
+
+    export_as_webservice_entry('translation_group')
 
     id = Int(
             title=_('Translation Group ID'), required=True, readonly=True,
