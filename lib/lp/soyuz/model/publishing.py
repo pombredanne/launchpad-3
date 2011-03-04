@@ -1297,6 +1297,7 @@ class PublishingSet:
 
     def publishBinaries(self, archive, distroseries, pocket,
                         bprs_and_overrides):
+        """See `IPublishingSet`."""
         publications = []
         for bpr, component, section, priority in bprs_and_overrides:
             target_archs = get_target_distroarchseries(bpr, distroseries)

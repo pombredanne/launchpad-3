@@ -875,7 +875,25 @@ class IPublishingSet(Interface):
             publishing histories.
         """
 
-    def publishBinary(archive, binarypackagerelease, distroarchseries,
+    def publishBinaries(archive, distroseries, pocket, bprs_and_overrides):
+        """Efficiently publish multiple BinaryPackageReleases in an Archive.
+
+        Creates `IBinaryPackagePublishingHistory` records for each binary,
+        handling architecture-independent and debug packages, avoiding
+        creation of duplicate publications, and leaving disabled
+        architectures alone.
+
+        :param archive: The target `IArchive`.
+        :param distroseries: The target `IDistroSeries`.
+        :param pocket: The target `PackagePublishingPocket`.
+        :param bprs_and_overrides: The binaries to publish and their
+            overrides, as a sequence of (`BinaryPackageRelease`, `Component`,
+            `Section`, `PackagePublishingPriority`) tuples.
+
+        :return: A list of new `IBinaryPackagePublishingHistory` records.
+        """
+
+    def publishBinary(archive, binarypackagerelease, distroseries,
                       component, section, priority, pocket):
         """Publish a `BinaryPackageRelease` in an archive.
 
@@ -887,9 +905,7 @@ class IPublishingSet(Interface):
 
         :param archive: The target `IArchive`.
         :param binarypackagerelease: The `IBinaryPackageRelease` to copy.
-        :param distroarchseries: An `IDistroArchSeries`. If the binary is
-            architecture-independent, it will be published to all enabled
-            architectures in this series.
+        :param distroseries: An `IDistroSeries`.
         :param component: The target `IComponent`.
         :param section: The target `ISection`.
         :param priority: The target `PackagePublishingPriority`.

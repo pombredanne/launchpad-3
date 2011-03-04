@@ -1401,7 +1401,7 @@ class TestGetBuiltBinaries(TestNativePublishingBase):
         self.assertThat(recorder, HasQueryCount(Equals(5)))
 
 
-class TestPublishBinary(TestCaseWithFactory):
+class TestPublishBinaries(TestCaseWithFactory):
     """Test PublishingSet.publishBinary() works."""
 
     layer = LaunchpadZopelessLayer
@@ -1416,13 +1416,14 @@ class TestPublishBinary(TestCaseWithFactory):
         if archive is None:
             archive = distroseries.main_archive
         return {
-            'binarypackagerelease': binarypackagerelease,
-            'distroseries': distroseries,
             'archive': archive,
-            'component': self.factory.makeComponent(),
-            'section': self.factory.makeSection(),
-            'priority': PackagePublishingPriority.REQUIRED,
+            'distroseries': distroseries,
             'pocket': PackagePublishingPocket.BACKPORTS,
+            'bprs_and_overrides': [
+                (binarypackagerelease, self.factory.makeComponent(),
+                 self.factory.makeSection(),
+                 PackagePublishingPriority.REQUIRED),
+                ],
             }
 
     def test_architecture_dependent(self):
@@ -1438,7 +1439,7 @@ class TestPublishBinary(TestCaseWithFactory):
         bpr = self.factory.makeBinaryPackageRelease(
             build=build, architecturespecific=True)
         args = self.makeArgs(bpr, target_das.distroseries)
-        [new_bpph] = getUtility(IPublishingSet).publishBinary(**args)
+        [new_bpph] = getUtility(IPublishingSet).publishBinaries(**args)
         keys, values = zip(*args.items())
         self.assertEqual(operator.attrgetter(*keys)(new_bpph), values)
         self.assertEqual(target_das, new_bpph.distroarchseries)
@@ -1457,7 +1458,7 @@ class TestPublishBinary(TestCaseWithFactory):
         target_das_c = self.factory.makeDistroArchSeries(
             distroseries=target_das_a.distroseries, enabled=False)
         args = self.makeArgs(bpr, target_das_a.distroseries)
-        bpphs = getUtility(IPublishingSet).publishBinary(
+        bpphs = getUtility(IPublishingSet).publishBinaries(
             **args)
         self.assertEquals(2, len(bpphs))
         self.assertEquals(
@@ -1469,10 +1470,10 @@ class TestPublishBinary(TestCaseWithFactory):
         bpr = self.factory.makeBinaryPackageRelease()
         target_das = self.factory.makeDistroArchSeries()
         args = self.makeArgs(bpr, target_das.distroseries)
-        [new_bpph] = getUtility(IPublishingSet).publishBinary(**args)
-        [] = getUtility(IPublishingSet).publishBinary(**args)
+        [new_bpph] = getUtility(IPublishingSet).publishBinaries(**args)
+        [] = getUtility(IPublishingSet).publishBinaries(**args)
 
         # But changing the target (eg. to RELEASE instead of BACKPORTS)
         # causes a new publication to be created.
         args['pocket'] = PackagePublishingPocket.RELEASE
-        [another_bpph] = getUtility(IPublishingSet).publishBinary(**args)
+        [another_bpph] = getUtility(IPublishingSet).publishBinaries(**args)
