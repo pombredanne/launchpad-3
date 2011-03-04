@@ -1259,28 +1259,43 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         self.requestDeletion(removed_by, removal_comment)
 
 
-def get_target_distroarchseries(binarypackagerelease, distroseries):
-    """Get a list of DistroArchSeries in which the binary should be published.
+def expand_binary_requests(distroseries, bprs_and_overrides):
+    """Architecture-expand a list of binary publication requests.
 
-    For architecture-independent binaries, this is all enabled architectures
-    in the series. For architecture-dependent binaries, this is the
+    For architecture-independent binaries, a tuple will be returned for each
+    enabled architecture in the series.
+    For architecture-dependent binaries, a tuple will be returned only for the
     architecture corresponding to the build architecture, if it exists and is
     enabled.
+
+    :param bprs_and_overrides: The binaries to publish and their
+        overrides, as a sequence of (`BinaryPackageRelease`, `Component`,
+        `Section`, `PackagePublishingPriority`) tuples.
+
+    :return: The binaries and the architectures in which they should be
+        published, as a sequence of (`DistroArchSeries`,
+        `BinaryPackageRelease`, `Component`, `Section`,
+        `PackagePublishingPriority`) tuples.`
     """
-    if not binarypackagerelease.architecturespecific:
-        return list(distroseries.enabled_architectures)
-    else:
-        # Find the DAS in this series corresponding to the original
-        # build arch tag. If it does not exist or is disabled, we should
-        # not publish.
-        build = binarypackagerelease.build
-        try:
-            das = distroseries[build.distro_arch_series.architecturetag]
-        except NotFoundError:
-            return []
-        if not das.enabled:
-            return []
-        return [das]
+
+    archs = list(distroseries.enabled_architectures)
+    arch_map = dict((arch.architecturetag, arch) for arch in archs)
+
+    expanded = []
+    for bpr, component, section, priority in bprs_and_overrides:
+        if bpr.architecturespecific:
+            # Find the DAS in this series corresponding to the original
+            # build arch tag. If it does not exist or is disabled, we should
+            # not publish.
+            # XXX: Need to preload BPB/DAS.
+            target_arch = arch_map.get(
+                bpr.build.distro_arch_series.architecturetag)
+            target_archs = [target_arch] if target_arch is not None else []
+        else:
+            target_archs = archs
+        for target_arch in target_archs:
+            expanded.append((target_arch, bpr, component, section, priority))
+    return expanded
 
 
 class PublishingSet:
@@ -1298,30 +1313,27 @@ class PublishingSet:
     def publishBinaries(self, archive, distroseries, pocket,
                         bprs_and_overrides):
         """See `IPublishingSet`."""
-        publications = []
-        for bpr, component, section, priority in bprs_and_overrides:
-            target_archs = get_target_distroarchseries(bpr, distroseries)
-            if len(target_archs) == 0:
-                return
+        expanded = expand_binary_requests(distroseries, bprs_and_overrides)
 
+        publications = []
+        for das, bpr, component, section, priority in expanded:
             # DDEBs targeted to the PRIMARY archive are published in the
             # corresponding DEBUG archive.
             if bpr.binpackageformat == BinaryPackageFormat.DDEB:
                 archive = get_debug_archive(archive)
 
-            for target_arch in target_archs:
-                # We only publish the binary if it doesn't already exist in
-                # the destination. Note that this means we don't support
-                # override changes on their own.
-                binaries_in_destination = archive.getAllPublishedBinaries(
-                    name=bpr.name, exact_match=True, version=bpr.version,
-                    status=active_publishing_status, pocket=pocket,
-                    distroarchseries=target_arch)
-                if not bool(binaries_in_destination):
-                    publications.append(
-                        getUtility(IPublishingSet).newBinaryPublication(
-                            archive, bpr, target_arch, component, section,
-                            priority, pocket))
+            # We only publish the binary if it doesn't already exist in
+            # the destination. Note that this means we don't support
+            # override changes on their own.
+            binaries_in_destination = archive.getAllPublishedBinaries(
+                name=bpr.name, exact_match=True, version=bpr.version,
+                status=active_publishing_status, pocket=pocket,
+                distroarchseries=das)
+            if not bool(binaries_in_destination):
+                publications.append(
+                    getUtility(IPublishingSet).newBinaryPublication(
+                        archive, bpr, das, component, section, priority,
+                        pocket))
         return publications
 
     def publishBinary(self, archive, binarypackagerelease, distroseries,
