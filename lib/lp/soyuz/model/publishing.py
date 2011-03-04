@@ -136,6 +136,15 @@ def maybe_override_component(archive, distroseries, component):
     return component
 
 
+def get_debug_archive(archive):
+    debug_archive = archive.debug_archive
+    if debug_archive is None:
+        raise QueueInconsistentStateError(
+            "Could not find the corresponding DEBUG archive "
+            "for %s" % (archive.displayname))
+    return debug_archive
+
+
 class FilePublishingBase:
     """Base class to publish files in the archive."""
 
@@ -1293,12 +1302,7 @@ class PublishingSet:
         # DDEBs targeted to the PRIMARY archive are published in the
         # corresponding DEBUG archive.
         if binarypackagerelease.binpackageformat == BinaryPackageFormat.DDEB:
-            debug_archive = archive.debug_archive
-            if debug_archive is None:
-                raise QueueInconsistentStateError(
-                    "Could not find the corresponding DEBUG archive "
-                    "for %s" % (archive.displayname))
-            archive = debug_archive
+            archive = get_debug_archive(archive)
 
         published_binaries = []
         for target_arch in target_archs:
