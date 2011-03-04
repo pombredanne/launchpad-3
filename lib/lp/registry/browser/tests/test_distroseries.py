@@ -68,6 +68,21 @@ class TestDerivedFromSeriesSource(TestCaseWithFactory):
         observed_distroseries = set(term.value for term in vocabulary)
         self.assertEqual(expected_distroseries, observed_distroseries)
 
+    def test_distribution_with_derived_series_of_self(self):
+        # Given a distribution with series derived from other of its series
+        # (which shouldn't happen), derived_from_series_source returns a
+        # vocabulary for all distroseries in all distributions *except* the
+        # given distribution.
+        parent_distroseries = self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries(
+            distribution=parent_distroseries.distribution,
+            parent_series=parent_distroseries)
+        vocabulary = derived_from_series_source(distroseries.distribution)
+        expected_distroseries = (
+            set(self.all_distroseries) - set(distroseries.distribution))
+        observed_distroseries = set(term.value for term in vocabulary)
+        self.assertEqual(expected_distroseries, observed_distroseries)
+
     def test_distroseries(self):
         # Given a distroseries, derived_from_series_source returns the
         # vocabulary the same as for its distribution.

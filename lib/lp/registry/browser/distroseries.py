@@ -551,7 +551,8 @@ def derived_from_series_source(context):
         serieses = set(all_serieses)
     else:
         for series in context_serieses:
-            if series.parent_series is not None:
+            if (series.parent_series is not None and
+                series.parent_series not in context_serieses):
                 # Derive only from series in the same distribution as other
                 # derived series in this distribution.
                 serieses = set(series.parent_series.distribution)
