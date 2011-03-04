@@ -6,6 +6,7 @@ import logging
 import os
 import unittest
 
+from testtools.matchers import Equals
 import transaction
 from zope.security.management import setSecurityPolicy
 
@@ -18,10 +19,13 @@ from canonical.launchpad.mail import (
     helpers,
     )
 from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.services.log.logger import BufferLogger
 from lp.services.mail.incoming import (
     authenticateEmail,
+    extract_addresses,
     handleMail,
     MailErrorUtility,
+    ORIGINAL_TO_HEADER,
     )
 from lp.services.mail.sendmail import MailController
 from lp.services.mail.stub import TestMailer
@@ -103,6 +107,46 @@ class TestIncoming(TestCaseWithFactory):
             helpers.IncomingEmailError,
             authenticateEmail,
             msg, fail_all_timestamps)
+
+
+class TestExtractAddresses(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_original_to(self):
+        mail = self.factory.makeSignedMessage()
+        original_to = 'eric@vikings.example.com'
+        mail[ORIGINAL_TO_HEADER] = original_to
+        self.assertThat(
+            extract_addresses(mail, None, None, None),
+            Equals([original_to]))
+
+    def test_original_to_in_body(self):
+        header_to = 'eric@vikings-r-us.example.com'
+        original_to = 'eric@vikings.example.com'
+        alias = 'librarian-somewhere'
+        body = '%s: %s\n\nsome body stuff' % (
+            ORIGINAL_TO_HEADER, original_to)
+        log = BufferLogger()
+        mail = self.factory.makeSignedMessage(
+            body=body, to_address=header_to)
+        addresses = extract_addresses(mail, mail.as_string(), alias, log)
+        self.assertThat(addresses, Equals([header_to]))
+        self.assertThat(
+            log.getLogBuffer(),
+            Equals('INFO Suspected spam: librarian-somewhere\n'))
+
+    def test_original_to_missing(self):
+        header_to = 'eric@vikings-r-us.example.com'
+        alias = 'librarian-somewhere'
+        log = BufferLogger()
+        mail = self.factory.makeSignedMessage(to_address=header_to)
+        addresses = extract_addresses(mail, mail.as_string(), alias, log)
+        self.assertThat(addresses, Equals([header_to]))
+        self.assertThat(
+            log.getLogBuffer(),
+            Equals('WARNING No X-Launchpad-Original-To header was present '
+                   'in email: librarian-somewhere\n'))
 
 
 def setUp(test):
