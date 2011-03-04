@@ -234,12 +234,27 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
                 help="Derived distribution series.")])
 
     def getDistroSeries(self):
+        """Return the `DistroSeries` that are to be processed."""
         if self.options.all:
             return list(find_derived_series())
         else:
             distro = getUtility(IDistributionSet).getByName(
                 self.options.distribution)
-            return [distro.getSeries(self.options.series)]
+            series = distro.getSeries(self.options.series)
+            if series is None:
+                raise OptionValueError(
+                    "Could not find %s series %s." % (
+                        self.options.distribution, self.options.series))
+            if series.parent_series is None:
+                raise OptionValueError(
+                    "%s series %s is not derived." % (
+                        self.options.distribution, self.options.series))
+            return [series]
+
+    def processDistroSeries(self, distroseries):
+        """Generate `DistroSeriesDifference`s for `distroseries`."""
+        self.logger.info("Looking for differences in %s.", distroseries)
+        populate_distroseriesdiff(distroseries)
 
     def main(self):
         specified_distro = (self.options.distribution is not None)
@@ -251,7 +266,5 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
             raise OptionValueError(
                 "Either specify a distribution series, or use --all.")
 
-        self.distroseries = self.getDistroSeries()
-        for series in self.distroseries:
-            self.logger.info("Looking for differences in %s.", series)
-            populate_distroseriesdiff(series)
+        for series in self.getDistroSeries():
+            self.processDistroSeries(series)

@@ -38,6 +38,7 @@ from lp.soyuz.interfaces.publishing import (
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.enums import ArchivePurpose
 from lp.testing import TestCaseWithFactory
+from lp.testing.fakemethod import FakeMethod
 
 
 class FactoryHelper:
@@ -441,28 +442,29 @@ class TestPopulateDistroSeriesDiffScript(TestCaseWithFactory, FactoryHelper):
         script.logger = DevNullLogger()
         return script
 
-    def test_script_populates_for_distroseries(self):
-        distroseries = self.makeDerivedDistroSeries()
-        self.makeSPPH(distroseries=distroseries)
-        self.makeSPPH(distroseries=distroseries.parent_series)
-        shared_spph = self.makeSPPH(distroseries=distroseries)
-        self.makeSPPH(
-            distroseries=distroseries.parent_series,
-            sourcepackagerelease=shared_spph.sourcepackagerelease)
-
+    def test_finds_distroseries(self):
+        spph = self.makeSPPH(distroseries=self.makeDerivedDistroSeries())
         script = self.makeScript([
-            '--distribution', distroseries.distribution.name,
-            '--series', distroseries.name,
+            '--distribution', spph.distroseries.distribution.name,
+            '--series', spph.distroseries.name,
+            ])
+        self.assertEqual([spph.distroseries], script.getDistroSeries())
+
+    def test_finds_all_distroseries(self):
+        spphs = [
+            self.makeSPPH(self.makeDerivedDistroSeries())
+            for counter in xrange(2)]
+        script = self.makeScript(['--all'])
+        distroseries = script.getDistroSeries()
+        for spph in spphs:
+            self.assertIn(spph.distroseries, distroseries)
+
+    def test_populates_for_distroseries(self):
+        spph = self.makeSPPH(distroseries=self.makeDerivedDistroSeries())
+        script = self.makeScript([
+            '--distribution', spph.distroseries.distribution.name,
+            '--series', spph.distroseries.name,
             ])
         script.main()
-
-        self.assertEqual([distroseries], script.distroseries)
-        self.assertNotEqual(0, self.getDistroSeriesDiff(distroseries).count())
-
-    def test_script_populates_for_all_distroseries(self):
-        distroseries = [
-            self.makeDerivedDistroSeries() for counter in xrange(2)]
-        script = self.makeScript(['--all'])
-        script.main()
-        for series in distroseries:
-            self.assertIn(series, script.distroseries)
+        self.assertNotEqual(
+            0, self.getDistroSeriesDiff(spph.distroseries).count())
