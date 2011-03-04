@@ -39,7 +39,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.bugs.browser.bug import BugViewMixin
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enum import BugNotificationLevel, HIDDEN_BUG_NOTIFICATION_LEVELS
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.services import features
@@ -118,13 +118,13 @@ class AdvancedSubscriptionMixin:
             # drop the NOTHING option since it just makes the UI
             # confusing.
             for level in sorted(BugNotificationLevel.items, reverse=True)
-                if level != BugNotificationLevel.NOTHING]
+                if level not in HIDDEN_BUG_NOTIFICATION_LEVELS]
         bug_notification_vocabulary = SimpleVocabulary(
             bug_notification_level_terms)
 
         if (self.current_user_subscription is not None and
-            self.current_user_subscription.bug_notification_level in
-                bug_notification_level_terms):
+            self.current_user_subscription.bug_notification_level not in
+                HIDDEN_BUG_NOTIFICATION_LEVELS):
             default_value = (
                 self.current_user_subscription.bug_notification_level)
         else:
