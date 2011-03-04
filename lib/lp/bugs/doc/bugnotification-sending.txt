@@ -678,7 +678,6 @@ more carefully at the notifications just to see that the status has
 been set properly.
 
     >>> from lp.bugs.model.bugnotification import BugNotification
-    >>> from lp.bugs.enum import BugNotificationStatus
     >>> for notification in BugNotification.select(orderBy='id')[-8:]:
     ...     if notification.is_comment:
     ...         identifier = 'comment'
