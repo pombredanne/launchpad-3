@@ -65,3 +65,10 @@ class TestGoogleSearchService(TestCase):
         with urlfetch_exception(TimeoutError, 'oops'):
             self.assertRaises(
                 GoogleResponseError, self.search_service.search, 'fnord')
+
+    def test___parse_google_search_protocol_SyntaxError(self):
+        # The method converts SyntaxError to GoogleResponseError.
+        with urlfetch_exception(SyntaxError, 'oops'):
+            self.assertRaises(
+                GoogleResponseError,
+                self.search_service._parse_google_search_protocol, '')

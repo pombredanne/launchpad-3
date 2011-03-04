@@ -273,12 +273,10 @@ class GoogleSearchService:
         """
         try:
             gsp_doc = ET.fromstring(gsp_xml)
-        except SyntaxError:
+            start_param = self._getElementByAttributeValue(
+                gsp_doc, './PARAM', 'name', 'start')
+        except (SyntaxError, IndexError):
             raise GoogleResponseError("The response was incomplete, no xml.")
-        # XXX sinzui 2011-03-04: this can fail.
-        # IndexError
-        start_param = self._getElementByAttributeValue(
-            gsp_doc, './PARAM', 'name', 'start')
         try:
             start = int(start_param.get('value'))
         except (AttributeError, ValueError):
