@@ -1407,10 +1407,10 @@ class TestPublishBinary(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def test_simple(self):
-        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        bpr = self.factory.makeBinaryPackageRelease()
         target_das = self.factory.makeDistroArchSeries()
         args = {
-            'binarypackagerelease': bpph.binarypackagerelease,
+            'binarypackagerelease': bpr,
             'distroarchseries': target_das,
             'archive': target_das.distroseries.distribution.main_archive,
             'component': self.factory.makeComponent(),
