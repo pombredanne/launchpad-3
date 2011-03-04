@@ -1399,3 +1399,26 @@ class TestGetBuiltBinaries(TestNativePublishingBase):
                 for bpf in files:
                     bpf.libraryfile.filename
         self.assertThat(recorder, HasQueryCount(Equals(5)))
+
+
+class TestPublishBinary(TestCaseWithFactory):
+    """Test PublishingSet.publishBinary() works."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_simple(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        target_das = self.factory.makeDistroArchSeries()
+        args = {
+            'binarypackagerelease': bpph.binarypackagerelease,
+            'distroarchseries': target_das,
+            'archive': target_das.distroseries.distribution.main_archive,
+            'component': self.factory.makeComponent(),
+            'section': self.factory.makeSection(),
+            'priority': PackagePublishingPriority.REQUIRED,
+            'pocket': PackagePublishingPocket.BACKPORTS,
+            }
+        [new_bpph] = getUtility(IPublishingSet).publishBinary(**args)
+        keys, values = zip(*args.items())
+        self.assertEqual(
+            operator.attrgetter(*keys)(new_bpph), values)
