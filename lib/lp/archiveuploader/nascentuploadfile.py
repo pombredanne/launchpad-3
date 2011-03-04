@@ -796,6 +796,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
         spphs = distroseries.getPublishedSources(
             self.source_name, version=self.source_version,
             include_pending=True, archive=self.policy.archive)
+        # Workaround storm bug in EmptyResultSet.
+        spphs = list(spphs[:1])
         try:
             return spphs[0].sourcepackagerelease
         except IndexError:

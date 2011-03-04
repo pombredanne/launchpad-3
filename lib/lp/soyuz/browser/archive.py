@@ -35,6 +35,7 @@ from urlparse import urlparse
 
 import pytz
 from sqlobject import SQLObjectNotFound
+from storm.expr import Desc
 from storm.zope.interfaces import IResultSet
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
@@ -944,7 +945,7 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
             }
 
         now = datetime.now(tz=pytz.UTC)
-        source_ids = [result_tuple[0].id for result_tuple in result_tuples]
+        source_ids = [result_tuple.id for result_tuple in result_tuples]
         summaries = getUtility(
             IPublishingSet).getBuildStatusSummariesForSourceIdsAndArchive(
                 source_ids, self.context)

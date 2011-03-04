@@ -210,7 +210,10 @@ class DistroSeriesDifference(Storm):
             self.source_package_name, include_pending=True)
 
         # The most recent published source is the first one.
-        return pubs.first()
+        try:
+            return pubs[0]
+        except IndexError:
+            return None
 
     def update(self):
         """See `IDistroSeriesDifference`."""
