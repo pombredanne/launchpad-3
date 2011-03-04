@@ -1818,7 +1818,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeSignedMessage(self, msgid=None, body=None, subject=None,
             attachment_contents=None, force_transfer_encoding=False,
-            email_address=None, signing_context=None):
+            email_address=None, signing_context=None, to_address=None):
         """Return an ISignedMessage.
 
         :param msgid: An rfc2822 message-id.
@@ -1836,8 +1836,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             person = self.makePerson()
             email_address = removeSecurityProxy(person).preferredemail.email
         mail['From'] = email_address
-        mail['To'] = removeSecurityProxy(
-            self.makePerson()).preferredemail.email
+        if to_address is None:
+            to_address = removeSecurityProxy(
+                self.makePerson()).preferredemail.email
+        mail['To'] = to_address
         if subject is None:
             subject = self.getUniqueString('subject')
         mail['Subject'] = subject
