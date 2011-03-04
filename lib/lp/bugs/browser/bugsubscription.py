@@ -590,3 +590,10 @@ class BugSubscriptionListView(LaunchpadView):
             if subscriber.isTeam() and self.user in subscriber.adminmembers:
                 return True
         return False
+
+    @property
+    def is_target_owner(self):
+        for bugtask in self.context.bug.bugtasks:
+            if self.user.inTeam(bugtask.target.owner):
+                return True
+        return False

@@ -423,3 +423,31 @@ class BugSubscriptionsListViewTestCase(TestCaseWithFactory):
         with person_logged_in(team.teamowner):
             duplicate.subscribe(team, team.teamowner)
             self.assertTrue(view.is_team_admin)
+
+    def test_is_target_owner_no(self):
+        # A person is a target owner if they are owner for
+        # any of the targets of any of the bug tasks.
+        view = self.getView()
+        with person_logged_in(self.subscriber):
+            self.assertFalse(view.is_target_owner)
+
+    def test_is_target_owner(self):
+        # A person is a target owner if they are owner for
+        # any of the targets of any of the bug tasks.
+        # In this case, we are logged in as the default
+        # bug task target owner.
+        target = self.bug.default_bugtask.target
+        view = self.getView()
+        with person_logged_in(target.owner):
+            self.assertTrue(view.is_target_owner)
+
+    def test_is_target_owner_mixed(self):
+        # A person is a target owner if they are owner for
+        # any of the targets of any of the bug tasks:
+        # in this "mixed" case, we are logged in as
+        # the non-default bug task target owner.
+        bugtask = self.factory.makeBugTask(bug=self.bug)
+        target = bugtask.target
+        view = self.getView()
+        with person_logged_in(target.owner):
+            self.assertTrue(view.is_target_owner)
