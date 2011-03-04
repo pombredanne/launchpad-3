@@ -1406,19 +1406,46 @@ class TestPublishBinary(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def test_simple(self):
-        bpr = self.factory.makeBinaryPackageRelease()
-        target_das = self.factory.makeDistroArchSeries()
-        args = {
-            'binarypackagerelease': bpr,
-            'distroarchseries': target_das,
-            'archive': target_das.distroseries.distribution.main_archive,
+    def makeArgs(self, binarypackagerelease, distroarchseries, archive=None):
+        if archive is None:
+            archive = distroarchseries.distroseries.main_archive
+        return {
+            'binarypackagerelease': binarypackagerelease,
+            'distroarchseries': distroarchseries,
+            'archive': archive,
             'component': self.factory.makeComponent(),
             'section': self.factory.makeSection(),
             'priority': PackagePublishingPriority.REQUIRED,
             'pocket': PackagePublishingPocket.BACKPORTS,
             }
+
+    def test_simple(self):
+        # Architecture-dependent binaries get created as PENDING in the
+        # destination DAS and pocket, with the given overrides.
+        bpr = self.factory.makeBinaryPackageRelease()
+        target_das = self.factory.makeDistroArchSeries()
+        args = self.makeArgs(bpr, target_das)
         [new_bpph] = getUtility(IPublishingSet).publishBinary(**args)
         keys, values = zip(*args.items())
-        self.assertEqual(
-            operator.attrgetter(*keys)(new_bpph), values)
+        self.assertEqual(operator.attrgetter(*keys)(new_bpph), values)
+        self.assertEqual(PackagePublishingStatus.PENDING, new_bpph.status)
+
+    def test_architecture_independent(self):
+        # Architecture-independent binaries get published to all enabled
+        # DASes in the series.
+        bpr = self.factory.makeBinaryPackageRelease(
+            architecturespecific=False)
+        # Create 3 architectures. The binary will not be published in
+        # the disabled one.
+        target_das_a = self.factory.makeDistroArchSeries()
+        target_das_b = self.factory.makeDistroArchSeries(
+            distroseries=target_das_a.distroseries)
+        target_das_c = self.factory.makeDistroArchSeries(
+            distroseries=target_das_a.distroseries, enabled=False)
+        args = self.makeArgs(bpr, target_das_a)
+        bpphs = getUtility(IPublishingSet).publishBinary(
+            **args)
+        self.assertEquals(2, len(bpphs))
+        self.assertEquals(
+            set((target_das_a, target_das_b)),
+            set(bpph.distroarchseries for bpph in bpphs))
