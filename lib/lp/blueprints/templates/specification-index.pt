@@ -51,9 +51,10 @@
     </div>
 
     <div class="yui-g">
-        <div class="portlet">
-          <h2>Blueprint information</h2>
-          <div class="yui-u first">
+      <div class="portlet">
+        <h2>Blueprint information</h2>
+
+        <div class="yui-u first">
           <div class="two-column-list">
             <dl>
               <dt>Priority:</dt>
@@ -195,10 +196,9 @@
               </dd>
             </dl>
           </div>
+        </div>
 
-      </div>
-
-      <div class="yui-u">
+        <div class="yui-u">
           <div id="linked_branches">
             <h3>Related branches</h3>
 
@@ -244,49 +244,49 @@
             </ul>
           </div>
 
-            <div>
-              <h3>Sprints</h3>
-              <ul
-                tal:define="sprint_links context/sprint_links"
-                tal:condition="sprint_links">
-                <li tal:repeat="sprint_link sprint_links">
-                  <tal:approval replace="structure sprint_link/@@+icon-status" />
-                  <a
-                    tal:attributes="href sprint_link/sprint/fmt:url"
-                    tal:content="sprint_link/sprint/name"/>
-                  <a
-                    tal:condition="sprint_link/sprint/required:launchpad.Driver"
-                    tal:attributes="href string:${context/fmt:url}/${sprint_link/sprint/name}"
-                    ><img src="/@@/edit" /></a>
-                </li>
-              </ul>
+          <div>
+            <h3>Sprints</h3>
+            <ul
+              tal:define="sprint_links context/sprint_links"
+              tal:condition="sprint_links">
+              <li tal:repeat="sprint_link sprint_links">
+                <tal:approval replace="structure sprint_link/@@+icon-status" />
+                <a
+                  tal:attributes="href sprint_link/sprint/fmt:url"
+                  tal:content="sprint_link/sprint/name"/>
+                <a
+                  tal:condition="sprint_link/sprint/required:launchpad.Driver"
+                  tal:attributes="href string:${context/fmt:url}/${sprint_link/sprint/name}"
+                  ><img src="/@@/edit" /></a>
+              </li>
+            </ul>
 
-              <ul class="horizontal">
-                <li tal:define="link context_menu/linksprint"
-                  tal:condition="link/enabled">
-                  <a tal:replace="structure link/fmt:link" />
-                </li>
-              </ul>
-            </div>
+            <ul class="horizontal">
+              <li tal:define="link context_menu/linksprint"
+                tal:condition="link/enabled">
+                <a tal:replace="structure link/fmt:link" />
+              </li>
+            </ul>
           </div>
-
-            <div>
-              <h3 tal:condition="not:context/feedbackrequests">Feedback requests</h3>
-
-              <div tal:replace="structure context/@@+portlet-feedbackqueue" />
-
-              <ul class="horizontal">
-                <li tal:define="link context_menu/givefeedback"
-                    tal:condition="link/enabled">
-                  <a tal:replace="structure link/fmt:link" />
-                </li>
-                <li tal:define="link context_menu/requestfeedback"
-                    tal:condition="link/enabled">
-                  <a tal:replace="structure link/fmt:link" />
-                </li>
-              </ul>
-            </div>
         </div>
+
+        <div>
+          <h3 tal:condition="not:context/feedbackrequests">Feedback requests</h3>
+
+          <div tal:replace="structure context/@@+portlet-feedbackqueue" />
+
+          <ul class="horizontal">
+            <li tal:define="link context_menu/givefeedback"
+                tal:condition="link/enabled">
+              <a tal:replace="structure link/fmt:link" />
+            </li>
+            <li tal:define="link context_menu/requestfeedback"
+                tal:condition="link/enabled">
+              <a tal:replace="structure link/fmt:link" />
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
 
     <div class="portlet">
