@@ -1257,14 +1257,20 @@ class PublishingSet:
 
     def copyBinariesTo(self, binaries, distroseries, pocket, archive):
         """See `IPublishingSet`."""
-        secure_copies = []
-        for binary in binaries:
-            secure_copies.extend(
-                getUtility(IPublishingSet).publishBinary(
-                    archive, binary.binarypackagerelease, distroseries,
-                    binary.component, binary.section, binary.priority,
+        return self.publishBinaries(
+            archive, distroseries, pocket,
+            ((bpph.binarypackagerelease, bpph.component, bpph.section,
+              bpph.priority) for bpph in binaries))
+
+    def publishBinaries(self, archive, distroseries, pocket,
+                        bprs_and_overrides):
+        publications = []
+        for bpr, component, section, priority in bprs_and_overrides:
+            publications.extend(
+                self.publishBinary(
+                    archive, bpr, distroseries, component, section, priority,
                     pocket))
-        return secure_copies
+        return publications
 
     def publishBinary(self, archive, binarypackagerelease, distroseries,
                       component, section, priority, pocket):
