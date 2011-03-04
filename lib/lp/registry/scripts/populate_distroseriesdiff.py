@@ -229,7 +229,8 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
             Option(
                 '-d', '--distribution', dest='distribution', default=None,
                 help="Derived distribution."),
-            Option('-s', '--series', dest='series', default=None,
+            Option(
+                '-s', '--series', dest='series', default=None,
                 help="Derived distribution series.")])
 
     def getDistroSeries(self):
