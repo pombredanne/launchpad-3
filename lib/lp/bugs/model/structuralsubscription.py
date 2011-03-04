@@ -643,7 +643,7 @@ def _get_structural_subscription_filter_id_query(bug, bugtasks, level):
     This provides the core implementation for
     get_structural_subscribers_for_bug and
     get_structural_subscribers_for_bugtask.
-    
+
     :param bug: a bug.
     :param bugtasks: an iterable of one or more bugtasks of the bug.
     :param level: a notification level.
