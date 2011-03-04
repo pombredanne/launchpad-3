@@ -1407,12 +1407,7 @@ class TestPublishBinaries(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def makeArgs(self, binarypackagerelease, distroseries, archive=None):
-        """Create a dict of arguments for publishBinary.
-
-        These can also be used to check values on the resulting
-        BinaryPackagePublishingHistory, but the DistroArchSeries will need to
-        be checked manually; publishBinary only takes a DistroSeries.
-        """
+        """Create a dict of arguments for publishBinary."""
         if archive is None:
             archive = distroseries.main_archive
         return {
@@ -1439,11 +1434,16 @@ class TestPublishBinaries(TestCaseWithFactory):
         bpr = self.factory.makeBinaryPackageRelease(
             build=build, architecturespecific=True)
         args = self.makeArgs(bpr, target_das.distroseries)
-        [new_bpph] = getUtility(IPublishingSet).publishBinaries(**args)
-        keys, values = zip(*args.items())
-        self.assertEqual(operator.attrgetter(*keys)(new_bpph), values)
-        self.assertEqual(target_das, new_bpph.distroarchseries)
-        self.assertEqual(PackagePublishingStatus.PENDING, new_bpph.status)
+        [bpph] = getUtility(IPublishingSet).publishBinaries(**args)
+        details = args['bprs_and_overrides'][0]
+        self.assertEqual(
+            (args['archive'], target_das, args['pocket']),
+            (bpph.archive, bpph.distroarchseries, bpph.pocket))
+        self.assertEqual(
+            details,
+            (bpph.binarypackagerelease, bpph.component, bpph.section,
+             bpph.priority))
+        self.assertEqual(PackagePublishingStatus.PENDING, bpph.status)
 
     def test_architecture_independent(self):
         # Architecture-independent binaries get published to all enabled
