@@ -34,7 +34,7 @@
         <tr tal:repeat="distribution context">
           <td tal:condition="distribution/@@+get-involved/has_involvement">
             <img src="/@@/distribution" />
-            <a tal:content="distribution/title" 
+            <a tal:content="distribution/title"
                tal:attributes="href distribution/fmt:url">
                   distribution title
             </a>
@@ -45,7 +45,7 @@
           </td>
         </tr>
       </tbody>
-    </table>    
+    </table>
 
     <h2>Distributions that do not use Launchpad</h2>
     <table class="listing">
@@ -59,7 +59,7 @@
         <tr tal:repeat="distribution context">
           <td tal:condition="not:distribution/@@+get-involved/has_involvement">
             <img src="/@@/distribution" />
-            <a tal:content="distribution/title" 
+            <a tal:content="distribution/title"
                tal:attributes="href distribution/fmt:url">
                   distribution title
             </a>
@@ -70,7 +70,7 @@
           </td>
         </tr>
       </tbody>
-    </table>    
+    </table>
 
     <div id="application-summary" class="application-summary">
       Launchpad manages the source packages, builds, archive publishing, bugs,
