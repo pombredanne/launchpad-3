@@ -4,8 +4,6 @@
 """Test CodeReviewComment emailing functionality."""
 
 
-from unittest import TestLoader
-
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -257,7 +255,6 @@ class TestCodeReviewComment(TestCaseWithFactory):
         self.assertEqual(
             'This is a diff.', attachment.get_payload(decode=True))
 
-
     def makeCommentAndParticipants(self):
         """Create a merge proposal and comment.
 
@@ -323,6 +320,3 @@ class TestCodeReviewComment(TestCaseWithFactory):
         mailer = CodeReviewCommentMailer.forCreation(reply)
         to = mailer._getToAddresses(second_commenter, 'comment2@gmail.com')
         self.assertEqual([mailer.merge_proposal.address], to)
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

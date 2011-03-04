@@ -138,10 +138,12 @@ class TestRecipientReason(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         subscription = branch.getSubscription(branch.owner)
         branch_cache = {branch: 'lp://fake'}
+
         def blowup(self):
             raise AssertionError('boom')
         patched = Branch.bzr_identity
         Branch.bzr_identity = property(blowup)
+
         def cleanup():
             Branch.bzr_identity = patched
         self.addCleanup(cleanup)
@@ -261,7 +263,8 @@ class TestBranchMailerSubject(TestCaseWithFactory):
         mailer = BranchMailer.forRevision(
             branch, 1, 'test@example.com', 'content', 'diff',
             'Testing %j foo')
-        branch_owner_email = removeSecurityProxy(branch.owner).preferredemail.email
+        branch_owner_email = removeSecurityProxy(
+            branch.owner).preferredemail.email
         self.assertEqual('Testing %j foo', mailer._getSubject(
                 branch_owner_email, branch.owner))
 

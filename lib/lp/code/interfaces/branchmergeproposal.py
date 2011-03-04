@@ -71,7 +71,6 @@ from canonical.database.constants import DEFAULT
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IPrivacy
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
-from lp.bugs.interfaces.bug import IBug
 from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
