@@ -6,13 +6,13 @@
 __metaclass__ = type
 
 
+from storm.store import Store
+from storm.exceptions import IntegrityError
 from zope.interface.verify import verifyObject
-from zope.component import getUtility
 
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.archivepublisher.interfaces.publisherconfig import (
     IPublisherConfig,
-    IPublisherConfigSet,
     )
 from lp.testing import TestCaseWithFactory
 
@@ -47,3 +47,10 @@ class TestPublisherConfig(TestCaseWithFactory):
         self.assertEqual(ROOT_DIR, pubconf.root_dir)
         self.assertEqual(BASE_URL, pubconf.base_url)
         self.assertEqual(COPY_BASE_URL, pubconf.copy_base_url)
+
+    def test_one_config_per_distro(self):
+        # Only one config for each distro is allowed.
+        pubconf = self.factory.makePublisherConfig(self.distribution)
+        pubconf2 = self.factory.makePublisherConfig(self.distribution)
+        store = Store.of(pubconf)
+        self.assertRaises(IntegrityError, store.flush)
