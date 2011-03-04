@@ -1449,3 +1449,11 @@ class TestPublishBinary(TestCaseWithFactory):
         self.assertEquals(
             set((target_das_a, target_das_b)),
             set(bpph.distroarchseries for bpph in bpphs))
+
+    def test_does_not_duplicate(self):
+        # An attempt to copy sometimes for a second time is ignored.
+        bpr = self.factory.makeBinaryPackageRelease()
+        target_das = self.factory.makeDistroArchSeries()
+        args = self.makeArgs(bpr, target_das)
+        [new_bpph] = getUtility(IPublishingSet).publishBinary(**args)
+        [] = getUtility(IPublishingSet).publishBinary(**args)
