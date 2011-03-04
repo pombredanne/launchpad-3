@@ -774,7 +774,9 @@
                     bug_messages
                     isUserAffected
                     getHWSubmissions
-                    isExpirable"/>
+                    isExpirable
+                    isMuted
+                    "/>
             <require
                 permission="launchpad.Edit"
                 attributes="

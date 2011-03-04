@@ -482,6 +482,13 @@ class IBug(IPrivacy, IHasLinkedBranches):
         duplicate of this bug, otherwise False.
         """
 
+    def isMuted(person):
+        """Does person have a muted on this bug?
+
+        :returns: True if the user has a direct subscription to this bug
+            with a BugNotificationLevel of NOTHING.
+        """
+
     def getDirectSubscriptions():
         """A sequence of IBugSubscriptions directly linked to this bug."""
 
