@@ -194,7 +194,12 @@ class TestSessionPruner(TestCase):
 
     def setUp(self):
         super(TestCase, self).setUp()
-        IMasterStore(SessionData).find(SessionData).remove()
+
+        # Session database isn't reset between tests. We need to do this
+        # manually.
+        nuke_all_sessions = IMasterStore(SessionData).find(SessionData).remove
+        nuke_all_sessions()
+        self.addCleanup(nuke_all_sessions)
 
         recent = datetime.now(UTC)
         yesterday = recent - timedelta(days=1)
@@ -220,10 +225,6 @@ class TestSessionPruner(TestCase):
         make_session(u'yesterday_unauth', yesterday, False)
         make_session(u'ancient_auth', ancient, True)
         make_session(u'ancient_unauth', ancient, False)
-
-    def tearDown(self):
-        IMasterStore(SessionData).find(SessionData).remove()
-        super(TestCase, self).tearDown()
 
     def sessionExists(self, client_id):
         store = IMasterStore(SessionData)
