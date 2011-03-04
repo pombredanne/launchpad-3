@@ -535,15 +535,6 @@ link to try the search again
     >>> print search_view.url
     http://launchpad.dev/+search?field.text=gnomebaker
 
-An oops was reported by the view so that the GoogleResponseError can be
-tracked.
-
-    >>> oops = search_view.request.oops
-    >>> oops.type
-    'GoogleResponseError'
-    >>> oops.value
-    'The response was incomplete, no xml.'
-
 
 SearchFormView and SearchFormPrimaryView
 ----------------------------------------
