@@ -14,6 +14,10 @@ __all__ = [
     'IStructuralSubscriptionTargetHelper',
     ]
 
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
@@ -37,6 +41,7 @@ from zope.interface import (
     )
 from zope.schema import (
     Bool,
+    Choice,
     Datetime,
     Int,
     )
@@ -146,9 +151,6 @@ class IStructuralSubscriptionTargetRead(Interface):
 
     def getSubscriptionsForBugTask(bug, level):
         """Return subscriptions for a given `IBugTask` at `level`."""
-
-    def getSubscriptionFiltersForBugTask(bug, level):
-        """Return subscription filters for a given `IBugTask` at `level`."""
 
 
 class IStructuralSubscriptionTargetWrite(Interface):

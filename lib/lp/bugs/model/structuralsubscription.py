@@ -494,18 +494,6 @@ class StructuralSubscriptionTargetMixin:
             In(BugSubscriptionFilter.id,
                filter_id_query)).config(distinct=True)
 
-    def getSubscriptionFiltersForBugTask(self, bugtask, level):
-        """See `IStructuralSubscriptionTarget`."""
-        candidates, filter_id_query = (
-            _get_structural_subscription_filter_id_query(
-                bugtask.bug, [bugtask], level))
-        if not candidates:
-            return EmptyResultSet()
-        return IStore(BugSubscriptionFilter).find(
-            BugSubscriptionFilter,
-            In(BugSubscriptionFilter.id,
-               filter_id_query)).config(distinct=True)
-
 
 def get_structural_subscription_targets(bugtasks):
     """Return (bugtask, target) pairs for each target of the bugtasks.
@@ -597,14 +585,15 @@ def _get_structural_subscribers(candidates, filter_id_query, recipients):
     else:
         subscribers = []
         query_results = source.find(
-            (Person, StructuralSubscription),
+            (Person, StructuralSubscription, BugSubscriptionFilter),
             *constraints).config(distinct=True)
-        for person, subscription in query_results:
+        for person, subscription, filter in query_results:
             # Set up results.
             if person not in recipients:
                 subscribers.append(person)
                 recipients.addStructuralSubscriber(
                     person, subscription.target)
+            recipients.addFilter(filter)
         return subscribers
 
 

@@ -58,7 +58,7 @@ class BugNotificationRecipients(NotificationRecipientSet):
         """
         NotificationRecipientSet.__init__(self)
         self.duplicateof = duplicateof
-        self.subscription_filters = []
+        self.subscription_filters = set()
 
     def _addReason(self, person, reason, header):
         """Adds a reason (text and header) for a person.
@@ -107,7 +107,7 @@ class BugNotificationRecipients(NotificationRecipientSet):
             text = "are a bug assignee"
         self._addReason(person, text, reason)
 
-    def addStructuralSubscriber(self, person, target, filters=[]):
+    def addStructuralSubscriber(self, person, target):
         """Registers a structural subscriber to this bug's target."""
         reason = "Subscriber (%s)" % target.displayname
         if person.isTeam():
@@ -117,7 +117,6 @@ class BugNotificationRecipients(NotificationRecipientSet):
         else:
             text = "are subscribed to %s" % target.displayname
         self._addReason(person, text, reason)
-        self.subscription_filters.extend(filters)
 
     def addRegistrant(self, person, upstream):
         """Registers an upstream product registrant for this bug."""
@@ -133,5 +132,9 @@ class BugNotificationRecipients(NotificationRecipientSet):
     def update(self, recipient_set):
         """See `INotificationRecipientSet`."""
         super(BugNotificationRecipients, self).update(recipient_set)
-        self.subscription_filters.extend(
+        self.subscription_filters.update(
             recipient_set.subscription_filters)
+
+    def addFilter(self, subscription_filter):
+        if subscription_filter is not None:
+            self.subscription_filters.add(subscription_filter)

@@ -150,12 +150,23 @@ class BugNotificationSet:
             reason_body, reason_header = recipients.getReason(recipient)
             sql_values.append('(%s, %s, %s, %s)' % sqlvalues(
                 bug_notification, recipient, reason_header, reason_body))
+
         # We add all the recipients in a single SQL statement to make
         # this a bit more efficient for bugs with many subscribers.
         store.execute("""
             INSERT INTO BugNotificationRecipient
               (bug_notification, person, reason_header, reason_body)
             VALUES %s;""" % ', '.join(sql_values))
+
+        if len(recipients.subscription_filters) > 0:
+            filter_link_sql = [
+                "(%s, %s)" % sqlvalues(bug_notification, filter.id)
+                for filter in recipients.subscription_filters]
+            store.execute("""
+                INSERT INTO BugNotificationFilter
+                  (bug_notification, bug_subscription_filter)
+                VALUES %s;""" % ", ".join(filter_link_sql))
+
         return bug_notification
 
 
