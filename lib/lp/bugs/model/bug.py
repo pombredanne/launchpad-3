@@ -911,7 +911,7 @@ BugMessage""" % sqlvalues(self.id))
 
         return info.duplicate_only_subscriptions.subscribers.sorted
 
-    def getSubscribersForPerson(self, person):
+    def getSubscribersForPerson(self, person, only_duplicates=False):
         """See `IBug."""
 
         assert person is not None
