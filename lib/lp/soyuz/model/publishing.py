@@ -1341,23 +1341,33 @@ class PublishingSet:
             Or(*candidates)).config(distinct=True)
         already_published = frozenset(already_published)
 
-        publications = []
-        for das, bpr, component, section, priority in expanded:
-            # DDEBs targeted to the PRIMARY archive are published in the
-            # corresponding DEBUG archive.
-            if bpr.binpackageformat == BinaryPackageFormat.DDEB:
-                archive = get_debug_archive(archive)
+        needed = [
+            (das, bpr, c, s, p) for (das, bpr, c, s, p) in
+            expanded if (das.id, bpr.binarypackagenameID, bpr.version)
+            not in already_published]
+        if len(needed) == 0:
+            return []
 
-            # We only publish the binary if it doesn't already exist in
-            # the destination. Note that this means we don't support
-            # override changes on their own.
-            if (das.id, bpr.binarypackagenameID, bpr.version) \
-                not in already_published:
-                publications.append(
-                    getUtility(IPublishingSet).newBinaryPublication(
-                        archive, bpr, das, component, section, priority,
-                        pocket))
-        return publications
+        # XXX ddebs
+        insert_head = """
+            INSERT INTO BinaryPackagePublishingHistory
+            (archive, distroarchseries, pocket, binarypackagerelease,
+             component, section, priority, status, datecreated)
+            VALUES
+            """
+        insert_pub_template = "(%s, %s, %s, %s, %s, %s, %s, %s, %s)"
+        insert_pubs = ", ".join(
+            insert_pub_template % sqlvalues(
+                archive.id, das.id, pocket, bpr.id, component.id, section.id,
+                priority, PackagePublishingStatus.PENDING, UTC_NOW) for
+                (das, bpr, component, section, priority) in needed)
+        insert_tail = " RETURNING BinaryPackagePublishingHistory.id"
+        new_ids = IMasterStore(BinaryPackagePublishingHistory).execute(
+            insert_head + insert_pubs + insert_tail)
+        publications = IMasterStore(BinaryPackagePublishingHistory).find(
+            BinaryPackagePublishingHistory,
+            BinaryPackagePublishingHistory.id.is_in(id[0] for id in new_ids))
+        return list(publications)
 
     def publishBinary(self, archive, binarypackagerelease, distroseries,
                       component, section, priority, pocket):
