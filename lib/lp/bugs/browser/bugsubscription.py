@@ -599,3 +599,11 @@ class BugSubscriptionListView(LaunchpadView):
             if self.user.inTeam(bugtask.target.owner):
                 return True
         return False
+
+    @property
+    def has_no_supervisor(self):
+        return False
+
+    @property
+    def is_supervisor(self):
+        return False
