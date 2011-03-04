@@ -196,7 +196,7 @@ class TestSessionPruner(TestCase):
         super(TestCase, self).setUp()
         IMasterStore(SessionData).find(SessionData).remove()
 
-        recent = datetime.utcnow().replace(tzinfo=UTC) - timedelta(minutes=1)
+        recent = datetime.now(UTC)
         yesterday = recent - timedelta(days=1)
         ancient = recent - timedelta(days=61)
 
@@ -307,7 +307,7 @@ class TestGarbo(TestCaseWithFactory):
         return collector
 
     def test_OAuthNoncePruner(self):
-        now = datetime.utcnow().replace(tzinfo=UTC)
+        now = datetime.now(UTC)
         timestamps = [
             now - timedelta(days=2), # Garbage
             now - timedelta(days=1) - timedelta(seconds=60), # Garbage
@@ -385,7 +385,7 @@ class TestGarbo(TestCaseWithFactory):
         self.failUnless(earliest >= now - 24*60*60, 'Still have old nonces')
 
     def test_CodeImportResultPruner(self):
-        now = datetime.utcnow().replace(tzinfo=UTC)
+        now = datetime.now(UTC)
         store = IMasterStore(CodeImportResult)
 
         results_to_keep_count = (
@@ -442,7 +442,7 @@ class TestGarbo(TestCaseWithFactory):
             >= now - timedelta(days=30))
 
     def test_CodeImportEventPruner(self):
-        now = datetime.utcnow().replace(tzinfo=UTC)
+        now = datetime.now(UTC)
         store = IMasterStore(CodeImportResult)
 
         LaunchpadZopelessLayer.switchDbUser('testadmin')
