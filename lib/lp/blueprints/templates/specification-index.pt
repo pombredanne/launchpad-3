@@ -270,7 +270,7 @@
           </div>
         </div>
 
-        <div>
+        <div id="feedback-requests">
           <h3 tal:condition="not:context/feedbackrequests">Feedback requests</h3>
 
           <div tal:replace="structure context/@@+portlet-feedbackqueue" />
