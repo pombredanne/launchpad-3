@@ -1406,7 +1406,7 @@ class TestPublishBinaries(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def makeArgs(self, binarypackagerelease, distroseries, archive=None):
+    def makeArgs(self, bprs, distroseries, archive=None):
         """Create a dict of arguments for publishBinary."""
         if archive is None:
             archive = distroseries.main_archive
@@ -1415,10 +1415,9 @@ class TestPublishBinaries(TestCaseWithFactory):
             'distroseries': distroseries,
             'pocket': PackagePublishingPocket.BACKPORTS,
             'bprs_and_overrides': [
-                (binarypackagerelease, self.factory.makeComponent(),
+                (bpr, self.factory.makeComponent(),
                  self.factory.makeSection(),
-                 PackagePublishingPriority.REQUIRED),
-                ],
+                 PackagePublishingPriority.REQUIRED) for bpr in bprs],
             }
 
     def test_architecture_dependent(self):
@@ -1433,7 +1432,7 @@ class TestPublishBinaries(TestCaseWithFactory):
         build = self.factory.makeBinaryPackageBuild(distroarchseries=orig_das)
         bpr = self.factory.makeBinaryPackageRelease(
             build=build, architecturespecific=True)
-        args = self.makeArgs(bpr, target_das.distroseries)
+        args = self.makeArgs([bpr], target_das.distroseries)
         [bpph] = getUtility(IPublishingSet).publishBinaries(**args)
         details = args['bprs_and_overrides'][0]
         self.assertEqual(
@@ -1457,7 +1456,7 @@ class TestPublishBinaries(TestCaseWithFactory):
             distroseries=target_das_a.distroseries)
         target_das_c = self.factory.makeDistroArchSeries(
             distroseries=target_das_a.distroseries, enabled=False)
-        args = self.makeArgs(bpr, target_das_a.distroseries)
+        args = self.makeArgs([bpr], target_das_a.distroseries)
         bpphs = getUtility(IPublishingSet).publishBinaries(
             **args)
         self.assertEquals(2, len(bpphs))
@@ -1466,10 +1465,10 @@ class TestPublishBinaries(TestCaseWithFactory):
             set(bpph.distroarchseries for bpph in bpphs))
 
     def test_does_not_duplicate(self):
-        # An attempt to copy sometimes for a second time is ignored.
+        # An attempt to copy something for a second time is ignored.
         bpr = self.factory.makeBinaryPackageRelease()
         target_das = self.factory.makeDistroArchSeries()
-        args = self.makeArgs(bpr, target_das.distroseries)
+        args = self.makeArgs([bpr], target_das.distroseries)
         [new_bpph] = getUtility(IPublishingSet).publishBinaries(**args)
         [] = getUtility(IPublishingSet).publishBinaries(**args)
 
