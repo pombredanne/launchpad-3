@@ -572,6 +572,17 @@ class MergePeopleView(BaseTokenView, LaunchpadView):
         self.context.consume()
 
     def _doMerge(self):
+        """Merges a duplicate person into a target person.
+
+        - Reassigns the duplicate user's primary email address to the
+          requesting user.
+
+        - Ensures that the requesting user has a preferred email address, and
+          uses the newly acquired one if not.
+
+        - If the duplicate user has no other email addresses, does the merge.
+
+        """
         # The user proved that he has access to this email address of the
         # dupe account, so we can assign it to him.
         requester = self.context.requester

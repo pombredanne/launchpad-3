@@ -23,7 +23,10 @@ from zope.interface import (
     implements,
     providedBy,
     )
-from zope.schema import ValidationError
+from zope.schema.interfaces import (
+    TooLong,
+    ValidationError,
+    )
 
 from canonical.launchpad.interfaces.mail import (
     BugTargetNotFound,
@@ -48,6 +51,7 @@ from lp.app.validators.name import valid_name
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBug,
+    IBugAddForm,
     IBugSet,
     )
 from lp.bugs.interfaces.bugtask import (
@@ -159,11 +163,28 @@ class BugEmailCommand(EmailCommand):
                 owner=getUtility(ILaunchBag).user,
                 filealias=filealias,
                 parsed_message=parsed_msg)
-            if message.text_contents.strip() == '':
+            description = message.text_contents
+            if description.strip() == '':
                 # The report for a new bug must contain an affects command,
                 # since the bug must have at least one task
                 raise EmailProcessingError(
                     get_error_message('no-affects-target-on-submit.txt'),
+                    stop_processing=True)
+
+            # Check the message validator.
+            validator = IBugAddForm['comment'].validate
+            try:
+                validator(description)
+            except TooLong:
+                raise EmailProcessingError(
+                    'The description is too long. If you have lots of '
+                    'text to add, use an attachment instead.',
+                    stop_processing=True)
+            except ValidationError as e:
+                # More a just in case than any real expectation of getting
+                # something.
+                raise EmailProcessingError(
+                    str(e),
                     stop_processing=True)
 
             params = CreateBugParams(

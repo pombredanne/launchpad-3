@@ -21,6 +21,7 @@ from lp.testing import (
     login,
     TestCaseWithFactory,
     )
+from lp.testing.matchers import BrowsesWithQueryLimit
 from lp.testing.views import create_initialized_view
 
 
@@ -89,6 +90,17 @@ class TestRecipeBuildListing(BrowserTestCase):
     def test_recipebuild_listing_with_user(self):
         # Ensure we can see the listing when we are logged in.
         self._test_recipebuild_listing()
+
+    def test_recipebuild_listing_querycount(self):
+        # The query count on the recipe build listing page is small enough.
+        # There's a base query count of approx 30, but if the page template
+        # is not set up right, the query count can increases linearly with the
+        # number of records.
+        self.factory.makeRecipeBuildRecords(5, 0)
+        root = getUtility(ILaunchpadRoot)
+        browser_query_limit = BrowsesWithQueryLimit(
+            35, self.user, view_name='+daily-builds', rootsite='code')
+        self.assertThat(root, browser_query_limit)
 
     def test_recipebuild_url(self):
         # Check the browser URL is as expected.
