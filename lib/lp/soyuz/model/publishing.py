@@ -1259,6 +1259,30 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         self.requestDeletion(removed_by, removal_comment)
 
 
+def get_target_distroarchseries(binarypackagerelease, distroseries):
+    """Get a list of DistroArchSeries in which the binary should be published.
+
+    For architecture-independent binaries, this is all enabled architectures
+    in the series. For architecture-dependent binaries, this is the
+    architecture corresponding to the build architecture, if it exists and is
+    enabled.
+    """
+    if not binarypackagerelease.architecturespecific:
+        return list(distroseries.enabled_architectures)
+    else:
+        # Find the DAS in this series corresponding to the original
+        # build arch tag. If it does not exist or is disabled, we should
+        # not publish.
+        build = binarypackagerelease.build
+        try:
+            das = distroseries[build.distro_arch_series.architecturetag]
+        except NotFoundError:
+            return []
+        if not das.enabled:
+            return []
+        return [das]
+
+
 class PublishingSet:
     """Utilities for manipulating publications in batches."""
 
@@ -1284,20 +1308,10 @@ class PublishingSet:
     def publishBinary(self, archive, binarypackagerelease, distroseries,
                       component, section, priority, pocket):
         """See `IPublishingSet`."""
-        if not binarypackagerelease.architecturespecific:
-            target_archs = distroseries.enabled_architectures
-        else:
-            # Find the DAS in this series corresponding to the original
-            # build arch tag. If it does not exist or is disabled, we should
-            # not publish.
-            build = binarypackagerelease.build
-            try:
-                das = distroseries[build.distro_arch_series.architecturetag]
-            except NotFoundError:
-                return []
-            if not das.enabled:
-                return []
-            target_archs = [das]
+        target_archs = get_target_distroarchseries(
+            binarypackagerelease, distroseries)
+        if len(target_archs) == 0:
+            return
 
         # DDEBs targeted to the PRIMARY archive are published in the
         # corresponding DEBUG archive.
