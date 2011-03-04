@@ -376,6 +376,7 @@ class TestWebService(WebServiceTestCase):
         ws_product.lp_save()
 
     def test_translationgroup(self):
+        """The translationgroup field should be writable."""
         product = self.factory.makeProduct()
         group = self.factory.makeTranslationGroup()
         transaction.commit()

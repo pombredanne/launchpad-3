@@ -786,7 +786,9 @@ class WindmillTestCase(TestCaseWithFactory):
 
 
 class WebServiceTestCase(TestCaseWithFactory):
+    """Test case optimized for testing the web service using launchpadlib."""
 
+    #avoid circular imports
     from canonical.testing.layers import AppServerLayer
 
     layer = AppServerLayer
@@ -796,6 +798,12 @@ class WebServiceTestCase(TestCaseWithFactory):
         self.service = self.factory.makeLaunchpadService()
 
     def wsObject(self, obj, user=None):
+        """Return the launchpadlib version of the supplied object.
+
+        :param obj: The object to find the launchpadlib equivalent of.
+        :param user: The user to use for accessing the object over
+            lauchpadlib.  Defaults to an arbitrary logged-in user.
+        """
         if user is not None:
             service = self.factory.makeLaunchpadService(user)
         else:
