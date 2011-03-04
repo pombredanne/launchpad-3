@@ -217,7 +217,8 @@ def find_derived_series():
     return IStore(DistroSeries).find(
         DistroSeries,
         Parent.id == DistroSeries.parent_seriesID,
-        Parent.distributionID != DistroSeries.distributionID)
+        Parent.distributionID != DistroSeries.distributionID).order_by(
+            (DistroSeries.parent_seriesID, DistroSeries.id))
 
 
 class PopulateDistroSeriesDiff(LaunchpadScript):
