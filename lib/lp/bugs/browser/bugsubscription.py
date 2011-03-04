@@ -577,4 +577,8 @@ class BugSubscriptionListView(LaunchpadView):
 
     @property
     def is_through_team(self):
+        subscribers = self.context.bug.getSubscribersForPerson(self.user)
+        for subscriber in subscribers:
+            if subscriber.isTeam():
+                return True
         return False
