@@ -7,6 +7,5 @@ from canonical.launchpad.utilities.celebrities import *
 from canonical.launchpad.utilities.gpghandler import *
 from canonical.launchpad.utilities.looptuner import *
 from canonical.launchpad.utilities.orderingcheck import *
-from lp.services.search.google import *
 
 
