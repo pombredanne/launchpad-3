@@ -43,10 +43,7 @@ from canonical.launchpad import (
     _,
     helpers,
     )
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchBag,
-    ILaunchpadCelebrities,
-    )
+from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.webapp import (
     action,
     custom_widget,
@@ -89,7 +86,10 @@ from lp.bugs.browser.structuralsubscription import (
     )
 from lp.registry.browser import MilestoneOverlayMixin
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseries import (
+    IDistroSeries,
+    IDistroSeriesSet,
+    )
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
@@ -530,14 +530,36 @@ class DistroSeriesAddView(LaunchpadFormView):
 def derived_from_series_source(context):
     """A vocabulary source for series to derive from.
 
-    If the distro doesn't have any series yet, then we allow it to be derived
-    from another distro.
+    Once a distribution has a series that has derived from a series in another
+    distribution, all other derived series must also derive from a series in
+    the same distribution.
+
+    A distribution can have non-derived series. Any of these can be changed to
+    derived at a later date, but as soon as this happens, the above rule
+    applies.
+
+    It is permissible for a distribution to have both derived and non-derived
+    series at the same time.
     """
     distribution = IDistribution(context)
     serieses = list(distribution)
-    # XXX: Change to select all series we consider ok to derive from.
     if len(serieses) == 0:
-        serieses.extend(getUtility(ILaunchpadCelebrities).ubuntu)
+        # Derive from any series.
+        serieses = getUtility(IDistroSeriesSet).search()
+    else:
+        for series in serieses:
+            if series.parent_series is not None:
+                # Derive only from series in the same distribution as other
+                # derived series in this distribution.
+                serieses = getUtility(IDistroSeriesSet).search(
+                    distribution=series.parent_series.distribution)
+                break
+        else:
+            # Derive from any series, except those in this distribution.
+            serieses = (
+                series for series in getUtility(IDistroSeriesSet).search()
+                if series.distribution != distribution)
+    # XXX: Need to sort the terms.
     return SimpleVocabulary(
         [DistroSeriesVocabulary.toTerm(series) for series in serieses])
 
