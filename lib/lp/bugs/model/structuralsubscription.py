@@ -506,6 +506,11 @@ def get_structural_subscription_targets(bugtasks):
             yield (bugtask, bugtask.target)
             if bugtask.target.parent_subscription_target is not None:
                 yield (bugtask, bugtask.target.parent_subscription_target)
+        # This can probably be an elif.  Determining conclusively
+        # whether it can be is not a priority at this time.  The
+        # docstring says one, two, or three targets per bugtask because
+        # of the belief that this could be an elif; otherwise, it would
+        # be one, two, three or four.
         if ISourcePackage.providedBy(bugtask.target):
             # Distribution series bug tasks with a package have the source
             # package set as their target, so we add the distroseries
@@ -518,20 +523,19 @@ def get_structural_subscription_targets(bugtasks):
 def _get_all_structural_subscriptions(find, targets, *conditions):
     """Find the structural subscriptions for the given targets.
 
-    "find" should be what to find (typically StructuralSubscription or
-    StructuralSubscription.id).  "targets" is an iterable of (bugtask,
-    target) pairs, as returned by get_structural_subscription_targets.
-    You can add in zero or more additional conditions to filter the
-    results.
+    :param find: what to find (typically StructuralSubscription or
+                 StructuralSubscription.id).
+    :param targets: an iterable of (bugtask, target) pairs, as returned by
+                    get_structural_subscription_targets.
+    :param conditions: additional conditions to filter the results.
     """
+    targets = set(target for bugtask, target in targets)
+    target_descriptions = [
+        IStructuralSubscriptionTargetHelper(target).join
+        for target in targets]
     return list(
         IStore(StructuralSubscription).find(
-            find,
-            Or(*[IStructuralSubscriptionTargetHelper(target).join
-                 for target
-                 in set(target for bugtask, target
-                        in targets)]),
-            *conditions))
+            find, Or(*target_descriptions), *conditions))
 
 
 def get_all_structural_subscriptions(bugtasks, person=None):
@@ -554,6 +558,7 @@ def _get_structural_subscribers(candidates, filter_id_query, recipients):
     from lp.registry.model.person import Person
     source = IStore(StructuralSubscription).using(
         StructuralSubscription,
+        # XXX gary 2011-03-03 bug 728818
         # We need to do this LeftJoin because we still have structural
         # subscriptions without filters in qastaging and production.
         # Once we do not, we can just use a Join.  Also see constraints
@@ -565,6 +570,7 @@ def _get_structural_subscribers(candidates, filter_id_query, recipients):
              Person.id == StructuralSubscription.subscriberID),
         )
     constraints = [
+        # XXX gary 2011-03-03 bug 728818
         # We need to do this Or because we still have structural
         # subscriptions without filters in qastaging and production.
         # Once we do not, we can simplify this to just
@@ -595,16 +601,13 @@ def get_structural_subscribers_for_bugtasks(bugtasks,
                                             level=None):
     """Return subscribers for structural filters for the bugtasks at "level".
 
-    All bugtasks must be for the same bug.
-
-    Returns None if we already know that the result is empty.
+    :param bugtasks: an iterable of bugtasks.  All must be for the same bug.
+    :param recipients: a BugNotificationRecipients object or None.
+                       Populates if given.
+    :param level: a level from lp.bugs.enum.BugNotificationLevel.
 
     Excludes structural subscriptions for people who are directly subscribed
-    to the bug.
-
-    Populates "recipients" (a
-    lp.bugs.mail.bugnotificationrecipients.BugNotificationRecipients) if
-    given."""
+    to the bug."""
     if not bugtasks:
         return EmptyResultSet()
     bugs = set(bugtask.bug for bugtask in bugtasks)
@@ -639,9 +642,11 @@ def _get_structural_subscription_filter_id_query(bug, bugtasks, level):
 
     This provides the core implementation for
     get_structural_subscribers_for_bug and
-    get_structural_subscribers_for_bugtask.  "bug" should
-    ba a bug.  "bugtasks" is an iterable of one or more bugtasks of the bug.
-    "level" is a notification level.
+    get_structural_subscribers_for_bugtask.
+    
+    :param bug: a bug.
+    :param bugtasks: an iterable of one or more bugtasks of the bug.
+    :param level: a notification level.
     """
     # We get the ids because we need to use group by in order to
     # look at the filters' tags in aggregate.  Once we have the ids,
