@@ -53,6 +53,7 @@ from lp.soyuz.interfaces.publishing import (
     PackagePublishingPriority,
     PackagePublishingStatus,
     )
+from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.model.publishing import (
@@ -1476,3 +1477,37 @@ class TestPublishBinaries(TestCaseWithFactory):
         # causes a new publication to be created.
         args['pocket'] = PackagePublishingPocket.RELEASE
         [another_bpph] = getUtility(IPublishingSet).publishBinaries(**args)
+
+    def test_ddebs_need_debug_archive(self):
+        debug = self.factory.makeBinaryPackageRelease(
+            binpackageformat=BinaryPackageFormat.DDEB)
+        args = self.makeArgs(
+            [debug], debug.build.distro_arch_series.distroseries)
+        self.assertRaises(
+            QueueInconsistentStateError,
+            getUtility(IPublishingSet).publishBinaries, **args)
+
+    def test_ddebs_go_to_debug_archive(self):
+        # Normal packages go to the given archive, but debug packages go
+        # to the corresponding debug archive.
+        das = self.factory.makeDistroArchSeries()
+        self.factory.makeArchive(
+            purpose=ArchivePurpose.DEBUG,
+            distribution=das.distroseries.distribution)
+        build = self.factory.makeBinaryPackageBuild(distroarchseries=das)
+        normal = self.factory.makeBinaryPackageRelease(build=build)
+        debug = self.factory.makeBinaryPackageRelease(
+            build=build, binpackageformat=BinaryPackageFormat.DDEB)
+        args = self.makeArgs([normal, debug], das.distroseries)
+        bpphs = getUtility(IPublishingSet).publishBinaries(**args)
+        self.assertEquals(2, len(bpphs))
+        self.assertEquals(
+            set((normal, debug)),
+            set(bpph.binarypackagerelease for bpph in bpphs))
+        self.assertEquals(
+            set((das.main_archive, das.main_archive.debug_archive)),
+            set(bpph.archive for bpph in bpphs))
+
+        # A second copy does nothing, because it checks in the debug
+        # archive too.
+        [] = getUtility(IPublishingSet).publishBinaries(**args)

@@ -138,13 +138,20 @@ def maybe_override_component(archive, distroseries, component):
     return component
 
 
-def get_debug_archive(archive):
-    debug_archive = archive.debug_archive
-    if debug_archive is None:
-        raise QueueInconsistentStateError(
-            "Could not find the corresponding DEBUG archive "
-            "for %s" % (archive.displayname))
-    return debug_archive
+def get_archive(archive, bpr):
+    """Get the archive in which this binary should be published.
+
+    Debug packages live in a DEBUG archive instead of a PRIMARY archive.
+    This helper implements that override.
+    """
+    if bpr.binpackageformat == BinaryPackageFormat.DDEB:
+        debug_archive = archive.debug_archive
+        if debug_archive is None:
+            raise QueueInconsistentStateError(
+                "Could not find the corresponding DEBUG archive "
+                "for %s" % (archive.displayname))
+        archive = debug_archive
+    return archive
 
 
 class FilePublishingBase:
@@ -1323,6 +1330,8 @@ class PublishingSet:
         # CopyChecker doesn't seem to ensure that there are no
         # conflicting binaries from other sources.
         candidates = (And(
+                BinaryPackagePublishingHistory.archiveID ==
+                    get_archive(archive, bpr).id,
                 BinaryPackagePublishingHistory.distroarchseriesID == das.id,
                 BinaryPackageRelease.binarypackagenameID ==
                     bpr.binarypackagenameID,
@@ -1332,7 +1341,6 @@ class PublishingSet:
             (BinaryPackagePublishingHistory.distroarchseriesID,
              BinaryPackageRelease.binarypackagenameID,
              BinaryPackageRelease.version),
-            BinaryPackagePublishingHistory.archiveID == archive.id,
             BinaryPackagePublishingHistory.pocket == pocket,
             BinaryPackagePublishingHistory.status.is_in(
                 active_publishing_status),
@@ -1358,8 +1366,9 @@ class PublishingSet:
         insert_pub_template = "(%s, %s, %s, %s, %s, %s, %s, %s, %s)"
         insert_pubs = ", ".join(
             insert_pub_template % sqlvalues(
-                archive.id, das.id, pocket, bpr.id, component.id, section.id,
-                priority, PackagePublishingStatus.PENDING, UTC_NOW) for
+                get_archive(archive, bpr).id, das.id, pocket, bpr.id,
+                component.id, section.id, priority,
+                PackagePublishingStatus.PENDING, UTC_NOW) for
                 (das, bpr, component, section, priority) in needed)
         insert_tail = " RETURNING BinaryPackagePublishingHistory.id"
         new_ids = IMasterStore(BinaryPackagePublishingHistory).execute(
