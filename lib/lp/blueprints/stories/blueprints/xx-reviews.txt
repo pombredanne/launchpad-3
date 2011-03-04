@@ -65,7 +65,7 @@ We will see that review request message on the spec page.
 
     >>> browser.open('http://blueprints.launchpad.dev/firefox/+spec/canvas')
     >>> print extract_text(
-    ...     find_portlet(browser.contents, 'Feedback requests'))
+    ...     find_tag_by_id(browser.contents, 'feedback-requests'))
     Feedback requests
     Sample Person requested feedback from Mark Shuttleworth:
         specification, review thyself
@@ -80,8 +80,8 @@ users, first with Carlos.
     ...     '+requestfeedback')
     >>> carlos_browser.getControl(name="field.reviewer").value = "mark"
     >>> carlos_browser.getControl(
-    ...     name="field.queuemsg").value = "do we really want to maintain "
-    ...                                    "compatibility with windows?"
+    ...     name="field.queuemsg").value = (
+    ...     "do we really want to maintain compatibility with windows?")
     >>> carlos_browser.getControl("Add").click()
 
 And then with Foo Bar
@@ -91,8 +91,8 @@ And then with Foo Bar
     ...     '+requestfeedback')
     >>> admin_browser.getControl(name="field.reviewer").value = "mark"
     >>> admin_browser.getControl(
-    ...     name="field.queuemsg").value = "please check my grammer and "
-    ...                                    "speling"
+    ...     name="field.queuemsg").value = (
+    ...     "please check my grammer and speling")
     >>> admin_browser.getControl("Add").click()
 
 Now, let's go and clear a review request. Mark has been asked to review spec
@@ -110,7 +110,7 @@ asked to review this page in particular.
 We also see our name in the "feedback requests" portlet.
 
     >>> print extract_text(
-    ...     find_portlet(mark_browser.contents, 'Feedback requests'))
+    ...     find_tag_by_id(browser.contents, 'feedback-requests'))
     Feedback requests
     ...
     Mark Shuttleworth:
