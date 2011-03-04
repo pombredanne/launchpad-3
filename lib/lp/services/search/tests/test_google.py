@@ -72,3 +72,13 @@ class TestGoogleSearchService(TestCase):
             self.assertRaises(
                 GoogleResponseError,
                 self.search_service._parse_google_search_protocol, '')
+
+    def test___parse_google_search_protocol_IndexError(self):
+        # The method converts IndexError to GoogleResponseError.
+        with urlfetch_exception(IndexError, 'oops'):
+            data = (
+                '<?xml version="1.0" encoding="UTF-8" standalone="no"?>'
+                '<GSP VER="3.2"></GSP>')
+            self.assertRaises(
+                GoogleResponseError,
+                self.search_service._parse_google_search_protocol, data)
