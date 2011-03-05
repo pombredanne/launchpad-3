@@ -585,14 +585,15 @@ def _get_structural_subscribers(candidates, filter_id_query, recipients):
     else:
         subscribers = []
         query_results = source.find(
-            (Person, StructuralSubscription),
-            *constraints).config(distinct=True)
-        for person, subscription in query_results:
+            (Person, StructuralSubscription, BugSubscriptionFilter),
+            *constraints)
+        for person, subscription, filter in query_results:
             # Set up results.
             if person not in recipients:
                 subscribers.append(person)
                 recipients.addStructuralSubscriber(
                     person, subscription.target)
+            recipients.addFilter(filter)
         return subscribers
 
 
