@@ -18,8 +18,22 @@
         </p>
         <tal:diff replace="structure view/diff"/>
       </div>
+
+      <p>
       For more information about the available feature flags and scopes see
-      the <a href="+feature-info">feature flag info</a>.
+      the <a href="+feature-info">feature flag info</a>. For other
+      documentation on feature flags, see the
+      <a href="https://dev.launchpad.net/FeatureFlags">development wiki</a>.
+      You can review the
+      <a class="sprite info" href="+feature-changelog">changelog</a> to see
+        previous rule changes.
+      </p>
+
+      <div id="feature-rules"
+        tal:condition="not: view/change_action/available">
+        <h3>Feature rules</h3>
+        <pre tal:content="view/initial_values/feature_rules" />
+      </div>
     </div>
   </div>
 </div>

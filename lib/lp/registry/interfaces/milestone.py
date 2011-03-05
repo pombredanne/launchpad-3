@@ -48,7 +48,7 @@ from canonical.launchpad import _
 from canonical.launchpad.components.apihelpers import (
     patch_plain_parameter_type,
     )
-from canonical.launchpad.validators.name import name_validator
+from lp.app.validators.name import name_validator
 from lp.bugs.interfaces.bugtarget import (
     IHasBugs,
     IHasOfficialBugTags,
@@ -228,6 +228,9 @@ class IMilestoneSet(Interface):
         If the milestone with that ID is not found, a
         NotFoundError will be raised.
         """
+
+    def getByIds(milestoneids):
+        """Get the milestones for milestoneids."""
 
     def getByNameAndProduct(name, product, default=None):
         """Get a milestone by its name and product.

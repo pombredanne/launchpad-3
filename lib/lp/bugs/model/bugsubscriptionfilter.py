@@ -12,12 +12,14 @@ from storm.locals import (
     Bool,
     Int,
     Reference,
+    SQL,
     Store,
     Unicode,
     )
 from zope.interface import implements
 
 from canonical.database.enumcol import DBEnum
+from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad import searchbuilder
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.bugs.enum import BugNotificationLevel
@@ -190,7 +192,32 @@ class BugSubscriptionFilter(StormBase):
         _get_tags, _set_tags, doc=(
             "A frozenset of tags filtered on."))
 
+    def _has_other_filters(self):
+        """Are there other filters for parent `StructuralSubscription`?"""
+        store = Store.of(self)
+        # Avoid race conditions by locking all the rows
+        # that we do our check over.
+        store.execute(SQL(
+            """SELECT * FROM BugSubscriptionFilter
+                 WHERE structuralsubscription=%s
+                 FOR UPDATE""" % sqlvalues(self.structural_subscription_id)))
+        return bool(store.find(
+            BugSubscriptionFilter,
+            (BugSubscriptionFilter.structural_subscription ==
+             self.structural_subscription),
+            BugSubscriptionFilter.id != self.id).any())
+
     def delete(self):
         """See `IBugSubscriptionFilter`."""
         self.importances = self.statuses = self.tags = ()
-        Store.of(self).remove(self)
+        # Revert attributes to their default values from the interface.
+        for attribute in ['bug_notification_level', 'find_all_tags',
+                          'include_any_tags', 'exclude_any_tags']:
+            default_value = IBugSubscriptionFilter.getDescriptionFor(
+                attribute).default
+            setattr(self, attribute, default_value)
+
+        self.description = None
+
+        if self._has_other_filters():
+            Store.of(self).remove(self)

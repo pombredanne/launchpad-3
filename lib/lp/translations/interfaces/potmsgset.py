@@ -128,6 +128,9 @@ class IPOTMsgSet(Interface):
             queries that search for credits messages.
             """))
 
+    def clone():
+        """Return a new copy of this POTMsgSet."""
+
     def getCurrentTranslationMessageOrDummy(pofile):
         """Return the current `TranslationMessage`, or a dummy.
 
@@ -192,6 +195,16 @@ class IPOTMsgSet(Interface):
         :param language: language we want translations for.
         """
 
+    def getExternallySuggestedOrUsedTranslationMessages(language):
+        """Find externally suggested or used translations for the same message.
+
+        This returns a tuple (suggested, used) containing the results of
+        self.getExternallySuggestedTranslationMessages and
+        self.getExternallyUsedTranslationMessages respectively.
+
+        :param language: language we want translations for.
+        """
+
     def hasTranslationChangedInLaunchpad(potemplate, language):
         """Whether an imported translation differs from the current one.
 
@@ -222,13 +235,17 @@ class IPOTMsgSet(Interface):
             translations.
         """
 
-    def submitSuggestion(pofile, submitter, new_translations):
+    def submitSuggestion(pofile, submitter, new_translations,
+                         from_import=False):
         """Submit a suggested translation for this message.
 
         If an identical message is already present, it will be returned
         (and it is not changed).  Otherwise, a new one is created and
         returned.  Suggestions for translation credits messages are
         ignored, and None is returned in that case.
+        Setting from_import to true will prevent karma assignment and
+        set the origin of the created message to SCM instead of
+        ROSETTAWEB.
         """
 
     def dismissAllSuggestions(pofile, reviewer, lock_timestamp):

@@ -62,7 +62,6 @@ from canonical.launchpad.interfaces.lpstorm import (
     ISlaveStore,
     IStore,
     )
-from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -70,6 +69,7 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.url import urlappend
 from lp.app.errors import NotFoundError
+from lp.app.validators.name import valid_name
 from lp.archivepublisher.debversion import Version
 from lp.archiveuploader.utils import (
     re_isadeb,
@@ -1969,6 +1969,9 @@ class ArchiveSet:
         # Avoiding circular imports.
         from lp.soyuz.model.archivepermission import ArchivePermission
 
+        # If there's no user logged in, then there's no archives.
+        if user is None:
+            return []
         store = Store.of(user)
         direct_membership = store.find(
             Archive,

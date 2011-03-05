@@ -57,13 +57,13 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver,
     IHasDrivers,
     )
-from canonical.launchpad.validators.name import name_validator
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
     )
+from lp.app.validators.name import name_validator
 from lp.blueprints.interfaces.specificationtarget import ISpecificationTarget
 from lp.blueprints.interfaces.sprint import IHasSprints
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
@@ -691,6 +691,15 @@ class IDistributionSet(Interface):
     def new(name, displayname, title, description, summary, domainname,
             members, owner, mugshot=None, logo=None, icon=None):
         """Create a new distribution."""
+
+    def getCurrentSourceReleases(distro_to_source_packagenames):
+        """Lookup many distribution source package releases.
+
+        :param distro_to_source_packagenames: A dictionary with
+            its keys being `IDistribution` and its values a list of
+            `ISourcePackageName`.
+        :return: A dict as per `IDistribution.getCurrentSourceReleases`
+        """
 
 
 class NoSuchDistribution(NameLookupFailed):

@@ -18,6 +18,7 @@ from storm.expr import (
     Min,
     SQL,
     )
+from storm.locals import Storm, Int
 from storm.store import Store
 import transaction
 from zope.component import getUtility
@@ -45,6 +46,7 @@ from canonical.testing.layers import (
     DatabaseLayer,
     LaunchpadScriptLayer,
     LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.bugs.model.bugnotification import (
     BugNotification,
@@ -67,6 +69,7 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     )
 from lp.scripts.garbo import (
+    BulkPruner,
     DailyDatabaseGarbageCollector,
     HourlyDatabaseGarbageCollector,
     OpenIDConsumerAssociationPruner,
@@ -96,6 +99,86 @@ class TestGarboScript(TestCase):
             "cronscripts/garbo-hourly.py", ["-q"], expect_returncode=0)
         self.failIf(out.strip(), "Output to stdout: %s" % out)
         self.failIf(err.strip(), "Output to stderr: %s" % err)
+
+
+class BulkFoo(Storm):
+    __storm_table__ = 'bulkfoo'
+    id = Int(primary=True)
+
+
+class BulkFooPruner(BulkPruner):
+    target_table_class = BulkFoo
+    ids_to_prune_query = "SELECT id FROM BulkFoo WHERE id < 5"
+    maximum_chunk_size = 2
+
+
+class TestBulkPruner(TestCase):
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestBulkPruner, self).setUp()
+
+        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.store.execute("CREATE TABLE BulkFoo (id serial PRIMARY KEY)")
+
+        for i in range(10):
+            self.store.add(BulkFoo())
+
+    def test_bulkpruner(self):
+        log = BufferLogger()
+        pruner = BulkFooPruner(log)
+
+        # The loop thinks there is stuff to do. Confirm the initial
+        # state is sane.
+        self.assertFalse(pruner.isDone())
+
+        # An arbitrary chunk size.
+        chunk_size = 2
+
+        # Determine how many items to prune and to leave rather than
+        # hardcode these numbers.
+        num_to_prune = self.store.find(
+            BulkFoo, BulkFoo.id < 5).count()
+        num_to_leave = self.store.find(
+            BulkFoo, BulkFoo.id >= 5).count()
+        self.assertTrue(num_to_prune > chunk_size)
+        self.assertTrue(num_to_leave > 0)
+
+        # Run one loop. Make sure it committed by throwing away
+        # uncommitted changes.
+        pruner(chunk_size)
+        transaction.abort()
+
+        # Confirm 'chunk_size' items where removed; no more, no less.
+        num_remaining = self.store.find(BulkFoo).count()
+        expected_num_remaining = num_to_leave + num_to_prune - chunk_size
+        self.assertEqual(num_remaining, expected_num_remaining)
+
+        # The loop thinks there is more stuff to do.
+        self.assertFalse(pruner.isDone())
+
+        # Run the loop to completion, removing the remaining targetted
+        # rows.
+        while not pruner.isDone():
+            pruner(1000000)
+        transaction.abort()
+
+        # Confirm we have removed all targetted rows.
+        self.assertEqual(self.store.find(BulkFoo, BulkFoo.id < 5).count(), 0)
+
+        # Confirm we have the expected number of remaining rows.
+        # With the previous check, this means no untargetted rows
+        # where removed.
+        self.assertEqual(
+            self.store.find(BulkFoo, BulkFoo.id >= 5).count(), num_to_leave)
+
+        # Cleanup clears up our resources.
+        pruner.cleanUp()
+
+        # We can run it again - temporary objects cleaned up.
+        pruner = BulkFooPruner(log)
+        while not pruner.isDone():
+            pruner(chunk_size)
 
 
 class TestGarbo(TestCaseWithFactory):
@@ -449,26 +532,6 @@ class TestGarbo(TestCaseWithFactory):
         self.assertIsNot(
             personset.getByName('test-unlinked-person-new'), None)
         self.assertIs(personset.getByName('test-unlinked-person-old'), None)
-
-    def test_BugMessage_indexer(self):
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
-        # The garbo sets BugMessage.index - so create a bug with three
-        # messages: 1 indexed and two not indexed. The two should get indexed
-        # when the garbo job runs.
-        bug = self.factory.makeBug()
-        for _ in range(3):
-            self.factory.makeBugComment(bug)
-        messages = list(bug.bug_messages)
-        messages[0].index = 0
-        messages[1].index = None
-        messages[2].index = None
-        indexed_messages = bug.indexed_messages
-        self.runHourly()
-        index_getter = operator.attrgetter('index')
-        indexed_messages = sorted(indexed_messages, key=index_getter)
-        expected = map(index_getter, indexed_messages)
-        actual = map(index_getter, bug.bug_messages)
-        self.assertEqual(expected, actual)
 
     def test_BugNotificationPruner(self):
         # Create some sample data

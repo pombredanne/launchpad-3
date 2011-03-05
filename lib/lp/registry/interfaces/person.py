@@ -102,13 +102,13 @@ from canonical.launchpad.interfaces.launchpad import (
     IPrivacy,
     )
 from canonical.launchpad.interfaces.validation import validate_new_team_email
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.email import email_validator
-from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.email import email_validator
+from lp.app.validators.name import name_validator
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.code.interfaces.hasbranches import (
@@ -633,7 +633,7 @@ class IPersonSettings(Interface):
 
     selfgenerated_bugnotifications = Bool(
         title=_("Send me bug notifications for changes I make."),
-        required=False, default=True)
+        required=False, default=False)
 
 
 class IPersonPublic(IHasBranches, IHasSpecifications,
@@ -973,6 +973,10 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
             readonly=True, required=False,
             description=_("Private teams are visible only to "
                           "their members.")))
+
+    is_merge_pending = Bool(
+        title=_("Is this person due to be merged into another?"),
+        required=False, default=False)
 
     @invariant
     def personCannotHaveIcon(person):
@@ -2149,6 +2153,17 @@ class IPersonSet(Interface):
 
     def latest_teams(limit=5):
         """Return the latest teams registered, up to the limit specified."""
+
+    def mergeAsync(from_person, to_person):
+        """Merge a person/team into another asynchronously.
+
+        This schedules a call to `merge()` to happen outside of the current
+        context/request. The intention is that it is called soon after this
+        method is called but there is no guarantee of that, nor is that call
+        guaranteed to succeed.
+
+        :return: A `PersonMergeJob`.
+        """
 
     def merge(from_person, to_person):
         """Merge a person/team into another.

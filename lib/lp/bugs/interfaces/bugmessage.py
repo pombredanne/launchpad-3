@@ -28,9 +28,7 @@ from zope.schema import (
 
 from canonical.launchpad.interfaces.launchpad import IHasBug
 from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.validators.attachment import (
-    attachment_size_constraint,
-    )
+from lp.app.validators.attachment import attachment_size_constraint
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.services.fields import Title
@@ -51,6 +49,7 @@ class IBugMessage(IHasBug):
     message = Object(schema=IMessage, title=u"The message.")
     bugwatch = Object(schema=IBugWatch,
         title=u"A bugwatch to which the message pertains.")
+    bugwatchID = Int(title=u'The bugwatch id.', readonly=True)
     remote_comment_id = TextLine(
         title=u"The id this comment has in the bugwatch's bug tracker.")
     visible = Bool(title=u"This message is visible or not.", required=False,

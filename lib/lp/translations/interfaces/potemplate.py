@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -256,9 +256,6 @@ class IPOTemplate(IRosettaStats):
             value_type=Reference(schema=Interface)),
         exported_as='translation_files')
 
-    relatives_by_name = Attribute(
-        _('All `IPOTemplate` objects that have the same name asa this one.'))
-
     relatives_by_source = Attribute(
         _('''All `IPOTemplate` objects that have the same source.
             For example those that came from the same productseries or the
@@ -385,6 +382,15 @@ class IPOTemplate(IRosettaStats):
         """Same as getPOTMsgSetByMsgIDText(), with only_current=True
         """
 
+    def sharingKey():
+        """A key for determining the sharing precedence of a template.
+
+        Active templates have precedence over inactive ones.
+        Development foci have precendence over non-development foci.
+        Product development foci have precedence over Package development
+        foci.
+        """
+
     def getPOTMsgSetByID(id):
         """Return the POTMsgSet object related to this POTemplate with the id.
 
@@ -488,13 +494,21 @@ class IPOTemplate(IRosettaStats):
         :return: The newly created message set.
         """
 
-    def getOrCreateSharedPOTMsgSet(singular_text, plural_text, context=None):
+    def getOrCreateSharedPOTMsgSet(singular_text, plural_text, context=None,
+                                   initial_file_references=None,
+                                   initial_source_comment=None):
         """Finds an existing shared POTMsgSet to use or creates a new one.
 
         :param singular_text: string containing singular form.
         :param plural_text: string containing plural form.
         :param context: context to differentiate between two messages with
         same singular_text and plural_text.
+        :param initial_file_references: Initializer for file_references if
+            a new POTMsgSet needs to be created.  Will not be set on an
+            existing POTMsgSet.
+        :param initial_source_comment: Initializer for source_comment if
+            a new POTMsgSet needs to be created.  Will not be set on an
+            existing POTMsgSet.
         :return: existing or new shared POTMsgSet with a sequence of 0
         in this POTemplate.
         """
@@ -657,14 +671,6 @@ class IPOTemplateSet(Interface):
            came from the given arguments.
 
         Return None if there is no such `IPOTemplate`.
-        """
-
-    def compareSharingPrecedence(left, right):
-        """Sort comparison: order sharing templates by precedence.
-
-        Sort using this function to order sharing templates from most
-        representative to least representative, as per the message-sharing
-        migration spec.
         """
 
     def wipeSuggestivePOTemplatesCache():

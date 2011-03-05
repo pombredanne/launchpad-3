@@ -15,5 +15,6 @@
   <include package=".profile" />
   <include package=".salesforce" />
   <include package=".scripts" />
+  <include package=".search" />
   <include package=".worlddata" />
 </configure>

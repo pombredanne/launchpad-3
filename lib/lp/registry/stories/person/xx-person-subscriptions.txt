@@ -281,14 +281,17 @@ filters are shown with a message stating that there is no filtering.
     ...             print extract_text(subscription.dl)
 
     >>> show_nigels_subscriptions()
-    Bug mail is not filtered; mail for Nigel about Scofflaw will
-    always be sent.
+    Bug mail for Nigel about Scofflaw is filtered;
+    ...
+    This filter allows all mail through.
+    There are no filter conditions!
+    (edit)
 
 If a bug mail filter exists for a structural subscription it is
 displayed immediately after the subscription.
 
     >>> with person_logged_in(nigel):
-    ...     nigel_bug_filter1 = nigel_subscription.newBugFilter()
+    ...     nigel_bug_filter1 = nigel_subscription.bug_filters.one()
     ...     nigel_bug_filter1.description = u"First"
     ...     nigel_bug_filter1.tags = [u"foo"]
 

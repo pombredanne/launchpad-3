@@ -101,7 +101,6 @@ from canonical.launchpad.interfaces.message import (
     IMessage,
     IndexedMessage,
     )
-from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -114,6 +113,7 @@ from lp.app.errors import (
     NotFoundError,
     UserCannotUnsubscribePerson,
     )
+from lp.app.validators import LaunchpadValidationError
 from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug,
     BranchUnlinkedFromBug,
@@ -150,9 +150,6 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
-from lp.bugs.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
-    )
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
@@ -169,13 +166,19 @@ from lp.bugs.model.bugtask import (
     NullBugTask,
     )
 from lp.bugs.model.bugwatch import BugWatch
+from lp.bugs.model.structuralsubscription import (
+    get_all_structural_subscriptions,
+    )
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    validate_public_person,
+    )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
@@ -318,7 +321,7 @@ class Bug(SQLBase):
                            prejoins=['owner'],
                            orderBy=['datecreated', 'id'])
     bug_messages = SQLMultipleJoin(
-        'BugMessage', joinColumn='bug', orderBy='id')
+        'BugMessage', joinColumn='bug', orderBy='index')
     watches = SQLMultipleJoin(
         'BugWatch', joinColumn='bug', orderBy=['bugtracker', 'remotebug'])
     cves = SQLRelatedJoin('Cve', intermediateTable='BugCve',
@@ -434,20 +437,14 @@ class Bug(SQLBase):
         """See `IBug`."""
         return self.users_affected_with_dupes.count()
 
-    def reindexMessages(self):
-        """See `IBug`."""
-        indexed_messages = self._indexed_messages(include_bugmessage=True)
-        for indexed_message, bugmessage in indexed_messages:
-            if bugmessage.index != indexed_message.index:
-                bugmessage.index = indexed_message.index
-
     @property
     def indexed_messages(self):
         """See `IMessageTarget`."""
+        # Note that this is a decorated result set, so will cache its
+        # value (in the absence of slices)
         return self._indexed_messages(include_content=True)
 
-    def _indexed_messages(self, include_content=False, include_parents=True,
-        include_bugmessage=False):
+    def _indexed_messages(self, include_content=False, include_parents=True):
         """Get the bugs messages, indexed.
 
         :param include_content: If True retrieve the content for the messages
@@ -455,17 +452,12 @@ class Bug(SQLBase):
         :param include_parents: If True retrieve the object for parent
             messages too. If False the parent attribute will be *forced* to
             None to reduce database lookups.
-        :param include_bugmessage: If True returns tuples (message,
-            bugmessage). This exists for the indexMessages API.
         """
         # Make all messages be 'in' the main bugtask.
         inside = self.default_bugtask
         store = Store.of(self)
         message_by_id = {}
-        if include_parents or include_bugmessage:
-            to_messages = lambda rows: [row[0] for row in rows]
-        else:
-            to_messages = lambda rows: rows
+        to_messages = lambda rows: [row[0] for row in rows]
 
         def eager_load_owners(messages):
             # Because we may have multiple owners, we spend less time
@@ -498,35 +490,29 @@ class Bug(SQLBase):
                 cache.text_contents = Message.chunks_text(
                     chunk_map[message.id])
 
-        def eager_load(rows, slice_info):
+        def eager_load(rows):
             messages = to_messages(rows)
             eager_load_owners(messages)
             if include_content:
                 eager_load_content(messages)
 
-        def index_message(row, index):
+        def index_message(row):
             # convert row to an IndexedMessage
             if include_parents:
-                if include_bugmessage:
-                    message, parent, bugmessage = row
-                else:
-                    message, parent = row
+                message, parent, bugmessage = row
                 if parent is not None:
                     # If there is an IndexedMessage available as parent, use
                     # that to reduce on-demand parent lookups.
                     parent = message_by_id.get(parent.id, parent)
             else:
-                if include_bugmessage:
-                    message, bugmessage = row
-                else:
-                    message = row
+                message, bugmessage = row
                 parent = None # parent attribute is not going to be accessed.
+            index = bugmessage.index
             result = IndexedMessage(message, inside, index, parent)
-            # This message may be the parent for another: stash it to permit
-            # use.
-            message_by_id[message.id] = result
-            if include_bugmessage:
-                result = result, bugmessage
+            if include_parents:
+                # This message may be the parent for another: stash it to
+                # permit use.
+                message_by_id[message.id] = result
             return result
         # There is possibly some nicer way to do this in storm, but
         # this is a lot easier to figure out.
@@ -539,25 +525,21 @@ message as parent_message on (
     parent_message.id in (
         select bugmessage.message from bugmessage where bugmessage.bug=%s)),
 BugMessage""" % sqlvalues(self.id))
-            lookup = Message, ParentMessage
-            if include_bugmessage:
-                lookup = lookup + (BugMessage,)
+            lookup = Message, ParentMessage, BugMessage
             results = store.using(tables).find(
                 lookup,
                 BugMessage.bugID == self.id,
                 BugMessage.messageID == Message.id,
                 )
         else:
-            lookup = Message
-            if include_bugmessage:
-                lookup = lookup, BugMessage
+            lookup = Message, BugMessage
             results = store.find(lookup,
                 BugMessage.bugID == self.id,
                 BugMessage.messageID == Message.id,
                 )
-        results.order_by(Message.datecreated, Message.id)
+        results.order_by(BugMessage.index)
         return DecoratedResultSet(results, index_message,
-            pre_iter_hook=eager_load, slice_info=True)
+            pre_iter_hook=eager_load)
 
     @property
     def displayname(self):
@@ -570,15 +552,39 @@ BugMessage""" % sqlvalues(self.id))
     @cachedproperty
     def bugtasks(self):
         """See `IBug`."""
-        result = BugTask.select('BugTask.bug = %s' % sqlvalues(self.id))
-        result = result.prejoin(
-            ["assignee", "product", "sourcepackagename",
-             "owner", "bugwatch"])
-        # Do not use the default orderBy as the prejoins cause ambiguities
-        # across the tables.
-        result = result.orderBy("id")
-        result = sorted(result, key=bugtask_sort_key)
-        return result
+        # \o/ circular imports.
+        from lp.registry.model.distribution import Distribution
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.registry.model.product import Product
+        from lp.registry.model.productseries import ProductSeries
+        from lp.registry.model.sourcepackagename import SourcePackageName
+        store = Store.of(self)
+        tasks = list(store.find(BugTask, BugTask.bugID == self.id))
+        # The bugtasks attribute is iterated in the API and web
+        # services, so it needs to preload all related data otherwise
+        # late evaluation is triggered in both places. Separately,
+        # bugtask_sort_key requires the related products, series,
+        # distros, distroseries and source package names to be loaded.
+        ids = set(map(operator.attrgetter('assigneeID'), tasks))
+        ids.update(map(operator.attrgetter('ownerID'), tasks))
+        ids.discard(None)
+        if ids:
+            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                ids, need_validity=True))
+
+        def load_something(attrname, klass):
+            ids = set(map(operator.attrgetter(attrname), tasks))
+            ids.discard(None)
+            if not ids:
+                return
+            list(store.find(klass, klass.id.is_in(ids)))
+        load_something('productID', Product)
+        load_something('productseriesID', ProductSeries)
+        load_something('distributionID', Distribution)
+        load_something('distroseriesID', DistroSeries)
+        load_something('sourcepackagenameID', SourcePackageName)
+        list(store.find(BugWatch, BugWatch.bugID == self.id))
+        return sorted(tasks, key=bugtask_sort_key)
 
     @property
     def default_bugtask(self):
@@ -985,13 +991,24 @@ BugMessage""" % sqlvalues(self.id))
                         recipients.addRegistrant(pillar.owner, pillar)
 
         # Structural subscribers.
+        if recipients is None:
+            temp_recipients = None
+        else:
+            temp_recipients = BugNotificationRecipients(
+                duplicateof=recipients.duplicateof)
         also_notified_subscribers.update(
             getUtility(IBugTaskSet).getStructuralSubscribers(
-                self.bugtasks, recipients=recipients, level=level))
+                self.bugtasks, recipients=temp_recipients, level=level))
 
         # Direct subscriptions always take precedence over indirect
         # subscriptions.
         direct_subscribers = set(self.getDirectSubscribers())
+        if recipients is not None:
+            # A direct subscriber may have muted this notification.
+            # Therefore, we want to remove any direct subscribers from the
+            # structural subscription recipients before we merge.
+            temp_recipients.remove(direct_subscribers)
+            recipients.update(temp_recipients)
 
         # Remove security proxy for the sort key, but return
         # the regular proxied object.
@@ -1029,14 +1046,14 @@ BugMessage""" % sqlvalues(self.id))
         # original `Bug`.
         return recipients
 
-    def addCommentNotification(self, message, recipients=None):
+    def addCommentNotification(self, message, recipients=None, activity=None):
         """See `IBug`."""
         if recipients is None:
             recipients = self.getBugNotificationRecipients(
                 level=BugNotificationLevel.COMMENTS)
         getUtility(IBugNotificationSet).addNotification(
              bug=self, is_comment=True,
-             message=message, recipients=recipients)
+             message=message, recipients=recipients, activity=activity)
 
     def addChange(self, change, recipients=None):
         """See `IBug`."""
@@ -1046,12 +1063,14 @@ BugMessage""" % sqlvalues(self.id))
 
         activity_data = change.getBugActivity()
         if activity_data is not None:
-            getUtility(IBugActivitySet).new(
+            activity = getUtility(IBugActivitySet).new(
                 self, when, change.person,
                 activity_data['whatchanged'],
                 activity_data.get('oldvalue'),
                 activity_data.get('newvalue'),
                 activity_data.get('message'))
+        else:
+            activity = None
 
         notification_data = change.getBugNotification()
         if notification_data is not None:
@@ -1065,7 +1084,7 @@ BugMessage""" % sqlvalues(self.id))
                     level=BugNotificationLevel.METADATA)
             getUtility(IBugNotificationSet).addNotification(
                 bug=self, is_comment=False, message=message,
-                recipients=recipients)
+                recipients=recipients, activity=activity)
 
         self.updateHeat()
 
@@ -1102,9 +1121,9 @@ BugMessage""" % sqlvalues(self.id))
         if message not in self.messages:
             if user is None:
                 user = message.owner
-
             result = BugMessage(bug=self, message=message,
-                bugwatch=bugwatch, remote_comment_id=remote_comment_id)
+                bugwatch=bugwatch, remote_comment_id=remote_comment_id,
+                index=self.bug_messages.count())
             getUtility(IBugWatchSet).fromText(
                 message.text_contents, self, user)
             self.findCvesInText(message.text_contents, user)
@@ -1381,39 +1400,56 @@ BugMessage""" % sqlvalues(self.id))
         """See `IBug`."""
         return self._question_from_bug
 
-    def getMessageChunks(self):
+    def getMessagesForView(self, slice_info):
         """See `IBug`."""
-        query = """
-            Message.id = MessageChunk.message AND
-            BugMessage.message = Message.id AND
-            BugMessage.bug = %s
-            """ % sqlvalues(self)
+        # Note that this function and indexed_messages have significant
+        # overlap and could stand to be refactored.
+        slices = []
+        if slice_info is not None:
+            # NB: This isn't a full implementation of the slice protocol,
+            # merely the bits needed by BugTask:+index.
+            for slice in slice_info:
+                if not slice.start:
+                    assert slice.stop > 0, slice.stop
+                    slices.append(BugMessage.index < slice.stop)
+                elif not slice.stop:
+                    if slice.start < 0:
+                        # If the high index is N, a slice of -1: should
+                        # return index N - so we need to add one to the
+                        # range.
+                        slices.append(BugMessage.index >= SQL(
+                            "(select max(index) from "
+                            "bugmessage where bug=%s) + 1 - %s" % (
+                            sqlvalues(self.id, -slice.start))))
+                    else:
+                        slices.append(BugMessage.index >= slice.start)
+                else:
+                    slices.append(And(BugMessage.index >= slice.start,
+                        BugMessage.index < slice.stop))
+        if slices:
+            ranges = [Or(*slices)]
+        else:
+            ranges = []
+        # We expect:
+        # 1 bugmessage -> 1 message -> small N chunks. For now, using a wide
+        # query seems fine as we have to join out from bugmessage anyway.
+        result = Store.of(self).find((BugMessage, Message, MessageChunk),
+            Message.id==MessageChunk.messageID,
+            BugMessage.messageID==Message.id,
+            BugMessage.bug==self.id,
+            *ranges)
+        result.order_by(BugMessage.index, MessageChunk.sequence)
 
-        chunks = MessageChunk.select(query,
-            clauseTables=["BugMessage", "Message"],
-            # XXX: kiko 2006-09-16 bug=60745:
-            # There is an issue that presents itself
-            # here if we prejoin message.owner: because Message is
-            # already in the clauseTables, the SQL generated joins
-            # against message twice and that causes the results to
-            # break.
-            prejoinClauseTables=["Message"],
-            # Note the ordering by Message.id here; while datecreated in
-            # production is never the same, it can be in the test suite.
-            orderBy=["Message.datecreated", "Message.id",
-                     "MessageChunk.sequence"])
-        chunks = list(chunks)
-
-        # Since we can't prejoin, cache all people at once so we don't
-        # have to do it while rendering, which is a big deal for bugs
-        # with a million comments.
-        owner_ids = set()
-        for chunk in chunks:
-            if chunk.message.ownerID:
-                owner_ids.add(str(chunk.message.ownerID))
-        list(Person.select("ID in (%s)" % ",".join(owner_ids)))
-
-        return chunks
+        def eager_load_owners(rows):
+            owners = set()
+            for row in rows:
+                owners.add(row[1].ownerID)
+            owners.discard(None)
+            if not owners:
+                return
+            list(PersonSet().getPrecachedPersonsFromIDs(owners,
+                need_validity=True))
+        return DecoratedResultSet(result, pre_iter_hook=eager_load_owners)
 
     def getNullBugTask(self, product=None, productseries=None,
                     sourcepackagename=None, distribution=None,
@@ -1773,11 +1809,15 @@ BugMessage""" % sqlvalues(self.id))
     def _known_viewers(self):
         """A set of known persons able to view this bug.
 
-        Seed it by including the list of all owners of pillars for bugtasks
-        for the bug.
+        This method must return an empty set or bug searches will trigger late
+        evaluation. Any 'should be set on load' propertis must be done by the
+        bug search.
+
+        If you are tempted to change this method, don't. Instead see
+        userCanView which defines the just-in-time policy for bug visibility,
+        and BugTask._search which honours visibility rules.
         """
-        pillar_owners = [bt.pillar.owner.id for bt in self.bugtasks]
-        return set(pillar_owners)
+        return set()
 
     def userCanView(self, user):
         """See `IBug`.
@@ -1811,6 +1851,12 @@ BugMessage""" % sqlvalues(self.id))
             # Explicit subscribers may also view it.
             for subscription in self.subscriptions:
                 if user.inTeam(subscription.person):
+                    self._known_viewers.add(user.id)
+                    return True
+            # Pillar owners can view it. Note that this is contentious and
+            # possibly incorrect: see bug 702429.
+            for pillar_owner in [bt.pillar.owner for bt in self.bugtasks]:
+                if user.inTeam(pillar_owner):
                     self._known_viewers.add(user.id)
                     return True
         return False
@@ -2139,29 +2185,7 @@ class BugSubscriptionInfo:
     @freeze(StructuralSubscriptionSet)
     def structural_subscriptions(self):
         """Structural subscriptions to the bug's targets."""
-        query_arguments = []
-        for bugtask in self.bug.bugtasks:
-            if IStructuralSubscriptionTarget.providedBy(bugtask.target):
-                query_arguments.append((bugtask.target, bugtask))
-                if bugtask.target.parent_subscription_target is not None:
-                    query_arguments.append(
-                        (bugtask.target.parent_subscription_target, bugtask))
-            if ISourcePackage.providedBy(bugtask.target):
-                # Distribution series bug tasks with a package have the source
-                # package set as their target, so we add the distroseries
-                # explicitly to the set of subscription targets.
-                query_arguments.append((bugtask.distroseries, bugtask))
-            if bugtask.milestone is not None:
-                query_arguments.append((bugtask.milestone, bugtask))
-        # Build the query.
-        empty = EmptyResultSet()
-        union = lambda left, right: (
-            removeSecurityProxy(left).union(
-                removeSecurityProxy(right)))
-        queries = (
-            target.getSubscriptionsForBugTask(bugtask, self.level)
-            for target, bugtask in query_arguments)
-        return reduce(union, queries, empty)
+        return get_all_structural_subscriptions(self.bug.bugtasks)
 
     @cachedproperty
     @freeze(BugSubscriberSet)
@@ -2408,7 +2432,7 @@ class BugSet:
             bug.subscribe(subscriber, params.owner)
 
         # Link the bug to the message.
-        BugMessage(bug=bug, message=params.msg)
+        BugMessage(bug=bug, message=params.msg, index=0)
 
         # Mark the bug reporter as affected by that bug.
         bug.markUserAffected(bug.owner)

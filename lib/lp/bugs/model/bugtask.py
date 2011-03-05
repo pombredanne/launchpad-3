@@ -15,6 +15,7 @@ __all__ = [
     'BugTaskSet',
     'NullBugTask',
     'bugtask_sort_key',
+    'determine_target',
     'get_bug_privacy_filter',
     'get_related_bugtasks_search_params',
     'search_value_to_where_condition',
@@ -25,7 +26,10 @@ import datetime
 from itertools import chain
 from operator import attrgetter
 
-from lazr.enum import DBItem
+from lazr.enum import (
+    DBItem,
+    Item,
+    )
 import pytz
 from sqlobject import (
     ForeignKey,
@@ -96,7 +100,6 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
-from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
@@ -126,12 +129,14 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskMilestone,
     UserCannotEditBugTaskStatus,
     )
-from lp.bugs.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
-    )
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
-from lp.bugs.model.structuralsubscription import StructuralSubscription
+from lp.bugs.model.structuralsubscription import (
+    get_all_structural_subscriptions,
+    get_structural_subscribers_for_bugtasks,
+    get_structural_subscription_targets,
+    StructuralSubscription,
+    )
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -143,10 +148,12 @@ from lp.registry.interfaces.distroseries import (
     IDistroSeries,
     IDistroSeriesSet,
     )
-from lp.registry.interfaces.milestone import IProjectGroupMilestone
+from lp.registry.interfaces.milestone import (
+    IMilestoneSet,
+    IProjectGroupMilestone,
+    )
 from lp.registry.interfaces.person import (
     IPerson,
-    IPersonSet,
     validate_person,
     validate_public_person,
     )
@@ -163,6 +170,7 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services import features
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
@@ -267,6 +275,29 @@ def get_related_bugtasks_search_params(user, context, **kwargs):
     return search_params
 
 
+def determine_target(product, productseries, distribution, distroseries,
+                     sourcepackagename):
+    """Returns the IBugTarget defined by the given arguments."""
+    if product:
+        return product
+    elif productseries:
+        return productseries
+    elif distribution:
+        if sourcepackagename:
+            return distribution.getSourcePackage(
+                sourcepackagename)
+        else:
+            return distribution
+    elif distroseries:
+        if sourcepackagename:
+            return distroseries.getSourcePackage(
+                sourcepackagename)
+        else:
+            return distroseries
+    else:
+        raise AssertionError("Unable to determine bugtask target.")
+
+
 class BugTaskDelta:
     """See `IBugTaskDelta`."""
 
@@ -312,24 +343,9 @@ class BugTaskMixin:
         # We explicitly reference attributes here (rather than, say,
         # IDistroBugTask.providedBy(self)), because we can't assume this
         # task has yet been marked with the correct interface.
-        if self.product:
-            return self.product
-        elif self.productseries:
-            return self.productseries
-        elif self.distribution:
-            if self.sourcepackagename:
-                return self.distribution.getSourcePackage(
-                    self.sourcepackagename)
-            else:
-                return self.distribution
-        elif self.distroseries:
-            if self.sourcepackagename:
-                return self.distroseries.getSourcePackage(
-                    self.sourcepackagename)
-            else:
-                return self.distroseries
-        else:
-            raise AssertionError("Unable to determine bugtask target.")
+        return determine_target(
+            self.product, self.productseries, self.distribution,
+            self.distroseries, self.sourcepackagename)
 
     @property
     def related_tasks(self):
@@ -744,10 +760,13 @@ class BugTask(SQLBase, BugTaskMixin):
             conjoined_master = None
         return conjoined_master
 
+    def _get_shortlisted_bugtasks(self):
+        return shortlist(self.bug.bugtasks, longest_expected=200)
+
     @property
     def conjoined_master(self):
         """See `IBugTask`."""
-        return self.getConjoinedMaster(shortlist(self.bug.bugtasks))
+        return self.getConjoinedMaster(self._get_shortlisted_bugtasks())
 
     @property
     def conjoined_slave(self):
@@ -758,7 +777,7 @@ class BugTask(SQLBase, BugTaskMixin):
             if self.distroseries != distribution.currentseries:
                 # Only current series tasks are conjoined.
                 return None
-            for bugtask in shortlist(self.bug.bugtasks):
+            for bugtask in self._get_shortlisted_bugtasks():
                 if (bugtask.distribution == distribution and
                     bugtask.sourcepackagename == self.sourcepackagename):
                     conjoined_slave = bugtask
@@ -768,7 +787,7 @@ class BugTask(SQLBase, BugTaskMixin):
             if self.productseries != product.development_focus:
                 # Only development focus tasks are conjoined.
                 return None
-            for bugtask in shortlist(self.bug.bugtasks):
+            for bugtask in self._get_shortlisted_bugtasks():
                 if bugtask.product == product:
                     conjoined_slave = bugtask
                     break
@@ -1502,6 +1521,14 @@ class BugTaskSet:
 
     title = "A set of bug tasks"
 
+    @property
+    def open_bugtask_search(self):
+        """See `IBugTaskSet`."""
+        return BugTaskSearchParams(
+            user=getUtility(ILaunchBag).user,
+            status=any(*UNRESOLVED_BUGTASK_STATUSES),
+            omit_dupes=True)
+
     def get(self, task_id):
         """See `IBugTaskSet`."""
         # XXX: JSK: 2007-12-19: This method should probably return
@@ -1541,6 +1568,13 @@ class BugTaskSet:
             SpecificationBug.bugID.is_in(bug_ids)))
         bug_ids_with_branches = set(IStore(BugBranch).find(
                 BugBranch.bugID, BugBranch.bugID.is_in(bug_ids)))
+        # Badging looks up milestones too : eager load into the storm cache.
+        milestoneset = getUtility(IMilestoneSet)
+        # And trigger a load:
+        milestone_ids = set(map(attrgetter('milestoneID'), bugtasks))
+        milestone_ids.discard(None)
+        if milestone_ids:
+            list(milestoneset.getByIds(milestone_ids))
 
         # Check if the bugs are cached. If not, cache all uncached bugs
         # at once to avoid one query per bugtask. We could rely on the
@@ -1728,7 +1762,11 @@ class BugTaskSet:
         :return: A query, the tables to query, ordering expression and a
             decorator to call on each returned row.
         """
-        assert isinstance(params, BugTaskSearchParams)
+        assert zope_isinstance(params, BugTaskSearchParams)
+        if not isinstance(params, BugTaskSearchParams):
+            # Browser code let this get wrapped, unwrap it here as its just a
+            # dumb data store that has no security implications.
+            params = removeSecurityProxy(params)
         from lp.bugs.model.bug import Bug
         extra_clauses = ['Bug.id = BugTask.bug']
         clauseTables = [BugTask, Bug]
@@ -1892,7 +1930,9 @@ class BugTaskSet:
                 ssub_match_milestone)
 
             join_tables.append(
-                (Product, LeftJoin(Product, BugTask.productID == Product.id)))
+                (Product, LeftJoin(Product, And(
+                                BugTask.productID == Product.id,
+                                Product.active))))
             join_tables.append(
                 (StructuralSubscription,
                  Join(StructuralSubscription, join_clause)))
@@ -1900,6 +1940,28 @@ class BugTaskSet:
                 'StructuralSubscription.subscriber = %s'
                 % sqlvalues(params.structural_subscriber))
             has_duplicate_results = True
+
+
+        # Remove bugtasks from deactivated products, if necessary.
+        # We don't have to do this if
+        # 1) We're searching on bugtasks for a specific product
+        # 2) We're searching on bugtasks for a specific productseries
+        # 3) We're searching on bugtasks for a distribution
+        # 4) We're searching for bugtasks for a distroseries
+        # because in those instances we don't have arbitrary products which
+        # may be deactivated showing up in our search.
+        if (params.product is None and
+            params.distribution is None and
+            params.productseries is None and
+            params.distroseries is None):
+            # Prevent circular import problems.
+            from lp.registry.model.product import Product
+            extra_clauses.append(
+                "(Bugtask.product IS NULL OR Product.active = TRUE)")
+            join_tables.append(
+                (Product, LeftJoin(Product, And(
+                                BugTask.productID == Product.id,
+                                Product.active))))
 
         if params.component:
             clauseTables += [SourcePackagePublishingHistory,
@@ -1986,12 +2048,7 @@ class BugTaskSet:
                 WHERE Message.owner = %(bug_commenter)s
                     AND Message.id = BugMessage.message
                     AND BugTask.bug = BugMessage.bug
-                    AND Message.id NOT IN (
-                        SELECT BugMessage.message FROM BugMessage
-                        WHERE BugMessage.bug = BugTask.bug
-                        ORDER BY BugMessage.id
-                        LIMIT 1
-                    )
+                    AND BugMessage.index > 0
             )
             """ % sqlvalues(bug_commenter=params.bug_commenter)
             extra_clauses.append(bug_commenter_clause)
@@ -2037,20 +2094,25 @@ class BugTaskSet:
         if hw_clause is not None:
             extra_clauses.append(hw_clause)
 
-        if params.linked_branches == BugBranchSearch.BUGS_WITH_BRANCHES:
+        if zope_isinstance(params.linked_branches, Item):
+            if params.linked_branches == BugBranchSearch.BUGS_WITH_BRANCHES:
+                extra_clauses.append(
+                    """EXISTS (
+                        SELECT id FROM BugBranch WHERE BugBranch.bug=Bug.id)
+                    """)
+            elif (params.linked_branches ==
+                  BugBranchSearch.BUGS_WITHOUT_BRANCHES):
+                extra_clauses.append(
+                    """NOT EXISTS (
+                        SELECT id FROM BugBranch WHERE BugBranch.bug=Bug.id)
+                    """)
+        elif zope_isinstance(params.linked_branches, (any, all, int)):
+            # A specific search term has been supplied.
             extra_clauses.append(
                 """EXISTS (
-                    SELECT id FROM BugBranch WHERE BugBranch.bug=Bug.id)
-                """)
-        elif params.linked_branches == BugBranchSearch.BUGS_WITHOUT_BRANCHES:
-            extra_clauses.append(
-                """NOT EXISTS (
-                    SELECT id FROM BugBranch WHERE BugBranch.bug=Bug.id)
-                """)
-        else:
-            # If no branch specific search restriction is specified,
-            # we don't need to add any clause.
-            pass
+                    SELECT TRUE FROM BugBranch WHERE BugBranch.bug=Bug.id AND
+                    BugBranch.branch %s)
+                """ % search_value_to_where_condition(params.linked_branches))
 
         linked_blueprints_clause = self._buildBlueprintRelatedClause(params)
         if linked_blueprints_clause is not None:
@@ -2211,8 +2273,13 @@ class BugTaskSet:
         text_search_clauses = [
             "Bug.fti @@ ftq(%s)" % searchtext_quoted,
             "BugTask.fti @@ ftq(%s)" % searchtext_quoted,
-            "BugTask.targetnamecache ILIKE '%%' || %s || '%%'" % (
-                searchtext_like_quoted)]
+            ]
+        no_targetnamesearch = bool(features.getFeatureFlag(
+            'malone.disable_targetnamesearch'))
+        if not no_targetnamesearch:
+            text_search_clauses.append(
+                "BugTask.targetnamecache ILIKE '%%' || %s || '%%'" % (
+                searchtext_like_quoted))
         # Due to performance problems, whether to search in comments is
         # controlled by a config option.
         if config.malone.search_comments:
@@ -2344,8 +2411,9 @@ class BugTaskSet:
         origin = [BugTask]
         already_joined = set(origin)
         for table, join in join_tables:
-            origin.append(join)
-            already_joined.add(table)
+            if table not in already_joined:
+                origin.append(join)
+                already_joined.add(table)
         for table, join in prejoin_tables:
             if table not in already_joined:
                 origin.append(join)
@@ -2448,12 +2516,13 @@ class BugTaskSet:
             eager_load = None
         else:
             requested_joins = kwargs.get('prejoins', [])
-            # NB: We could save later work by predicting what sort of targets
-            # we might be interested in here, but as at any point we're dealing
-            # with relatively few results, this is likely to be a small win.
+            # NB: We could save later work by predicting what sort of
+            # targets we might be interested in here, but as at any
+            # point we're dealing with relatively few results, this is
+            # likely to be a small win.
             prejoins = [
-                (Bug, Join(Bug, BugTask.bug == Bug.id))
-                ] + requested_joins
+                (Bug, Join(Bug, BugTask.bug == Bug.id))] + requested_joins
+
             def eager_load(results):
                 product_ids = set([row[0].productID for row in results])
                 product_ids.discard(None)
@@ -2476,6 +2545,19 @@ class BugTaskSet:
     def searchBugIds(self, params):
         """See `IBugTaskSet`."""
         return self._search(BugTask.bugID, [], None, params).result_set
+
+    def countBugs(self, params, group_on):
+        """See `IBugTaskSet`."""
+        resultset = self._search(
+            group_on + (SQL("COUNT(Distinct BugTask.bug)"),),
+            [], None, params).result_set
+        # We group on the related field:
+        resultset.group_by(*group_on)
+        resultset.order_by()
+        result = {}
+        for row in resultset:
+            result[row[:-1]] = row[-1]
+        return result
 
     def getPrecachedNonConjoinedBugTasks(self, user, milestone):
         """See `IBugTaskSet`."""
@@ -2923,10 +3005,6 @@ class BugTaskSet:
 
         return tuple(orderby_arg)
 
-    def dangerousGetAllTasks(self):
-        """DO NOT USE THIS METHOD. For details, see `IBugTaskSet`"""
-        return BugTask.select(orderBy='id')
-
     def getBugCountsForPackages(self, user, packages):
         """See `IBugTaskSet`."""
         distributions = sorted(
@@ -3030,57 +3108,19 @@ class BugTaskSet:
 
         return counts
 
+    def _getStructuralSubscriptionTargets(self, bugtasks):
+        """Return (bugtask, target) pairs for each target of the bugtasks.
+
+        Each bugtask may be responsible theoretically for 0 or more targets.
+        In practice, each generates one, two or three.
+        """
+        return get_structural_subscription_targets(bugtasks)
+
+    def getAllStructuralSubscriptions(self, bugtasks, recipient=None):
+        """See `IBugTaskSet`."""
+        return get_all_structural_subscriptions(bugtasks, recipient)
+
     def getStructuralSubscribers(self, bugtasks, recipients=None, level=None):
         """See `IBugTaskSet`."""
-        query_arguments = []
-        for bugtask in bugtasks:
-            if IStructuralSubscriptionTarget.providedBy(bugtask.target):
-                query_arguments.append((bugtask.target, bugtask))
-                if bugtask.target.parent_subscription_target is not None:
-                    query_arguments.append(
-                        (bugtask.target.parent_subscription_target, bugtask))
-            if ISourcePackage.providedBy(bugtask.target):
-                # Distribution series bug tasks with a package have the source
-                # package set as their target, so we add the distroseries
-                # explicitly to the set of subscription targets.
-                query_arguments.append((bugtask.distroseries, bugtask))
-            if bugtask.milestone is not None:
-                query_arguments.append((bugtask.milestone, bugtask))
-
-        if len(query_arguments) == 0:
-            return EmptyResultSet()
-
-        if level is None:
-            # If level is not specified, default to NOTHING so that all
-            # subscriptions are found.
-            level = BugNotificationLevel.NOTHING
-
-        # Build the query.
-        union = lambda left, right: (
-            removeSecurityProxy(left).union(
-                removeSecurityProxy(right)))
-        queries = (
-            target.getSubscriptionsForBugTask(bugtask, level)
-            for target, bugtask in query_arguments)
-        subscriptions = reduce(union, queries)
-
-        # Pull all the subscriptions in.
-        subscriptions = list(subscriptions)
-
-        # Prepare a query for the subscribers.
-        from lp.registry.model.person import Person
-        subscribers = IStore(Person).find(
-            Person, Person.id.is_in(
-                removeSecurityProxy(subscription).subscriberID
-                for subscription in subscriptions))
-
-        if recipients is not None:
-            # We need to process subscriptions, so pull all the
-            # subscribers into the cache, then update recipients
-            # with the subscriptions.
-            subscribers = list(subscribers)
-            for subscription in subscriptions:
-                recipients.addStructuralSubscriber(
-                    subscription.subscriber, subscription.target)
-
-        return subscribers
+        return get_structural_subscribers_for_bugtasks(
+            bugtasks, recipients, level)

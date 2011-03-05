@@ -103,6 +103,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.mail.bugnotificationbuilder import format_rfc2822_date
+from lp.services import features
 from lp.services.fields import DuplicateBug
 from lp.services.propertycache import cachedproperty
 
@@ -207,6 +208,12 @@ class BugContextMenu(ContextMenu):
         # have to duplicate menu code.
         ContextMenu.__init__(self, getUtility(ILaunchBag).bugtask)
 
+    @cachedproperty
+    def _use_advanced_features(self):
+        """Return True if advanced subscriptions features are enabled."""
+        return features.getFeatureFlag(
+            'malone.advanced-subscriptions.enabled')
+
     def editdescription(self):
         """Return the 'Edit description/tags' Link."""
         text = 'Update description / tags'
@@ -240,8 +247,12 @@ class BugContextMenu(ContextMenu):
         elif user is not None and (
             self.context.bug.isSubscribed(user) or
             self.context.bug.isSubscribedToDupes(user)):
-            text = 'Unsubscribe'
-            icon = 'remove'
+            if self._use_advanced_features:
+                text = 'Edit subscription'
+                icon = 'edit'
+            else:
+                text = 'Unsubscribe'
+                icon = 'remove'
         else:
             text = 'Subscribe'
             icon = 'add'
@@ -360,6 +371,9 @@ class MaloneView(LaunchpadFormView):
 
     def _redirectToBug(self, bug_id):
         """Redirect to the specified bug id."""
+        if not isinstance(bug_id, basestring):
+            self.error_message = "Bug %r is not registered." % bug_id
+            return
         if bug_id.startswith("#"):
             # Be nice to users and chop off leading hashes
             bug_id = bug_id[1:]

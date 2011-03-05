@@ -38,7 +38,6 @@ from canonical.testing.layers import (
     )
 from lp.answers.model.answercontact import AnswerContact
 from lp.blueprints.model.specification import Specification
-from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtask import get_related_bugtasks_search_params
@@ -278,6 +277,27 @@ class TestPerson(TestCaseWithFactory):
             user.getOwnedOrDrivenPillars()]
         self.assertEqual(expected_pillars, received_pillars)
 
+    def test_no_merge_pending(self):
+        # is_merge_pending returns False when this person is not the "from"
+        # person of an active merge job.
+        person = self.factory.makePerson()
+        self.assertFalse(person.is_merge_pending)
+
+    def test_merge_pending(self):
+        # is_merge_pending returns True when this person is the "from" person
+        # of an active merge job.
+        from_person = self.factory.makePerson()
+        to_person = self.factory.makePerson()
+        getUtility(IPersonSet).mergeAsync(from_person, to_person)
+        self.assertTrue(from_person.is_merge_pending)
+        self.assertFalse(to_person.is_merge_pending)
+
+    def test_selfgenerated_bugnotifications_none_by_default(self):
+        # Default for new accounts is to not get any
+        # self-generated bug notifications by default.
+        user = self.factory.makePerson()
+        self.assertFalse(user.selfgenerated_bugnotifications)
+
 
 class TestPersonStates(TestCaseWithFactory):
 
@@ -398,9 +418,7 @@ class TestPersonStates(TestCaseWithFactory):
         # A PUBLIC team with a structural subscription to a product can
         # convert to a PRIVATE team.
         foo_bar = Person.byName('name16')
-        StructuralSubscription(
-            product=self.bzr, subscriber=self.otherteam,
-            subscribed_by=foo_bar)
+        self.bzr.addSubscription(self.otherteam, foo_bar)
         self.otherteam.visibility = PersonVisibility.PRIVATE
 
     def test_visibility_validator_team_private_to_public(self):
@@ -731,7 +749,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self._do_premerge(recipe.owner, person)
         login_person(person)
         self.person_set.merge(recipe.owner, person)
-        self.assertEqual(1, person.getRecipes().count())
+        self.assertEqual(1, person.recipes.count())
 
     def test_merge_with_duplicated_recipes(self):
         # If both the from and to people have recipes with the same name,
@@ -747,11 +765,20 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self._do_premerge(merge_from.owner, mergee)
         login_person(mergee)
         self.person_set.merge(merge_from.owner, merge_to.owner)
-        recipes = mergee.getRecipes()
+        recipes = mergee.recipes
         self.assertEqual(2, recipes.count())
         descriptions = [r.description for r in recipes]
         self.assertEqual([u'TO', u'FROM'], descriptions)
         self.assertEqual(u'foo-1', recipes[1].name)
+
+    def test_mergeAsync(self):
+        # mergeAsync() creates a new `PersonMergeJob`.
+        from_person = self.factory.makePerson()
+        to_person = self.factory.makePerson()
+        login_person(from_person)
+        job = self.person_set.mergeAsync(from_person, to_person)
+        self.assertEqual(from_person, job.from_person)
+        self.assertEqual(to_person, job.to_person)
 
 
 class TestPersonSetCreateByOpenId(TestCaseWithFactory):

@@ -20,9 +20,8 @@ __all__ = [
     'IProjectGroupBugAddForm',
     ]
 
-from textwrap import dedent
-
 from lazr.enum import DBEnumeratedType
+
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     call_with,
@@ -65,10 +64,8 @@ from zope.schema.vocabulary import SimpleVocabulary
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IPrivacy
 from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.validators.attachment import (
-    attachment_size_constraint,
-    )
-from canonical.launchpad.validators.name import name_validator
+from lp.app.validators.attachment import attachment_size_constraint
+from lp.app.validators.name import bug_name_validator
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bugactivity import IBugActivity
 from lp.bugs.interfaces.bugattachment import IBugAttachment
@@ -85,6 +82,7 @@ from lp.registry.interfaces.person import IPerson
 from lp.services.fields import (
     BugField,
     ContentNameField,
+    Description,
     DuplicateBug,
     PublicPersonChoice,
     Tag,
@@ -207,15 +205,16 @@ class IBug(IPrivacy, IHasLinkedBranches):
             description=_("""A short and unique name.
                 Add one only if you often need to retype the URL
                 but have trouble remembering the bug number."""),
-            constraint=name_validator))
+            constraint=bug_name_validator))
     title = exported(
         Title(title=_('Summary'), required=True,
               description=_("""A one-line summary of the problem.""")))
     description = exported(
-        Text(title=_('Description'), required=True,
+        Description(title=_('Description'), required=True,
              description=_("""A detailed description of the problem,
                  including the steps required to reproduce it."""),
-             max_length=50000))
+             strip_text=True, trailing_only=True,
+             min_length=1, max_length=50000))
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = exported(
         Reference(IPerson, title=_("The owner's IPerson"), readonly=True))
@@ -309,15 +308,8 @@ class IBug(IPrivacy, IHasLinkedBranches):
             readonly=True))
     tags = exported(List(
         title=_("Tags"),
-        description=_(dedent("""
-            The tags applied to this bug.
-
-            Web service:
-                The list of tags is whitespace delimited.
-
-            Launchpadlib:
-                The list of tags is represented as a sequence of strings.
-            """)),
+        description=_("Space-separated keywords for classifying "
+            "this bug report."),
             value_type=Tag(), required=False))
     is_complete = Bool(
         title=_("Is Complete?"),
@@ -409,6 +401,16 @@ class IBug(IPrivacy, IHasLinkedBranches):
             value_type=Reference(schema=IMessage)),
         exported_as='messages')
 
+    def _indexed_messages(include_content=False, include_parents=False):
+        """Low level query for getting bug messages.
+
+        :param include_content: If True retrieve the content for the messages
+            too.
+        :param include_parents: If True retrieve the object for parent
+            messages too. If False the parent attribute will be *forced* to
+            None to prevent lazy evaluation triggering database lookups.
+        """
+
     followup_subject = Attribute("The likely subject of the next message.")
 
     has_patches = Attribute("Does this bug have any patches?")
@@ -463,9 +465,6 @@ class IBug(IPrivacy, IHasLinkedBranches):
     @export_write_operation()
     def unsubscribeFromDupes(person, unsubscribed_by):
         """Remove this person's subscription from all dupes of this bug."""
-
-    def reindexMessages():
-        """Fill in the `BugMessage`.index column for this bugs messages."""
 
     def isSubscribed(person):
         """Is person subscribed to this bug?
@@ -547,8 +546,11 @@ class IBug(IPrivacy, IHasLinkedBranches):
         True to include the master bug's subscribers as recipients.
         """
 
-    def addCommentNotification(message, recipients=None):
-        """Add a bug comment notification."""
+    def addCommentNotification(message, recipients=None, activity=None):
+        """Add a bug comment notification.
+        
+        If a BugActivity instance is provided as an `activity`, it is linked
+        to the notification."""
 
     def addChange(change, recipients=None):
         """Record a change to the bug.
@@ -696,8 +698,15 @@ class IBug(IPrivacy, IHasLinkedBranches):
                 remote bug tracker, if it's an imported comment.
         """
 
-    def getMessageChunks():
-        """Return MessageChunks corresponding to comments made on this bug"""
+    def getMessagesForView(slice_info):
+        """Return BugMessage,Message,MessageChunks for renderinger.
+
+        This eager loads message.owner validity associated with the
+        bugmessages.
+
+        :param slice_info: Either None or a list of slices to constraint the
+            returned rows. The step parameter in each slice is ignored.
+        """
 
     def getNullBugTask(product=None, productseries=None,
                     sourcepackagename=None, distribution=None,
@@ -992,9 +1001,10 @@ class IBugAddForm(IBug):
                 "tracker."),
             vocabulary="DistributionUsingMalone")
     owner = Int(title=_("Owner"), required=True)
-    comment = Text(
+    comment = Description(
         title=_('Further information'),
-        required=False)
+        strip_text=True, trailing_only=True,
+        min_length=1, max_length=50000, required=False)
     bug_already_reported_as = Choice(
         title=_("This bug has already been reported as ..."), required=False,
         vocabulary="Bug")

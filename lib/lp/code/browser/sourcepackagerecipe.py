@@ -14,6 +14,8 @@ __all__ = [
     'SourcePackageRecipeView',
     ]
 
+import itertools
+
 from bzrlib.plugins.builder.recipe import (
     ForbiddenInstructionError,
     RecipeParseError,
@@ -22,6 +24,7 @@ from bzrlib.plugins.builder.recipe import (
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import use_template
+import simplejson
 from storm.locals import Store
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser.widget import Widget
@@ -35,8 +38,8 @@ from zope.interface import (
     providedBy,
     )
 from zope.schema import (
-    Field,
     Choice,
+    Field,
     List,
     Text,
     TextLine,
@@ -49,7 +52,6 @@ from zope.schema.vocabulary import (
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad.browser.launchpad import Hierarchy
-from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,
@@ -69,8 +71,14 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     render_radio_widget_part,
     )
-from lp.app.browser.lazrjs import InlineEditPickerWidget
+from lp.app.browser.lazrjs import (
+    BooleanChoiceWidget,
+    InlineEditPickerWidget,
+    TextAreaEditorWidget,
+    TextLineEditorWidget,
+    )
 from lp.app.browser.tales import format_link
+from lp.app.validators.name import name_validator
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadRadioWidget,
@@ -87,8 +95,11 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
     ISourcePackageRecipeSource,
     MINIMAL_RECIPE_TEXT,
+    RECIPE_BETA_FLAG,
     )
-from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.code.model.sourcepackagerecipe import get_buildable_distroseries_set
+from lp.registry.interfaces.series import SeriesStatus
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.model.archive import Archive
 
@@ -170,21 +181,35 @@ class SourcePackageRecipeContextMenu(ContextMenu):
 
     facet = 'branches'
 
-    links = ('request_builds',)
+    links = ('request_builds', 'request_daily_build',)
 
     def request_builds(self):
         """Provide a link for requesting builds of a recipe."""
         return Link('+request-builds', 'Request build(s)', icon='add')
+
+    def request_daily_build(self):
+        """Provide a link for requesting a daily build of a recipe."""
+        recipe = self.context
+        ppa = recipe.daily_build_archive
+        if (ppa is None or not recipe.build_daily or not recipe.is_stale
+                or not recipe.distroseries):
+            show_request_build = False
+        else:
+            has_upload = ppa.checkArchivePermission(recipe.owner)
+            show_request_build = has_upload
+
+        return Link(
+                '+request-daily-build', 'Build now',
+                enabled=show_request_build)
 
 
 class SourcePackageRecipeView(LaunchpadView):
     """Default view of a SourcePackageRecipe."""
 
     def initialize(self):
-        # XXX: rockstar: This should be removed when source package recipes
-        # are put into production. spec=sourcepackagerecipes
         super(SourcePackageRecipeView, self).initialize()
-        self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
+        if getFeatureFlag(RECIPE_BETA_FLAG):
+            self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
         recipe = self.context
         if recipe.build_daily and recipe.daily_build_archive is None:
             self.request.response.addWarningNotification(
@@ -211,21 +236,7 @@ class SourcePackageRecipeView(LaunchpadView):
 
     @property
     def builds(self):
-        """A list of interesting builds.
-
-        All pending builds are shown, as well as 1-5 recent builds.
-        Recent builds are ordered by date finished (if completed) or
-        date_started (if date finished is not set due to an error building or
-        other circumstance which resulted in the build not being completed).
-        This allows started but unfinished builds to show up in the view but
-        be discarded as more recent builds become available.
-        """
-        builds = list(self.context.getPendingBuilds())
-        for build in self.context.getBuilds():
-            builds.append(build)
-            if len(builds) >= 5:
-                break
-        return builds
+        return builds_for_recipe(self.context)
 
     def dailyBuildWithoutUploadPermission(self):
         """Returns true if there are upload permissions to the daily archive.
@@ -249,16 +260,71 @@ class SourcePackageRecipeView(LaunchpadView):
 
     @property
     def archive_picker(self):
-        ppa = self.context.daily_build_archive
-        if ppa is None:
-            initial_html = 'None'
-        else:
-            initial_html = format_link(ppa)
         field = ISourcePackageEditSchema['daily_build_archive']
         return InlineEditPickerWidget(
-            self.context, field, initial_html,
+            self.context, field,
+            format_link(self.context.daily_build_archive),
             header='Change daily build archive',
             step_title='Select a PPA')
+
+    @property
+    def recipe_text_widget(self):
+        """The recipe text as widget HTML."""
+        recipe_text = ISourcePackageRecipe['recipe_text']
+        return TextAreaEditorWidget(self.context, recipe_text, title="")
+
+    @property
+    def daily_build_widget(self):
+        return BooleanChoiceWidget(
+            self.context, ISourcePackageRecipe['build_daily'],
+            tag='span',
+            false_text='Built on request',
+            true_text='Built daily',
+            header='Change build schedule')
+
+    @property
+    def description_widget(self):
+        """The description as a widget."""
+        description = ISourcePackageRecipe['description']
+        return TextAreaEditorWidget(
+            self.context, description, title="")
+
+    @property
+    def name_widget(self):
+        name = ISourcePackageRecipe['name']
+        title = "Edit the recipe name"
+        return TextLineEditorWidget(self.context, name, title, 'h1')
+
+
+def builds_for_recipe(recipe):
+        """A list of interesting builds.
+
+        All pending builds are shown, as well as 1-5 recent builds.
+        Recent builds are ordered by date finished (if completed) or
+        date_started (if date finished is not set due to an error building or
+        other circumstance which resulted in the build not being completed).
+        This allows started but unfinished builds to show up in the view but
+        be discarded as more recent builds become available.
+        """
+        builds = list(recipe.pending_builds)
+        for build in recipe.completed_builds:
+            builds.append(build)
+            if len(builds) >= 5:
+                break
+        return builds
+
+
+def new_builds_notification_text(builds, already_pending=None):
+    nr_builds = len(builds)
+    if not nr_builds:
+        builds_text = "All requested recipe builds are already queued."
+    elif nr_builds == 1:
+        builds_text = "1 new recipe build has been queued."
+    else:
+        builds_text = "%d new recipe builds have been queued." % nr_builds
+    if nr_builds > 0 and already_pending:
+        builds_text = "<p>%s</p>%s" % (builds_text, already_pending)
+    return structured(builds_text)
 
 
 class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
@@ -271,19 +337,67 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
         The distroseries function as defaults for requesting a build.
         """
         initial_values = {'distros': self.context.distroseries}
-        build = self.context.getLastBuild()
+        build = self.context.last_build
         if build is not None:
             initial_values['archive'] = build.archive
         return initial_values
 
     class schema(Interface):
         """Schema for requesting a build."""
+        archive = Choice(vocabulary='TargetPPAs', title=u'Archive')
         distros = List(
             Choice(vocabulary='BuildableDistroSeries'),
             title=u'Distribution series')
-        archive = Choice(vocabulary='TargetPPAs', title=u'Archive')
 
     custom_widget('distros', LabeledMultiCheckBoxWidget)
+
+    def validate(self, data):
+        distros = data.get('distros', [])
+        if not len(distros):
+            self.setFieldError('distros',
+                "You need to specify at least one distro series for which "
+                "to build.")
+            return
+        over_quota_distroseries = []
+        for distroseries in data['distros']:
+            if self.context.isOverQuota(self.user, distroseries):
+                over_quota_distroseries.append(str(distroseries))
+        if len(over_quota_distroseries) > 0:
+            self.setFieldError(
+                'distros',
+                "You have exceeded today's quota for %s." %
+                ', '.join(over_quota_distroseries))
+
+    def requestBuild(self, data):
+        """User action for requesting a number of builds.
+
+        We raise exceptions for most errors but if there's already a pending
+        build for a particular distroseries, we simply record that so that
+        other builds can ne queued and a message be displayed to the caller.
+        """
+        informational = {}
+        builds = []
+        for distroseries in data['distros']:
+            try:
+                build = self.context.requestBuild(
+                    data['archive'], self.user, distroseries, manual=True)
+                builds.append(build)
+            except BuildAlreadyPending, e:
+                existing_message = informational.get("already_pending")
+                if existing_message:
+                    new_message = existing_message[:-1] + (
+                                    ", and %s." % e.distroseries)
+                else:
+                    new_message = ("An identical build is "
+                                "already pending for %s." % e.distroseries)
+                informational["already_pending"] = new_message
+
+        return builds, informational
+
+
+class SourcePackageRecipeRequestBuildsHtmlView(
+        SourcePackageRecipeRequestBuildsView):
+    """Supports HTML form recipe build requests."""
 
     @property
     def title(self):
@@ -295,32 +409,98 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
     def cancel_url(self):
         return canonical_url(self.context)
 
-    def validate(self, data):
-        over_quota_distroseries = []
-        for distroseries in data['distros']:
-            if self.context.isOverQuota(self.user, distroseries):
-                over_quota_distroseries.append(str(distroseries))
-        if len(over_quota_distroseries) > 0:
-            self.setFieldError(
-                'distros',
-                "You have exceeded today's quota for %s." %
-                ', '.join(over_quota_distroseries))
-
     @action('Request builds', name='request')
     def request_action(self, action, data):
-        """User action for requesting a number of builds."""
-        for distroseries in data['distros']:
-            try:
-                self.context.requestBuild(
-                    data['archive'], self.user, distroseries,
-                    PackagePublishingPocket.RELEASE, manual=True)
-            except BuildAlreadyPending, e:
-                self.setFieldError(
-                    'distros',
-                    'An identical build is already pending for %s.' %
-                    e.distroseries)
-                return
+        builds, informational = self.requestBuild(data)
         self.next_url = self.cancel_url
+        already_pending = informational.get("already_pending")
+        notification_text = new_builds_notification_text(
+            builds, already_pending)
+        self.request.response.addNotification(notification_text)
+
+
+class SourcePackageRecipeRequestBuildsAjaxView(
+        SourcePackageRecipeRequestBuildsView):
+    """Supports AJAX form recipe build requests."""
+
+    def _process_error(self, data=None, builds=None, informational=None,
+                       errors=None, reason="Validation"):
+        """Set up the response and json data to return to the caller."""
+        self.request.response.setStatus(400, reason)
+        self.request.response.setHeader('Content-type', 'application/json')
+        return_data = dict(builds=builds, errors=errors)
+        if informational:
+            return_data.update(informational)
+        return simplejson.dumps(return_data)
+
+    def failure(self, action, data, errors):
+        """Called by the form if validate() finds any errors.
+
+           We simply convert the errors to json and return that data to the
+           caller for display to the user.
+        """
+        return self._process_error(data=data, errors=self.widget_errors)
+
+    @action('Request builds', name='request', failure=failure)
+    def request_action(self, action, data):
+        """User action for requesting a number of builds.
+
+        The failure handler will handle any validation errors. We still need
+        to handle errors which may occur when invoking the business logic.
+        These "expected" errors are ones which result in a predefined message
+        being displayed to the user. If the business method raises an
+        unexpected exception, that will be handled using the form's standard
+        exception processing mechanism (using response code 500).
+        """
+        builds, informational = self.requestBuild(data)
+        # If there are errors we return a json data snippet containing the
+        # errors as well as the form content. These errors are processed
+        # by the caller's response handler and displayed to the user. The
+        # form content may be rendered as well if required.
+        if informational:
+            builds_html = None
+            if len(builds):
+                builds_html = self.render()
+            return self._process_error(
+                data=data, builds=builds_html, informational=informational,
+                reason="Request Build")
+
+    @property
+    def builds(self):
+        return builds_for_recipe(self.context)
+
+
+class SourcePackageRecipeRequestDailyBuildView(LaunchpadFormView):
+    """Supports requests to perform a daily build for a recipe.
+
+    Renders the recipe builds table so that the recipe index page can be
+    updated with the new build records.
+
+    This view works for both ajax and html form requests.
+    """
+
+    # Attributes for the html version
+    page_title = "Build now"
+
+    class schema(Interface):
+        """Schema for requesting a build."""
+
+    @action('Build now', name='build')
+    def build_action(self, action, data):
+        recipe = self.context
+        builds = recipe.performDailyBuild()
+        if self.request.is_ajax:
+            template = ViewPageTemplateFile(
+                    "../templates/sourcepackagerecipe-builds.pt")
+            return template(self)
+        else:
+            self.next_url = canonical_url(recipe)
+            self.request.response.addNotification(
+                    new_builds_notification_text(builds))
+
+    @property
+    def builds(self):
+        return builds_for_recipe(self.context)
 
 
 class ISourcePackageEditSchema(Interface):
@@ -387,6 +567,10 @@ class ISourcePackageAddSchema(ISourcePackageEditSchema):
                           "the owner of the recipe ."))
 
 
+class ErrorHandled(Exception):
+    """A field error occured and was handled."""
+
+
 class RecipeTextValidatorMixin:
     """Class to validate that the Source Package Recipe text is valid."""
 
@@ -401,6 +585,25 @@ class RecipeTextValidatorMixin:
             parser.parse()
         except RecipeParseError, error:
             self.setFieldError('recipe_text', str(error))
+
+    def error_handler(self, callable, *args, **kwargs):
+        try:
+            return callable(*args)
+        except TooNewRecipeFormat:
+            self.setFieldError(
+                'recipe_text',
+                'The recipe format version specified is not available.')
+        except ForbiddenInstructionError, e:
+            self.setFieldError(
+                'recipe_text',
+                'The bzr-builder instruction "%s" is not permitted '
+                'here.' % e.instruction_name)
+        except NoSuchBranch, e:
+            self.setFieldError(
+                'recipe_text', '%s is not a branch on Launchpad.' % e.name)
+        except PrivateBranchRecipe, e:
+            self.setFieldError('recipe_text', str(e))
+        raise ErrorHandled()
 
 
 class RelatedBranchesWidget(Widget):
@@ -475,9 +678,8 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
 
     def initialize(self):
         super(SourcePackageRecipeAddView, self).initialize()
-        # XXX: rockstar: This should be removed when source package recipes
-        # are put into production. spec=sourcepackagerecipes
-        self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
+        if getFeatureFlag(RECIPE_BETA_FLAG):
+            self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
         widget = self.widgets['use_ppa']
         current_value = widget._getFormValue()
         self.use_ppa_existing = render_radio_widget_part(
@@ -497,12 +699,32 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
         """The branch on which the recipe is built."""
         return self.context
 
+    def _recipe_names(self):
+        """A generator of recipe names."""
+        branch_target_name = self.context.target.name.split('/')[-1]
+        yield "%s-daily" % branch_target_name
+        counter = itertools.count(1)
+        while True:
+            yield "%s-daily-%s" % (branch_target_name, counter.next())
+
+    def _find_unused_name(self, owner):
+        # Grab the last path element of the branch target path.
+        source = getUtility(ISourcePackageRecipeSource)
+        for recipe_name in self._recipe_names():
+            if not source.exists(owner, recipe_name):
+                return recipe_name
+
     @property
     def initial_values(self):
+        distroseries = get_buildable_distroseries_set(self.user)
+        series = [series for series in distroseries if series.status in (
+                SeriesStatus.CURRENT, SeriesStatus.DEVELOPMENT)]
         return {
+            'name': self._find_unused_name(self.user),
             'recipe_text': MINIMAL_RECIPE_TEXT % self.context.bzr_identity,
             'owner': self.user,
-            'build_daily': False,
+            'distros': series,
+            'build_daily': True,
             'use_ppa': EXISTING_PPA,
             }
 
@@ -512,36 +734,20 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
 
     @action('Create Recipe', name='create')
     def request_action(self, action, data):
+        owner = data['owner']
+        if data['use_ppa'] == CREATE_NEW:
+            ppa_name = data.get('ppa_name', None)
+            ppa = owner.createPPA(ppa_name)
+        else:
+            ppa = data['daily_build_archive']
         try:
-            owner = data['owner']
-            if data['use_ppa'] == CREATE_NEW:
-                ppa_name = data.get('ppa_name', None)
-                ppa = owner.createPPA(ppa_name)
-            else:
-                ppa = data['daily_build_archive']
-            source_package_recipe = getUtility(
-                ISourcePackageRecipeSource).new(
-                    self.user, owner, data['name'],
-                    data['recipe_text'], data['description'], data['distros'],
-                    ppa, data['build_daily'])
+            source_package_recipe = self.error_handler(
+                getUtility(ISourcePackageRecipeSource).new,
+                self.user, owner, data['name'],
+                data['recipe_text'], data['description'], data['distros'],
+                ppa, data['build_daily'])
             Store.of(source_package_recipe).flush()
-        except TooNewRecipeFormat:
-            self.setFieldError(
-                'recipe_text',
-                'The recipe format version specified is not available.')
-            return
-        except ForbiddenInstructionError:
-            # XXX: bug=592513 We shouldn't be hardcoding "run" here.
-            self.setFieldError(
-                'recipe_text',
-                'The bzr-builder instruction "run" is not permitted here.')
-            return
-        except NoSuchBranch, e:
-            self.setFieldError(
-                'recipe_text', '%s is not a branch on Launchpad.' % e.name)
-            return
-        except PrivateBranchRecipe, e:
-            self.setFieldError('recipe_text', str(e))
+        except ErrorHandled:
             return
 
         self.next_url = canonical_url(source_package_recipe)
@@ -626,24 +832,10 @@ class SourcePackageRecipeEditView(RecipeRelatedBranchesMixin,
         recipe = parser.parse()
         if self.context.builder_recipe != recipe:
             try:
-                self.context.setRecipeText(recipe_text)
+                self.error_handler(self.context.setRecipeText, recipe_text)
                 changed = True
-            except TooNewRecipeFormat:
-                self.setFieldError(
-                    'recipe_text',
-                    'The recipe format version specified is not available.')
+            except ErrorHandled:
                 return
-            except ForbiddenInstructionError:
-                # XXX: bug=592513 We shouldn't be hardcoding "run" here.
-                self.setFieldError(
-                    'recipe_text',
-                    'The bzr-builder instruction "run" is not permitted'
-                    ' here.')
-                return
-            except PrivateBranchRecipe, e:
-                self.setFieldError('recipe_text', str(e))
-                return
-
 
         distros = data.pop('distros')
         if distros != self.context.distroseries:

@@ -1,6 +1,6 @@
 -- Copyright 2010 Canonical Ltd.  This software is licensed under the
 -- GNU Affero General Public License version 3 (see the file LICENSE).
--- Created using pg_dump (PostgreSQL) 8.4.6
+-- Created using pg_dump (PostgreSQL) 8.4.7
 
 SET check_function_bodies = false;
 SET client_encoding = 'UTF8';
@@ -10,6 +10,9 @@ SET standard_conforming_strings = off;
 SET statement_timeout = 0;
 
 SET search_path = public, pg_catalog;
+
+
+
 
 
 
@@ -3333,42 +3336,42 @@ ALTER TABLE bugwatch ENABLE TRIGGER ALL;
 
 ALTER TABLE bugmessage DISABLE TRIGGER ALL;
 
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (1, 2, 1, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (2, 1, 3, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (3, 1, 4, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (4, 2, 5, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (5, 2, 6, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (6, 4, 7, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (7, 5, 8, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (8, 6, 9, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (9, 3, 10, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (10, 7, 11, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (11, 8, 14, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (12, 9, 15, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (13, 10, 17, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (14, 10, 16, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (15, 11, 24, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (16, 11, 25, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (17, 11, 26, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (18, 11, 27, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (19, 11, 28, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (20, 11, 29, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (21, 11, 30, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (22, 12, 31, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (23, 12, 33, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (24, 12, 34, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (25, 12, 35, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (26, 12, 36, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (27, 13, 37, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (28, 13, 38, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (29, 14, 39, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (30, 15, 40, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (31, 15, 44, 11, '<4284D7D1.6010208@gmx.de>', true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (32, 15, 45, 11, '<20050517185429.GB20786@spring.luon.net>', true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (33, 15, 46, 11, '<428A44E9.6090802@gmx.de>', true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (34, 15, 47, 11, '<20050517202044.GA23231@spring.luon.net>', true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (35, 15, 48, 11, '<20050617140011.GA15638@piware.de>', true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (36, 15, 49, 11, '<42BD2E36.9090809@gmx.de>', true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (1, 2, 1, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (2, 1, 3, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (3, 1, 4, NULL, NULL, true, 1);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (4, 2, 5, NULL, NULL, true, 1);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (5, 2, 6, NULL, NULL, true, 2);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (6, 4, 7, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (7, 5, 8, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (8, 6, 9, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (9, 3, 10, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (10, 7, 11, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (11, 8, 14, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (12, 9, 15, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (13, 10, 17, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (14, 10, 16, NULL, NULL, true, 1);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (15, 11, 24, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (16, 11, 25, NULL, NULL, true, 1);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (17, 11, 26, NULL, NULL, true, 2);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (18, 11, 27, NULL, NULL, true, 3);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (19, 11, 28, NULL, NULL, true, 4);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (20, 11, 29, NULL, NULL, true, 5);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (21, 11, 30, NULL, NULL, true, 6);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (22, 12, 31, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (23, 12, 33, NULL, NULL, true, 1);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (24, 12, 34, NULL, NULL, true, 2);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (25, 12, 35, NULL, NULL, true, 3);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (26, 12, 36, NULL, NULL, true, 4);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (27, 13, 37, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (28, 13, 38, NULL, NULL, true, 1);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (29, 14, 39, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (30, 15, 40, NULL, NULL, true, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (31, 15, 44, 11, '<4284D7D1.6010208@gmx.de>', true, 1);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (32, 15, 45, 11, '<20050517185429.GB20786@spring.luon.net>', true, 2);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (33, 15, 46, 11, '<428A44E9.6090802@gmx.de>', true, 3);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (34, 15, 47, 11, '<20050517202044.GA23231@spring.luon.net>', true, 4);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (35, 15, 48, 11, '<20050617140011.GA15638@piware.de>', true, 5);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (36, 15, 49, 11, '<42BD2E36.9090809@gmx.de>', true, 6);
 
 
 ALTER TABLE bugmessage ENABLE TRIGGER ALL;
@@ -3451,6 +3454,50 @@ ALTER TABLE bugnotificationattachment DISABLE TRIGGER ALL;
 ALTER TABLE bugnotificationattachment ENABLE TRIGGER ALL;
 
 
+ALTER TABLE milestone DISABLE TRIGGER ALL;
+
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (1, 4, '1.0', NULL, '2056-10-16 18:31:44.293448', true, 1, NULL, '2006-10-16 18:31:44.293448', NULL, NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (2, NULL, '3.1', 3, '2056-05-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574', NULL, NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (3, NULL, '3.1-rc1', 3, '2056-02-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574', NULL, NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (4, 4, '0.9.2', NULL, NULL, false, 1, NULL, '2009-03-02 18:31:35.911331', 'This was a security fix release for 0.9.', 'One (secure) Tree Hill');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (5, 4, '0.9.1', NULL, NULL, false, 1, NULL, '2009-03-02 18:31:35.911331', 'This was a bugfix release to patch up problems with the new extension system.', 'One Tree Hill (v2)');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (6, 4, '0.9', NULL, NULL, false, 1, NULL, '2009-03-02 18:31:35.911331', 'Release 0.9 of Firefox introduced a new theme as well as improved migration tools for people switching to Firefox.', 'One Tree Hill');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (7, 4, '1.0.0', NULL, NULL, false, 2, NULL, '2009-03-02 18:31:35.911331', 'After four years of work the Mozilla project makes its first public stable release. Mozilla 1.0.0 is a major milestone in open source history.', 'First Stable Release');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (8, 5, '2.1.6', NULL, NULL, false, 3, NULL, '2009-03-02 18:31:35.911331', '', NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (9, 8, '0.8', NULL, NULL, false, 4, NULL, '2009-03-02 18:31:35.911331', '', NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (10, 11, '1.0', NULL, NULL, false, 5, NULL, '2009-03-02 18:31:35.911331', '', NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (11, 15, '1.0.9a', NULL, NULL, false, 8, NULL, '2009-03-02 18:31:35.911331', '', NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (12, 15, '1.0.8', NULL, NULL, false, 8, NULL, '2009-03-02 18:31:35.911331', '', NULL);
+
+
+ALTER TABLE milestone ENABLE TRIGGER ALL;
+
+
+ALTER TABLE structuralsubscription DISABLE TRIGGER ALL;
+
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (1, NULL, NULL, NULL, NULL, 1, NULL, 1, 16, 16, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (2, NULL, NULL, NULL, NULL, 1, NULL, 14, 16, 16, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (3, 22, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (4, 16, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
+
+
+ALTER TABLE structuralsubscription ENABLE TRIGGER ALL;
+
+
+ALTER TABLE bugsubscriptionfilter DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE bugsubscriptionfilter ENABLE TRIGGER ALL;
+
+
+ALTER TABLE bugnotificationfilter DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE bugnotificationfilter ENABLE TRIGGER ALL;
+
+
 ALTER TABLE bugnotificationrecipient DISABLE TRIGGER ALL;
 
 
@@ -3470,25 +3517,6 @@ ALTER TABLE bugpackageinfestation DISABLE TRIGGER ALL;
 
 
 ALTER TABLE bugpackageinfestation ENABLE TRIGGER ALL;
-
-
-ALTER TABLE milestone DISABLE TRIGGER ALL;
-
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (1, 4, '1.0', NULL, '2056-10-16 18:31:44.293448', true, 1, NULL, '2006-10-16 18:31:44.293448', NULL, NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (2, NULL, '3.1', 3, '2056-05-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574', NULL, NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (3, NULL, '3.1-rc1', 3, '2056-02-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574', NULL, NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (4, 4, '0.9.2', NULL, NULL, false, 1, NULL, '2009-03-02 18:31:35.911331', 'This was a security fix release for 0.9.', 'One (secure) Tree Hill');
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (5, 4, '0.9.1', NULL, NULL, false, 1, NULL, '2009-03-02 18:31:35.911331', 'This was a bugfix release to patch up problems with the new extension system.', 'One Tree Hill (v2)');
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (6, 4, '0.9', NULL, NULL, false, 1, NULL, '2009-03-02 18:31:35.911331', 'Release 0.9 of Firefox introduced a new theme as well as improved migration tools for people switching to Firefox.', 'One Tree Hill');
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (7, 4, '1.0.0', NULL, NULL, false, 2, NULL, '2009-03-02 18:31:35.911331', 'After four years of work the Mozilla project makes its first public stable release. Mozilla 1.0.0 is a major milestone in open source history.', 'First Stable Release');
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (8, 5, '2.1.6', NULL, NULL, false, 3, NULL, '2009-03-02 18:31:35.911331', '', NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (9, 8, '0.8', NULL, NULL, false, 4, NULL, '2009-03-02 18:31:35.911331', '', NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (10, 11, '1.0', NULL, NULL, false, 5, NULL, '2009-03-02 18:31:35.911331', '', NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (11, 15, '1.0.9a', NULL, NULL, false, 8, NULL, '2009-03-02 18:31:35.911331', '', NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (12, 15, '1.0.8', NULL, NULL, false, 8, NULL, '2009-03-02 18:31:35.911331', '', NULL);
-
-
-ALTER TABLE milestone ENABLE TRIGGER ALL;
 
 
 ALTER TABLE productrelease DISABLE TRIGGER ALL;
@@ -3690,24 +3718,6 @@ INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by, bug_n
 
 
 ALTER TABLE bugsubscription ENABLE TRIGGER ALL;
-
-
-ALTER TABLE structuralsubscription DISABLE TRIGGER ALL;
-
-INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (1, NULL, NULL, NULL, NULL, 1, NULL, 1, 16, 16, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
-INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (2, NULL, NULL, NULL, NULL, 1, NULL, 14, 16, 16, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
-INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (3, 22, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
-INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (4, 16, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
-
-
-ALTER TABLE structuralsubscription ENABLE TRIGGER ALL;
-
-
-ALTER TABLE bugsubscriptionfilter DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE bugsubscriptionfilter ENABLE TRIGGER ALL;
 
 
 ALTER TABLE bugsubscriptionfilterimportance DISABLE TRIGGER ALL;
@@ -6265,6 +6275,13 @@ INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productse
 
 
 ALTER TABLE packaging ENABLE TRIGGER ALL;
+
+
+ALTER TABLE packagingjob DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE packagingjob ENABLE TRIGGER ALL;
 
 
 ALTER TABLE parsedapachelog DISABLE TRIGGER ALL;

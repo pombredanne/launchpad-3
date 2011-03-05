@@ -28,10 +28,9 @@ import rfc822
 import shutil
 import tempfile
 
-from canonical import encoding
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.scripts import log
-from canonical.launchpad.validators.version import valid_debian_version
+from lp.app.validators.version import valid_debian_version
 from lp.archivepublisher.diskpool import poolify
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.utils import (
@@ -39,6 +38,7 @@ from lp.archiveuploader.utils import (
     extract_dpkg_source,
     )
 from lp.registry.interfaces.gpg import GPGKeyAlgorithm
+from lp.services import encoding
 from lp.soyuz.enums import PackagePublishingPriority
 from lp.soyuz.scripts.gina import (
     call,

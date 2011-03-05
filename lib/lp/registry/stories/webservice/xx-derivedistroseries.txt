@@ -39,12 +39,8 @@ child's parent
     ...     name=child_name, rebuild=False)
     >>> print derived
     HTTP/1.1 400 Bad Request
-    Status: 400 Bad Request
     ...
-    <BLANKLINE>
     DistroSeries ... parent series isn't ...
-    <BLANKLINE>
-    ...
 
 If we call it correctly, it works.
 
@@ -53,9 +49,6 @@ If we call it correctly, it works.
     ...     name=child_name, rebuild=False)
     >>> print derived
     HTTP/1.1 200 Ok
-    Status: 200 Ok
-    ...
-    <BLANKLINE>
     ...
 
 If we call it with all of the arguments, it also works.
@@ -70,9 +63,6 @@ If we call it with all of the arguments, it also works.
     ...     packagesets=('test1',), rebuild=False)
     >>> print derived
     HTTP/1.1 200 Ok
-    Status: 200 Ok
-    ...
-    <BLANKLINE>
     ...
 
 And we can verify both jobs exists.

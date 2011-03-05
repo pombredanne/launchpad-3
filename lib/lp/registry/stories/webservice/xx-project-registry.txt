@@ -180,6 +180,7 @@ Projects are available at their canonical URL on the API virtual host.
     programming_language: None
     project_group_link: u'http://.../mozilla'
     qualifies_for_free_hosting: False
+    recipes_collection_link: u'http://.../firefox/recipes'
     registrant_link: u'http://.../~name12'
     releases_collection_link: u'http://.../firefox/releases'
     remote_product: None
@@ -244,6 +245,7 @@ several that are not available to non-privileged users marked as
     programming_language: None
     project_group_link: u'http://.../mozilla'
     qualifies_for_free_hosting: False
+    recipes_collection_link: u'http://.../firefox/recipes'
     registrant_link: u'http://.../~name12'
     releases_collection_link: u'http://.../firefox/releases'
     remote_product: None
@@ -705,10 +707,7 @@ Attempting to access it as a normal users is unauthorized.
     ...     licenses=["Other/Proprietary"])
     HTTP/1.1 401 Unauthorized
     ...
-    Traceback (most recent call last):
-    ...
-    Unauthorized: (...)
-    <BLANKLINE>
+    (<...>, 'forReview', 'launchpad.Moderate')
 
 The project collection has a method for creating a new project.
 
@@ -1025,7 +1024,7 @@ Only one product release can be created per milestone.
     >>> print response
     HTTP/1.1 400 Bad Request
     ...
-    MultipleProductReleases: A milestone can only have one ProductRelease.
+    A milestone can only have one ProductRelease.
 
 
 Project release entries

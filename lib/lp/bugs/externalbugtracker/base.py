@@ -18,6 +18,7 @@ __all__ = [
     'UnknownBugTrackerTypeError',
     'UnknownRemoteImportanceError',
     'UnknownRemoteStatusError',
+    'UnknownRemoteValueError',
     'UnparsableBugData',
     'UnparsableBugTrackerVersion',
     'UnsupportedBugTrackerVersion',
@@ -122,12 +123,18 @@ class BugNotFound(BugWatchUpdateWarning):
     """The bug was not found in the external bug tracker."""
 
 
-class UnknownRemoteImportanceError(BugWatchUpdateWarning):
+class UnknownRemoteValueError(BugWatchUpdateWarning):
+    """A matching Launchpad value could not be found for the remote value."""
+
+
+class UnknownRemoteImportanceError(UnknownRemoteValueError):
     """The remote bug's importance isn't mapped to a `BugTaskImportance`."""
+    field_name = 'importance'
 
 
-class UnknownRemoteStatusError(BugWatchUpdateWarning):
+class UnknownRemoteStatusError(UnknownRemoteValueError):
     """The remote bug's status isn't mapped to a `BugTaskStatus`."""
+    field_name = 'status'
 
 
 class PrivateRemoteBug(BugWatchUpdateWarning):
@@ -231,13 +238,13 @@ class ExternalBugTracker:
         """
         return None
 
-    def _fetchPage(self, page):
+    def _fetchPage(self, page, data=None):
         """Fetch a page from the remote server.
 
         A BugTrackerConnectError will be raised if anything goes wrong.
         """
         try:
-            return self.urlopen(page)
+            return self.urlopen(page, data)
         except (urllib2.HTTPError, urllib2.URLError), val:
             raise BugTrackerConnectError(self.baseurl, val)
 
@@ -253,7 +260,7 @@ class ExternalBugTracker:
     def _post(self, url, data):
         """Post to a given URL."""
         request = urllib2.Request(url, headers={'User-agent': LP_USER_AGENT})
-        return self.urlopen(request, data=data)
+        return self._fetchPage(request, data=data)
 
     def _postPage(self, page, form, repost_on_redirect=False):
         """POST to the specified page and form.
