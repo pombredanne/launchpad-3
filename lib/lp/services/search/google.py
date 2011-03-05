@@ -22,7 +22,7 @@ from lazr.uri import URI
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.interfaces.searchservice import (
+from lp.services.search.interfaces import (
     GoogleResponseError,
     GoogleWrongGSPVersion,
     ISearchResult,
