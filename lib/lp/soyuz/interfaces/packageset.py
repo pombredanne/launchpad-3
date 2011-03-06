@@ -411,7 +411,7 @@ class IPackagesetSet(Interface):
 
     @collection_default_content()
     def get():
-        """Return the first `limit` package sets in Launchpad.
+        """Return all of the package sets in Launchpad.
 
         :return: A (potentially empty) sequence of `IPackageset` instances.
         """
