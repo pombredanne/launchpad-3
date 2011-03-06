@@ -1354,7 +1354,6 @@ class PublishingSet:
         if len(needed) == 0:
             return []
 
-        # XXX ddebs
         insert_head = """
             INSERT INTO BinaryPackagePublishingHistory
             (archive, distroarchseries, pocket, binarypackagerelease,
