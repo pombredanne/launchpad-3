@@ -61,6 +61,10 @@ from lp.translations.interfaces.translationimportqueue import (
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
+from lp.translations.utilities.translationsharinginfo import (
+    has_ubuntu_template,
+    get_ubuntu_sharing_info,
+    )
 
 
 class ProductSeriesTranslationsMenuMixIn:
@@ -446,6 +450,17 @@ class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
     def is_translations_admin(self):
         """Whether or not the user is a translations admin."""
         return check_permission("launchpad.TranslationsAdmin", self.context)
+
+    def is_sharing(self):
+        return has_ubuntu_template(productseries=self.context)
+
+    @property
+    def sharing_sourcepackage(self):
+        infos = get_ubuntu_sharing_info(productseries=self.context)
+        if len(infos) == 0:
+            return None
+        sourcepackage, template = infos[0]
+        return sourcepackage
 
 
 class SettingsRadioWidget(LaunchpadRadioWidgetWithDescription):

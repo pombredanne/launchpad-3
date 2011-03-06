@@ -238,13 +238,13 @@ class ExternalBugTracker:
         """
         return None
 
-    def _fetchPage(self, page):
+    def _fetchPage(self, page, data=None):
         """Fetch a page from the remote server.
 
         A BugTrackerConnectError will be raised if anything goes wrong.
         """
         try:
-            return self.urlopen(page)
+            return self.urlopen(page, data)
         except (urllib2.HTTPError, urllib2.URLError), val:
             raise BugTrackerConnectError(self.baseurl, val)
 
@@ -260,7 +260,7 @@ class ExternalBugTracker:
     def _post(self, url, data):
         """Post to a given URL."""
         request = urllib2.Request(url, headers={'User-agent': LP_USER_AGENT})
-        return self.urlopen(request, data=data)
+        return self._fetchPage(request, data=data)
 
     def _postPage(self, page, form, repost_on_redirect=False):
         """POST to the specified page and form.

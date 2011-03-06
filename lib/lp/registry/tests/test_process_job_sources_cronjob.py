@@ -5,13 +5,9 @@
 
 __metaclass__ = type
 
-import os
-import subprocess
-
 import transaction
 from zope.component import getUtility
 
-from canonical.config import config
 from canonical.launchpad.scripts.tests import run_script
 from canonical.testing import LaunchpadScriptLayer
 from lp.registry.interfaces.teammembership import (
@@ -64,8 +60,8 @@ class ProcessJobSourceTest(TestCaseWithFactory):
         returncode, output, error = run_script(
             self.script, ['-v', 'IMembershipNotificationJobSource'])
         self.assertIn(
-            ('DEBUG   Running <MEMBERSHIP_NOTIFICATION branch job (1) '
-             'for murdock as part of a-team. status=Waiting>'),
+            ('DEBUG   Running <MembershipNotificationJob '
+             'about ~murdock in ~a-team; status=Waiting>'),
             error)
         self.assertIn('DEBUG   MembershipNotificationJob sent email', error)
         self.assertIn('Ran 1 MembershipNotificationJob jobs.', error)
@@ -118,8 +114,8 @@ class ProcessJobSourceGroupsTest(TestCaseWithFactory):
         returncode, output, error = run_script(
             self.script, ['-v', '--wait', 'MAIN'])
         self.assertTextMatchesExpressionIgnoreWhitespace(
-            ('DEBUG Running <MEMBERSHIP_NOTIFICATION branch job (.*) '
-             'for murdock as part of a-team. status=Waiting>'),
+            ('DEBUG Running <MembershipNotificationJob '
+             'about ~murdock in ~a-team; status=Waiting>'),
             error)
         self.assertIn('DEBUG   MembershipNotificationJob sent email', error)
         self.assertIn('Ran 1 MembershipNotificationJob jobs.', error)

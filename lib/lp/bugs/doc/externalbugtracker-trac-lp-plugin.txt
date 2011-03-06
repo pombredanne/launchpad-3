@@ -40,7 +40,7 @@ Trac to validate $token and return a Set-Cookie header.
     ...         self.headers = {}
 
     >>> class TestTracLPPlugin(TracLPPlugin):
-    ...     def urlopen(self, url):
+    ...     def urlopen(self, url, data=None):
     ...         with lp_dbuser():
     ...             base_auth_url = urlappend(self.baseurl, 'launchpad-auth')
     ...             if not url.startswith(base_auth_url + '/'):
@@ -133,7 +133,7 @@ If authentication fails, a BugTrackerAuthenticationError will be raised.
 
     >>> from urllib2 import HTTPError
     >>> class TestFailingTracLPPlugin(TracLPPlugin):
-    ...     def urlopen(self, url):
+    ...     def urlopen(self, url, data=None):
     ...         raise HTTPError(url, 401, "Denied!", {}, None)
 
     >>> test_trac = TestFailingTracLPPlugin(

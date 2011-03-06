@@ -104,6 +104,7 @@ from lp.app.enums import ServiceUsage
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
 from lp.blueprints.enums import (
+    NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
     SpecificationPriority,
     )
@@ -501,10 +502,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             pocket)
         return ProxyFactory(location)
 
-    def makeAccount(self, displayname, email=None, password=None,
+    def makeAccount(self, displayname=None, email=None, password=None,
                     status=AccountStatus.ACTIVE,
                     rationale=AccountCreationRationale.UNKNOWN):
         """Create and return a new Account."""
+        if displayname is None:
+            displayname = self.getUniqueString('displayname')
         account = getUtility(IAccountSet).new(
             rationale, displayname, password=password)
         removeSecurityProxy(account).status = status
@@ -816,6 +819,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             Milestone(product=product, distribution=distribution,
                       productseries=productseries, distroseries=distroseries,
                       name=name))
+
+    def makePackaging(self):
+        """Create a new Packaging."""
+        productseries = self.makeProductSeries()
+        sourcepackage = self.makeSourcePackage()
+        return productseries.setPackaging(
+            sourcepackage.distroseries, sourcepackage.sourcepackagename,
+            productseries.owner)
 
     def makeProcessor(self, family=None, name=None, title=None,
                       description=None):
@@ -1882,7 +1893,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeSpecification(self, product=None, title=None, distribution=None,
                           name=None, summary=None, owner=None,
-                          status=SpecificationDefinitionStatus.NEW,
+                          status=NewSpecificationDefinitionStatus.NEW,
                           implementation_status=None, goal=None, specurl=None,
                           assignee=None, drafter=None, approver=None,
                           priority=None, whiteboard=None, milestone=None):
@@ -1903,12 +1914,18 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             owner = self.makePerson()
         if priority is None:
             priority = SpecificationPriority.UNDEFINED
+        status_names = NewSpecificationDefinitionStatus.items.mapping.keys()
+        if status.name in status_names:
+            definition_status = status
+        else:
+            # This is to satisfy life cycle requirements.
+            definition_status = NewSpecificationDefinitionStatus.NEW
         spec = getUtility(ISpecificationSet).new(
             name=name,
             title=title,
             specurl=None,
             summary=summary,
-            definition_status=status,
+            definition_status=definition_status,
             whiteboard=whiteboard,
             owner=owner,
             assignee=assignee,
@@ -1918,6 +1935,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             distribution=distribution,
             priority=priority)
         naked_spec = removeSecurityProxy(spec)
+        if status.name not in status_names:
+            # Set the closed status after the status has a sane initial state.
+            naked_spec.definition_status = status
         if status == SpecificationDefinitionStatus.OBSOLETE:
             # This is to satisfy a DB constraint of obsolete specs.
             naked_spec.completer = owner
@@ -2703,7 +2723,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     ServiceUsage.LAUNCHPAD)
             else:
                 distroseries = self.makeUbuntuDistroSeries()
-                sourcepackagename = self.makeSourcePackageName()
+        if distroseries is not None and sourcepackagename is None:
+            sourcepackagename = self.makeSourcePackageName()
 
         templateset = getUtility(IPOTemplateSet)
         subset = templateset.getSubset(
