@@ -1276,21 +1276,19 @@ def expand_binary_requests(distroseries, binaries):
     architecture corresponding to the build architecture, if it exists and is
     enabled.
 
-    :param binaries: A dict mapping `BinaryPackageReleases` to their
-        desired overrides as (`Component`, `Section`,
-        `PackagePublishingPriority`) tuples.
+    :param binaries: A dict mapping `BinaryPackageReleases` to tuples of their
+        desired overrides.
 
     :return: The binaries and the architectures in which they should be
         published, as a sequence of (`DistroArchSeries`,
-        `BinaryPackageRelease`, `Component`, `Section`,
-        `PackagePublishingPriority`) tuples.`
+        `BinaryPackageRelease`, (overrides)) tuples.
     """
 
     archs = list(distroseries.enabled_architectures)
     arch_map = dict((arch.architecturetag, arch) for arch in archs)
 
     expanded = []
-    for bpr, (component, section, priority) in binaries.iteritems():
+    for bpr, overrides in binaries.iteritems():
         if bpr.architecturespecific:
             # Find the DAS in this series corresponding to the original
             # build arch tag. If it does not exist or is disabled, we should
@@ -1301,7 +1299,7 @@ def expand_binary_requests(distroseries, binaries):
         else:
             target_archs = archs
         for target_arch in target_archs:
-            expanded.append((target_arch, bpr, component, section, priority))
+            expanded.append((target_arch, bpr, overrides))
     return expanded
 
 
@@ -1336,7 +1334,7 @@ class PublishingSet:
                 BinaryPackageRelease.binarypackagenameID ==
                     bpr.binarypackagenameID,
                 BinaryPackageRelease.version == bpr.version)
-             for das, bpr, c, s, p in expanded)
+             for das, bpr, overrides in expanded)
         already_published = IMasterStore(BinaryPackagePublishingHistory).find(
             (BinaryPackagePublishingHistory.distroarchseriesID,
              BinaryPackageRelease.binarypackagenameID,
@@ -1350,7 +1348,7 @@ class PublishingSet:
         already_published = frozenset(already_published)
 
         needed = [
-            (das, bpr, c, s, p) for (das, bpr, c, s, p) in
+            (das, bpr, overrides) for (das, bpr, overrides) in
             expanded if (das.id, bpr.binarypackagenameID, bpr.version)
             not in already_published]
         if len(needed) == 0:
@@ -1369,7 +1367,7 @@ class PublishingSet:
                 get_archive(archive, bpr).id, das.id, pocket, bpr.id,
                 component.id, section.id, priority,
                 PackagePublishingStatus.PENDING, UTC_NOW) for
-                (das, bpr, component, section, priority) in needed)
+                (das, bpr, (component, section, priority)) in needed)
         insert_tail = " RETURNING BinaryPackagePublishingHistory.id"
         new_ids = IMasterStore(BinaryPackagePublishingHistory).execute(
             insert_head + insert_pubs + insert_tail)
