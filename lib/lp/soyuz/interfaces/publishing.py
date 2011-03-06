@@ -887,8 +887,8 @@ class IPublishingSet(Interface):
         :param distroseries: The target `IDistroSeries`.
         :param pocket: The target `PackagePublishingPocket`.
         :param binaries: A dict mapping `BinaryPackageReleases` to their
-            desired overrides as (`BinaryPackageRelease`, `Component`,
-            `Section`, `PackagePublishingPriority`) tuples.
+            desired overrides as (`Component`, `Section`,
+            `PackagePublishingPriority`) tuples.
 
         :return: A list of new `IBinaryPackagePublishingHistory` records.
         """

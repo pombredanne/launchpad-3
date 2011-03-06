@@ -1278,8 +1278,8 @@ def expand_binary_requests(distroseries, binaries):
     enabled.
 
     :param binaries: A dict mapping `BinaryPackageReleases` to their
-        desired overrides as (`BinaryPackageRelease`, `Component`,
-        `Section`, `PackagePublishingPriority`) tuples.
+        desired overrides as (`Component`, `Section`,
+        `PackagePublishingPriority`) tuples.
 
     :return: The binaries and the architectures in which they should be
         published, as a sequence of (`DistroArchSeries`,
