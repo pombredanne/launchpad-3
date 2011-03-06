@@ -1268,8 +1268,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         self.requestDeletion(removed_by, removal_comment)
 
 
-def expand_binary_requests(distroseries, bprs_and_overrides):
-    """Architecture-expand a list of binary publication requests.
+def expand_binary_requests(distroseries, binaries):
+    """Architecture-expand a dict of binary publication requests.
 
     For architecture-independent binaries, a tuple will be returned for each
     enabled architecture in the series.
@@ -1277,8 +1277,8 @@ def expand_binary_requests(distroseries, bprs_and_overrides):
     architecture corresponding to the build architecture, if it exists and is
     enabled.
 
-    :param bprs_and_overrides: The binaries to publish and their
-        overrides, as a sequence of (`BinaryPackageRelease`, `Component`,
+    :param binaries: A dict mapping `BinaryPackageReleases` to their
+        desired overrides as (`BinaryPackageRelease`, `Component`,
         `Section`, `PackagePublishingPriority`) tuples.
 
     :return: The binaries and the architectures in which they should be
@@ -1291,7 +1291,7 @@ def expand_binary_requests(distroseries, bprs_and_overrides):
     arch_map = dict((arch.architecturetag, arch) for arch in archs)
 
     expanded = []
-    for bpr, component, section, priority in bprs_and_overrides:
+    for bpr, (component, section, priority) in binaries.iteritems():
         if bpr.architecturespecific:
             # Find the DAS in this series corresponding to the original
             # build arch tag. If it does not exist or is disabled, we should
@@ -1316,14 +1316,16 @@ class PublishingSet:
         """See `IPublishingSet`."""
         return self.publishBinaries(
             archive, distroseries, pocket,
-            ((bpph.binarypackagerelease, bpph.component, bpph.section,
-              bpph.priority) for bpph in binaries))
+            dict(
+                (bpph.binarypackagerelease, (bpph.component, bpph.section,
+                 bpph.priority)) for bpph in binaries))
 
     def publishBinaries(self, archive, distroseries, pocket,
-                        bprs_and_overrides):
+                        binaries):
         """See `IPublishingSet`."""
-        # Expand the list of binaries to include the architecture.
-        expanded = expand_binary_requests(distroseries, bprs_and_overrides)
+        # Expand the dict of binaries into a list of tuples including the
+        # architecture.
+        expanded = expand_binary_requests(distroseries, binaries)
 
         # Find existing publications.
         # We should really be able to just compare BPR.id, but
@@ -1383,7 +1385,7 @@ class PublishingSet:
         """See `IPublishingSet`."""
         return self.publishBinaries(
             archive, distroseries, pocket,
-            [(binarypackagerelease, component, section, priority)])
+            {binarypackagerelease: (component, section, priority)})
 
     def newBinaryPublication(self, archive, binarypackagerelease,
                              distroarchseries, component, section, priority,

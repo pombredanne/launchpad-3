@@ -875,7 +875,7 @@ class IPublishingSet(Interface):
             publishing histories.
         """
 
-    def publishBinaries(archive, distroseries, pocket, bprs_and_overrides):
+    def publishBinaries(archive, distroseries, pocket, binaries):
         """Efficiently publish multiple BinaryPackageReleases in an Archive.
 
         Creates `IBinaryPackagePublishingHistory` records for each binary,
@@ -886,8 +886,8 @@ class IPublishingSet(Interface):
         :param archive: The target `IArchive`.
         :param distroseries: The target `IDistroSeries`.
         :param pocket: The target `PackagePublishingPocket`.
-        :param bprs_and_overrides: The binaries to publish and their
-            overrides, as a sequence of (`BinaryPackageRelease`, `Component`,
+        :param binaries: A dict mapping `BinaryPackageReleases` to their
+            desired overrides as (`BinaryPackageRelease`, `Component`,
             `Section`, `PackagePublishingPriority`) tuples.
 
         :return: A list of new `IBinaryPackagePublishingHistory` records.

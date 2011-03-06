@@ -1415,10 +1415,10 @@ class TestPublishBinaries(TestCaseWithFactory):
             'archive': archive,
             'distroseries': distroseries,
             'pocket': PackagePublishingPocket.BACKPORTS,
-            'bprs_and_overrides': [
-                (bpr, self.factory.makeComponent(),
+            'binaries': dict(
+                (bpr, (self.factory.makeComponent(),
                  self.factory.makeSection(),
-                 PackagePublishingPriority.REQUIRED) for bpr in bprs],
+                 PackagePublishingPriority.REQUIRED)) for bpr in bprs),
             }
 
     def test_architecture_dependent(self):
@@ -1435,14 +1435,13 @@ class TestPublishBinaries(TestCaseWithFactory):
             build=build, architecturespecific=True)
         args = self.makeArgs([bpr], target_das.distroseries)
         [bpph] = getUtility(IPublishingSet).publishBinaries(**args)
-        details = args['bprs_and_overrides'][0]
+        overrides = args['binaries'][bpr]
+        self.assertEqual(bpr, bpph.binarypackagerelease)
         self.assertEqual(
             (args['archive'], target_das, args['pocket']),
             (bpph.archive, bpph.distroarchseries, bpph.pocket))
         self.assertEqual(
-            details,
-            (bpph.binarypackagerelease, bpph.component, bpph.section,
-             bpph.priority))
+            overrides, (bpph.component, bpph.section, bpph.priority))
         self.assertEqual(PackagePublishingStatus.PENDING, bpph.status)
 
     def test_architecture_independent(self):
