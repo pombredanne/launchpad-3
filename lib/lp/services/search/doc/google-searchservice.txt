@@ -14,7 +14,7 @@ The GoogleSearchService implements the ISearchService interface.
 
     >>> from zope.component import getUtility
     >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.interfaces.searchservice import (
+    >>> from lp.services.search.interfaces import (
     ...     ISearchService)
 
     >>> google_search = getUtility(ISearchService)
@@ -32,7 +32,7 @@ The search method accepts a string argument of terms and an optional int
 argument of start. The terms are the same as the text that would be
 entered in Google search form; the terms should not be escaped.
 
-    >>> from canonical.launchpad.interfaces.searchservice import (
+    >>> from lp.services.search.interfaces import (
     ...     ISearchResults)
 
     >>> first_page_matches = google_search.search(terms='bug')
@@ -121,8 +121,8 @@ The PageMatch object represents a single result from a search result
 set. It is created by passing a title, url, and a summary. It is
 an implementation of ISearchResult.
 
-    >>> from canonical.launchpad.interfaces.searchservice import ISearchResult
-    >>> from canonical.launchpad.utilities.searchservice import PageMatch
+    >>> from lp.services.search.interfaces import ISearchResult
+    >>> from lp.services.search.google import PageMatch
 
     >>> page_match = PageMatch(
     ...     u'Unicode Titles in Launchpad',
@@ -155,7 +155,7 @@ lazr.config. All requests are made to Google's site, but the
 configuration may set a testing site.
 
     >>> from canonical.config import config
-    >>> from canonical.launchpad.utilities.searchservice import (
+    >>> from lp.services.search.google import (
     ...     GoogleSearchService)
 
     >>> google_search = GoogleSearchService()
@@ -257,7 +257,7 @@ nothing in the value attribute in the next test, so an error is raised.
     >>> from os import path
 
     >>> base_path = path.normpath(path.join(
-    ...         path.dirname(__file__), '..', 'ftests', 'googlesearches'))
+    ...         path.dirname(__file__), '..', 'tests', 'data'))
     >>> gsp_xml_file_name = path.join(
     ...     base_path, 'googlesearchservice-incompatible-param.xml')
     >>> gsp_xml_file = open(gsp_xml_file_name, 'r')
