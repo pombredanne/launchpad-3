@@ -1295,7 +1295,6 @@ def expand_binary_requests(distroseries, binaries):
             # Find the DAS in this series corresponding to the original
             # build arch tag. If it does not exist or is disabled, we should
             # not publish.
-            # XXX: Need to preload BPB/DAS.
             target_arch = arch_map.get(
                 bpr.build.distro_arch_series.architecturetag)
             target_archs = [target_arch] if target_arch is not None else []
