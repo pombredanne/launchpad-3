@@ -61,7 +61,7 @@ class AddMissingBuilds(SoyuzScript):
             pocket=pocket,
             status=PackagePublishingStatus.PUBLISHED)
         sources = list(sources)
-        if sources:
+        if not sources:
             self.logger.info("No sources published, nothing to do.")
             return
 
