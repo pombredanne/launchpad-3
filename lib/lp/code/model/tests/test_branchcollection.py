@@ -199,8 +199,7 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         team = self.factory.makeTeam(members=[person])
         branch = self.factory.makeAnyBranch(owner=team)
         branch2 = self.factory.makeAnyBranch()
-        collection = self.all_branches.ownedBy(
-            person, include_team_membership=True)
+        collection = self.all_branches.ownedByTeamMember(person)
         self.assertEqual([branch], list(collection.getBranches()))
 
     def test_in_product(self):
@@ -252,8 +251,7 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         branch2 = self.factory.makeProductBranch(product=product, owner=team)
         branch3 = self.factory.makeAnyBranch(owner=person)
         branch4 = self.factory.makeProductBranch(product=product)
-        collection = self.all_branches.inProduct(product).ownedBy(
-            person, include_team_membership=True)
+        collection = self.all_branches.inProduct(product).ownedBy(person)
         self.assertEqual(
             set([branch, branch2]), set(collection.getBranches()))
         collection = self.all_branches.ownedBy(

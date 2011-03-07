@@ -145,7 +145,10 @@ class IBranchCollection(Interface):
         with a sourcepackage.
         """
 
-    def ownedBy(person, include_team_membership=False):
+    def ownedBy(person):
+        """Restrict the collection to branches owned by 'person'."""
+
+    def ownedByTeamMember(person):
         """Restrict the collection to branches owned by 'person'.
 
         :param include_team_membership: If True, the result will include

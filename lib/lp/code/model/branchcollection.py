@@ -383,6 +383,15 @@ class GenericBranchCollection:
 
         return self._filterBy([filter])
 
+    def ownedByTeamMember(self, person):
+        """See `IBranchCollection`."""
+        subquery = Select(
+            TeamParticipation.teamID,
+            where=TeamParticipation.personID==person.id)
+        filter = [In(Branch.ownerID, subquery)]
+
+        return self._filterBy(filter)
+
     def registeredBy(self, person):
         """See `IBranchCollection`."""
         return self._filterBy([Branch.registrant == person])
