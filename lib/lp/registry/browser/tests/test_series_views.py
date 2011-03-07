@@ -89,14 +89,35 @@ def set_derived_series_ui_feature_flag(test_case):
     test_case.addCleanup(reset_per_thread_features)
 
 
-class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
-    """Test the distroseries +localpackagediffs view."""
+class DistroSeriesLocalPackageDiffsPageTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(DistroSeriesLocalPackageDiffsTestCase,
+        super(DistroSeriesLocalPackageDiffsPageTestCase,
               self).setUp('foo.bar@canonical.com')
+
+    def test_filter_form_if_differences(self):
+        # Test page includes the filter form if differences are present
+        admin = getUtility(IPersonSet).getByEmail(
+            'admin@canonical.com')
+        login_person(admin)
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
+        current_difference = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series)
+
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs', principal=admin)
+
+        find_tag_by_id(view.render(), 'distroseries-localdiff-search-filter')
+
+
+class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
+    """Test the distroseries +localpackagediffs view."""
+
+    layer = LaunchpadZopelessLayer
 
     def test_view_redirects_without_feature_flag(self):
         # If the feature flag soyuz.derived-series-ui.enabled is not set the
@@ -128,22 +149,6 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
             "Source package differences between 'Derilucid' and "
             "parent series 'Lucid'",
             view.label)
-
-    def test_filter_form_if_differences(self):
-        # Test page includes the filter form if differences are present
-        admin = getUtility(IPersonSet).getByEmail(
-            'admin@canonical.com')
-        login_person(admin)
-        derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=self.factory.makeDistroSeries(
-                name='lucid'))
-        current_difference = self.factory.makeDistroSeriesDifference(
-            derived_series=derived_series)
-
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs', principal=admin)
-
-        find_tag_by_id(view.render(), 'distroseries-localdiff-search-filter')
 
     def test_batch_includes_needing_attention_only(self):
         # The differences attribute includes differences needing
