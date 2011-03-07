@@ -24,7 +24,7 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.lazr.timeout import TimeoutError
-from lp.services.search.interfaces import (
+from lp.services.googlesearch.interfaces import (
     GoogleResponseError,
     GoogleWrongGSPVersion,
     ISearchResult,

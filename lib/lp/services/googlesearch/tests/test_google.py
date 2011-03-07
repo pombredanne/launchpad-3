@@ -13,8 +13,8 @@ from urllib2 import (
 
 from canonical.lazr.timeout import TimeoutError
 from canonical.testing.layers import FunctionalLayer
-from lp.services.search.google import GoogleSearchService
-from lp.services.search.interfaces import GoogleResponseError
+from lp.services.googlesearch import GoogleSearchService
+from lp.services.googlesearch.interfaces import GoogleResponseError
 from lp.testing import TestCase
 
 

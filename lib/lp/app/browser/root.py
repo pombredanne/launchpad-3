@@ -26,7 +26,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet,
     )
-from lp.services.search.interfaces import (
+from lp.services.googlesearch.interfaces import (
     GoogleResponseError,
     ISearchService,
     )
