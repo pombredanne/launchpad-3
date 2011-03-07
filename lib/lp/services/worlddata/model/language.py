@@ -21,6 +21,7 @@ from sqlobject import (
 from storm.expr import (
     And,
     Count,
+    Desc,
     Join,
     LeftJoin,
     Or,
@@ -28,10 +29,7 @@ from storm.expr import (
 from zope.interface import implements
 
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import (
-    SQLBase,
-    sqlvalues,
-    )
+from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
@@ -159,25 +157,19 @@ class Language(SQLBase):
     @property
     def translators(self):
         """See `ILanguage`."""
-        # XXX CarlosPerelloMarin 2007-03-31 bug=102257:
-        # The KarmaCache table doesn't have a field to store karma per
-        # language, so we are actually returning the people with the most
-        # translation karma that have this language selected in their
-        # preferences.
-        from lp.registry.model.person import Person
-        return Person.select('''
-            PersonLanguage.person = Person.id AND
-            PersonLanguage.language = %s AND
-            KarmaCache.person = Person.id AND
-            KarmaCache.product IS NULL AND
-            KarmaCache.project IS NULL AND
-            KarmaCache.sourcepackagename IS NULL AND
-            KarmaCache.distribution IS NULL AND
-            KarmaCache.category = KarmaCategory.id AND
-            KarmaCategory.name = 'translations'
-            ''' % sqlvalues(self), orderBy=['-KarmaCache.karmavalue'],
-            clauseTables=[
-                'PersonLanguage', 'KarmaCache', 'KarmaCategory'])
+        from lp.registry.model.person import (
+            Person,
+            PersonLanguage,
+            )
+        return ISlaveStore(Language).using(
+            Join(
+                Person,
+                LanguageSet._getTranslatorJoins(),
+                Person.id == PersonLanguage.personID),
+            ).find(
+                Person,
+                PersonLanguage.language == self,
+            ).order_by(Desc(KarmaCache.karmavalue))
 
     @cachedproperty
     def translators_count(self):
@@ -187,6 +179,30 @@ class Language(SQLBase):
 
 class LanguageSet:
     implements(ILanguageSet)
+
+    @staticmethod
+    def _getTranslatorJoins():
+        # XXX CarlosPerelloMarin 2007-03-31 bug=102257:
+        # The KarmaCache table doesn't have a field to store karma per
+        # language, so we are actually returning the people with the most
+        # translation karma that have this language selected in their
+        # preferences.
+        from lp.registry.model.person import PersonLanguage
+        return Join(
+            PersonLanguage,
+            Join(
+                KarmaCache,
+                KarmaCategory,
+                And(
+                    KarmaCache.categoryID == KarmaCategory.id,
+                    KarmaCategory.name == 'translations')),
+            And(
+                PersonLanguage.personID ==
+                    KarmaCache.personID,
+                KarmaCache.productID == None,
+                KarmaCache.projectID == None,
+                KarmaCache.sourcepackagenameID == None,
+                KarmaCache.distributionID == None))
 
     @property
     def _visible_languages(self):
@@ -214,27 +230,11 @@ class LanguageSet:
                 counts = ISlaveStore(Language).using(
                     LeftJoin(
                         Language,
-                        Join(
-                            PersonLanguage,
-                            Join(
-                                KarmaCache,
-                                KarmaCategory,
-                                And(
-                                    KarmaCache.categoryID == KarmaCategory.id,
-                                    KarmaCategory.name == 'translations')),
-                            And(
-                                PersonLanguage.personID ==
-                                    KarmaCache.personID,
-                                KarmaCache.productID == None,
-                                KarmaCache.projectID == None,
-                                KarmaCache.sourcepackagenameID == None,
-                                KarmaCache.distributionID == None)),
-                        And(
-                            PersonLanguage.languageID ==
-                                Language.id)),
+                        self._getTranslatorJoins(),
+                        PersonLanguage.languageID == Language.id),
                     ).find(
-                    (Language, Count(PersonLanguage)),
-                    Language.id.is_in(ids),
+                        (Language, Count(PersonLanguage)),
+                        Language.id.is_in(ids),
                     ).group_by(Language)
                 for language, count in counts:
                     get_property_cache(language).translators_count = count
