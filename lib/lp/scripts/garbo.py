@@ -82,6 +82,7 @@ from lp.code.model.revision import (
 from lp.hardwaredb.model.hwdb import HWSubmission
 from lp.registry.model.person import Person
 from lp.services.job.model.job import Job
+from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     SilentLaunchpadScriptFailure,
@@ -916,10 +917,14 @@ class PopulateSPRChangelogs(TunableLoop):
 
     def __init__(self, log, abort_time=None):
         super(PopulateSPRChangelogs, self).__init__(log, abort_time)
-        self.start_at = 0
-        self.finish_at = self.getCandidateSPRIDs(0).last()
+        value = getUtility(IMemcacheClient).get('populate-spr-changelogs')
+        if not value:
+            self.start_at = 0
+        else:
+            self.start_at = value
+        self.finish_at = self.getCandidateSPRs(0).last()
 
-    def getCandidateSPRIDs(self, start_at):
+    def getCandidateSPRs(self, start_at):
         return IMasterStore(SourcePackageRelease).using(
             SourcePackageRelease,
             # Find any SPRFs that have expired (LFA.content IS NULL).
@@ -946,7 +951,7 @@ class PopulateSPRChangelogs(TunableLoop):
         return self.start_at > self.finish_at
 
     def __call__(self, chunk_size):
-        for sprid in self.getCandidateSPRIDs(self.start_at)[:chunk_size]:
+        for sprid in self.getCandidateSPRs(self.start_at)[:chunk_size]:
             spr = SourcePackageRelease.get(sprid)
             try:
                 tmp_dir = tempfile.mkdtemp(prefix='tmppsc-')
@@ -1019,6 +1024,10 @@ class PopulateSPRChangelogs(TunableLoop):
                 shutil.rmtree(tmp_dir)
 
         self.start_at = spr.id + 1
+        result = getUtility(IMemcacheClient).set(
+            'populate-spr-changelogs', self.start_at)
+        if not result:
+            self.log.warning('Failed to set start_at in memcache.')
         transaction.commit()
 
 
