@@ -4,6 +4,7 @@
 __metaclass__ = type
 __all__ = [
     'get_all_structural_subscriptions',
+    'get_structural_subscribers',
     'get_structural_subscribers_for_bugtasks',
     'get_structural_subscription_targets',
     'StructuralSubscription',
@@ -47,6 +48,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import quote
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscription,
     IStructuralSubscriptionTarget,
@@ -476,24 +479,6 @@ class StructuralSubscriptionTargetMixin:
                     return True
         return False
 
-    def getSubscriptionsForBugTask(self, bugtask, level):
-        """See `IStructuralSubscriptionTarget`."""
-        # Note that this method does not take into account
-        # structural subscriptions without filters.  Since it is only
-        # used for tests at this point, that's not a problem; moreover,
-        # we intend all structural subscriptions to have filters.
-        candidates, filter_id_query = (
-            _get_structural_subscription_filter_id_query(
-                bugtask.bug, [bugtask], level))
-        if not candidates:
-            return EmptyResultSet()
-        return IStore(StructuralSubscription).find(
-            StructuralSubscription,
-            BugSubscriptionFilter.structural_subscription_id ==
-            StructuralSubscription.id,
-            In(BugSubscriptionFilter.id,
-               filter_id_query)).config(distinct=True)
-
 
 def get_structural_subscription_targets(bugtasks):
     """Return (bugtask, target) pairs for each target of the bugtasks.
@@ -551,7 +536,30 @@ def get_all_structural_subscriptions(bugtasks, person=None):
         *conditions)
 
 
-def _get_structural_subscribers(candidates, filter_id_query, recipients):
+def get_structural_subscribers(bug_or_bugtask, recipients, level):
+    """Return subscribers for bug or bugtask at level.
+
+    :param bug: a bug.
+    :param recipients: a BugNotificationRecipients object or None.
+                       Populates if given.
+    :param level: a level from lp.bugs.enum.BugNotificationLevel.
+
+    Excludes structural subscriptions for people who are directly subscribed
+    to the bug."""
+    if IBug.providedBy(bug_or_bugtask):
+        bug = bug_or_bugtask
+        bugtasks = bug.bugtasks
+    elif IBugTask.providedBy(bug_or_bugtask):
+        bug = bug_or_bugtask.bug
+        bugtasks = [bug_or_bugtask]
+    else:
+        raise ValueError('First argument must be bug or bugtask')
+    # XXX gary 2011-03-03 bug 728818
+    # Once we no longer have structural subscriptions without filters in
+    # qastaging and production, _get_structural_subscription_filter_id_query
+    # can just return the query, and leave the candidates out of it.
+    candidates, filter_id_query = (
+        _get_structural_subscription_filter_id_query(bug, bugtasks, level))
     if not candidates:
         return EmptyResultSet()
     # This is here because of a circular import.
@@ -601,22 +609,26 @@ def get_structural_subscribers_for_bugtasks(bugtasks,
                                             level=None):
     """Return subscribers for structural filters for the bugtasks at "level".
 
-    :param bugtasks: an iterable of bugtasks.  All must be for the same bug.
+    :param bugtasks: an iterable of bugtasks.  Should be a single bugtask, or
+                     all of the bugtasks from one bug.
     :param recipients: a BugNotificationRecipients object or None.
                        Populates if given.
     :param level: a level from lp.bugs.enum.BugNotificationLevel.
 
     Excludes structural subscriptions for people who are directly subscribed
     to the bug."""
+    bugtasks = list(bugtasks)
     if not bugtasks:
         return EmptyResultSet()
-    bugs = set(bugtask.bug for bugtask in bugtasks)
-    if len(bugs) > 1:
-        raise NotImplementedError('Each bugtask must be from the same bug.')
-    bug = bugs.pop()
-    candidates, query = _get_structural_subscription_filter_id_query(
-        bug, bugtasks, level)
-    return _get_structural_subscribers(candidates, query, recipients)
+    if len(bugtasks) == 1:
+        target = bugtasks[0]
+    else:
+        target = bugtasks[0].bug
+        if target.bugtasks != bugtasks:
+            raise NotImplementedError(
+                'bugtasks must be one, or the full set of bugtasks from one '
+                'bug')
+    return get_structural_subscribers(target, recipients, level)
 
 
 class ArrayAgg(NamedFunc):

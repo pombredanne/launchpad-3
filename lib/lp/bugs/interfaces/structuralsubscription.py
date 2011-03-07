@@ -149,9 +149,6 @@ class IStructuralSubscriptionTargetRead(Interface):
     def userHasBugSubscriptions(user):
         """Is `user` subscribed, directly or via a team, to bug mail?"""
 
-    def getSubscriptionsForBugTask(bug, level):
-        """Return subscriptions for a given `IBugTask` at `level`."""
-
 
 class IStructuralSubscriptionTargetWrite(Interface):
     """A Launchpad Structure allowing users to subscribe to it.
