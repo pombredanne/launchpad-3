@@ -12,7 +12,11 @@ from datetime import (
 
 from pytz import utc
 from zope.component import getUtility
-from zope.schema.interfaces import IVocabularyFactory
+from zope.schema.interfaces import (
+    IVocabulary,
+    IVocabularyFactory,
+    IVocabularyTokenized,
+    )
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -37,6 +41,14 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
         self.assertEqual(
             getUtility(IVocabularyFactory, name="DistroSeriesDerivation"),
             DistroSeriesDerivationVocabularyFactory)
+
+    def test_interfaces(self):
+        # DistroSeriesDerivationVocabularyFactory instances provide
+        # IVocabulary and IVocabularyTokenized.
+        distribution = self.factory.makeDistribution()
+        vocabulary = self.vocabulary_factory(distribution)
+        self.assertProvides(vocabulary, IVocabulary)
+        self.assertProvides(vocabulary, IVocabularyTokenized)
 
     def test_distribution_without_series(self):
         # Given a distribution without any series, the vocabulary factory
