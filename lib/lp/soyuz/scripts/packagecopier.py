@@ -265,7 +265,7 @@ class CopyChecker:
 
         # If there are no conflicts with the same version, we can skip the
         # rest of the checks, but we still want to check conflicting files
-        if (not bool(destination_archive_conflicts) and
+        if (destination_archive_conflicts.is_empty() and
             len(inventory_conflicts) == 0):
             self._checkConflictingFiles(source)
             return
@@ -556,12 +556,12 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries):
         version=source.sourcepackagerelease.version,
         status=active_publishing_status,
         distroseries=series, pocket=pocket)
-    if not bool(source_in_destination):
+    if source_in_destination.is_empty():
         source_copy = source.copyTo(series, pocket, archive)
         close_bugs_for_sourcepublication(source_copy)
         copies.append(source_copy)
     else:
-        source_copy = source_in_destination[0]
+        source_copy = source_in_destination.first()
 
     if not include_binaries:
         source_copy.createMissingBuilds()
