@@ -248,8 +248,12 @@ class BugContextMenu(ContextMenu):
             self.context.bug.isSubscribed(user) or
             self.context.bug.isSubscribedToDupes(user)):
             if self._use_advanced_features:
-                text = 'Edit subscription'
-                icon = 'edit'
+                if self.context.bug.isMuted(user):
+                    text = 'Subscribe'
+                    icon = 'add'
+                else:
+                    text = 'Edit subscription'
+                    icon = 'edit'
             else:
                 text = 'Unsubscribe'
                 icon = 'remove'
