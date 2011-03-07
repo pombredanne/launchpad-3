@@ -767,7 +767,7 @@ class IDistroSeriesPublic(
         """
 
     def newArch(architecturetag, processorfamily, official, owner,
-                supports_virtualized=False):
+                supports_virtualized=False, enabled=True):
         """Create a new port or DistroArchSeries for this DistroSeries."""
 
     def copyTranslationsFromParent(ztm):
