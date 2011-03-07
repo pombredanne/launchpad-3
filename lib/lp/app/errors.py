@@ -14,8 +14,11 @@ __all__ = [
     'UserCannotUnsubscribePerson',
     ]
 
-from lazr.restful.declarations import webservice_error
-from zope.security.interfaces import Unauthorized
+from lazr.restful.declarations import error_status
+from zope.security.interfaces import (
+    ForbiddenAttribute,
+    Unauthorized,
+    )
 
 
 class TranslationUnavailable(Exception):
@@ -62,6 +65,12 @@ class POSTToNonCanonicalURL(UnexpectedFormData):
     One example would be a URL containing uppercase letters.
     """
 
+@error_status(401)
 class UserCannotUnsubscribePerson(Unauthorized):
     """User does not have persmisson to unsubscribe person or team."""
-    webservice_error(401)
+
+
+# Slam a 401 response code onto all Unauthorized and
+# ForbiddenAttribute errors.
+error_status(401)(Unauthorized)
+error_status(401)(ForbiddenAttribute)
