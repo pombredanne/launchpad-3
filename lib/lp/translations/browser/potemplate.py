@@ -77,11 +77,18 @@ from lp.translations.interfaces.potemplate import (
     IPOTemplateSet,
     IPOTemplateSubset,
     )
+from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translationimporter import (
     ITranslationImporter,
     )
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
+    )
+from lp.translations.utilities.translationsharinginfo import (
+    has_ubuntu_template,
+    get_ubuntu_sharing_info,
+    has_upstream_template,
+    get_upstream_sharing_info,
     )
 
 
@@ -291,12 +298,6 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                 translation_group.translation_guide_url is not None)
 
     @property
-    def has_related_templates(self):
-        by_source = self.context.relatives_by_source
-        by_name = self.context.relatives_by_name
-        return bool(by_source) or bool(by_name)
-
-    @property
     def related_templates_by_source(self):
         by_source = list(
             self.context.relatives_by_source[:self.SHOW_RELATED_TEMPLATES])
@@ -328,17 +329,6 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
             return ""
 
     @property
-    def related_templates_by_name(self):
-        by_name = list(
-            self.context.relatives_by_name[:self.SHOW_RELATED_TEMPLATES])
-        return by_name
-
-    @property
-    def has_more_templates_by_name(self):
-        by_name_count = self.context.relatives_by_name.count()
-        return by_name_count > self.SHOW_RELATED_TEMPLATES
-
-    @property
     def has_pofiles(self):
         languages = set(
             self.context.languages()).union(self.translatable_languages)
@@ -353,6 +343,35 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
             pofileset = getUtility(IPOFileSet)
             pofile = pofileset.getDummy(self.context, language)
         return pofile
+
+    @property
+    def is_upstream_template(self):
+        return self.context.translation_side == TranslationSide.UPSTREAM
+
+    def is_sharing(self):
+        if self.is_upstream_template:
+            return has_ubuntu_template(
+                productseries=self.context.productseries,
+                templatename=self.context.name)
+        else:
+            return has_upstream_template(
+                sourcepackage=self.context.sourcepackage,
+                templatename=self.context.name)
+
+    @property
+    def sharing_template(self):
+        if self.is_upstream_template:
+            infos = get_ubuntu_sharing_info(
+                productseries=self.context.productseries,
+                templatename=self.context.name)
+        else:
+            infos = get_upstream_sharing_info(
+                sourcepackage=self.context.sourcepackage,
+                templatename=self.context.name)
+        if len(infos) == 0:
+            return None
+        obj, template = infos[0]
+        return template
 
 
 class POTemplateUploadView(LaunchpadView, TranslationsMixin):

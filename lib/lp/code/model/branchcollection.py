@@ -196,7 +196,8 @@ class GenericBranchCollection:
                 SeriesSourcePackageBranch.pocket)
             for link in links:
                 cache = caches[link.branchID]
-                cache._associatedSuiteSourcePackages.append(link)
+                cache._associatedSuiteSourcePackages.append(
+                    link.suite_sourcepackage)
         return DecoratedResultSet(resultset, pre_iter_hook=do_eager_load)
 
     def getMergeProposals(self, statuses=None, for_branches=None,

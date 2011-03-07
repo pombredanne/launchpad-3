@@ -34,7 +34,7 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-from lp.blueprints.enums import SpecificationDefinitionStatus
+from lp.blueprints.enums import NewSpecificationDefinitionStatus
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.model.specificationbranch import SpecificationBranch
 from lp.bugs.interfaces.bug import (
@@ -1099,7 +1099,7 @@ class TestBranchDeletion(TestCaseWithFactory):
         spec = getUtility(ISpecificationSet).new(
             name='some-spec', title='Some spec', product=self.product,
             owner=self.user, summary='', specurl=None,
-            definition_status=SpecificationDefinitionStatus.NEW)
+            definition_status=NewSpecificationDefinitionStatus.NEW)
         spec.linkBranch(self.branch, self.user)
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch linked to a spec is not deletable.")

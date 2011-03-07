@@ -331,8 +331,21 @@ class FilteredStructuralSubscriptionTestBase:
         # Without either tag the subscription is found.
         self.assertSubscriptions([self.subscription])
 
-        # With either tag the subscription is no longer found.
+        # With both tags, the subscription is omitted.
+        self.bug.tags = ["foo", "bar"]
+        self.assertSubscriptions([])
+
+        # With only one tag, the subscription is found again.
         self.bug.tags = ["foo"]
+        self.assertSubscriptions([self.subscription])
+
+        # However, if find_all_tags is True, even a single excluded tag
+        # causes the subscription to be skipped.
+        self.initial_filter.find_all_tags = True
+        self.assertSubscriptions([])
+
+        # This is also true, of course, if the bug has both tags.
+        self.bug.tags = ["foo", "bar"]
         self.assertSubscriptions([])
 
     def test_getSubscriptionsForBugTask_with_filter_for_not_all_tags(self):
@@ -347,11 +360,13 @@ class FilteredStructuralSubscriptionTestBase:
         # Without either tag the subscription is found.
         self.assertSubscriptions([self.subscription])
 
-        # With only one of the excluded tags the subscription is found.
+        # With only one of the excluded tags the subscription is not
+        # found--we are saying that we want to find both an absence of foo
+        # and an absence of bar, and yet foo exists.
         self.bug.tags = ["foo"]
-        self.assertSubscriptions([self.subscription])
+        self.assertSubscriptions([])
 
-        # With both tags the subscription is no longer found.
+        # With both tags the subscription is also not found.
         self.bug.tags = ["foo", "bar"]
         self.assertSubscriptions([])
 
@@ -361,6 +376,7 @@ class FilteredStructuralSubscriptionTestBase:
 
         # Add the "foo" tag to the bug.
         self.bug.tags = ["foo"]
+        self.assertSubscriptions([self.subscription])
 
         # Filter the subscription to bugs in the CRITICAL state.
         self.initial_filter.statuses = [BugTaskStatus.CONFIRMED]
@@ -553,7 +569,8 @@ class TestStructuralSubscriptionFiltersForMilestone(
         return self.factory.makeMilestone()
 
     def makeBugTask(self):
-        return self.factory.makeBugTask(target=self.target.series_target)
+        bug = self.factory.makeBug(milestone=self.target)
+        return bug.bugtasks[0]
 
 
 class TestStructuralSubscriptionForDistroSeries(

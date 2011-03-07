@@ -148,7 +148,7 @@ class SourcePackageRecipe(Storm):
         return self.sourcepackagename.name
 
     name = Unicode(allow_none=True)
-    description = Unicode(allow_none=False)
+    description = Unicode(allow_none=True)
 
     @property
     def _recipe_data(self):
