@@ -437,7 +437,7 @@ class TestGarbo(TestCaseWithFactory):
         # them will have the present day as its date created, and so will not
         # be deleted, whereas the other will have a creation date far in the
         # past, so it will be deleted.
-        person = self.factory.makePerson(name='test-unlinked-person-new')
+        self.factory.makePerson(name='test-unlinked-person-new')
         person_old = self.factory.makePerson(name='test-unlinked-person-old')
         removeSecurityProxy(person_old).datecreated = datetime(
             2008, 01, 01, tzinfo=UTC)
@@ -465,7 +465,7 @@ class TestGarbo(TestCaseWithFactory):
             bugID=1,
             is_comment=True,
             date_emailed=None)
-        recipient = BugNotificationRecipient(
+        BugNotificationRecipient(
             bug_notification=notification,
             personID=1,
             reason_header='Whatever',
@@ -479,7 +479,7 @@ class TestGarbo(TestCaseWithFactory):
                 bugID=1,
                 is_comment=True,
                 date_emailed=UTC_NOW + SQL("interval '%d days'" % delta))
-            recipient = BugNotificationRecipient(
+            BugNotificationRecipient(
                 bug_notification=notification,
                 personID=1,
                 reason_header='Whatever',
@@ -533,7 +533,6 @@ class TestGarbo(TestCaseWithFactory):
         Store.of(db_branch).flush()
         branch_job = BranchUpgradeJob.create(db_branch)
         branch_job.job.date_finished = THIRTY_DAYS_AGO
-        job_id = branch_job.job.id
 
         self.assertEqual(
             store.find(
@@ -541,7 +540,7 @@ class TestGarbo(TestCaseWithFactory):
                 BranchJob.branch == db_branch.id).count(),
                 1)
 
-        collector = self.runDaily()
+        self.runDaily()
 
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         self.assertEqual(
@@ -562,21 +561,16 @@ class TestGarbo(TestCaseWithFactory):
 
         branch_job = BranchUpgradeJob.create(db_branch)
         branch_job.job.date_finished = THIRTY_DAYS_AGO
-        job_id = branch_job.job.id
 
         db_branch2 = self.factory.makeAnyBranch(
             branch_format=BranchFormat.BZR_BRANCH_5,
             repository_format=RepositoryFormat.BZR_KNIT_1)
-        branch_job2 = BranchUpgradeJob.create(db_branch2)
-        job_id_newer = branch_job2.job.id
+        BranchUpgradeJob.create(db_branch2)
 
-        collector = self.runDaily()
+        self.runDaily()
 
         LaunchpadZopelessLayer.switchDbUser('testadmin')
-        self.assertEqual(
-            store.find(
-                BranchJob).count(),
-            1)
+        self.assertEqual(store.find(BranchJob).count(), 1)
 
     def test_ObsoleteBugAttachmentDeleter(self):
         # Bug attachments without a LibraryFileContent record are removed.
