@@ -21,8 +21,10 @@ easier.
 
     >>> def print_notification_headers(email_notification):
     ...     for header in ['To', 'From', 'Subject',
-    ...                    'X-Launchpad-Message-Rationale']:
-    ...         print "%s: %s" % (header, email_notification[header])
+    ...                    'X-Launchpad-Message-Rationale',
+    ...                    'X-Launchpad-Subscription-Filter']:
+    ...         if email_notification[header]:
+    ...             print "%s: %s" % (header, email_notification[header])
 
     >>> def print_notification(email_notification):
     ...     print_notification_headers(email_notification)
@@ -676,7 +678,6 @@ more carefully at the notifications just to see that the status has
 been set properly.
 
     >>> from lp.bugs.model.bugnotification import BugNotification
-    >>> from lp.bugs.enum import BugNotificationStatus
     >>> for notification in BugNotification.select(orderBy='id')[-8:]:
     ...     if notification.is_comment:
     ...         identifier = 'comment'
@@ -1247,6 +1248,7 @@ COMMENTS, he also receives these notifications.
     >>> with lp_dbuser():
     ...     filter = subscription_no_priv.newBugFilter()
     ...     filter.bug_notification_level = BugNotificationLevel.COMMENTS
+    ...     filter.description = u"Allow-comments filter"
 
     >>> comment = getUtility(IMessageSet).fromText(
     ...     'subject', 'another comment.', sample_person,
@@ -1279,12 +1281,14 @@ COMMENTS, he also receives these notifications.
     From: Sample Person <...@bugs.launchpad.net>
     Subject: [Bug 1] subject
     X-Launchpad-Message-Rationale: Subscriber (Mozilla Firefox)
+    X-Launchpad-Subscription-Filter: Allow-comments filter
     <BLANKLINE>
     another comment.
     <BLANKLINE>
     --
     You received this bug notification because you are subscribed to Mozilla
     Firefox.
+    Matching filters: Allow-comments filter
     ...
     ----------------------------------------------------------------------
     To: support@ubuntu.com
@@ -1390,6 +1394,7 @@ receives these notifications.
     From: Sample Person <...@bugs.launchpad.net>
     Subject: [Bug 1] subject
     X-Launchpad-Message-Rationale: Subscriber (Mozilla Firefox)
+    X-Launchpad-Subscription-Filter: Allow-comments filter
     <BLANKLINE>
     no comment for no-priv.
     <BLANKLINE>
@@ -1400,6 +1405,7 @@ receives these notifications.
     --
     You received this bug notification because you are subscribed to Mozilla
     Firefox.
+    Matching filters: Allow-comments filter
     ...
     ----------------------------------------------------------------------
     To: support@ubuntu.com

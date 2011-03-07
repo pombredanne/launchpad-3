@@ -38,6 +38,7 @@ class ISourcePackageRelease(Interface):
     version = Attribute("A version string")
     dateuploaded = Attribute("Date of Upload")
     urgency = Attribute("Source Package Urgency")
+    dscsigningkeyID = Attribute("DB ID of the DSC Signing Key")
     dscsigningkey = Attribute("DSC Signing Key")
     component = Attribute("Source Package Component")
     format = Attribute("The Source Package Format")

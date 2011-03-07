@@ -202,7 +202,7 @@ corresponding source row in the PPA overview page.
     >>> anon_browser.open(
     ...     'http://launchpad.dev/~name16/+archive/ppa/+packages')
     >>> login('foo.bar@canonical.com')
-    >>> biscuit_ppa = name16.archive.getPublishedSources()[0]
+    >>> biscuit_ppa = name16.archive.getPublishedSources().first()
     >>> biscuit_ppa_id = biscuit_ppa.id
     >>> diff_three.date_fulfilled = None
     >>> diff_three.status = PackageDiffStatus.PENDING
