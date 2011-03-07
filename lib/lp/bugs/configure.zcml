@@ -669,6 +669,21 @@
               " />
     </class>
 
+    <!-- PersonSubscriptionInfo -->
+
+    <class class="lp.bugs.model.personsubscriptioninfo.PersonSubscriptionInfo">
+        <allow
+            interface="
+              lp.bugs.interfaces.personsubscriptioninfo.IPersonSubscriptionInfo"/>
+    </class>
+
+    <securedutility
+        class="lp.bugs.model.personsubscriptioninfo.PersonSubscriptionInfoSet"
+        provides="lp.bugs.interfaces.personsubscriptioninfo.IPersonSubscriptionInfoSet">
+        <allow
+            interface="lp.bugs.interfaces.personsubscriptioninfo.IPersonSubscriptionInfoSet"/>
+    </securedutility>
+
     <facet
         facet="bugs">
 

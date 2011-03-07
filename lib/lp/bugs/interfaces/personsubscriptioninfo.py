@@ -20,6 +20,7 @@ from zope.interface import (
     Interface,
     )
 from zope.schema import (
+    Bool,
     Choice,
     Datetime,
     Int,
@@ -69,11 +70,19 @@ class IPersonSubscriptionInfo(Interface):
                       "subscribed through.  Might be a person "
                       "itself or a team person is member of."))
 
+    personally = Bool(
+        title=_("Personally subscribed"),
+        description=_("Is subscribed directly (as opposed through a team)."),
+        default=False, readonly=True)
+
     duplicates = Attribute(
         "List of duplicate bugs through which you have a subscription.")
 
-    can_change_supervisor = Attribute(
-        "List of duplicate bugs through which you have a subscription.")
+    supervisor_for = Attribute(
+        "Targets this person is a supervisor for.")
+
+    owner_for = Attribute(
+        "Targets this person is both a supervisor and owner for.")
 
     as_team_member = Attribute(
         "Teams through which this subscription is applicable. "
@@ -86,6 +95,19 @@ class IPersonSubscriptionInfo(Interface):
 
 class IPersonSubscriptionInfoSet(Interface):
     """A utility for accessing `IPersonSubscriptionInfo` records."""
+
+    direct_subscriptions = Attribute(
+        "Contains information about all direct subscriptions, including "
+        "those through membership in teams directly subscribed to a bug.")
+
+    duplicate_subscriptions = Attribute(
+        "Contains information about all subscriptions through duplicate "
+        "bugs, including those through team membership.")
+
+    supervisor_subscriptions = Attribute(
+        "Contains information about all subscriptions as bug supervisor, "
+        "including those through team memberships and target ownership "
+        "when no bug supervisor is defined for the target.")
 
     def loadSubscriptionsFor(person, bug):
         """Load subscriptions for a person/bug."""

@@ -35,6 +35,7 @@ class PersonSubscriptionInfo(object):
 
         self.bug = bug
         self.person = person
+        self.personally = False
 
         # For duplicates.
         self.duplicates = duplicates
@@ -82,7 +83,9 @@ class PersonSubscriptionInfo(object):
             if not is_admin:
                 self._addMember(subscriber)
         else:
-            pass
+            assert self.person == subscriber, (
+                "Non-team subscription for a different person.")
+            self.personally = True
 
     def addSupervisedTarget(self, target):
         assert self.subscription_type == PersonSubscriptionType.SUPERVISOR
@@ -102,12 +105,17 @@ class PersonSubscriptionInfo(object):
 class PersonSubscriptionInfoSet(object):
     """See `IPersonSubscriptionInfoSet`."""
 
-    def __init__(self, person, bug):
-        self.person = person
-        self.bug = bug
-        self.loadSubscriptionsFor(person, bug)
+    implements(IPersonSubscriptionInfoSet)
+
+    def __init__(self):
+        self.direct_subscriptions = None
+        self.duplicate_subscriptions = None
+        self.supervisor_subscriptions = None
 
     def _getDirectAndDuplicateSubscriptions(self, person, bug):
+        # Fetch all information for direct and duplicate
+        # subscriptions (including indirect through team
+        # membership) in a single query.
         store = Store.of(person)
         info = store.find(
             (BugSubscription, Bug, Person),
@@ -167,8 +175,10 @@ class PersonSubscriptionInfoSet(object):
                 # Owner can change the supervisor.
                 if is_owner:
                     supervisor.addOwnedTarget(target)
+                    supervisor.addSubscriber(target.owner)
                 else:
                     supervisor.addSupervisedTarget(target)
+                    supervisor.addSubscriber(target.bug_supervisor)
                 has_supervisor = True
         if not has_supervisor:
             supervisor = None
