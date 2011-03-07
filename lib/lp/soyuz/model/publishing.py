@@ -1327,14 +1327,18 @@ class PublishingSet:
         # We should really be able to just compare BPR.id, but
         # CopyChecker doesn't seem to ensure that there are no
         # conflicting binaries from other sources.
-        candidates = (And(
+        def make_package_condition(archive, das, bpr):
+            return And(
                 BinaryPackagePublishingHistory.archiveID ==
                     get_archive(archive, bpr).id,
                 BinaryPackagePublishingHistory.distroarchseriesID == das.id,
                 BinaryPackageRelease.binarypackagenameID ==
                     bpr.binarypackagenameID,
-                BinaryPackageRelease.version == bpr.version)
-             for das, bpr, overrides in expanded)
+                BinaryPackageRelease.version == bpr.version,
+                )
+        candidates = (
+            make_package_condition(archive, das, bpr)
+            for das, bpr, overrides in expanded)
         already_published = IMasterStore(BinaryPackagePublishingHistory).find(
             (BinaryPackagePublishingHistory.distroarchseriesID,
              BinaryPackageRelease.binarypackagenameID,
@@ -1351,7 +1355,7 @@ class PublishingSet:
             (das, bpr, overrides) for (das, bpr, overrides) in
             expanded if (das.id, bpr.binarypackagenameID, bpr.version)
             not in already_published]
-        if len(needed) == 0:
+        if not needed:
             return []
 
         insert_head = """
