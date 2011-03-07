@@ -3134,6 +3134,9 @@ class CachedMilestoneSourceFactory:
         return self.vocabularies[target]
 
     def _load(self):
+        """Load all the vocabularies, once only."""
+        if self.vocabularies:
+            return
         targets = set(
             map(MilestoneVocabulary.getMilestoneTarget, self.contexts))
         # TODO: instantiate for all targets at once.
