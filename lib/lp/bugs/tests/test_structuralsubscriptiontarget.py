@@ -447,6 +447,7 @@ class FilteredStructuralSubscriptionTestBase:
             BugTaskStatus.INPROGRESS, self.ordinary_subscriber)
         self.assertSubscribers([self.ordinary_subscriber])
 
+
 class TestStructuralSubscriptionForDistro(
     RestrictedStructuralSubscriptionTestBase, TestCaseWithFactory):
 
