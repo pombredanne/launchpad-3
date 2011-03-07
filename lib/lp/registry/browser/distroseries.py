@@ -28,6 +28,7 @@ from zope.schema import (
     Bool,
     Choice,
     List,
+    TextLine,
     )
 from zope.schema.vocabulary import (
     SimpleTerm,
@@ -518,7 +519,7 @@ class DistroSeriesAddView(LaunchpadFormView):
         return canonical_url(self.context)
 
 
-class IDistroSeriesInitializeForm(IDistroSeries):
+class IDistroSeriesInitializeForm(Interface):
 
     derived_from_series = Choice(
         title=_('Derived from distribution series'),
@@ -532,6 +533,12 @@ class IDistroSeriesInitializeForm(IDistroSeries):
     all_architectures = Bool(
         title=_('Architectures to initialize'),
         default=True,
+        required=True)
+
+    architectures = List(
+        title=_("The list of architectures to copy to "
+                "the derived distroseries."),
+        value_type=TextLine(),
         required=True)
 
     rebuild = Bool(
@@ -550,6 +557,7 @@ class DistroSeriesInitializeView(LaunchpadFormView):
     schema = IDistroSeriesInitializeForm
     field_names = [
         "derived_from_series",
+        "all_architectures",
         ]
 
     custom_widget('derived_from_series', LaunchpadDropdownWidget)
@@ -574,8 +582,13 @@ class DistroSeriesInitializeView(LaunchpadFormView):
     @action(_('Commence initialization'), name='initialize')
     def initialize_series(self, action, data):
         """Initialize the Distribution Series."""
-        owner = getUtility(ILaunchBag).user
-        assert owner is not None
+        parent = data["derived_from_series"]
+        parent.deriveDistroSeries(
+            name=self.context.name,
+            distribution=self.context.distribution,
+            architectures=data["architectures"],
+            packagesets=data["packagesets"],
+            rebuild=data["rebuild"])
 
     @property
     def next_url(self):
