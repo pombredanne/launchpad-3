@@ -971,10 +971,6 @@ BugMessage""" % sqlvalues(self.id))
             BugSubscription.person == person,
             BugSubscription.bug == self).one()
 
-    def getStructuralSubscriptionsForPerson(self, person):
-        """See `IBug`."""
-        return get_all_structural_subscriptions(self.bugtasks, person)
-
     def getAlsoNotifiedSubscribers(self, recipients=None, level=None):
         """See `IBug`.
 
