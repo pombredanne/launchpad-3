@@ -19,7 +19,7 @@ from storm.expr import (
     Or,
     Select,
     Union,
-    )
+    In)
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -60,7 +60,7 @@ from lp.registry.model.person import (
     )
 from lp.registry.model.product import Product
 from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.registry.model.teammembership import TeamParticipation
+from lp.registry.model.teammembership import TeamParticipation, TeamMembership
 from lp.services.propertycache import get_property_cache
 
 
@@ -368,9 +368,19 @@ class GenericBranchCollection:
             Branch.product == None,
             Branch.sourcepackagename == None])
 
-    def ownedBy(self, person):
+    def ownedBy(self, person, include_team_membership=False):
         """See `IBranchCollection`."""
-        return self._filterBy([Branch.owner == person])
+        filter = Branch.owner == person
+        if include_team_membership:
+            subquery = Select(
+                TeamMembership.teamID,
+                where=TeamMembership.personID==person.id)            
+            filter = Or(
+                filter,
+                In(Branch.ownerID, subquery) 
+            )
+            
+        return self._filterBy([filter])
 
     def registeredBy(self, person):
         """See `IBranchCollection`."""

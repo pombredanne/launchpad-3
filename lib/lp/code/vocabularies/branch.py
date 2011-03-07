@@ -130,5 +130,7 @@ class HostedBranchRestrictedOnOwnerVocabulary(BranchVocabularyBase):
             self.user = getUtility(ILaunchBag).user
 
     def _getCollection(self):
-        return getUtility(IAllBranches).ownedBy(self.user).withBranchType(
+        return getUtility(IAllBranches).ownedBy(
+            self.user, include_team_membership=True,
+        ).withBranchType(
             BranchType.HOSTED)
