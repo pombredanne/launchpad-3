@@ -3124,14 +3124,22 @@ class CachedMilestoneSourceFactory:
 
     def __init__(self):
         self.vocabularies = {}
+        self.contexts = set()
 
     def __call__(self, context):
+        assert context in self.contexts, ("context %r not added to "
+            "self.contexts (%r)." % (context, self.contexts))
+        self._load()
         target = MilestoneVocabulary.getMilestoneTarget(context)
-        milestone_vocabulary = self.vocabularies.get(target)
-        if milestone_vocabulary is None:
-            milestone_vocabulary = MilestoneVocabulary(context)
+        return self.vocabularies[target]
+
+    def _load(self):
+        targets = set(
+            map(MilestoneVocabulary.getMilestoneTarget, self.contexts))
+        # TODO: instantiate for all targets at once.
+        for target in targets:
+            milestone_vocabulary = MilestoneVocabulary(target)
             self.vocabularies[target] = milestone_vocabulary
-        return milestone_vocabulary
 
 
 class BugTasksAndNominationsView(LaunchpadView):
@@ -3205,6 +3213,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         The view's is_conjoined_slave and is_converted_to_question
         attributes are set, as well as the edit view.
         """
+        self.cached_milestone_source.contexts.add(context)
         view = getMultiAdapter(
             (context, self.request),
             name='+bugtasks-and-nominations-table-row')
@@ -3212,6 +3221,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         view.is_conjoined_slave = is_conjoined_slave
         if IBugTask.providedBy(context):
             view.target_link_title = self.getTargetLinkTitle(context.target)
+        view.milestone_source = self.cached_milestone_source
 
         view.edit_view = getMultiAdapter(
             (context, self.request), name='+edit-form')
@@ -3383,6 +3393,11 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
     target_link_title = None
     many_bugtasks = False
 
+    def __init__(self, context, request):
+        """Ensure we always have a bug context."""
+        super(BugTaskTableRowView, self).__init__(context, request)
+        self.milestone_source = MilestoneVocabulary
+
     def canSeeTaskDetails(self):
         """Whether someone can see a task's status details.
 
@@ -3509,7 +3524,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
     @cachedproperty
     def _visible_milestones(self):
         """The visible milestones for this context."""
-        return MilestoneVocabulary(self.context).visible_milestones
+        return self.milestone_source(self.context).visible_milestones
 
     @property
     def milestone_widget_items(self):
