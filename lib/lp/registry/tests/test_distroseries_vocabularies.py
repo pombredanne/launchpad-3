@@ -28,8 +28,7 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
 
     def setUp(self):
         super(TestDistroSeriesDerivationVocabularyFactory, self).setUp()
-        self.vocabulary_factory = lambda context: (
-            DistroSeriesDerivationVocabularyFactory(context)())
+        self.vocabulary_factory = DistroSeriesDerivationVocabularyFactory
         self.all_distroseries = getUtility(IDistroSeriesSet).search()
 
     def test_registration(self):

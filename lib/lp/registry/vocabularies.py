@@ -81,7 +81,7 @@ from storm.expr import (
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import (
-    IContextSourceBinder,
+    IVocabulary,
     IVocabularyTokenized,
     )
 from zope.schema.vocabulary import (
@@ -1496,15 +1496,13 @@ class DistroSeriesDerivationVocabularyFactory:
     series at the same time.
     """
 
-    implements(IContextSourceBinder)
+    implements(IVocabulary, IVocabularyTokenized)
 
     def __init__(self, context):
-        self.distribution = IDistribution(context)
-
-    def __call__(self):
-        """Return a vocabulary tailored to `context`."""
+        """See `IVocabularyFactory.__call__`."""
+        distribution = IDistribution(context)
         all_serieses = getUtility(IDistroSeriesSet).search()
-        context_serieses = set(self.distribution)
+        context_serieses = set(distribution)
         if len(context_serieses) == 0:
             # Derive from any series.
             serieses = set(all_serieses)
@@ -1527,8 +1525,54 @@ class DistroSeriesDerivationVocabularyFactory:
             serieses, key=lambda series: (
                 series.distribution.displayname,
                 reference - series.date_created))
-        return SimpleVocabulary(
-            [DistroSeriesVocabulary.toTerm(series) for series in serieses])
+        self.terms = [
+            DistroSeriesVocabulary.toTerm(series) for series in serieses]
+
+    @cachedproperty
+    def terms_by_value(self):
+        return dict((term.value, term) for term in self.terms)
+
+    @cachedproperty
+    def terms_by_token(self):
+        return dict((term.token, term) for term in self.terms)
+
+    def __iter__(self):
+        """Returns an iterator over the terms in the vocabulary.
+
+        See `IIterableVocabulary`.
+        """
+        return iter(self.terms)
+
+    def __len__(self):
+        """The number of terms.
+
+        See `IIterableVocabulary`.
+        """
+        return len(self.terms)
+
+    def getTerm(self, value):
+        """Return the `ITerm` object for the term 'value'.
+
+        See `IBaseVocabulary`.
+        """
+        try:
+            return self.terms_by_value[value]
+        except KeyError:
+            raise LookupError(value)
+
+    def __contains__(self, value):
+        """Return whether the value is available in this source.
+
+        See `ISource`.
+        """
+        return (value in self.terms_by_value)
+
+    def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
+        try:
+            return self.terms_by_token[token]
+        except KeyError:
+            raise LookupError(token)
 
 
 class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
