@@ -149,10 +149,8 @@ class IBranchCollection(Interface):
         """Restrict the collection to branches owned by 'person'."""
 
     def ownedByTeamMember(person):
-        """Restrict the collection to branches owned by 'person'.
-
-        :param include_team_membership: If True, the result will include
-            branches owned by teams of which the person is a member.
+        """Restrict the collection to branches owned by 'person' or a team
+        of which person is a member.
         """
 
     def registeredBy(person):
