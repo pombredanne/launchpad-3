@@ -6,7 +6,6 @@ __all__ = [
     'add_bug_change_notifications',
     'get_bug_delta',
     'get_bugtask_indirect_subscribers',
-    'notify_bug_added',
     'notify_bug_attachment_added',
     'notify_bug_attachment_removed',
     'notify_bug_comment_added',
@@ -41,15 +40,6 @@ from lp.bugs.mail.bugnotificationbuilder import BugNotificationBuilder
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.mail.newbug import generate_bug_add_email
 from lp.registry.interfaces.person import IPerson
-
-
-@block_implicit_flushes
-def notify_bug_added(bug, event):
-    """Send an email notification that a bug was added.
-
-    Event must be an IObjectCreatedEvent.
-    """
-    bug.addCommentNotification(bug.initial_message)
 
 
 @block_implicit_flushes

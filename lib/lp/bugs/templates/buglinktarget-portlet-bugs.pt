@@ -3,7 +3,7 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   id="related-bugs"
   tal:define="links view/buglinks" >
-  <h2>Related bugs</h2>
+  <h3>Related bugs</h3>
 
   <ul>
     <li tal:repeat="link links">

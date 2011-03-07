@@ -63,7 +63,7 @@ list of emails to send:
     >>> from lp.bugs.scripts.bugnotification import (
     ...     get_email_notifications)
     >>> email_notifications = get_email_notifications(notifications)
-    >>> for bug_notifications, messages in email_notifications:
+    >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
@@ -176,7 +176,7 @@ subject, though, which is often the case when someone replies via email.
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> email_notifications = get_email_notifications(pending_notifications)
-    >>> for bug_notifications, messages in email_notifications:
+    >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
@@ -222,7 +222,7 @@ Let's add a few changes and see how it looks like:
     2
 
     >>> email_notifications = get_email_notifications(pending_notifications)
-    >>> for bug_notifications, messages in email_notifications:
+    >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
@@ -275,7 +275,7 @@ Notice how the comment is in the top of the email, and the changes are
 in the order they were added:
 
     >>> email_notifications = get_email_notifications(pending_notifications)
-    >>> for bug_notifications, messages in email_notifications:
+    >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
@@ -293,13 +293,9 @@ in the order they were added:
     - Old summary
     + New summary
     <BLANKLINE>
-    ** Visibility changed to: Private
-    <BLANKLINE>
     ** Summary changed:
     - New summary
     + Another summary
-    <BLANKLINE>
-    ** Visibility changed to: Public
     <BLANKLINE>
     --
     You received this bug notification because you are a member of Ubuntu
@@ -311,6 +307,29 @@ in the order they were added:
     ----------------------------------------------------------------------
     To: test@canonical.com
     ...
+
+If you look carefully, there's a surprise in that output: the visibility
+changes are not reported.  This is because they are done and then undone
+within the same notification.  Undone changes like that are omitted.
+moreover, if the email only would have reported done/undone changes, it
+is not sent at all.  This is tested elsewhere (see
+lp/bugs/tests/test_bugnotification.py), and not demonstrated here.
+
+Another thing worth noting is that there's a blank line before the
+signature, and the signature marker has a trailing space.
+
+    >>> message.get_payload(decode=True).splitlines()
+    [...,
+     '',
+     '-- ',
+     'You received this bug notification because you are a direct subscriber',
+     'of the bug.',
+     'http://bugs.launchpad.dev/bugs/1',
+     '',
+     'Title:',
+     '  Firefox does not support SVG'...]
+
+    >>> flush_notifications()
 
 We send the notification only if the user hasn't done any other changes
 for the last 5 minutes:
@@ -325,22 +344,6 @@ for the last 5 minutes:
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(pending_notifications)
     0
-
-    >>> flush_notifications()
-
-There's a blank line before the signature, and the signature marker has
-a trailing space.
-
-    >>> message.get_payload(decode=True).splitlines()
-    [...,
-     '',
-     '-- ',
-     'You received this bug notification because you are a direct subscriber',
-     'of the bug.',
-     'http://bugs.launchpad.dev/bugs/1',
-     '',
-     'Title:',
-     '  Firefox does not support SVG'...]
 
     >>> flush_notifications()
 
@@ -368,7 +371,7 @@ notification will be sent to all members individually.
     1
 
     >>> email_notifications = get_email_notifications(pending_notifications)
-    >>> for bug_notifications, messages in email_notifications:
+    >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print message['To']
     foo.bar@canonical.com
@@ -378,7 +381,6 @@ notification will be sent to all members individually.
     test@canonical.com
 
     >>> flush_notifications()
-
 
 Duplicates
 ----------
@@ -412,7 +414,7 @@ top of the email:
     >>> len(notifications)
     1
 
-    >>> for bug_notifications, messages in (
+    >>> for bug_notifications, omitted, messages in (
     ...     get_email_notifications(notifications)):
     ...     for message in messages:
     ...         print_notification(message)
@@ -483,7 +485,7 @@ inserted at the top of the message body.
     >>> notifications = (
     ...     getUtility(IBugNotificationSet).getNotificationsToSend())
     >>> email_notifications = get_email_notifications(notifications)
-    >>> for bug_notifications, messages in email_notifications:
+    >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: support@ubuntu.com
@@ -507,7 +509,7 @@ The message is only inserted for new bugs, not for modified bugs:
     >>> notifications = (
     ...     getUtility(IBugNotificationSet).getNotificationsToSend())
     >>> email_notifications = get_email_notifications(notifications)
-    >>> for bug_notifications, messages in email_notifications:
+    >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: support@ubuntu.com
@@ -554,11 +556,19 @@ few notifications to show that it works.
     ...     BugTitleChange(
     ...         ten_minutes_ago, sample_person, "title",
     ...         "Old summary", "New summary"))
+    >>> bug_two.addChange(
+    ...     BugVisibilityChange(
+    ...         ten_minutes_ago, sample_person, "title",
+    ...         False, True))
+    >>> bug_two.addChange(
+    ...     BugVisibilityChange(
+    ...         ten_minutes_ago, sample_person, "title",
+    ...         True, False))
 
     >>> notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(notifications)
-    6
+    8
 
 We need to commit the transaction so that the cronscript will see the
 notifications.
@@ -646,7 +656,41 @@ makes it write out the emails it sends.
     INFO    Notifying test@canonical.com about bug 1.
     ...
 
-    >>> flush_notifications()
+Note that the message omitted the undone visibility change.
+
+The cronscript has to be sure to mark all notifications, omitted and
+otherwise, as sent.  It also marks the omitted notifications with a status,
+so if there are any problems we can identify which notifications were omitted
+during analysis.  We'll commit a transaction to synchronize the database,
+and then look at the notifications available.
+
+    >>> transaction.commit()
+
+    >>> notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> len(notifications)
+    0
+
+They have all been marked as sent, including the omitted ones.  Let's look
+more carefully at the notifications just to see that the status has
+been set properly.
+
+    >>> from lp.bugs.model.bugnotification import BugNotification
+    >>> from lp.bugs.enum import BugNotificationStatus
+    >>> for notification in BugNotification.select(orderBy='id')[-8:]:
+    ...     if notification.is_comment:
+    ...         identifier = 'comment'
+    ...     else:
+    ...         identifier = notification.activity.whatchanged
+    ...     print identifier, notification.status.title
+    comment Sent
+    summary Sent
+    comment Sent
+    summary Sent
+    comment Sent
+    summary Sent
+    visibility Omitted
+    visibility Omitted
 
 
 The X-Launchpad-Bug header
@@ -671,7 +715,7 @@ If we take a closer look at a notification, we can see that
 X-Launchpad-Bug headers were added:
 
     >>> email_notifications = get_email_notifications(notifications)
-    >>> for bug_notifications, messages in email_notifications:
+    >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         sorted(message.get_all('X-Launchpad-Bug'))
     [u'distribution=debian; distroseries=sarge;... milestone=3.1;...',
@@ -705,7 +749,7 @@ email messages, and a third that combines the first two.
 
     >>> def get_email_messages(notifications):
     ...     messages = (message
-    ...         for bug_notifications, messages in
+    ...         for bug_notifications, omitted, messages in
     ...             get_email_notifications(notifications)
     ...         for message in messages)
     ...     return sorted(messages, key=lambda message: message['To'])
@@ -961,7 +1005,7 @@ function.
 
     >>> from itertools import chain
     >>> collated_messages = collate_messages_by_recipient(
-    ...     chain(*(messages for bug_notifications, messages in
+    ...     chain(*(messages for bug_notifications, omitted, messages in
     ...             get_email_notifications(notifications))))
 
 We can see that Concise Person doesn't receive verbose notifications:
@@ -1150,7 +1194,7 @@ notifications.
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> email_notifications = get_email_notifications(pending_notifications)
-    >>> for bug_notifications, messages in email_notifications:
+    >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
@@ -1211,7 +1255,7 @@ COMMENTS, he also receives these notifications.
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> email_notifications = get_email_notifications(pending_notifications)
-    >>> for bug_notifications, messages in email_notifications:
+    >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
@@ -1270,7 +1314,7 @@ no comment notifications.
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> email_notifications = get_email_notifications(pending_notifications)
-    >>> for bug_notifications, messages in email_notifications:
+    >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
@@ -1321,7 +1365,7 @@ receives these notifications.
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> email_notifications = get_email_notifications(pending_notifications)
-    >>> for bug_notifications, messages in email_notifications:
+    >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
@@ -1385,7 +1429,7 @@ no notifications created by addChange().
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> email_notifications = get_email_notifications(pending_notifications)
-    >>> for bug_notifications, messages in email_notifications:
+    >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
@@ -1447,7 +1491,7 @@ after all.
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> email_notifications = get_email_notifications(pending_notifications)
-    >>> for bug_notifications, messages in email_notifications:
+    >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com

@@ -8,12 +8,12 @@ from lazr.lifecycle.event import (
     ObjectModifiedEvent,
     )
 from lazr.lifecycle.snapshot import Snapshot
+from testtools.matchers import StartsWith
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from lp.bugs.model.bugnotification import BugNotification
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
@@ -24,6 +24,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     )
 from lp.bugs.interfaces.cve import ICveSet
+from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.scripts.bugnotification import construct_email_notifications
 from lp.testing import (
     person_logged_in,
@@ -182,7 +183,8 @@ class TestBugChanges(TestCaseWithFactory):
 
     def assertRecipients(self, expected_recipients):
         notifications = self.getNewNotifications()
-        notifications, messages = construct_email_notifications(notifications)
+        notifications, omitted, messages = construct_email_notifications(
+            notifications)
         recipients = set(message['to'] for message in messages)
 
         self.assertEqual(
@@ -219,6 +221,11 @@ class TestBugChanges(TestCaseWithFactory):
         # Changing the title of a Bug adds items to the activity log and
         # the Bug's notifications.
         old_title = self.changeAttribute(self.bug, 'title', '42')
+
+        # This checks the activity's attribute and target attributes.
+        activity = self.bug.activity[-1]
+        self.assertEqual(activity.attribute, 'title')
+        self.assertEqual(activity.target, None)
 
         title_change_activity = {
             'whatchanged': 'summary',
@@ -269,6 +276,11 @@ class TestBugChanges(TestCaseWithFactory):
         # log and the Bug's notifications.
         bugtracker = self.factory.makeBugTracker()
         bug_watch = self.bug.addWatch(bugtracker, '42', self.user)
+
+        # This checks the activity's attribute and target attributes.
+        activity = self.bug.activity[-1]
+        self.assertEqual(activity.attribute, 'watches')
+        self.assertEqual(activity.target, None)
 
         bugwatch_activity = {
             'person': self.user,
@@ -336,6 +348,11 @@ class TestBugChanges(TestCaseWithFactory):
         bug_watch = self.bug.addWatch(bugtracker, '42', self.user)
         self.saveOldChanges()
         self.bug.removeWatch(bug_watch, self.user)
+
+        # This checks the activity's attribute and target attributes.
+        activity = self.bug.activity[-1]
+        self.assertEqual(activity.attribute, 'watches')
+        self.assertEqual(activity.target, None)
 
         bugwatch_activity = {
             'person': self.user,
@@ -413,6 +430,12 @@ class TestBugChanges(TestCaseWithFactory):
         # sends an e-mail notification.
         branch = self.factory.makeBranch()
         self.bug.linkBranch(branch, self.user)
+
+        # This checks the activity's attribute and target attributes.
+        activity = self.bug.activity[-1]
+        self.assertEqual(activity.attribute, 'linked_branches')
+        self.assertEqual(activity.target, None)
+
         added_activity = {
             'person': self.user,
             'whatchanged': 'branch linked',
@@ -459,6 +482,12 @@ class TestBugChanges(TestCaseWithFactory):
         self.bug.linkBranch(branch, self.user)
         self.saveOldChanges()
         self.bug.unlinkBranch(branch, self.user)
+
+        # This checks the activity's attribute and target attributes.
+        activity = self.bug.activity[-1]
+        self.assertEqual(activity.attribute, 'linked_branches')
+        self.assertEqual(activity.target, None)
+
         added_activity = {
             'person': self.user,
             'whatchanged': 'branch unlinked',
@@ -654,6 +683,11 @@ class TestBugChanges(TestCaseWithFactory):
         cve = getUtility(ICveSet)['1999-8979']
         self.bug.linkCVE(cve, self.user)
 
+        # This checks the activity's attribute and target attributes.
+        activity = self.bug.activity[-1]
+        self.assertEqual(activity.attribute, 'cves')
+        self.assertEqual(activity.target, None)
+
         cve_linked_activity = {
             'person': self.user,
             'whatchanged': 'cve linked',
@@ -679,6 +713,11 @@ class TestBugChanges(TestCaseWithFactory):
         self.bug.linkCVE(cve, self.user)
         self.saveOldChanges()
         self.bug.unlinkCVE(cve, self.user)
+
+        # This checks the activity's attribute and target attributes.
+        activity = self.bug.activity[-1]
+        self.assertEqual(activity.attribute, 'cves')
+        self.assertEqual(activity.target, None)
 
         cve_unlinked_activity = {
             'person': self.user,
@@ -707,6 +746,11 @@ class TestBugChanges(TestCaseWithFactory):
 
         attachment = self.factory.makeBugAttachment(
             bug=self.bug, owner=self.user, comment=message)
+
+        # This checks the activity's attribute and target attributes.
+        activity = self.bug.activity[-1]
+        self.assertEqual(activity.attribute, 'attachments')
+        self.assertEqual(activity.target, None)
 
         attachment_added_activity = {
             'person': self.user,
@@ -740,6 +784,11 @@ class TestBugChanges(TestCaseWithFactory):
             attachment.libraryfile, attachment).http_url
 
         attachment.removeFromBug(user=self.user)
+
+        # This checks the activity's attribute and target attributes.
+        activity = self.bug.activity[-1]
+        self.assertEqual(activity.attribute, 'attachments')
+        self.assertEqual(activity.target, None)
 
         attachment_removed_activity = {
             'person': self.user,
@@ -857,6 +906,11 @@ class TestBugChanges(TestCaseWithFactory):
         notify(ObjectModifiedEvent(
             self.bug_task, bug_task_before_modification,
             ['importance'], user=self.user))
+
+        # This checks the activity's attribute and target attributes.
+        activity = self.bug.activity[-1]
+        self.assertEqual(activity.attribute, 'importance')
+        self.assertThat(activity.target, StartsWith(u'product-name'))
 
         expected_activity = {
             'person': self.user,
@@ -1304,6 +1358,11 @@ class TestBugChanges(TestCaseWithFactory):
             level=BugNotificationLevel.METADATA).getRecipients()
         self.changeAttribute(duplicate_bug, 'duplicateof', self.bug)
 
+        # This checks the activity's attribute and target attributes.
+        activity = duplicate_bug.activity[-1]
+        self.assertEqual(activity.attribute, 'duplicateof')
+        self.assertEqual(activity.target, None)
+
         expected_activity = {
             'person': self.user,
             'whatchanged': 'marked as duplicate',
@@ -1351,6 +1410,11 @@ class TestBugChanges(TestCaseWithFactory):
         self.saveOldChanges(duplicate_bug)
         self.changeAttribute(duplicate_bug, 'duplicateof', None)
 
+        # This checks the activity's attribute and target attributes.
+        activity = duplicate_bug.activity[-1]
+        self.assertEqual(activity.attribute, 'duplicateof')
+        self.assertEqual(activity.target, None)
+
         expected_activity = {
             'person': self.user,
             'whatchanged': 'removed duplicate marker',
@@ -1381,6 +1445,11 @@ class TestBugChanges(TestCaseWithFactory):
         self.bug.markAsDuplicate(bug_one)
         self.saveOldChanges()
         self.changeAttribute(self.bug, 'duplicateof', bug_two)
+
+        # This checks the activity's attribute and target attributes.
+        activity = self.bug.activity[-1]
+        self.assertEqual(activity.attribute, 'duplicateof')
+        self.assertEqual(activity.target, None)
 
         expected_activity = {
             'person': self.user,
@@ -1429,6 +1498,11 @@ class TestBugChanges(TestCaseWithFactory):
             level=BugNotificationLevel.METADATA).getRecipients()
         self.changeAttribute(public_bug, 'duplicateof', private_bug)
 
+        # This checks the activity's attribute and target attributes.
+        activity = public_bug.activity[-1]
+        self.assertEqual(activity.attribute, 'duplicateof')
+        self.assertEqual(activity.target, None)
+
         expected_activity = {
             'person': self.user,
             'whatchanged': 'marked as duplicate',
@@ -1468,6 +1542,11 @@ class TestBugChanges(TestCaseWithFactory):
 
         self.changeAttribute(public_bug, 'duplicateof', None)
 
+        # This checks the activity's attribute and target attributes.
+        activity = public_bug.activity[-1]
+        self.assertEqual(activity.attribute, 'duplicateof')
+        self.assertEqual(activity.target, None)
+
         expected_activity = {
             'person': self.user,
             'whatchanged': 'removed duplicate marker',
@@ -1503,6 +1582,11 @@ class TestBugChanges(TestCaseWithFactory):
         self.saveOldChanges(duplicate_bug)
 
         self.changeAttribute(duplicate_bug, 'duplicateof', public_bug)
+
+        # This checks the activity's attribute and target attributes.
+        activity = duplicate_bug.activity[-1]
+        self.assertEqual(activity.attribute, 'duplicateof')
+        self.assertEqual(activity.target, None)
 
         expected_activity = {
             'person': self.user,
