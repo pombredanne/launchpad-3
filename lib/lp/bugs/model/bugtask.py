@@ -131,9 +131,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
-from lp.bugs.model.structuralsubscription import (
-    StructuralSubscription,
-    )
+from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
