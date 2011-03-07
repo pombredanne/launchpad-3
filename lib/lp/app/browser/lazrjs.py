@@ -21,6 +21,7 @@ from zope.security.checker import canAccess, canWrite
 from zope.schema.interfaces import IVocabulary
 from zope.schema.vocabulary import getVocabularyRegistry
 
+from lazr.enum import IEnumeratedType
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
 from canonical.lazr.utils import get_current_browser_request
 from canonical.lazr.utils import safe_hasattr
@@ -402,6 +403,41 @@ class BooleanChoiceWidget(EditableWidgetBase, DefinedTagMixin):
                      disabled=False),
                 dict(name=self.false_text, value=False, style='', help='',
                      disabled=False)])
+
+    @property
+    def json_config(self):
+        return simplejson.dumps(self.config)
+
+
+class EnumChoiceWidget(EditableWidgetBase):
+    """A popup choice widget."""
+
+    __call__ = ViewPageTemplateFile('../templates/enum-choice-widget.pt')
+
+    def __init__(self, context, exported_field, header,
+                 content_box_id=None, enum=None,
+                 edit_view="+edit", edit_url=None,
+                 css_class_prefix=''):
+        super(EnumChoiceWidget, self).__init__(
+            context, exported_field, content_box_id, edit_view, edit_url)
+        self.header = header
+        value = getattr(self.context, self.attribute_name)
+        self.css_class = "value %s%s" % (css_class_prefix, value.name)
+        self.value = value.title
+        if enum is None:
+            # Get the enum from the exported field.
+            enum = exported_field.vocabulary
+        if IEnumeratedType(enum, None) is None:
+            raise ValueError('%r does not provide IEnumeratedType' % enum)
+        self.items = vocabulary_to_choice_edit_items(enum, css_class_prefix)
+
+    @property
+    def config(self):
+        return dict(
+            contentBox='#'+self.content_box_id,
+            value=self.value,
+            title=self.header,
+            items=self.items)
 
     @property
     def json_config(self):
