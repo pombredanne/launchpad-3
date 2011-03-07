@@ -8,6 +8,7 @@
   <include package=".features" />
   <include package=".fields" />
   <include package=".geoip" />
+  <include package=".googlesearch" />
   <include package=".inlinehelp" file="meta.zcml" />
   <include package=".job" />
   <include package=".memcache" />
@@ -15,6 +16,5 @@
   <include package=".profile" />
   <include package=".salesforce" />
   <include package=".scripts" />
-  <include package=".search" />
   <include package=".worlddata" />
 </configure>
