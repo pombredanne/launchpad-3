@@ -135,8 +135,7 @@ class DistroSeriesDifference(Storm):
             conditions.extend([
                 DistroSeriesDifference.source_package_name ==
                     SourcePackageName.id,
-                SourcePackageName.name.like(
-                    u'%%%s%%' %source_package_name_filter)])
+                SourcePackageName.name == source_package_name_filter])
 
         return IStore(DistroSeriesDifference).find(
             DistroSeriesDifference,

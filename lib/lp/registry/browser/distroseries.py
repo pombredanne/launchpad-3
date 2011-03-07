@@ -564,7 +564,7 @@ class DistroSeriesLocalDifferencesListView(LaunchpadFormView):
 
     @property
     def specified_name_filter(self):
-        """Return the specified name filter if one was specified """
+        """If specified, return the name filter from the GET form data."""
         requested_name_filter = self.request.query_string_params.get(
             'field.name_filter')
 
@@ -575,7 +575,9 @@ class DistroSeriesLocalDifferencesListView(LaunchpadFormView):
 
     @property
     def specified_include_blacklisted_filter(self):
-        """Return the specified name filter if one was specified """
+        """If specified, return the 'blacklisted' filter from the GET form
+        data.
+        """
         include_blacklisted_filter = self.request.query_string_params.get(
             'field.include_blacklisted_filter')
 
@@ -587,7 +589,6 @@ class DistroSeriesLocalDifferencesListView(LaunchpadFormView):
     @cachedproperty
     def cached_differences(self):
         """Return a batch navigator of filtered results."""
-        utility = getUtility(IDistroSeriesDifferenceSource)
         if self.specified_include_blacklisted_filter:
             status=(
                 DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
@@ -595,23 +596,25 @@ class DistroSeriesLocalDifferencesListView(LaunchpadFormView):
         else:
             status=(
                 DistroSeriesDifferenceStatus.NEEDS_ATTENTION,)
-        differences = utility.getForDistroSeries(
-            self.context,
-            source_package_name_filter=self.specified_name_filter,
-            status=status)
+        differences = getUtility(
+            IDistroSeriesDifferenceSource).getForDistroSeries(
+                self.context,
+                source_package_name_filter=self.specified_name_filter,
+                status=status)
         return BatchNavigator(differences, self.request)
 
     @cachedproperty
     def has_differences(self):
         """Whether or not differences between this derived series and
-        it's parent exist."""
-        utility = getUtility(IDistroSeriesDifferenceSource)
-        differences = utility.getForDistroSeries(
-            self.context,
-            status=(
-                DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
-                DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT))
-        return bool(differences.count())
+        its parent exist.
+        """
+        differences = getUtility(
+            IDistroSeriesDifferenceSource).getForDistroSeries(
+                self.context,
+                status=(
+                    DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+                    DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT))
+        return differences.any()
 
 
 class IDifferencesFormSchema(Interface):

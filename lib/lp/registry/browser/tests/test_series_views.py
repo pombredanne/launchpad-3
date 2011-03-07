@@ -115,7 +115,7 @@ class DistroSeriesLocalPackageDiffsPageTestCase(TestCaseWithFactory):
         self.assertIsNot(
             None,
             find_tag_by_id(view(), 'distroseries-localdiff-search-filter'),
-            "Form filter should be show when there is differences.")
+            "Form filter should be shown when there are differences.")
 
     def test_filter_noform_if_nodifferences(self):
         # Test that the page doesn't includes the filter form if no
@@ -131,7 +131,7 @@ class DistroSeriesLocalPackageDiffsPageTestCase(TestCaseWithFactory):
         self.assertIs(
             None,
             find_tag_by_id(view(), 'distroseries-localdiff-search-filter'),
-            "Form filter should not be show when there is no differences.")
+            "Form filter should not be shown when there are no differences.")
 
 
 class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
@@ -286,7 +286,7 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
         filtered_view = create_initialized_view(
             derived_series,
             '+localpackagediffs',
-            query_string='field.name_filter=my-src')
+            query_string='field.name_filter=my-src-package')
         unfiltered_view = create_initialized_view(
             derived_series,
             '+localpackagediffs')
