@@ -196,13 +196,13 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         # 'ownedBy' returns a new collection restricted to branches owned by
         # any team of which the given person is a member.
         person = self.factory.makePerson()
-        team = self.factory.makeTeam(members=[person])        
+        team = self.factory.makeTeam(members=[person])
         branch = self.factory.makeAnyBranch(owner=team)
         branch2 = self.factory.makeAnyBranch()
         collection = self.all_branches.ownedBy(
             person, include_team_membership=True)
         self.assertEqual([branch], list(collection.getBranches()))
-        
+
     def test_in_product(self):
         # 'inProduct' returns a new collection restricted to branches in the
         # given product.
@@ -254,11 +254,13 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         branch4 = self.factory.makeProductBranch(product=product)
         collection = self.all_branches.inProduct(product).ownedBy(
             person, include_team_membership=True)
-        self.assertEqual(set([branch, branch2]), set(collection.getBranches()))
+        self.assertEqual(
+            set([branch, branch2]), set(collection.getBranches()))
         collection = self.all_branches.ownedBy(
             person, include_team_membership=True).inProduct(product)
-        self.assertEqual(set([branch, branch2]), set(collection.getBranches()))
-        
+        self.assertEqual(
+            set([branch, branch2]), set(collection.getBranches()))
+
     def test_in_source_package(self):
         # 'inSourcePackage' returns a new collection that only has branches in
         # the given source package.

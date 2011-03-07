@@ -142,7 +142,7 @@ Here's a vocabulary for all hosted branches owned by the current user.
     ...     owner=a_team, product=product2, name='another_hosted')
     >>> foreign_branch = factory.makeBranch()
 
-It returns branches owned by the user, or teams a user belongs to, but not 
+It returns branches owned by the user, or teams a user belongs to, but not
 ones owned by others, nor ones that aren't hosted on Launchpad.
 
     >>> branch_vocabulary = vocabulary_registry.get(

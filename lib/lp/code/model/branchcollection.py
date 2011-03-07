@@ -14,12 +14,13 @@ from storm.expr import (
     And,
     Count,
     Desc,
+    In,
     Join,
     LeftJoin,
     Or,
     Select,
     Union,
-    In)
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -60,7 +61,7 @@ from lp.registry.model.person import (
     )
 from lp.registry.model.product import Product
 from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.registry.model.teammembership import TeamParticipation, TeamMembership
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.propertycache import get_property_cache
 
 
@@ -158,6 +159,7 @@ class GenericBranchCollection:
         resultset = self.store.using(*tables).find(Branch, *expressions)
         if not eager_load:
             return resultset
+
         def do_eager_load(rows):
             branch_ids = set(branch.id for branch in rows)
             if not branch_ids:
@@ -373,13 +375,12 @@ class GenericBranchCollection:
         filter = Branch.owner == person
         if include_team_membership:
             subquery = Select(
-                TeamMembership.teamID,
-                where=TeamMembership.personID==person.id)            
+                TeamParticipation.teamID,
+                where=TeamParticipation.personID==person.id)
             filter = Or(
                 filter,
-                In(Branch.ownerID, subquery) 
-            )
-            
+                In(Branch.ownerID, subquery))
+
         return self._filterBy([filter])
 
     def registeredBy(self, person):
