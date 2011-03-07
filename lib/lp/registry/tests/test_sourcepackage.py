@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import unittest
 
+from storm.locals import Store
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -24,6 +25,7 @@ from lp.code.interfaces.seriessourcepackagebranch import (
 from lp.registry.interfaces.distribution import NoPartnerArchive
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.model.packaging import Packaging
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -255,6 +257,15 @@ class TestSourcePackage(TestCaseWithFactory):
             u'mozilla-firefox-data: No summary available for '
             u'mozilla-firefox-data in ubuntu warty.')
         self.assertEqual(''.join(expected_summary), sp.summary)
+
+    def test_deletePackaging(self):
+        """Ensure deletePackaging completely removes packaging."""
+        packaging = self.factory.makePackagingLink()
+        packaging_id = packaging.id
+        store = Store.of(packaging)
+        packaging.sourcepackage.deletePackaging()
+        result = store.find(Packaging, Packaging.id==packaging_id)
+        self.assertIs(None, result.one())
 
 
 class TestSourcePackageWebService(WebServiceTestCase):
