@@ -370,18 +370,9 @@ class GenericBranchCollection:
             Branch.product == None,
             Branch.sourcepackagename == None])
 
-    def ownedBy(self, person, include_team_membership=False):
+    def ownedBy(self, person):
         """See `IBranchCollection`."""
-        filter = Branch.owner == person
-        if include_team_membership:
-            subquery = Select(
-                TeamParticipation.teamID,
-                where=TeamParticipation.personID==person.id)
-            filter = Or(
-                filter,
-                In(Branch.ownerID, subquery))
-
-        return self._filterBy([filter])
+        return self._filterBy([Branch.owner == person])
 
     def ownedByTeamMember(self, person):
         """See `IBranchCollection`."""
