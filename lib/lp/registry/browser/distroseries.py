@@ -11,11 +11,10 @@ __all__ = [
     'DistroSeriesBreadcrumb',
     'DistroSeriesEditView',
     'DistroSeriesFacets',
-    'DistroSeriesInitializeView',
     'DistroSeriesLocalDifferences',
-    'DistroSeriesNavigation',
     'DistroSeriesPackageSearchView',
     'DistroSeriesPackagesView',
+    'DistroSeriesNavigation',
     'DistroSeriesView',
     ]
 
@@ -25,10 +24,8 @@ from zope.formlib import form
 from zope.interface import Interface
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import (
-    Bool,
     Choice,
     List,
-    TextLine,
     )
 from zope.schema.vocabulary import (
     SimpleTerm,
@@ -68,9 +65,7 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.errors import NotFoundError
 from lp.app.widgets.itemswidgets import (
-    CheckBoxMatrixWidget,
     LabeledMultiCheckBoxWidget,
-    LaunchpadBooleanRadioWidget,
     LaunchpadDropdownWidget,
     )
 from lp.blueprints.browser.specificationtarget import (
@@ -486,7 +481,7 @@ class DistroSeriesAdminView(LaunchpadEditFormView, SeriesStatusMixin):
 
 
 class DistroSeriesAddView(LaunchpadFormView):
-    """A view to create an `IDistroSeries`."""
+    """A view to creat an `IDistrobutionSeries`."""
     schema = IDistroSeries
     field_names = [
         'name', 'displayname', 'title', 'summary', 'description', 'version',
@@ -517,84 +512,6 @@ class DistroSeriesAddView(LaunchpadFormView):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
-
-
-class IDistroSeriesInitializeForm(Interface):
-
-    derived_from_series = Choice(
-        title=_('Derived from distribution series'),
-        default=None,
-        vocabulary="DistroSeriesDerivation",
-        description=_(
-            "Select the distribution series you "
-            "want to derive from."),
-        required=True)
-
-    all_architectures = Bool(
-        title=_('Architectures to initialize'),
-        default=True,
-        required=True)
-
-    architectures = List(
-        title=_("The list of architectures to copy to "
-                "the derived distroseries."),
-        value_type=TextLine(),
-        required=True)
-
-    rebuild = Bool(
-        title=_('Copy options'),
-        description=_(
-            "Choose whether to rebuild all the sources "
-            "copied from the parent, or to copy their "
-            "binaries."),
-        default=False,
-        required=True)
-
-
-class DistroSeriesInitializeView(LaunchpadFormView):
-    """A view to initialize an `IDistroSeries`."""
-
-    schema = IDistroSeriesInitializeForm
-    field_names = [
-        "derived_from_series",
-        "all_architectures",
-        ]
-
-    custom_widget('derived_from_series', LaunchpadDropdownWidget)
-    custom_widget(
-        'all_architectures', LaunchpadBooleanRadioWidget,
-        true_label='Use all architectures in parent series',
-        false_label='Specify architectures below')
-    custom_widget('architectures', CheckBoxMatrixWidget, column_count=5)
-    custom_widget(
-        'all_packagesets', LaunchpadBooleanRadioWidget,
-        true_label='Copy all packagesets in parent series',
-        false_label='Specify packagesets below')
-    custom_widget('packagesets', CheckBoxMatrixWidget, column_count=5)
-    custom_widget(
-        'rebuild', LaunchpadBooleanRadioWidget,
-        true_label='Copy source and rebuild',
-        false_label='Copy source and binaries')
-
-    label = 'Initialize series'
-    page_title = label
-
-    @action(_('Commence initialization'), name='initialize')
-    def initialize_series(self, action, data):
-        """Initialize the Distribution Series."""
-        parent = data["derived_from_series"]
-        parent.deriveDistroSeries(
-            name=self.context.name,
-            distribution=self.context.distribution,
-            architectures=data["architectures"],
-            packagesets=data["packagesets"],
-            rebuild=data["rebuild"])
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
-
-    cancel_url = next_url
 
 
 class DistroSeriesPackagesView(LaunchpadView):
@@ -679,7 +596,8 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
         for its own vocabulary, we set it up after all the others.
         """
         super(DistroSeriesLocalDifferences, self).setUpFields()
-        check_permission('launchpad.Edit', self.context)
+        has_edit = check_permission('launchpad.Edit', self.context)
+
         terms = [
             SimpleTerm(diff, diff.source_package_name.name,
                 diff.source_package_name.name)
