@@ -526,6 +526,12 @@ class IBug(IPrivacy, IHasLinkedBranches):
         If no such `BugSubscription` exists, return None.
         """
 
+    def getStructuralSubscriptionsForPerson(person):
+        """Return the `StructuralSubscription`s for a `Person` to this `Bug`.
+
+        This disregards filters.
+        """
+
     def getSubscriptionInfo(level):
         """Return a `BugSubscriptionInfo` at the given `level`.
 

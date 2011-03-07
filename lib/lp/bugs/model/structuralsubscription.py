@@ -5,7 +5,6 @@ __metaclass__ = type
 __all__ = [
     'get_all_structural_subscriptions',
     'get_structural_subscribers',
-    'get_structural_subscribers_for_bugtasks',
     'get_structural_subscription_targets',
     'StructuralSubscription',
     'StructuralSubscriptionTargetMixin',
@@ -606,33 +605,6 @@ def get_structural_subscribers(
                 recipients.addStructuralSubscriber(
                     person, subscription.target)
         return subscribers
-
-
-def get_structural_subscribers_for_bugtasks(bugtasks,
-                                            recipients=None,
-                                            level=None):
-    """Return subscribers for structural filters for the bugtasks at "level".
-
-    :param bugtasks: an iterable of bugtasks.  Should be a single bugtask, or
-                     all of the bugtasks from one bug.
-    :param recipients: a BugNotificationRecipients object or None.
-                       Populates if given.
-    :param level: a level from lp.bugs.enum.BugNotificationLevel.
-
-    Excludes structural subscriptions for people who are directly subscribed
-    to the bug."""
-    bugtasks = list(bugtasks)
-    if not bugtasks:
-        return EmptyResultSet()
-    if len(bugtasks) == 1:
-        target = bugtasks[0]
-    else:
-        target = bugtasks[0].bug
-        if target.bugtasks != bugtasks:
-            raise NotImplementedError(
-                'bugtasks must be one, or the full set of bugtasks from one '
-                'bug')
-    return get_structural_subscribers(target, recipients, level)
 
 
 class ArrayAgg(NamedFunc):

@@ -5,7 +5,12 @@
 
 __metaclass__ = type
 
-from storm.store import Store
+from storm.store import (
+    EmptyResultSet,
+    ResultSet,
+    Store,
+    )
+from testtools.matchers import StartsWith
 from zope.security.interfaces import Unauthorized
 
 from canonical.testing.layers import (
@@ -17,8 +22,13 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
+from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
-from lp.bugs.model.structuralsubscription import get_structural_subscribers
+from lp.bugs.model.structuralsubscription import (
+    get_all_structural_subscriptions,
+    get_structural_subscribers,
+    get_structural_subscription_targets,
+    )
 from lp.testing import (
     anonymous_logged_in,
     login_person,
@@ -444,3 +454,213 @@ class TestStructuralSubscriptionFiltersForProductSeries(
 
     def makeTarget(self):
         return self.factory.makeProductSeries()
+
+
+class TestGetStructuralSubscriptionTargets(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_product_target(self):
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+        bugtask = bug.bugtasks[0]
+        result = get_structural_subscription_targets(bug.bugtasks)
+        self.assertEqual(list(result), [(bugtask, product)])
+
+    def test_milestone_target(self):
+        actor = self.factory.makePerson()
+        login_person(actor)
+        product = self.factory.makeProduct()
+        milestone = self.factory.makeMilestone(product=product)
+        bug = self.factory.makeBug(product=product, milestone=milestone)
+        bugtask = bug.bugtasks[0]
+        result = get_structural_subscription_targets(bug.bugtasks)
+        self.assertEqual(set(result), set(
+            ((bugtask, product), (bugtask, milestone))))
+
+    def test_sourcepackage_target(self):
+        actor = self.factory.makePerson()
+        login_person(actor)
+        distroseries = self.factory.makeDistroSeries()
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=distroseries)
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+        bug.addTask(actor, sourcepackage)
+        product_bugtask = bug.bugtasks[0]
+        sourcepackage_bugtask = bug.bugtasks[1]
+        result = get_structural_subscription_targets(bug.bugtasks)
+        self.assertEqual(set(result), set(
+            ((product_bugtask, product),
+             (sourcepackage_bugtask, distroseries))))
+
+    def test_distribution_source_package_target(self):
+        actor = self.factory.makePerson()
+        login_person(actor)
+        distribution = self.factory.makeDistribution()
+        dist_sourcepackage = self.factory.makeDistributionSourcePackage(
+            distribution=distribution)
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+        bug.addTask(actor, dist_sourcepackage)
+        product_bugtask = bug.bugtasks[0]
+        dist_sourcepackage_bugtask = bug.bugtasks[1]
+        result = get_structural_subscription_targets(bug.bugtasks)
+        self.assertEqual(set(result), set(
+            ((product_bugtask, product),
+             (dist_sourcepackage_bugtask, dist_sourcepackage),
+             (dist_sourcepackage_bugtask, distribution))))
+
+
+class TestGetAllStructuralSubscriptions(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGetAllStructuralSubscriptions, self).setUp()
+        self.subscriber = self.factory.makePerson()
+        login_person(self.subscriber)
+        self.product = self.factory.makeProduct()
+        self.milestone = self.factory.makeMilestone(product=self.product)
+        self.bug = self.factory.makeBug(
+            product=self.product, milestone=self.milestone)
+
+    def test_no_subscriptions(self):
+        subscriptions = get_all_structural_subscriptions(
+            self.bug.bugtasks, self.subscriber)
+        self.assertEqual([], list(subscriptions))
+
+    def test_one_subscription(self):
+        sub = self.product.addBugSubscription(
+            self.subscriber, self.subscriber)
+        subscriptions = get_all_structural_subscriptions(
+            self.bug.bugtasks, self.subscriber)
+        self.assertEqual([sub], list(subscriptions))
+
+    def test_two_subscriptions(self):
+        sub1 = self.product.addBugSubscription(
+            self.subscriber, self.subscriber)
+        sub2 = self.milestone.addBugSubscription(
+            self.subscriber, self.subscriber)
+        subscriptions = get_all_structural_subscriptions(
+            self.bug.bugtasks, self.subscriber)
+        self.assertEqual(set([sub1, sub2]), set(subscriptions))
+
+    def test_two_bugtasks_one_subscription(self):
+        sub = self.product.addBugSubscription(
+            self.subscriber, self.subscriber)
+        product2 = self.factory.makeProduct()
+        self.bug.addTask(self.subscriber, product2)
+        subscriptions = get_all_structural_subscriptions(
+            self.bug.bugtasks, self.subscriber)
+        self.assertEqual([sub], list(subscriptions))
+
+    def test_two_bugtasks_two_subscriptions(self):
+        sub1 = self.product.addBugSubscription(
+            self.subscriber, self.subscriber)
+        product2 = self.factory.makeProduct()
+        self.bug.addTask(self.subscriber, product2)
+        sub2 = product2.addBugSubscription(
+            self.subscriber, self.subscriber)
+        subscriptions = get_all_structural_subscriptions(
+            self.bug.bugtasks, self.subscriber)
+        self.assertEqual(set([sub1, sub2]), set(subscriptions))
+
+    def test_ignore_other_subscriptions(self):
+        sub1 = self.product.addBugSubscription(
+            self.subscriber, self.subscriber)
+        another_subscriber = self.factory.makePerson()
+        login_person(another_subscriber)
+        sub2 = self.product.addBugSubscription(
+            another_subscriber, another_subscriber)
+        subscriptions = get_all_structural_subscriptions(
+            self.bug.bugtasks, self.subscriber)
+        self.assertEqual([sub1], list(subscriptions))
+        subscriptions = get_all_structural_subscriptions(
+            self.bug.bugtasks, another_subscriber)
+        self.assertEqual([sub2], list(subscriptions))
+
+
+class TestGetStructuralSubscribers(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def make_product_with_bug(self):
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
+        return product, bug
+
+    def test_getStructuralSubscribers_no_subscribers(self):
+        # If there are no subscribers for any of the bug's targets then no
+        # subscribers will be returned by get_structural_subscribers().
+        product, bug = self.make_product_with_bug()
+        subscribers = get_structural_subscribers(bug, None, None, None)
+        self.assertIsInstance(subscribers, (ResultSet, EmptyResultSet))
+        self.assertEqual([], list(subscribers))
+
+    def test_getStructuralSubscribers_single_target(self):
+        # Subscribers for any of the bug's targets are returned.
+        subscriber = self.factory.makePerson()
+        login_person(subscriber)
+        product, bug = self.make_product_with_bug()
+        product.addBugSubscription(subscriber, subscriber)
+        self.assertEqual(
+            [subscriber], list(
+                get_structural_subscribers(bug, None, None, None)))
+
+    def test_getStructuralSubscribers_multiple_targets(self):
+        # Subscribers for any of the bug's targets are returned.
+        actor = self.factory.makePerson()
+        login_person(actor)
+
+        subscriber1 = self.factory.makePerson()
+        subscriber2 = self.factory.makePerson()
+
+        product1 = self.factory.makeProduct(owner=actor)
+        product1.addBugSubscription(subscriber1, subscriber1)
+        product2 = self.factory.makeProduct(owner=actor)
+        product2.addBugSubscription(subscriber2, subscriber2)
+
+        bug = self.factory.makeBug(product=product1)
+        bug.addTask(actor, product2)
+
+        subscribers = get_structural_subscribers(bug, None, None, None)
+        self.assertIsInstance(subscribers, ResultSet)
+        self.assertEqual(set([subscriber1, subscriber2]), set(subscribers))
+
+    def test_getStructuralSubscribers_recipients(self):
+        # If provided, get_structural_subscribers() calls the appropriate
+        # methods on a BugNotificationRecipients object.
+        subscriber = self.factory.makePerson()
+        login_person(subscriber)
+        product, bug = self.make_product_with_bug()
+        product.addBugSubscription(subscriber, subscriber)
+        recipients = BugNotificationRecipients()
+        subscribers = get_structural_subscribers(bug, recipients, None, None)
+        # The return value is a list only when populating recipients.
+        self.assertIsInstance(subscribers, list)
+        self.assertEqual([subscriber], recipients.getRecipients())
+        reason, header = recipients.getReason(subscriber)
+        self.assertThat(
+            reason, StartsWith(
+                u"You received this bug notification because "
+                u"you are subscribed to "))
+        self.assertThat(header, StartsWith(u"Subscriber "))
+
+    def test_getStructuralSubscribers_level(self):
+        # get_structural_subscribers() respects the given level.
+        subscriber = self.factory.makePerson()
+        login_person(subscriber)
+        product, bug = self.make_product_with_bug()
+        subscription = product.addBugSubscription(subscriber, subscriber)
+        filter = subscription.bug_filters.one()
+        filter.bug_notification_level = BugNotificationLevel.METADATA
+        self.assertEqual(
+            [subscriber], list(
+                get_structural_subscribers(
+                    bug, None, BugNotificationLevel.METADATA, None)))
+        filter.bug_notification_level = BugNotificationLevel.METADATA
+        self.assertEqual(
+            [], list(
+                get_structural_subscribers(
+                    bug, None, BugNotificationLevel.COMMENTS, None)))

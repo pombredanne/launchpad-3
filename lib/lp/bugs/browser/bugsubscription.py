@@ -559,5 +559,4 @@ class BugSubscriptionListView(LaunchpadView):
 
     @property
     def structural_subscriptions(self):
-        return getUtility(IBugTaskSet).getAllStructuralSubscriptions(
-            self.context.bug.bugtasks, self.user)
+        return self.context.bug.getStructuralSubscriptionsForPerson(self.user)
