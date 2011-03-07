@@ -5,7 +5,7 @@
 
 __all__ = [
     'IPersonSubscriptionInfo',
-    'IPersonSubscriptionInfoSet',
+    'IPersonSubscriptions',
     'PersonSubscriptionType',
     ]
 
@@ -93,8 +93,8 @@ class IPersonSubscriptionInfo(Interface):
         "which a person is an admin of.")
 
 
-class IPersonSubscriptionInfoSet(Interface):
-    """A utility for accessing `IPersonSubscriptionInfo` records."""
+class IPersonSubscriptions(Interface):
+    """Container for all `IPersonSubscriptionInfo`s for a (person, bug)."""
 
     direct_subscriptions = Attribute(
         "Contains information about all direct subscriptions, including "
@@ -109,5 +109,5 @@ class IPersonSubscriptionInfoSet(Interface):
         "including those through team memberships and target ownership "
         "when no bug supervisor is defined for the target.")
 
-    def loadSubscriptionsFor(person, bug):
-        """Load subscriptions for a person/bug."""
+    def reload():
+        """Reload subscriptions for a person/bug."""

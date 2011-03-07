@@ -4,7 +4,7 @@
 __metaclass__ = type
 __all__ = [
     'PersonSubscriptionInfo',
-    'PersonSubscriptionInfoSet',
+    'PersonSubscriptions',
     ]
 
 from storm.expr import Or
@@ -17,7 +17,7 @@ from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
 from lp.bugs.interfaces.personsubscriptioninfo import (
     IPersonSubscriptionInfo,
-    IPersonSubscriptionInfoSet,
+    IPersonSubscriptions,
     PersonSubscriptionType,
     )
 
@@ -102,15 +102,22 @@ class PersonSubscriptionInfo(object):
             self.owner_for.add(target)
 
 
-class PersonSubscriptionInfoSet(object):
-    """See `IPersonSubscriptionInfoSet`."""
+class PersonSubscriptions(object):
+    """See `IPersonSubscriptions`."""
 
-    implements(IPersonSubscriptionInfoSet)
+    implements(IPersonSubscriptions)
 
-    def __init__(self):
+    def __init__(self, person, bug):
         self.direct_subscriptions = None
         self.duplicate_subscriptions = None
         self.supervisor_subscriptions = None
+        self.person = person
+        self.bug = bug
+        self.loadSubscriptionsFor(person, bug)
+
+    def reload(self):
+        """See `IPersonSubscriptions`."""
+        self.loadSubscriptionsFor(self.person, self.bug)
 
     def _getDirectAndDuplicateSubscriptions(self, person, bug):
         # Fetch all information for direct and duplicate
