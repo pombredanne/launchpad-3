@@ -76,6 +76,7 @@ IGNORED_TABLES = set([
     # Database statistics
     'public.databasetablestats',
     'public.databasecpustats',
+    'public.databasediskutilization',
     # Don't replicate OAuthNonce - too busy and no real gain.
     'public.oauthnonce',
     # Ubuntu SSO database. These tables where created manually by ISD

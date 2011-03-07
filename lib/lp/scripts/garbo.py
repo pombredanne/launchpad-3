@@ -89,6 +89,7 @@ from lp.services.scripts.base import (
 from lp.soyuz.model.files import SourcePackageReleaseFile
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.model.potranslation import POTranslation
 
 
 ONE_DAY_IN_SECONDS = 24*60*60
@@ -96,6 +97,111 @@ ONE_DAY_IN_SECONDS = 24*60*60
 
 def subprocess_setup():
     signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+
+
+class BulkPruner(TunableLoop):
+    """A abstract ITunableLoop base class for simple pruners.
+
+    This is designed for the case where calculating the list of items
+    is expensive, and this list may be huge. For this use case, it
+    is impractical to calculate a batch of ids to remove each
+    iteration.
+
+    One approach is using a temporary table, populating it
+    with the set of items to remove at the start. However, this
+    approach can perform badly as you either need to prune the
+    temporary table as you go, or using OFFSET to skip to the next
+    batch to remove which gets slower as we progress further through
+    the list.
+
+    Instead, this implementation declares a CURSOR that can be used
+    across multiple transactions, allowing us to calculate the set
+    of items to remove just once and iterate over it, avoiding the
+    seek-to-batch issues with a temporary table and OFFSET yet
+    deleting batches of rows in separate transactions.
+    """
+
+    # The Storm database class for the table we are removing records
+    # from. Must be overridden.
+    target_table_class = None
+
+    # The column name in target_table we use as the integer key. May be
+    # overridden.
+    target_table_key = 'id'
+
+    # An SQL query returning a list of ids to remove from target_table.
+    # The query must return a single column named 'id' and should not
+    # contain duplicates. Must be overridden.
+    ids_to_prune_query = None
+
+    # See `TunableLoop`. May be overridden.
+    maximum_chunk_size = 10000
+
+    def __init__(self, log, abort_time=None):
+        super(BulkPruner, self).__init__(log, abort_time)
+
+        self.store = IMasterStore(self.target_table_class)
+        self.target_table_name = self.target_table_class.__storm_table__
+
+        # Open the cursor.
+        self.store.execute(
+            "DECLARE bulkprunerid NO SCROLL CURSOR WITH HOLD FOR %s"
+            % self.ids_to_prune_query)
+
+    _num_removed = None
+
+    def isDone(self):
+        """See `ITunableLoop`."""
+        return self._num_removed == 0
+
+    def __call__(self, chunk_size):
+        """See `ITunableLoop`."""
+        result = self.store.execute("""
+            DELETE FROM %s WHERE %s IN (
+                SELECT id FROM
+                cursor_fetch('bulkprunerid', %d) AS f(id integer))
+            """
+            % (self.target_table_name, self.target_table_key, chunk_size))
+        self._num_removed = result.rowcount
+        transaction.commit()
+
+    def cleanUp(self):
+        """See `ITunableLoop`."""
+        self.store.execute("CLOSE bulkprunerid")
+
+
+class POTranslationPruner(BulkPruner):
+    """Remove unlinked POTranslation entries.
+
+    XXX bug=723596 StuartBishop: This job only needs to run once per month.
+    """
+
+    target_table_class = POTranslation
+
+    ids_to_prune_query = """
+        SELECT POTranslation.id AS id FROM POTranslation
+        EXCEPT (
+            SELECT potranslation FROM POComment
+
+            UNION ALL SELECT msgstr0 FROM TranslationMessage
+                WHERE msgstr0 IS NOT NULL
+
+            UNION ALL SELECT msgstr1 FROM TranslationMessage
+                WHERE msgstr1 IS NOT NULL
+
+            UNION ALL SELECT msgstr2 FROM TranslationMessage
+                WHERE msgstr2 IS NOT NULL
+
+            UNION ALL SELECT msgstr3 FROM TranslationMessage
+                WHERE msgstr3 IS NOT NULL
+
+            UNION ALL SELECT msgstr4 FROM TranslationMessage
+                WHERE msgstr4 IS NOT NULL
+
+            UNION ALL SELECT msgstr5 FROM TranslationMessage
+                WHERE msgstr5 IS NOT NULL
+            )
+        """
 
 
 class OAuthNoncePruner(TunableLoop):
@@ -191,7 +297,7 @@ class OpenIDConsumerAssociationPruner(TunableLoop):
                 LIMIT %d
                 )
             """ % (self.table_name, self.table_name, int(chunksize)))
-        self._num_removed = result._raw_cursor.rowcount
+        self._num_removed = result.rowcount
         transaction.commit()
 
     def isDone(self):
@@ -1025,6 +1131,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         OldTimeLimitedTokenDeleter,
         RevisionAuthorEmailLinker,
         SuggestiveTemplatesCacheUpdater,
+        POTranslationPruner,
         ]
     experimental_tunable_loops = [
         PersonPruner,

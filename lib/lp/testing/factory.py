@@ -820,6 +820,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                       productseries=productseries, distroseries=distroseries,
                       name=name))
 
+    def makePackaging(self):
+        """Create a new Packaging."""
+        productseries = self.makeProductSeries()
+        sourcepackage = self.makeSourcePackage()
+        return productseries.setPackaging(
+            sourcepackage.distroseries, sourcepackage.sourcepackagename,
+            productseries.owner)
+
     def makeProcessor(self, family=None, name=None, title=None,
                       description=None):
         """Create a new processor.
@@ -2715,7 +2723,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     ServiceUsage.LAUNCHPAD)
             else:
                 distroseries = self.makeUbuntuDistroSeries()
-                sourcepackagename = self.makeSourcePackageName()
+        if distroseries is not None and sourcepackagename is None:
+            sourcepackagename = self.makeSourcePackageName()
 
         templateset = getUtility(IPOTemplateSet)
         subset = templateset.getSubset(
