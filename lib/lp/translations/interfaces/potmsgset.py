@@ -199,8 +199,9 @@ class IPOTMsgSet(Interface):
         used_languages=()):
         """Find externally suggested or used translations for the same message.
 
-        This returns a mapping: language -> tuple (suggested, used) containing
-        the results of self.getExternallySuggestedTranslationMessages and
+        This returns a mapping: language -> namedtuple (suggested, used)
+        containing the results of
+        self.getExternallySuggestedTranslationMessages and
         self.getExternallyUsedTranslationMessages for each language.
 
         :param suggested_languages: languages we want suggestions for.
