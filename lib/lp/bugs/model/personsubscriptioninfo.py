@@ -13,13 +13,16 @@ from zope.interface import implements
 
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bug import Bug
-from lp.registry.model.person import Person
-from lp.registry.model.teammembership import TeamParticipation
 from lp.bugs.interfaces.personsubscriptioninfo import (
     IPersonSubscriptionInfo,
     IPersonSubscriptions,
     PersonSubscriptionType,
     )
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.model.person import Person
+from lp.registry.model.teammembership import TeamParticipation
 
 class PersonSubscriptionInfo(object):
     """See `IPersonSubscriptionInfo`."""
@@ -157,6 +160,17 @@ class PersonSubscriptions(object):
 
         return (direct, duplicates)
 
+    def _getAttributeForPillar(self, target, attribute):
+        if IProductSeries.providedBy(target):
+            pillar = target.product
+        elif IDistroSeries.providedBy(target):
+            pillar = target.distribution
+        elif ISourcePackage.providedBy(target):
+            pillar = target.distribution
+        else:
+            pillar = target
+        return getattr(pillar, attribute)
+
     def loadSubscriptionsFor(self, person, bug):
         # Categorise all subscriptions into three types:
         # direct, through duplicates, as supervisor.
@@ -173,19 +187,22 @@ class PersonSubscriptions(object):
             person, bug, PersonSubscriptionType.SUPERVISOR)
         for bugtask in bug.bugtasks:
             target = bugtask.target
-            is_owner = person.inTeam(target.owner)
-            is_supervisor = person.inTeam(target.bug_supervisor)
+            owner = self._getAttributeForPillar(target, "owner")
+            bug_supervisor = self._getAttributeForPillar(
+                target, "bug_supervisor")
+            is_owner = person.inTeam(owner)
+            is_supervisor = person.inTeam(bug_supervisor)
             # If person is a bug supervisor, or there is no
             # supervisor, but person is the team owner.
             if (is_supervisor or
-                (is_owner and target.bug_supervisor is None)):
+                (is_owner and bug_supervisor is None)):
                 # Owner can change the supervisor.
                 if is_owner:
                     supervisor.addOwnedTarget(target)
-                    supervisor.addSubscriber(target.owner)
+                    supervisor.addSubscriber(owner)
                 else:
                     supervisor.addSupervisedTarget(target)
-                    supervisor.addSubscriber(target.bug_supervisor)
+                    supervisor.addSubscriber(bug_supervisor)
                 has_supervisor = True
         if not has_supervisor:
             supervisor = None

@@ -16,34 +16,7 @@
     <div id="maincontent">
       <div id="nonportlets" class="readable">
 
-        <div id="description">
-          <tal:dupe condition="view/is_from_duplicate">
-            <tal:direct condition="not:view/is_through_team">
-              You are directly subscribed to a duplicate.
-            </tal:direct>
-            <tal:team condition="view/is_through_team">
-              You are subscribed to a duplicate through team membership.
-              <tal:admin condition="view/is_team_admin">
-                You are also the admin of that team.
-              </tal:admin>
-            </tal:team>
-          </tal:dupe>
-          <tal:notdupe condition="not:view/is_from_duplicate">
-            <tal:direct condition="view/is_directly_subscribed">
-              <tal:reporter condition="view/is_reporter">
-                You are directly subscribed to this bug as the bug reporter.
-              </tal:reporter>
-              <tal:nonreporter condition="not:view/is_reporter">
-                You are directly subscribed to this bug.
-              </tal:nonreporter>
-            </tal:direct>
-            <tal:team condition="view/is_through_team">
-              You are subscribed through team membership.
-              <tal:admin condition="view/is_team_admin">
-                You are also the admin of that team.
-              </tal:admin>
-            </tal:team>
-          </tal:notdupe>
+        <div id="description" tal:content="view/description">
         </div>
 
       </div>

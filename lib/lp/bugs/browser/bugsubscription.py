@@ -42,6 +42,7 @@ from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.services import features
 from lp.services.propertycache import cachedproperty
 
@@ -555,55 +556,81 @@ class BugSubscriptionListView(LaunchpadView):
 
     page_title = label
 
+    def initialize(self):
+        super(BugSubscriptionListView, self).initialize()
+        if self.user is not None:
+            self.subscriptions_info = PersonSubscriptions(
+                self.user, self.context.bug)
+        else:
+            self.subscriptions_info = None
+
     @property
     def structural_subscriptions(self):
         return getUtility(IBugTaskSet).getAllStructuralSubscriptions(
             self.context.bug.bugtasks, self.user)
 
-    @property
-    def is_directly_subscribed(self):
-        return self.context.bug.isSubscribed(self.user)
+    def _getSupervisedTargets(self):
+        owned = self.subscriptions_info.supervisor_subscriptions.owner_for
+        supervised = (
+            self.subscriptions_info.supervisor_subscriptions.supervisor_for)
+        if owned is None:
+            owned = set()
+        if supervised is None:
+            supervised = set()
+        all_targets = list(owned.union(supervised))
+        target_names = [
+            target.displayname for target in all_targets]
+        target_names = sorted(target_names)
+        if len(target_names) > 1:
+            text = ", ".join(target_names[:-1]) + " and " + target_names[-1]
+        else:
+            text = target_names[0]
+        return text
+
+    def _getDuplicates(self):
+        duplicates = list(
+            self.subscriptions_info.duplicate_subscriptions.duplicates)
+        dupe_names = [
+            "#%d" % dupe.id for dupe in duplicates]
+        dupe_names = sorted(dupe_names)
+        if len(dupe_names) > 1:
+            text = ", ".join(dupe_names[:-1]) + " and " + dupe_names[-1]
+        else:
+            text = dupe_names[0]
+        return text
 
     @property
-    def is_reporter(self):
-        return self.context.bug.owner == self.user
+    def description(self):
+        """Describes all subscriptions that exist in English."""
+        if self.subscriptions_info is None:
+            return u"ERROR: Not logged in"
+        has_direct = (
+            self.subscriptions_info.direct_subscriptions is not None)
+        personally = (
+            self.subscriptions_info.direct_subscriptions.personally)
+        has_duplicate = (
+            self.subscriptions_info.duplicate_subscriptions is not None)
+        has_supervisor = (
+            self.subscriptions_info.supervisor_subscriptions is not None)
 
-    @property
-    def is_from_duplicate(self):
-        return (
-            self.context.bug.isSubscribedToDupes(self.user) or
-            self.context.bug.getSubscribersForPerson(
-                self.user, only_duplicates=True).any())
-
-    @property
-    def is_through_team(self):
-        subscribers = self.context.bug.getSubscribersForPerson(self.user)
-        for subscriber in subscribers:
-            if subscriber.is_team:
-                return True
-        return False
-
-    @property
-    def is_team_admin(self):
-        subscribers = self.context.bug.getSubscribersForPerson(self.user)
-        for subscriber in subscribers:
-            if subscriber.is_team:
-                for admin in subscriber.adminmembers:
-                    if self.user.inTeam(admin):
-                        return True
-        return False
-
-    @property
-    def is_target_owner(self):
-        for bugtask in self.context.bug.bugtasks:
-            if self.user.inTeam(bugtask.target.owner):
-                return True
-        return False
-
-    @property
-    def has_no_supervisor(self):
-        return False
-
-    @property
-    def is_supervisor(self):
-        return False
+        if has_direct and has_duplicate and has_supervisor:
+            if personally:
+                return (
+                    "You are subscribed to this bug directly. "
+                    "However, you are also the bug supervisor for "
+                    "%(supervised_targets)s and have subscriptions "
+                    "on duplicate bugs %(duplicate_bugs)s." % (
+                        {"supervised_targets": self._getSupervisedTargets(),
+                         "duplicate_bugs": self._getDuplicates(),
+                         }))
+            else:
+                return (
+                    "You are subscribed to this bug through team membership. "
+                    "However, you are also the bug supervisor for "
+                    "%(supervised_targets)s and have subscriptions "
+                    "on duplicate bugs %(duplicate_bugs)s." % (
+                        {"supervised_targets": self._getSupervisedTargets(),
+                         "duplicate_bugs": self._getDuplicates(),
+                         }))
+        else:
+            return None

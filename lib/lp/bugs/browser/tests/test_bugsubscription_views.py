@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.launchpad.ftests import LaunchpadFormHarness
 from canonical.testing.layers import LaunchpadFunctionalLayer
 
@@ -296,3 +298,31 @@ class BugSubscriptionsListViewTestCase(TestCaseWithFactory):
                 self.subscriber, self.subscriber)
             self.assertEqual(
                 list(view.structural_subscriptions), [sub])
+
+    def test_subscriptions_info_none(self):
+        # For non-logged-in person, there is no subscriptions info.
+        view = self.getView()
+        self.assertIs(None, view.subscriptions_info)
+
+    def test_subscriptions_info(self):
+        # On view initialization we load the person subscriptions info
+        # as well.
+        with person_logged_in(self.subscriber):
+            view = self.getView()
+            self.assertIsNot(None, view.subscriptions_info)
+
+    def test_description_all_three(self):
+
+        # Add direct subscription and a duplicate bug.
+        with person_logged_in(self.subscriber):
+            self.bug.subscribe(self.subscriber, self.subscriber)
+            dupe = self.factory.makeBug()
+            dupe.markAsDuplicate(self.bug)
+            dupe.subscribe(self.subscriber, self.subscriber)
+
+        # Set as the bug supervisor.
+        removeSecurityProxy(self.product).bug_supervisor = self.subscriber
+
+        with person_logged_in(self.subscriber):
+            view = self.getView()
+            self.assertIsNot(None, view.description)
