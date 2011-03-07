@@ -36,6 +36,10 @@
     <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
   </securedutility>
 
+  <class class=".vocabularies.DistroSeriesDerivationVocabularyFactory">
+    <allow interface="zope.schema.interfaces.IVocabularyTokenized"/>
+  </class>
+
 
   <securedutility
     name="FeaturedProject"
