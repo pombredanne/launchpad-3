@@ -242,6 +242,7 @@ class IHasSpecificationsTests(SpecificationWebserviceTestCase):
         self.factory.makeSpecification(product=product, name="spec2")
         # Need to endInteraction() because launchpadlib_for_anonymous() will
         # setup a new one.
+        import pdb; pdb.set_trace()
         endInteraction()
         lplib = launchpadlib_for('lplib-test', person=None, version='devel')
         ws_product = ws_object(lplib, product)

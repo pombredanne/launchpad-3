@@ -355,8 +355,8 @@ class TestErrorHandling(TestCaseWithFactory):
 
     def test_edit_conjoined_bugtask_gives_bad_request_error(self):
         # Create the conjoined bugtask.
-        bug = self.factory.makeBug()
         product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product)
         conjoined_bugtask = self.factory.makeBugTask(
             bug=bug, target=product.development_focus)
 
@@ -364,7 +364,6 @@ class TestErrorHandling(TestCaseWithFactory):
         launchpad = launchpadlib_for('test', bug.owner)
         lp_task = launchpad.load(api_url(conjoined_bugtask))
         lp_task.status = 'Invalid'
-        lp_task.lp_save()
         self.assertRaisesWithContent(
                 BadRequest,
                 "This task cannot be edited directly, it should be edited "

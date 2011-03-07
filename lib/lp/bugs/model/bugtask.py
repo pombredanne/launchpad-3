@@ -499,6 +499,7 @@ def validate_conjoined_attribute(self, attr, value):
     if self.bug is None:
         return value
 
+    import pdb; pdb.set_trace()
     if self._isConjoinedBugTask():
         raise ConjoinedBugTaskEditError(
             "This task cannot be edited directly, it should be"
@@ -2579,7 +2580,12 @@ class BugTaskSet:
             milestone = None
 
         # Raise a WidgetError if this product bugtask already exists.
-        target = product or productseries or distribution or distroseries
+        sourcepackage = None
+        if sourcepackagename is not None:
+            distro = distribution or distroseries
+            target = distro.getSourcePackage(sourcepackagename)
+        else:
+            target = product or productseries or distribution or distroseries
         valid_upstreamtask(bug, target)
 
         if not bug.private and bug.security_related:

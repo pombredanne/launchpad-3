@@ -326,8 +326,8 @@ def validate_distrotask(bug, distribution, sourcepackagename=None):
         pass
 
 
-def valid_upstreamtask(bug, product):
-    """Check if a product bugtask already exists for a given bug.
+def valid_upstreamtask(bug, bug_target):
+    """Check if a bugtask already exists for a given bug/target.
 
     If it exists, WidgetsError will be raised.
     """
@@ -336,12 +336,12 @@ def valid_upstreamtask(bug, product):
     errors = []
     user = getUtility(ILaunchBag).user
     params = BugTaskSearchParams(user, bug=bug)
-    if not product.searchTasks(params).is_empty():
+    if not bug_target.searchTasks(params).is_empty():
         errors.append(LaunchpadValidationError(_(
-            'A fix for this bug has already been requested for ${product}',
-            mapping={'product': product.displayname})))
+                    'A fix for this bug has already been requested for ${target}',
+                    mapping={'target': bug_target.displayname})))
 
-    if errors:
+    if len(errors) > 0:
         raise expose(WidgetsError(errors), 400)
 
 
