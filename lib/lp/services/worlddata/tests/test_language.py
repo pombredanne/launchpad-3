@@ -80,12 +80,9 @@ class TestTranslatorsCounts(TestCaseWithFactory):
 
     def test_getAllLanguages_can_preload_translators_count(self):
         # LanguageSet.getAllLanguages() can preload translators_count.
-        slave_langs = list(getUtility(ILanguageSet).getAllLanguages(
+        list(getUtility(ILanguageSet).getAllLanguages(
             want_translators_count=True))
         with StormStatementRecorder() as recorder:
-            for lang in slave_langs:
-                if lang == self.translated_lang:
-                    self.assertEquals(3, lang.translators_count)
-                if lang == self.untranslated_lang:
-                    self.assertEquals(0, lang.translators_count)
+            self.assertEquals(3, self.translated_lang.translators_count)
+            self.assertEquals(0, self.untranslated_lang.translators_count)
         self.assertThat(recorder, HasQueryCount(Equals(0)))

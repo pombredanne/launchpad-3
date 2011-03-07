@@ -34,7 +34,10 @@ from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.helpers import ensure_unicode
-from canonical.launchpad.interfaces.lpstorm import ISlaveStore
+from canonical.launchpad.interfaces.lpstorm import (
+    ISlaveStore,
+    IStore,
+    )
 from lp.app.errors import NotFoundError
 from lp.registry.model.karma import (
     KarmaCache,
@@ -161,7 +164,7 @@ class Language(SQLBase):
             Person,
             PersonLanguage,
             )
-        return ISlaveStore(Language).using(
+        return IStore(Language).using(
             Join(
                 Person,
                 LanguageSet._getTranslatorJoins(),
@@ -223,7 +226,7 @@ class LanguageSet:
     def getAllLanguages(self, want_translators_count=False,
                         only_visible=False):
         """See `ILanguageSet`."""
-        result = ISlaveStore(Language).find(
+        result = IStore(Language).find(
                 Language,
                 Language.visible == True if only_visible else True,
             ).order_by(
@@ -232,7 +235,7 @@ class LanguageSet:
             def preload_translators_count(languages):
                 from lp.registry.model.person import PersonLanguage
                 ids = [language.id for language in languages]
-                counts = ISlaveStore(Language).using(
+                counts = IStore(Language).using(
                     LeftJoin(
                         Language,
                         self._getTranslatorJoins(),
