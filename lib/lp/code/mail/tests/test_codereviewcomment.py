@@ -182,7 +182,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
             '-- \n'
             'I am a wacky guy.\n')
         branch_name = mailer.merge_proposal.source_branch.bzr_identity
-        body = mailer._getBody(subscriber)
+        body = mailer._getBody(subscriber.preferredemail.email, subscriber)
         self.assertEqual(body.splitlines()[1:],
             ['-- ', 'I am a wacky guy.', '',
              canonical_url(mailer.merge_proposal),
