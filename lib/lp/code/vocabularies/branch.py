@@ -117,8 +117,8 @@ class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
 class HostedBranchRestrictedOnOwnerVocabulary(BranchVocabularyBase):
     """A vocabulary for hosted branches owned by the current user.
 
-    These are branches that the user is guaranteed to be able to push
-    to.
+    These are branches that the user either owns themselves or which are
+    owned by a team of which the person is a member.
     """
 
     def __init__(self, context=None):
@@ -130,5 +130,5 @@ class HostedBranchRestrictedOnOwnerVocabulary(BranchVocabularyBase):
             self.user = getUtility(ILaunchBag).user
 
     def _getCollection(self):
-        return getUtility(IAllBranches).ownedBy(self.user).withBranchType(
-            BranchType.HOSTED)
+        owned_branches = getUtility(IAllBranches).ownedByTeamMember(self.user)
+        return owned_branches.withBranchType(BranchType.HOSTED)
