@@ -1358,22 +1358,27 @@ class PublishingSet:
         if not needed:
             return []
 
+        def make_insert_values(archive, das, bpr,
+                               (component, section, priority)):
+            return "(%s)" % ', '.join(sqlvalues(
+                get_archive(archive, bpr).id, das.id, pocket, bpr.id,
+                maybe_override_component(
+                    archive, das.distroseries, component).id,
+                section.id, priority, PackagePublishingStatus.PENDING,
+                UTC_NOW))
         insert_head = """
             INSERT INTO BinaryPackagePublishingHistory
             (archive, distroarchseries, pocket, binarypackagerelease,
              component, section, priority, status, datecreated)
             VALUES
             """
-        insert_pub_template = "(%s, %s, %s, %s, %s, %s, %s, %s, %s)"
         insert_pubs = ", ".join(
-            insert_pub_template % sqlvalues(
-                get_archive(archive, bpr).id, das.id, pocket, bpr.id,
-                component.id, section.id, priority,
-                PackagePublishingStatus.PENDING, UTC_NOW) for
-                (das, bpr, (component, section, priority)) in needed)
+            make_insert_values(archive, das, bpr, overrides)
+            for (das, bpr, overrides) in needed)
         insert_tail = " RETURNING BinaryPackagePublishingHistory.id"
         new_ids = IMasterStore(BinaryPackagePublishingHistory).execute(
             insert_head + insert_pubs + insert_tail)
+
         publications = IMasterStore(BinaryPackagePublishingHistory).find(
             BinaryPackagePublishingHistory,
             BinaryPackagePublishingHistory.id.is_in(id[0] for id in new_ids))
