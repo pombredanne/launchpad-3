@@ -12,9 +12,9 @@ __all__ = [
 
 from storm.locals import (
     Int,
+    RawStr,
     Reference,
     Storm,
-    RawStr,
     )
 from zope.interface import implements
 
