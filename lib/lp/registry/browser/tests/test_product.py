@@ -23,6 +23,7 @@ from lp.registry.interfaces.product import (
     )
 from lp.testing import (
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.mail_helpers import pop_notifications
@@ -169,3 +170,28 @@ class TestProductAddView(TestCaseWithFactory):
         view = create_initialized_view(self.product_set, '+new')
         message = find_tag_by_id(view.render(), 'staging-message')
         self.assertEqual(None, message)
+
+
+class TestProductView(TestCaseWithFactory):
+    """Tests the ProductView."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestProductView, self).setUp()
+        self.product = self.factory.makeProduct()
+
+    def test_show_programming_languages_false(self):
+        # show_programming_languages is false when there are no programming
+        # languages set.
+        view = create_initialized_view(self.product, '+index')
+        self.assertEqual(None, self.product.programminglang)
+        self.assertFalse(view.show_programming_languages)
+
+    def test_show_programming_languages_true(self):
+        # show_programming_languages is true when programming languages
+        # are set.
+        with person_logged_in(self.product.owner):
+            self.product.programminglang = 'C++'
+        view = create_initialized_view(self.product, '+index')
+        self.assertTrue(view.show_programming_languages)
