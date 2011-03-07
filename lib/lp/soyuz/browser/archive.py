@@ -35,6 +35,7 @@ from urlparse import urlparse
 
 import pytz
 from sqlobject import SQLObjectNotFound
+from storm.expr import Desc
 from storm.zope.interfaces import IResultSet
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
@@ -150,6 +151,7 @@ from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     )
 from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.scripts.packagecopier import do_copy
 
 
@@ -573,7 +575,7 @@ class ArchiveViewBase(LaunchpadView):
         the view to determine whether to display "This PPA does not yet
         have any published sources" or "No sources matching 'blah'."
         """
-        return bool(self.context.getPublishedSources())
+        return not self.context.getPublishedSources().is_empty()
 
     @cachedproperty
     def repository_usage(self):
@@ -924,13 +926,8 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
         """Return the last five published sources for this archive."""
         sources = self.context.getPublishedSources(
             status=PackagePublishingStatus.PUBLISHED)
-
-        # We adapt the ISQLResultSet into a normal storm IResultSet so we
-        # can re-order and limit the results (orderBy is not included on
-        # the ISQLResultSet interface). Because this query contains
-        # pre-joins, the result of the adaption is a set of tuples.
-        result_tuples = IResultSet(sources)
-        result_tuples = result_tuples.order_by('datepublished DESC')[:5]
+        sources.order_by(Desc(SourcePackagePublishingHistory.datepublished))
+        result_tuples = sources[:5]
 
         # We want to return a list of dicts for easy template rendering.
         latest_updates_list = []
@@ -948,7 +945,7 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
             }
 
         now = datetime.now(tz=pytz.UTC)
-        source_ids = [result_tuple[0].id for result_tuple in result_tuples]
+        source_ids = [result_tuple.id for result_tuple in result_tuples]
         summaries = getUtility(
             IPublishingSet).getBuildStatusSummariesForSourceIdsAndArchive(
                 source_ids, self.context)
@@ -981,11 +978,8 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
         """Return the number of updates over the past days."""
         now = datetime.now(tz=pytz.UTC)
         created_since = now - timedelta(num_days)
-
-        sources = self.context.getPublishedSources(
-            created_since_date=created_since)
-
-        return sources.count()
+        return self.context.getPublishedSources(
+            created_since_date=created_since).count()
 
     @property
     def num_pkgs_building(self):
@@ -1941,7 +1935,7 @@ class ArchiveAdminView(BaseArchiveEditView):
 
         if data.get('private') != self.context.private:
             # The privacy is being switched.
-            if bool(self.context.getPublishedSources()):
+            if not self.context.getPublishedSources().is_empty():
                 self.setFieldError(
                     'private',
                     'This archive already has published sources. It is '
