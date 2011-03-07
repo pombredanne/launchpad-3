@@ -3394,7 +3394,6 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
     many_bugtasks = False
 
     def __init__(self, context, request):
-        """Ensure we always have a bug context."""
         super(BugTaskTableRowView, self).__init__(context, request)
         self.milestone_source = MilestoneVocabulary
 
