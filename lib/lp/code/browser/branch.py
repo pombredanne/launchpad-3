@@ -613,7 +613,7 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
     def revision_info(self):
         collection = getUtility(IAllBranches).visibleByUser(self.user)
         return collection.getExtendedRevisionDetails(
-            self.context.latest_revisions)
+            self.user, self.context.latest_revisions)
 
     @cachedproperty
     def latest_code_import_results(self):
