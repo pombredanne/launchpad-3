@@ -234,7 +234,8 @@ class LanguageSet:
         if want_translators_count:
             def preload_translators_count(languages):
                 from lp.registry.model.person import PersonLanguage
-                ids = [language.id for language in languages]
+                ids = set(language.id for language in languages).difference(
+                    set([None]))
                 counts = IStore(Language).using(
                     LeftJoin(
                         Language,
