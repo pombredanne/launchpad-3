@@ -53,6 +53,7 @@ from lp.soyuz.interfaces.publishing import (
     PackagePublishingPriority,
     PackagePublishingStatus,
     )
+from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.model.publishing import (
@@ -1399,3 +1400,113 @@ class TestGetBuiltBinaries(TestNativePublishingBase):
                 for bpf in files:
                     bpf.libraryfile.filename
         self.assertThat(recorder, HasQueryCount(Equals(5)))
+
+
+class TestPublishBinaries(TestCaseWithFactory):
+    """Test PublishingSet.publishBinary() works."""
+
+    layer = LaunchpadZopelessLayer
+
+    def makeArgs(self, bprs, distroseries, archive=None):
+        """Create a dict of arguments for publishBinary."""
+        if archive is None:
+            archive = distroseries.main_archive
+        return {
+            'archive': archive,
+            'distroseries': distroseries,
+            'pocket': PackagePublishingPocket.BACKPORTS,
+            'binaries': dict(
+                (bpr, (self.factory.makeComponent(),
+                 self.factory.makeSection(),
+                 PackagePublishingPriority.REQUIRED)) for bpr in bprs),
+            }
+
+    def test_architecture_dependent(self):
+        # Architecture-dependent binaries get created as PENDING in the
+        # corresponding architecture of the destination series and pocket,
+        # with the given overrides.
+        arch_tag = self.factory.getUniqueString('arch-')
+        orig_das = self.factory.makeDistroArchSeries(
+            architecturetag=arch_tag)
+        target_das = self.factory.makeDistroArchSeries(
+            architecturetag=arch_tag)
+        build = self.factory.makeBinaryPackageBuild(distroarchseries=orig_das)
+        bpr = self.factory.makeBinaryPackageRelease(
+            build=build, architecturespecific=True)
+        args = self.makeArgs([bpr], target_das.distroseries)
+        [bpph] = getUtility(IPublishingSet).publishBinaries(**args)
+        overrides = args['binaries'][bpr]
+        self.assertEqual(bpr, bpph.binarypackagerelease)
+        self.assertEqual(
+            (args['archive'], target_das, args['pocket']),
+            (bpph.archive, bpph.distroarchseries, bpph.pocket))
+        self.assertEqual(
+            overrides, (bpph.component, bpph.section, bpph.priority))
+        self.assertEqual(PackagePublishingStatus.PENDING, bpph.status)
+
+    def test_architecture_independent(self):
+        # Architecture-independent binaries get published to all enabled
+        # DASes in the series.
+        bpr = self.factory.makeBinaryPackageRelease(
+            architecturespecific=False)
+        # Create 3 architectures. The binary will not be published in
+        # the disabled one.
+        target_das_a = self.factory.makeDistroArchSeries()
+        target_das_b = self.factory.makeDistroArchSeries(
+            distroseries=target_das_a.distroseries)
+        target_das_c = self.factory.makeDistroArchSeries(
+            distroseries=target_das_a.distroseries, enabled=False)
+        args = self.makeArgs([bpr], target_das_a.distroseries)
+        bpphs = getUtility(IPublishingSet).publishBinaries(
+            **args)
+        self.assertEquals(2, len(bpphs))
+        self.assertEquals(
+            set((target_das_a, target_das_b)),
+            set(bpph.distroarchseries for bpph in bpphs))
+
+    def test_does_not_duplicate(self):
+        # An attempt to copy something for a second time is ignored.
+        bpr = self.factory.makeBinaryPackageRelease()
+        target_das = self.factory.makeDistroArchSeries()
+        args = self.makeArgs([bpr], target_das.distroseries)
+        [new_bpph] = getUtility(IPublishingSet).publishBinaries(**args)
+        [] = getUtility(IPublishingSet).publishBinaries(**args)
+
+        # But changing the target (eg. to RELEASE instead of BACKPORTS)
+        # causes a new publication to be created.
+        args['pocket'] = PackagePublishingPocket.RELEASE
+        [another_bpph] = getUtility(IPublishingSet).publishBinaries(**args)
+
+    def test_ddebs_need_debug_archive(self):
+        debug = self.factory.makeBinaryPackageRelease(
+            binpackageformat=BinaryPackageFormat.DDEB)
+        args = self.makeArgs(
+            [debug], debug.build.distro_arch_series.distroseries)
+        self.assertRaises(
+            QueueInconsistentStateError,
+            getUtility(IPublishingSet).publishBinaries, **args)
+
+    def test_ddebs_go_to_debug_archive(self):
+        # Normal packages go to the given archive, but debug packages go
+        # to the corresponding debug archive.
+        das = self.factory.makeDistroArchSeries()
+        self.factory.makeArchive(
+            purpose=ArchivePurpose.DEBUG,
+            distribution=das.distroseries.distribution)
+        build = self.factory.makeBinaryPackageBuild(distroarchseries=das)
+        normal = self.factory.makeBinaryPackageRelease(build=build)
+        debug = self.factory.makeBinaryPackageRelease(
+            build=build, binpackageformat=BinaryPackageFormat.DDEB)
+        args = self.makeArgs([normal, debug], das.distroseries)
+        bpphs = getUtility(IPublishingSet).publishBinaries(**args)
+        self.assertEquals(2, len(bpphs))
+        self.assertEquals(
+            set((normal, debug)),
+            set(bpph.binarypackagerelease for bpph in bpphs))
+        self.assertEquals(
+            set((das.main_archive, das.main_archive.debug_archive)),
+            set(bpph.archive for bpph in bpphs))
+
+        # A second copy does nothing, because it checks in the debug
+        # archive too.
+        [] = getUtility(IPublishingSet).publishBinaries(**args)
