@@ -1500,7 +1500,12 @@ class DistroSeriesDerivationVocabularyFactory:
 
     def __init__(self, context):
         """See `IVocabularyFactory.__call__`."""
-        distribution = IDistribution(context)
+        self.context = context
+
+    @cachedproperty
+    def terms(self):
+        """Terms for the series the context can derive from, in order."""
+        distribution = IDistribution(self.context)
         all_serieses = getUtility(IDistroSeriesSet).search()
         context_serieses = set(distribution)
         if len(context_serieses) == 0:
@@ -1525,15 +1530,18 @@ class DistroSeriesDerivationVocabularyFactory:
             serieses, key=lambda series: (
                 series.distribution.displayname,
                 reference - series.date_created))
-        self.terms = [
-            DistroSeriesVocabulary.toTerm(series) for series in serieses]
+        return tuple(
+            DistroSeriesVocabulary.toTerm(series)
+            for series in serieses)
 
     @cachedproperty
     def terms_by_value(self):
+        """Mapping of terms by value."""
         return dict((term.value, term) for term in self.terms)
 
     @cachedproperty
     def terms_by_token(self):
+        """Mapping of terms by token."""
         return dict((term.token, term) for term in self.terms)
 
     def __iter__(self):
