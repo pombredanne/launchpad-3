@@ -5,7 +5,6 @@ __metaclass__ = type
 __all__ = [
     'add_bug_change_notifications',
     'get_bug_delta',
-    'get_bugtask_indirect_subscribers',
     'notify_bug_attachment_added',
     'notify_bug_attachment_removed',
     'notify_bug_comment_added',
@@ -39,6 +38,7 @@ from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.mail.bugnotificationbuilder import BugNotificationBuilder
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.mail.newbug import generate_bug_add_email
+from lp.bugs.model.bug import get_also_notified_subscribers
 from lp.registry.interfaces.person import IPerson
 
 
@@ -146,46 +146,6 @@ def get_bug_delta(old_bug, new_bug, user):
         return None
 
 
-def get_bugtask_indirect_subscribers(bugtask, recipients=None, level=None):
-    """Return the indirect subscribers for a bug task.
-
-    Return the list of people who should get notifications about
-    changes to the task because of having an indirect subscription
-    relationship with it (by subscribing to its target, being an
-    assignee or owner, etc...)
-
-    If `recipients` is present, add the subscribers to the set of
-    bug notification recipients.
-    """
-    if bugtask.bug.private:
-        return set()
-
-    also_notified_subscribers = set()
-
-    # Assignees are indirect subscribers.
-    if bugtask.assignee:
-        also_notified_subscribers.add(bugtask.assignee)
-        if recipients is not None:
-            recipients.addAssignee(bugtask.assignee)
-
-    # Get structural subscribers.
-    also_notified_subscribers.update(
-        getUtility(IBugTaskSet).getStructuralSubscribers(
-            [bugtask], recipients, level))
-
-    # If the target's bug supervisor isn't set,
-    # we add the owner as a subscriber.
-    pillar = bugtask.pillar
-    if pillar.bug_supervisor is None and pillar.official_malone:
-        also_notified_subscribers.add(pillar.owner)
-        if recipients is not None:
-            recipients.addRegistrant(pillar.owner, pillar)
-
-    return sorted(
-        also_notified_subscribers,
-        key=attrgetter('displayname'))
-
-
 def add_bug_change_notifications(bug_delta, old_bugtask=None,
                                  new_subscribers=None):
     """Generate bug notifications and add them to the bug."""
@@ -195,7 +155,7 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None,
         level=BugNotificationLevel.METADATA)
     if old_bugtask is not None:
         old_bugtask_recipients = BugNotificationRecipients()
-        get_bugtask_indirect_subscribers(
+        get_also_notified_subscribers(
             old_bugtask, recipients=old_bugtask_recipients,
             level=BugNotificationLevel.METADATA)
         recipients.update(old_bugtask_recipients)

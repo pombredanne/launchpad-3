@@ -499,7 +499,7 @@ class IBug(IPrivacy, IHasLinkedBranches):
         dupes, etc.
         """
 
-    def getAlsoNotifiedSubscribers():
+    def getAlsoNotifiedSubscribers(recipients=None, level=None):
         """Return IPersons in the "Also notified" subscriber list.
 
         This includes bug contacts and assignees, but not subscribers
