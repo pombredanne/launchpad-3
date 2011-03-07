@@ -216,11 +216,17 @@ class LanguageSet:
 
     def getDefaultLanguages(self, want_translators_count=False):
         """See `ILanguageSet`."""
-        return self.getAllLanguages(want_translators_count).find(visible=True)
+        return self.getAllLanguages(
+            want_translators_count=want_translators_count,
+            only_visible=True)
 
-    def getAllLanguages(self, want_translators_count=False):
+    def getAllLanguages(self, want_translators_count=False,
+                        only_visible=False):
         """See `ILanguageSet`."""
-        result = ISlaveStore(Language).find(Language).order_by(
+        result = ISlaveStore(Language).find(
+                Language,
+                Language.visible == True if only_visible else True,
+            ).order_by(
             Language.englishname)
         if want_translators_count:
             def preload_translators_count(languages):
