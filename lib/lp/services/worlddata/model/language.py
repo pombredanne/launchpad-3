@@ -1,5 +1,6 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
-# GNU Affero General Public License version 3 (see the file LICENSE).
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under
+# the GNU Affero General Public License version 3 (see the file
+# LICENSE).
 
 # pylint: disable-msg=E0611,W0212
 
@@ -17,8 +18,10 @@ from sqlobject import (
     SQLRelatedJoin,
     StringCol,
     )
-from storm.locals import (
+from storm.expr import (
+    And,
     Count,
+    LeftJoin,
     Or,
     )
 from zope.interface import implements
@@ -206,17 +209,29 @@ class LanguageSet:
         if want_translators_count:
             def preload_translators_count(languages):
                 from lp.registry.model.person import PersonLanguage
-                counts = ISlaveStore(Language).find(
-                    (PersonLanguage.language, Count(PersonLanguage)),
-                    PersonLanguage.language.is_in(languages),
-                    PersonLanguage.personID == KarmaCache.person,
-                    KarmaCache.product == None,
-                    KarmaCache.project == None,
-                    KarmaCache.sourcepackagename == None,
-                    KarmaCache.distribution == None,
-                    KarmaCache.categoryID == KarmaCategory.id,
-                    KarmaCategory.name == 'translations').group_by(
-                        PersonLanguage.language)
+                ids = [language.id for language in languages]
+                counts = ISlaveStore(Language).using(
+                    Language,
+                    LeftJoin(
+                        KarmaCategory,
+                        KarmaCategory.name == 'translations'),
+                    LeftJoin(
+                        KarmaCache,
+                        And(
+                            KarmaCache.productID == None,
+                            KarmaCache.projectID == None,
+                            KarmaCache.sourcepackagenameID == None,
+                            KarmaCache.distributionID == None,
+                            KarmaCache.categoryID == KarmaCategory.id)),
+                    LeftJoin(
+                        PersonLanguage,
+                        And(
+                            PersonLanguage.languageID == Language.id,
+                            PersonLanguage.personID == KarmaCache.personID)),
+                    ).find(
+                    (Language, Count(PersonLanguage)),
+                    Language.id.is_in(ids),
+                    ).group_by(Language)
                 for language, count in counts:
                     get_property_cache(language).translators_count = count
             return DecoratedResultSet(
