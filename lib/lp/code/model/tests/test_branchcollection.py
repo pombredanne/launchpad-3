@@ -251,7 +251,8 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         branch2 = self.factory.makeProductBranch(product=product, owner=team)
         branch3 = self.factory.makeAnyBranch(owner=person)
         branch4 = self.factory.makeProductBranch(product=product)
-        collection = self.all_branches.inProduct(product).ownedBy(person)
+        collection = self.all_branches.inProduct(
+                                    product).ownedByTeamMember(person)
         self.assertEqual(
             set([branch, branch2]), set(collection.getBranches()))
         collection = self.all_branches.ownedBy(
