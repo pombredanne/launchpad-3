@@ -17,7 +17,10 @@ from sqlobject import (
     SQLRelatedJoin,
     StringCol,
     )
-from storm.locals import Or
+from storm.locals import (
+    Count,
+    Or,
+    )
 from zope.interface import implements
 
 from canonical.database.enumcol import EnumCol
@@ -25,9 +28,20 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.helpers import ensure_unicode
 from canonical.launchpad.interfaces.lpstorm import ISlaveStore
 from lp.app.errors import NotFoundError
+from lp.registry.model.karma import (
+    KarmaCache,
+    KarmaCategory,
+    )
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.services.worlddata.interfaces.language import (
     ILanguage,
     ILanguageSet,
@@ -38,6 +52,7 @@ from lp.services.worlddata.interfaces.language import (
 # unusable without spokenin being imported first. So, import spokenin.
 from lp.services.worlddata.model.spokenin import SpokenIn
 SpokenIn
+
 
 class Language(SQLBase):
     implements(ILanguage)
@@ -160,7 +175,7 @@ class Language(SQLBase):
             clauseTables=[
                 'PersonLanguage', 'KarmaCache', 'KarmaCategory'])
 
-    @property
+    @cachedproperty
     def translators_count(self):
         """See `ILanguage`."""
         return self.translators.count()
@@ -180,14 +195,33 @@ class LanguageSet:
         """See `ILanguageSet`."""
         return iter(self._visible_languages)
 
-    def getDefaultLanguages(self):
+    def getDefaultLanguages(self, want_translators_count=False):
         """See `ILanguageSet`."""
-        return self._visible_languages
+        return self.getAllLanguages(want_translators_count).find(visible=True)
 
-    def getAllLanguages(self):
+    def getAllLanguages(self, want_translators_count=False):
         """See `ILanguageSet`."""
-        return ISlaveStore(Language).find(Language).order_by(
+        result = ISlaveStore(Language).find(Language).order_by(
             Language.englishname)
+        if want_translators_count:
+            def preload_translators_count(languages):
+                from lp.registry.model.person import PersonLanguage
+                counts = ISlaveStore(Language).find(
+                    (PersonLanguage.language, Count(PersonLanguage)),
+                    PersonLanguage.language.is_in(languages),
+                    PersonLanguage.personID == KarmaCache.person,
+                    KarmaCache.product == None,
+                    KarmaCache.project == None,
+                    KarmaCache.sourcepackagename == None,
+                    KarmaCache.distribution == None,
+                    KarmaCache.categoryID == KarmaCategory.id,
+                    KarmaCategory.name == 'translations').group_by(
+                        PersonLanguage.language)
+                for language, count in counts:
+                    get_property_cache(language).translators_count = count
+            return DecoratedResultSet(
+                result, pre_iter_hook=preload_translators_count)
+        return result
 
     def __iter__(self):
         """See `ILanguageSet`."""
