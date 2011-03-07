@@ -70,7 +70,5 @@ class UserCannotUnsubscribePerson(Unauthorized):
     """User does not have persmisson to unsubscribe person or team."""
 
 
-# Slam a 401 response code onto all Unauthorized and
-# ForbiddenAttribute errors.
-error_status(401)(Unauthorized)
+# Slam a 401 response code onto all ForbiddenAttribute errors.
 error_status(401)(ForbiddenAttribute)
