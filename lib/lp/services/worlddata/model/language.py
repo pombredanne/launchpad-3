@@ -21,6 +21,7 @@ from sqlobject import (
 from storm.expr import (
     And,
     Count,
+    Join,
     LeftJoin,
     Or,
     )
@@ -211,23 +212,26 @@ class LanguageSet:
                 from lp.registry.model.person import PersonLanguage
                 ids = [language.id for language in languages]
                 counts = ISlaveStore(Language).using(
-                    Language,
                     LeftJoin(
-                        KarmaCategory,
-                        KarmaCategory.name == 'translations'),
-                    LeftJoin(
-                        KarmaCache,
+                        Language,
+                        Join(
+                            PersonLanguage,
+                            Join(
+                                KarmaCache,
+                                KarmaCategory,
+                                And(
+                                    KarmaCache.categoryID == KarmaCategory.id,
+                                    KarmaCategory.name == 'translations')),
+                            And(
+                                PersonLanguage.personID ==
+                                    KarmaCache.personID,
+                                KarmaCache.productID == None,
+                                KarmaCache.projectID == None,
+                                KarmaCache.sourcepackagenameID == None,
+                                KarmaCache.distributionID == None)),
                         And(
-                            KarmaCache.productID == None,
-                            KarmaCache.projectID == None,
-                            KarmaCache.sourcepackagenameID == None,
-                            KarmaCache.distributionID == None,
-                            KarmaCache.categoryID == KarmaCategory.id)),
-                    LeftJoin(
-                        PersonLanguage,
-                        And(
-                            PersonLanguage.languageID == Language.id,
-                            PersonLanguage.personID == KarmaCache.personID)),
+                            PersonLanguage.languageID ==
+                                Language.id)),
                     ).find(
                     (Language, Count(PersonLanguage)),
                     Language.id.is_in(ids),
