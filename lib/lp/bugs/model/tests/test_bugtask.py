@@ -8,17 +8,9 @@ from doctest import DocTestSuite
 import unittest
 
 from lazr.lifecycle.snapshot import Snapshot
-from storm.store import (
-    EmptyResultSet,
-    ResultSet,
-    )
-from testtools.matchers import (
-    Equals,
-    StartsWith,
-    )
+from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.interface import providedBy
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -32,7 +24,6 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.app.enums import ServiceUsage
-from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
@@ -45,7 +36,6 @@ from lp.bugs.interfaces.bugtask import (
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
-from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugtask import build_tag_search_clause
 from lp.bugs.tests.bug import (
     create_old_bug,
@@ -72,10 +62,7 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
-from lp.testing.factory import (
-    is_security_proxied_or_harmless,
-    LaunchpadObjectFactory,
-    )
+from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.matchers import HasQueryCount
 
 
