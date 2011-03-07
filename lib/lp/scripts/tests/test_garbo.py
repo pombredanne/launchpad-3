@@ -636,6 +636,7 @@ class TestGarbo(TestCaseWithFactory):
         self.assertEqual(1, count)
 
     def test_populateSPRChangelogs(self):
+        # We set SPR.changelog for imported records from Debian.
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         sid = getUtility(IDistributionSet)['debian']['sid']
         spn = self.factory.makeSourcePackageName('9wm')
