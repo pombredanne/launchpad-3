@@ -15,9 +15,6 @@ __all__ = [
 
 
 import datetime
-from operator import attrgetter
-
-from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
@@ -34,7 +31,6 @@ from lp.bugs.adapters.bugchange import (
     )
 from lp.bugs.adapters.bugdelta import BugDelta
 from lp.bugs.enum import BugNotificationLevel
-from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.mail.bugnotificationbuilder import BugNotificationBuilder
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.mail.newbug import generate_bug_add_email

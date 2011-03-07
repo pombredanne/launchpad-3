@@ -744,9 +744,10 @@ def _get_structural_subscription_filter_id_query(
     # can just return the query, and leave the candidates out of it.
     return candidates, query
 
+
 def _calculate_bugtask_condition(query_arguments):
     """Return a condition matching importance and status for the bugtasks.
-    
+
     :param query_arguments: an iterable of (bugtask, target) pairs, as
                             returned by get_structural_subscription_targets.
     """
@@ -800,7 +801,7 @@ def _calculate_bugtask_condition(query_arguments):
 
 def _calculate_tag_query(tables, conditions, tags):
     """Determine tag-related conditions and assemble a query.
-    
+
     :param tables: the tables and joins to use in the query.
     :param conditions: the other conditions that constrain the query.
     :param tags: the list of tags that the bug has.
@@ -869,7 +870,7 @@ def _calculate_tag_query(tables, conditions, tags):
                           BugSubscriptionFilterTag.tag == None))),
                 *conditions))
         # We have our first clause.  Now we start on the second one:
-        # handling filters that match *all* tags. 
+        # handling filters that match *all* tags.
         # This second query will have a HAVING clause, which is where some
         # tricky bits happen. We first make a SQL snippet that
         # represents the tags on this bug.  It is straightforward
