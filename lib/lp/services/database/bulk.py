@@ -11,7 +11,6 @@ __all__ = [
 
 from collections import defaultdict
 
-from storm.base import Storm
 from storm.info import get_cls_info
 from storm.store import Store
 from zope.security.proxy import removeSecurityProxy
@@ -43,10 +42,6 @@ def get_type(thing):
 def gen_reload_queries(objects):
     """Prepare queries to reload the given objects."""
     for object_type, objects in collate(objects, get_type):
-        if not issubclass(object_type, Storm):
-            raise AssertionError(
-                "Cannot load objects of type %s: %r" % (
-                    object_type.__name__, objects))
         primary_key = get_cls_info(object_type).primary_key
         if len(primary_key) != 1:
             raise AssertionError(
@@ -68,10 +63,6 @@ def reload(objects):
 
 def load(object_type, primary_keys, store=None):
     """Load a large number of objects efficiently."""
-    if not issubclass(object_type, Storm):
-        raise AssertionError(
-            "Cannot load objects of type %s." % (
-                object_type.__name__,))
     primary_key = get_cls_info(object_type).primary_key
     if len(primary_key) != 1:
         raise AssertionError(
