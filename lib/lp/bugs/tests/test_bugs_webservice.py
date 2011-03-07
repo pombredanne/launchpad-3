@@ -335,9 +335,23 @@ class TestPostBugWithLargeCollections(TestCaseWithFactory):
             snapshot.HARD_LIMIT_FOR_SNAPSHOT = real_hard_limit_for_snapshot
 
 
-class TestEditConjoinedBugtask(TestCaseWithFactory):
+class TestErrorHandling(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def test_add_bugtask_for_project_that_already_has_one_gives_bad_request(self):
+        bug = self.factory.makeBug()
+        product = self.factory.makeProduct()
+        bugtask = self.factory.makeBugTask(bug=bug, target=product)
+
+        launchpad = launchpadlib_for('test', bug.owner)
+        lp_bug = launchpad.load(api_url(bug))
+        exception = self.assertRaises(
+            BadRequest, lp_bug.addTask, target=api_url(product))
+        # self.assertThat(partial(callable, target='bar'), Raises(MatchesException(AssertionError('the target must be foo')))
+        # raises(foo ) -> Raises(MatchesException(foo))
+        #'A fix for this bug has already been requested',
+
 
     def test_edit_conjoined_bugtask_gives_bad_request_error(self):
         # Create the conjoined bugtask.
@@ -350,10 +364,9 @@ class TestEditConjoinedBugtask(TestCaseWithFactory):
         launchpad = launchpadlib_for('test', bug.owner)
         lp_task = launchpad.load(api_url(conjoined_bugtask))
         lp_task.status = 'Invalid'
-        try:
-            lp_task.lp_save()
-        except BadRequest, e:
-            self.assertEquals(
-                e.contents,
+        lp_task.lp_save()
+        self.assertRaisesWithContent(
+                BadRequest,
                 "This task cannot be edited directly, it should be edited "
-                "through its conjoined_master.")
+                "through its conjoined_master.",
+                lp_task.lp_save)

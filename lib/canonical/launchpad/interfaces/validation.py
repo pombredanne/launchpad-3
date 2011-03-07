@@ -29,6 +29,8 @@ import urllib
 from zope.app.form.interfaces import WidgetsError
 from zope.component import getUtility
 
+from lazr.restful.error import expose
+
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.emailaddress import (
@@ -340,7 +342,7 @@ def valid_upstreamtask(bug, product):
             mapping={'product': product.displayname})))
 
     if errors:
-        raise WidgetsError(errors)
+        raise expose(WidgetsError(errors), 400)
 
 
 def valid_password(password):

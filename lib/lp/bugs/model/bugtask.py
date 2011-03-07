@@ -85,6 +85,7 @@ from canonical.launchpad.components.decoratedresultset import (
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.interfaces.validation import valid_upstreamtask
 from canonical.launchpad.searchbuilder import (
     all,
     any,
@@ -2576,6 +2577,10 @@ class BugTaskSet:
             assignee = None
         if not milestone:
             milestone = None
+
+        # Raise a WidgetError if this product bugtask already exists.
+        target = product or productseries or distribution or distroseries
+        valid_upstreamtask(bug, target)
 
         if not bug.private and bug.security_related:
             if product and product.security_contact:
