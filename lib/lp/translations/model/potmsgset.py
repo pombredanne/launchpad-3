@@ -394,7 +394,7 @@ class POTMsgSet(SQLBase):
         in_use_clause = (
             "(is_current_ubuntu IS TRUE OR is_current_upstream IS TRUE)")
         # Present a list of language + usage constraints to sql. A language
-        # can either be unconstrainted, used, or suggested depending on which
+        # can either be unconstrained, used, or suggested depending on which
         # of suggested_languages, used_languages it appears in.
         suggested_languages = set(suggested_languages)
         used_languages = set(used_languages)
@@ -475,11 +475,11 @@ class POTMsgSet(SQLBase):
             suggested_languages=suggested_languages,
             used_languages=used_languages):
             in_use = message.is_current_ubuntu or message.is_current_upstream
-            language = result[message.language]
+            language_result = result[message.language]
             if in_use:
-                language.used.append(message)
+                language_result.used.append(message)
             else:
-                language.suggested.append(message)
+                language_result.suggested.append(message)
         return result
 
     @property
