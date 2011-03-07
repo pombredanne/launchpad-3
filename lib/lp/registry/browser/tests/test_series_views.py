@@ -24,7 +24,6 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
-from lp.registry.interfaces.person import IPersonSet
 from lp.services.features.flags import FeatureController
 from lp.services.features.model import (
     FeatureFlag,
@@ -90,18 +89,20 @@ def set_derived_series_ui_feature_flag(test_case):
 
 
 class DistroSeriesLocalPackageDiffsPageTestCase(TestCaseWithFactory):
+    """Test the distroseries +localpackagediffs page."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(DistroSeriesLocalPackageDiffsPageTestCase,
               self).setUp('foo.bar@canonical.com')
+        set_derived_series_ui_feature_flag(self)
+        self.simple_user = self.factory.makePerson()
 
     def test_filter_form_if_differences(self):
-        # Test page includes the filter form if differences are present
-        admin = getUtility(IPersonSet).getByEmail(
-            'admin@canonical.com')
-        login_person(admin)
+        # Test that the page includes the filter form if differences
+        # are present
+        login_person(self.simple_user)
         derived_series = self.factory.makeDistroSeries(
             name='derilucid', parent_series=self.factory.makeDistroSeries(
                 name='lucid'))
@@ -109,9 +110,28 @@ class DistroSeriesLocalPackageDiffsPageTestCase(TestCaseWithFactory):
             derived_series=derived_series)
 
         view = create_initialized_view(
-            derived_series, '+localpackagediffs', principal=admin)
+            derived_series, '+localpackagediffs', principal=self.simple_user)
 
-        find_tag_by_id(view.render(), 'distroseries-localdiff-search-filter')
+        self.assertIsNot(
+            None,
+            find_tag_by_id(view(), 'distroseries-localdiff-search-filter'),
+            "Form filter should be show when there is differences.")
+
+    def test_filter_noform_if_nodifferences(self):
+        # Test that the page doesn't includes the filter form if no
+        # differences are present
+        login_person(self.simple_user)
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
+
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs', principal=self.simple_user)
+
+        self.assertIs(
+            None,
+            find_tag_by_id(view(), 'distroseries-localdiff-search-filter'),
+            "Form filter should not be show when there is no differences.")
 
 
 class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
@@ -249,6 +269,56 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
 class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
+
+    def test_batch_filtered(self):
+        # The name_filter parameter allows to filter packages by name.
+        set_derived_series_ui_feature_flag(self)
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
+        diff1 = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            source_package_name_str="my-src-package")
+        diff2 = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            source_package_name_str="my-second-src-package")
+
+        filtered_view = create_initialized_view(
+            derived_series,
+            '+localpackagediffs',
+            query_string='field.name_filter=my-src')
+        unfiltered_view = create_initialized_view(
+            derived_series,
+            '+localpackagediffs')
+
+        self.assertContentEqual(
+            [diff1], filtered_view.cached_differences.batch)
+        self.assertContentEqual(
+            [diff2, diff1], unfiltered_view.cached_differences.batch)
+
+    def test_batch_blacklisted(self):
+        # The include_blacklisted_filter parameter allows to list
+        # blacklisted packages.
+        set_derived_series_ui_feature_flag(self)
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
+        blacklisted_diff = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
+
+        blacklisted_view = create_initialized_view(
+            derived_series,
+            '+localpackagediffs',
+            query_string='field.include_blacklisted_filter=on')
+        unblacklisted_view = create_initialized_view(
+            derived_series,
+            '+localpackagediffs')
+
+        self.assertContentEqual(
+            [blacklisted_diff], blacklisted_view.cached_differences.batch)
+        self.assertContentEqual(
+            [], unblacklisted_view.cached_differences.batch)
 
     def test_canPerformSync_non_editor(self):
         # Non-editors do not see options to sync.
