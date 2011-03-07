@@ -122,7 +122,7 @@ def makePoolPath(source_name, component_name):
         'pool', poolify(source_name, component_name))
 
 
-def maybe_override_component(archive, distroseries, component):
+def get_component(archive, distroseries, component):
     """Override the component to fit in the archive, if possible.
 
     If the archive has a default component, and it forbids use of the
@@ -1358,14 +1358,6 @@ class PublishingSet:
         if not needed:
             return []
 
-        def make_insert_values(archive, das, bpr,
-                               (component, section, priority)):
-            return "(%s)" % ', '.join(sqlvalues(
-                get_archive(archive, bpr).id, das.id, pocket, bpr.id,
-                maybe_override_component(
-                    archive, das.distroseries, component).id,
-                section.id, priority, PackagePublishingStatus.PENDING,
-                UTC_NOW))
         insert_head = """
             INSERT INTO BinaryPackagePublishingHistory
             (archive, distroarchseries, pocket, binarypackagerelease,
@@ -1373,8 +1365,12 @@ class PublishingSet:
             VALUES
             """
         insert_pubs = ", ".join(
-            make_insert_values(archive, das, bpr, overrides)
-            for (das, bpr, overrides) in needed)
+            "(%s)" % ", ".join(sqlvalues(
+                get_archive(archive, bpr).id, das.id, pocket, bpr.id,
+                get_component(archive, das.distroseries, component).id,
+                section.id, priority, PackagePublishingStatus.PENDING,
+                UTC_NOW))
+            for (das, bpr, (component, section, priority)) in needed)
         insert_tail = " RETURNING BinaryPackagePublishingHistory.id"
         new_ids = IMasterStore(BinaryPackagePublishingHistory).execute(
             insert_head + insert_pubs + insert_tail)
@@ -1401,7 +1397,7 @@ class PublishingSet:
             archive=archive,
             binarypackagerelease=binarypackagerelease,
             distroarchseries=distroarchseries,
-            component=maybe_override_component(
+            component=get_component(
                 archive, distroarchseries.distroseries, component),
             section=section,
             priority=priority,
@@ -1418,8 +1414,7 @@ class PublishingSet:
             pocket=pocket,
             archive=archive,
             sourcepackagerelease=sourcepackagerelease,
-            component=maybe_override_component(
-                archive, distroseries, component),
+            component=get_component(archive, distroseries, component),
             section=section,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
