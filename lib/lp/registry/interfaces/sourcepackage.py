@@ -26,8 +26,10 @@ from lazr.restful.declarations import (
     export_read_operation,
     export_write_operation,
     exported,
+    operation_for_version,
     operation_parameters,
     operation_returns_entry,
+    operation_removed_in_version,
     REQUEST_USER,
     )
 from lazr.restful.fields import (
@@ -199,6 +201,7 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
     @operation_parameters(productseries=Reference(schema=IProductSeries))
     @call_with(owner=REQUEST_USER)
     @export_write_operation()
+    @operation_for_version('devel')
     def setPackaging(productseries, owner):
         """Update the existing packaging record, or create a new packaging
         record, that links the source package to the given productseries,
@@ -206,6 +209,7 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
         """
 
     @export_write_operation()
+    @operation_for_version('devel')
     def deletePackaging():
         """Delete the packaging for this sourcepackage."""
 

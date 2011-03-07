@@ -20,6 +20,7 @@ from lazr.restful.declarations import (
     export_as_webservice_collection,
     export_read_operation,
     export_operation_as,
+    operation_for_version,
     operation_parameters,
     operation_returns_entry,
     )
@@ -59,8 +60,10 @@ class ITranslationGroup(IHasOwner):
             description=_("""Keep this name very short, unique, and
             descriptive, because it will be used in URLs. Examples:
             gnome-translation-project, ubuntu-translators."""),
-            constraint=name_validator,
-            ))
+            constraint=name_validator),
+            ('devel', {'exported': True}),
+            exported=False,
+            )
     title = exported(Title(
             title=_('Title'), required=True,
             description=_("""Title of this Translation Group.
@@ -68,8 +71,10 @@ class ITranslationGroup(IHasOwner):
             page and in lists or reports of translation groups.  Do not
             add "translation group" to this title, or it will be shown
             double.
-            """),
-            ))
+            """),),
+            ('devel', {'exported': True}),
+            exported=False,
+            )
     summary = Summary(
             title=_('Summary'), required=True,
             description=_("""A single-paragraph description of the
@@ -169,8 +174,11 @@ class ITranslationGroupSet(Interface):
     @operation_parameters(
         name=TextLine(title=_("Name of the translation group"),))
     @operation_returns_entry(ITranslationGroup)
-    @export_operation_as('getByName')
     @export_read_operation()
+    @operation_for_version('devel')
+    def getByName(name):
+        """Get a translation group by name."""
+
     def __getitem__(name):
         """Get a translation group by name."""
 

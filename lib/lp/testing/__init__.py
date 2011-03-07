@@ -795,7 +795,7 @@ class WebServiceTestCase(TestCaseWithFactory):
 
     def setUp(self):
         super(WebServiceTestCase, self).setUp()
-        self.service = self.factory.makeLaunchpadService()
+        self.service = self.factory.makeLaunchpadService(version='devel')
 
     def wsObject(self, obj, user=None):
         """Return the launchpadlib version of the supplied object.

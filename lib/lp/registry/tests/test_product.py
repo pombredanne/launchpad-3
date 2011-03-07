@@ -372,7 +372,7 @@ class TestWebService(WebServiceTestCase):
         product = self.factory.makeProduct()
         transaction.commit()
         ws_product = self.wsObject(product, product.owner)
-        ws_product.translationpermission = TranslationPermission.OPEN.title
+        ws_product.translationpermission = TranslationPermission.CLOSED.title
         ws_product.lp_save()
 
     def test_translationgroup(self):

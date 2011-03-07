@@ -283,6 +283,10 @@ class TranslationGroupSet:
 
     def __getitem__(self, name):
         """See ITranslationGroupSet."""
+        return self.getByName(name)
+
+    def getByName(self, name):
+        """See ITranslationGroupSet."""
         try:
             return TranslationGroup.byName(name)
         except SQLObjectNotFound:
