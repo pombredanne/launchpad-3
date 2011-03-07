@@ -85,7 +85,10 @@ from canonical.launchpad.components.decoratedresultset import (
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.interfaces.validation import valid_upstreamtask
+from canonical.launchpad.interfaces.validation import (
+    validate_new_distrotask,
+    valid_upstreamtask,
+    )
 from canonical.launchpad.searchbuilder import (
     all,
     any,
@@ -499,7 +502,6 @@ def validate_conjoined_attribute(self, attr, value):
     if self.bug is None:
         return value
 
-    import pdb; pdb.set_trace()
     if self._isConjoinedBugTask():
         raise ConjoinedBugTaskEditError(
             "This task cannot be edited directly, it should be"
@@ -2580,13 +2582,15 @@ class BugTaskSet:
             milestone = None
 
         # Raise a WidgetError if this product bugtask already exists.
-        sourcepackage = None
-        if sourcepackagename is not None:
-            distro = distribution or distroseries
-            target = distro.getSourcePackage(sourcepackagename)
+        target = None
+        if distribution is not None:
+            validate_new_distrotask(bug, distribution, sourcepackagename)
+        elif sourcepackagename is not None:
+            target = distroseries.getSourcePackage(sourcepackagename)
         else:
-            target = product or productseries or distribution or distroseries
-        valid_upstreamtask(bug, target)
+            target = product or productseries
+        if target is not None:
+            valid_upstreamtask(bug, target)
 
         if not bug.private and bug.security_related:
             if product and product.security_contact:
@@ -2634,6 +2638,7 @@ class BugTaskSet:
         # to be queued in appropriately, which leads to Bug.bugtasks not
         # finding the bugtask.
         Store.of(bugtask).flush()
+
         return bugtask
 
     def getStatusCountsForProductSeries(self, user, product_series):
