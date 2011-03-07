@@ -401,7 +401,6 @@ class StructuralSubscriptionTargetMixin:
         # This is a helper method for creating a structural
         # subscription. It is useful so long as subscriptions are mainly
         # used to implement bug contacts.
-
         if not self.userCanAlterBugSubscription(subscriber, subscribed_by):
             raise UserCannotSubscribePerson(
                 '%s does not have permission to subscribe %s' % (
