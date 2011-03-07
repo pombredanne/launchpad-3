@@ -10,7 +10,10 @@ from datetime import (
     datetime,
     timedelta,
     )
-import operator
+import os
+import shutil
+import subprocess
+import tempfile
 import time
 
 from pytz import UTC
@@ -34,6 +37,7 @@ from canonical.launchpad.database.message import Message
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.webapp.interfaces import (
@@ -46,6 +50,7 @@ from canonical.testing.layers import (
     LaunchpadScriptLayer,
     LaunchpadZopelessLayer,
     )
+from lp.archiveuploader.dscfile import findFile
 from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
@@ -62,6 +67,7 @@ from lp.code.model.branchjob import (
     )
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
@@ -73,6 +79,7 @@ from lp.scripts.garbo import (
     )
 from lp.services.job.model.job import Job
 from lp.services.log.logger import BufferLogger
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
@@ -627,3 +634,40 @@ class TestGarbo(TestCaseWithFactory):
             """ % sqlbase.quote(template.id)).get_one()
 
         self.assertEqual(1, count)
+
+    def test_populateSPRChangelogs(self):
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        sid = getUtility(IDistributionSet)['debian']['sid']
+        spn = self.factory.makeSourcePackageName('9wm')
+        spr = self.factory.makeSourcePackageRelease(
+            sourcepackagename=spn, version='1.2-7', distroseries=sid)
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr, archive=sid.main_archive,
+            status=PackagePublishingStatus.PUBLISHED)
+        for name in (
+            '9wm_1.2-7.diff.gz', '9wm_1.2.orig.tar.gz', '9wm_1.2-7.dsc'):
+            path = os.path.join(
+                'lib/lp/soyuz/scripts/tests/gina_test_archive/pool/main/9',
+                '9wm', name)
+            lfa = getUtility(ILibraryFileAliasSet).create(
+                name, os.stat(path).st_size, open(path, 'r'),
+                'application/octet-stream')
+            spr.addFile(lfa)
+        tmp_dir = tempfile.mkdtemp(prefix='tmppsc-')
+        fnull = open('/dev/null', 'w')
+        ret = subprocess.call(
+            ['dpkg-source', '-x', path, os.path.join(
+                tmp_dir, 'extracted')],
+                stdout=fnull, stderr=fnull)
+        fnull.close()
+        self.assertEqual(0, ret)
+        changelog_path = findFile(tmp_dir, 'debian/changelog')
+        changelog = open(changelog_path, 'r').read()
+        shutil.rmtree(tmp_dir)
+        transaction.commit() # .runHourly() switches dbuser.
+        collector = self.runHourly()
+        log = collector.logger.getLogBuffer()
+        self.assertTrue(
+            'SPR %d (9wm 1.2-7) changelog imported.' % spr.id in log)
+        self.assertFalse(spr.changelog == None)
+        self.assertEqual(changelog, spr.changelog.read())

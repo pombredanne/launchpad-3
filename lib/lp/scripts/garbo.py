@@ -13,11 +13,19 @@ from datetime import (
     datetime,
     timedelta,
     )
+import os
+import shutil
+import signal
+import subprocess
+import tempfile
 import time
 
 from psycopg2 import IntegrityError
 import pytz
+from storm.expr import LeftJoin
 from storm.locals import (
+    And,
+    Count,
     Max,
     Min,
     Select,
@@ -43,6 +51,7 @@ from canonical.launchpad.database.librarian import (
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.utilities.looptuner import TunableLoop
 from canonical.launchpad.webapp.interfaces import (
@@ -50,6 +59,9 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
+from canonical.librarian.utils import copy_and_close
+from lp.archiveuploader.dscfile import findFile
+from lp.archiveuploader.nascentuploadfile import UploadError
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
@@ -74,10 +86,16 @@ from lp.services.scripts.base import (
     LaunchpadCronScript,
     SilentLaunchpadScriptFailure,
     )
+from lp.soyuz.model.files import SourcePackageReleaseFile
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 
 ONE_DAY_IN_SECONDS = 24*60*60
+
+
+def subprocess_setup():
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
 
 class OAuthNoncePruner(TunableLoop):
@@ -787,6 +805,117 @@ class SuggestiveTemplatesCacheUpdater(TunableLoop):
         self.done = True
 
 
+class PopulateSPRChangelogs(TunableLoop):
+    maximum_chunk_size = 1
+
+    def __init__(self, log, abort_time=None):
+        super(PopulateSPRChangelogs, self).__init__(log, abort_time)
+        self.start_at = 0
+        self.finish_at = self.getCandidateSPRIDs(0).last()
+
+    def getCandidateSPRIDs(self, start_at):
+        return IMasterStore(SourcePackageRelease).using(
+            SourcePackageRelease,
+            # Find any SPRFs that have expired (LFA.content IS NULL).
+            LeftJoin(
+                SourcePackageReleaseFile,
+                SourcePackageReleaseFile.sourcepackagereleaseID ==
+                    SourcePackageRelease.id),
+            LeftJoin(
+                LibraryFileAlias,
+                And(LibraryFileAlias.id ==
+                    SourcePackageReleaseFile.libraryfileID,
+                    LibraryFileAlias.content == None)),
+            # And exclude any SPRs that have any expired SPRFs.
+            ).find(
+                SourcePackageRelease.id,
+                SourcePackageRelease.id >= start_at,
+                SourcePackageRelease.changelog == None,
+                SourcePackageRelease.upload_archiveID == 3,
+            ).group_by(SourcePackageRelease.id).having(
+                Count(LibraryFileAlias) == 0
+            ).order_by(SourcePackageRelease.id)
+
+    def isDone(self):
+        return self.start_at > self.finish_at
+
+    def __call__(self, chunk_size):
+        for sprid in self.getCandidateSPRIDs(self.start_at)[:chunk_size]:
+            spr = SourcePackageRelease.get(sprid)
+            try:
+                tmp_dir = tempfile.mkdtemp(prefix='tmppsc-')
+                dsc_file = None
+
+                # Grab the files from the librarian into a temporary
+                # directory.
+                try:
+                    for sprf in spr.files:
+                        dest = os.path.join(
+                            tmp_dir, sprf.libraryfile.filename)
+                        dest_file = open(dest, 'w')
+                        sprf.libraryfile.open()
+                        copy_and_close(sprf.libraryfile, dest_file)
+                        if dest.endswith('.dsc'):
+                            dsc_file = dest
+                except LookupError:
+                    self.log.warning(
+                        'SPR %d (%s %s) has missing library files.' %
+                        (spr.id, spr.name, spr.version))
+                    continue
+
+                if dsc_file is None:
+                    self.log.warning('SPR %d (%s %s) has no DSC.' %
+                        (spr.id, spr.name, spr.version))
+                    continue
+
+                # Extract the source package. Throw away stdout/stderr
+                # -- we only really care about the return code.
+                fnull = open('/dev/null', 'w')
+                ret = subprocess.call(
+                    ['dpkg-source', '-x', dsc_file, os.path.join(
+                        tmp_dir, 'extracted')],
+                        stdout=fnull, stderr=fnull,
+                        preexec_fn=subprocess_setup)
+                fnull.close()
+                if ret != 0:
+                    self.log.warning(
+                        'SPR %d (%s %s) failed to unpack: returned %d' %
+                        (spr.id, spr.name, spr.version, ret))
+                    continue
+
+                # We have an extracted source package. Let's get the
+                # changelog. findFile ensures that it's not too huge, and
+                # not a symlink.
+                try:
+                    changelog_path = findFile(tmp_dir, 'debian/changelog')
+                except UploadError, e:
+                    changelog_path = None
+                    self.log.warning(
+                        'SPR %d (%s %s) changelog could not be imported: %s' %
+                        (spr.id, spr.name, spr.version, e))
+                if changelog_path:
+                    # The LFA should be restricted only if there aren't any
+                    # public publications.
+                    restricted = not any(
+                        not a.private for a in spr.published_archives)
+                    spr.changelog = getUtility(ILibraryFileAliasSet).create(
+                        'changelog',
+                        os.stat(changelog_path).st_size,
+                        open(changelog_path, "r"),
+                        "text/x-debian-source-changelog",
+                        restricted=restricted)
+                    self.log.info('SPR %d (%s %s) changelog imported.' %
+                        (spr.id, spr.name, spr.version))
+                else:
+                    self.log.warning('SPR %d (%s %s) had no changelog.' %
+                        (spr.id, spr.name, spr.version))
+            finally:
+                shutil.rmtree(tmp_dir)
+
+        self.start_at = spr.id + 1
+        transaction.commit()
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None # Script name for locking and database user. Override.
@@ -871,6 +1000,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         RevisionCachePruner,
         BugHeatUpdater,
         BugWatchScheduler,
+        PopulateSPRChangelogs,
         ]
     experimental_tunable_loops = []
 
