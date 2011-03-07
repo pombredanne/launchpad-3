@@ -1498,10 +1498,13 @@ class DistroSeriesDerivationVocabularyFactory:
 
     implements(IContextSourceBinder)
 
-    def __call__(self, context):
+    def __init__(self, context):
+        self.distribution = IDistribution(context)
+
+    def __call__(self):
         """Return a vocabulary tailored to `context`."""
         all_serieses = getUtility(IDistroSeriesSet).search()
-        context_serieses = set(IDistribution(context))
+        context_serieses = set(self.distribution)
         if len(context_serieses) == 0:
             # Derive from any series.
             serieses = set(all_serieses)

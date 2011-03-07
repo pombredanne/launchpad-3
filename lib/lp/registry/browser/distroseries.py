@@ -86,7 +86,6 @@ from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
 from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.vocabularies import DistroSeriesDerivationVocabularyFactory
 from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountry
@@ -524,7 +523,7 @@ class IDistroSeriesInitializeForm(IDistroSeries):
     derived_from_series = Choice(
         title=_('Derived from distribution series'),
         default=None,
-        source=DistroSeriesDerivationVocabularyFactory(),
+        vocabulary="DistroSeriesDerivation",
         description=_(
             "Select the distribution series you "
             "want to derive from."),

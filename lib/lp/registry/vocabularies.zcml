@@ -30,6 +30,14 @@
 
 
   <securedutility
+      name="DistroSeriesDerivation"
+      component=".vocabularies.DistroSeriesDerivationVocabularyFactory"
+      provides="zope.schema.interfaces.IVocabularyFactory">
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+
+  <securedutility
     name="FeaturedProject"
     component="lp.registry.vocabularies.FeaturedProjectVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"

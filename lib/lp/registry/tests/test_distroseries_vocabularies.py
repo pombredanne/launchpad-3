@@ -12,7 +12,7 @@ from datetime import (
 
 from pytz import utc
 from zope.component import getUtility
-from zope.schema.interfaces import IContextSourceBinder
+from zope.schema.interfaces import IVocabularyFactory
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -28,14 +28,16 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
 
     def setUp(self):
         super(TestDistroSeriesDerivationVocabularyFactory, self).setUp()
-        self.vocabulary_factory = DistroSeriesDerivationVocabularyFactory()
+        self.vocabulary_factory = lambda context: (
+            DistroSeriesDerivationVocabularyFactory(context)())
         self.all_distroseries = getUtility(IDistroSeriesSet).search()
 
-    def test_interface(self):
-        # DistroSeriesDerivationVocabularyFactory instances provides
-        # IContextSourceBinder.
-        self.assertProvides(
-            self.vocabulary_factory, IContextSourceBinder)
+    def test_registration(self):
+        # DistroSeriesDerivationVocabularyFactory is registered as a named
+        # utility for IVocabularyFactory.
+        self.assertEqual(
+            getUtility(IVocabularyFactory, name="DistroSeriesDerivation"),
+            DistroSeriesDerivationVocabularyFactory)
 
     def test_distribution_without_series(self):
         # Given a distribution without any series, the vocabulary factory
