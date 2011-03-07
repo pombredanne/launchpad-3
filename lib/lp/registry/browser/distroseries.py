@@ -24,8 +24,10 @@ from zope.formlib import form
 from zope.interface import Interface
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import (
+    Bool,
     Choice,
     List,
+    TextLine,
     )
 from zope.schema.vocabulary import (
     SimpleTerm,
@@ -77,6 +79,7 @@ from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin,
     )
 from lp.registry.browser import MilestoneOverlayMixin
+from lp.registry.enum import DistroSeriesDifferenceStatus
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
@@ -544,6 +547,73 @@ class DistroSeriesNeedsPackagesView(LaunchpadView):
         return navigator
 
 
+class DistroSeriesLocalDifferencesListFilter(Interface):
+    """The interface used as the schema for the package filtering form."""
+    name_filter = TextLine(
+        title=_("Package name contains"), required=False)
+
+    include_blacklisted_filter = Bool(
+        title=_("include blacklisted packages"),
+        required=False, default=False)
+
+
+class DistroSeriesLocalDifferencesListView(LaunchpadFormView):
+    """A Form view for filtering and batching source packages."""
+
+    schema = DistroSeriesLocalDifferencesListFilter
+
+    @property
+    def specified_name_filter(self):
+        """Return the specified name filter if one was specified """
+        requested_name_filter = self.request.query_string_params.get(
+            'field.name_filter')
+
+        if requested_name_filter and requested_name_filter[0]:
+            return requested_name_filter[0]
+        else:
+            return None
+
+    @property
+    def specified_include_blacklisted_filter(self):
+        """Return the specified name filter if one was specified """
+        include_blacklisted_filter = self.request.query_string_params.get(
+            'field.include_blacklisted_filter')
+
+        if include_blacklisted_filter and include_blacklisted_filter[0]:
+            return include_blacklisted_filter[0]
+        else:
+            return None
+
+    @cachedproperty
+    def cached_differences(self):
+        """Return a batch navigator of filtered results."""
+        utility = getUtility(IDistroSeriesDifferenceSource)
+        if self.specified_include_blacklisted_filter:
+            status=(
+                DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+                DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
+        else:
+            status=(
+                DistroSeriesDifferenceStatus.NEEDS_ATTENTION,)
+        differences = utility.getForDistroSeries(
+            self.context,
+            source_package_name_filter=self.specified_name_filter,
+            status=status)
+        return BatchNavigator(differences, self.request)
+
+    @cachedproperty
+    def has_differences(self):
+        """Whether or not differences between this derived series and
+        it's parent exist."""
+        utility = getUtility(IDistroSeriesDifferenceSource)
+        differences = utility.getForDistroSeries(
+            self.context,
+            status=(
+                DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+                DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT))
+        return bool(differences.count())
+
+
 class IDifferencesFormSchema(Interface):
     selected_differences = List(
         title=_('Selected differences'),
@@ -552,7 +622,8 @@ class IDifferencesFormSchema(Interface):
         required=True)
 
 
-class DistroSeriesLocalDifferences(LaunchpadFormView):
+class DistroSeriesLocalDifferences(DistroSeriesLocalDifferencesListView,
+                                   LaunchpadFormView):
     """Present differences between a derived series and its parent."""
     schema = IDifferencesFormSchema
     custom_widget('selected_differences', LabeledMultiCheckBoxWidget)
@@ -582,13 +653,6 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
                 self.context.parent_series.displayname,
                 ))
 
-    @cachedproperty
-    def cached_differences(self):
-        """Return a batch navigator of potentially filtered results."""
-        utility = getUtility(IDistroSeriesDifferenceSource)
-        differences = utility.getForDistroSeries(self.context)
-        return BatchNavigator(differences, self.request)
-
     def setUpFields(self):
         """Add the selected differences field.
 
@@ -605,6 +669,11 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
         diffs_vocabulary = SimpleVocabulary(terms)
         choice = self.form_fields['selected_differences'].field.value_type
         choice.vocabulary = diffs_vocabulary
+
+    @action(_("Update"), name="update")
+    def update_action(self, action, data):
+        """Simply re-issue the form with the new values."""
+        pass
 
     @action(_("Sync Sources"), name="sync", validator='validate_sync',
             condition='canPerformSync')
