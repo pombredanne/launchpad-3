@@ -708,7 +708,10 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         """
 
     def associatedSuiteSourcePackages():
-        """Return the suite source packages that this branch is linked to."""
+        """Return the suite source packages that this branch is linked to.
+        
+        :return: A list of suite source packages ordered by pocket.
+        """
 
     def branchLinks():
         """Return a sorted list of ICanHasLinkedBranch objects.
@@ -1286,8 +1289,13 @@ class IBranchSet(Interface):
         """
 
     @collection_default_content()
-    def getBranches(limit=50):
-        """Return a collection of branches."""
+    def getBranches(limit=50, eager_load=True):
+        """Return a collection of branches.
+        
+        :param eager_load: If True (the default because this is used in the 
+            web service and it needs the related objects to create links) eager
+            load related objects (products, code imports etc).
+        """
 
 
 class IBranchListingQueryOptimiser(Interface):

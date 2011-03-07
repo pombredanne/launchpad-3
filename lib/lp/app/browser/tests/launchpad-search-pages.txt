@@ -615,7 +615,7 @@ matching pages. The WindowList claims to be 25 items in length, but
 the first 20 items are None. Only the last 5 items are PageMatches.
 
     >>> from lp.app.browser.root import WindowedList
-    >>> from canonical.launchpad.utilities.searchservice import (
+    >>> from lp.services.search.google import (
     ...     GoogleSearchService)
 
     >>> google_search = GoogleSearchService()

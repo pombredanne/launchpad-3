@@ -382,6 +382,9 @@ class MaloneView(LaunchpadFormView):
 
     def _redirectToBug(self, bug_id):
         """Redirect to the specified bug id."""
+        if not isinstance(bug_id, basestring):
+            self.error_message = "Bug %r is not registered." % bug_id
+            return
         if bug_id.startswith("#"):
             # Be nice to users and chop off leading hashes
             bug_id = bug_id[1:]
