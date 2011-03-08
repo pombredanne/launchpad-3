@@ -1977,7 +1977,7 @@
         class="lp.registry.browser.distroseries.DistroSeriesInitializeView"
         facet="overview"
         permission="launchpad.Admin"
-        template="../../app/templates/generic-edit.pt">
+        template="../templates/distroseries-initialize.pt">
     </browser:page>
 
     <browser:page
