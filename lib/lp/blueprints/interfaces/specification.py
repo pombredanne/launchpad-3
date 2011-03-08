@@ -21,14 +21,21 @@ __all__ = [
 
 
 from lazr.restful.declarations import (
+    call_with,
     export_as_webservice_entry,
+    export_write_operation,
     exported,
+    mutator_for,
+    operation_for_version,
+    operation_parameters,
+    REQUEST_USER,
     )
 from lazr.restful.fields import (
     CollectionField,
     Reference,
     ReferenceChoice,
     )
+from lazr.restful.interface import copy_field
 from zope.component import getUtility
 from zope.interface import (
     Attribute,
@@ -248,23 +255,6 @@ class INewSpecificationTarget(Interface):
         ('devel', dict(exported=True, readonly=True)), exported=False)
 
 
-class ISpecificationEditRestricted(Interface):
-    """Specification's attributes and methods protected with launchpad.Edit.
-    """
-
-    def setTarget(target):
-        """Set this specification's target.
-
-        :param target: an IProduct or IDistribution.
-        """
-
-    def retarget(target):
-        """Move the spec to the given target.
-
-        The new target must be an IProduct or IDistribution.
-        """
-
-
 class ISpecificationPublic(
         INewSpecification, INewSpecificationTarget, IHasOwner,
         IHasLinkedBranches):
@@ -368,7 +358,7 @@ class ISpecificationPublic(
         "in the number."))
     implementation_status = exported(
         Choice(
-            title=_("Implementation Status"), required=True,
+            title=_("Implementation Status"), required=True, readonly=True,
             default=SpecificationImplementationStatus.UNKNOWN,
             vocabulary=SpecificationImplementationStatus,
             description=_(
@@ -545,6 +535,45 @@ class ISpecificationPublic(
     # branches
     def getBranchLink(branch):
         """Return the SpecificationBranch link for the branch, or None."""
+
+
+class ISpecificationEditRestricted(Interface):
+    """Specification's attributes and methods protected with launchpad.Edit.
+    """
+
+    @mutator_for(copy_field(
+            ISpecificationPublic['definition_status'], readonly=True))
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        definition_status=copy_field(
+            ISpecificationPublic['definition_status']))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setDefinitionStatus(definition_status, user):
+        """xxx"""
+
+    @mutator_for(
+            ISpecificationPublic['implementation_status'])
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        implementation_status=copy_field(
+            ISpecificationPublic['implementation_status']))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setImplementationStatus(implementation_status, user):
+        """xxx"""
+
+    def setTarget(target):
+        """Set this specification's target.
+
+        :param target: an IProduct or IDistribution.
+        """
+
+    def retarget(target):
+        """Move the spec to the given target.
+
+        The new target must be an IProduct or IDistribution.
+        """
 
 
 class ISpecification(ISpecificationPublic, ISpecificationEditRestricted,

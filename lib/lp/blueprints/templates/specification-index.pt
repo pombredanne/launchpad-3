@@ -57,81 +57,39 @@
         <div class="yui-u first">
           <div class="two-column-list">
             <dl>
-              <dt>Priority:</dt>
-              <dd><tal:block content="context/priority/title"/>
-                <tal:guidance condition="not: context/direction_approved"
-                >(Needs guidance)</tal:guidance>
-                <a tal:define="link context_menu/priority"
-                     tal:condition="link/enabled"
-                     tal:attributes="href link/url"
-                ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a>
-              </dd>
+              <dt>Status:</dt>
+              <dd id="lifecycle-status"
+                  tal:content="context/lifecycle_status/title" />
             </dl>
 
             <dl>
               <dt>Approver:</dt>
-              <dd>
-                <a tal:condition="context/approver"
-                   tal:replace="structure context/approver/fmt:link">Foo Bar</a>
-                <tal:none condition="not: context/approver">None</tal:none>
-                <a tal:define="link context_menu/people"
-                     tal:condition="link/enabled"
-                     tal:attributes="href link/url"
-                ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a>
-              </dd>
+              <dd tal:content="structure view/approver_widget" />
             </dl>
 
             <dl>
-              <dt>Definition:</dt>
-              <dd>
-                <tal:definition replace="context/definition_status/title" />
-                <a tal:define="link context_menu/status"
-                     tal:condition="link/enabled"
-                     tal:attributes="href link/url"
-                ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a>
-              </dd>
+              <dt>Priority:</dt>
+              <dd tal:content="structure view/priority_widget" />
             </dl>
 
             <dl>
               <dt>Drafter:</dt>
-              <dd>
-                <a tal:condition="context/drafter"
-                   tal:replace="structure context/drafter/fmt:link">Foo Bar</a>
-                <tal:none condition="not: context/drafter">None</tal:none>
-                <a tal:define="link context_menu/people"
-                     tal:condition="link/enabled"
-                     tal:attributes="href link/url"
-                ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a>
-              </dd>
+              <dd tal:content="structure view/drafter_widget" />
             </dl>
 
             <dl>
-              <dt>Implementation:</dt>
-              <dd>
-                <img tal:condition="context/informational"
-                     src="/@@/info" alt="Informational"
-                     title="Informational blueprint, no implementation necessary"
-                     id="informational-icon"
-                     />
-                <tal:impl content="context/implementation_status/title">Unknown</tal:impl>
-                <a tal:define="link context_menu/status"
-                     tal:condition="link/enabled"
-                     tal:attributes="href link/url"
-                ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a>
-              </dd>
+              <dt>Direction:</dt>
+              <dd>todo</dd>
             </dl>
 
             <dl>
               <dt>Assignee:</dt>
-              <dd>
-                <a tal:condition="context/assignee"
-                   tal:replace="structure context/assignee/fmt:link">Foo Bar</a>
-                <tal:none condition="not: context/assignee">None</tal:none>
-                <a tal:define="link context_menu/people"
-                     tal:condition="link/enabled"
-                     tal:attributes="href link/url"
-                ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a>
-              </dd>
+              <dd tal:content="structure view/assignee_widget" />
+            </dl>
+
+            <dl>
+              <dt>Definition:</dt>
+              <dd tal:content="structure view/definition_status_widget" />
             </dl>
 
             <dl id="series-goal">
@@ -162,6 +120,19 @@
                 ><img tal:attributes="alt link/text; title link/text" src="/@@/edit" /></a>
               </dd>
             </dl>
+
+            <dl>
+              <dt>Implementation:</dt>
+              <dd>
+                <img tal:condition="context/informational"
+                     src="/@@/info" alt="Informational"
+                     title="Informational blueprint, no implementation necessary"
+                     id="informational-icon"
+                     />
+                <tal:widget replace="structure view/implementation_status_widget" />
+              </dd>
+            </dl>
+
 
             <dl id="milestone-target">
               <dt>Milestone target:</dt>
@@ -335,6 +306,20 @@
         </ul>
       </div>
     </div>
+
+  <script type="text/javascript">
+    LPS.use('lp.ui', function(Y) {
+
+        Y.on('lp:context:changed', function(e) {
+            Y.log(e);
+        });
+        Y.on('lp:context:base_branch_link:changed', function(e) {
+            Y.lp.ui.update_field('#base-branch dd', e.entry.getHTML(e.name));
+        });
+
+      });
+    </script>
+
   </div>
 
   <tal:side metal:fill-slot="side">

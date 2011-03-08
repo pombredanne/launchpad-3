@@ -85,6 +85,14 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     safe_action,
     )
+from lp.app.browser.lazrjs import (
+    BooleanChoiceWidget,
+    EnumChoiceWidget,
+    InlineEditPickerWidget,
+    TextAreaEditorWidget,
+    TextLineEditorWidget,
+    )
+from lp.app.browser.tales import format_link
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
 from lp.blueprints.enums import SpecificationDefinitionStatus
 from lp.blueprints.interfaces.specification import (
@@ -517,6 +525,51 @@ class SpecificationView(SpecificationSimpleView):
             msg = "You have %d feedback request(s) on this blueprint."
             msg %= len(self.feedbackrequests)
             self.notices.append(msg)
+
+    @property
+    def approver_widget(self):
+        return InlineEditPickerWidget(
+            self.context, ISpecification['approver'],
+            format_link(self.context.approver),
+            header='Change approver',
+            step_title='Select a new approver')
+
+    @property
+    def drafter_widget(self):
+        return InlineEditPickerWidget(
+            self.context, ISpecification['drafter'],
+            format_link(self.context.drafter),
+            header='Change drafter',
+            step_title='Select a new drafter')
+
+    @property
+    def assignee_widget(self):
+        return InlineEditPickerWidget(
+            self.context, ISpecification['assignee'],
+            format_link(self.context.assignee),
+            header='Change assignee',
+            step_title='Select a new assignee')
+
+    @property
+    def definition_status_widget(self):
+        return EnumChoiceWidget(
+            self.context, ISpecification['definition_status'],
+            header='Change definition status to', edit_view='+status',
+            css_class_prefix='specstatus')
+
+    @property
+    def implementation_status_widget(self):
+        return EnumChoiceWidget(
+            self.context, ISpecification['implementation_status'],
+            header='Change implementation status to', edit_view='+status',
+            css_class_prefix='specdelivery')
+
+    @property
+    def priority_widget(self):
+        return EnumChoiceWidget(
+            self.context, ISpecification['priority'],
+            header='Change priority to', edit_view='+priority',
+            css_class_prefix='specpriority')
 
 
 class SpecificationSubscriptionView(SpecificationView):
