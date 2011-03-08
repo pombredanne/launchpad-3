@@ -1513,14 +1513,18 @@ class DistroSeriesDerivationVocabularyFactory:
             # Derive from any series.
             serieses = set(all_serieses)
         else:
-            for series in context_serieses:
-                if (series.parent_series is not None and
-                    series.parent_series not in context_serieses):
-                    # Derive only from series in the same distribution as
-                    # other derived series in this distribution.
-                    serieses = set(series.parent_series.distribution)
-                    break
-            else:
+            # Derive only from series in the same distribution as other
+            # derived series in this distribution.
+            serieses = set(
+                series for (series, distribution) in (
+                    IStore(DistroSeries).find(
+                        (DistroSeries, Distribution),
+                        DistroSeries.distribution == Distribution.id,
+                        DistroSeries.distribution != distribution,
+                        DistroSeries.id.is_in(
+                            removeSecurityProxy(series).parent_seriesID
+                            for series in context_serieses))))
+            if len(serieses) == 0:
                 # Derive from any series, except those in this distribution.
                 serieses = set(all_serieses) - context_serieses
         # Sort the series before generating the vocabulary. We want newest

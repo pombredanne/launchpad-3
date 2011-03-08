@@ -151,18 +151,41 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
             if series in expected_distroseries]
         self.assertEqual(expected_distroseries, observed_distroseries)
 
-    def test_queries(self):
+    def test_queries_for_distribution_without_series(self):
+        # Getting terms issues two queries: one for the distribution's
+        # serieses and a second for all serieses.
         for index in range(10):
             self.factory.makeDistroSeries()
-        context = self.factory.makeDistribution()
+        distribution = self.factory.makeDistribution()
         flush_database_caches()
-
         with StormStatementRecorder() as recorder:
-            # The vocabulary terms are evaluated late so no queries are issued
-            # for instantiating the vocabulary.
-            vocabulary = self.vocabulary_factory(context)
-            self.assertThat(recorder, HasQueryCount(Equals(0)))
-            # Referencing terms issues two queries: one for the context's
-            # serieses and a second for all serieses.
-            vocabulary.terms
+            self.vocabulary_factory(distribution).terms
+            self.assertThat(recorder, HasQueryCount(Equals(2)))
+
+    def test_queries_for_distribution_with_non_derived_series(self):
+        # Getting terms issues two queries: one for the distribution's
+        # serieses, a second to search for parent serieses (of which there are
+        # none) and a third for all serieses.
+        for index in range(10):
+            self.factory.makeDistroSeries()
+        distribution = self.factory.makeDistribution()
+        self.factory.makeDistroSeries(distribution=distribution)
+        flush_database_caches()
+        with StormStatementRecorder() as recorder:
+            self.vocabulary_factory(distribution).terms
+            self.assertThat(recorder, HasQueryCount(Equals(3)))
+
+    def test_queries_for_distribution_with_derived_series(self):
+        # Getting terms issues two queries: one for the distribution's
+        # serieses and a second to find parent serieses.
+        for index in range(10):
+            self.factory.makeDistroSeries()
+        distribution = self.factory.makeDistribution()
+        parent_distroseries = self.factory.makeDistroSeries()
+        self.factory.makeDistroSeries(
+            parent_series=parent_distroseries,
+            distribution=distribution)
+        flush_database_caches()
+        with StormStatementRecorder() as recorder:
+            self.vocabulary_factory(distribution).terms
             self.assertThat(recorder, HasQueryCount(Equals(2)))
