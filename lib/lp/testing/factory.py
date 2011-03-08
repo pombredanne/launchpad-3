@@ -3857,11 +3857,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if distribution is None:
             distribution = self.makeDistribution()
         if root_dir is None:
-            root_dir = self.getUniqueString()
+            root_dir = self.getUniqueUnicode()
         if base_url is None:
-            base_url = self.getUniqueString()
+            base_url = self.getUniqueUnicode()
         if copy_base_url is None:
-            copy_base_url = self.getUniqueString()
+            copy_base_url = self.getUniqueUnicode()
         return getUtility(IPublisherConfigSet).new(
             distribution, root_dir, base_url, copy_base_url)
 

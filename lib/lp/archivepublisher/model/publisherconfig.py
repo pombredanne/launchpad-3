@@ -12,9 +12,9 @@ __all__ = [
 
 from storm.locals import (
     Int,
-    RawStr,
     Reference,
     Storm,
+    Unicode,
     )
 from zope.interface import implements
 
@@ -37,11 +37,11 @@ class PublisherConfig(Storm):
     distribution_id = Int(name='distribution', allow_none=False)
     distribution = Reference(distribution_id, 'Distribution.id')
 
-    root_dir = RawStr(name='root_dir', allow_none=False)
+    root_dir = Unicode(name='root_dir', allow_none=False)
 
-    base_url = RawStr(name='base_url', allow_none=False)
+    base_url = Unicode(name='base_url', allow_none=False)
 
-    copy_base_url = RawStr(name='copy_base_url', allow_none=False)
+    copy_base_url = Unicode(name='copy_base_url', allow_none=False)
 
 
 class PublisherConfigSet:

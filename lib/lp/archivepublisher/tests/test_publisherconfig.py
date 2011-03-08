@@ -35,9 +35,9 @@ class TestPublisherConfig(TestCaseWithFactory):
 
     def test_properties(self):
         # Test the model properties.
-        ROOT_DIR = "rootdir/test"
-        BASE_URL = "http://base.url"
-        COPY_BASE_URL = "http://base.url"
+        ROOT_DIR = u"rootdir/test"
+        BASE_URL = u"http://base.url"
+        COPY_BASE_URL = u"http://base.url"
         pubconf = self.factory.makePublisherConfig(
             distribution=self.distribution,
             root_dir=ROOT_DIR,
