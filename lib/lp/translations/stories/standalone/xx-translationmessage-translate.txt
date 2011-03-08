@@ -586,7 +586,7 @@ it would be different if the translation had been properly reset. Also the
 wording here ("packaged") needs to be adapted.
 
     >>> print extract_text(packaged)
-    In upstream:
+    In upstream: (not translated)
 
 
 Shared and diverged translations
