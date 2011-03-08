@@ -6,5 +6,5 @@ import doctest
 
 def test_suite():
     return doctest.DocTestSuite(
-            'lp.services.search.tests.googleserviceharness',
+            'lp.services.googlesearch.tests.googleserviceharness',
             optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS)
