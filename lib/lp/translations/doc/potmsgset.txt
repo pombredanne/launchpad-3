@@ -552,7 +552,8 @@ the same result for suggestions and used messages.
 
     >>> suggestions, used = (
     ...     potmsgset_untranslated.getExternallySuggestedOrUsedTranslationMessages(
-    ...         pofile.language))
+    ...         suggested_languages=[pofile.language],
+    ...         used_languages=[pofile.language]))[pofile.language]
     >>> wiki_suggestions = (
     ...     potmsgset_untranslated.getExternallySuggestedTranslationMessages(
     ...         pofile.language))
