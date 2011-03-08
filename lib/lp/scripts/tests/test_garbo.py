@@ -712,15 +712,17 @@ class TestGarbo(TestCaseWithFactory):
 
         self.assertEqual(1, count)
 
-    def test_populateSPRChangelogs(self):
-        # We set SPR.changelog for imported records from Debian.
-        LaunchpadZopelessLayer.switchDbUser('testadmin')
+    def upload_to_debian(self, restricted=False):
         sid = getUtility(IDistributionSet)['debian']['sid']
         spn = self.factory.makeSourcePackageName('9wm')
         spr = self.factory.makeSourcePackageRelease(
             sourcepackagename=spn, version='1.2-7', distroseries=sid)
+        archive = sid.main_archive
+        if restricted:
+            archive = self.factory.makeArchive(
+                distribution=sid.distribution, private=True)
         self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagerelease=spr, archive=sid.main_archive,
+            sourcepackagerelease=spr, archive=archive,
             status=PackagePublishingStatus.PUBLISHED)
         for name in (
             '9wm_1.2-7.diff.gz', '9wm_1.2.orig.tar.gz', '9wm_1.2-7.dsc'):
@@ -729,7 +731,7 @@ class TestGarbo(TestCaseWithFactory):
                 '9wm', name)
             lfa = getUtility(ILibraryFileAliasSet).create(
                 name, os.stat(path).st_size, open(path, 'r'),
-                'application/octet-stream')
+                'application/octet-stream', restricted=restricted)
             spr.addFile(lfa)
         tmp_dir = tempfile.mkdtemp(prefix='tmppsc-')
         fnull = open('/dev/null', 'w')
@@ -743,9 +745,27 @@ class TestGarbo(TestCaseWithFactory):
         changelog = open(changelog_path, 'r').read()
         shutil.rmtree(tmp_dir)
         transaction.commit() # .runHourly() switches dbuser.
+        return (spr, changelog)
+
+    def test_populateSPRChangelogs(self):
+        # We set SPR.changelog for imported records from Debian.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        spr, changelog = self.upload_to_debian()
         collector = self.runHourly()
         log = collector.logger.getLogBuffer()
         self.assertTrue(
             'SPR %d (9wm 1.2-7) changelog imported.' % spr.id in log)
         self.assertFalse(spr.changelog == None)
+        self.assertFalse(spr.changelog.restricted)
+        self.assertEqual(changelog, spr.changelog.read())
+
+    def test_populateSPRChangelogs_restricted_sprf(self):
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        spr, changelog = self.upload_to_debian(restricted=True)
+        collector = self.runHourly()
+        log = collector.logger.getLogBuffer()
+        self.assertTrue(
+            'SPR %d (9wm 1.2-7) changelog imported.' % spr.id in log)
+        self.assertFalse(spr.changelog == None)
+        self.assertTrue(spr.changelog.restricted)
         self.assertEqual(changelog, spr.changelog.read())

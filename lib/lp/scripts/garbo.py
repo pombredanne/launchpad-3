@@ -80,6 +80,7 @@ from lp.code.model.revision import (
     RevisionCache,
     )
 from lp.hardwaredb.model.hwdb import HWSubmission
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.model.person import Person
 from lp.services.job.model.job import Job
 from lp.services.memcache.interfaces import IMemcacheClient
@@ -917,6 +918,7 @@ class PopulateSPRChangelogs(TunableLoop):
 
     def __init__(self, log, abort_time=None):
         super(PopulateSPRChangelogs, self).__init__(log, abort_time)
+        self.debian = getUtility(IDistributionSet)['debian']
         value = getUtility(IMemcacheClient).get('populate-spr-changelogs')
         if not value:
             self.start_at = 0
@@ -942,7 +944,8 @@ class PopulateSPRChangelogs(TunableLoop):
                 SourcePackageRelease.id,
                 SourcePackageRelease.id >= start_at,
                 SourcePackageRelease.changelog == None,
-                SourcePackageRelease.upload_archiveID == 3,
+                SourcePackageRelease.upload_archiveID == 
+                    self.debian.main_archive.id,
             ).group_by(SourcePackageRelease.id).having(
                 Count(LibraryFileAlias) == 0
             ).order_by(SourcePackageRelease.id)
@@ -970,13 +973,14 @@ class PopulateSPRChangelogs(TunableLoop):
                             dsc_file = dest
                 except LookupError:
                     self.log.warning(
-                        'SPR %d (%s %s) has missing library files.' %
-                        (spr.id, spr.name, spr.version))
+                        'SPR %d (%s %s) has missing library files.' % (
+                            spr.id, spr.name, spr.version))
                     continue
 
                 if dsc_file is None:
-                    self.log.warning('SPR %d (%s %s) has no DSC.' %
-                        (spr.id, spr.name, spr.version))
+                    self.log.warning(
+                        'SPR %d (%s %s) has no DSC.' % (
+                            spr.id, spr.name, spr.version))
                     continue
 
                 # Extract the source package. Throw away stdout/stderr
@@ -990,8 +994,8 @@ class PopulateSPRChangelogs(TunableLoop):
                 fnull.close()
                 if ret != 0:
                     self.log.warning(
-                        'SPR %d (%s %s) failed to unpack: returned %d' %
-                        (spr.id, spr.name, spr.version, ret))
+                        'SPR %d (%s %s) failed to unpack: returned %d' % (
+                            spr.id, spr.name, spr.version, ret))
                     continue
 
                 # We have an extracted source package. Let's get the
@@ -1002,8 +1006,9 @@ class PopulateSPRChangelogs(TunableLoop):
                 except UploadError, e:
                     changelog_path = None
                     self.log.warning(
-                        'SPR %d (%s %s) changelog could not be imported: %s' %
-                        (spr.id, spr.name, spr.version, e))
+                        'SPR %d (%s %s) changelog could not be '
+                        'imported: %s' % (
+                            spr.id, spr.name, spr.version, e))
                 if changelog_path:
                     # The LFA should be restricted only if there aren't any
                     # public publications.
@@ -1015,11 +1020,11 @@ class PopulateSPRChangelogs(TunableLoop):
                         open(changelog_path, "r"),
                         "text/x-debian-source-changelog",
                         restricted=restricted)
-                    self.log.info('SPR %d (%s %s) changelog imported.' %
-                        (spr.id, spr.name, spr.version))
+                    self.log.info('SPR %d (%s %s) changelog imported.' % (
+                        spr.id, spr.name, spr.version))
                 else:
-                    self.log.warning('SPR %d (%s %s) had no changelog.' %
-                        (spr.id, spr.name, spr.version))
+                    self.log.warning('SPR %d (%s %s) had no changelog.' % (
+                        spr.id, spr.name, spr.version))
             finally:
                 shutil.rmtree(tmp_dir)
 
