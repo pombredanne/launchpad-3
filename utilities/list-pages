@@ -1,0 +1,70 @@
+#!/usr/bin/python2.6
+
+import _pythonpath
+
+from inspect import getmro
+import os
+from pprint import pformat, pprint
+
+from zope.app.pagetemplate.simpleviewclass import simple
+from zope.app.testing.functional import FunctionalTestSetup
+from zope.component import getGlobalSiteManager
+
+from zope.publisher.interfaces.browser import IDefaultBrowserLayer
+
+from canonical.launchpad.scripts import execute_zcml_for_scripts
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+
+
+def load_zcml(zopeless=False):
+    root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    if zopeless:
+        execute_zcml_for_scripts()
+    else:
+        FunctionalTestSetup(
+            os.path.join(root, 'zcml', 'ftesting.zcml')).setUp()
+
+
+def iter_page_adapters():
+    """Iterate over adapters for browser:page directives."""
+    # XXX: Gets all of the browser:page declarations. Many of these aren't
+    # actually pages, but portlets.
+    gsm = getGlobalSiteManager()
+    for adapter in gsm.registeredAdapters():
+        for interface in adapter.required:
+            if issubclass(interface, IDefaultBrowserLayer):
+                yield adapter
+
+
+def iter_canonical_url():
+    """Iterate over the canonical_url adapters."""
+    # XXX: Is this a good way of figuring out what pages we have.
+    gsm = getGlobalSiteManager()
+    for adapter in gsm.registeredAdapters():
+        if adapter.provided is ICanonicalUrlData:
+            # XXX: What's the best way of displaying this so as to give us a
+            # clue as to the actual page / URL / pageid?
+            yield adapter
+
+
+def format_page_adapter(a):
+    factory = a.factory
+    try:
+        bases = getmro(factory)
+    except AttributeError:
+        return a.name
+    bases = [b for b in bases
+             if b is not simple
+             and 'SimpleViewClass' not in b.__name__]
+    return '%s:%s' % (bases[0].__name__, a.name)
+
+
+def main():
+    load_zcml()
+    gsm = getGlobalSiteManager()
+    for adapter in iter_page_adapters():
+        print format_page_adapter(adapter)
+
+
+if __name__ == '__main__':
+    main()
