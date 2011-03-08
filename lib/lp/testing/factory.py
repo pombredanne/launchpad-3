@@ -3892,6 +3892,10 @@ class LaunchpadObjectFactory:
         else:
             return attr
 
+    def __dir__(self):
+        """Let interactive users know what can be created."""
+        return dir(self._factory)
+
 
 def remove_security_proxy_and_shout_at_engineer(obj):
     """Remove an object's security proxy and print a warning.
