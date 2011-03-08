@@ -59,6 +59,12 @@ from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
+from lp.translations.utilities.translationsharinginfo import (
+    has_ubuntu_template,
+    has_upstream_template,
+    get_ubuntu_sharing_info,
+    get_upstream_sharing_info,
+    )
 
 
 class POFileNavigation(Navigation):
@@ -877,8 +883,9 @@ class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
         Update the start_offset when the filtered batch has mutated.
         """
         if self.show == 'untranslated':
-            translationmessage = potmsgset.getCurrentTranslationMessage(
-                self.pofile.potemplate, self.pofile.language)
+            translationmessage = potmsgset.getCurrentTranslation(
+                self.pofile.potemplate, self.pofile.language,
+                self.pofile.potemplate.translation_side)
             if translationmessage is not None:
                 self.start_offset += 1
         elif self.show == 'new_suggestions':
@@ -984,6 +991,40 @@ class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
     @property
     def translations_order(self):
         return ' '.join(self._messages_html_id())
+
+    @property
+    def is_upstream_pofile(self):
+        potemplate = self.context.potemplate
+        return potemplate.translation_side == TranslationSide.UPSTREAM
+
+    def is_sharing(self):
+        if self.is_upstream_pofile:
+            return has_ubuntu_template(
+                productseries=self.context.potemplate.productseries,
+                templatename=self.context.potemplate.name)
+        else:
+            return has_upstream_template(
+                sourcepackage=self.context.potemplate.sourcepackage,
+                templatename=self.context.potemplate.name)
+
+    @property
+    def sharing_pofile(self):
+        if self.is_upstream_pofile:
+            infos = get_ubuntu_sharing_info(
+                productseries=self.context.potemplate.productseries,
+                templatename=self.context.potemplate.name)
+        else:
+            infos = get_upstream_sharing_info(
+                sourcepackage=self.context.potemplate.sourcepackage,
+                templatename=self.context.potemplate.name)
+        if len(infos) == 0:
+            return None
+        obj, potemplate = infos[0]
+        pofile = potemplate.getPOFileByLang(self.context.language.code)
+        if pofile is None:
+            pofile = potemplate.getDummyPOFile(
+                self.context.language, check_for_existing=False)
+        return pofile
 
 
 class POExportView(BaseExportView):

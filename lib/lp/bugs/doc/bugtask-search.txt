@@ -1009,6 +1009,15 @@ Similarly, we can search for bugs that do not have any linked branches.
     20 0
     21 0
 
+And we can search for bugs linked to a specific branch.
+
+    >>> search_params = BugTaskSearchParams(
+    ...     user=None, linked_branches=1)
+    >>> for task in firefox.searchTasks(search_params):
+    ...     print task.bug.id
+    4
+    5
+
 
 == Ordering search results ==
 
@@ -1230,7 +1239,7 @@ Firefox bug tasks.
     ...     name='product-struct-subber')
     >>> firefox.addBugSubscription(product_struct_subber,
     ...     product_struct_subber)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
     >>> product_struct_sub_search = BugTaskSearchParams(
     ...     user=None, structural_subscriber=product_struct_subber)
     >>> found_bugtasks = bugtask_set.search(product_struct_sub_search)
@@ -1248,7 +1257,7 @@ for the product series in which they are interested.
     ...     name='series-struct-subber')
     >>> product_series.addBugSubscription(series_struct_subber,
     ...     series_struct_subber)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
     >>> series_struct_sub_search = BugTaskSearchParams(
     ...     user=None, structural_subscriber=series_struct_subber)
     >>> found_bugtasks = bugtask_set.search(series_struct_sub_search)
@@ -1269,7 +1278,7 @@ person is subscribed.
     ...     name='project-struct-subber')
     >>> project.addBugSubscription(project_struct_subber,
     ...     project_struct_subber)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
     >>> project_struct_sub_search = BugTaskSearchParams(
     ...     user=None, structural_subscriber=project_struct_subber)
     >>> found_bugtasks = bugtask_set.search(project_struct_sub_search)
@@ -1285,7 +1294,7 @@ results.
     >>> product2.project = project
     >>> product2.addBugSubscription(project_struct_subber,
     ...     project_struct_subber)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
     >>> project_struct_sub_search = BugTaskSearchParams(
     ...     user=None, structural_subscriber=project_struct_subber)
     >>> found_bugtasks = bugtask_set.search(project_struct_sub_search)
@@ -1300,7 +1309,7 @@ bug tasks for the milestone in which they are interested.
     ...     name='milestone-struct-subber')
     >>> product_milestone.addBugSubscription(milestone_struct_subber,
     ...     milestone_struct_subber)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
     >>> milestone_struct_sub_search = BugTaskSearchParams(
     ...     user=None, structural_subscriber=milestone_struct_subber)
     >>> found_bugtasks = bugtask_set.search(milestone_struct_sub_search)
@@ -1315,7 +1324,7 @@ bugs with an Ubuntu bug task.
     ...     name='distro-struct-subber')
     >>> ubuntu.addBugSubscription(distro_struct_subber,
     ...     distro_struct_subber)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
     >>> distro_struct_sub_search = BugTaskSearchParams(
     ...     user=None, structural_subscriber=distro_struct_subber)
     >>> found_bugtasks = bugtask_set.search(distro_struct_sub_search)
@@ -1332,7 +1341,7 @@ is subscribed to all of the bug tasks about that distro series.
     ...     name='distro-series-struct-subber')
     >>> hoary.addBugSubscription(distro_series_struct_subber,
     ...     distro_series_struct_subber)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
     >>> distro_series_struct_sub_search = BugTaskSearchParams(
     ...     user=None, structural_subscriber=distro_series_struct_subber)
     >>> found_bugtasks = bugtask_set.search(distro_series_struct_sub_search)
@@ -1349,7 +1358,7 @@ subscribed to all of the Ubuntu Firefox bug tasks.
     ...     name='package-struct-subber')
     >>> ubuntu_firefox.addBugSubscription(package_struct_subber,
     ...     package_struct_subber)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
     >>> package_struct_sub_search = BugTaskSearchParams(
     ...     user=None, structural_subscriber=package_struct_subber)
     >>> found_bugtasks = bugtask_set.search(package_struct_sub_search)
@@ -1363,7 +1372,7 @@ tasks.
 
     >>> product_series.addBugSubscription(package_struct_subber,
     ...     package_struct_subber)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
     >>> package_struct_sub_search = BugTaskSearchParams(
     ...     user=None, structural_subscriber=package_struct_subber)
     >>> found_bugtasks = bugtask_set.search(package_struct_sub_search)

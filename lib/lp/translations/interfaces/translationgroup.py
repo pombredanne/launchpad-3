@@ -23,7 +23,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.validators.name import name_validator
+from lp.app.validators.name import name_validator
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import (
     PublicPersonChoice,

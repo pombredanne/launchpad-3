@@ -12,29 +12,12 @@
           width: 90%;
           max-width: 80em;
       }
-      .homepage-portlet {
-          margin-bottom: 3em;
-          line-height: 140%;
-      }
-      .homepage-portlet h2 {
-          border-bottom: 1px solid;
-          margin-top: 2em;
-          font-size: 167%;
-          padding-bottom: 2px;
-          }
-      .homepage-whatslaunchpad h2 {
-          font-size: 189%;
-          font-weight: bold;
-          line-height: 110%;
-          margin-bottom: 0.5em;
-      }
       #homepage-whatslaunchpad ul {
           margin-left: 1em;
           margin-bottom: 0.5em;
       }
       #homepage-whatslaunchpad ul,
       #homepage-whatslaunchpad-tour {
-          font-size: 116%;
           font-weight: bold;
       }
       #homepage-stats {
@@ -42,7 +25,6 @@
           margin: auto;
           padding-top: 0.5em;
           color: gray;
-          font-size: 83.3%
       }
       #homepage-blogposts {
           padding-right: 4em;
@@ -51,7 +33,6 @@
           padding-top: 0.5em;
           }
       .featured-project-top h3 {
-          font-size: 131%;
           font-weight: bold;
           }
       .featured-project-top h3 img {
@@ -60,7 +41,8 @@
       .featured-project-top p {
           margin-top: 0.5em;
           margin-bottom: 1em;
-          border-bottom: 1px solid #888888;
+          padding-bottom: .5em;
+          border-bottom: 1px dotted #999;
           }
     </style>
   </metal:head>
@@ -76,14 +58,14 @@
 
       <div id="homepage" class="homepage">
 
-        <div class="top-portlet" style="border-bottom: 1px solid;">
+        <div class="top-portlet" style="border-bottom: 1px dotted #999;">
           <img src="/@@/launchpad-logo-and-name.png"
                alt=""
                style="margin: 0 9em 1em 0"/>
         </div>
 
         <div class="yui-g">
-          <div class="yui-u first">
+          <div class="yui-u first" style="margin-top: 1.5em;">
             <div class="homepage-whatslaunchpad"
                  tal:condition="not:view/user" tal:content="cache:anonymous">
               <h2><span class="launchpad-gold">Launchpad</span> is a software collaboration platform that provides:</h2>
@@ -168,17 +150,17 @@
               setFocusByName('field.text');
             // --></script>
             <div id="homepage-stats" tal:content="cache:public, 1 hour">
-              <strong class="registry-stat"
+              <strong
                 tal:content="view/project_count/fmt:intcomma">123</strong>&nbsp;projects,
-              <strong class="bugs-stat"
+              <strong
                 tal:content="view/bug_count/fmt:intcomma">123</strong>&nbsp;bugs,
-              <strong class="code-stat"
+              <strong
                 tal:content="view/branch_count/fmt:intcomma">123</strong>&nbsp;branches,
-              <strong class="translations-stat"
+              <strong
                 tal:content="view/translation_count/fmt:intcomma">123</strong>&nbsp;translations,
-              <strong class="answers-stat"
+              <strong
                 tal:content="view/answer_count/fmt:intcomma">123</strong>&nbsp;answers,
-              <strong class="blueprints-stat"
+              <strong
                 tal:content="view/blueprint_count/fmt:intcomma">123</strong>&nbsp;blueprints,
               and&nbsp;counting...
             </div>
@@ -187,17 +169,17 @@
               <tal:logged_out condition="not:view/user" omit-tag="">
                 <a href="/+login">Creating an account</a> allows you to start
                 working within Launchpad.<br />
-              </tal:logged_out>You can test Launchpad's functionality
-              in our sandbox environment.
-              (<a href="/+help/home-page-staging-help.html" target="help">What's this?</a>)<br />
+              </tal:logged_out>
+              <p>
+                Learn more about Launchpad in the
+                <a href="https://help.launchpad.net/">user guide</a>
+                or try it for yourself in our
+                <a href="https://qastaging.launchpad.net/">sandbox environment</a>.
+              </p>
               <tal:logged_in condition="view/user" omit-tag=""
                 tal:content="cache:public">
                 If you're ready, you can:
                 <ul tal:define="apphomes view/apphomes">
-                  <li>
-                    <a class="sprite info"
-                      href="https://help.launchpad.net/">Read the user guide</a>
-                  </li>
                   <li>
                     <a class="sprite add"
                       href="/projects/+new">Register a project</a>

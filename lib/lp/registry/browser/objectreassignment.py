@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A view for changing the owner or registrant of an object.
@@ -24,14 +24,14 @@ from zope.schema.vocabulary import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp import canonical_url
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     )
+from lp.app.validators.name import valid_name
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.registry.interfaces.person import (
     IObjectReassignment,
     IPersonSet,

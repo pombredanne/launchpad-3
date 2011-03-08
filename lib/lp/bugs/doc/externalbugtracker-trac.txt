@@ -33,7 +33,7 @@ to validate the token.
 
     >>> import urllib2
     >>> class TracHavingLPPlugin401(Trac):
-    ...     def urlopen(self, url):
+    ...     def urlopen(self, url, data=None):
     ...         print url
     ...         raise urllib2.HTTPError(
     ...             url, 401, "Unauthorized", None, None)
@@ -60,13 +60,13 @@ not include a "trac_auth" cookie.
     >>> from urllib import addinfourl
 
     >>> class TracReturning200ForPageNotFound(Trac):
-    ...     def urlopen(self, url):
+    ...     def urlopen(self, url, data=None):
     ...         print url
     ...         return addinfourl(
     ...             StringIO(''), HTTPMessage(StringIO('')), url)
 
     >>> class TracHavingLPPlugin200(Trac):
-    ...     def urlopen(self, url):
+    ...     def urlopen(self, url, data=None):
     ...         print url
     ...         return addinfourl(
     ...             StringIO(''), HTTPMessage(
@@ -99,7 +99,7 @@ the external bug tracker that groks the plugin is selected:
 If a 404 is returned, the normal Trac instance is returned.
 
     >>> class TracNotHavingLPPlugin(Trac):
-    ...     def urlopen(self, url):
+    ...     def urlopen(self, url, data=None):
     ...         print url
     ...         raise urllib2.HTTPError(
     ...             url, 404, "Not found", None, None)
@@ -157,7 +157,7 @@ Calling initializeRemoteBugDB() on our Trac instance and passing it a set of
 remote bug IDs will fetch those bug IDs from the server and file them in a
 local variable for later use.
 
-We use a test-oriented implementation for the purposes of these tests, which 
+We use a test-oriented implementation for the purposes of these tests, which
 overrides ExternalBugTracker.urlopen() so that we don't have to rely on a
 working network connection.
 
@@ -208,7 +208,7 @@ doesn't support CSV exports of individual tickets:
     CALLED urlopen(u'http://test.trac/query?id=6&id=7...&format=csv')
 
 If, when using the batch export method, the Trac instance comes across
-invalid data, it will raise an UnparseableBugData exception. We will
+invalid data, it will raise an UnparsableBugData exception. We will
 force our trac instance to use invalid data for the purposes of this
 test.
 
@@ -216,7 +216,7 @@ test.
     >>> trac.initializeRemoteBugDB([6, 7, 8, 9, 10])
     Traceback (most recent call last):
       ...
-    UnparseableBugData: External bugtracker http://test.trac does not
+    UnparsableBugData: External bugtracker http://test.trac does not
     define all the necessary fields for bug status imports (Defined
     field names: ['<html>']).
 
@@ -226,7 +226,7 @@ This is also true of the single bug export mode.
     >>> trac.initializeRemoteBugDB([6])
     Traceback (most recent call last):
       ...
-    UnparseableBugData: External bugtracker http://test.trac does not
+    UnparsableBugData: External bugtracker http://test.trac does not
     define all the necessary fields for bug status imports (Defined
     field names: ['<html>']).
 
@@ -261,13 +261,13 @@ the IDs returned are nothing like the ones we asked for:
     [1, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153]
 
 If _fetchBugData() receives a response that isn't a valid Trac CSV
-export, it will raise an UnparseableBugData error.
+export, it will raise an UnparsableBugData error.
 
     >>> trac.csv_export_file = 'trac_example_broken_ticket_export.csv'
     >>> trac._fetchBugData(query_url)
     Traceback (most recent call last):
       ...
-    UnparseableBugData: External bugtracker http://test.trac does not
+    UnparsableBugData: External bugtracker http://test.trac does not
     define all the necessary fields for bug status imports (Defined
     field names: ['<html>']).
 
@@ -279,11 +279,13 @@ First, we create some bug watches to test with:
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.registry.interfaces.person import IPersonSet
 
-    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
 
     >>> example_bug_tracker = new_bugtracker(BugTrackerType.TRAC)
 
-    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
     ...     example_bug_tracker, '1',

@@ -10,7 +10,10 @@ __all__ = [
     'SourcePackageRecipeBuild',
     ]
 
-import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import logging
 import sys
 
@@ -194,8 +197,12 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
             logger = logging.getLogger()
         builds = []
         for recipe in recipes:
+            recipe.is_stale = False
             logger.debug(
                 'Recipe %s/%s is stale', recipe.owner.name, recipe.name)
+            if recipe.daily_build_archive is None:
+                logger.debug(' - No daily build archive specified.')
+                continue
             for distroseries in recipe.distroseries:
                 series_name = distroseries.named_version
                 try:
@@ -215,7 +222,6 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
                 else:
                     logger.debug(' - build requested for %s', series_name)
                     builds.append(build)
-            recipe.is_stale = False
         return builds
 
     def _unqueueBuild(self):
@@ -256,9 +262,9 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
     def getRecentBuilds(cls, requester, recipe, distroseries, _now=None):
         from lp.buildmaster.model.buildfarmjob import BuildFarmJob
         if _now is None:
-            _now = datetime.datetime.now(utc)
+            _now = datetime.now(utc)
         store = IMasterStore(SourcePackageRecipeBuild)
-        old_threshold = _now - datetime.timedelta(days=1)
+        old_threshold = _now - timedelta(days=1)
         return store.find(cls, cls.distroseries_id == distroseries.id,
             cls.requester_id == requester.id, cls.recipe_id == recipe.id,
             BuildFarmJob.date_created > old_threshold,
@@ -279,13 +285,16 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         median = self.recipe.getMedianBuildDuration()
         if median is not None:
             return median
-        return datetime.timedelta(minutes=10)
+        return timedelta(minutes=10)
 
     def verifySuccessfulUpload(self):
         return self.source_package_release is not None
 
     def notify(self, extra_info=None):
         """See `IPackageBuild`."""
+        # If our recipe has been deleted, any notification will fail.
+        if self.recipe is None:
+            return
         mailer = SourcePackageRecipeBuildMailer.forStatus(self)
         mailer.sendAll()
 
@@ -328,6 +337,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
         """See `IPackageBuild`."""
         d = super(SourcePackageRecipeBuild, self)._handleStatus_OK(
             librarian, slave_status, logger)
+
         def uploaded_build(ignored):
             # Base implementation doesn't notify on success.
             if self.status == BuildStatus.FULLYBUILT:

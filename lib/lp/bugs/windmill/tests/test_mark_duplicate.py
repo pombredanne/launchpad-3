@@ -8,12 +8,12 @@ __all__ = []
 
 import unittest
 
-from canonical.launchpad.windmill.testing import (
+from lp.bugs.windmill.testing import BugsWindmillLayer
+from lp.testing import WindmillTestCase
+from lp.testing.windmill import (
     constants,
     lpuser,
     )
-from lp.bugs.windmill.testing import BugsWindmillLayer
-from lp.testing import WindmillTestCase
 
 
 MAIN_FORM_ELEMENT = u'//div[@id="duplicate-form-container"]/div'
@@ -115,7 +115,7 @@ class TestMarkDuplicate(WindmillTestCase):
         client.click(link=u'bug #1')
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.waits.forElement(
-            id=u'bug-title', timeout=constants.FOR_ELEMENT)
+            id=u'edit-title', timeout=constants.FOR_ELEMENT)
 
         # Make sure all js loads are complete before trying the next test.
         client.waits.forElement(

@@ -10,8 +10,8 @@ from mocker import (
     Mocker,
     )
 
-from canonical.launchpad.windmill.testing.widgets import OnPageWidget
 from lp.testing import TestCase
+from lp.testing.windmill.widgets import OnPageWidget
 
 
 class TestOnPageWidget(TestCase):

@@ -112,7 +112,7 @@ The pmount source has no packageupload in the sampledata:
 
 The iceweasel source has good data:
 
-    >>> pub = spph.archive.getPublishedSources(name="iceweasel")[0]
+    >>> pub = spph.archive.getPublishedSources(name="iceweasel").first()
     >>> print pub.changesFileUrl()
     http://launchpad.dev/ubuntu/+archive/primary/+files/mozilla-firefox_0.9_i386.changes
 
@@ -1432,9 +1432,9 @@ The returned ResultSet element is tuple containing:
 Last but not least the publishing set class allows for the bulk deletion
 of publishing history records.
 
-    >>> cprov_sources = sorted(list(
+    >>> cprov_sources = sorted(
     ...     cprov.archive.getPublishedSources(
-    ...     status=PackagePublishingStatus.PUBLISHED)),
+    ...     status=PackagePublishingStatus.PUBLISHED),
     ...     key=operator.attrgetter('id'))
     >>> print len(cprov_sources)
     6

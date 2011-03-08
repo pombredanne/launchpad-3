@@ -57,13 +57,16 @@ class IBranchCollection(Interface):
             of individuals and teams that own branches in this collection.
         """
 
-    def getBranches():
+    def getBranches(eager_load=False):
         """Return a result set of all branches in this collection.
 
         The returned result set will also join across the specified tables as
         defined by the arguments to this function.  These extra tables are
         joined specificly to allow the caller to sort on values not in the
         Branch table itself.
+
+        :param eager_load: If True trigger eager loading of all the related
+            objects in the collection.
         """
 
     def getMergeProposals(statuses=None, for_branches=None,
@@ -97,6 +100,18 @@ class IBranchCollection(Interface):
         :param status: An iterable of queue_status of the proposals to return.
             If None is specified, all the proposals of all possible states
             are returned.
+        """
+
+    def getExtendedRevisionDetails(user, revisions):
+        """Return information about the specified revisions on a branch.
+
+        For each revision, see if the revision resulted from merging in a
+        merge proposal, and if so package up the merge proposal and any linked
+        bug tasks on the merge proposal's source branch.
+
+        :param user: The user who is making the request. Only bug tasks
+            visible to this user are returned.
+        :param revisions: The revisions we want details for.
         """
 
     def getTeamsWithBranches(person):
@@ -136,6 +151,11 @@ class IBranchCollection(Interface):
 
     def ownedBy(person):
         """Restrict the collection to branches owned by 'person'."""
+
+    def ownedByTeamMember(person):
+        """Restrict the collection to branches owned by 'person' or a team
+        of which person is a member.
+        """
 
     def registeredBy(person):
         """Restrict the collection to branches registered by 'person'."""

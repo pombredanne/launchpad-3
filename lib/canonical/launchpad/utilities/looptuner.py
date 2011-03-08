@@ -24,6 +24,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
+from canonical.lazr.utils import safe_hasattr
 
 
 class LoopTuner:
@@ -117,55 +118,59 @@ class LoopTuner:
 
     def run(self):
         """Run the loop to completion."""
-        chunk_size = self.minimum_chunk_size
-        iteration = 0
-        total_size = 0
-        self.start_time = self._time()
-        last_clock = self.start_time
-        while not self.operation.isDone():
+        try:
+            chunk_size = self.minimum_chunk_size
+            iteration = 0
+            total_size = 0
+            self.start_time = self._time()
+            last_clock = self.start_time
+            while not self.operation.isDone():
 
-            if self._isTimedOut():
-                self.log.warn(
-                    "Task aborted after %d seconds." % self.abort_time)
-                break
+                if self._isTimedOut():
+                    self.log.warn(
+                        "Task aborted after %d seconds." % self.abort_time)
+                    break
 
-            self.operation(chunk_size)
+                self.operation(chunk_size)
 
-            new_clock = self._time()
-            time_taken = new_clock - last_clock
-            last_clock = new_clock
-            self.log.debug("Iteration %d (size %.1f): %.3f seconds" %
-                         (iteration, chunk_size, time_taken))
+                new_clock = self._time()
+                time_taken = new_clock - last_clock
+                last_clock = new_clock
+                self.log.debug("Iteration %d (size %.1f): %.3f seconds" %
+                            (iteration, chunk_size, time_taken))
 
-            last_clock = self._coolDown(last_clock)
+                last_clock = self._coolDown(last_clock)
 
-            total_size += chunk_size
+                total_size += chunk_size
 
-            # Adjust parameter value to approximate goal_seconds.  The new
-            # value is the average of two numbers: the previous value, and an
-            # estimate of how many rows would take us to exactly goal_seconds
-            # seconds.
-            # The weight in this estimate of any given historic measurement
-            # decays exponentially with an exponent of 1/2.  This softens the
-            # blows from spikes and dips in processing time.
-            # Set a reasonable minimum for time_taken, just in case we get
-            # weird values for whatever reason and destabilize the
-            # algorithm.
-            time_taken = max(self.goal_seconds/10, time_taken)
-            chunk_size *= (1 + self.goal_seconds/time_taken)/2
-            chunk_size = max(chunk_size, self.minimum_chunk_size)
-            chunk_size = min(chunk_size, self.maximum_chunk_size)
-            iteration += 1
+                # Adjust parameter value to approximate goal_seconds.
+                # The new value is the average of two numbers: the
+                # previous value, and an estimate of how many rows would
+                # take us to exactly goal_seconds seconds. The weight in
+                # this estimate of any given historic measurement decays
+                # exponentially with an exponent of 1/2. This softens
+                # the blows from spikes and dips in processing time. Set
+                # a reasonable minimum for time_taken, just in case we
+                # get weird values for whatever reason and destabilize
+                # the algorithm.
+                time_taken = max(self.goal_seconds/10, time_taken)
+                chunk_size *= (1 + self.goal_seconds/time_taken)/2
+                chunk_size = max(chunk_size, self.minimum_chunk_size)
+                chunk_size = min(chunk_size, self.maximum_chunk_size)
+                iteration += 1
 
-        total_time = last_clock - self.start_time
-        average_size = total_size/max(1, iteration)
-        average_speed = total_size/max(1, total_time)
-        self.log.debug(
-            "Done. %d items in %d iterations, "
-            "%.3f seconds, "
-            "average size %f (%s/s)" %
-                (total_size, iteration, total_time, average_size,
-                 average_speed))
+            total_time = last_clock - self.start_time
+            average_size = total_size/max(1, iteration)
+            average_speed = total_size/max(1, total_time)
+            self.log.debug(
+                "Done. %d items in %d iterations, "
+                "%.3f seconds, "
+                "average size %f (%s/s)" %
+                    (total_size, iteration, total_time, average_size,
+                    average_speed))
+        finally:
+            if safe_hasattr(self.operation, 'cleanUp'):
+                self.operation.cleanUp()
 
     def _coolDown(self, bedtime):
         """Sleep for `self.cooldown_time` seconds, if set.

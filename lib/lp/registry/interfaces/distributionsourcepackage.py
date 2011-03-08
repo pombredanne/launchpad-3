@@ -36,14 +36,14 @@ from lp.bugs.interfaces.bugtarget import (
     IHasOfficialBugTags,
     )
 from lp.bugs.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
 from lp.code.interfaces.hasbranches import (
     IHasBranches,
     IHasMergeProposals,
     )
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
-    )
 from lp.soyuz.enums import ArchivePurpose
 
 

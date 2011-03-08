@@ -40,7 +40,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.encoding import (
+from lp.services.encoding import (
     ascii_smash,
     guess as guess_encoding,
     )
@@ -72,7 +72,6 @@ from lp.registry.interfaces.pocket import (
     )
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import (
-    BinaryPackageFormat,
     PackageUploadCustomFormat,
     PackageUploadStatus,
     )
@@ -192,8 +191,22 @@ class PackageUpload(SQLBase):
     # PackageUploadSource objects which are related.
     sources = SQLMultipleJoin('PackageUploadSource',
                               joinColumn='packageupload')
+    # Does not include source builds.
     builds = SQLMultipleJoin('PackageUploadBuild',
                              joinColumn='packageupload')
+
+    def getSourceBuild(self):
+        #avoid circular import
+        from lp.code.model.sourcepackagerecipebuild import (
+            SourcePackageRecipeBuild)
+        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+        return Store.of(self).find(
+            SourcePackageRecipeBuild,
+            SourcePackageRecipeBuild.id ==
+                SourcePackageRelease.source_package_recipe_build_id,
+            SourcePackageRelease.id ==
+            PackageUploadSource.sourcepackagereleaseID,
+            PackageUploadSource.packageupload == self.id).one()
 
     # Also the custom files associated with the build.
     customfiles = SQLMultipleJoin('PackageUploadCustom',
@@ -487,6 +500,10 @@ class PackageUpload(SQLBase):
     def contains_build(self):
         """See `IPackageUpload`."""
         return self.builds
+
+    @cachedproperty
+    def from_build(self):
+        return bool(self.builds) or self.getSourceBuild()
 
     def isAutoSyncUpload(self, changed_by_email):
         """See `IPackageUpload`."""
@@ -1070,10 +1087,10 @@ class PackageUpload(SQLBase):
 
         # If this is a binary or mixed upload, we don't send *any* emails
         # provided it's not a rejection or a security upload:
-        if(self.contains_build and
+        if(self.from_build and
            self.status != PackageUploadStatus.REJECTED and
            self.pocket != PackagePublishingPocket.SECURITY):
-            debug(self.logger, "Not sending email, upload contains binaries.")
+            debug(self.logger, "Not sending email; upload is from a build.")
             return
 
         # XXX julian 2007-05-11:
@@ -1440,12 +1457,9 @@ class PackageUploadBuild(SQLBase):
         """See `IPackageUploadBuild`."""
         # Determine the build's architecturetag
         build_archtag = self.build.distro_arch_series.architecturetag
-        # Determine the target arch series.
-        # This will raise NotFoundError if anything odd happens.
-        target_das = self.packageupload.distroseries[build_archtag]
+        distroseries = self.packageupload.distroseries
         debug(logger, "Publishing build to %s/%s/%s" % (
-            target_das.distroseries.distribution.name,
-            target_das.distroseries.name,
+            distroseries.distribution.name, distroseries.name,
             build_archtag))
 
         # First up, publish everything in this build into that dar.
@@ -1461,7 +1475,7 @@ class PackageUploadBuild(SQLBase):
                 getUtility(IPublishingSet).publishBinary(
                     archive=self.packageupload.archive,
                     binarypackagerelease=binary,
-                    distroarchseries=target_das,
+                    distroseries=distroseries,
                     component=binary.component,
                     section=binary.section,
                     priority=binary.priority,

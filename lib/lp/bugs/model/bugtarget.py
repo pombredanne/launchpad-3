@@ -94,7 +94,8 @@ class HasBugsBase:
                     hardware_owner_is_affected_by_bug=False,
                     hardware_owner_is_subscribed_to_bug=False,
                     hardware_is_linked_to_bug=False, linked_branches=None,
-                    modified_since=None, created_since=None, prejoins=[]):
+                    linked_blueprints=None, modified_since=None,
+                    created_since=None, prejoins=[]):
         """See `IHasBugs`."""
         if status is None:
             # If no statuses are supplied, default to the
@@ -140,12 +141,7 @@ class HasBugsBase:
     @property
     def open_bugtasks(self):
         """See `IHasBugs`."""
-        open_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES),
-            omit_dupes=True)
-
-        return self.searchTasks(open_tasks_query)
+        return self.searchTasks(BugTaskSet().open_bugtask_search)
 
     @property
     def new_bugtasks(self):

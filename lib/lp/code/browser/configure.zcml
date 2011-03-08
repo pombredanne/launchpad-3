@@ -1228,10 +1228,23 @@
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             layer="lp.code.publisher.CodeLayer"
-            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeRequestBuildsView"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeRequestBuildsHtmlView"
             name="+request-builds"
             template="../templates/sourcepackagerecipe-request-builds.pt"
             permission="launchpad.AnyPerson"/>
+        <browser:page
+            for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+            layer="lp.code.publisher.CodeLayer"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeRequestBuildsAjaxView"
+            name="+builds"
+            template="../templates/sourcepackagerecipe-builds.pt"
+            permission="launchpad.View"/>
+        <browser:page
+            for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+            layer="lp.code.publisher.CodeLayer"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeRequestDailyBuildView"
+            name="+request-daily-build"
+            permission="launchpad.Edit"/>
     </facet>
     <facet facet="branches">
         <browser:defaultView

@@ -230,8 +230,14 @@ class ITeamMembership(Interface):
         """
 
     def sendExpirationWarningEmail():
-        """Send an email to the member warning him that this membership will
-        expire soon.
+        """Send the member an email warning that the membership will expire.
+
+        This method cannot be called for memberships without an expiration
+        date. Emails are not sent to members if their membership has already
+        expired or if the member is no longer active.
+
+        :raises AssertionError: if the member has no expiration date of the
+            team or if the TeamMembershipRenewalPolicy is AUTOMATIC.
         """
 
     @call_with(user=REQUEST_USER)

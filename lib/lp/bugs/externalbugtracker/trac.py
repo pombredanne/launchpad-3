@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Trac ExternalBugTracker implementation."""
@@ -21,8 +21,8 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.launchpad.interfaces.message import IMessageSet
-from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.url import urlappend
+from lp.app.validators.email import valid_email
 from lp.bugs.externalbugtracker.base import (
     BugNotFound,
     BugTrackerAuthenticationError,
@@ -30,7 +30,7 @@ from lp.bugs.externalbugtracker.base import (
     InvalidBugId,
     LookupTree,
     UnknownRemoteStatusError,
-    UnparseableBugData,
+    UnparsableBugData,
     )
 from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 from lp.bugs.externalbugtracker.xmlrpc import UrlLib2Transport
@@ -143,13 +143,13 @@ class Trac(ExternalBugTracker):
         # We consider the data we're getting from the remote server to
         # be valid if there is an ID field and a status field in the CSV
         # header. If the fields don't exist we raise an
-        # UnparseableBugData error. If these fields are defined but not
+        # UnparsableBugData error. If these fields are defined but not
         # filled in for each row, that error will be handled in
         # getRemoteBugStatus() (i.e.  with a BugNotFound or an
         # UnknownRemoteStatusError).
         if ('id' not in csv_reader.fieldnames or
             'status' not in csv_reader.fieldnames):
-            raise UnparseableBugData(
+            raise UnparsableBugData(
                 "External bugtracker %s does not define all the necessary "
                 "fields for bug status imports (Defined field names: %r)."
                 % (self.baseurl, csv_reader.fieldnames))
@@ -169,7 +169,7 @@ class Trac(ExternalBugTracker):
         # There should be only one bug returned for a getRemoteBug()
         # call, so if we have more or less than one bug something went
         # wrong.
-        raise UnparseableBugData(
+        raise UnparsableBugData(
             "Remote bugtracker %s returned wrong amount of data for bug "
             "%i (expected 1 bug, got %i bugs)." %
             (self.baseurl, bug_id, len(bug_data)))
@@ -248,7 +248,7 @@ class Trac(ExternalBugTracker):
 
         # If the bug has a valid resolution as well as a status then we return
         # that, since it's more informative than the status field on its own.
-        if (remote_bug.has_key('resolution') and
+        if ('resolution' in remote_bug and
             remote_bug['resolution'] not in ['', '--', None]):
             return remote_bug['resolution']
         else:
@@ -271,8 +271,7 @@ class Trac(ExternalBugTracker):
     _status_lookup_titles = 'Trac status',
     _status_lookup = LookupTree(
         ('new', 'open', 'reopened', BugTaskStatus.NEW),
-        # XXX: 2007-08-06 Graham Binns:
-        #      We should follow dupes if possible.
+        # XXX: Graham Binns 2007-08-06: We should follow dupes if possible.
         ('accepted', 'assigned', 'duplicate', BugTaskStatus.CONFIRMED),
         # Status fixverified added for bug 667340, for http://trac.yorba.org/,
         # but could be generally useful so adding here.
@@ -295,6 +294,7 @@ def needs_authentication(func):
     If an `xmlrpclib.ProtocolError` with error code 403 is raised by the
     function, we'll try to authenticate and call the function again.
     """
+
     def decorator(self, *args, **kwargs):
         try:
             return func(self, *args, **kwargs)
@@ -401,7 +401,8 @@ class TracLPPlugin(Trac):
         # We retrieve only the IDs of the modified bugs from the server.
         criteria = {
             'modified_since': last_checked_timestamp,
-            'bugs': remote_bug_ids,}
+            'bugs': remote_bug_ids,
+            }
         time_snapshot, modified_bugs = self._server.launchpad.bug_info(
             LP_PLUGIN_BUG_IDS_ONLY, criteria)
 

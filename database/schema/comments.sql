@@ -208,6 +208,7 @@ COMMENT ON COLUMN BugSubscription.bug_notification_level IS 'The level of notifi
 -- BugSubscriptionFilter
 COMMENT ON TABLE BugSubscriptionFilter IS 'A filter with search criteria. Emails are sent only if the affected bug matches the specified parameters. The parameters are the same as those used for bugtask searches.';
 COMMENT ON COLUMN BugSubscriptionFilter.structuralsubscription IS 'The structural subscription to be filtered.';
+COMMENT ON COLUMN BugSubscriptionFilter.bug_notification_level IS 'The volume and type of bug notifications this filter will allow. The value is an item of the enumeration `BugNotificationLevel`.';
 COMMENT ON COLUMN BugSubscriptionFilter.find_all_tags IS 'If set, search for bugs having all tags specified in BugSubscriptionFilterTag, else search for bugs having any of the tags specified in BugSubscriptionFilterTag.';
 COMMENT ON COLUMN BugSubscriptionFilter.include_any_tags IS 'If True, include messages for bugs having any tag set.';
 COMMENT ON COLUMN BugSubscriptionFilter.exclude_any_tags IS 'If True, exclude bugs having any tag set.';
@@ -279,6 +280,8 @@ COMMENT ON COLUMN BugNotification.bug IS 'The bug that was changed.';
 COMMENT ON COLUMN BugNotification.message IS 'The message the contains the textual representation of the change.';
 COMMENT ON COLUMN BugNotification.is_comment IS 'Is the change a comment addition.';
 COMMENT ON COLUMN BugNotification.date_emailed IS 'When this notification was emailed to the bug subscribers.';
+COMMENT ON COLUMN BugNotification.activity IS 'The BugActivity record corresponding to this notification, if any.';
+COMMENT ON COLUMN BugNotification.status IS 'The status of this bug notification: pending, omitted, or sent.';
 
 
 -- BugNotificationAttachment
@@ -286,6 +289,13 @@ COMMENT ON COLUMN BugNotification.date_emailed IS 'When this notification was em
 COMMENT ON TABLE BugNotificationAttachment IS 'Attachments to be attached to a bug notification.';
 COMMENT ON COLUMN BugNotificationAttachment.message IS 'A message to be attached to the sent bug notification. It will be attached as a mime/multipart part, with a content type of message/rfc822.';
 COMMENT ON COLUMN BugNotificationAttachment.bug_notification IS 'The bug notification, to which things should be attached to.';
+
+
+-- BugNotificationFilter
+
+COMMENT ON TABLE BugNotificationFilter IS 'BugSubscriptionFilters that caused BugNotification to be generated.';
+COMMENT ON COLUMN BugNotificationFilter.bug_subscription_filter IS 'A BugSubscriptionFilter that caused a notification to go off.';
+COMMENT ON COLUMN BugNotificationFilter.bug_notification IS 'The bug notification which a filter caused to be emitted.';
 
 
 -- BugNotificationRecipient
@@ -604,6 +614,14 @@ COMMENT ON COLUMN FeatureFlag.priority IS
 
 COMMENT ON COLUMN FeatureFlag.flag IS
     'Name of the flag being controlled';
+
+-- FeatureFlagChange
+
+COMMENT ON TABLE FeatureFlagChangelogEntry IS 'A record of changes to the FeatureFlag table.';
+COMMENT ON COLUMN FeatureFlagChangelogEntry.date_changed IS 'The timestamp for when the change was made';
+COMMENT ON COLUMN FeatureFlagChangelogEntry.diff IS 'A unified diff of the change.';
+COMMENT ON COLUMN FeatureFlagChangelogEntry.comment IS 'A comment explaining the change.';
+COMMENT ON COLUMN FeatureFlagChangelogEntry.person IS 'The person who made this change.';
 
 -- KarmaCategory
 
@@ -1266,6 +1284,9 @@ COMMENT ON COLUMN Person.mailing_list_receive_duplicates IS 'True means the user
 COMMENT ON COLUMN Person.visibility IS 'person.PersonVisibility enumeration which can be set to Public, Public with Private Membership, or Private.';
 COMMENT ON COLUMN Person.verbose_bugnotifications  IS 'If true, all bugnotifications sent to this Person will include the bug description.';
 
+COMMENT ON TABLE PersonSettings IS 'Flags and settings corresponding to a Person. These are in a separate table to remove infrequently used data from the Person table itself.';
+COMMENT ON COLUMN PersonSettings.selfgenerated_bugnotifications  IS 'If true, users receive bugnotifications for actions they personally triggered.';
+
 COMMENT ON VIEW ValidPersonCache IS 'A materialized view listing the Person.ids of all valid people (but not teams).';
 
 -- PersonLanguage
@@ -1821,6 +1842,14 @@ it is simply a record of who told us about this packaging relationship. Note
 that we do not keep a history of these, so if someone sets it correctly,
 then someone else sets it incorrectly, we lose the first setting.';
 
+COMMENT ON TABLE PackagingJob IS 'A Job related to a Packaging entry.';
+COMMENT ON COLUMN PackagingJob.id IS '';
+COMMENT ON COLUMN PackagingJob.job IS 'The Job related to this PackagingJob.';
+COMMENT ON COLUMN PackagingJob.job_type IS 'An enumeration specifying the type of job to perform.';
+COMMENT ON COLUMN PackagingJob.productseries IS 'The productseries of the Packaging.';
+COMMENT ON COLUMN PackagingJob.sourcepackagename IS 'The sourcepackage of the Packaging.';
+COMMENT ON COLUMN PackagingJob.distroseries IS 'The distroseries of the Packaging.';
+
 -- Translator / TranslationGroup
 
 COMMENT ON TABLE TranslationGroup IS 'This represents an organised translation group that spans multiple languages. Effectively it consists of a list of people (pointers to Person), and each Person is associated with a Language. So, for each TranslationGroup we can ask the question "in this TranslationGroup, who is responsible for translating into Arabic?", for example.';
@@ -2182,6 +2211,7 @@ translation message.';
 COMMENT ON TABLE NameBlacklist IS 'A list of regular expressions used to blacklist names.';
 COMMENT ON COLUMN NameBlacklist.regexp IS 'A Python regular expression. It will be compiled with the IGNORECASE, UNICODE and VERBOSE flags. The Python search method will be used rather than match, so ^ markers should be used to indicate the start of a string.';
 COMMENT ON COLUMN NameBlacklist.comment IS 'An optional comment on why this regexp was entered. It should not be displayed to non-admins and its only purpose is documentation.';
+COMMENT ON COLUMN NameBlacklist.admin IS 'The person who can override the blacklisted name.';
 
 -- ScriptActivity
 COMMENT ON TABLE ScriptActivity IS 'Records of successful runs of scripts ';
@@ -2393,8 +2423,6 @@ COMMENT ON COLUMN StructuralSubscription.distroseries IS 'The subscription\`s ta
 COMMENT ON COLUMN StructuralSubscription.sourcepackagename IS 'The subscription\`s target, when it is a source-package';
 COMMENT ON COLUMN StructuralSubscription.subscriber IS 'The person subscribed.';
 COMMENT ON COLUMN StructuralSubscription.subscribed_by IS 'The person initiating the subscription.';
-COMMENT ON COLUMN StructuralSubscription.bug_notification_level IS 'The volume and type of bug notifications this subscription will generate. The value is an item of the enumeration `BugNotificationLevel`.';
-COMMENT ON COLUMN StructuralSubscription.blueprint_notification_level IS 'The volume and type of blueprint notifications this subscription will generate. The value is an item of the enumeration `BugNotificationLevel`.';
 COMMENT ON COLUMN StructuralSubscription.date_created IS 'The date on which this subscription was created.';
 COMMENT ON COLUMN StructuralSubscription.date_last_updated IS 'The date on which this subscription was last updated.';
 

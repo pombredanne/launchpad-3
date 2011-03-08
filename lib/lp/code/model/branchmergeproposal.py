@@ -236,14 +236,15 @@ class BranchMergeProposal(SQLBase):
         storm_validator=validate_public_person, notNull=False,
         default=None)
 
-    @property
-    def related_bugs(self):
-        """Bugs which are linked to the source but not the target.
+    def getRelatedBugTasks(self, user):
+        """Bug tasks which are linked to the source but not the target.
 
-        Implies that these bugs would be fixed, in the target, by the merge.
+        Implies that these would be fixed, in the target, by the merge.
         """
-        return (bug for bug in self.source_branch.linked_bugs
-                if bug not in self.target_branch.linked_bugs)
+        source_tasks = self.source_branch.getLinkedBugTasks(user)
+        target_tasks = self.target_branch.getLinkedBugTasks(user)
+        return [bugtask
+            for bugtask in source_tasks if bugtask not in target_tasks]
 
     @property
     def address(self):
@@ -650,14 +651,14 @@ class BranchMergeProposal(SQLBase):
         TargetRevision = ClassAlias(BranchRevision)
         target_join = LeftJoin(
             TargetRevision, And(
-                TargetRevision.revision_id == SourceRevision.revision_id,
-                TargetRevision.branch_id == self.target_branch.id))
+                TargetRevision.branch_id == self.target_branch.id,
+                TargetRevision.revision_id == SourceRevision.revision_id))
         origin = [SourceRevision, target_join]
         result = store.using(*origin).find(
             SourceRevision,
             SourceRevision.branch_id == self.source_branch.id,
             SourceRevision.sequence != None,
-            TargetRevision.id == None)
+            TargetRevision.branch_id == None)
         return result.order_by(Desc(SourceRevision.sequence)).config(limit=10)
 
     def createComment(self, owner, subject, content=None, vote=None,

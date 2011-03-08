@@ -222,15 +222,12 @@ to make sure it's stored properly.
 
 Tell the PO file to import from the file data it has.  The user has rights
 to edit translations directly, so his suggestion is approved directly.
-Even when the user is also a reviwer, he should not get karma for reviewing
-or approving his own translations. IOW, he'll only get karma for submitting
-his suggestion.
+No karma is awarded for this action.
 
     >>> potemplate = POTemplate.get(1)
     >>> entry = translation_import_queue[entry_id]
     >>> pofile = potemplate.getPOFileByLang('es')
     >>> (subject, message) = pofile.importFromQueue(entry)
-    Karma added: action=translationsuggestionadded, product=evolution
     >>> transaction.commit()
 
 Let's try the case when a file is uploaded, but no translation is changed.

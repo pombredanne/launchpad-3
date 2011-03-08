@@ -15,6 +15,7 @@ __all__ = [
 
 
 import errno
+import fcntl
 import logging
 import os
 import resource
@@ -31,6 +32,7 @@ from bzrlib.commands import Command, register_command
 from bzrlib.option import Option
 from bzrlib import (
     commands,
+    errors,
     lockdir,
     osutils,
     trace,
@@ -309,6 +311,11 @@ class LPForkingService(object):
     SLEEP_FOR_CHILDREN_TIMEOUT = 1.0
     WAIT_FOR_REQUEST_TIMEOUT = 1.0 # No request should take longer than this to
                                    # be read
+    CHILD_CONNECT_TIMEOUT = 120   # If we get a fork() request, but nobody
+                                  # connects just exit
+                                  # On a heavily loaded server, it could take a
+                                  # couple secs, but it should never take
+                                  # minutes
 
     _fork_function = os.fork
 
@@ -324,6 +331,7 @@ class LPForkingService(object):
         # Map from pid => (temp_path_for_handles, request_socket)
         self._child_processes = {}
         self._children_spawned = 0
+        self._child_connect_timeout = self.CHILD_CONNECT_TIMEOUT
 
     def _create_master_socket(self):
         self._server_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -372,28 +380,84 @@ class LPForkingService(object):
         signal.signal(signal.SIGCHLD, signal.SIG_DFL)
         signal.signal(signal.SIGTERM, signal.SIG_DFL)
 
-    def _create_child_file_descriptors(self, base_path):
+    def _compute_paths(self, base_path):
         stdin_path = os.path.join(base_path, 'stdin')
         stdout_path = os.path.join(base_path, 'stdout')
         stderr_path = os.path.join(base_path, 'stderr')
+        return (stdin_path, stdout_path, stderr_path)
+
+    def _create_child_file_descriptors(self, base_path):
+        stdin_path, stdout_path, stderr_path = self._compute_paths(base_path)
         os.mkfifo(stdin_path)
         os.mkfifo(stdout_path)
         os.mkfifo(stderr_path)
 
-    def _bind_child_file_descriptors(self, base_path):
-        stdin_path = os.path.join(base_path, 'stdin')
-        stdout_path = os.path.join(base_path, 'stdout')
-        stderr_path = os.path.join(base_path, 'stderr')
+    def _set_blocking(self, fd):
+        """Change the file descriptor to unset the O_NONBLOCK flag."""
+        flags = fcntl.fcntl(fd, fcntl.F_GETFD)
+        flags = flags & (~os.O_NONBLOCK)
+        fcntl.fcntl(fd, fcntl.F_SETFD, flags)
+
+    def _open_handles(self, base_path):
+        """Open the given file handles.
+
+        This will attempt to open all of these file handles, but will not block
+        while opening them, timing out after self._child_connect_timeout
+        seconds.
+
+        :param base_path: The directory where all FIFOs are located
+        :return: (stdin_fid, stdout_fid, stderr_fid)
+        """
+        stdin_path, stdout_path, stderr_path = self._compute_paths(base_path)
         # These open calls will block until another process connects (which
         # must connect in the same order)
-        stdin_fid = os.open(stdin_path, os.O_RDONLY)
-        stdout_fid = os.open(stdout_path, os.O_WRONLY)
-        stderr_fid = os.open(stderr_path, os.O_WRONLY)
+        fids = []
+        to_open = [(stdin_path, os.O_RDONLY), (stdout_path, os.O_WRONLY),
+                   (stderr_path, os.O_WRONLY)]
+        # If we set it to 0, we won't get an alarm, so require some time > 0.
+        signal.alarm(max(1, self._child_connect_timeout))
+        tstart = time.time()
+        for path, flags in to_open:
+            try:
+                fids.append(os.open(path, flags))
+            except OSError, e:
+                # In production code, signal.alarm will generally just kill
+                # us. But if something installs a signal handler for SIGALRM,
+                # do what we can to die gracefully.
+                error = ('After %.3fs we failed to open %s, exiting'
+                         % (time.time() - tstart, path,))
+                trace.warning(error)
+                for fid in fids:
+                    try:
+                        os.close(fid)
+                    except OSError:
+                        pass
+                raise errors.BzrError(error)
+        # If we get to here, that means all the handles were opened
+        # successfully, so cancel the wakeup call.
+        signal.alarm(0)
+        return fids
+
+    def _cleanup_fifos(self, base_path):
+        """Remove the FIFO objects and directory from disk."""
+        stdin_path, stdout_path, stderr_path = self._compute_paths(base_path)
+        # Now that we've opened the handles, delete everything so that we don't
+        # leave garbage around. Because the open() is done in blocking mode, we
+        # know that someone has already connected to them, and we don't want
+        # anyone else getting confused and connecting.
+        # See [Decision #5]
+        os.remove(stdin_path)
+        os.remove(stdout_path)
+        os.remove(stderr_path)
+        os.rmdir(base_path)
+
+    def _bind_child_file_descriptors(self, base_path):
         # Note: by this point bzrlib has opened stderr for logging
         #       (as part of starting the service process in the first place).
         #       As such, it has a stream handler that writes to stderr. logging
         #       tries to flush and close that, but the file is already closed.
         #       This just supresses that exception
+        stdin_fid, stdout_fid, stderr_fid = self._open_handles(base_path)
         logging.raiseExceptions = False
         sys.stdin.close()
         sys.stdout.close()
@@ -407,15 +471,7 @@ class LPForkingService(object):
         ui.ui_factory.stdin = sys.stdin
         ui.ui_factory.stdout = sys.stdout
         ui.ui_factory.stderr = sys.stderr
-        # Now that we've opened the handles, delete everything so that we don't
-        # leave garbage around. Because the open() is done in blocking mode, we
-        # know that someone has already connected to them, and we don't want
-        # anyone else getting confused and connecting.
-        # See [Decision #5]
-        os.remove(stderr_path)
-        os.remove(stdout_path)
-        os.remove(stdin_path)
-        os.rmdir(base_path)
+        self._cleanup_fifos(base_path)
 
     def _close_child_file_descriptors(self):
         sys.stdin.close()
@@ -424,14 +480,23 @@ class LPForkingService(object):
 
     def become_child(self, command_argv, path):
         """We are in the spawned child code, do our magic voodoo."""
-        # Stop tracking new signals
-        self._unregister_signals()
-        # Reset the start time
-        trace._bzr_log_start_time = time.time()
-        trace.mutter('%d starting %r'
-                     % (os.getpid(), command_argv))
-        self._bind_child_file_descriptors(path)
-        self._run_child_command(command_argv)
+        retcode = 127 # Failed in a bad way, poor cleanup, etc.
+        try:
+            # Stop tracking new signals
+            self._unregister_signals()
+            # Reset the start time
+            trace._bzr_log_start_time = time.time()
+            trace.mutter('%d starting %r'
+                         % (os.getpid(), command_argv))
+            self._bind_child_file_descriptors(path)
+            retcode = self._run_child_command(command_argv)
+        finally:
+            # We force os._exit() here, because we don't want to unwind the
+            # stack, which has complex results. (We can get it to unwind back
+            # to the cmd_launchpad_forking_service code, and even back to
+            # main() reporting thereturn code, but after that, suddenly the
+            # return code changes from a '0' to a '1', with no logging of info.
+            os._exit(retcode)
 
     def _run_child_command(self, command_argv):
         # This is the point where we would actually want to do something with
@@ -447,17 +512,12 @@ class LPForkingService(object):
         self._close_child_file_descriptors()
         trace.mutter('%d finished %r'
                      % (os.getpid(), command_argv))
-        # We force os._exit() here, because we don't want to unwind the stack,
-        # which has complex results. (We can get it to unwind back to the
-        # cmd_launchpad_forking_service code, and even back to main() reporting
-        # thereturn code, but after that, suddenly the return code changes from
-        # a '0' to a '1', with no logging of info.
-        # TODO: Should we call sys.exitfunc() here? it allows atexit functions
-        #       to fire, however, some of those may be still around from the
-        #       parent process, which we don't really want.
+        # TODO: Should we call sys.exitfunc() here? it allows atexit
+        #       functions to fire, however, some of those may be still
+        #       around from the parent process, which we don't really want.
         sys.exitfunc()
         # See [Decision #6]
-        os._exit(retcode)
+        return retcode
 
     @staticmethod
     def command_to_argv(command_str):
@@ -630,6 +690,13 @@ class LPForkingService(object):
             c_path, sock = self._child_processes.pop(c_id)
             trace.mutter('%s exited %s and usage: %s'
                          % (c_id, exit_code, rusage))
+            # Cleanup the child path, before mentioning it exited to the
+            # caller. This avoids a race condition in the test suite.
+            if os.path.exists(c_path):
+                # The child failed to cleanup after itself, do the work here
+                trace.warning('Had to clean up after child %d: %s\n'
+                              % (c_id, c_path))
+                shutil.rmtree(c_path, ignore_errors=True)
             # See [Decision #4]
             try:
                 sock.sendall('exited\n%s\n' % (exit_code,))
@@ -639,11 +706,6 @@ class LPForkingService(object):
                 trace.mutter('%s\'s socket already closed: %s' % (c_id, e))
             else:
                 sock.close()
-            if os.path.exists(c_path):
-                # The child failed to cleanup after itself, do the work here
-                trace.warning('Had to clean up after child %d: %s\n'
-                              % (c_id, c_path))
-                shutil.rmtree(c_path, ignore_errors=True)
 
     def _wait_for_children(self, secs):
         start = time.time()
@@ -719,6 +781,15 @@ class LPForkingService(object):
         elif request == 'quit\n':
             self._should_terminate.set()
             conn.sendall('ok\nquit command requested... exiting\n')
+            conn.close()
+        elif request.startswith('child_connect_timeout '):
+            try:
+                value = int(request.split(' ', 1)[1])
+            except ValueError, e:
+                conn.sendall('FAILURE: %r\n' % (e,))
+            else:
+                self._child_connect_timeout = value
+                conn.sendall('ok\n')
             conn.close()
         elif request.startswith('fork ') or request.startswith('fork-env '):
             command_argv, env = self._parse_fork_request(conn, client_addr,

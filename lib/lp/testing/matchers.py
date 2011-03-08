@@ -3,12 +3,18 @@
 
 __metaclass__ = type
 __all__ = [
+    'BrowsesWithQueryLimit',
     'Contains',
+    'DocTestMatches',
     'DoesNotCorrectlyProvide',
     'DoesNotProvide',
     'HasQueryCount',
     'IsNotProxied',
     'IsProxied',
+    'MatchesPickerText',
+    'MatchesTagText',
+    'MissingElement',
+    'MultipleElements',
     'Provides',
     'ProvidesAndIsProxied',
     ]
@@ -18,6 +24,8 @@ from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
 from testtools.matchers import (
     Equals,
+    DocTestMatches as OriginalDocTestMatches,
+    LessThan,
     Matcher,
     Mismatch,
     MismatchesAll,
@@ -34,7 +42,55 @@ from zope.security.proxy import (
     Proxy,
     )
 
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.batching import BatchNavigator
+from lp.testing._login import person_logged_in
+from lp.testing._webservice import QueryCollector
+
+
+class BrowsesWithQueryLimit(Matcher):
+    """Matches the rendering of an objects default view with a query limit.
+
+    This is a wrapper for HasQueryCount which does the heavy lifting on the
+    query comparison - BrowsesWithQueryLimit simply provides convenient
+    glue to use a userbrowser and view an object.
+    """
+
+    def __init__(self, query_limit, user, view_name="+index", **options):
+        """Create a BrowsesWithQueryLimit checking for limit query_limit.
+
+        :param query_limit: The number of queries permited for the page.
+        :param user: The user to use to render the page.
+        :param view_name: The name of the view to use to render tha page.
+        :param options: Additional options for view generation eg rootsite.
+        """
+        self.query_limit = query_limit
+        self.user = user
+        self.view_name = view_name
+        self.options = options
+
+    def match(self, context):
+        # circular dependencies.
+        from canonical.launchpad.testing.pages import setupBrowserForUser
+        with person_logged_in(self.user):
+            context_url = canonical_url(
+                context, view_name=self.view_name, **self.options)
+        browser = setupBrowserForUser(self.user)
+        collector = QueryCollector()
+        collector.register()
+        try:
+            browser.open(context_url)
+            counter = HasQueryCount(LessThan(self.query_limit))
+            # When bug 724691 is fixed, this can become an AnnotateMismatch to
+            # describe the object being rendered.
+            return counter.match(collector)
+        finally:
+            # Unregister now in case this method is called multiple
+            # times in a single test.
+            collector.unregister()
+
+    def __str__(self):
+        return "BrowsesWithQueryLimit(%s, %s)" % (self.query_limit, self.user)
 
 
 class DoesNotProvide(Mismatch):
@@ -302,3 +358,83 @@ class DoesNotSnapshot(Matcher):
             return None
         else:
             return MismatchesAll(mismatches)
+
+
+def DocTestMatches(example):
+    """See if a string matches a doctest example.
+
+    Uses the default doctest flags used across Launchpad.
+    """
+    from canonical.launchpad.testing.systemdocs import default_optionflags
+    return OriginalDocTestMatches(example, default_optionflags)
+
+
+class SoupMismatch(Mismatch):
+
+    def __init__(self, widget_id, soup_content):
+        self.widget_id = widget_id
+        self.soup_content = soup_content
+
+    def get_details(self):
+        return {'content': self.soup_content}
+
+
+class MissingElement(SoupMismatch):
+
+    def describe(self):
+        return 'No HTML element found with id %r' % self.widget_id
+
+
+class MultipleElements(SoupMismatch):
+
+    def describe(self):
+        return 'HTML id %r found multiple times in document' % self.widget_id
+
+
+class MatchesTagText(Matcher):
+    """Match against the extracted text of the tag."""
+
+    def __init__(self, soup_content, tag_id):
+        """Construct the matcher with the soup content."""
+        self.soup_content = soup_content
+        self.tag_id = tag_id
+
+    def __str__(self):
+        return "matches widget %r text" % self.tag_id
+
+    def match(self, matchee):
+        # Here to avoid circular dependancies.
+        from canonical.launchpad.testing.pages import extract_text
+        widgets = self.soup_content.findAll(id=self.tag_id)
+        if len(widgets) == 0:
+            return MissingElement(self.tag_id, self.soup_content)
+        elif len(widgets) > 1:
+            return MultipleElements(self.tag_id, self.soup_content)
+        widget = widgets[0]
+        text_matcher = DocTestMatches(extract_text(widget))
+        return text_matcher.match(matchee)
+
+
+class MatchesPickerText(Matcher):
+    """Match against the text in a widget."""
+
+    def __init__(self, soup_content, widget_id):
+        """Construct the matcher with the soup content."""
+        self.soup_content = soup_content
+        self.widget_id = widget_id
+
+    def __str__(self):
+        return "matches widget %r text" % self.widget_id
+
+    def match(self, matchee):
+        # Here to avoid circular dependancies.
+        from canonical.launchpad.testing.pages import extract_text
+        widgets = self.soup_content.findAll(id=self.widget_id)
+        if len(widgets) == 0:
+            return MissingElement(self.widget_id, self.soup_content)
+        elif len(widgets) > 1:
+            return MultipleElements(self.widget_id, self.soup_content)
+        widget = widgets[0]
+        text = widget.findAll(attrs={'class': 'yui3-activator-data-box'})[0]
+        text_matcher = DocTestMatches(extract_text(text))
+        return text_matcher.match(matchee)

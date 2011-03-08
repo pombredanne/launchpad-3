@@ -54,10 +54,12 @@ of properties:
     log_url: u'http://.../~cprov/+archive/ppa/+buildjob/26/+files/netapplet-1.0.0.tar.gz'
     pocket: u'Release'
     resource_type_link: u'http://api.launchpad.dev/beta/#build'
+    score: None
     self_link: u'http://api.launchpad.dev/beta/~cprov/+archive/ppa/+buildjob/26'
     status: u'Failed to build'
     title: u'i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE'
     upload_log_url: None
+    web_link: u'http://launchpad.../~cprov/+archive/ppa/+buildjob/26'
 
 Whereas the 1.0 webservice for builds maintains the old property names
 (without underscores):
@@ -80,9 +82,11 @@ Whereas the 1.0 webservice for builds maintains the old property names
     distribution_link: u'http://.../ubuntu'
     pocket: u'Release'
     resource_type_link: u'http://.../#build'
+    score: None
     self_link: u'http://.../~cprov/+archive/ppa/+buildjob/26'
     title: u'i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE'
     upload_log_url: None
+    web_link: u'http://launchpad.../~cprov/+archive/ppa/+buildjob/26'
 
 For testing purposes we will set 'buildlog' and 'upload_log' to the
 same library file, so both can be verified.
@@ -112,7 +116,6 @@ will be proxied by the webapp.
 
     >>> print builds['entries'][0]['upload_log_url']
     http://launchpad.dev/~cprov/+archive/ppa/+buildjob/26/+files/...
-
 
 Re-trying builds
 ================
@@ -198,6 +201,12 @@ The user cprov is a buildd admin.
     HTTP/1.1 200 Ok
     ...
 
+The job has been rescored
+
+    >>> updated_build = webservice.get(a_build['self_link']).jsonBody()
+    >>> print updated_build['score']
+    1000
+
 If the build cannot be retried, then a 400 code is returned.  Let's
 alter the buildstate to one that cannot be retried:
 
@@ -210,5 +219,4 @@ alter the buildstate to one that cannot be retried:
     ...     a_build['self_link'], 'rescore', score=1000)
     HTTP/1.1 400 Bad Request
     ...
-    CannotBeRescored: Build cannot be rescored.
-    <BLANKLINE>
+    Build cannot be rescored.

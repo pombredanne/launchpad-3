@@ -21,15 +21,14 @@ __all__ = [
 
 
 from lazr.restful.declarations import (
-    exported,
     export_as_webservice_entry,
+    exported,
     )
 from lazr.restful.fields import (
     CollectionField,
     Reference,
     ReferenceChoice,
     )
-
 from zope.component import getUtility
 from zope.interface import (
     Attribute,
@@ -46,8 +45,9 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.validation import valid_webref
-from canonical.launchpad.validators import LaunchpadValidationError
+from lp.app.validators import LaunchpadValidationError
 from lp.blueprints.enums import (
+    NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
     SpecificationGoalStatus,
     SpecificationImplementationStatus,
@@ -58,8 +58,8 @@ from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications,
     ISpecificationTarget,
     )
-from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.blueprints.interfaces.sprint import ISprint
+from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.code.interfaces.branchlink import IHasLinkedBranches
 from lp.registry.interfaces.milestone import IMilestone
 from lp.registry.interfaces.projectgroup import IProjectGroup
@@ -169,8 +169,8 @@ class INewSpecification(Interface):
     definition_status = exported(
         Choice(
             title=_('Definition Status'),
-            vocabulary=SpecificationDefinitionStatus,
-            default=SpecificationDefinitionStatus.NEW,
+            vocabulary=NewSpecificationDefinitionStatus,
+            default=NewSpecificationDefinitionStatus.NEW,
             description=_(
                 "The current status of the process to define the "
                 "feature and get approval for the implementation plan.")),
@@ -275,6 +275,18 @@ class ISpecificationPublic(
     #      specification to an attribute of another SQL object
     #      referencing it.
     id = Int(title=_("Database ID"), required=True, readonly=True)
+
+    # Redefine definition_status to support all definition statuses for
+    # life cycle events.
+    definition_status = exported(
+        Choice(
+            title=_('Definition Status'),
+            vocabulary=SpecificationDefinitionStatus,
+            default=SpecificationDefinitionStatus.NEW,
+            description=_(
+                "The current status of the process to define the "
+                "feature and get approval for the implementation plan.")),
+        ('devel', dict(exported=True, readonly=True)), exported=False)
 
     priority = exported(
         Choice(
@@ -399,8 +411,13 @@ class ISpecificationPublic(
         "All the dependencies, including dependencies of dependencies.")
     all_blocked = Attribute(
         "All specs blocked on this, and those blocked on the blocked ones.")
-    linked_branches = Attribute(
-        'The entries that link the branches to the spec.')
+    linked_branches = exported(
+        CollectionField(
+            title=_("Branches associated with this spec, usually "
+            "branches on which this spec is being implemented."),
+            value_type=Reference(schema=Interface), # ISpecificationBranch
+            readonly=True),
+        ('devel', dict(exported=True)), exported=False)
 
     # emergent properties
     informational = Attribute('Is True if this spec is purely informational '

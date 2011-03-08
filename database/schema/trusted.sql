@@ -51,8 +51,30 @@ COMMENT ON FUNCTION null_count(anyarray) IS
 'Return the number of NULLs in the first row of the given array.';
 
 
+CREATE OR REPLACE FUNCTION cursor_fetch(cur refcursor, n integer)
+RETURNS SETOF record LANGUAGE plpgsql AS
+$$
+DECLARE
+    r record;
+    count integer;
+BEGIN
+    FOR count IN 1..n LOOP
+        FETCH FORWARD FROM cur INTO r;
+        IF NOT FOUND THEN
+            RETURN;
+        END IF;
+        RETURN NEXT r;
+    END LOOP;
+END;
+$$;
+
+COMMENT ON FUNCTION cursor_fetch(refcursor, integer) IS
+'Fetch the next n items from a cursor. Work around for not being able to use FETCH inside a SELECT statement.';
+
+
+
 CREATE OR REPLACE FUNCTION replication_lag() RETURNS interval
-LANGUAGE plpgsql STABLE SECURITY DEFINER AS
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO public AS
 $$
     DECLARE
         v_lag interval;
@@ -73,7 +95,7 @@ COMMENT ON FUNCTION replication_lag() IS
 
 
 CREATE OR REPLACE FUNCTION replication_lag(node_id integer) RETURNS interval
-LANGUAGE plpgsql STABLE SECURITY DEFINER AS
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO public AS
 $$
     DECLARE
         v_lag interval;
@@ -96,7 +118,7 @@ COMMENT ON FUNCTION replication_lag(integer) IS
 
 
 CREATE OR REPLACE FUNCTION update_replication_lag_cache() RETURNS boolean
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO public AS
 $$
     BEGIN
         DELETE FROM DatabaseReplicationLag;
@@ -117,7 +139,7 @@ COMMENT ON FUNCTION update_replication_lag_cache() IS
 'Updates the DatabaseReplicationLag materialized view.';
 
 CREATE OR REPLACE FUNCTION update_database_stats() RETURNS void
-LANGUAGE plpythonu VOLATILE SECURITY DEFINER AS
+LANGUAGE plpythonu VOLATILE SECURITY DEFINER SET search_path TO public AS
 $$
     import re
     import subprocess
@@ -204,9 +226,109 @@ $$;
 COMMENT ON FUNCTION update_database_stats() IS
 'Copies rows from pg_stat_user_tables into DatabaseTableStats. We use a stored procedure because it is problematic for us to grant permissions on objects in the pg_catalog schema.';
 
+SET check_function_bodies=false; -- Handle forward references
+CREATE OR REPLACE FUNCTION update_database_disk_utilization() RETURNS void
+LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path TO public AS
+$$
+    INSERT INTO DatabaseDiskUtilization
+    SELECT
+        CURRENT_TIMESTAMP AT TIME ZONE 'UTC',
+        namespace, name,
+        sub_namespace, sub_name,
+        kind,
+        (namespace || '.' ||  name || COALESCE(
+                '/' || sub_namespace || '.' || sub_name, '')) AS sort,
+        (stat).table_len,
+        (stat).tuple_count,
+        (stat).tuple_len,
+        (stat).tuple_percent,
+        (stat).dead_tuple_count,
+        (stat).dead_tuple_len,
+        (stat).dead_tuple_percent,
+        (stat).free_space,
+        (stat).free_percent
+    FROM (
+        SELECT
+            pg_namespace.nspname AS namespace,
+            pg_class.relname AS name,
+            NULL AS sub_namespace,
+            NULL AS sub_name,
+            pg_class.relkind AS kind,
+            pgstattuple(pg_class.oid) AS stat
+        FROM pg_class, pg_namespace
+        WHERE
+            pg_class.relnamespace = pg_namespace.oid
+            AND pg_class.relkind = 'r'
+
+        UNION ALL
+        
+        SELECT
+            pg_namespace_table.nspname AS namespace,
+            pg_class_table.relname AS name,
+            pg_namespace_index.nspname AS sub_namespace,
+            pg_class_index.relname AS sub_name,
+            pg_class_index.relkind AS kind,
+            pgstattuple(pg_class_index.oid) AS stat
+        FROM
+            pg_namespace AS pg_namespace_table,
+            pg_namespace AS pg_namespace_index,
+            pg_class AS pg_class_table,
+            pg_class AS pg_class_index,
+            pg_index
+        WHERE
+            pg_class_index.relkind = 'i'
+            AND pg_class_index.relnamespace = pg_namespace_index.oid
+            AND pg_class_table.relnamespace = pg_namespace_table.oid
+            AND pg_index.indexrelid = pg_class_index.oid
+            AND pg_index.indrelid = pg_class_table.oid
+
+        UNION ALL
+
+        -- TOAST tables
+        SELECT
+            pg_namespace_table.nspname AS namespace,
+            pg_class_table.relname AS name,
+            pg_namespace_toast.nspname AS sub_namespace,
+            pg_class_toast.relname AS sub_name,
+            pg_class_toast.relkind AS kind,
+            pgstattuple(pg_class_toast.oid) AS stat
+        FROM
+            pg_namespace AS pg_namespace_table,
+            pg_namespace AS pg_namespace_toast,
+            pg_class AS pg_class_table,
+            pg_class AS pg_class_toast
+        WHERE
+            pg_class_toast.relnamespace = pg_namespace_toast.oid
+            AND pg_class_table.relnamespace = pg_namespace_table.oid
+            AND pg_class_toast.oid = pg_class_table.reltoastrelid
+
+        UNION ALL
+
+        -- TOAST indexes
+        SELECT
+            pg_namespace_table.nspname AS namespace,
+            pg_class_table.relname AS name,
+            pg_namespace_index.nspname AS sub_namespace,
+            pg_class_index.relname AS sub_name,
+            pg_class_index.relkind AS kind,
+            pgstattuple(pg_class_index.oid) AS stat
+        FROM
+            pg_namespace AS pg_namespace_table,
+            pg_namespace AS pg_namespace_index,
+            pg_class AS pg_class_table,
+            pg_class AS pg_class_index,
+            pg_class AS pg_class_toast
+        WHERE
+            pg_class_table.relnamespace = pg_namespace_table.oid
+            AND pg_class_index.relnamespace = pg_namespace_index.oid
+            AND pg_class_table.reltoastrelid = pg_class_toast.oid
+            AND pg_class_index.oid = pg_class_toast.reltoastidxid
+        ) AS whatever;
+$$;
+SET check_function_bodies=true; -- Handle forward references
 
 CREATE OR REPLACE FUNCTION getlocalnodeid() RETURNS integer
-LANGUAGE plpgsql STABLE SECURITY DEFINER AS
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path TO public AS
 $$
     DECLARE
         v_node_id integer;
@@ -225,7 +347,7 @@ COMMENT ON FUNCTION getlocalnodeid() IS
 
 CREATE OR REPLACE FUNCTION activity()
 RETURNS SETOF pg_catalog.pg_stat_activity
-LANGUAGE SQL VOLATILE SECURITY DEFINER AS
+LANGUAGE SQL VOLATILE SECURITY DEFINER SET search_path TO public AS
 $$
     SELECT
         datid, datname, procpid, usesysid, usename,
@@ -486,7 +608,7 @@ COMMENT ON FUNCTION is_printable_ascii(text) IS
 
 
 CREATE OR REPLACE FUNCTION mv_pillarname_distribution() RETURNS TRIGGER
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
@@ -504,7 +626,7 @@ COMMENT ON FUNCTION mv_pillarname_distribution() IS
 
 
 CREATE OR REPLACE FUNCTION mv_pillarname_product() RETURNS TRIGGER
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
@@ -523,7 +645,8 @@ COMMENT ON FUNCTION mv_pillarname_product() IS
 
 
 CREATE OR REPLACE FUNCTION mv_pillarname_project() RETURNS TRIGGER
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS $$
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO public AS
+$$
 BEGIN
     IF TG_OP = 'INSERT' THEN
         INSERT INTO PillarName (name, project, active)
@@ -541,8 +664,8 @@ COMMENT ON FUNCTION mv_pillarname_project() IS
 
 
 CREATE OR REPLACE FUNCTION mv_pofiletranslator_translationmessage()
-RETURNS TRIGGER
-VOLATILE SECURITY DEFINER AS $$
+RETURNS TRIGGER VOLATILE SECURITY DEFINER SET search_path TO public AS
+$$
 DECLARE
     v_trash_old BOOLEAN;
 BEGIN
@@ -741,19 +864,61 @@ $$;
 COMMENT ON FUNCTION debversion_sort_key(text) IS 'Return a string suitable for sorting debian version strings on';
 
 
-CREATE OR REPLACE FUNCTION name_blacklist_match(text) RETURNS int4
+CREATE OR REPLACE FUNCTION name_blacklist_match(text, integer) RETURNS int4
 LANGUAGE plpythonu STABLE RETURNS NULL ON NULL INPUT
-EXTERNAL SECURITY DEFINER AS
+SECURITY DEFINER SET search_path TO public AS
 $$
     import re
     name = args[0].decode("UTF-8")
-    if not SD.has_key("select_plan"):
-        SD["select_plan"] = plpy.prepare("""
-            SELECT id, regexp FROM NameBlacklist ORDER BY id
-            """)
+    user_id = args[1]
+
+    # Initialize shared storage, shared between invocations.
+    if not SD.has_key("regexp_select_plan"):
+
+        # All the blacklist regexps except the ones we are an admin
+        # for. These we do not check since they are not blacklisted to us.
+        SD["regexp_select_plan"] = plpy.prepare("""
+            SELECT id, regexp FROM NameBlacklist
+            WHERE admin IS NULL OR admin NOT IN (
+                SELECT team FROM TeamParticipation
+                WHERE person = $1)
+            ORDER BY id
+            """, ["integer"])
+
+        # Storage for compiled regexps
         SD["compiled"] = {}
+
+        # admins is a celebrity and its id is immutable.
+        admins_id = plpy.execute(
+            "SELECT id FROM Person WHERE name='admins'")[0]["id"]
+
+        SD["admin_select_plan"] = plpy.prepare("""
+            SELECT TRUE FROM TeamParticipation
+            WHERE
+                TeamParticipation.team = %d
+                AND TeamParticipation.person = $1
+            LIMIT 1
+            """ % admins_id, ["integer"])
+
+        # All the blacklist regexps except those that have an admin because
+        # members of ~admin can use any name that any other admin can use.
+        SD["admin_regexp_select_plan"] = plpy.prepare("""
+            SELECT id, regexp FROM NameBlacklist
+            WHERE admin IS NULL
+            ORDER BY id
+            """, ["integer"])
+
+
     compiled = SD["compiled"]
-    for row in plpy.execute(SD["select_plan"]):
+
+    # Names are never blacklisted for Lauchpad admins.
+    if user_id is not None and plpy.execute(
+        SD["admin_select_plan"], [user_id]).nrows() > 0:
+        blacklist_plan = "admin_regexp_select_plan"
+    else:
+        blacklist_plan = "regexp_select_plan"
+
+    for row in plpy.execute(SD[blacklist_plan], [user_id]):
         regexp_id = row["id"]
         regexp_txt = row["regexp"]
         if (compiled.get(regexp_id) is None
@@ -769,16 +934,17 @@ $$
     return None
 $$;
 
-COMMENT ON FUNCTION name_blacklist_match(text) IS 'Return the id of the row in the NameBlacklist table that matches the given name, or NULL if no regexps in the NameBlacklist table match.';
+COMMENT ON FUNCTION name_blacklist_match(text, integer) IS 'Return the id of the row in the NameBlacklist table that matches the given name, or NULL if no regexps in the NameBlacklist table match.';
 
 
-CREATE OR REPLACE FUNCTION is_blacklisted_name(text) RETURNS boolean
-LANGUAGE SQL STABLE RETURNS NULL ON NULL INPUT EXTERNAL SECURITY DEFINER AS
+CREATE OR REPLACE FUNCTION is_blacklisted_name(text, integer)
+RETURNS boolean LANGUAGE SQL STABLE RETURNS NULL ON NULL INPUT
+SECURITY DEFINER SET search_path TO public AS
 $$
-    SELECT COALESCE(name_blacklist_match($1)::boolean, FALSE);
+    SELECT COALESCE(name_blacklist_match($1, $2)::boolean, FALSE);
 $$;
 
-COMMENT ON FUNCTION is_blacklisted_name(text) IS 'Return TRUE if any regular expressions stored in the NameBlacklist table match the givenname, otherwise return FALSE.';
+COMMENT ON FUNCTION is_blacklisted_name(text, integer) IS 'Return TRUE if any regular expressions stored in the NameBlacklist table match the givenname, otherwise return FALSE.';
 
 
 CREATE OR REPLACE FUNCTION set_shipit_normalized_address() RETURNS trigger
@@ -883,7 +1049,7 @@ $$;
 
 
 CREATE OR REPLACE FUNCTION set_bug_date_last_message() RETURNS TRIGGER
-LANGUAGE plpgsql VOLATILE SECURITY DEFINER AS
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     IF TG_OP = 'INSERT' THEN
@@ -1411,7 +1577,7 @@ COMMENT ON FUNCTION mv_branch_distribution_update() IS
 -- in a seperate replication set.
 -- Insert triggers
 CREATE OR REPLACE FUNCTION lp_mirror_teamparticipation_ins() RETURNS trigger
-SECURITY DEFINER LANGUAGE plpgsql AS
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     INSERT INTO lp_TeamParticipation SELECT NEW.*;
@@ -1420,7 +1586,7 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION lp_mirror_personlocation_ins() RETURNS trigger
-SECURITY DEFINER LANGUAGE plpgsql AS
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     INSERT INTO lp_PersonLocation SELECT NEW.*;
@@ -1429,7 +1595,7 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION lp_mirror_person_ins() RETURNS trigger
-SECURITY DEFINER LANGUAGE plpgsql AS
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     INSERT INTO lp_Person (
@@ -1448,7 +1614,7 @@ $$;
 
 -- Obsolete. Remove next cycle.
 CREATE OR REPLACE FUNCTION lp_mirror_account_ins() RETURNS trigger
-SECURITY DEFINER LANGUAGE plpgsql AS
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     INSERT INTO lp_Account (id, openid_identifier)
@@ -1458,7 +1624,7 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION lp_mirror_openididentifier_ins() RETURNS trigger
-SECURITY DEFINER LANGUAGE plpgsql AS
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     -- Support obsolete lp_Account.openid_identifier as best we can
@@ -1479,7 +1645,7 @@ $$;
 
 -- UPDATE triggers
 CREATE  OR REPLACE FUNCTION lp_mirror_teamparticipation_upd() RETURNS trigger
-SECURITY DEFINER LANGUAGE plpgsql AS
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     UPDATE lp_TeamParticipation
@@ -1492,7 +1658,7 @@ END;
 $$;
 
 CREATE  OR REPLACE FUNCTION lp_mirror_personlocation_upd() RETURNS trigger
-SECURITY DEFINER LANGUAGE plpgsql AS
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     UPDATE lp_PersonLocation
@@ -1512,7 +1678,7 @@ END;
 $$;
 
 CREATE  OR REPLACE FUNCTION lp_mirror_person_upd() RETURNS trigger
-SECURITY DEFINER LANGUAGE plpgsql AS
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     UPDATE lp_Person
@@ -1552,7 +1718,7 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION lp_mirror_account_upd() RETURNS trigger
-SECURITY DEFINER LANGUAGE plpgsql AS
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     IF OLD.id <> NEW.id OR OLD.openid_identifier <> NEW.openid_identifier THEN
@@ -1565,7 +1731,7 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION lp_mirror_openididentifier_upd() RETURNS trigger
-SECURITY DEFINER LANGUAGE plpgsql AS
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     IF OLD.identifier <> NEW.identifier THEN
@@ -1584,7 +1750,7 @@ $$;
 
 -- Delete triggers
 CREATE OR REPLACE FUNCTION lp_mirror_del() RETURNS trigger
-SECURITY DEFINER LANGUAGE plpgsql AS
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     EXECUTE 'DELETE FROM lp_' || TG_TABLE_NAME || ' WHERE id=' || OLD.id;
@@ -1593,7 +1759,7 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION lp_mirror_openididentifier_del() RETURNS trigger
-SECURITY DEFINER LANGUAGE plpgsql AS
+LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 DECLARE
     next_identifier text;
@@ -1616,7 +1782,7 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION add_test_openid_identifier(account_ integer)
-RETURNS BOOLEAN SECURITY DEFINER LANGUAGE plpgsql AS
+RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     -- The generated OpenIdIdentifier is not a valid OpenId Identity URL
@@ -1639,7 +1805,7 @@ COMMENT ON FUNCTION add_test_openid_identifier(integer) IS
 -- Update the (redundant) column bug.latest_patch_uploaded when a
 -- a bug attachment is added or removed or if its type is changed.
 CREATE OR REPLACE FUNCTION bug_update_latest_patch_uploaded(integer)
-RETURNS VOID SECURITY DEFINER LANGUAGE plpgsql AS
+RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     UPDATE bug SET latest_patch_uploaded =
@@ -1654,7 +1820,7 @@ $$;
 
 
 CREATE OR REPLACE FUNCTION bug_update_latest_patch_uploaded_on_insert_update()
-RETURNS trigger SECURITY DEFINER LANGUAGE plpgsql AS
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     PERFORM bug_update_latest_patch_uploaded(NEW.bug);
@@ -1664,7 +1830,7 @@ $$;
 
 
 CREATE OR REPLACE FUNCTION bug_update_latest_patch_uploaded_on_delete()
-RETURNS trigger SECURITY DEFINER LANGUAGE plpgsql AS
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
 $$
 BEGIN
     PERFORM bug_update_latest_patch_uploaded(OLD.bug);

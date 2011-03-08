@@ -457,3 +457,29 @@ than this timeout, it is aborted and a WARNING logged.
     WARNING:root:Task aborted after 20 seconds.
 
 
+== Cleanup ==
+
+    Loops can define a clean up hook to clean up opened resources.
+    We need this because loops can be aborted mid run, so we cannot rely
+    on clean up code in the isDone() method, and __del__ is fragile and
+    can never be relied on.
+
+    >>> class PlannedLoopWithCleanup(PlannedLoop):
+    ...     def cleanUp(self):
+    ...         print 'clean up'
+
+    >>> body = PlannedLoopWithCleanup([])
+    >>> loop = TestTuner(body, goal_seconds, 100)
+    >>> loop.run()
+    done
+    clean up
+
+    >>> body = PlannedLoopWithCleanup([5, 7, 8, 9, 10, 11, 9, 20, 7, 10, 10])
+    >>> loop = TestTuner(body, goal_seconds, 100, abort_time=20)
+    >>> loop.run()
+    start
+    same (0.0)
+    same (0.0)
+    WARNING:root:Task aborted after 20 seconds.
+    clean up
+

@@ -1113,8 +1113,12 @@ is used here.
     >>> print err
     INFO Creating lockfile: /var/lock/launchpad-launchpad-targetnamecacheupdater.lock
     INFO Updating targetname cache of bugtasks.
-    INFO Updating 1 BugTasks (starting id: 2).
-    INFO Updating ...BugTasks...
+    INFO Calculating targets.
+    INFO Will check ... targets.
+    ...
+    INFO Updating (u'Mozilla Thunderbird',) to 'Mozilla Thunderbird NG'.
+    ...
+    INFO Updated 1 target names.
     INFO Finished updating targetname cache of bugtasks.
 
     >>> process.returncode
@@ -1137,6 +1141,10 @@ targetnamecache updated.
 
     >>> new_bug, new_bug_event = bugset.createBugWithoutTarget(
     ...     CreateBugParams(mark, 'New Bug', comment='New Bug'))
+
+    The first message of a new bug has index 0.
+    >>> new_bug.bug_messages[0].index
+    0
 
     >>> bugtaskset.createTask(
     ...     bug=new_bug, owner=mark,
@@ -1188,8 +1196,11 @@ it can also be invoked directly.
     >>> updater = BugTaskTargetNameCacheUpdater(transaction, logger)
     >>> updater.run()
     INFO Updating targetname cache of bugtasks.
-    INFO Updating 1 BugTasks (starting id: 2).
-    INFO Updating ...BugTasks...
+    INFO Calculating targets.
+    ...
+    INFO Updating (u'Mozilla Thunderbird NG',) to 'Mozilla Thunderbird'.
+    ...
+    INFO Updated 1 target names.
     INFO Finished updating targetname cache of bugtasks.
 
     >>> flush_database_caches()

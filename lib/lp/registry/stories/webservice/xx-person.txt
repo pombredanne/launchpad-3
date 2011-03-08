@@ -50,6 +50,7 @@ for teams (as they're defined in the ITeam interface).
         u'http://.../~salgado/+email/guilherme.salgado@canonical.com'
     private: False
     proposed_members_collection_link: u'http://.../~salgado/proposed_members'
+    recipes_collection_link: u'http://.../~salgado/recipes'
     resource_type_link: u'http://.../#person'
     self_link: u'http://.../~salgado'
     sshkeys_collection_link: u'http://.../~salgado/sshkeys'
@@ -58,6 +59,7 @@ for teams (as they're defined in the ITeam interface).
     team_owner_link: None
     time_zone: None
     visibility: u'Public'
+    web_link: u'http://launchpad.../~salgado'
     wiki_names_collection_link: u'http://.../~salgado/wiki_names'
 
     >>> ubuntu_team = webservice.get("/~ubuntu-team").jsonBody()
@@ -109,6 +111,7 @@ for teams (as they're defined in the ITeam interface).
     private: False
     proposed_members_collection_link:
         u'http://.../~ubuntu-team/proposed_members'
+    recipes_collection_link: u'http://.../~ubuntu-team/recipes'
     renewal_policy: u'invite them to apply for renewal'
     resource_type_link: u'http://.../#team'
     self_link: u'http://.../~ubuntu-team'
@@ -120,6 +123,7 @@ for teams (as they're defined in the ITeam interface).
     team_owner_link: u'http://.../~mark'
     time_zone: None
     visibility: u'Public'
+    web_link: u'http://launchpad.../~ubuntu-team'
     wiki_names_collection_link: u'http://.../~ubuntu-team/wiki_names'
 
     >>> sorted(set(ubuntu_team.keys()).difference(salgado.keys()))
@@ -292,7 +296,8 @@ Team memberships also have data fields.
     >>> sorted(salgado_landscape)
     [u'date_expires', u'date_joined', u'http_etag',
      u'last_change_comment', u'last_changed_by_link', u'member_link',
-     u'resource_type_link', u'self_link', u'status', u'team_link']
+     u'resource_type_link', u'self_link', u'status', u'team_link',
+     u'web_link']
 
 Each team membership links to the person who approved the link.
 
@@ -634,7 +639,7 @@ returned.
     ...     mark['self_link'], 'getPPAByName', name='boing')
     HTTP/1.1 400 Bad Request
     ...
-    NoSuchPPA: No such ppa: 'boing'.
+    No such ppa: 'boing'.
 
 The method doesn't even bother to execute the lookup if the given
 'name' doesn't match the constraints for PPA names. An error message
@@ -699,6 +704,7 @@ Subscribed packages can be listed with getBugSubscriberPackages:
     self_link: u'...'
     title: u'...'
     upstream_product_link: None
+    web_link: u'...'
     ---
 
 

@@ -53,7 +53,7 @@ class BaseBranchTargetTests:
         # branches related to the branch target.
         self.assertEqual(self.target.collection.getBranches().count(), 0)
         branch = self.makeBranchForTarget()
-        branches = self.target.collection.getBranches()
+        branches = self.target.collection.getBranches(eager_load=False)
         self.assertEqual([branch], list(branches))
 
     def test_retargetBranch_packageBranch(self):
@@ -220,6 +220,30 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         self.assertEqual(owner, code_import.registrant)
         self.assertEqual(owner, code_import.branch.owner)
         self.assertEqual(self.target, code_import.branch.target)
+
+    def test_related_branches(self):
+        (branch, related_series_branch_info,
+            related_package_branches) = (
+                self.factory.makeRelatedBranchesForSourcePackage(
+                sourcepackage=self.original))
+        self.assertEqual(
+            related_series_branch_info,
+            self.target.getRelatedSeriesBranchInfo(branch))
+        self.assertEqual(
+            related_package_branches,
+            self.target.getRelatedPackageBranchInfo(branch))
+
+    def test_related_branches_with_private_branch(self):
+        (branch, related_series_branch_info,
+            related_package_branches) = (
+                self.factory.makeRelatedBranchesForSourcePackage(
+                sourcepackage=self.original, with_private_branches=True))
+        self.assertEqual(
+            related_series_branch_info,
+            self.target.getRelatedSeriesBranchInfo(branch))
+        self.assertEqual(
+            related_package_branches,
+            self.target.getRelatedPackageBranchInfo(branch))
 
 
 class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
@@ -451,6 +475,42 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         self.assertEqual(owner, code_import.registrant)
         self.assertEqual(owner, code_import.branch.owner)
         self.assertEqual(self.target, code_import.branch.target)
+
+    def test_related_branches(self):
+        (branch, related_series_branch_info,
+            related_package_branches) = (
+                self.factory.makeRelatedBranchesForProduct(
+                product=self.original))
+        self.assertEqual(
+            related_series_branch_info,
+            self.target.getRelatedSeriesBranchInfo(branch))
+        self.assertEqual(
+            related_package_branches,
+            self.target.getRelatedPackageBranchInfo(branch))
+
+    def test_related_branches_with_private_branch(self):
+        (branch, related_series_branch_info,
+            related_package_branches) = (
+                self.factory.makeRelatedBranchesForProduct(
+                product=self.original, with_private_branches=True))
+        self.assertEqual(
+            related_series_branch_info,
+            self.target.getRelatedSeriesBranchInfo(branch))
+        self.assertEqual(
+            related_package_branches,
+            self.target.getRelatedPackageBranchInfo(branch))
+
+    def test_related_branches_with_limit(self):
+        (branch, related_series_branch_info,
+            related_package_branches) = (
+                self.factory.makeRelatedBranchesForProduct(
+                product=self.original))
+        self.assertEqual(
+            related_series_branch_info[:2],
+            self.target.getRelatedSeriesBranchInfo(branch, 2))
+        self.assertEqual(
+            related_package_branches[:2],
+            self.target.getRelatedPackageBranchInfo(branch, 2))
 
 
 class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):

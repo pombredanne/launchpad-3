@@ -47,7 +47,7 @@
             <tr tal:define="parent_source_pub difference/parent_source_pub;
                             source_pub difference/source_pub;
                             src_name difference/source_package_name/name;
-                            signer source_pub/sourcepackagerelease/uploader/fmt:link|nothing;"
+                            signer source_pub/sourcepackagerelease/uploader;"
                 tal:attributes="class parent_source_pub/source_package_name">
               <td>
                 <input tal:condition="view/canPerformSync"
@@ -72,7 +72,7 @@
                   <span tal:attributes="title difference/source_pub/datepublished/fmt:datetime"
                         tal:content="difference/source_pub/datepublished/fmt:approximatedate">2005-09-16</span>
                   <tal:signer condition="signer">
-                   by <a tal:replace="structure signer">Steph Smith</a>
+                   by <a tal:replace="structure signer/fmt:link">Steph Smith</a>
                   </tal:signer>
               </td>
               <td>

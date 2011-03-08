@@ -10,16 +10,17 @@ from canonical.testing.layers import LaunchpadFunctionalLayer
 
 from lp.bugs.browser.bugsubscription import (
     BugPortletSubcribersIds,
-    BugSubscriptionAddView,
+    BugSubscriptionListView,
     BugSubscriptionSubscribeSelfView,
     )
-from lp.registry.enum import BugNotificationLevel
+from lp.bugs.enum import BugNotificationLevel
 from lp.testing import (
     feature_flags,
     person_logged_in,
     set_feature_flag,
     TestCaseWithFactory,
     )
+from lp.testing.views import create_initialized_view
 
 
 class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
@@ -54,7 +55,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                         bug.default_bugtask, BugSubscriptionSubscribeSelfView)
                     form_data = {
                         'field.subscription': person.name,
-                        'field.bug_notification_level': level.name,
+                        'field.bug_notification_level': level.title,
                         }
                     harness.submit('continue', form_data)
 
@@ -63,7 +64,8 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     level, subscription.bug_notification_level,
                     "Bug notification level of subscription should be %s, is "
                     "actually %s." % (
-                        level.name, subscription.bug_notification_level.name))
+                        level.title,
+                        subscription.bug_notification_level.title))
 
     def test_nothing_is_not_a_valid_level(self):
         # BugNotificationLevel.NOTHING isn't considered valid when
@@ -77,7 +79,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     bug.default_bugtask, BugSubscriptionSubscribeSelfView)
                 form_data = {
                     'field.subscription': person.name,
-                    'field.bug_notification_level': level.name,
+                    'field.bug_notification_level': level.title,
                     }
                 harness.submit('continue', form_data)
                 self.assertTrue(harness.hasErrors())
@@ -102,7 +104,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     bug.default_bugtask, BugSubscriptionSubscribeSelfView)
                 form_data = {
                     'field.subscription': 'update-subscription',
-                    'field.bug_notification_level': level.name,
+                    'field.bug_notification_level': level.title,
                     }
                 harness.submit('continue', form_data)
                 self.assertFalse(harness.hasErrors())
@@ -112,7 +114,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
             BugNotificationLevel.METADATA,
             subscription.bug_notification_level,
             "Bug notification level of subscription should be METADATA, is "
-            "actually %s." % subscription.bug_notification_level.name)
+            "actually %s." % subscription.bug_notification_level.title)
 
     def test_user_can_unsubscribe(self):
         # A user can unsubscribe from a bug using the
@@ -151,7 +153,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     bug.default_bugtask, BugSubscriptionSubscribeSelfView)
                 form_data = {
                     'field.subscription': person.name,
-                    'field.bug_notification_level': level.name,
+                    'field.bug_notification_level': level.title,
                     }
                 harness.submit('continue', form_data)
 
@@ -249,6 +251,31 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                 self.assertFalse(
                     harness.view.widgets['bug_notification_level'].visible)
 
+    def test_bug_721400(self):
+        # If a subscription exists with a BugNotificationLevel of
+        # NOTHING the view will still render correctly, even though
+        # NOTHING is not accepted as a valid value for the
+        # bug_notification_level field.
+        # This is a regression test for bug 721400.
+        bug = self.factory.makeBug()
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            subscription = bug.subscribe(
+                person, person, level=BugNotificationLevel.NOTHING)
+
+        with feature_flags():
+            with person_logged_in(person):
+                subscribe_view = create_initialized_view(
+                    bug.default_bugtask, name='+subscribe')
+                self.assertEqual(0, len(subscribe_view.errors))
+                bug_notification_level_widget = (
+                    subscribe_view.widgets['bug_notification_level'])
+                default_notification_level_value = (
+                    bug_notification_level_widget._getDefault())
+                self.assertEqual(
+                    BugNotificationLevel.COMMENTS,
+                    default_notification_level_value)
+
 
 class BugPortletSubcribersIdsTests(TestCaseWithFactory):
 
@@ -266,3 +293,27 @@ class BugPortletSubcribersIdsTests(TestCaseWithFactory):
         self.assertEqual(
             harness.request.response.getHeader('content-type'),
             'application/json')
+
+
+class BugSubscriptionsListViewTestCase(TestCaseWithFactory):
+    """Tests for the BugSubscriptionsListView."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(BugSubscriptionsListViewTestCase, self).setUp()
+        self.product = self.factory.makeProduct(
+            name='widgetsrus', displayname='Widgets R Us')
+        self.bug = self.factory.makeBug(product=self.product)
+        self.subscriber = self.factory.makePerson()
+
+    def test_identify_structural_subscriptions(self):
+        # This shows simply that we can identify the structural
+        # subscriptions for the page.  The content will come later.
+        with person_logged_in(self.subscriber):
+            sub = self.product.addBugSubscription(
+                self.subscriber, self.subscriber)
+            harness = LaunchpadFormHarness(
+                self.bug.default_bugtask, BugSubscriptionListView)
+            self.assertEqual(
+                list(harness.view.structural_subscriptions), [sub])

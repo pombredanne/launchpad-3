@@ -6,7 +6,6 @@ __all__ = [
     'add_bug_change_notifications',
     'get_bug_delta',
     'get_bugtask_indirect_subscribers',
-    'notify_bug_added',
     'notify_bug_attachment_added',
     'notify_bug_attachment_removed',
     'notify_bug_comment_added',
@@ -35,22 +34,12 @@ from lp.bugs.adapters.bugchange import (
     get_bug_changes,
     )
 from lp.bugs.adapters.bugdelta import BugDelta
-from lp.bugs.interfaces.bugchange import IBugChange
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.mail.bugnotificationbuilder import BugNotificationBuilder
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.mail.newbug import generate_bug_add_email
-from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.person import IPerson
-
-
-@block_implicit_flushes
-def notify_bug_added(bug, event):
-    """Send an email notification that a bug was added.
-
-    Event must be an IObjectCreatedEvent.
-    """
-    bug.addCommentNotification(bug.initial_message)
 
 
 @block_implicit_flushes
@@ -211,30 +200,30 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None,
             level=BugNotificationLevel.METADATA)
         recipients.update(old_bugtask_recipients)
     for change in changes:
-        # XXX 2009-03-17 gmb [bug=344125]
-        #     This if..else should be removed once the new BugChange API
-        #     is complete and ubiquitous.
-        if IBugChange.providedBy(change):
-            if isinstance(change, BugDuplicateChange):
-                no_dupe_master_recipients = (
+        if isinstance(change, BugDuplicateChange):
+            no_dupe_master_recipients = (
+                bug_delta.bug.getBugNotificationRecipients(
+                    old_bug=bug_delta.bug_before_modification,
+                    level=change.change_level,
+                    include_master_dupe_subscribers=False))
+            bug_delta.bug.addChange(
+                change, recipients=no_dupe_master_recipients)
+        elif (isinstance(change, BugTaskAssigneeChange) and
+              new_subscribers is not None):
+            for person in new_subscribers:
+                reason, rationale = recipients.getReason(person)
+                if 'Assignee' in rationale:
+                    recipients.remove(person)
+            bug_delta.bug.addChange(change, recipients=recipients)
+        else:
+            if change.change_level == BugNotificationLevel.LIFECYCLE:
+                change_recipients = (
                     bug_delta.bug.getBugNotificationRecipients(
                         old_bug=bug_delta.bug_before_modification,
-                        level=BugNotificationLevel.METADATA,
+                        level=change.change_level,
                         include_master_dupe_subscribers=False))
-                bug_delta.bug.addChange(
-                    change, recipients=no_dupe_master_recipients)
-            elif (isinstance(change, BugTaskAssigneeChange) and
-                  new_subscribers is not None):
-                for person in new_subscribers:
-                    reason, rationale = recipients.getReason(person)
-                    if 'Assignee' in rationale:
-                        recipients.remove(person)
-                bug_delta.bug.addChange(change, recipients=recipients)
-            else:
-                bug_delta.bug.addChange(change, recipients=recipients)
-        else:
-            bug_delta.bug.addChangeNotification(
-                change, person=bug_delta.user, recipients=recipients)
+                recipients.update(change_recipients)
+            bug_delta.bug.addChange(change, recipients=recipients)
 
 
 def send_bug_details_to_new_bug_subscribers(

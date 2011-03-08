@@ -32,9 +32,7 @@ from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.tests import test_notifications
 from canonical.testing.layers import (
     AppServerLayer,
-    BaseLayer,
     FunctionalLayer,
-    GoogleLaunchpadFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
@@ -194,10 +192,6 @@ special = {
     'old-testing.txt': LayeredDocFileSuite(
         '../doc/old-testing.txt', layer=FunctionalLayer),
 
-    'autodecorate.txt':
-        LayeredDocFileSuite('../doc/autodecorate.txt', layer=BaseLayer),
-
-
     # And this test want minimal environment too.
     'package-relationship.txt': LayeredDocFileSuite(
         '../doc/package-relationship.txt',
@@ -254,10 +248,6 @@ special = {
         setUp=setUp,
         tearDown=tearDown,
         layer=FunctionalLayer,),
-    'google-searchservice.txt': LayeredDocFileSuite(
-        '../doc/google-searchservice.txt',
-        setUp=setUp, tearDown=tearDown,
-        layer=GoogleLaunchpadFunctionalLayer,),
     }
 
 
