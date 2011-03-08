@@ -21,9 +21,6 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
 from lp.archivepublisher.interfaces.publisherconfig import (
     IPublisherConfigSet,
     )
-from lp.archivepublisher.model.publisherconfig import (
-    PublisherConfig,
-    )
 from lp.registry.interfaces.poll import (
     IPollSet,
     IPollSubset,

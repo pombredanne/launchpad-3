@@ -1124,7 +1124,7 @@ class DistributionPublisherConfigView(LaunchpadFormView):
         if config is not None:
             for name in self.field_names:
                 values[name] = getattr(config, name)
-        
+
         return values
 
     @action("Save")
@@ -1144,4 +1144,3 @@ class DistributionPublisherConfigView(LaunchpadFormView):
         self.request.response.addInfoNotification(
             'Your changes have been applied.')
         self.next_url = canonical_url(self.context)
-
