@@ -826,6 +826,17 @@ BugMessage""" % sqlvalues(self.id))
         """See `IBug`."""
         return self.personIsSubscribedToDuplicate(person)
 
+    def isMuted(self, person):
+        """See `IBug`."""
+        store = Store.of(self)
+        subscriptions = store.find(
+            BugSubscription,
+            BugSubscription.bug == self,
+            BugSubscription.person == person,
+            BugSubscription.bug_notification_level ==
+                BugNotificationLevel.NOTHING)
+        return not subscriptions.is_empty()
+
     @property
     def subscriptions(self):
         """The set of `BugSubscriptions` for this bug."""
