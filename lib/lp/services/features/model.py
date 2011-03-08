@@ -3,20 +3,26 @@
 
 __all__ = [
     'FeatureFlag',
+    'FeatureFlagChangelogEntry',
     'getFeatureStore',
     ]
 
 __metaclass__ = type
 
+from datetime import datetime
+
+import pytz
+
 from storm.locals import (
     DateTime,
-    Desc,
     Int,
+    Reference,
     Storm,
     Unicode,
     )
 from zope.component import getUtility
 
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -49,3 +55,23 @@ class FeatureFlag(Storm):
         self.priority = priority
         self.flag = flag
         self.value = value
+
+
+class FeatureFlagChangelogEntry(Storm):
+    """A record of a change to the whole set of feature flags."""
+
+    __storm_table__ = 'FeatureFlagChangelogEntry'
+
+    id = Int(primary=True)
+    date_changed = UtcDateTimeCol(notNull=True)
+    diff = Unicode(allow_none=False)
+    comment = Unicode(allow_none=False)
+    person_id = Int(name='person', allow_none=False)
+    person = Reference(person_id, 'Person.id')
+
+    def __init__(self, diff, comment, person):
+        super(FeatureFlagChangelogEntry, self).__init__()
+        self.diff = unicode(diff)
+        self.date_changed = datetime.now(pytz.timezone('UTC'))
+        self.comment = unicode(comment)
+        self.person = person

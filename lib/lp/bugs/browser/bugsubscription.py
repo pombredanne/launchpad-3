@@ -19,7 +19,6 @@ from simplejson import dumps
 from zope import formlib
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import RadioWidget
-from zope.component import getUtility
 from zope.schema import Choice
 from zope.schema.vocabulary import (
     SimpleTerm,
@@ -39,9 +38,8 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.bugs.browser.bug import BugViewMixin
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enum import BugNotificationLevel, HIDDEN_BUG_NOTIFICATION_LEVELS
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
-from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.services import features
 from lp.services.propertycache import cachedproperty
@@ -119,11 +117,13 @@ class AdvancedSubscriptionMixin:
             # drop the NOTHING option since it just makes the UI
             # confusing.
             for level in sorted(BugNotificationLevel.items, reverse=True)
-                if level != BugNotificationLevel.NOTHING]
+                if level not in HIDDEN_BUG_NOTIFICATION_LEVELS]
         bug_notification_vocabulary = SimpleVocabulary(
             bug_notification_level_terms)
 
-        if self.current_user_subscription is not None:
+        if (self.current_user_subscription is not None and
+            self.current_user_subscription.bug_notification_level not in
+                HIDDEN_BUG_NOTIFICATION_LEVELS):
             default_value = (
                 self.current_user_subscription.bug_notification_level)
         else:
@@ -566,8 +566,7 @@ class BugSubscriptionListView(LaunchpadView):
 
     @property
     def structural_subscriptions(self):
-        return getUtility(IBugTaskSet).getAllStructuralSubscriptions(
-            self.context.bug.bugtasks, self.user)
+        return self.context.bug.getStructuralSubscriptionsForPerson(self.user)
 
     def _getSupervisedTargets(self):
         owned = self.subscriptions_info.supervisor_subscriptions.owner_for

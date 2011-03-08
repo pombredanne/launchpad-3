@@ -21,8 +21,7 @@
        class="main-portlet"
        tal:define="batch view/all_batched">
     <p>There are
-    <strong class="registry-stat"
-            tal:content="batch/batch/total">7</strong>
+    <strong tal:content="batch/batch/total">7</strong>
     projects registered in Launchpad.
     </p>
 

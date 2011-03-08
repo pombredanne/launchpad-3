@@ -499,7 +499,7 @@ class IBug(IPrivacy, IHasLinkedBranches):
         dupes, etc.
         """
 
-    def getAlsoNotifiedSubscribers():
+    def getAlsoNotifiedSubscribers(recipients=None, level=None):
         """Return IPersons in the "Also notified" subscriber list.
 
         This includes bug contacts and assignees, but not subscribers
@@ -526,6 +526,12 @@ class IBug(IPrivacy, IHasLinkedBranches):
         If no such `BugSubscription` exists, return None.
         """
 
+    def getStructuralSubscriptionsForPerson(person):
+        """Return the `StructuralSubscription`s for a `Person` to this `Bug`.
+
+        This disregards filters.
+        """
+
     def getSubscriptionInfo(level):
         """Return a `BugSubscriptionInfo` at the given `level`.
 
@@ -546,8 +552,11 @@ class IBug(IPrivacy, IHasLinkedBranches):
         True to include the master bug's subscribers as recipients.
         """
 
-    def addCommentNotification(message, recipients=None):
-        """Add a bug comment notification."""
+    def addCommentNotification(message, recipients=None, activity=None):
+        """Add a bug comment notification.
+
+        If a BugActivity instance is provided as an `activity`, it is linked
+        to the notification."""
 
     def addChange(change, recipients=None):
         """Record a change to the bug.
@@ -1152,6 +1161,9 @@ class IBugSet(Interface):
         """
 
     def dangerousGetAllBugs():
+        # XXX 2010-01-08 gmb bug=505850:
+        #     Note, this method should go away when we have a proper
+        #     permissions system for scripts.
         """DO NOT CALL THIS METHOD.
 
         This method exists solely to allow the bug heat script to grab
@@ -1160,9 +1172,6 @@ class IBugSet(Interface):
         DOING. AND IF YOU KNOW WHAT YOU'RE DOING YOU KNOW BETTER THAN TO
         USE THIS ANYWAY.
         """
-        # XXX 2010-01-08 gmb bug=505850:
-        #     Note, this method should go away when we have a proper
-        #     permissions system for scripts.
 
     def getBugsWithOutdatedHeat(max_heat_age):
         """Return the set of bugs whose heat is out of date.
