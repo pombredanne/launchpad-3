@@ -696,11 +696,17 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
         """Whether or not differences between this derived series and
         its parent exist.
         """
-
-        differences = getUtility(
-            IDistroSeriesDifferenceSource).getForDistroSeries(
-                self.context,
-                status=(
-                    DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
-                    DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT))
-        return not differences.is_empty()
+        # Performance optimisation: save a query if we have differences
+        # to show in the batch.
+        if self.cached_differences.batch.total() > 0:
+            return True
+        else:
+            # Here we check the whole dataset since the empty batch
+            # might be filtered.
+            differences = getUtility(
+                IDistroSeriesDifferenceSource).getForDistroSeries(
+                    self.context,
+                    status=(
+                        DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+                        DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT))
+            return not differences.is_empty()
