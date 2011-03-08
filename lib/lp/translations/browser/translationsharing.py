@@ -35,7 +35,7 @@ class TranslationSharingDetailsMixin:
             if self.is_sharing():
                 text = "Edit sharing details"
             else:
-                text = "Set up sharing now!"
+                text = "Set up sharing"
         else:
             if self.is_sharing():
                 icon = 'info'
