@@ -800,7 +800,9 @@ class WebServiceTestCase(TestCaseWithFactory):
 
     def setUp(self):
         super(WebServiceTestCase, self).setUp()
-        self.service = self.factory.makeLaunchpadService(version='devel')
+        self.ws_version = 'devel'
+        self.service = self.factory.makeLaunchpadService(
+            version=self.ws_version)
 
     def wsObject(self, obj, user=None):
         """Return the launchpadlib version of the supplied object.
@@ -810,7 +812,8 @@ class WebServiceTestCase(TestCaseWithFactory):
             lauchpadlib.  Defaults to an arbitrary logged-in user.
         """
         if user is not None:
-            service = self.factory.makeLaunchpadService(user)
+            service = self.factory.makeLaunchpadService(
+                user, version=self.ws_version)
         else:
             service = self.service
         return ws_object(service, obj)
