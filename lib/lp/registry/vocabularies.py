@@ -1499,37 +1499,37 @@ class DistroSeriesDerivationVocabularyFactory:
         """See `IVocabularyFactory.__call__`."""
         self.context = context
 
+    def find_serieses(self, *where):
+        return set(
+            series for (series, distribution) in (
+                IStore(DistroSeries).find(
+                    (DistroSeries, Distribution),
+                    DistroSeries.distribution == Distribution.id,
+                    *where)))
+
     @cachedproperty
     def terms(self):
         """Terms for the series the context can derive from."""
         distribution = IDistribution(self.context)
-        all_serieses = (
-            series for (series, distribution) in (
-                IStore(DistroSeries).find(
-                    (DistroSeries, Distribution),
-                    DistroSeries.distribution == Distribution.id)))
         context_serieses = set(distribution)
         if len(context_serieses) == 0:
             # Derive from any series.
-            serieses = set(all_serieses)
+            serieses = self.find_serieses()
         else:
             # Derive only from series in the same distribution as other
             # derived series in this distribution.
-            serieses = set(
-                series for (series, distribution) in (
-                    IStore(DistroSeries).find(
-                        (DistroSeries, Distribution),
-                        DistroSeries.distribution == Distribution.id,
-                        DistroSeries.distribution != distribution,
-                        DistroSeries.id.is_in(
-                            removeSecurityProxy(series).parent_seriesID
-                            for series in context_serieses))))
+            serieses = self.find_serieses(
+                DistroSeries.distribution != distribution,
+                DistroSeries.id.is_in(
+                    removeSecurityProxy(series).parent_seriesID
+                    for series in context_serieses))
             if len(serieses) == 0:
                 # Derive from any series, except those in this distribution.
-                serieses = set(all_serieses) - context_serieses
-        return [
+                serieses = self.find_serieses(
+                    DistroSeries.distribution != distribution)
+        return tuple(
             DistroSeriesVocabulary.toTerm(series)
-            for series in serieses]
+            for series in serieses)
 
     @cachedproperty
     def terms_in_order(self):
