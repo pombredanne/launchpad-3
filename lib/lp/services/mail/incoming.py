@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functions dealing with mails coming into Launchpad."""
@@ -186,9 +186,14 @@ def authenticateEmail(mail,
     # Check that sender is registered in Launchpad and the email is signed.
     if principal is None:
         setupInteraction(authutil.unauthenticatedPrincipal())
-        return
+        return None
 
-    person = IPerson(principal)
+    # People with accounts but no related person will have a principal, but
+    # the person adaptation will fail.
+    person = IPerson(principal, None)
+    if person is None:
+        setupInteraction(authutil.unauthenticatedPrincipal())
+        return None
 
     if person.account_status != AccountStatus.ACTIVE:
         raise InactiveAccount(

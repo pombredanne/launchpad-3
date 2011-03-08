@@ -1302,8 +1302,10 @@ class CurrentTranslationMessageView(LaunchpadView):
 
             # Get a list of translations which are _used_ as translations
             # for this same message in a different translation template.
+            translations = potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                language)
             externally_used = self._setOnePOFile(sorted(
-                potmsgset.getExternallyUsedTranslationMessages(language),
+                translations[1],
                 key=operator.attrgetter("date_created"),
                 reverse=True))
 
@@ -1311,7 +1313,7 @@ class CurrentTranslationMessageView(LaunchpadView):
             # translations for this same message in a different translation
             # template, but are not used.
             externally_suggested = self._setOnePOFile(sorted(
-                potmsgset.getExternallySuggestedTranslationMessages(language),
+                translations[0],
                 key=operator.attrgetter("date_created"),
                 reverse=True))
         else:

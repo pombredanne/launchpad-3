@@ -29,3 +29,28 @@ CREATE INDEX timelimitedtoken_created ON TimeLimitedToken(created);
 GRANT SELECT, INSERT, UPDATE, DELETE ON TimeLimitedToken TO session;
 -- And the garbo needs to run on it too.
 GRANT SELECT, DELETE ON TimeLimitedToken TO session;
+
+
+-- This helper needs to exist in the session database so the BulkPruner
+-- can clean up unwanted sessions.
+CREATE OR REPLACE FUNCTION cursor_fetch(cur refcursor, n integer)
+RETURNS SETOF record LANGUAGE plpgsql AS
+$$
+DECLARE
+    r record;
+    count integer;
+BEGIN
+    FOR count IN 1..n LOOP
+        FETCH FORWARD FROM cur INTO r;
+        IF NOT FOUND THEN
+            RETURN;
+        END IF;
+        RETURN NEXT r;
+    END LOOP;
+END;
+$$;
+
+COMMENT ON FUNCTION cursor_fetch(refcursor, integer) IS
+'Fetch the next n items from a cursor. Work around for not being able to use FETCH inside a SELECT statement.';
+
+GRANT EXECUTE ON FUNCTION cursor_fetch(refcursor, integer) TO session;

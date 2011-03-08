@@ -771,7 +771,9 @@
                     bug_messages
                     isUserAffected
                     getHWSubmissions
-                    isExpirable"/>
+                    isExpirable
+                    isMuted
+                    "/>
             <require
                 permission="launchpad.Edit"
                 attributes="
@@ -899,6 +901,7 @@
                     productseries
                     bug
                     owner
+                    ownerID
                     decider
                     target
                     status
@@ -1055,6 +1058,10 @@
         class="lp.bugs.mail.bugnotificationrecipients.BugNotificationRecipients">
         <allow
             interface="canonical.launchpad.interfaces.launchpad.INotificationRecipientSet"/>
+        <!-- BugNotificationRecipients provides the following
+             attributes/methods in addition. -->
+        <allow
+            attributes="subscription_filters addFilter"/>
     </class>
     <securedutility
         provides="lp.bugs.interfaces.bugnotification.IBugNotificationSet"
@@ -1091,14 +1098,6 @@
     <class class="lp.bugs.model.bug.FileBugData">
         <allow interface="lp.bugs.interfaces.bug.IFileBugData" />
     </class>
-
-  <class class="lp.bugs.mail.bugnotificationrecipients.BugNotificationRecipientReason">
-    <allow attributes="
-        bug
-        getReason
-        mail_header
-        recipient"/>
-  </class>
 
     <!-- StructuralSubscription -->
 

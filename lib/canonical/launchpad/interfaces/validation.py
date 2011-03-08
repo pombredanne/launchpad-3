@@ -30,19 +30,19 @@ from zope.app.form.interfaces import WidgetsError
 from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.emailaddress import (
     IEmailAddress,
     IEmailAddressSet,
     )
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.cve import valid_cve
-from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.validators.url import valid_absolute_url
+from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.menu import structured
 from lp.app.errors import NotFoundError
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.cve import valid_cve
+from lp.app.validators.email import valid_email
+from lp.app.validators.url import valid_absolute_url
 
 
 def can_be_nominated_for_series(series):

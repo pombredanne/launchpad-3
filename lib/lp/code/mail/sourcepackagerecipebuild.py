@@ -49,10 +49,11 @@ class SourcePackageRecipeBuildMailer(BaseMailer):
             })
         return headers
 
-    def _getTemplateParams(self, email):
+    def _getTemplateParams(self, email, recipient):
         """See `BaseMailer`"""
         params = super(
-            SourcePackageRecipeBuildMailer, self)._getTemplateParams(email)
+            SourcePackageRecipeBuildMailer, self)._getTemplateParams(
+                email, recipient)
         params.update({
             'status': self.build.status.title,
             'build_id': self.build.id,

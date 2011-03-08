@@ -6,10 +6,13 @@
 __metaclass__ = type
 __all__ = ['Packaging', 'PackagingUtil']
 
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectDeletedEvent,
+    )
 from sqlobject import ForeignKey
 from zope.event import notify
 from zope.interface import implements
-from lazr.lifecycle.event import ObjectCreatedEvent
 
 from canonical.database.constants import (
     DEFAULT,
@@ -60,6 +63,10 @@ class Packaging(SQLBase):
     def __init__(self, **kwargs):
         super(Packaging, self).__init__(**kwargs)
         notify(ObjectCreatedEvent(self))
+
+    def destroySelf(self):
+        notify(ObjectDeletedEvent(self))
+        super(Packaging, self).destroySelf()
 
 
 class PackagingUtil:

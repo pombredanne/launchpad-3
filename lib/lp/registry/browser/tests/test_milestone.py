@@ -7,7 +7,10 @@ __metaclass__ = type
 
 from textwrap import dedent
 
-from testtools.matchers import LessThan
+from testtools.matchers import (
+    LessThan,
+    Matcher,
+    )
 from zope.component import getUtility
 
 from canonical.config import config
@@ -26,7 +29,10 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
-from lp.testing.matchers import HasQueryCount
+from lp.testing.matchers import (
+    BrowsesWithQueryLimit,
+    HasQueryCount,
+    )
 from lp.testing.memcache import MemcacheTestCase
 from lp.testing.views import create_initialized_view
 
@@ -187,19 +193,6 @@ class TestQueryCountBase(TestCaseWithFactory):
         self.assertThat(recorder, HasQueryCount(LessThan(query_limit)))
         self.assertEqual(bugtask_count, len(bugtasks))
 
-    def assert_milestone_page_query_count(self, milestone, query_limit):
-        collector = QueryCollector()
-        collector.register()
-        try:
-            milestone_url = canonical_url(milestone)
-            browser = self.getUserBrowser(user=self.owner)
-            browser.open(milestone_url)
-            self.assertThat(collector, HasQueryCount(LessThan(query_limit)))
-        finally:
-            # Unregister now in case this method is called multiple
-            # times in a single test.
-            collector.unregister()
-
 
 class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
 
@@ -246,13 +239,11 @@ class TestProjectMilestoneIndexQueryCount(TestQueryCountBase):
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more
         # bugs with different assignees.
-        query_limit = 35
+        browses_under_limit = BrowsesWithQueryLimit(35, self.owner)
         self.add_bug(3)
-        self.assert_milestone_page_query_count(
-            self.milestone, query_limit=query_limit)
+        self.assertThat(self.milestone, browses_under_limit)
         self.add_bug(10)
-        self.assert_milestone_page_query_count(
-            self.milestone, query_limit=query_limit)
+        self.assertThat(self.milestone, browses_under_limit)
 
     def test_more_private_bugs_query_count_is_constant(self):
         # This test tests that as we add more private bugs to a milestone
@@ -370,13 +361,11 @@ class TestProjectGroupMilestoneIndexQueryCount(TestQueryCountBase):
         # Verify that the number of queries does not increase with more
         # bugs with different assignees as long as the number of
         # projects doesn't increase.
-        query_limit = 37
+        browses_under_limit = BrowsesWithQueryLimit(37, self.owner)
         self.add_bug(1)
-        self.assert_milestone_page_query_count(
-            self.milestone, query_limit=query_limit)
+        self.assertThat(self.milestone, browses_under_limit)
         self.add_bug(10)
-        self.assert_milestone_page_query_count(
-            self.milestone, query_limit=query_limit)
+        self.assertThat(self.milestone, browses_under_limit)
 
 
 class TestDistributionMilestoneIndexQueryCount(TestQueryCountBase):
@@ -429,15 +418,13 @@ class TestDistributionMilestoneIndexQueryCount(TestQueryCountBase):
         #  9. Load links to milestones.
         bugtask_count = 10
         self.assert_bugtasks_query_count(
-            self.milestone, bugtask_count, query_limit=10)
+            self.milestone, bugtask_count, query_limit=11)
 
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more
         # bugs with different assignees.
-        query_limit = 34
-        self.add_bug(3)
-        self.assert_milestone_page_query_count(
-            self.milestone, query_limit=query_limit)
+        browses_under_limit = BrowsesWithQueryLimit(34, self.owner)
+        self.add_bug(4)
+        self.assertThat(self.milestone, browses_under_limit)
         self.add_bug(10)
-        self.assert_milestone_page_query_count(
-            self.milestone, query_limit=query_limit)
+        self.assertThat(self.milestone, browses_under_limit)

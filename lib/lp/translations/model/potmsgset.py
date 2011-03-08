@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -372,6 +372,10 @@ class POTMsgSet(SQLBase):
 
         Suggestions are read-only, so these objects come from the slave
         store.
+
+        :param used: If None, return both used and unused messages.
+            Otherwise, return only used (if bool(used)) or unused (if not
+            bool(used)) messages.
         """
         if not config.rosetta.global_suggestions_enabled:
             return []
@@ -385,7 +389,9 @@ class POTMsgSet(SQLBase):
         # Also note that there is a NOT(in_use_clause) index.
         in_use_clause = (
             "(is_current_ubuntu IS TRUE OR is_current_upstream IS TRUE)")
-        if used:
+        if used is None:
+            query = []
+        elif used:
             query = [in_use_clause]
         else:
             query = ["(NOT %s)" % in_use_clause]
@@ -439,6 +445,23 @@ class POTMsgSet(SQLBase):
     def getExternallySuggestedTranslationMessages(self, language):
         """See `IPOTMsgSet`."""
         return self._getExternalTranslationMessages(language, used=False)
+
+    def getExternallySuggestedOrUsedTranslationMessages(self, language):
+        """See `IPOTMsgSet`."""
+        # This method exists because suggestions + used == all external
+        # messages : its better not to do the work twice. We could use a
+        # temp table and query twice, but as the list length is capped at
+        # 2000, doing a single pass in python should be insignificantly
+        # slower.
+        suggested_messages = []
+        used_messages = []
+        for message in self._getExternalTranslationMessages(language, used=None):
+            in_use = message.is_current_ubuntu or message.is_current_upstream
+            if in_use:
+                used_messages.append(message)
+            else:
+                suggested_messages.append(message)
+        return suggested_messages, used_messages
 
     @property
     def flags(self):
@@ -1046,16 +1069,21 @@ class POTMsgSet(SQLBase):
                         traits.other_side_traits.getCurrentMessage(
                             self, pofile.potemplate, pofile.language))
                     if other_incumbent is None:
+                        # Untranslated on the other side; use the new
+                        # translation there as well.
                         traits.other_side_traits.setFlag(message, True)
                     elif (incumbent_message is None and
                           traits.side == TranslationSide.UPSTREAM):
-                        # If this is the first upstream translation, we
-                        # we use it as the current Ubuntu translation
-                        # too, overriding a possibly existing current
-                        # Ubuntu translation.
-                        if other_incumbent is not None:
-                            traits.other_side_traits.setFlag(
-                                other_incumbent, False)
+                        # Translating upstream, and the message was
+                        # previously untranslated.  Any translation in
+                        # Ubuntu is probably different, but only because
+                        # no upstream translation was available.  In
+                        # this special case the upstream translation
+                        # overrides the Ubuntu translation.
+                        traits.other_side_traits.setFlag(
+                            other_incumbent, False)
+                        Store.of(message).add_flush_order(
+                            other_incumbent, message)
                         traits.other_side_traits.setFlag(message, True)
             elif character == '+':
                 if share_with_other_side:
@@ -1069,6 +1097,8 @@ class POTMsgSet(SQLBase):
             message = twin
 
         if not traits.getFlag(message):
+            if incumbent_message is not None and message != incumbent_message:
+                Store.of(message).add_flush_order(incumbent_message, message)
             traits.setFlag(message, True)
             pofile.markChanged(translator=submitter)
 

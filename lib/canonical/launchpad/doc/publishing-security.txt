@@ -25,8 +25,7 @@ As an anonymous user we can get the first published source and binary out
 the public PPA:
 
     >>> login(ANONYMOUS)
-    >>> source_pub = public_ppa.getPublishedSources()[0]
-    >>> print source_pub.displayname
+    >>> print public_ppa.getPublishedSources().first().displayname
     foo 666 in breezy-autotest
 
     >>> binary_pub = public_ppa.getAllPublishedBinaries()[0]
@@ -36,8 +35,7 @@ the public PPA:
 A regular user can see them too:
 
     >>> login('no-priv@canonical.com')
-    >>> source_pub = public_ppa.getPublishedSources()[0]
-    >>> print source_pub.displayname
+    >>> print public_ppa.getPublishedSources().first().displayname
     foo 666 in breezy-autotest
 
     >>> binary_pub = public_ppa.getAllPublishedBinaries()[0]
@@ -47,7 +45,7 @@ A regular user can see them too:
 But when querying the private PPA, anonymous access will be refused:
 
     >>> login(ANONYMOUS)
-    >>> source_pub = private_ppa.getPublishedSources()[0]
+    >>> source_pub = private_ppa.getPublishedSources().first()
     Traceback (most recent call last):
     ...
     Unauthorized:...
@@ -60,7 +58,7 @@ But when querying the private PPA, anonymous access will be refused:
 As is for a regular user.
 
     >>> login('no-priv@canonical.com')
-    >>> source_pub = private_ppa.getPublishedSources()[0]
+    >>> source_pub = private_ppa.getPublishedSources().first()
     Traceback (most recent call last):
     ...
     Unauthorized:...
@@ -73,8 +71,7 @@ As is for a regular user.
 But the owner can see them.
 
     >>> login_person(private_ppa.owner)
-    >>> source_pub = private_ppa.getPublishedSources()[0]
-    >>> print source_pub.displayname
+    >>> print public_ppa.getPublishedSources().first().displayname
     foo 666 in breezy-autotest
 
     >>> binary_pub = private_ppa.getAllPublishedBinaries()[0]
@@ -84,8 +81,7 @@ But the owner can see them.
 As can an administrator.
 
     >>> login('admin@canonical.com')
-    >>> source_pub = private_ppa.getPublishedSources()[0]
-    >>> print source_pub.displayname
+    >>> print public_ppa.getPublishedSources().first().displayname
     foo 666 in breezy-autotest
 
     >>> binary_pub = private_ppa.getAllPublishedBinaries()[0]
