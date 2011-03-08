@@ -557,7 +557,6 @@ class DistroSeriesInitializeView(LaunchpadFormView):
     schema = IDistroSeriesInitializeForm
     field_names = [
         "derived_from_series",
-        "all_architectures",
         ]
 
     custom_widget('derived_from_series', LaunchpadDropdownWidget)
