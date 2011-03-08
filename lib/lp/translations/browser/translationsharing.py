@@ -19,7 +19,7 @@ class TranslationSharingDetailsMixin:
     View using this need to implement is_sharing, can_edit_sharing_details
     and getTranslationTarget().
     """
-    
+
     def getTranslationTarget(self):
         """Return either a productseries or a sourcepackage."""
         raise NotImplementedError
@@ -29,7 +29,7 @@ class TranslationSharingDetailsMixin:
         tag_template = (
             '<a class="sprite %(icon)s" id="sharing-details"'
             ' href="%(href)s/+sharing-details">%(text)s</a>')
-    
+
         if self.can_edit_sharing_details():
             icon = 'edit'
             if self.is_sharing():

@@ -61,7 +61,7 @@ class TestSharingInfoMixin:
         raise NotImplementedError
 
     SHARING_TEXT = None
-    
+
     def getAuthorizedUser(self, obj):
         """Get a user that is authorized to edit sharing details on obj."""
         raise NotImplementedError
@@ -82,7 +82,7 @@ class TestSharingInfoMixin:
         browser = self.getViewBrowser(
                 obj, user=user, no_login=(not authorized),
                 rootsite="translations")
-            
+
         sharing_info = find_tag_by_id(browser.contents, id_under_test)
         if expected_text is None:
             self.assertIs(None, sharing_info)

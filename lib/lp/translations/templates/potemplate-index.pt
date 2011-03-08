@@ -82,7 +82,7 @@
         </p>
         <a tal:replace="structure view/sharing_details">
           View sharing details
-        </a>       
+        </a>
       </div>
     </div>
 

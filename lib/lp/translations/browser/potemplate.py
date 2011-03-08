@@ -389,8 +389,8 @@ class POTemplateView(LaunchpadView,
             obj = self.context.productseries
         else:
             obj = self.context.distroseries
-        return check_permission('launchpad.Edit', obj) 
-        
+        return check_permission('launchpad.Edit', obj)
+
 
 class POTemplateUploadView(LaunchpadView, TranslationsMixin):
     """Upload translations and updated template."""

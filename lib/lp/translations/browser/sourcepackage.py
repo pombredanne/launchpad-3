@@ -51,13 +51,13 @@ class SourcePackageTranslationsView(TranslationsMixin,
 
         productseries, template = infos[0]
         return productseries
-    
+
     def getTranslationTarget(self):
         """See `TranslationSharingDetailsMixin`."""
         return self.context
 
     def can_edit_sharing_details(self):
-        return check_permission('launchpad.Edit', self.context.distroseries) 
+        return check_permission('launchpad.Edit', self.context.distroseries)
 
 
 class SourcePackageTranslationsMenu(NavigationMenu):
