@@ -127,7 +127,7 @@
             <dl>
               <dt>Implementation:</dt>
               <dd>
-                <img tal:condition="context/informational"
+                <img tal:attributes="class python: not context.informational and 'unseen' or ''"
                      src="/@@/info" alt="Informational"
                      title="Informational blueprint, no implementation necessary"
                      id="informational-icon"
@@ -306,8 +306,13 @@
   <script type="text/javascript">
     LPS.use('lazr.anim', 'lp.ui', function(Y) {
 
-        Y.on('lp:context:changed', function(e) {
-            Y.log(e);
+        Y.on('lp:context:implementation_status:changed', function(e) {
+            var icon = Y.one('#informational-icon');
+            if (e.new_value == 'Informational') {
+              icon.removeClass('unseen');
+            } else {
+              icon.addClass('unseen');
+            }
         });
         Y.on('lp:context:lifecycle_status:changed', function(e) {
             Y.lp.ui.update_field('#lifecycle-status', e.entry.get(e.name));
@@ -321,7 +326,6 @@
             } else {
               started.addClass('unseen');
             }
-            Y.log(e);
         });
         Y.on('lp:context:is_complete:changed', function(e) {
             var completed = Y.one('#completed-by');
@@ -332,7 +336,6 @@
             } else {
               completed.addClass('unseen');
             }
-            Y.log(e);
         });
 
       });
