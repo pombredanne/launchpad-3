@@ -239,7 +239,10 @@ class IProductSeriesPublic(
         vocabulary=TranslationsBranchImportMode,
         required=True,
         description=_("Specify which files will be imported from the "
-                      "source code branch.")))
+                      "source code branch.")),
+        ('devel', {'exported': True}),
+        exported=False
+        )
 
     potemplate_count = Int(
         title=_("The total number of POTemplates in this series."),
