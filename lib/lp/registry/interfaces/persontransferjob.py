@@ -7,6 +7,8 @@ __metaclass__ = type
 __all__ = [
     'IMembershipNotificationJob',
     'IMembershipNotificationJobSource',
+    'IPersonMergeJob',
+    'IPersonMergeJobSource',
     'IPersonTransferJob',
     'IPersonTransferJobSource',
     ]
@@ -78,3 +80,37 @@ class IMembershipNotificationJobSource(IJobSource):
     def create(member, team, reviewer, old_status, new_status,
                last_change_comment=None):
         """Create a new IMembershipNotificationJob."""
+
+
+class IPersonMergeJob(IPersonTransferJob):
+    """A Job that merges one person or team into another."""
+
+    from_person = PublicPersonChoice(
+        title=_('Alias for minor_person attribute'),
+        vocabulary='ValidPersonOrTeam',
+        required=True)
+
+    to_person = PublicPersonChoice(
+        title=_('Alias for major_person attribute'),
+        vocabulary='ValidPersonOrTeam',
+        required=True)
+
+
+class IPersonMergeJobSource(IJobSource):
+    """An interface for acquiring IMembershipNotificationJobs."""
+
+    def create(from_person, to_person):
+        """Create a new IMembershipNotificationJob."""
+
+    def find(from_person=None, to_person=None):
+        """Finds pending merge jobs.
+
+        :param from_person: Match jobs on `from_person`, or `None` to ignore
+            `from_person`.
+        :param to_person: Match jobs on `to_person`, or `None` to ignore
+            `from_person`.
+        :return: A `ResultSet` yielding `IPersonMergeJob`.
+
+        If both `from_person` and `to_person` is supplied, only jobs where
+        both match are returned.
+        """

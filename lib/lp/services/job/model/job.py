@@ -68,7 +68,7 @@ class Job(SQLBase):
 
     attempt_count = IntCol(default=0)
 
-    # List of the valid target states from a given state.
+    # Mapping of valid target states from a given state.
     _valid_transitions = {
         JobStatus.WAITING:
             (JobStatus.RUNNING,
@@ -81,7 +81,13 @@ class Job(SQLBase):
         JobStatus.COMPLETED: (),
         JobStatus.SUSPENDED:
             (JobStatus.WAITING,),
-    }
+        }
+
+    # Set of all states where the job could eventually complete.
+    PENDING_STATUSES = frozenset(
+        (JobStatus.WAITING,
+         JobStatus.RUNNING,
+         JobStatus.SUSPENDED))
 
     def _set_status(self, status):
         if status not in self._valid_transitions[self._status]:
@@ -106,7 +112,7 @@ class Job(SQLBase):
         already expired, return 0.
         """
         expiry = timegm(self.lease_expires.timetuple())
-        return max(0,  expiry - time.time())
+        return max(0, expiry - time.time())
 
     def start(self):
         """See `IJob`."""

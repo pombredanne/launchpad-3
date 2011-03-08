@@ -52,11 +52,11 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IHasAppointedDriver
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.email import email_validator
-from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.validators.version import sane_version
 from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.email import email_validator
+from lp.app.validators.name import name_validator
+from lp.app.validators.version import sane_version
 from lp.blueprints.interfaces.specificationtarget import ISpecificationGoal
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
@@ -767,7 +767,7 @@ class IDistroSeriesPublic(
         """
 
     def newArch(architecturetag, processorfamily, official, owner,
-                supports_virtualized=False):
+                supports_virtualized=False, enabled=True):
         """Create a new port or DistroArchSeries for this DistroSeries."""
 
     def copyTranslationsFromParent(ztm):

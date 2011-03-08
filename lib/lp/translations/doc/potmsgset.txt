@@ -516,10 +516,11 @@ we get no suggestions.
     >>> transaction.commit()
 
     >>> wiki_submissions = (
-    ...     potmsgset_untranslated.getExternallyUsedTranslationMessages(
+    ...     potmsgset_untranslated.getExternallySuggestedTranslationMessages(
     ...         pofile.language))
     >>> len(wiki_submissions)
     0
+
 
 Nor do we get any suggestions if the Ubuntu distribution is not using
 Launchpad for translations.
@@ -536,6 +537,33 @@ Launchpad for translations.
     ...         pofile.language))
     >>> len(wiki_submissions)
     0
+
+POTMsgSet.getExternallySuggestedOrUsedTranslationMessages
+---------------------------------------------------------
+
+This helper combines both getExternallyUsedTranslationMessages and
+getExternallySuggestedTranslationMessages into one call for more efficient
+database access. It is intended for use whenever both
+getExternallyUsedTranslationMessages and
+getExternallySuggestedTranslationMessages will be used on the same potmsgset.
+
+If we go back to the external translations available before, we can see we get
+the same result for suggestions and used messages.
+
+    >>> suggestions, used = (
+    ...     potmsgset_untranslated.getExternallySuggestedOrUsedTranslationMessages(
+    ...         suggested_languages=[pofile.language],
+    ...         used_languages=[pofile.language]))[pofile.language]
+    >>> wiki_suggestions = (
+    ...     potmsgset_untranslated.getExternallySuggestedTranslationMessages(
+    ...         pofile.language))
+    >>> wiki_used = (
+    ...     potmsgset_untranslated.getExternallyUsedTranslationMessages(
+    ...         pofile.language))
+    >>> wiki_submissions == suggestions
+    True
+    >>> wiki_used == used
+    True
 
 
 Suggestions for translator credits

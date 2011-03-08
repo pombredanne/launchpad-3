@@ -80,3 +80,9 @@ class PersonTransferJobType(DBEnumeratedType):
 
         Notify affected users of new team membership.
         """)
+
+    MERGE = DBItem(1, """
+        Person merge
+
+        Merge one person or team into another person or team.
+        """)

@@ -104,6 +104,7 @@ from lp.app.enums import ServiceUsage
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
 from lp.blueprints.enums import (
+    NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
     SpecificationPriority,
     )
@@ -293,6 +294,9 @@ from lp.translations.interfaces.translationtemplatesbuildjob import (
 from lp.translations.interfaces.translator import ITranslatorSet
 from lp.translations.model.translationimportqueue import (
     TranslationImportQueueEntry,
+    )
+from lp.translations.model.translationtemplateitem import (
+    TranslationTemplateItem,
     )
 from lp.translations.utilities.sanitize import (
     sanitize_translations_from_webui,
@@ -498,10 +502,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             pocket)
         return ProxyFactory(location)
 
-    def makeAccount(self, displayname, email=None, password=None,
+    def makeAccount(self, displayname=None, email=None, password=None,
                     status=AccountStatus.ACTIVE,
                     rationale=AccountCreationRationale.UNKNOWN):
         """Create and return a new Account."""
+        if displayname is None:
+            displayname = self.getUniqueString('displayname')
         account = getUtility(IAccountSet).new(
             rationale, displayname, password=password)
         removeSecurityProxy(account).status = status
@@ -813,6 +819,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             Milestone(product=product, distribution=distribution,
                       productseries=productseries, distroseries=distroseries,
                       name=name))
+
+    def makePackaging(self):
+        """Create a new Packaging."""
+        productseries = self.makeProductSeries()
+        sourcepackage = self.makeSourcePackage()
+        return productseries.setPackaging(
+            sourcepackage.distroseries, sourcepackage.sourcepackagename,
+            productseries.owner)
 
     def makeProcessor(self, family=None, name=None, title=None,
                       description=None):
@@ -1670,6 +1684,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(IBugTrackerSet).ensureBugTracker(
             base_url, owner, bugtrackertype, title=title, name=name)
 
+    def makeBugTrackerWithWatches(self, base_url=None, count=2):
+        """Make a new bug tracker with some watches."""
+        bug_tracker = self.makeBugTracker(base_url=base_url)
+        bug_watches = [
+            self.makeBugWatch(bugtracker=bug_tracker)
+            for i in range(count)]
+        return (bug_tracker, bug_watches)
+
     def makeBugTrackerComponentGroup(self, name=None, bug_tracker=None):
         """Make a new bug tracker component group."""
         if name is None:
@@ -1871,7 +1893,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeSpecification(self, product=None, title=None, distribution=None,
                           name=None, summary=None, owner=None,
-                          status=SpecificationDefinitionStatus.NEW,
+                          status=NewSpecificationDefinitionStatus.NEW,
                           implementation_status=None, goal=None, specurl=None,
                           assignee=None, drafter=None, approver=None,
                           priority=None, whiteboard=None, milestone=None):
@@ -1892,12 +1914,18 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             owner = self.makePerson()
         if priority is None:
             priority = SpecificationPriority.UNDEFINED
+        status_names = NewSpecificationDefinitionStatus.items.mapping.keys()
+        if status.name in status_names:
+            definition_status = status
+        else:
+            # This is to satisfy life cycle requirements.
+            definition_status = NewSpecificationDefinitionStatus.NEW
         spec = getUtility(ISpecificationSet).new(
             name=name,
             title=title,
             specurl=None,
             summary=summary,
-            definition_status=status,
+            definition_status=definition_status,
             whiteboard=whiteboard,
             owner=owner,
             assignee=assignee,
@@ -1907,6 +1935,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             distribution=distribution,
             priority=priority)
         naked_spec = removeSecurityProxy(spec)
+        if status.name not in status_names:
+            # Set the closed status after the status has a sane initial state.
+            naked_spec.definition_status = status
         if status == SpecificationDefinitionStatus.OBSOLETE:
             # This is to satisfy a DB constraint of obsolete specs.
             naked_spec.completer = owner
@@ -2284,7 +2315,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeDistroArchSeries(self, distroseries=None,
                              architecturetag=None, processorfamily=None,
                              official=True, owner=None,
-                             supports_virtualized=False):
+                             supports_virtualized=False, enabled=True):
         """Create a new distroarchseries"""
 
         if distroseries is None:
@@ -2300,7 +2331,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             architecturetag = self.getUniqueString('arch')
         return distroseries.newArch(
             architecturetag, processorfamily, official, owner,
-            supports_virtualized)
+            supports_virtualized, enabled)
 
     def makeComponent(self, name=None):
         """Make a new `IComponent`."""
@@ -2523,11 +2554,19 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             sourcepackagename=sourcepackagename,
             distroseries=distroseries)
 
-        records = []
-        records_outside_epoch = []
+        records_inside_epoch = []
+        all_records = []
         for x in range(num_recent_records+num_records_outside_epoch):
+
+            # We want some different source package names occasionally
+            if not x % 3:
+                sourcepackagename = self.makeSourcePackageName()
+                sourcepackage = self.makeSourcePackage(
+                    sourcepackagename=sourcepackagename,
+                    distroseries=distroseries)
+
             # Ensure we have both ppa and primary archives
-            if x%2 == 0:
+            if not x % 2:
                 purpose = ArchivePurpose.PPA
             else:
                 purpose = ArchivePurpose.PRIMARY
@@ -2566,13 +2605,19 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     naked_build.queueBuild()
                     naked_build.status = build_status
 
-                    from random import randrange
-                    offset = randrange(0, epoch_days)
                     now = datetime.now(UTC)
-                    if x >= num_recent_records:
-                        offset = epoch_days + 1 + offset
-                    naked_build.date_finished = (
-                        now - timedelta(days=offset))
+                    # We want some builds to be created in ascending order
+                    if x < num_recent_records:
+                        naked_build.date_finished = (
+                            now - timedelta(
+                                days=epoch_days-1,
+                                hours=-x))
+                    # And others is descending order
+                    else:
+                        days_offset = epoch_days + 1 + x
+                        naked_build.date_finished = (
+                            now - timedelta(days=days_offset))
+
                     naked_build.date_started = (
                         naked_build.date_finished - timedelta(minutes=5))
                     rbr = RecipeBuildRecord(
@@ -2585,13 +2630,21 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     # Only return fully completed daily builds.
                     if daily and build_status == BuildStatus.FULLYBUILT:
                         if x < num_recent_records:
-                            records.append(rbr)
-                        else:
-                            records_outside_epoch.append(rbr)
+                            records_inside_epoch.append(rbr)
+                        all_records.append(rbr)
         # We need to explicitly commit because if don't, the records don't
         # appear in the slave datastore.
         transaction.commit()
-        return records, records_outside_epoch
+
+        # We need to ensure our results are sorted by correctly
+        def _sort_records(records):
+            records.sort(lambda x, y:
+                cmp(x.sourcepackagename.name, y.sourcepackagename.name) or
+                -cmp(x.most_recent_build_time, y.most_recent_build_time))
+
+        _sort_records(all_records)
+        _sort_records(records_inside_epoch)
+        return all_records, records_inside_epoch
 
     def makeDscFile(self, tempdir_path=None):
         """Make a DscFile.
@@ -2670,7 +2723,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     ServiceUsage.LAUNCHPAD)
             else:
                 distroseries = self.makeUbuntuDistroSeries()
-                sourcepackagename = self.makeSourcePackageName()
+        if distroseries is not None and sourcepackagename is None:
+            sourcepackagename = self.makeSourcePackageName()
 
         templateset = getUtility(IPOTemplateSet)
         subset = templateset.getSubset(
@@ -2841,6 +2895,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             'Cannot specify both language and pofile.')
         assert None in (side, pofile), (
             'Cannot specify both side and pofile.')
+        link_potmsgset_with_potemplate = (
+            (pofile is None and potemplate is None) or potmsgset is None)
         if pofile is None:
             pofile = self.makePOFile(
                 language=language, side=side, potemplate=potemplate)
@@ -2850,6 +2906,19 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         potemplate = pofile.potemplate
         if potmsgset is None:
             potmsgset = self.makePOTMsgSet(potemplate)
+        if link_potmsgset_with_potemplate:
+            # If we have a new pofile or a new potmsgset, we must link
+            # the potmsgset to the pofile's potemplate.
+            potmsgset.setSequence(
+                pofile.potemplate, self.getUniqueInteger())
+        else:
+            # Otherwise it is the duty of the callsite to ensure
+            # consistency.
+            store = IStore(TranslationTemplateItem)
+            tti_for_message_in_template = store.find(
+                TranslationTemplateItem.potmsgset == potmsgset,
+                TranslationTemplateItem.potemplate == pofile.potemplate).any()
+            assert tti_for_message_in_template is not None
         if translator is None:
             translator = self.makePerson()
         if reviewer is None:
