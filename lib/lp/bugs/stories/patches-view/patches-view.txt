@@ -209,6 +209,21 @@ Bugs in a product series show up in the patches view for that series.
 
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+
+    >>> login('admin@canonical.com')
+    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    >>> hoary = ubuntu.getSeries('hoary')
+    >>> spph = factory.makeSourcePackagePublishingHistory(
+    ...     sourcepackagename=factory.getOrMakeSourcePackageName('evoltuion'),
+    ...     distroseries=hoary)
+    >>> spph = factory.makeSourcePackagePublishingHistory(
+    ...     sourcepackagename=factory.getOrMakeSourcePackageName('a52dec'),
+    ...     distroseries=hoary)
+    >>> logout()
+
     >>> @with_anybody
     ... def make_bugtask(
     ...     # Meta-factory for making bugtasks.
