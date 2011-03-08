@@ -15,7 +15,6 @@ from email.Utils import (
 import unittest
 
 from sqlobject import SQLObjectNotFound
-import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.database.message import (
@@ -23,27 +22,25 @@ from canonical.launchpad.database.message import (
     MessageJobAction,
     MessageSet,
     )
-from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.message import IMessageJob
 from canonical.launchpad.webapp.testing import verifyObject
+from canonical.librarian.testing.fake import FakeLibrarian
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.services.job.model.job import Job
 from lp.services.mail.sendmail import MailController
 from lp.testing import TestCaseWithFactory
-from lp.testing.factory import LaunchpadObjectFactory
 
 
-class TestMessageSet(unittest.TestCase):
+class TestMessageSet(TestCaseWithFactory):
     """Test the methods of `MessageSet`."""
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        unittest.TestCase.setUp(self)
         # Testing behavior, not permissions here.
-        login('foo.bar@canonical.com')
-        self.factory = LaunchpadObjectFactory()
+        super(TestMessageSet, self).setUp(user='admin@canonical.com')
+        self.fake_librarian = self.useFixture(FakeLibrarian())
 
     def createTestMessages(self):
         """Create some test messages."""
@@ -111,7 +108,7 @@ class TestMessageSet(unittest.TestCase):
         self.assertEqual('review.diff', diff.blob.filename)
         self.assertEqual('text/x-diff', diff.blob.mimetype)
         # Need to commit in order to read back out of the librarian.
-        transaction.commit()
+        self.fake_librarian.pretendCommit()
         self.assertEqual('This is the diff, honest.', diff.blob.read())
 
     def test_fromEmail_strips_attachment_paths(self):
@@ -138,7 +135,7 @@ class TestMessageSet(unittest.TestCase):
         self.assertEqual('review.diff', diff.blob.filename)
         self.assertEqual('text/x-diff', diff.blob.mimetype)
         # Need to commit in order to read back out of the librarian.
-        transaction.commit()
+        self.fake_librarian.pretendCommit()
         self.assertEqual('This is the diff, honest.', diff.blob.read())
 
 
@@ -146,6 +143,10 @@ class TestMessageJob(TestCaseWithFactory):
     """Tests for MessageJob."""
 
     layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestMessageJob, self).setUp()
+        self.fake_librarian = self.useFixture(FakeLibrarian())
 
     def test_providesInterface(self):
         """Ensure that BranchJob implements IBranchJob."""
@@ -172,7 +173,7 @@ class TestMessageJob(TestCaseWithFactory):
         lfa = getUtility(ILibraryFileAliasSet).create(
             'message', len(content), StringIO(content), 'text/x-diff')
         message_job = MessageJob(lfa, MessageJobAction.CREATE_MERGE_PROPOSAL)
-        transaction.commit()
+        self.fake_librarian.pretendCommit()
         message = message_job.getMessage()
         self.assertEqual('from@example.com', message['From'])
         self.assertEqual('to@example.com', message['To'])
