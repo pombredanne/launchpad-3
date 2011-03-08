@@ -1535,6 +1535,7 @@
                 addAnswerContact
                 removeAnswerContact"/>
 
+
         <!-- IFAQTarget -->
 
         <allow
@@ -1578,6 +1579,12 @@
         for="lp.registry.interfaces.distribution.IDistributionSet"
         factory="lp.registry.browser.distribution.DistributionSetBreadcrumb"
         permission="zope.Public"/>
+    <adapter
+        provides="lp.archivepublisher.interfaces.publisherconfig.IPublisherConfig"
+        for="lp.registry.interfaces.distribution.IDistribution"
+        factory="lp.registry.adapters.distribution_to_publisherconfig"
+        permission="zope.Public"/>
+
 
     <!-- DistributionSet -->
 
