@@ -63,6 +63,9 @@ class TestTranslationSuggestions(TestCaseWithFactory):
             potmsgset.getExternallyUsedTranslationMessages(self.nl), [])
         self.assertEquals(
             potmsgset.getExternallySuggestedTranslationMessages(self.nl), [])
+        self.assertEqual(
+            potmsgset.getExternallySuggestedOrUsedTranslationMessages(self.nl),
+            ([], []))
 
     def test_SimpleExternallyUsedSuggestion(self):
         # If foo wants to translate "error message 936" and bar happens
@@ -76,13 +79,18 @@ class TestTranslationSuggestions(TestCaseWithFactory):
 
         transaction.commit()
 
+        def check_used_suggested():
+            self.assertEquals(len(used_suggestions), 1)
+            self.assertEquals(used_suggestions[0], translation)
+            self.assertEquals(len(other_suggestions), 0)
         used_suggestions = foomsg.getExternallyUsedTranslationMessages(
             self.nl)
         other_suggestions = foomsg.getExternallySuggestedTranslationMessages(
             self.nl)
-        self.assertEquals(len(used_suggestions), 1)
-        self.assertEquals(used_suggestions[0], translation)
-        self.assertEquals(len(other_suggestions), 0)
+        check_used_suggested()
+        other_suggestions, used_suggestions = \
+            foomsg.getExternallySuggestedOrUsedTranslationMessages(self.nl)
+        check_used_suggested()
 
     def test_DisabledExternallyUsedSuggestions(self):
         # If foo wants to translate "error message 936" and bar happens
@@ -101,6 +109,9 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         used_suggestions = foomsg.getExternallyUsedTranslationMessages(
             self.nl)
         self.assertEquals(len(used_suggestions), 1)
+        used_suggestions = foomsg.getExternallySuggestedOrUsedTranslationMessages(
+            self.nl)[1]
+        self.assertEquals(len(used_suggestions), 1)
 
         # Override the config option to disable global suggestions.
         new_config = ("""
@@ -110,6 +121,9 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         config.push('disabled_suggestions', new_config)
         disabled_used_suggestions = (
             foomsg.getExternallyUsedTranslationMessages(self.nl))
+        self.assertEquals(len(disabled_used_suggestions), 0)
+        disabled_used_suggestions = (
+            foomsg.getExternallySuggestedOrUsedTranslationMessages(self.nl))[1]
         self.assertEquals(len(disabled_used_suggestions), 0)
         # Restore the old configuration.
         config.pop('disabled_suggestions')
@@ -124,13 +138,18 @@ class TestTranslationSuggestions(TestCaseWithFactory):
 
         transaction.commit()
 
+        def check_used_suggested():
+            self.assertEquals(len(used_suggestions), 0)
+            self.assertEquals(len(other_suggestions), 1)
+            self.assertEquals(other_suggestions[0], suggestion)
         used_suggestions = foomsg.getExternallyUsedTranslationMessages(
             self.nl)
         other_suggestions = foomsg.getExternallySuggestedTranslationMessages(
             self.nl)
-        self.assertEquals(len(used_suggestions), 0)
-        self.assertEquals(len(other_suggestions), 1)
-        self.assertEquals(other_suggestions[0], suggestion)
+        check_used_suggested()
+        other_suggestions, used_suggestions = \
+            foomsg.getExternallySuggestedOrUsedTranslationMessages(self.nl)
+        check_used_suggested()
 
     def test_IdenticalSuggestions(self):
         # If two suggestions are identical, the most recent one is used.
@@ -162,6 +181,10 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         transaction.commit()
         suggestions = oof_potmsgset.getExternallyUsedTranslationMessages(
             self.nl)
+        self.assertEquals(len(suggestions), 1)
+        self.assertEquals(suggestions[0], suggestion1)
+        suggestions = oof_potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+            self.nl)[1]
         self.assertEquals(len(suggestions), 1)
         self.assertEquals(suggestions[0], suggestion1)
 

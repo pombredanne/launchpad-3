@@ -51,7 +51,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.validators.name import name_validator
+from lp.app.validators.name import name_validator
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -221,7 +221,7 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
                 "be unique for the given owner.")))
 
     description = exported(Description(
-        title=_('Description'), required=True,
+        title=_('Description'), required=False,
         description=_('A short description of the recipe.')))
 
     date_last_modified = exported(

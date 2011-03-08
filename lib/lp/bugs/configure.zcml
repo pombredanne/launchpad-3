@@ -58,9 +58,6 @@
         handler="lp.bugs.subscribers.bugcreation.at_least_one_task"/>
     <subscriber
         for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="lp.bugs.subscribers.bug.notify_bug_added"/>
-    <subscriber
-        for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.subscribers.karma.bug_created"/>
     <subscriber
         for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
@@ -774,7 +771,9 @@
                     bug_messages
                     isUserAffected
                     getHWSubmissions
-                    isExpirable"/>
+                    isExpirable
+                    isMuted
+                    "/>
             <require
                 permission="launchpad.Edit"
                 attributes="
@@ -902,6 +901,7 @@
                     productseries
                     bug
                     owner
+                    ownerID
                     decider
                     target
                     status
@@ -925,9 +925,6 @@
     <subscriber
         for="lp.bugs.interfaces.bug.IBug                            zope.lifecycleevent.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_bug_added"/>
-    <subscriber
-        for="lp.bugs.interfaces.bug.IBug                            lazr.lifecycle.interfaces.IObjectModifiedEvent"
-        handler="lp.bugs.subscribers.bugactivity.record_bug_edited"/>
     <subscriber
         for="lp.bugs.interfaces.bugcve.IBugCve                            lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bugactivity.record_cve_linked_to_bug"/>
@@ -1097,14 +1094,6 @@
     <class class="lp.bugs.model.bug.FileBugData">
         <allow interface="lp.bugs.interfaces.bug.IFileBugData" />
     </class>
-
-  <class class="lp.bugs.mail.bugnotificationrecipients.BugNotificationRecipientReason">
-    <allow attributes="
-        bug
-        getReason
-        mail_header
-        recipient"/>
-  </class>
 
     <!-- StructuralSubscription -->
 

@@ -292,9 +292,9 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         """The formatted count of bugs for this milestone."""
         count = len(self.bugtasks)
         if count == 1:
-            return '<strong>1 bug</strong>'
+            return '1 bug'
         else:
-            return '<strong>%d bugs</strong>' % count
+            return '%d bugs' % count
 
     @property
     def bugtask_status_counts(self):
@@ -306,9 +306,9 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         """The formatted count of specifications for this milestone."""
         count = len(self.specifications)
         if count == 1:
-            return '<strong>1 blueprint</strong>'
+            return '1 blueprint'
         else:
-            return '<strong>%d blueprints</strong>' % count
+            return '%d blueprints' % count
 
     @property
     def specification_status_counts(self):

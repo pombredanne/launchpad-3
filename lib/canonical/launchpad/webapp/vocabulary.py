@@ -281,9 +281,6 @@ class SQLObjectVocabularyBase:
             found_obj = self._table.selectOne(clause)
             return found_obj is not None
 
-    def getQuery(self):
-        return None
-
     def getTerm(self, value):
         # Short circuit. There is probably a design problem here since
         # we sometimes get the id and sometimes an SQLBase instance.

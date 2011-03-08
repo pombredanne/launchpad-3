@@ -256,9 +256,6 @@ class IPOTemplate(IRosettaStats):
             value_type=Reference(schema=Interface)),
         exported_as='translation_files')
 
-    relatives_by_name = Attribute(
-        _('All `IPOTemplate` objects that have the same name asa this one.'))
-
     relatives_by_source = Attribute(
         _('''All `IPOTemplate` objects that have the same source.
             For example those that came from the same productseries or the
