@@ -401,16 +401,19 @@ class POTMsgSet(SQLBase):
         both_languages = suggested_languages.intersection(used_languages)
         suggested_languages = suggested_languages - both_languages
         used_languages = used_languages - both_languages
-        query = []
+        lang_used = []
         if both_languages:
-            query.append('TranslationMessage.language IN %s' % 
+            lang_used.append('TranslationMessage.language IN %s' % 
                 quote(both_languages))
         if used_languages:
-            query.append('TranslationMessage.language IN %s AND %s' % (
+            lang_used.append('(TranslationMessage.language IN %s AND %s)' % (
                 quote(used_languages), in_use_clause))
         if suggested_languages:
-            query.append('TranslationMessage.language IN %s AND NOT %s' % (
+            lang_used.append(
+                '(TranslationMessage.language IN %s AND NOT %s)' % (
                 quote(suggested_languages), in_use_clause))
+        query = []
+        query.append('(' + ' OR '.join(lang_used) + ')')
         query.append('TranslationMessage.potmsgset <> %s' % sqlvalues(self))
 
         query.append('''
