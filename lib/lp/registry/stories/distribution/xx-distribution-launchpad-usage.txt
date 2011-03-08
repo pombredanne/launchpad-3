@@ -12,6 +12,10 @@ details.
     Traceback (most recent call last):
       ...
     LinkNotFound...
+    >>> user_browser.getLink('Configure publisher')
+    Traceback (most recent call last):
+      ...
+    LinkNotFound...
     >>> user_browser.open('http://launchpad.dev/ubuntu/+edit')
     Traceback (most recent call last):
       ...
@@ -67,6 +71,24 @@ Just like Launchpad administrators can.
 
     >>> print admin_browser.url
     http://launchpad.dev/ubuntu
+
+Only administators can configure the publisher for the distribution:
+
+    >>> admin_browser.getLink('Configure publisher').click()
+    >>> print admin_browser.title
+    Publisher configuration for...
+
+    >>> admin_browser.getControl(
+    ...     name='field.root_dir').value = "/tmp/root_dir"
+    >>> admin_browser.getControl(
+    ...     name='field.base_url').value = "http://base.url/"
+    >>> admin_browser.getControl(
+    ...     name='field.copy_base_url').value = "http://copy.base.url/"
+    >>> admin_browser.getControl('Save').click()
+
+    >>> print admin_browser.url
+    http://launchpad.dev/ubuntu
+
 
 enable_bug_expiration and JavaScript
 ====================================

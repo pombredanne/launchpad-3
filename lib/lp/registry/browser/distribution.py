@@ -284,7 +284,12 @@ class DistributionNavigationMenu(NavigationMenu, DistributionLinksMixin):
     """A menu of context actions."""
     usedfor = IDistribution
     facet = 'overview'
-    links = ['edit']
+    links = ['edit', 'pubconf']
+
+    @enabled_with_permission("launchpad.Admin")
+    def pubconf(self):
+        text = "Configure publisher"
+        return Link("+pubconf", text, icon="edit")
 
 
 class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
