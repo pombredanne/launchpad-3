@@ -1501,7 +1501,7 @@ class DistroSeriesDerivationVocabularyFactory:
 
     @cachedproperty
     def terms(self):
-        """Terms for the series the context can derive from, in order."""
+        """Terms for the series the context can derive from."""
         distribution = IDistribution(self.context)
         all_serieses = (
             series for (series, distribution) in (
@@ -1527,17 +1527,21 @@ class DistroSeriesDerivationVocabularyFactory:
             if len(serieses) == 0:
                 # Derive from any series, except those in this distribution.
                 serieses = set(all_serieses) - context_serieses
+        return [
+            DistroSeriesVocabulary.toTerm(series)
+            for series in serieses]
+
+    @cachedproperty
+    def terms_in_order(self):
+        """Terms for the series the context can derive from, in order"""
         # Sort the series before generating the vocabulary. We want newest
         # series first so we must compose the key with the difference from a
         # reference date to the creation date.
         reference = datetime.now(utc)
-        serieses = sorted(
-            serieses, key=lambda series: (
-                series.distribution.displayname,
-                reference - series.date_created))
-        return tuple(
-            DistroSeriesVocabulary.toTerm(series)
-            for series in serieses)
+        return sorted(
+            self.terms, key=lambda term: (
+                term.value.distribution.displayname,
+                reference - term.value.date_created))
 
     @cachedproperty
     def terms_by_value(self):
@@ -1554,7 +1558,7 @@ class DistroSeriesDerivationVocabularyFactory:
 
         See `IIterableVocabulary`.
         """
-        return iter(self.terms)
+        return iter(self.terms_in_order)
 
     def __len__(self):
         """The number of terms.

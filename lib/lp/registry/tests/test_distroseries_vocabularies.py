@@ -159,8 +159,14 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
         distribution = self.factory.makeDistribution()
         flush_database_caches()
         with StormStatementRecorder() as recorder:
-            self.vocabulary_factory(distribution).terms
+            vocabulary = self.vocabulary_factory(distribution)
+            vocabulary.terms
             self.assertThat(recorder, HasQueryCount(Equals(2)))
+        # Getting the terms in order does not add another query because all
+        # objects used in the key are preloaded.
+        with StormStatementRecorder() as recorder:
+            vocabulary.terms_in_order
+            self.assertThat(recorder, HasQueryCount(Equals(0)))
 
     def test_queries_for_distribution_with_non_derived_series(self):
         # Getting terms issues two queries: one for the distribution's
@@ -172,8 +178,14 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
         self.factory.makeDistroSeries(distribution=distribution)
         flush_database_caches()
         with StormStatementRecorder() as recorder:
-            self.vocabulary_factory(distribution).terms
+            vocabulary = self.vocabulary_factory(distribution)
+            vocabulary.terms
             self.assertThat(recorder, HasQueryCount(Equals(3)))
+        # Getting the terms in order does not add another query because all
+        # objects used in the key are preloaded.
+        with StormStatementRecorder() as recorder:
+            vocabulary.terms_in_order
+            self.assertThat(recorder, HasQueryCount(Equals(0)))
 
     def test_queries_for_distribution_with_derived_series(self):
         # Getting terms issues two queries: one for the distribution's
@@ -187,5 +199,11 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
             distribution=distribution)
         flush_database_caches()
         with StormStatementRecorder() as recorder:
-            self.vocabulary_factory(distribution).terms
+            vocabulary = self.vocabulary_factory(distribution)
+            vocabulary.terms
             self.assertThat(recorder, HasQueryCount(Equals(2)))
+        # Getting the terms in order does not add another query because all
+        # objects used in the key are preloaded.
+        with StormStatementRecorder() as recorder:
+            vocabulary.terms_in_order
+            self.assertThat(recorder, HasQueryCount(Equals(0)))
