@@ -1499,11 +1499,11 @@ class DistroSeriesDerivationVocabularyFactory:
         """See `IVocabularyFactory.__call__`."""
         self.context = context
 
-    def find_serieses(self, *where):
-        """Return a `tuple` of `DistroSeries` matching the given criteria.
+    def find_terms(self, *where):
+        """Return a `tuple` of terms matching the given criteria.
 
-        The serieses are returned in order, and the related `Distribution`s
-        are preloaded at the same time.
+        The terms are returned in order. The `Distribution`s related to those
+        terms are preloaded at the same time.
         """
         query = IStore(DistroSeries).find(
             (DistroSeries, Distribution),
@@ -1513,7 +1513,8 @@ class DistroSeriesDerivationVocabularyFactory:
             Distribution.displayname,
             Desc(DistroSeries.date_created))
         return tuple(
-            series for (series, distribution) in query)
+            DistroSeriesVocabulary.toTerm(series)
+            for (series, distribution) in query)
 
     @cachedproperty
     def terms(self):
@@ -1525,22 +1526,21 @@ class DistroSeriesDerivationVocabularyFactory:
         context_serieses = set(distribution)
         if len(context_serieses) == 0:
             # Derive from any series.
-            serieses = self.find_serieses()
+            return self.find_terms()
         else:
             # Derive only from series in the same distribution as other
             # derived series in this distribution.
-            serieses = self.find_serieses(
+            terms = self.find_terms(
                 DistroSeries.distribution != distribution,
                 DistroSeries.id.is_in(
                     removeSecurityProxy(series).parent_seriesID
                     for series in context_serieses))
-            if len(serieses) == 0:
+            if len(terms) == 0:
                 # Derive from any series, except those in this distribution.
-                serieses = self.find_serieses(
+                return self.find_terms(
                     DistroSeries.distribution != distribution)
-        return tuple(
-            DistroSeriesVocabulary.toTerm(series)
-            for series in serieses)
+            else:
+                return terms
 
     @cachedproperty
     def terms_by_value(self):
