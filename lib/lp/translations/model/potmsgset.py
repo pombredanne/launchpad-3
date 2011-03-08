@@ -396,21 +396,21 @@ class POTMsgSet(SQLBase):
         # Present a list of language + usage constraints to sql. A language
         # can either be unconstrained, used, or suggested depending on which
         # of suggested_languages, used_languages it appears in.
-        suggested_languages = set(suggested_languages)
-        used_languages = set(used_languages)
+        suggested_languages = set(lang.id for lang in suggested_languages)
+        used_languages = set(lang.id for lang in used_languages)
         both_languages = suggested_languages.intersection(used_languages)
         suggested_languages = suggested_languages - both_languages
         used_languages = used_languages - both_languages
         query = []
         if both_languages:
-            query.append('TranslationMessage.language IN %s' % (
-                sqlvalues(both_languages),))
+            query.append('TranslationMessage.language IN %s' % 
+                quote(both_languages))
         if used_languages:
             query.append('TranslationMessage.language IN %s AND %s' % (
-                sqlvalues(used_languages), in_use_clause))
+                quote(used_languages), in_use_clause))
         if suggested_languages:
             query.append('TranslationMessage.language IN %s AND NOT %s' % (
-                sqlvalues(used_languages), in_use_clause))
+                quote(suggested_languages), in_use_clause))
         query.append('TranslationMessage.potmsgset <> %s' % sqlvalues(self))
 
         query.append('''

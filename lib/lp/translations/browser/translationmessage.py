@@ -1307,7 +1307,7 @@ class CurrentTranslationMessageView(LaunchpadView):
                 used_languages.append(self.sec_lang)
             translations = potmsgset.getExternallySuggestedOrUsedTranslationMessages(
                 suggested_languages=[language], used_languages=used_languages)
-            alt_external = translations[self.sec_land].used
+            alt_external = translations[self.sec_lang].used
             externally_used = self._setOnePOFile(sorted(
                 translations[language].used,
                 key=operator.attrgetter("date_created"),

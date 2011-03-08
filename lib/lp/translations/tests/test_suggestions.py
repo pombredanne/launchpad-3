@@ -127,7 +127,7 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         disabled_used_suggestions = (
             foomsg.getExternallySuggestedOrUsedTranslationMessages(
                 used_languages=[self.nl],
-                suggested_languages=[self.nl])[self.nl].used
+                suggested_languages=[self.nl]))[self.nl].used
         self.assertEquals(len(disabled_used_suggestions), 0)
         # Restore the old configuration.
         config.pop('disabled_suggestions')
