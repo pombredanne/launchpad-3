@@ -348,9 +348,6 @@ class TestErrorHandling(TestCaseWithFactory):
         lp_bug = launchpad.load(api_url(bug))
         exception = self.assertRaises(
             BadRequest, lp_bug.addTask, target=api_url(product))
-        # self.assertThat(partial(callable, target='bar'), Raises(MatchesException(AssertionError('the target must be foo')))
-        # raises(foo ) -> Raises(MatchesException(foo))
-        #'A fix for this bug has already been requested',
 
 
     def test_edit_conjoined_bugtask_gives_bad_request_error(self):
