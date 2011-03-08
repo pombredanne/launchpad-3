@@ -529,7 +529,7 @@ Using getQueueItem to inspect current NEW queue and accept them.
 Now we process the accepted queue items, one more time.
 
   >>> script = os.path.join(config.root, "scripts", "process-accepted.py")
-  >>> process = subprocess.Popen([sys.executable, script, "ubuntutest", '-q'])
+  >>> process = subprocess.Popen([sys.executable, script, "ubuntutest", "-q"])
   >>> process.wait()
   0
 
