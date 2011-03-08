@@ -614,7 +614,7 @@ class DistroSeriesLocalDifferencesListView(LaunchpadFormView):
                 status=(
                     DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
                     DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT))
-        return differences.any()
+        return differences.any() is not None
 
 
 class IDifferencesFormSchema(Interface):
