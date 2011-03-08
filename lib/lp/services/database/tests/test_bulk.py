@@ -158,8 +158,8 @@ class TestLoaders(TestCaseWithFactory):
             ]
         db_object_ids = [db_object.id for db_object in db_objects]
         self.assertEqual(
-            bulk.load(Component, db_object_ids),
-            db_objects)
+            set(bulk.load(Component, db_object_ids)),
+            set(db_objects))
 
     def test_load_with_non_Storm_objects(self):
         # load() does not like non-Storm objects.
