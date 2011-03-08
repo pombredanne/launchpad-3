@@ -547,8 +547,7 @@ class DistroSeriesNeedsPackagesView(LaunchpadView):
         return navigator
 
 
-class DistroSeriesLocalDifferencesListFilter(Interface):
-    """The interface used as the schema for the package filtering form."""
+class IDifferencesFormSchema(Interface):
     name_filter = TextLine(
         title=_("Package name contains"), required=False)
 
@@ -556,68 +555,6 @@ class DistroSeriesLocalDifferencesListFilter(Interface):
         title=_("include blacklisted packages"),
         required=False, default=False)
 
-
-class DistroSeriesLocalDifferencesListView(LaunchpadFormView):
-    """A Form view for filtering and batching source packages."""
-
-    schema = DistroSeriesLocalDifferencesListFilter
-
-    @property
-    def specified_name_filter(self):
-        """If specified, return the name filter from the GET form data."""
-        requested_name_filter = self.request.query_string_params.get(
-            'field.name_filter')
-
-        if requested_name_filter and requested_name_filter[0]:
-            return requested_name_filter[0]
-        else:
-            return None
-
-    @property
-    def specified_include_blacklisted_filter(self):
-        """If specified, return the 'blacklisted' filter from the GET form
-        data.
-        """
-        include_blacklisted_filter = self.request.query_string_params.get(
-            'field.include_blacklisted_filter')
-
-        if include_blacklisted_filter and include_blacklisted_filter[0]:
-            return include_blacklisted_filter[0]
-        else:
-            return None
-
-    @cachedproperty
-    def cached_differences(self):
-        """Return a batch navigator of filtered results."""
-        if self.specified_include_blacklisted_filter:
-            status=(
-                DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
-                DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
-        else:
-            status=(
-                DistroSeriesDifferenceStatus.NEEDS_ATTENTION,)
-        differences = getUtility(
-            IDistroSeriesDifferenceSource).getForDistroSeries(
-                self.context,
-                source_package_name_filter=self.specified_name_filter,
-                status=status)
-        return BatchNavigator(differences, self.request)
-
-    @cachedproperty
-    def has_differences(self):
-        """Whether or not differences between this derived series and
-        its parent exist.
-        """
-        differences = getUtility(
-            IDistroSeriesDifferenceSource).getForDistroSeries(
-                self.context,
-                status=(
-                    DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
-                    DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT))
-        return not differences.is_empty()
-
-
-class IDifferencesFormSchema(Interface):
     selected_differences = List(
         title=_('Selected differences'),
         value_type=Choice(vocabulary=SimpleVocabulary([])),
@@ -625,10 +562,10 @@ class IDifferencesFormSchema(Interface):
         required=True)
 
 
-class DistroSeriesLocalDifferences(DistroSeriesLocalDifferencesListView,
-                                   LaunchpadFormView):
+class DistroSeriesLocalDifferences(LaunchpadFormView):
     """Present differences between a derived series and its parent."""
     schema = IDifferencesFormSchema
+    field_names = ['selected_differences']
     custom_widget('selected_differences', LabeledMultiCheckBoxWidget)
 
     page_title = 'Local package differences'
@@ -712,3 +649,58 @@ class DistroSeriesLocalDifferences(DistroSeriesLocalDifferencesListView,
         well as directly in the template.
         """
         return check_permission('launchpad.Edit', self.context)
+
+    @property
+    def specified_name_filter(self):
+        """If specified, return the name filter from the GET form data."""
+        requested_name_filter = self.request.query_string_params.get(
+            'field.name_filter')
+
+        if requested_name_filter and requested_name_filter[0]:
+            return requested_name_filter[0]
+        else:
+            return None
+
+    @property
+    def specified_include_blacklisted_filter(self):
+        """If specified, return the 'blacklisted' filter from the GET form
+        data.
+        """
+        include_blacklisted_filter = self.request.query_string_params.get(
+            'field.include_blacklisted_filter')
+
+        if include_blacklisted_filter and include_blacklisted_filter[0]:
+            return include_blacklisted_filter[0]
+        else:
+            return None
+
+    @cachedproperty
+    def cached_differences(self):
+        """Return a batch navigator of filtered results."""
+        if self.specified_include_blacklisted_filter:
+            status=(
+                DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+                DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
+        else:
+            status=(
+                DistroSeriesDifferenceStatus.NEEDS_ATTENTION,)
+        differences = getUtility(
+            IDistroSeriesDifferenceSource).getForDistroSeries(
+                self.context,
+                source_package_name_filter=self.specified_name_filter,
+                status=status)
+        return BatchNavigator(differences, self.request)
+
+    @cachedproperty
+    def has_differences(self):
+        """Whether or not differences between this derived series and
+        its parent exist.
+        """
+
+        differences = getUtility(
+            IDistroSeriesDifferenceSource).getForDistroSeries(
+                self.context,
+                status=(
+                    DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+                    DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT))
+        return not differences.is_empty()
