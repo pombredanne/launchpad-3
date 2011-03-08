@@ -8,11 +8,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'INewSpecification',
-    'INewSpecificationSeriesGoal',
-    'INewSpecificationSprint',
-    'INewSpecificationTarget',
-    'INewSpecificationProjectTarget',
     'ISpecification',
     'ISpecificationPublic',
     'ISpecificationSet',
@@ -54,7 +49,6 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.validation import valid_webref
 from lp.app.validators import LaunchpadValidationError
 from lp.blueprints.enums import (
-    NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
     SpecificationGoalStatus,
     SpecificationImplementationStatus,
@@ -138,8 +132,14 @@ class SpecURLField(TextLine):
             raise LaunchpadValidationError(self.errormessage % specurl)
 
 
-class INewSpecification(Interface):
-    """A schema for a new specification."""
+class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
+    """Specification's public attributes and methods."""
+
+    # TomBerger 2007-06-20: 'id' is required for
+    #      SQLObject to be able to assign a security-proxied
+    #      specification to an attribute of another SQL object
+    #      referencing it.
+    id = Int(title=_("Database ID"), required=True, readonly=True)
 
     name = exported(
         SpecNameField(
@@ -170,18 +170,17 @@ class INewSpecification(Interface):
                 "A single-paragraph description of the feature. "
                 "This will also be displayed in most feature listings.")),
         ('devel', dict(exported=True)), exported=False)
-    # XXX: salgado, 2010-11-25, bug=680880: We need a method for changing the
-    # definition_status because when that happens we may need to call
-    # updateLifecycleStatus().
+
     definition_status = exported(
         Choice(
-            title=_('Definition Status'),
-            vocabulary=NewSpecificationDefinitionStatus,
-            default=NewSpecificationDefinitionStatus.NEW,
+            title=_('Definition Status'), readonly=True,
+            vocabulary=SpecificationDefinitionStatus,
+            default=SpecificationDefinitionStatus.NEW,
             description=_(
                 "The current status of the process to define the "
                 "feature and get approval for the implementation plan.")),
-        ('devel', dict(exported=True, readonly=True)), exported=False)
+        ('devel', dict(exported=True)), exported=False)
+
     assignee = exported(
         PublicPersonChoice(
             title=_('Assignee'), required=False,
@@ -205,79 +204,6 @@ class INewSpecification(Interface):
             vocabulary='ValidPersonOrTeam'),
         ('devel', dict(exported=True)), exported=False)
 
-
-class INewSpecificationProjectTarget(Interface):
-    """A mixin schema for a new specification.
-
-    Requires the user to specify a product from a given project.
-    """
-    target = Choice(title=_("For"),
-                    description=_("The project for which this "
-                                  "proposal is being made."),
-                    required=True, vocabulary='ProjectProducts')
-
-
-class INewSpecificationSeriesGoal(Interface):
-    """A mixin schema for a new specification.
-
-    Allows the user to propose the specification as a series goal.
-    """
-    goal = Bool(title=_('Propose for series goal'),
-                description=_("Check this to indicate that you wish to "
-                              "propose this blueprint as a series goal."),
-                required=True, default=False)
-
-
-class INewSpecificationSprint(Interface):
-    """A mixin schema for a new specification.
-
-    Allows the user to propose the specification for discussion at a sprint.
-    """
-    sprint = Choice(title=_("Propose for sprint"),
-                    description=_("The sprint to which agenda this "
-                                  "blueprint is being suggested."),
-                    required=False, vocabulary='FutureSprint')
-
-
-class INewSpecificationTarget(Interface):
-    """A mixin schema for a new specification.
-
-    Requires the user to specify a distribution or a product as a target.
-    """
-    # Exported as readonly for simplicity, but could be exported as read-write
-    # using setTarget() as the mutator.
-    target = exported(
-        ReferenceChoice(
-            title=_('For'), required=True, vocabulary='DistributionOrProduct',
-            description=_(
-                "The project for which this proposal is being made."),
-            schema=ISpecificationTarget),
-        ('devel', dict(exported=True, readonly=True)), exported=False)
-
-
-class ISpecificationPublic(
-        INewSpecification, INewSpecificationTarget, IHasOwner,
-        IHasLinkedBranches):
-    """Specification's public attributes and methods."""
-
-    # TomBerger 2007-06-20: 'id' is required for
-    #      SQLObject to be able to assign a security-proxied
-    #      specification to an attribute of another SQL object
-    #      referencing it.
-    id = Int(title=_("Database ID"), required=True, readonly=True)
-
-    # Redefine definition_status to support all definition statuses for
-    # life cycle events.
-    definition_status = exported(
-        Choice(
-            title=_('Definition Status'),
-            vocabulary=SpecificationDefinitionStatus,
-            default=SpecificationDefinitionStatus.NEW,
-            description=_(
-                "The current status of the process to define the "
-                "feature and get approval for the implementation plan.")),
-        ('devel', dict(exported=True, readonly=True)), exported=False)
-
     priority = exported(
         Choice(
             title=_('Priority'), vocabulary=SpecificationPriority,
@@ -298,6 +224,16 @@ class ISpecificationPublic(
                      vocabulary='Product')
     distribution = Choice(title=_('Distribution'), required=False,
                           vocabulary='Distribution')
+
+    # Exported as readonly for simplicity, but could be exported as read-write
+    # using setTarget() as the mutator.
+    target = exported(
+        ReferenceChoice(
+            title=_('For'), required=True, vocabulary='DistributionOrProduct',
+            description=_(
+                "The project for which this proposal is being made."),
+            schema=ISpecificationTarget),
+        ('devel', dict(exported=True, readonly=True)), exported=False)
 
     productseries = Choice(
         title=_('Series Goal'), required=False,
@@ -579,8 +515,7 @@ class ISpecificationEditRestricted(Interface):
     """Specification's attributes and methods protected with launchpad.Edit.
     """
 
-    @mutator_for(copy_field(
-            ISpecificationPublic['definition_status'], readonly=True))
+    @mutator_for(ISpecificationPublic['definition_status'])
     @call_with(user=REQUEST_USER)
     @operation_parameters(
         definition_status=copy_field(
@@ -590,8 +525,7 @@ class ISpecificationEditRestricted(Interface):
     def setDefinitionStatus(definition_status, user):
         """xxx"""
 
-    @mutator_for(
-            ISpecificationPublic['implementation_status'])
+    @mutator_for(ISpecificationPublic['implementation_status'])
     @call_with(user=REQUEST_USER)
     @operation_parameters(
         implementation_status=copy_field(

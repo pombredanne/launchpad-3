@@ -45,6 +45,7 @@ from subprocess import (
     Popen,
     )
 
+from lazr.restful.interface import use_template
 from lazr.restful.interfaces import (
     IFieldHTMLRenderer,
     IWebServiceClientRequest,
@@ -63,7 +64,10 @@ from zope.interface import (
     implementer,
     Interface,
     )
-from zope.schema import Choice
+from zope.schema import (
+    Bool,
+    Choice,
+    )
 from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
@@ -105,13 +109,11 @@ from lp.app.browser.tales import (
     format_link,
     )
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
-from lp.blueprints.enums import SpecificationDefinitionStatus
+from lp.blueprints.enums import (
+    NewSpecificationDefinitionStatus,
+    SpecificationDefinitionStatus,
+    )
 from lp.blueprints.interfaces.specification import (
-    INewSpecification,
-    INewSpecificationProjectTarget,
-    INewSpecificationSeriesGoal,
-    INewSpecificationSprint,
-    INewSpecificationTarget,
     ISpecification,
     ISpecificationSet,
     )
@@ -120,9 +122,71 @@ from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.services.propertycache import cachedproperty
+
+
+class INewSpecification(Interface):
+    """A schema for a new specification."""
+
+    use_template(ISpecification, include=[
+        'name',
+        'title',
+        'specurl',
+        'summary',
+        'assignee',
+        'drafter',
+        'approver',
+        ])
+
+    definition_status = Choice(
+        title=_('Definition Status'),
+        vocabulary=NewSpecificationDefinitionStatus,
+        default=NewSpecificationDefinitionStatus.NEW,
+        description=_(
+            "The current status of the process to define the "
+            "feature and get approval for the implementation plan."))
+
+
+class INewSpecificationProjectTarget(Interface):
+    """A mixin schema for a new specification.
+
+    Requires the user to specify a product from a given project.
+    """
+    target = Choice(
+        title=_("For"),
+        description=_("The project for which this proposal is being made."),
+        required=True, vocabulary='ProjectProducts')
+
+
+class INewSpecificationSeriesGoal(Interface):
+    """A mixin schema for a new specification.
+
+    Allows the user to propose the specification as a series goal.
+    """
+    goal = Bool(title=_('Propose for series goal'),
+                description=_("Check this to indicate that you wish to "
+                              "propose this blueprint as a series goal."),
+                required=True, default=False)
+
+
+class INewSpecificationSprint(Interface):
+    """A mixin schema for a new specification.
+
+    Allows the user to propose the specification for discussion at a sprint.
+    """
+    sprint = Choice(title=_("Propose for sprint"),
+                    description=_("The sprint to which agenda this "
+                                  "blueprint is being suggested."),
+                    required=False, vocabulary='FutureSprint')
+
+
+class INewSpecificationTarget(Interface):
+    """A mixin schema for a new specification.
+
+    Requires the user to specify a distribution or a product as a target.
+    """
+    use_template(ISpecification, include=['target'])
 
 
 class NewSpecificationView(LaunchpadFormView):
@@ -582,6 +646,18 @@ class SpecificationView(SpecificationSimpleView):
             self.context, ISpecification['priority'],
             header='Change priority to', edit_view='+priority',
             css_class_prefix='specpriority')
+
+    @property
+    def name_widget(self):
+        name = ISpecification['name']
+        title = "Edit the blueprint name"
+        return TextLineEditorWidget(self.context, name, title, 'h1')
+
+    @property
+    def summary_widget(self):
+        """The summary as a widget."""
+        return TextAreaEditorWidget(
+            self.context, ISpecification['summary'], title="")
 
     @property
     def whiteboard_widget(self):

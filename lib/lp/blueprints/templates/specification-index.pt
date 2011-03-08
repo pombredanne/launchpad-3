@@ -14,6 +14,11 @@
       tal:replace="structure context/datecreated/fmt:approximatedate" />
   </tal:registering>
 
+<metal:heading fill-slot="heading">
+  <h1 tal:replace="structure view/name_widget">
+    blueprint name
+  </h1>
+</metal:heading>
 
 <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
   <p tal:repeat="notice view/notices" tal:content="notice"
@@ -30,9 +35,7 @@
 
   <div id="maincontentsub">
     <div class="top-portlet">
-      <tal:desc replace="structure context/summary/fmt:text-to-html">
-        The blueprint summary will go here.
-      </tal:desc>
+      <tal:widget replace="structure view/summary_widget" />
 
       <ul class="horizontal">
         <li
