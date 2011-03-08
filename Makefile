@@ -459,8 +459,8 @@ pydoctor:
 
 .PHONY: apidoc buildout_bin check doc tags TAGS zcmldocs realclean clean debug \
 	stop start run ftest_build ftest_inplace test_build test_inplace \
-	pagetests check check_merge schema default launchpad.pot \
-	check_merge_ui pull scan sync_branches reload-apache hosted_branches \
-	check_db_merge check_mailman check_config jsbuild jsbuild_lazr \
-	clean_js clean_buildout buildonce_eggs build_eggs sprite_css \
-	sprite_image css_combine compile check_schema pydoctor clean_logs \
+	pagetests check schema default launchpad.pot pull_branches \
+	scan_branches sync_branches reload-apache hosted_branches \
+	check_mailman check_config jsbuild jsbuild_lazr clean_js \
+	clean_buildout buildonce_eggs build_eggs sprite_css sprite_image \
+	css_combine compile check_schema pydoctor clean_logs \
