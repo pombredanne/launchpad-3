@@ -79,7 +79,7 @@
 
             <dl>
               <dt>Direction:</dt>
-              <dd>todo</dd>
+              <dd tal:content="structure view/direction_widget" />
             </dl>
 
             <dl>
@@ -149,21 +149,21 @@
               </dd>
             </dl>
 
-            <dl tal:condition="context/starter">
+            <dl id="started-by"
+                tal:attributes="class python: not context.starter and 'unseen' or ''">
                <dt>Started by</dt>
                <dd>
-                 <tal:registrant tal:replace="structure context/starter/fmt:link" />
-                  on <tal:started_date
-                    tal:replace="structure context/date_started/fmt:approximatedate" />
+                 <tal:starter replace="structure context/starter/fmt:link" />
+                 <tal:started_date replace="context/date_started/fmt:displaydate" />
               </dd>
             </dl>
 
-            <dl tal:condition="context/completer">
+            <dl id="completed-by"
+                tal:attributes="class python: not context.completer and 'unseen' or ''">
               <dt>Completed by</dt>
               <dd>
-                 <tal:registrant tal:replace="structure context/completer/fmt:link" />
-                 on <tal:registrant_date
-                   tal:replace="structure context/date_completed/fmt:approximatedate" />
+                 <tal:completer replace="structure context/completer/fmt:link" />
+                 <tal:completed_date replace="context/date_completed/fmt:displaydate" />
               </dd>
             </dl>
           </div>
@@ -261,14 +261,7 @@
     </div>
 
     <div class="portlet">
-      <h2>
-        Whiteboard
-        <a tal:replace="structure context_menu/whiteboard/fmt:icon" />
-      </h2>
-
-      <div class="wide"
-           tal:content="structure context/whiteboard/fmt:text-to-html"
-           tal:condition="context/whiteboard">Whiteboard.</div>
+      <div class="wide" tal:content="structure view/whiteboard_widget" />
     </div>
 
     <div class="portlet">
@@ -308,13 +301,35 @@
     </div>
 
   <script type="text/javascript">
-    LPS.use('lp.ui', function(Y) {
+    LPS.use('lazr.anim', 'lp.ui', function(Y) {
 
         Y.on('lp:context:changed', function(e) {
             Y.log(e);
         });
-        Y.on('lp:context:base_branch_link:changed', function(e) {
-            Y.lp.ui.update_field('#base-branch dd', e.entry.getHTML(e.name));
+        Y.on('lp:context:lifecycle_status:changed', function(e) {
+            Y.lp.ui.update_field('#lifecycle-status', e.entry.get(e.name));
+        });
+        Y.on('lp:context:is_started:changed', function(e) {
+            var started = Y.one('#started-by');
+            if (e.new_value) {
+              started.removeClass('unseen');
+              started.one('dd').set('innerHTML', e.entry.getHTML('starter'));
+              Y.lazr.anim.green_flash({node:started}).run();
+            } else {
+              started.addClass('unseen');
+            }
+            Y.log(e);
+        });
+        Y.on('lp:context:is_complete:changed', function(e) {
+            var completed = Y.one('#completed-by');
+            if (e.new_value) {
+              completed.removeClass('unseen');
+              completed.one('dd').set('innerHTML', e.entry.getHTML('completer'));
+              Y.lazr.anim.green_flash({node:completed}).run();
+            } else {
+              completed.addClass('unseen');
+            }
+            Y.log(e);
         });
 
       });

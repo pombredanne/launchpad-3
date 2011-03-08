@@ -45,16 +45,24 @@ from subprocess import (
     Popen,
     )
 
+from lazr.restful.interfaces import (
+    IFieldHTMLRenderer,
+    IWebServiceClientRequest,
+    )
 from zope.app.form.browser import (
     TextAreaWidget,
     TextWidget,
     )
 from zope.app.form.browser.itemswidgets import DropdownWidget
+from zope import component
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 from zope.formlib import form
 from zope.formlib.form import Fields
-from zope.interface import Interface
+from zope.interface import (
+    implementer,
+    Interface,
+    )
 from zope.schema import Choice
 from zope.schema.vocabulary import (
     SimpleTerm,
@@ -92,7 +100,10 @@ from lp.app.browser.lazrjs import (
     TextAreaEditorWidget,
     TextLineEditorWidget,
     )
-from lp.app.browser.tales import format_link
+from lp.app.browser.tales import (
+    DateTimeFormatterAPI,
+    format_link,
+    )
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
 from lp.blueprints.enums import SpecificationDefinitionStatus
 from lp.blueprints.interfaces.specification import (
@@ -109,6 +120,7 @@ from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.services.propertycache import cachedproperty
 
@@ -570,6 +582,22 @@ class SpecificationView(SpecificationSimpleView):
             self.context, ISpecification['priority'],
             header='Change priority to', edit_view='+priority',
             css_class_prefix='specpriority')
+
+    @property
+    def whiteboard_widget(self):
+        """The description as a widget."""
+        return TextAreaEditorWidget(
+            self.context, ISpecification['whiteboard'], title="Whiteboard",
+            edit_view='+whiteboard', hide_empty=False)
+
+    @property
+    def direction_widget(self):
+        return BooleanChoiceWidget(
+            self.context, ISpecification['direction_approved'],
+            tag='span',
+            false_text='Needs approval',
+            true_text='Approved',
+            header='Change approval of basic direction')
 
 
 class SpecificationSubscriptionView(SpecificationView):
@@ -1290,3 +1318,34 @@ class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
         if search_text is not None:
             url += '?searchtext=' + search_text
         self.next_url = url
+
+
+@component.adapter(ISpecification, Interface, IWebServiceClientRequest)
+@implementer(IFieldHTMLRenderer)
+def starter_xhtml_representation(context, field, request):
+    """Render the starter as XHTML to populate the page using AJAX."""
+    def render(value):
+        # The value is a webservice link to the object, we want field value.
+        starter = context.starter
+        if starter is None:
+            return ''
+        date_formatter = DateTimeFormatterAPI(context.date_started)
+        return "%s %s" % (
+            format_link(starter), date_formatter.displaydate())
+    return render
+
+
+@component.adapter(ISpecification, Interface, IWebServiceClientRequest)
+@implementer(IFieldHTMLRenderer)
+def completer_xhtml_representation(context, field, request):
+    """Render the completer as XHTML to populate the page using AJAX."""
+    def render(value):
+        # The value is a webservice link to the object, we want field value.
+        completer = context.completer
+        if completer is None:
+            return ''
+        date_formatter = DateTimeFormatterAPI(context.date_completed)
+        return "%s %s" % (
+            format_link(completer), date_formatter.displaydate())
+    return render
+

@@ -346,11 +346,14 @@ class ISpecificationPublic(
                 "Any notes on the status of this spec you would like to "
                 "make. Your changes will override the current text.")),
         ('devel', dict(exported=True)), exported=False)
-    direction_approved = Bool(title=_('Basic direction approved?'),
-        required=False, default=False, description=_("Check this to "
-        "indicate that the drafter and assignee have satisfied the "
-        "approver that they are headed in the right basic direction "
-        "with this specification."))
+    direction_approved = exported(
+        Bool(title=_('Basic direction approved?'),
+             required=True, default=False,
+             description=_(
+                "Check this to indicate that the drafter and assignee "
+                "have satisfied the approver that they are headed in "
+                "the right basic direction with this specification.")),
+        ('devel', dict(exported=True)), exported=False)
     man_days = Int(title=_("Estimated Developer Days"),
         required=False, default=None, description=_("An estimate of the "
         "number of developer days it will take to implement this feature. "
@@ -364,7 +367,7 @@ class ISpecificationPublic(
             description=_(
                 "The state of progress being made on the actual "
                 "implementation or delivery of this feature.")),
-        ('devel', dict(exported=True, readonly=True)), exported=False)
+        ('devel', dict(exported=True)), exported=False)
     superseded_by = Choice(title=_("Superseded by"),
         required=False, default=None,
         vocabulary='Specification', description=_("The specification "
@@ -373,16 +376,38 @@ class ISpecificationPublic(
         "status to Superseded."))
 
     # lifecycle
-    starter = Attribute('The person who first set the state of the '
-        'spec to the values that we consider mark it as started.')
-    date_started = Attribute('The date when this spec was marked '
-        'started.')
-    completer = Attribute('The person who finally set the state of the '
-        'spec to the values that we consider mark it as complete.')
-    date_completed = Attribute('The date when this spec was marked '
-        'complete. Note that complete also includes "obsolete" and '
-        'superseded. Essentially, it is the state where no more work '
-        'will be done on the feature.')
+    starter = exported(
+        PublicPersonChoice(
+            title=_('Starter'), required=False, readonly=True,
+            description=_(
+                'The person who first set the state of the '
+                'spec to the values that we consider mark it as started.'),
+            vocabulary='ValidPersonOrTeam'),
+        ('devel', dict(exported=True)), exported=False)
+    date_started = exported(
+        Datetime(
+            title=_('Date Started'), required=False, readonly=True,
+            description=_('The date when this spec was marked started.')),
+        ('devel', dict(exported=True)), exported=False)
+
+    completer = exported(
+        PublicPersonChoice(
+            title=_('Starter'), required=False, readonly=True,
+            description=_(
+            'The person who finally set the state of the '
+            'spec to the values that we consider mark it as complete.'),
+            vocabulary='ValidPersonOrTeam'),
+        ('devel', dict(exported=True)), exported=False)
+
+    date_completed = exported(
+        Datetime(
+            title=_('Date Completed'), required=False, readonly=True,
+            description=_(
+                'The date when this spec was marked '
+                'complete. Note that complete also includes "obsolete" and '
+                'superseded. Essentially, it is the state where no more work '
+                'will be done on the feature.')),
+        ('devel', dict(exported=True)), exported=False)
 
     # joins
     subscriptions = Attribute('The set of subscriptions to this spec.')
@@ -412,26 +437,39 @@ class ISpecificationPublic(
     # emergent properties
     informational = Attribute('Is True if this spec is purely informational '
         'and requires no implementation.')
-    is_complete = Attribute('Is True if this spec is already completely '
-        'implemented. Note that it is True for informational specs, since '
-        'they describe general functionality rather than specific '
-        'code to be written. It is also true of obsolete and superseded '
-        'specs, since there is no longer any need to schedule work for '
-        'them.')
+    is_complete = exported(
+        Bool(title=_('Is started'),
+             readonly=True, required=True,
+             description=_(
+                'Is True if this spec is already completely implemented. '
+                'Note that it is True for informational specs, since '
+                'they describe general functionality rather than specific '
+                'code to be written. It is also true of obsolete and '
+                'superseded specs, since there is no longer any need '
+                'to schedule work for them.')),
+        ('devel', dict(exported=True)), exported=False)
+
     is_incomplete = Attribute('Is True if this work still needs to '
         'be done. Is in fact always the opposite of is_complete.')
     is_blocked = Attribute('Is True if this spec depends on another spec '
         'which is still incomplete.')
-    is_started = Attribute('Is True if the spec is in a state which '
-        'we consider to be "started". This looks at the delivery '
-        'attribute, and also considers informational specs to be '
-        'started when they are approved.')
+    is_started = exported(
+        Bool(title=_('Is started'),
+             readonly=True, required=True,
+             description=_(
+                'Is True if the spec is in a state which '
+                'we consider to be "started". This looks at the delivery '
+                'attribute, and also considers informational specs to be '
+                'started when they are approved.')),
+        ('devel', dict(exported=True)), exported=False)
 
-    lifecycle_status = Choice(
-        title=_('Lifecycle Status'),
-        vocabulary=SpecificationLifecycleStatus,
-        default=SpecificationLifecycleStatus.NOTSTARTED,
-        readonly=True)
+    lifecycle_status = exported(
+        Choice(
+            title=_('Lifecycle Status'),
+            vocabulary=SpecificationLifecycleStatus,
+            default=SpecificationLifecycleStatus.NOTSTARTED,
+            readonly=True),
+        ('devel', dict(exported=True)), exported=False)
 
     def validateMove(target):
         """Check that the specification can be moved to the target."""
