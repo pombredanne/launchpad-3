@@ -1995,7 +1995,7 @@
     <browser:page
         name="+pubconf"
         for="lp.registry.interfaces.distribution.IDistribution"
-        class="lp.registry.browser.distribution.DistributionPublisherConfig"
+        class="lp.registry.browser.distribution.DistributionPublisherConfigView"
         template="../../app/templates/generic-edit.pt"
         facet="overview"
         permission="launchpad.Admin"/>

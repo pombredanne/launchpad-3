@@ -21,6 +21,7 @@ __all__ = [
     'DistributionPPASearchView',
     'DistributionPackageSearchView',
     'DistributionPendingReviewMirrorsView',
+    'DistributionPublisherConfigView',
     'DistributionSeriesView',
     'DistributionSeriesMirrorsRSSView',
     'DistributionSeriesMirrorsView',
@@ -1086,7 +1087,7 @@ class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
         return self.context.disabled_mirrors
 
 
-class DistributionPublisherConfig(LaunchpadFormView):
+class DistributionPublisherConfigView(LaunchpadFormView):
     """View class for configuring publisher options for a DistroSeries.
 
     It redirects to the main distroseries page after a successful edit.
