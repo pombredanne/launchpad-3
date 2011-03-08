@@ -40,6 +40,7 @@ from lp.app.browser.launchpadform import (
 from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.enum import BugNotificationLevel, HIDDEN_BUG_NOTIFICATION_LEVELS
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
+from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.services import features
 from lp.services.propertycache import cachedproperty
 
@@ -555,6 +556,80 @@ class BugSubscriptionListView(LaunchpadView):
 
     page_title = label
 
+    def initialize(self):
+        super(BugSubscriptionListView, self).initialize()
+        if self.user is not None:
+            self.subscriptions_info = PersonSubscriptions(
+                self.user, self.context.bug)
+        else:
+            self.subscriptions_info = None
+
     @property
     def structural_subscriptions(self):
         return self.context.bug.getStructuralSubscriptionsForPerson(self.user)
+
+    def _getSupervisedTargets(self):
+        owned = self.subscriptions_info.supervisor_subscriptions.owner_for
+        supervised = (
+            self.subscriptions_info.supervisor_subscriptions.supervisor_for)
+        if owned is None:
+            owned = set()
+        if supervised is None:
+            supervised = set()
+        all_targets = list(owned.union(supervised))
+        target_names = [
+            target.displayname for target in all_targets]
+        target_names = sorted(target_names)
+        if len(target_names) > 1:
+            text = ", ".join(target_names[:-1]) + " and " + target_names[-1]
+        else:
+            text = target_names[0]
+        return text
+
+    def _getDuplicates(self):
+        duplicates = list(
+            self.subscriptions_info.duplicate_subscriptions.duplicates)
+        dupe_names = [
+            "#%d" % dupe.id for dupe in duplicates]
+        dupe_names = sorted(dupe_names)
+        if len(dupe_names) > 1:
+            text = ", ".join(dupe_names[:-1]) + " and " + dupe_names[-1]
+        else:
+            text = dupe_names[0]
+        return text
+
+    @property
+    def description(self):
+        """Describes all subscriptions that exist in English."""
+        if self.subscriptions_info is None:
+            return u"ERROR: Not logged in"
+        has_direct = (
+            self.subscriptions_info.direct_subscriptions is not None)
+        personally = (
+            self.subscriptions_info.direct_subscriptions.personally)
+        has_duplicate = (
+            self.subscriptions_info.duplicate_subscriptions is not None)
+        has_supervisor = (
+            self.subscriptions_info.supervisor_subscriptions is not None)
+
+        if has_direct and has_duplicate and has_supervisor:
+            if personally:
+                return (
+                    "You are subscribed to this bug directly. "
+                    "However, you are also the bug supervisor for "
+                    "%(supervised_targets)s and have subscriptions "
+                    "on duplicate bugs %(duplicate_bugs)s." % (
+                        {"supervised_targets": self._getSupervisedTargets(),
+                         "duplicate_bugs": self._getDuplicates(),
+                         }))
+            else:
+                return (
+                    "You are subscribed to this bug through team membership. "
+                    "However, you are also the bug supervisor for "
+                    "%(supervised_targets)s and have subscriptions "
+                    "on duplicate bugs %(duplicate_bugs)s." % (
+                        {"supervised_targets": self._getSupervisedTargets(),
+                         "duplicate_bugs": self._getDuplicates(),
+                         }))
+        else:
+            return None

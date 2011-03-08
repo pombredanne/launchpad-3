@@ -16,6 +16,9 @@
     <div id="maincontent">
       <div id="nonportlets" class="readable">
 
+        <div id="description" tal:content="view/description">
+        </div>
+
       </div>
     </div>
 

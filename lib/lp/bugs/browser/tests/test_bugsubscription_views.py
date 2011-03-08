@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.launchpad.ftests import LaunchpadFormHarness
 from canonical.testing.layers import LaunchpadFunctionalLayer
 
@@ -14,6 +16,7 @@ from lp.bugs.browser.bugsubscription import (
     BugSubscriptionSubscribeSelfView,
     )
 from lp.bugs.enum import BugNotificationLevel
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.testing import (
     feature_flags,
     person_logged_in,
@@ -307,13 +310,45 @@ class BugSubscriptionsListViewTestCase(TestCaseWithFactory):
         self.bug = self.factory.makeBug(product=self.product)
         self.subscriber = self.factory.makePerson()
 
+    def getView(self):
+        harness = LaunchpadFormHarness(
+            self.bug.default_bugtask, BugSubscriptionListView)
+        return harness.view
+
     def test_identify_structural_subscriptions(self):
         # This shows simply that we can identify the structural
         # subscriptions for the page.  The content will come later.
+        view = self.getView()
         with person_logged_in(self.subscriber):
             sub = self.product.addBugSubscription(
                 self.subscriber, self.subscriber)
-            harness = LaunchpadFormHarness(
-                self.bug.default_bugtask, BugSubscriptionListView)
             self.assertEqual(
-                list(harness.view.structural_subscriptions), [sub])
+                list(view.structural_subscriptions), [sub])
+
+    def test_subscriptions_info_none(self):
+        # For non-logged-in person, there is no subscriptions info.
+        view = self.getView()
+        self.assertIs(None, view.subscriptions_info)
+
+    def test_subscriptions_info(self):
+        # On view initialization we load the person subscriptions info
+        # as well.
+        with person_logged_in(self.subscriber):
+            view = self.getView()
+            self.assertIsNot(None, view.subscriptions_info)
+
+    def test_description_all_three(self):
+
+        # Add direct subscription and a duplicate bug.
+        with person_logged_in(self.subscriber):
+            self.bug.subscribe(self.subscriber, self.subscriber)
+            dupe = self.factory.makeBug()
+            dupe.markAsDuplicate(self.bug)
+            dupe.subscribe(self.subscriber, self.subscriber)
+
+        # Set as the bug supervisor.
+        removeSecurityProxy(self.product).bug_supervisor = self.subscriber
+
+        with person_logged_in(self.subscriber):
+            view = self.getView()
+            self.assertIsNot(None, view.description)
