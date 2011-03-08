@@ -477,6 +477,8 @@ class TestPersonStates(TestCaseWithFactory):
         ignore, displayname = repr(person).rsplit(' ', 1)
         self.assertEqual('(\\u0170-tester)>', displayname)
 
+class TestPersonStatusPermissions
+
 
 class TestPersonSet(TestCaseWithFactory):
     """Test `IPersonSet`."""
