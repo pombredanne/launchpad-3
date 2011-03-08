@@ -11,6 +11,7 @@ from datetime import (
     )
 
 from pytz import utc
+from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.schema.interfaces import (
     IVocabulary,
@@ -19,10 +20,15 @@ from zope.schema.interfaces import (
     )
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.database.sqlbase import flush_database_caches
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.vocabularies import DistroSeriesDerivationVocabularyFactory
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    StormStatementRecorder,
+    TestCaseWithFactory,
+    )
+from lp.testing.matchers import HasQueryCount
 
 
 class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
@@ -144,3 +150,42 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
             series for series in observed_distroseries
             if series in expected_distroseries]
         self.assertEqual(expected_distroseries, observed_distroseries)
+
+    def test_queries_for_distribution_without_series(self):
+        for index in range(10):
+            self.factory.makeDistroSeries()
+        distribution = self.factory.makeDistribution()
+        flush_database_caches()
+        # Getting terms issues two queries: one for the distribution's
+        # serieses and a second for all serieses.
+        with StormStatementRecorder() as recorder:
+            self.vocabulary_factory(distribution).terms
+            self.assertThat(recorder, HasQueryCount(Equals(2)))
+
+    def test_queries_for_distribution_with_non_derived_series(self):
+        for index in range(10):
+            self.factory.makeDistroSeries()
+        distribution = self.factory.makeDistribution()
+        self.factory.makeDistroSeries(distribution=distribution)
+        flush_database_caches()
+        # Getting terms issues two queries: one for the distribution's
+        # serieses, a second to search for parent serieses (of which there are
+        # none) and a third for all serieses.
+        with StormStatementRecorder() as recorder:
+            self.vocabulary_factory(distribution).terms
+            self.assertThat(recorder, HasQueryCount(Equals(3)))
+
+    def test_queries_for_distribution_with_derived_series(self):
+        for index in range(10):
+            self.factory.makeDistroSeries()
+        distribution = self.factory.makeDistribution()
+        parent_distroseries = self.factory.makeDistroSeries()
+        self.factory.makeDistroSeries(
+            parent_series=parent_distroseries,
+            distribution=distribution)
+        flush_database_caches()
+        # Getting terms issues two queries: one for the distribution's
+        # serieses and a second to find parent serieses.
+        with StormStatementRecorder() as recorder:
+            self.vocabulary_factory(distribution).terms
+            self.assertThat(recorder, HasQueryCount(Equals(2)))

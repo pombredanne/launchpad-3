@@ -136,10 +136,7 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
-from lp.registry.interfaces.distroseries import (
-    IDistroSeries,
-    IDistroSeriesSet,
-    )
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet,
     MailingListStatus,
@@ -1502,34 +1499,45 @@ class DistroSeriesDerivationVocabularyFactory:
         """See `IVocabularyFactory.__call__`."""
         self.context = context
 
+    def find_serieses(self, *where):
+        """Return a `tuple` of `DistroSeries` matching the given criteria.
+
+        The serieses are returned in order, and the related `Distribution`s
+        are preloaded at the same time.
+        """
+        query = IStore(DistroSeries).find(
+            (DistroSeries, Distribution),
+            DistroSeries.distribution == Distribution.id,
+            *where)
+        query = query.order_by(
+            Distribution.displayname,
+            Desc(DistroSeries.date_created))
+        return tuple(
+            series for (series, distribution) in query)
+
     @cachedproperty
     def terms(self):
-        """Terms for the series the context can derive from, in order."""
+        """Terms for the series the context can derive from, in order.
+
+        The order is the same as for `DistroSeriesVocabulary`.
+        """
         distribution = IDistribution(self.context)
-        all_serieses = getUtility(IDistroSeriesSet).search()
         context_serieses = set(distribution)
         if len(context_serieses) == 0:
             # Derive from any series.
-            serieses = set(all_serieses)
+            serieses = self.find_serieses()
         else:
-            for series in context_serieses:
-                if (series.parent_series is not None and
-                    series.parent_series not in context_serieses):
-                    # Derive only from series in the same distribution as
-                    # other derived series in this distribution.
-                    serieses = set(series.parent_series.distribution)
-                    break
-            else:
+            # Derive only from series in the same distribution as other
+            # derived series in this distribution.
+            serieses = self.find_serieses(
+                DistroSeries.distribution != distribution,
+                DistroSeries.id.is_in(
+                    removeSecurityProxy(series).parent_seriesID
+                    for series in context_serieses))
+            if len(serieses) == 0:
                 # Derive from any series, except those in this distribution.
-                serieses = set(all_serieses) - context_serieses
-        # Sort the series before generating the vocabulary. We want newest
-        # series first so we must compose the key with the difference from a
-        # reference date to the creation date.
-        reference = datetime.now(utc)
-        serieses = sorted(
-            serieses, key=lambda series: (
-                series.distribution.displayname,
-                reference - series.date_created))
+                serieses = self.find_serieses(
+                    DistroSeries.distribution != distribution)
         return tuple(
             DistroSeriesVocabulary.toTerm(series)
             for series in serieses)
