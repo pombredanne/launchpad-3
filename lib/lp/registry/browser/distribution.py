@@ -1130,9 +1130,9 @@ class DistributionPublisherConfigView(LaunchpadFormView):
         if config is None:
             config = getUtility(IPublisherConfigSet).new(
                 distribution=self.context,
-                root_dir=str(data['root_dir']),
-                base_url=str(data['base_url']),
-                copy_base_url=str(data['copy_base_url']))
+                root_dir=data['root_dir'],
+                base_url=data['base_url'],
+                copy_base_url=data['copy_base_url'])
         else:
             form.applyChanges(config, self.form_fields, data, self.adapters)
 
