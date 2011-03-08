@@ -11,6 +11,7 @@ from datetime import (
     )
 
 from pytz import utc
+from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.schema.interfaces import (
     IVocabulary,
@@ -19,10 +20,15 @@ from zope.schema.interfaces import (
     )
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.database.sqlbase import flush_database_caches
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.vocabularies import DistroSeriesDerivationVocabularyFactory
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    StormStatementRecorder,
+    TestCaseWithFactory,
+    )
+from lp.testing.matchers import HasQueryCount
 
 
 class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
@@ -144,3 +150,19 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
             series for series in observed_distroseries
             if series in expected_distroseries]
         self.assertEqual(expected_distroseries, observed_distroseries)
+
+    def test_queries(self):
+        for index in range(10):
+            self.factory.makeDistroSeries()
+        context = self.factory.makeDistribution()
+        flush_database_caches()
+
+        with StormStatementRecorder() as recorder:
+            # The vocabulary terms are evaluated late so no queries are issued
+            # for instantiating the vocabulary.
+            vocabulary = self.vocabulary_factory(context)
+            self.assertThat(recorder, HasQueryCount(Equals(0)))
+            # Referencing terms issues two queries: one for the context's
+            # serieses and a second for all serieses.
+            vocabulary.terms
+            self.assertThat(recorder, HasQueryCount(Equals(2)))

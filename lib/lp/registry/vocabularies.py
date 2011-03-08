@@ -136,10 +136,7 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
-from lp.registry.interfaces.distroseries import (
-    IDistroSeries,
-    IDistroSeriesSet,
-    )
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet,
     MailingListStatus,
@@ -1506,7 +1503,11 @@ class DistroSeriesDerivationVocabularyFactory:
     def terms(self):
         """Terms for the series the context can derive from, in order."""
         distribution = IDistribution(self.context)
-        all_serieses = getUtility(IDistroSeriesSet).search()
+        all_serieses = (
+            series for (series, distribution) in (
+                IStore(DistroSeries).find(
+                    (DistroSeries, Distribution),
+                    DistroSeries.distribution == Distribution.id)))
         context_serieses = set(distribution)
         if len(context_serieses) == 0:
             # Derive from any series.
