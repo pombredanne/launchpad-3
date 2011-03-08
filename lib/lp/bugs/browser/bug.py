@@ -271,7 +271,7 @@ class BugContextMenu(ContextMenu):
 
     def mute_subscription(self):
         """Return the 'Mute subscription' Link."""
-        text = 'Mute subscription'
+        text = 'Mute bug mail'
         # We link to '#' here because we don't yet have a view to handle
         # this link.
         return Link(
