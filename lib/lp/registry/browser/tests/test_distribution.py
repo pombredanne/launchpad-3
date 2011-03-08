@@ -10,7 +10,7 @@ from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.registry.browser.distribution import DistributionPublisherConfigView
-from lp.testing import ANONYMOUS, TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from lp.testing.sampledata import LAUNCHPAD_ADMIN
 
 
