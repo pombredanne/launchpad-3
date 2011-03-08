@@ -20,6 +20,14 @@ class TranslationSharingDetailsMixin:
     and getTranslationTarget().
     """
 
+    def is_sharing(self):
+        """Whether this object is sharing translations or not."""
+        raise NotImplementedError
+
+    def can_edit_sharing_details(self):
+        """If the current user can edit sharing details."""
+        raise NotImplementedError
+
     def getTranslationTarget(self):
         """Return either a productseries or a sourcepackage."""
         raise NotImplementedError
