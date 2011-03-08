@@ -22,8 +22,12 @@
 
     <class
         class="lp.archivepublisher.model.publisherconfig.PublisherConfig">
-        <allow
+        <require
+            permission="launchpad.Admin"
             interface="lp.archivepublisher.interfaces.publisherconfig.IPublisherConfig" />
+        <require
+            permission="launchpad.Admin"
+            set_schema="lp.archivepublisher.interfaces.publisherconfig.IPublisherConfig"/>
     </class>
 
 
