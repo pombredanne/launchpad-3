@@ -152,12 +152,12 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
         self.assertEqual(expected_distroseries, observed_distroseries)
 
     def test_queries_for_distribution_without_series(self):
-        # Getting terms issues two queries: one for the distribution's
-        # serieses and a second for all serieses.
         for index in range(10):
             self.factory.makeDistroSeries()
         distribution = self.factory.makeDistribution()
         flush_database_caches()
+        # Getting terms issues two queries: one for the distribution's
+        # serieses and a second for all serieses.
         with StormStatementRecorder() as recorder:
             vocabulary = self.vocabulary_factory(distribution)
             vocabulary.terms
@@ -169,14 +169,14 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
             self.assertThat(recorder, HasQueryCount(Equals(0)))
 
     def test_queries_for_distribution_with_non_derived_series(self):
-        # Getting terms issues two queries: one for the distribution's
-        # serieses, a second to search for parent serieses (of which there are
-        # none) and a third for all serieses.
         for index in range(10):
             self.factory.makeDistroSeries()
         distribution = self.factory.makeDistribution()
         self.factory.makeDistroSeries(distribution=distribution)
         flush_database_caches()
+        # Getting terms issues two queries: one for the distribution's
+        # serieses, a second to search for parent serieses (of which there are
+        # none) and a third for all serieses.
         with StormStatementRecorder() as recorder:
             vocabulary = self.vocabulary_factory(distribution)
             vocabulary.terms
@@ -188,8 +188,6 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
             self.assertThat(recorder, HasQueryCount(Equals(0)))
 
     def test_queries_for_distribution_with_derived_series(self):
-        # Getting terms issues two queries: one for the distribution's
-        # serieses and a second to find parent serieses.
         for index in range(10):
             self.factory.makeDistroSeries()
         distribution = self.factory.makeDistribution()
@@ -198,6 +196,8 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
             parent_series=parent_distroseries,
             distribution=distribution)
         flush_database_caches()
+        # Getting terms issues two queries: one for the distribution's
+        # serieses and a second to find parent serieses.
         with StormStatementRecorder() as recorder:
             vocabulary = self.vocabulary_factory(distribution)
             vocabulary.terms
