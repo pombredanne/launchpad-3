@@ -22,15 +22,12 @@
 
     <class
         class="lp.archivepublisher.model.publisherconfig.PublisherConfig">
-        <allow
+        <require
+            permission="launchpad.Admin"
             interface="lp.archivepublisher.interfaces.publisherconfig.IPublisherConfig" />
         <require
             permission="launchpad.Admin"
-            set_attributes="
-                root_dir
-                base_url
-                copy_base_url"/>
-
+            set_schema="lp.archivepublisher.interfaces.publisherconfig.IPublisherConfig"/>
     </class>
 
 

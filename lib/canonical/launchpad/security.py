@@ -45,6 +45,7 @@ from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfig
 from lp.blueprints.interfaces.specification import (
     ISpecification,
     ISpecificationPublic,
@@ -2587,3 +2588,7 @@ class ViewLibraryFileAliasWithParent(AuthorizationBase):
         if parent is None:
             return False
         return check_permission(self.permission, parent)
+
+
+class ViewPublisherConfig(AdminByAdminsTeam):
+    usedfor = IPublisherConfig

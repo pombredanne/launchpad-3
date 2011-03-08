@@ -10,13 +10,22 @@ from storm.store import Store
 from storm.exceptions import IntegrityError
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
+from zope.security.interfaces import Unauthorized
 
-from canonical.testing.layers import ZopelessDatabaseLayer
+from canonical.launchpad.ftests import login
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.archivepublisher.interfaces.publisherconfig import (
     IPublisherConfig,
     IPublisherConfigSet,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    ANONYMOUS,
+    TestCaseWithFactory,
+    )
+from lp.testing.sampledata import LAUNCHPAD_ADMIN
 
 
 class TestPublisherConfig(TestCaseWithFactory):
@@ -64,3 +73,22 @@ class TestPublisherConfig(TestCaseWithFactory):
         pubconf = getUtility(IPublisherConfigSet).getByDistribution(
             self.distribution)
         self.assertEqual(self.distribution.name, pubconf.distribution.name)
+
+
+class TestPublisherConfigSecurity(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_only_admin(self):
+        # Only admins can see and change the config.
+        distro = self.factory.makeDistribution()
+        config = self.factory.makePublisherConfig(distro, root_dir=u"foo")
+
+        login(ANONYMOUS)
+        self.assertRaises(Unauthorized, getattr, config, "root_dir")
+        self.assertRaises(Unauthorized, setattr, config, "root_dir", "test")
+
+        login(LAUNCHPAD_ADMIN)
+        self.assertEqual(u"foo", config.root_dir)
+        config.root_dir = u"bar"
+        self.assertEqual(u"bar", config.root_dir)
