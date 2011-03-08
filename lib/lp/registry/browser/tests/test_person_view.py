@@ -219,6 +219,31 @@ class TestShouldShowPpaSection(TestCaseWithFactory):
         self.failUnless(person_view.should_show_ppa_section)
 
 
+class TestAccessToSuspendedPersonPage(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestAccessToSuspendedPersonPage, self).setUp()
+        self.user = self.factory.makePerson()
+        self.target = self.factory.makePerson()
+        self.admin = getUtility(ILaunchpadCelebrities).admin.teamowner
+        with person_logged_in(self.admin):
+            self.target.account.status = AccountStatus.SUSPENDED
+
+    def test_anon_cannot_see_page(self):
+        pass
+
+    def test_random_user_cannot_see_page(self):
+        pass
+
+    def test_registry_can_see_page(self):
+        pass
+
+    def test_admin_can_see_page(self):
+        pass
+
+
 class TestPersonEditView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
