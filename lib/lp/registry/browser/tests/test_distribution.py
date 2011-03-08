@@ -88,11 +88,3 @@ class TestDistributionPublisherConfigView(TestCaseWithFactory):
             copy_base_url=u"foo",
             )
         self._change_and_test_config()
-
-    def test_anonymous_access_fails(self):
-        login(ANONYMOUS)
-
-        view = DistributionPublisherConfigView(
-            self.distro, LaunchpadTestRequest())
-        view.initialize()
-
