@@ -106,9 +106,16 @@ getAlsoNotifiedSubscribers() and getSubscribersFromDuplicates().
 It is also possible to get the list of indirect subscribers for an
 individual bug task.
 
-    >>> from lp.bugs.subscribers.bug import get_bugtask_indirect_subscribers
-    >>> get_bugtask_indirect_subscribers(linux_source_bug.bugtasks[0])
+    >>> from lp.bugs.model.bug import get_also_notified_subscribers
+    >>> res = get_also_notified_subscribers(linux_source_bug.bugtasks[0])
+    >>> res
     [<Person at ...>]
+
+These are security proxied.
+
+    >>> from zope.security. proxy import Proxy
+    >>> isinstance(res, Proxy)
+    True
 
 The list of all bug subscribers can also be accessed via
 IBugTask.bug_subscribers. Our event handling machinery compares a

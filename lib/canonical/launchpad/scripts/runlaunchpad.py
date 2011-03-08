@@ -24,7 +24,7 @@ from canonical.lazr.pidfile import (
     )
 from lp.services.mailman import runmailman
 from lp.services.osutils import ensure_directory_exists
-from lp.services.search import googletestservice
+from lp.services.googlesearch import googletestservice
 
 
 def make_abspath(path):
