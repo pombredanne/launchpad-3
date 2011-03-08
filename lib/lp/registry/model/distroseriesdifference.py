@@ -157,10 +157,9 @@ class DistroSeriesDifference(Storm):
                 name=self.source_package_name.name,
                 version=self.base_version,
                 distroseries=self.derived_series)
-            # As we know there is a base version published in the
-            # distroseries' main archive, we don't check (equivalent
-            # of calling .one() for a storm resultset.
-            return pubs[0]
+            # We know there is a base version published in the distroseries'
+            # main archive.
+            return pubs.first()
 
         return None
 
@@ -211,9 +210,9 @@ class DistroSeriesDifference(Storm):
             self.source_package_name, include_pending=True)
 
         # The most recent published source is the first one.
-        if pubs:
+        try:
             return pubs[0]
-        else:
+        except IndexError:
             return None
 
     def update(self):

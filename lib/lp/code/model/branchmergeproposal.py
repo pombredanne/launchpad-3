@@ -236,14 +236,15 @@ class BranchMergeProposal(SQLBase):
         storm_validator=validate_public_person, notNull=False,
         default=None)
 
-    @property
-    def related_bugs(self):
-        """Bugs which are linked to the source but not the target.
+    def getRelatedBugTasks(self, user):
+        """Bug tasks which are linked to the source but not the target.
 
-        Implies that these bugs would be fixed, in the target, by the merge.
+        Implies that these would be fixed, in the target, by the merge.
         """
-        return (bug for bug in self.source_branch.linked_bugs
-                if bug not in self.target_branch.linked_bugs)
+        source_tasks = self.source_branch.getLinkedBugTasks(user)
+        target_tasks = self.target_branch.getLinkedBugTasks(user)
+        return [bugtask
+            for bugtask in source_tasks if bugtask not in target_tasks]
 
     @property
     def address(self):

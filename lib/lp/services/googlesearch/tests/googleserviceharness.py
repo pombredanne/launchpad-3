@@ -14,7 +14,7 @@ import errno
 import os
 import signal
 
-from canonical.launchpad.testing import googletestservice
+from lp.services.googlesearch import googletestservice
 
 
 class GoogleServiceTestSetup:
@@ -29,7 +29,7 @@ class GoogleServiceTestSetup:
     # google-service-stub.txt, is also disabled.  See
     # canonical/launchpad/ftests/test_system_documentation.py.
     """
-    >>> from canonical.launchpad.testing.googletestservice import (
+    >>> from lp.services.googlesearch.googletestservice import (
     ...     service_is_available)
     >>> from canonical.config import config
 
