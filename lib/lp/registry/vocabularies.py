@@ -1500,16 +1500,27 @@ class DistroSeriesDerivationVocabularyFactory:
         self.context = context
 
     def find_serieses(self, *where):
-        return set(
-            series for (series, distribution) in (
-                IStore(DistroSeries).find(
-                    (DistroSeries, Distribution),
-                    DistroSeries.distribution == Distribution.id,
-                    *where)))
+        """Return a `tuple` of `DistroSeries` matching the given criteria.
+
+        The serieses are returned in order, and the related `Distribution`s
+        are preloaded at the same time.
+        """
+        query = IStore(DistroSeries).find(
+            (DistroSeries, Distribution),
+            DistroSeries.distribution == Distribution.id,
+            *where)
+        query = query.order_by(
+            Distribution.displayname,
+            Desc(DistroSeries.date_created))
+        return tuple(
+            series for (series, distribution) in query)
 
     @cachedproperty
     def terms(self):
-        """Terms for the series the context can derive from."""
+        """Terms for the series the context can derive from, in order.
+
+        The order is the same as for `DistroSeriesVocabulary`.
+        """
         distribution = IDistribution(self.context)
         context_serieses = set(distribution)
         if len(context_serieses) == 0:
@@ -1532,18 +1543,6 @@ class DistroSeriesDerivationVocabularyFactory:
             for series in serieses)
 
     @cachedproperty
-    def terms_in_order(self):
-        """Terms for the series the context can derive from, in order"""
-        # Sort the series before generating the vocabulary. We want newest
-        # series first so we must compose the key with the difference from a
-        # reference date to the creation date.
-        reference = datetime.now(utc)
-        return sorted(
-            self.terms, key=lambda term: (
-                term.value.distribution.displayname,
-                reference - term.value.date_created))
-
-    @cachedproperty
     def terms_by_value(self):
         """Mapping of terms by value."""
         return dict((term.value, term) for term in self.terms)
@@ -1558,7 +1557,7 @@ class DistroSeriesDerivationVocabularyFactory:
 
         See `IIterableVocabulary`.
         """
-        return iter(self.terms_in_order)
+        return iter(self.terms)
 
     def __len__(self):
         """The number of terms.
