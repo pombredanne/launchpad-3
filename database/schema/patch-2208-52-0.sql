@@ -11,4 +11,4 @@ CREATE TABLE PublisherConfig (
 CREATE UNIQUE INDEX publisherconfig__distribution__idx
     ON PublisherConfig(distribution);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 52, 0);
