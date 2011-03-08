@@ -135,10 +135,6 @@ class SpecURLField(TextLine):
 class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
     """Specification's public attributes and methods."""
 
-    # TomBerger 2007-06-20: 'id' is required for
-    #      SQLObject to be able to assign a security-proxied
-    #      specification to an attribute of another SQL object
-    #      referencing it.
     id = Int(title=_("Database ID"), required=True, readonly=True)
 
     name = exported(
@@ -523,7 +519,7 @@ class ISpecificationEditRestricted(Interface):
     @export_write_operation()
     @operation_for_version("devel")
     def setDefinitionStatus(definition_status, user):
-        """xxx"""
+        """Mutator for definition_status that calls updateLifeCycle."""
 
     @mutator_for(ISpecificationPublic['implementation_status'])
     @call_with(user=REQUEST_USER)
@@ -533,7 +529,7 @@ class ISpecificationEditRestricted(Interface):
     @export_write_operation()
     @operation_for_version("devel")
     def setImplementationStatus(implementation_status, user):
-        """xxx"""
+        """Mutator for implementation_status that calls updateLifeCycle."""
 
     def setTarget(target):
         """Set this specification's target.
