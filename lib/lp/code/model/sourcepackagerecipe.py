@@ -18,7 +18,7 @@ from datetime import (
 
 from bzrlib.plugins.builder.recipe import RecipeParseError
 from lazr.delegates import delegates
-from lazr.restful.error import expose
+from lazr.restful.declarations import error_status
 from pytz import utc
 from storm.expr import (
     And,
@@ -53,10 +53,7 @@ from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.code.errors import (
     BuildAlreadyPending,
     BuildNotAllowedForDistro,
-    NoSuchBranch,
-    PrivateBranchRecipe,
     TooManyBuilds,
-    TooNewRecipeFormat,
     )
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
@@ -70,10 +67,13 @@ from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.model.distroseries import DistroSeries
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.stormexpr import Greatest
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.model.archive import Archive
+
+# "Slam" a 400 response code onto RecipeParseError so that it will behave
+# properly when raised in a web service context.
+error_status(400)(RecipeParseError)
 
 
 def get_buildable_distroseries_set(user):
@@ -166,13 +166,8 @@ class SourcePackageRecipe(Storm):
         return self._recipe_data.base_branch
 
     def setRecipeText(self, recipe_text):
-        try:
-            parsed = SourcePackageRecipeData.getParsedRecipe(recipe_text)
-            self._recipe_data.setRecipe(parsed)
-        except (RecipeParseError, NoSuchBranch, PrivateBranchRecipe,
-                TooNewRecipeFormat) as e:
-            expose(e)
-            raise
+        parsed = SourcePackageRecipeData.getParsedRecipe(recipe_text)
+        self._recipe_data.setRecipe(parsed)
 
     @property
     def recipe_text(self):

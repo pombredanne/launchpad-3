@@ -85,6 +85,10 @@ from canonical.launchpad.components.decoratedresultset import (
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.interfaces.validation import (
+    validate_new_distrotask,
+    valid_upstreamtask,
+    )
 from canonical.launchpad.searchbuilder import (
     all,
     any,
@@ -2578,6 +2582,43 @@ class BugTaskSet:
         if not milestone:
             milestone = None
 
+        # Raise a WidgetError if this product bugtask already exists.
+        target = None
+
+        if sourcepackagename is not None:
+            # A source package takes precedence over the distro series
+            # or distribution in which the source package is found.
+            if distroseries is not None:
+                # We'll need to make sure there's no bug task already
+                # filed against this source package in this
+                # distribution series.
+                target = distroseries.getSourcePackage(sourcepackagename)
+            elif distribution is not None:
+                # Make sure there's no bug task already filed against
+                # this source package in this distribution.
+                validate_new_distrotask(bug, distribution, sourcepackagename)
+
+        if target is None:
+            # This task is not being filed against a source package. Find
+            # the prospective target.
+            if productseries is not None:
+                # Bug filed against a product series.
+                target = productseries
+            elif product is not None:
+                # Bug filed against a product.
+                target = product
+            elif distroseries is not None:
+                # Bug filed against a distro series.
+                target = distroseries
+            elif distribution is not None:
+                # Bug filed against a distribution.
+                validate_new_distrotask(bug, distribution)
+
+        if target is not None:
+            # Make sure there's no task for this bug already filed
+            # against the target.
+            valid_upstreamtask(bug, target)
+
         if not bug.private and bug.security_related:
             if product and product.security_contact:
                 bug.subscribe(product.security_contact, owner)
@@ -2624,6 +2665,7 @@ class BugTaskSet:
         # to be queued in appropriately, which leads to Bug.bugtasks not
         # finding the bugtask.
         Store.of(bugtask).flush()
+
         return bugtask
 
     def getStatusCountsForProductSeries(self, user, product_series):

@@ -12,12 +12,11 @@ __all__ = [
 
 from datetime import datetime
 import operator
-import simplejson
 
 from bzrlib import urlutils
 from bzrlib.revision import NULL_REVISION
-from lazr.restful.error import expose
 import pytz
+import simplejson
 from sqlobject import (
     BoolCol,
     ForeignKey,
@@ -74,7 +73,6 @@ from canonical.launchpad.webapp import urlappend
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
-    BugTaskSearchParams,
     )
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.bzr import (
@@ -1049,7 +1047,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         except CannotDeleteBranch, e:
             # Reraise and expose exception here so that the webservice_error
             # is propogated.
-            raise expose(CannotDeleteBranch(e.message))
+            raise CannotDeleteBranch(e.message)
 
     def _deleteBranchSubscriptions(self):
         """Delete subscriptions for this branch prior to deleting branch."""

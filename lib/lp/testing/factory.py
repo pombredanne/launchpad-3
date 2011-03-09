@@ -1657,17 +1657,22 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if owner is None:
             owner = self.makePerson()
 
+        a = None
         if IProductSeries.providedBy(target):
             # We can't have a series task without a product task.
-            self.makeBugTask(bug, target.product)
+            a = target.product
         if IDistroSeries.providedBy(target):
             # We can't have a series task without a distribution task.
-            self.makeBugTask(bug, target.distribution)
+            a = target.distribution
         if ISourcePackage.providedBy(target):
-            distribution_package = target.distribution.getSourcePackage(
-                target.sourcepackagename)
             # We can't have a series task without a distribution task.
-            self.makeBugTask(bug, distribution_package)
+            a = target.distribution.getSourcePackage(
+                target.sourcepackagename)
+
+        if a is not None:
+            prerequisite = bug.getBugTask(a)
+            if prerequisite is None:
+                self.makeBugTask(bug, a)
 
         return removeSecurityProxy(bug).addTask(owner, target)
 
