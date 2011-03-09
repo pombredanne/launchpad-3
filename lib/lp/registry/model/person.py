@@ -4109,7 +4109,8 @@ class PersonSet:
 
         # Inform the user of the merge changes.
         if not to_person.isTeam():
-            mail_text = get_email_template('person-merged.txt')
+            mail_text = get_email_template(
+                'person-merged.txt', app='registry')
             mail_text = mail_text % {
                 'dupename': from_person.name,
                 'person': to_person.name,

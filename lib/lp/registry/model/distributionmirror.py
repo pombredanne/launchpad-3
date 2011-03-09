@@ -368,7 +368,8 @@ class DistributionMirror(SQLBase):
         """Send a failure notification to the distribution's mirror admins and
         to the mirror owner, in case notify_owner is True.
         """
-        template = get_email_template('notify-mirror-owner.txt')
+        template = get_email_template(
+            'notify-mirror-owner.txt', app='registry')
         fromaddress = format_address(
             "Launchpad Mirror Prober", config.canonical.noreply_from_address)
 
