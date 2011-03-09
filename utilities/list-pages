@@ -12,17 +12,20 @@ from zope.component import getGlobalSiteManager
 
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 
+from canonical.launchpad import pagetitles
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+
 def load_zcml(zopeless=False):
-    root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     if zopeless:
         execute_zcml_for_scripts()
     else:
         FunctionalTestSetup(
-            os.path.join(root, 'zcml', 'ftesting.zcml')).setUp()
+            os.path.join(ROOT, 'zcml', 'ftesting.zcml')).setUp()
 
 
 def is_page_adapter(adapter):
@@ -32,15 +35,42 @@ def is_page_adapter(adapter):
     return False
 
 
+def get_view(adapter):
+    return adapter.factory
+
+
+def get_template_filename(view):
+    try:
+        filename = view.index.filename
+    except AttributeError:
+        return None
+    filename = os.path.abspath(filename)[len(ROOT)+1:]
+    return filename
+
+
+def has_page_title(adapter):
+    view = get_view(adapter)
+    marker = object()
+    if getattr(view, 'page_title', marker) is not marker:
+        return True
+    template = get_template_filename(view)
+    if template is None:
+        return False
+    name = os.path.splitext(os.path.basename(template))[0].replace('-', '_')
+    return getattr(pagetitles, name, marker) is not marker
+
+
 def iter_page_adapters():
     """Iterate over adapters for browser:page directives."""
     # XXX: Gets all of the browser:page declarations. Many of these aren't
     # actually pages, but portlets.
     gsm = getGlobalSiteManager()
-    return (a for a in gsm.registeredAdapters() if is_page_adapter(a))
+    return (a for a in gsm.registeredAdapters()
+            if is_page_adapter(a) and has_page_title(a))
 
 
 def format_page_adapter(a):
+#    return pformat(a.__dict__)
     factory = a.factory
     try:
         bases = getmro(factory)
@@ -49,7 +79,13 @@ def format_page_adapter(a):
     bases = [b for b in bases
              if b is not simple
              and 'SimpleViewClass' not in b.__name__]
-    return '%s:%s' % (bases[0].__name__, a.name)
+    template = get_template_filename(get_view(a))
+    return '%s:%s,%s,%s,%s' % (
+        bases[0].__name__,
+        a.name,
+        a.required[0].__name__,
+        a.required[1].__name__,
+        template)
 
 
 def main():
