@@ -2584,7 +2584,7 @@ class BugTaskSet:
 
         # Raise a WidgetError if this product bugtask already exists.
         target = None
-
+        stop_checking = False
         if sourcepackagename is not None:
             # A source package takes precedence over the distro series
             # or distribution in which the source package is found.
@@ -2597,8 +2597,9 @@ class BugTaskSet:
                 # Make sure there's no bug task already filed against
                 # this source package in this distribution.
                 validate_new_distrotask(bug, distribution, sourcepackagename)
+                stop_checking = True
 
-        if target is None:
+        if target is None and not stop_checking:
             # This task is not being filed against a source package. Find
             # the prospective target.
             if productseries is not None:
@@ -2610,9 +2611,10 @@ class BugTaskSet:
             elif distroseries is not None:
                 # Bug filed against a distro series.
                 target = distroseries
-            elif distribution is not None:
+            elif distribution is not None and not stop_checking:
                 # Bug filed against a distribution.
                 validate_new_distrotask(bug, distribution)
+                stop_checking = True
 
         if target is not None:
             # Make sure there's no task for this bug already filed
