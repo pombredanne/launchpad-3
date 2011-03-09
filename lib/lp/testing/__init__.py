@@ -793,10 +793,13 @@ class WindmillTestCase(TestCaseWithFactory):
 class WebServiceTestCase(TestCaseWithFactory):
     """Test case optimized for testing the web service using launchpadlib."""
 
-    #avoid circular imports
-    from canonical.testing.layers import AppServerLayer
-
-    layer = AppServerLayer
+    @property
+    def layer(self):
+        # XXX wgrant 2011-03-09 bug=505913:
+        # TestTwistedJobRunner.test_timeout fails if this is at the
+        # module level. There is probably some hidden circular import.
+        from canonical.testing.layers import AppServerLayer
+        return AppServerLayer
 
     def setUp(self):
         super(WebServiceTestCase, self).setUp()

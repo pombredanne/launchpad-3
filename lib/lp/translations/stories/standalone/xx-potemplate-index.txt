@@ -80,6 +80,7 @@ the Ubuntu source package. This information is displayed on the page.
     Sharing Information
     This template is sharing translations with
     evolution in Ubuntu Hoary template evolution-2.2.
+    View sharing details
     >>> print sharing_info
     <div...<a href="/ubuntu/hoary/+source/evolution/+pots/evolution-2.2"...
 
@@ -95,8 +96,22 @@ translations with the upstream project.
     Sharing Information
     This template is sharing translations with
     Evolution trunk series template evolution-2.2.
+    View sharing details
     >>> print sharing_info
     <div...<a href="/evolution/trunk/+pots/evolution-2.2"...
+
+If the user has the right permissions, they are offered to edit the sharing
+information.
+
+    >>> with FeatureFixture(feature_flag):
+    ...     admin_browser.open('http://translations.launchpad.dev/evolution'
+    ...         '/trunk/+pots/evolution-2.2')
+    >>> sharing_details = find_tag_by_id(
+    ...     admin_browser.contents, 'sharing-details')
+    >>> print extract_text(sharing_details)
+    Edit sharing details
+    >>> print sharing_details['href']
+    http://.../evolution/trunk/+sharing-details
 
 
 Finding related templates
