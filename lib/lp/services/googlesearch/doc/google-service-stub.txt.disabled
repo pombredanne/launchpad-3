@@ -14,7 +14,7 @@ The URL-to-XML mapping is loaded from a text file.  The mapping
 determines which XML files will be returned when a specific URL is
 accessed.
 
-    >>> from canonical.launchpad.testing.googletestservice import (
+    >>> from lp.services.googlesearch.googletestservice import (
     ...     url_to_xml_map)
     >>> routes = url_to_xml_map()
 

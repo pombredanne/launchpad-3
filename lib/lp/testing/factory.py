@@ -820,6 +820,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                       productseries=productseries, distroseries=distroseries,
                       name=name))
 
+    def makePackaging(self):
+        """Create a new Packaging."""
+        productseries = self.makeProductSeries()
+        sourcepackage = self.makeSourcePackage()
+        return productseries.setPackaging(
+            sourcepackage.distroseries, sourcepackage.sourcepackagename,
+            productseries.owner)
+
     def makeProcessor(self, family=None, name=None, title=None,
                       description=None):
         """Create a new processor.
@@ -2309,7 +2317,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeDistroArchSeries(self, distroseries=None,
                              architecturetag=None, processorfamily=None,
                              official=True, owner=None,
-                             supports_virtualized=False):
+                             supports_virtualized=False, enabled=True):
         """Create a new distroarchseries"""
 
         if distroseries is None:
@@ -2325,7 +2333,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             architecturetag = self.getUniqueString('arch')
         return distroseries.newArch(
             architecturetag, processorfamily, official, owner,
-            supports_virtualized)
+            supports_virtualized, enabled)
 
     def makeComponent(self, name=None):
         """Make a new `IComponent`."""
@@ -2717,7 +2725,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     ServiceUsage.LAUNCHPAD)
             else:
                 distroseries = self.makeUbuntuDistroSeries()
-                sourcepackagename = self.makeSourcePackageName()
+        if distroseries is not None and sourcepackagename is None:
+            sourcepackagename = self.makeSourcePackageName()
 
         templateset = getUtility(IPOTemplateSet)
         subset = templateset.getSubset(
