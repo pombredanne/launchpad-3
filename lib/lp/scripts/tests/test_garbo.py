@@ -109,7 +109,10 @@ class TestGarboScript(TestCase):
 
     def test_hourly_script(self):
         """Ensure garbo-hourly.py actually runs."""
-        # Our sampledata sucks.
+        # Our sampledata doesn't contain anything that PopulateSPRChangelogs
+        # can process without errors, so it's easier to just set all of the
+        # changelogs to a random LFA. We can't just expire every LFA, since
+        # a bunch of SPRs have no SPRFs at all.
         IMasterStore(SourcePackageRelease).find(SourcePackageRelease).set(
             changelogID=1)
         transaction.commit() # run_script() is a different process.
