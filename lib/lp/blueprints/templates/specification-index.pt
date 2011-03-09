@@ -23,8 +23,8 @@
   </tal:registering>
 
 <metal:heading fill-slot="heading">
-  <h1 tal:replace="structure view/name_widget">
-    blueprint name
+  <h1 tal:replace="structure view/title_widget">
+    blueprint title
   </h1>
 </metal:heading>
 

@@ -112,6 +112,7 @@ from lp.blueprints.browser.specificationtarget import HasSpecificationsView
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
+    SpecificationImplementationStatus,
     )
 from lp.blueprints.interfaces.specification import (
     ISpecification,
@@ -648,10 +649,10 @@ class SpecificationView(SpecificationSimpleView):
             css_class_prefix='specpriority')
 
     @property
-    def name_widget(self):
-        name = ISpecification['name']
-        title = "Edit the blueprint name"
-        return TextLineEditorWidget(self.context, name, title, 'h1')
+    def title_widget(self):
+        title = ISpecification['title']
+        title = "Edit the blueprint title"
+        return TextLineEditorWidget(self.context, title, title, 'h1')
 
     @property
     def summary_widget(self):
@@ -685,14 +686,39 @@ class SpecificationSubscriptionView(SpecificationView):
         return "Subscribe to blueprint"
 
 
+class SpecificationEditSchema(ISpecification):
+    """Provide overrides for the implementaion and definition status."""
+
+    definition_status = Choice(
+        title=_('Definition Status'), readonly=True,
+        vocabulary=SpecificationDefinitionStatus,
+        default=SpecificationDefinitionStatus.NEW,
+        description=_(
+            "The current status of the process to define the "
+            "feature and get approval for the implementation plan."))
+
+    implementation_status = Choice(
+        title=_("Implementation Status"), required=True,
+        default=SpecificationImplementationStatus.UNKNOWN,
+        vocabulary=SpecificationImplementationStatus,
+        description=_(
+            "The state of progress being made on the actual "
+            "implementation or delivery of this feature."))
+
+
 class SpecificationEditView(LaunchpadEditFormView):
 
-    schema = ISpecification
+    schema = SpecificationEditSchema
     field_names = ['name', 'title', 'specurl', 'summary', 'whiteboard']
     label = 'Edit specification'
     custom_widget('summary', TextAreaWidget, height=5)
     custom_widget('whiteboard', TextAreaWidget, height=10)
     custom_widget('specurl', TextWidget, width=60)
+
+    @property
+    def adapters(self):
+        """See `LaunchpadFormView`"""
+        return {SpecificationEditSchema: self.context}
 
     @action(_('Change'), name='change')
     def change_action(self, action, data):
