@@ -795,7 +795,9 @@ class WebServiceTestCase(TestCaseWithFactory):
 
     @property
     def layer(self):
-        #avoid circular imports
+        # XXX wgrant 2011-03-09 bug=505913:
+        # TestTwistedJobRunner.test_timeout fails if this is at the
+        # module level. There is probably some hidden circular import.
         from canonical.testing.layers import AppServerLayer
         return AppServerLayer
 
