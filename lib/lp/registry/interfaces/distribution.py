@@ -689,7 +689,7 @@ class IDistributionSet(Interface):
         """Return the IDistribution with the given name or None."""
 
     def new(name, displayname, title, description, summary, domainname,
-            members, owner, mugshot=None, logo=None, icon=None):
+            members, owner, registrant, mugshot=None, logo=None, icon=None):
         """Create a new distribution."""
 
     def getCurrentSourceReleases(distro_to_source_packagenames):

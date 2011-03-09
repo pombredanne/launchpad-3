@@ -768,6 +768,7 @@ class DistributionAddView(LaunchpadFormView):
             domainname=data['domainname'],
             members=data['members'],
             owner=self.user,
+            registrant=self.user,
             )
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)
