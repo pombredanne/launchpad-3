@@ -75,7 +75,7 @@ def notify_invitation_to_join_team(event):
         team.displayname, config.canonical.noreply_from_address)
     subject = 'Invitation for %s to join' % member.name
     templatename = 'membership-invitation.txt'
-    template = get_email_template(templatename)
+    template = get_email_template(templatename, app='registry')
     replacements = {
         'reviewer': '%s (%s)' % (reviewer.displayname, reviewer.name),
         'member': '%s (%s)' % (member.displayname, member.name),
@@ -145,7 +145,7 @@ def notify_team_join(event):
 
         if team.mailing_list is not None:
             template = get_email_template(
-                'team-list-subscribe-block.txt')
+                'team-list-subscribe-block.txt', app='registry')
             editemails_url = urlappend(
                 canonical_url(getUtility(ILaunchpadRoot)),
                 'people/+me/+editemails')
@@ -153,7 +153,7 @@ def notify_team_join(event):
         else:
             list_instructions = ''
 
-        template = get_email_template(templatename)
+        template = get_email_template(templatename, app='registry')
         replacements = {
             'reviewer': '%s (%s)' % (reviewer.displayname, reviewer.name),
             'team_url': canonical_url(team),
@@ -186,7 +186,7 @@ def notify_team_join(event):
     headers = {}
     if membership.status in [approved, admin]:
         template = get_email_template(
-            'new-member-notification-for-admins.txt')
+            'new-member-notification-for-admins.txt', app='registry')
         subject = '%s joined %s' % (person.name, team.name)
     elif membership.status == proposed:
         # In the UI, a user can only propose himself or a team he
@@ -195,10 +195,11 @@ def notify_team_join(event):
         if reviewer != person:
             headers = {"Reply-To": reviewer.preferredemail.email}
             template = get_email_template(
-                'pending-membership-approval-for-third-party.txt')
+                'pending-membership-approval-for-third-party.txt', app='registry')
         else:
             headers = {"Reply-To": person.preferredemail.email}
-            template = get_email_template('pending-membership-approval.txt')
+            template = get_email_template(
+                'pending-membership-approval.txt', app='registry')
         subject = "%s wants to join" % person.name
     else:
         raise AssertionError(
@@ -250,7 +251,7 @@ def notify_mailinglist_activated(mailinglist, event):
         team.displayname, config.canonical.noreply_from_address)
     headers = {}
     subject = "New Mailing List for %s" % team.displayname
-    template = get_email_template('new-mailing-list.txt')
+    template = get_email_template('new-mailing-list.txt', app='registry')
     editemails_url = '%s/+editemails'
 
     for person in team.allmembers:
@@ -280,7 +281,7 @@ def notify_message_held(message_approval, event):
     subject = (
         'New mailing list message requiring approval for %s'
         % team.displayname)
-    template = get_email_template('new-held-message.txt')
+    template = get_email_template('new-held-message.txt', app='registry')
 
     # Most of the replacements are the same for everyone.
     replacements = {
