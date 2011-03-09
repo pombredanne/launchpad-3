@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'SourcePackageTranslationsExportView',
     'SourcePackageTranslationsView',
+    'SourcePackageTranslationSharingStatus',
     ]
 
 from canonical.launchpad.webapp import (
@@ -16,6 +17,7 @@ from canonical.launchpad.webapp import (
     Link,
     NavigationMenu,
     )
+from canonical.launchpad.webapp.publisher import LaunchpadView
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.translations import TranslationsMixin
@@ -88,3 +90,43 @@ class SourcePackageTranslationsExportView(BaseExportView):
     @property
     def label(self):
         return "Download translations for %s" % self.download_description
+
+
+class SourcePackageTranslationSharingStatus(LaunchpadView):
+    """Details about translation sharing."""
+
+    page_title = "Sharing details"
+
+    @property
+    def packaging_configured(self):
+        """Is a packaging link defined for this branch?"""
+
+    @propeprty
+    def upstream_branch_exists(self):
+        """Does teh upstream series has at least one source code branch?"""
+
+    @property
+    def upstream_translations_enabled(self):
+        """Are Launchpad translations enabled for the upstream series?"""
+
+    @property
+    def upstream_synchronizes_translations(self):
+        """Is antuomatic synchronization of upstream translation enabled?"""
+
+    @property
+    def configuration_is_incomplete(self):
+        """Is anything missing in the set up for translation sharing?"""
+
+    @property
+    def template_info(self):
+        """Details about translation templates.
+
+        :return: A list of dictionaries contaiing details about each
+            template. Each dictionary contains:
+                'name': The name of the template
+                'package_template': The package template (may be None)
+                'upstream_template': The corresponding upstream template
+                    (may be None)
+                'status': one of the string 'linking', 'shared',
+                    'only in Ubuntu', 'only in upstream'
+        """

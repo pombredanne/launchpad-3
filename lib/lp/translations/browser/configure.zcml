@@ -605,6 +605,13 @@
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         class="lp.translations.browser.translations.TranslationsRedirectView"
         permission="zope.Public"/>
+    <browser:page
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        name="+translation-sharing-status"
+        class="lp.translations.browser.sourcepackage.SourcePackageTranslationSharingStatus"
+        permission="zope.Public"
+        template="../templates/translation-sharing-status.pt"
+        layer="lp.translations.publisher.TranslationsLayer"/>
     <browser:pages
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         permission="zope.Public"
