@@ -49,6 +49,9 @@ from lp.services.propertycache import cachedproperty
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.potemplate import BaseSeriesTemplatesView
 from lp.translations.browser.translations import TranslationsMixin
+from lp.translations.browser.translationsharing import (
+    TranslationSharingDetailsMixin,
+    )
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguageSet,
     )
@@ -344,7 +347,9 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
         return check_permission("launchpad.Edit", self.context)
 
 
-class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
+class ProductSeriesView(LaunchpadView,
+                        ProductSeriesTranslationsMixin,
+                        TranslationSharingDetailsMixin):
     """A view to show a series with translations."""
 
     label = "Translation status by language"
@@ -461,6 +466,12 @@ class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
             return None
         sourcepackage, template = infos[0]
         return sourcepackage
+
+    def getTranslationTarget(self):
+        """See `TranslationSharingDetailsMixin`."""
+        return self.context
+
+    can_edit_sharing_details = can_configure_translations
 
 
 class SettingsRadioWidget(LaunchpadRadioWidgetWithDescription):
