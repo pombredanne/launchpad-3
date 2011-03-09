@@ -2616,7 +2616,7 @@ class BugTaskSet:
                 validate_new_distrotask(bug, distribution)
                 stop_checking = True
 
-        if target is not None:
+        if target is not None and not stop_checking:
             # Make sure there's no task for this bug already filed
             # against the target.
             valid_upstreamtask(bug, target)
@@ -2667,7 +2667,6 @@ class BugTaskSet:
         # to be queued in appropriately, which leads to Bug.bugtasks not
         # finding the bugtask.
         Store.of(bugtask).flush()
-
         return bugtask
 
     def getStatusCountsForProductSeries(self, user, product_series):
