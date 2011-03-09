@@ -14,6 +14,7 @@ __all__ = [
     'BugSet',
     'BugTag',
     'FileBugData',
+    'get_also_notified_subscribers',
     'get_bug_tags',
     'get_bug_tags_open_count',
     ]
@@ -70,7 +71,10 @@ from zope.interface import (
     implements,
     providedBy,
     )
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    ProxyFactory,
+    removeSecurityProxy,
+    )
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -101,7 +105,6 @@ from canonical.launchpad.interfaces.message import (
     IMessage,
     IndexedMessage,
     )
-from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -114,6 +117,7 @@ from lp.app.errors import (
     NotFoundError,
     UserCannotUnsubscribePerson,
     )
+from lp.app.validators import LaunchpadValidationError
 from lp.bugs.adapters.bugchange import (
     BranchLinkedToBug,
     BranchUnlinkedFromBug,
@@ -144,15 +148,13 @@ from lp.bugs.interfaces.bugnomination import (
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
+    IBugTask,
     IBugTaskSet,
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
-from lp.bugs.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
-    )
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugbranch import BugBranch
@@ -169,13 +171,20 @@ from lp.bugs.model.bugtask import (
     NullBugTask,
     )
 from lp.bugs.model.bugwatch import BugWatch
+from lp.bugs.model.structuralsubscription import (
+    get_all_structural_subscriptions,
+    get_structural_subscribers,
+    )
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    validate_public_person,
+    )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
@@ -437,8 +446,8 @@ class Bug(SQLBase):
     @property
     def indexed_messages(self):
         """See `IMessageTarget`."""
-        # Note that this is a decorated result set, so will cache its value (in
-        # the absence of slices)
+        # Note that this is a decorated result set, so will cache its
+        # value (in the absence of slices)
         return self._indexed_messages(include_content=True)
 
     def _indexed_messages(self, include_content=False, include_parents=True):
@@ -549,15 +558,39 @@ BugMessage""" % sqlvalues(self.id))
     @cachedproperty
     def bugtasks(self):
         """See `IBug`."""
-        result = BugTask.select('BugTask.bug = %s' % sqlvalues(self.id))
-        result = result.prejoin(
-            ["assignee", "product", "sourcepackagename",
-             "owner", "bugwatch"])
-        # Do not use the default orderBy as the prejoins cause ambiguities
-        # across the tables.
-        result = result.orderBy("id")
-        result = sorted(result, key=bugtask_sort_key)
-        return result
+        # \o/ circular imports.
+        from lp.registry.model.distribution import Distribution
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.registry.model.product import Product
+        from lp.registry.model.productseries import ProductSeries
+        from lp.registry.model.sourcepackagename import SourcePackageName
+        store = Store.of(self)
+        tasks = list(store.find(BugTask, BugTask.bugID == self.id))
+        # The bugtasks attribute is iterated in the API and web
+        # services, so it needs to preload all related data otherwise
+        # late evaluation is triggered in both places. Separately,
+        # bugtask_sort_key requires the related products, series,
+        # distros, distroseries and source package names to be loaded.
+        ids = set(map(operator.attrgetter('assigneeID'), tasks))
+        ids.update(map(operator.attrgetter('ownerID'), tasks))
+        ids.discard(None)
+        if ids:
+            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                ids, need_validity=True))
+
+        def load_something(attrname, klass):
+            ids = set(map(operator.attrgetter(attrname), tasks))
+            ids.discard(None)
+            if not ids:
+                return
+            list(store.find(klass, klass.id.is_in(ids)))
+        load_something('productID', Product)
+        load_something('productseriesID', ProductSeries)
+        load_something('distributionID', Distribution)
+        load_something('distroseriesID', DistroSeries)
+        load_something('sourcepackagenameID', SourcePackageName)
+        list(store.find(BugWatch, BugWatch.bugID == self.id))
+        return sorted(tasks, key=bugtask_sort_key)
 
     @property
     def default_bugtask(self):
@@ -793,6 +826,17 @@ BugMessage""" % sqlvalues(self.id))
         """See `IBug`."""
         return self.personIsSubscribedToDuplicate(person)
 
+    def isMuted(self, person):
+        """See `IBug`."""
+        store = Store.of(self)
+        subscriptions = store.find(
+            BugSubscription,
+            BugSubscription.bug == self,
+            BugSubscription.person == person,
+            BugSubscription.bug_notification_level ==
+                BugNotificationLevel.NOTHING)
+        return not subscriptions.is_empty()
+
     @property
     def subscriptions(self):
         """The set of `BugSubscriptions` for this bug."""
@@ -938,56 +982,17 @@ BugMessage""" % sqlvalues(self.id))
             BugSubscription.person == person,
             BugSubscription.bug == self).one()
 
+    def getStructuralSubscriptionsForPerson(self, person):
+        """See `IBug`."""
+        return get_all_structural_subscriptions(self.bugtasks, person)
+
     def getAlsoNotifiedSubscribers(self, recipients=None, level=None):
         """See `IBug`.
 
         See the comment in getDirectSubscribers for a description of the
         recipients argument.
         """
-        if self.private:
-            return []
-
-        also_notified_subscribers = set()
-
-        for bugtask in self.bugtasks:
-            if bugtask.assignee:
-                also_notified_subscribers.add(bugtask.assignee)
-                if recipients is not None:
-                    recipients.addAssignee(bugtask.assignee)
-
-            # If the target's bug supervisor isn't set,
-            # we add the owner as a subscriber.
-            pillar = bugtask.pillar
-            if pillar.bug_supervisor is None and pillar.official_malone:
-                    also_notified_subscribers.add(pillar.owner)
-                    if recipients is not None:
-                        recipients.addRegistrant(pillar.owner, pillar)
-
-        # Structural subscribers.
-        if recipients is None:
-            temp_recipients = None
-        else:
-            temp_recipients = BugNotificationRecipients(
-                duplicateof=recipients.duplicateof)
-        also_notified_subscribers.update(
-            getUtility(IBugTaskSet).getStructuralSubscribers(
-                self.bugtasks, recipients=temp_recipients, level=level))
-
-        # Direct subscriptions always take precedence over indirect
-        # subscriptions.
-        direct_subscribers = set(self.getDirectSubscribers())
-        if recipients is not None:
-            # A direct subscriber may have muted this notification.
-            # Therefore, we want to remove any direct subscribers from the
-            # structural subscription recipients before we merge.
-            temp_recipients.remove(direct_subscribers)
-            recipients.update(temp_recipients)
-
-        # Remove security proxy for the sort key, but return
-        # the regular proxied object.
-        return sorted(
-            (also_notified_subscribers - direct_subscribers),
-            key=lambda x: removeSecurityProxy(x).displayname)
+        return get_also_notified_subscribers(self, recipients, level)
 
     def getBugNotificationRecipients(self, duplicateof=None, old_bug=None,
                                      level=None,
@@ -1019,14 +1024,14 @@ BugMessage""" % sqlvalues(self.id))
         # original `Bug`.
         return recipients
 
-    def addCommentNotification(self, message, recipients=None):
+    def addCommentNotification(self, message, recipients=None, activity=None):
         """See `IBug`."""
         if recipients is None:
             recipients = self.getBugNotificationRecipients(
                 level=BugNotificationLevel.COMMENTS)
         getUtility(IBugNotificationSet).addNotification(
              bug=self, is_comment=True,
-             message=message, recipients=recipients)
+             message=message, recipients=recipients, activity=activity)
 
     def addChange(self, change, recipients=None):
         """See `IBug`."""
@@ -1036,12 +1041,14 @@ BugMessage""" % sqlvalues(self.id))
 
         activity_data = change.getBugActivity()
         if activity_data is not None:
-            getUtility(IBugActivitySet).new(
+            activity = getUtility(IBugActivitySet).new(
                 self, when, change.person,
                 activity_data['whatchanged'],
                 activity_data.get('oldvalue'),
                 activity_data.get('newvalue'),
                 activity_data.get('message'))
+        else:
+            activity = None
 
         notification_data = change.getBugNotification()
         if notification_data is not None:
@@ -1055,7 +1062,7 @@ BugMessage""" % sqlvalues(self.id))
                     level=BugNotificationLevel.METADATA)
             getUtility(IBugNotificationSet).addNotification(
                 bug=self, is_comment=False, message=message,
-                recipients=recipients)
+                recipients=recipients, activity=activity)
 
         self.updateHeat()
 
@@ -1373,8 +1380,8 @@ BugMessage""" % sqlvalues(self.id))
 
     def getMessagesForView(self, slice_info):
         """See `IBug`."""
-        # Note that this function and indexed_messages have significant overlap
-        # and could stand to be refactored.
+        # Note that this function and indexed_messages have significant
+        # overlap and could stand to be refactored.
         slices = []
         if slice_info is not None:
             # NB: This isn't a full implementation of the slice protocol,
@@ -1410,6 +1417,7 @@ BugMessage""" % sqlvalues(self.id))
             BugMessage.bug==self.id,
             *ranges)
         result.order_by(BugMessage.index, MessageChunk.sequence)
+
         def eager_load_owners(rows):
             owners = set()
             for row in rows:
@@ -1970,6 +1978,66 @@ BugMessage""" % sqlvalues(self.id))
             operator.itemgetter(0))
 
 
+@ProxyFactory
+def get_also_notified_subscribers(
+    bug_or_bugtask, recipients=None, level=None):
+    """Return the indirect subscribers for a bug or bug task.
+
+    Return the list of people who should get notifications about changes
+    to the bug or task because of having an indirect subscription
+    relationship with it (by subscribing to a target, being an assignee
+    or owner, etc...)
+
+    If `recipients` is present, add the subscribers to the set of
+    bug notification recipients.
+    """
+    if IBug.providedBy(bug_or_bugtask):
+        bug = bug_or_bugtask
+        bugtasks = bug.bugtasks
+    elif IBugTask.providedBy(bug_or_bugtask):
+        bug = bug_or_bugtask.bug
+        bugtasks = [bug_or_bugtask]
+    else:
+        raise ValueError('First argument must be bug or bugtask')
+
+    if bug.private:
+        return []
+
+    # Direct subscriptions always take precedence over indirect
+    # subscriptions.
+    direct_subscribers = set(bug.getDirectSubscribers())
+
+    also_notified_subscribers = set()
+
+    for bugtask in bugtasks:
+        if (bugtask.assignee and
+            bugtask.assignee not in direct_subscribers):
+            # We have an assignee that is not a direct subscriber.
+            also_notified_subscribers.add(bugtask.assignee)
+            if recipients is not None:
+                recipients.addAssignee(bugtask.assignee)
+
+        # If the target's bug supervisor isn't set...
+        pillar = bugtask.pillar
+        if (pillar.bug_supervisor is None and
+            pillar.official_malone and
+            pillar.owner not in direct_subscribers):
+            # ...we add the owner as a subscriber.
+            also_notified_subscribers.add(pillar.owner)
+            if recipients is not None:
+                recipients.addRegistrant(pillar.owner, pillar)
+
+    # This structural subscribers code omits direct subscribers itself.
+    also_notified_subscribers.update(
+        get_structural_subscribers(
+            bug_or_bugtask, recipients, level, direct_subscribers))
+
+    # Remove security proxy for the sort key, but return
+    # the regular proxied object.
+    return sorted(also_notified_subscribers,
+                  key=lambda x: removeSecurityProxy(x).displayname)
+
+
 def load_people(*where):
     """Get subscribers from subscriptions.
 
@@ -2155,29 +2223,7 @@ class BugSubscriptionInfo:
     @freeze(StructuralSubscriptionSet)
     def structural_subscriptions(self):
         """Structural subscriptions to the bug's targets."""
-        query_arguments = []
-        for bugtask in self.bug.bugtasks:
-            if IStructuralSubscriptionTarget.providedBy(bugtask.target):
-                query_arguments.append((bugtask.target, bugtask))
-                if bugtask.target.parent_subscription_target is not None:
-                    query_arguments.append(
-                        (bugtask.target.parent_subscription_target, bugtask))
-            if ISourcePackage.providedBy(bugtask.target):
-                # Distribution series bug tasks with a package have the source
-                # package set as their target, so we add the distroseries
-                # explicitly to the set of subscription targets.
-                query_arguments.append((bugtask.distroseries, bugtask))
-            if bugtask.milestone is not None:
-                query_arguments.append((bugtask.milestone, bugtask))
-        # Build the query.
-        empty = EmptyResultSet()
-        union = lambda left, right: (
-            removeSecurityProxy(left).union(
-                removeSecurityProxy(right)))
-        queries = (
-            target.getSubscriptionsForBugTask(bugtask, self.level)
-            for target, bugtask in query_arguments)
-        return reduce(union, queries, empty)
+        return get_all_structural_subscriptions(self.bug.bugtasks)
 
     @cachedproperty
     @freeze(BugSubscriberSet)

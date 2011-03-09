@@ -351,13 +351,6 @@ class POTemplate(SQLBase, RosettaStats):
         return self.getTranslationPolicy().getEffectiveTranslationPermission()
 
     @property
-    def relatives_by_name(self):
-        """See `IPOTemplate`."""
-        return POTemplate.select(
-            'id <> %s AND name = %s AND iscurrent' % sqlvalues(
-                self, self.name), orderBy=['datecreated'])
-
-    @property
     def relatives_by_source(self):
         """See `IPOTemplate`."""
         if self.productseries is not None:
