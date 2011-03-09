@@ -209,6 +209,10 @@ class IDistributionPublic(
         PublicPersonChoice(
             title=_("Owner"), vocabulary='ValidOwner',
             description=_("The distro's owner."), required=True))
+    registrant = exported(
+        PublicPersonChoice(
+            title=_("Registrant"), vocabulary='ValidOwner',
+            description=_("The distro's registrant."), required=True))
     date_created = exported(
         Datetime(title=_('Date created'),
                  description=_("The date this distribution was registered.")))

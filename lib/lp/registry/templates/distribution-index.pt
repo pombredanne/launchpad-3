@@ -12,7 +12,7 @@
 
     <tal:registering metal:fill-slot="registering">
         Registered by
-        <a tal:replace="structure context/owner/fmt:link" />
+        <a tal:replace="structure context/registrant/fmt:link" />
         <span tal:content="context/date_created/fmt:displaydate"
               tal:attributes="title context/date_created/fmt:datetime"
           >on 2005-01-01</span>
