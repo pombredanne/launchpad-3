@@ -24,9 +24,7 @@
         class="lp.archivepublisher.model.publisherconfig.PublisherConfig">
         <require
             permission="launchpad.Admin"
-            interface="lp.archivepublisher.interfaces.publisherconfig.IPublisherConfig" />
-        <require
-            permission="launchpad.Admin"
+            interface="lp.archivepublisher.interfaces.publisherconfig.IPublisherConfig"
             set_schema="lp.archivepublisher.interfaces.publisherconfig.IPublisherConfig"/>
     </class>
 
