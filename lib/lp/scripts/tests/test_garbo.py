@@ -89,6 +89,7 @@ from lp.scripts.garbo import (
 from lp.services.job.model.job import Job
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
@@ -108,7 +109,9 @@ class TestGarboScript(TestCase):
 
     def test_hourly_script(self):
         """Ensure garbo-hourly.py actually runs."""
-        IStore(LibraryFileAlias).find(LibraryFileAlias).set(contentID=None)
+        # Our sampledata sucks.
+        IMasterStore(SourcePackageRelease).find(SourcePackageRelease).set(
+            changelogID=1)
         transaction.commit() # run_script() is a different process.
         rv, out, err = run_script(
             "cronscripts/garbo-hourly.py", ["-q"], expect_returncode=0)
@@ -758,7 +761,6 @@ class TestGarbo(TestCaseWithFactory):
     def test_populateSPRChangelogs(self):
         # We set SPR.changelog for imported records from Debian.
         LaunchpadZopelessLayer.switchDbUser('testadmin')
-        IStore(LibraryFileAlias).find(LibraryFileAlias).set(contentID=None)
         spr, changelog = self.upload_to_debian()
         collector = self.runHourly()
         log = collector.logger.getLogBuffer()
@@ -770,7 +772,6 @@ class TestGarbo(TestCaseWithFactory):
 
     def test_populateSPRChangelogs_restricted_sprf(self):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
-        IStore(LibraryFileAlias).find(LibraryFileAlias).set(contentID=None)
         spr, changelog = self.upload_to_debian(restricted=True)
         collector = self.runHourly()
         log = collector.logger.getLogBuffer()
