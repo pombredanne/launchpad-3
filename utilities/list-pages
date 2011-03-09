@@ -25,26 +25,19 @@ def load_zcml(zopeless=False):
             os.path.join(root, 'zcml', 'ftesting.zcml')).setUp()
 
 
+def is_page_adapter(adapter):
+    for interface in adapter.required:
+        if issubclass(interface, IDefaultBrowserLayer):
+            return True
+    return False
+
+
 def iter_page_adapters():
     """Iterate over adapters for browser:page directives."""
     # XXX: Gets all of the browser:page declarations. Many of these aren't
     # actually pages, but portlets.
     gsm = getGlobalSiteManager()
-    for adapter in gsm.registeredAdapters():
-        for interface in adapter.required:
-            if issubclass(interface, IDefaultBrowserLayer):
-                yield adapter
-
-
-def iter_canonical_url():
-    """Iterate over the canonical_url adapters."""
-    # XXX: Is this a good way of figuring out what pages we have.
-    gsm = getGlobalSiteManager()
-    for adapter in gsm.registeredAdapters():
-        if adapter.provided is ICanonicalUrlData:
-            # XXX: What's the best way of displaying this so as to give us a
-            # clue as to the actual page / URL / pageid?
-            yield adapter
+    return (a for a in gsm.registeredAdapters() if is_page_adapter(a))
 
 
 def format_page_adapter(a):
