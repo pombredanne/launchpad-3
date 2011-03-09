@@ -13,11 +13,10 @@ from datetime import (
     datetime,
     timedelta,
     )
+from fixtures import TempDir
 import os
-import shutil
 import signal
 import subprocess
-import tempfile
 import time
 
 from psycopg2 import IntegrityError
@@ -80,7 +79,6 @@ from lp.code.model.revision import (
     RevisionCache,
     )
 from lp.hardwaredb.model.hwdb import HWSubmission
-from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.model.person import Person
 from lp.services.job.model.job import Job
 from lp.services.memcache.interfaces import IMemcacheClient
@@ -953,8 +951,7 @@ class PopulateSPRChangelogs(TunableLoop):
     def __call__(self, chunk_size):
         for sprid in self.getCandidateSPRs(self.start_at)[:chunk_size]:
             spr = SourcePackageRelease.get(sprid)
-            try:
-                tmp_dir = tempfile.mkdtemp(prefix='tmppsc-')
+            with TempDir() as tmp_dir:
                 dsc_file = None
 
                 # Grab the files from the librarian into a temporary
@@ -962,7 +959,7 @@ class PopulateSPRChangelogs(TunableLoop):
                 try:
                     for sprf in spr.files:
                         dest = os.path.join(
-                            tmp_dir, sprf.libraryfile.filename)
+                            tmp_dir.path, sprf.libraryfile.filename)
                         dest_file = open(dest, 'w')
                         sprf.libraryfile.open()
                         copy_and_close(sprf.libraryfile, dest_file)
@@ -985,7 +982,7 @@ class PopulateSPRChangelogs(TunableLoop):
                 fnull = open('/dev/null', 'w')
                 ret = subprocess.call(
                     ['dpkg-source', '-x', dsc_file, os.path.join(
-                        tmp_dir, 'extracted')],
+                        tmp_dir.path, 'extracted')],
                         stdout=fnull, stderr=fnull,
                         preexec_fn=subprocess_setup)
                 fnull.close()
@@ -999,7 +996,8 @@ class PopulateSPRChangelogs(TunableLoop):
                 # changelog. findFile ensures that it's not too huge, and
                 # not a symlink.
                 try:
-                    changelog_path = findFile(tmp_dir, 'debian/changelog')
+                    changelog_path = findFile(
+                        tmp_dir.path, 'debian/changelog')
                 except UploadError, e:
                     changelog_path = None
                     self.log.warning(
@@ -1022,8 +1020,6 @@ class PopulateSPRChangelogs(TunableLoop):
                 else:
                     self.log.warning('SPR %d (%s %s) had no changelog.' % (
                         spr.id, spr.name, spr.version))
-            finally:
-                shutil.rmtree(tmp_dir)
 
         self.start_at = spr.id + 1
         result = getUtility(IMemcacheClient).set(

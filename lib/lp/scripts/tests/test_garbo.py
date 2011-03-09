@@ -10,10 +10,9 @@ from datetime import (
     datetime,
     timedelta,
     )
+from fixtures import TempDir
 import os
-import shutil
 import subprocess
-import tempfile
 import time
 
 from pytz import UTC
@@ -33,19 +32,13 @@ from canonical.database.constants import (
     THIRTY_DAYS_AGO,
     UTC_NOW,
     )
-from canonical.launchpad.database.librarian import (
-    LibraryFileAlias,
-    TimeLimitedToken,
-    )
+from canonical.launchpad.database.librarian import TimeLimitedToken
 from canonical.launchpad.database.message import Message
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    IStore,
-    )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
@@ -747,17 +740,16 @@ class TestGarbo(TestCaseWithFactory):
                 name, os.stat(path).st_size, open(path, 'r'),
                 'application/octet-stream', restricted=restricted)
             spr.addFile(lfa)
-        tmp_dir = tempfile.mkdtemp(prefix='tmppsc-')
-        fnull = open('/dev/null', 'w')
-        ret = subprocess.call(
-            ['dpkg-source', '-x', path, os.path.join(
-                tmp_dir, 'extracted')],
-                stdout=fnull, stderr=fnull)
-        fnull.close()
-        self.assertEqual(0, ret)
-        changelog_path = findFile(tmp_dir, 'debian/changelog')
-        changelog = open(changelog_path, 'r').read()
-        shutil.rmtree(tmp_dir)
+        with TempDir() as tmp_dir:
+            fnull = open('/dev/null', 'w')
+            ret = subprocess.call(
+                ['dpkg-source', '-x', path, os.path.join(
+                    tmp_dir.path, 'extracted')],
+                    stdout=fnull, stderr=fnull)
+            fnull.close()
+            self.assertEqual(0, ret)
+            changelog_path = findFile(tmp_dir.path, 'debian/changelog')
+            changelog = open(changelog_path, 'r').read()
         transaction.commit() # .runHourly() switches dbuser.
         return (spr, changelog)
 
