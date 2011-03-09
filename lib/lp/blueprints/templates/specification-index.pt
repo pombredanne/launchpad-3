@@ -7,6 +7,14 @@
   i18n:domain="launchpad">
   <body>
 
+<metal:block fill-slot="head_epilogue">
+  <style type="text/css">
+    #implementation div.yui3-ichoicesource {
+      display: inline;
+    }
+  </style>
+</metal:block>
+
   <tal:registering metal:fill-slot="registering">
     Registered by
     <tal:registrant tal:replace="structure context/owner/fmt:link" /> on
@@ -126,7 +134,7 @@
 
             <dl>
               <dt>Implementation:</dt>
-              <dd>
+              <dd id="implementation">
                 <img tal:attributes="class python: not context.informational and 'unseen' or ''"
                      src="/@@/info" alt="Informational"
                      title="Informational blueprint, no implementation necessary"
