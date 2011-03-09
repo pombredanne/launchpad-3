@@ -793,10 +793,11 @@ class WindmillTestCase(TestCaseWithFactory):
 class WebServiceTestCase(TestCaseWithFactory):
     """Test case optimized for testing the web service using launchpadlib."""
 
-    #avoid circular imports
-    from canonical.testing.layers import AppServerLayer
-
-    layer = AppServerLayer
+    @property
+    def layer(self):
+        #avoid circular imports
+        from canonical.testing.layers import AppServerLayer
+        return AppServerLayer
 
     def setUp(self):
         super(WebServiceTestCase, self).setUp()
