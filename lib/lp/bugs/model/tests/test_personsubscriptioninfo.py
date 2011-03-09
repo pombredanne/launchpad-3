@@ -48,6 +48,47 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         self.assertIs(None, self.subscriptions.duplicate_subscriptions)
         self.assertIs(None, self.subscriptions.supervisor_subscriptions)
 
+    def test_assignee(self):
+        with person_logged_in(self.subscriber):
+            self.bug.bugtasks[0].transitionToAssignee(self.subscriber)
+        self.subscriptions.reload()
+
+        self.assertIsNot(None, self.subscriptions.assignee_subscriptions)
+        self.assertEqual(
+            PersonSubscriptionType.ASSIGNEE,
+            self.subscriptions.assignee_subscriptions.subscription_type)
+        self.assertTrue(self.subscriptions.assignee_subscriptions.personally)
+
+    def test_assignee_through_team(self):
+        team = self.factory.makeTeam(members=[self.subscriber])
+        with person_logged_in(self.subscriber):
+            self.bug.bugtasks[0].transitionToAssignee(team)
+        self.subscriptions.reload()
+
+        self.assertIsNot(None, self.subscriptions.assignee_subscriptions)
+        self.assertEqual(
+            PersonSubscriptionType.ASSIGNEE,
+            self.subscriptions.assignee_subscriptions.subscription_type)
+        self.assertFalse(self.subscriptions.assignee_subscriptions.personally)
+        self.assertContentEqual(
+            [team], self.subscriptions.assignee_subscriptions.as_team_member)
+
+    def test_assignee_through_team_as_admin(self):
+        team = self.factory.makeTeam()
+        with person_logged_in(team.teamowner):
+            team.addMember(self.subscriber, team.teamowner,
+                           status=TeamMembershipStatus.ADMIN)
+            self.bug.bugtasks[0].transitionToAssignee(team)
+        self.subscriptions.reload()
+
+        self.assertIsNot(None, self.subscriptions.assignee_subscriptions)
+        self.assertEqual(
+            PersonSubscriptionType.ASSIGNEE,
+            self.subscriptions.assignee_subscriptions.subscription_type)
+        self.assertFalse(self.subscriptions.assignee_subscriptions.personally)
+        self.assertContentEqual(
+            [team], self.subscriptions.assignee_subscriptions.as_team_admin)
+
     def test_direct(self):
         # Subscribed directly to the bug.
         with person_logged_in(self.subscriber):

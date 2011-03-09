@@ -47,6 +47,10 @@ class PersonSubscriptionType(EnumeratedType):
         Subscription as the bug supervisor.
         """)
 
+    ASSIGNEE = Item(40, """
+        Subscription as an assignee.
+        """)
+
 
 class IPersonSubscriptionInfo(Interface):
     """Bug subscription information for a person."""
@@ -108,6 +112,10 @@ class IPersonSubscriptions(Interface):
         "Contains information about all subscriptions as bug supervisor, "
         "including those through team memberships and target ownership "
         "when no bug supervisor is defined for the target.")
+
+    assignee_subscriptions = Attribute(
+        "Contains information about all subscriptions as an assignee, "
+        "including those through team memberships.")
 
     def reload():
         """Reload subscriptions for a person/bug."""

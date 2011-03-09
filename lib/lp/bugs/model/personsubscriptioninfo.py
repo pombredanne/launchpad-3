@@ -114,6 +114,7 @@ class PersonSubscriptions(object):
         self.direct_subscriptions = None
         self.duplicate_subscriptions = None
         self.supervisor_subscriptions = None
+        self.assignee_subscriptions = None
         self.person = person
         self.bug = bug
         self.loadSubscriptionsFor(person, bug)
@@ -185,8 +186,11 @@ class PersonSubscriptions(object):
 
         # Then get supervisor subscriptions.
         has_supervisor = False
+        has_assignee = False
         supervisor = PersonSubscriptionInfo(
             person, bug, PersonSubscriptionType.SUPERVISOR)
+        assignee = PersonSubscriptionInfo(
+            person, bug, PersonSubscriptionType.ASSIGNEE)
         for bugtask in bug.bugtasks:
             target = bugtask.target
             owner = self._getAttributeForPillar(target, "owner")
@@ -194,6 +198,7 @@ class PersonSubscriptions(object):
                 target, "bug_supervisor")
             is_owner = person.inTeam(owner)
             is_supervisor = person.inTeam(bug_supervisor)
+            is_assignee = person.inTeam(bugtask.assignee)
             # If person is a bug supervisor, or there is no
             # supervisor, but person is the team owner.
             if (is_supervisor or
@@ -206,7 +211,13 @@ class PersonSubscriptions(object):
                     supervisor.addSupervisedTarget(target)
                     supervisor.addSubscriber(bug_supervisor)
                 has_supervisor = True
+            if is_assignee:
+                assignee.addSubscriber(bugtask.assignee)
+                has_assignee = True
         if not has_supervisor:
             supervisor = None
         self.supervisor_subscriptions = supervisor
+        if not has_assignee:
+            assignee = None
+        self.assignee_subscriptions = assignee
 
