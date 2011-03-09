@@ -116,6 +116,23 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
             [duplicate], self.subscriptions.duplicate_subscriptions.duplicates)
         self.assertTrue(self.subscriptions.duplicate_subscriptions.personally)
 
+    def test_duplicate_direct_reverse(self):
+        # Subscribed directly to the primary bug, and a duplicate bug changes.
+        duplicate = self.factory.makeBug()
+        with person_logged_in(self.subscriber):
+            self.bug.markAsDuplicate(duplicate)
+            duplicate.subscribe(self.subscriber, self.subscriber)
+        # Load a `PersonSubscriptionInfo`s for subscriber and a bug.
+        self.subscriptions.reload()
+
+        self.assertIsNot(None, self.subscriptions.duplicate_subscriptions)
+        self.assertEqual(
+            PersonSubscriptionType.DUPLICATE,
+            self.subscriptions.duplicate_subscriptions.subscription_type)
+        self.assertContentEqual(
+            [duplicate], self.subscriptions.duplicate_subscriptions.duplicates)
+        self.assertTrue(self.subscriptions.duplicate_subscriptions.personally)
+
     def test_duplicate_multiple(self):
         # Subscribed directly to more than one duplicate bug.
         duplicate1 = self.factory.makeBug()

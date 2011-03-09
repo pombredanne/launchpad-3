@@ -55,7 +55,7 @@ class PersonSubscriptionInfo(object):
         assert self.subscription_type == PersonSubscriptionType.DUPLICATE, (
             "Subscription type is %s instead of DUPLICATE." % (
                 self.subscription_type))
-        assert bug.duplicateof == self.bug
+        assert bug.duplicateof == self.bug or self.bug.duplicateof == bug
         if self.duplicates is None:
             self.duplicates = set([bug])
         else:
@@ -127,12 +127,14 @@ class PersonSubscriptions(object):
         # subscriptions (including indirect through team
         # membership) in a single query.
         store = Store.of(person)
+        bug_id_options = [Bug.id == bug.id, Bug.duplicateofID == bug.id]
+        if bug.duplicateof is not None:
+            bug_id_options.append(Bug.id == bug.duplicateof.id)
         info = store.find(
             (BugSubscription, Bug, Person),
             BugSubscription.bug == Bug.id,
             BugSubscription.person == Person.id,
-            Or(Bug.id == bug.id,
-               Bug.duplicateofID == bug.id),
+            Or(*bug_id_options),
             TeamParticipation.personID == person.id,
             TeamParticipation.teamID == Person.id)
 
