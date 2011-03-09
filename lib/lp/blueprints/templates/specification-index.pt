@@ -135,7 +135,7 @@
             <dl>
               <dt>Implementation:</dt>
               <dd id="implementation">
-                <img tal:attributes="class python: not context.informational and 'unseen' or ''"
+                <img tal:attributes="class context/informational/css:select/visible/unseen"
                      src="/@@/info" alt="Informational"
                      title="Informational blueprint, no implementation necessary"
                      id="informational-icon"
@@ -161,7 +161,7 @@
             </dl>
 
             <dl id="started-by"
-                tal:attributes="class python: not context.starter and 'unseen' or ''">
+                tal:attributes="class context/starter/css:select/visible/unseen">
                <dt>Started by</dt>
                <dd>
                  <tal:starter replace="structure context/starter/fmt:link" />
@@ -170,7 +170,7 @@
             </dl>
 
             <dl id="completed-by"
-                tal:attributes="class python: not context.completer and 'unseen' or ''">
+                tal:attributes="class context/completer/css:select/visible/unseen">
               <dt>Completed by</dt>
               <dd>
                  <tal:completer replace="structure context/completer/fmt:link" />
