@@ -77,8 +77,8 @@ class TestDeriveDistroSeries(TestCaseWithFactory):
         self.assertEqual(job.distroseries.name, 'deribuntu')
 
     def test_create_initialises_correct_distribution(self):
-        bar = self.factory.makeDistroSeries(name='bar')
-        bar_2 = self.factory.makeDistroSeries(
+        self.factory.makeDistroSeries(name='bar')
+        self.factory.makeDistroSeries(
             name='bar', parent_series=self.parent)
         self.parent.deriveDistroSeries(
             self.soyuz.teamowner, 'bar', displayname='Bar', title='The Bar',
