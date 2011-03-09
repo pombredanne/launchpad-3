@@ -1660,6 +1660,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             # We can't have a series task without a distribution task.
             prerequisite_target = target.distribution.getSourcePackage(
                 target.sourcepackagename)
+            self.makeSourcePackagePublishingHistory(
+                distroseries=target.distribution.currentseries,
+                sourcepackagename=target.sourcepackagename)
         if prerequisite_target is not None:
             prerequisite = bug.getBugTask(prerequisite_target)
             if prerequisite is None:
