@@ -61,8 +61,7 @@ class TestDeriveDistroSeries(TestCaseWithFactory):
 
     def test_create_new_distroseries(self):
         self.parent.deriveDistroSeries(
-            self.soyuz.teamowner, self.child.name,
-            distribution=self.child.distribution)
+            self.soyuz.teamowner, self.child.name, self.child.distribution)
         [job] = list(
             getUtility(IInitialiseDistroSeriesJobSource).iterReady())
         self.assertEqual(job.distroseries, self.child)
@@ -77,13 +76,16 @@ class TestDeriveDistroSeries(TestCaseWithFactory):
         self.assertEqual(job.distroseries.name, 'deribuntu')
 
     def test_create_initialises_correct_distribution(self):
+        # Make two distroseries with the same name and different
+        # distributions to check that the right distroseries is initialised.
         self.factory.makeDistroSeries(name='bar')
-        self.factory.makeDistroSeries(
+        bar = self.factory.makeDistroSeries(
             name='bar', parent_series=self.parent)
         self.parent.deriveDistroSeries(
-            self.soyuz.teamowner, 'bar', displayname='Bar', title='The Bar',
-            summary='Bar', description='Bar is good', version='1.0')
+            self.soyuz.teamowner, 'bar', distribution=bar.parent,
+            displayname='Bar', title='The Bar', summary='Bar',
+            description='Bar is good', version='1.0')
         [job] = list(
             getUtility(IInitialiseDistroSeriesJobSource).iterReady())
         self.assertEqual('bar', job.distroseries.name)
-        self.assertEqual(self.parent.parent.name, job.distribution.name)
+        self.assertEqual(bar.parent.name, job.distribution.name)
