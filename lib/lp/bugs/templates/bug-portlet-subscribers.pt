@@ -15,7 +15,9 @@
     <div tal:content="structure context_menu/addsubscriber/render" />
     <tal:show-mute
         condition="request/features/malone.advanced-subscriptions.enabled">
-      <div tal:content="structure context_menu/mute_subscription/render" />
+      <div
+        tal:attributes="class view/current_user_subscription_class"
+        tal:content="structure context_menu/mute_subscription/render" />
       <div id="mute-unmute-spinner">Unmuting...</div>
     </tal:show-mute>
   </div>
