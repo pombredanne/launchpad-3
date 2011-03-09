@@ -918,7 +918,6 @@ class PopulateSPRChangelogs(TunableLoop):
 
     def __init__(self, log, abort_time=None):
         super(PopulateSPRChangelogs, self).__init__(log, abort_time)
-        self.debian = getUtility(IDistributionSet)['debian']
         value = getUtility(IMemcacheClient).get('populate-spr-changelogs')
         if not value:
             self.start_at = 0
@@ -944,8 +943,6 @@ class PopulateSPRChangelogs(TunableLoop):
                 SourcePackageRelease.id,
                 SourcePackageRelease.id >= start_at,
                 SourcePackageRelease.changelog == None,
-                SourcePackageRelease.upload_archiveID == 
-                    self.debian.main_archive.id,
             ).group_by(SourcePackageRelease.id).having(
                 Count(LibraryFileAlias) == 0
             ).order_by(SourcePackageRelease.id)

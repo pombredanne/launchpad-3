@@ -33,13 +33,19 @@ from canonical.database.constants import (
     THIRTY_DAYS_AGO,
     UTC_NOW,
     )
-from canonical.launchpad.database.librarian import TimeLimitedToken
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias,
+    TimeLimitedToken,
+    )
 from canonical.launchpad.database.message import Message
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
@@ -102,6 +108,8 @@ class TestGarboScript(TestCase):
 
     def test_hourly_script(self):
         """Ensure garbo-hourly.py actually runs."""
+        IStore(LibraryFileAlias).find(LibraryFileAlias).set(contentID=None)
+        transaction.commit() # run_script() is a different process.
         rv, out, err = run_script(
             "cronscripts/garbo-hourly.py", ["-q"], expect_returncode=0)
         self.failIf(out.strip(), "Output to stdout: %s" % out)
@@ -750,6 +758,7 @@ class TestGarbo(TestCaseWithFactory):
     def test_populateSPRChangelogs(self):
         # We set SPR.changelog for imported records from Debian.
         LaunchpadZopelessLayer.switchDbUser('testadmin')
+        IStore(LibraryFileAlias).find(LibraryFileAlias).set(contentID=None)
         spr, changelog = self.upload_to_debian()
         collector = self.runHourly()
         log = collector.logger.getLogBuffer()
@@ -761,6 +770,7 @@ class TestGarbo(TestCaseWithFactory):
 
     def test_populateSPRChangelogs_restricted_sprf(self):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
+        IStore(LibraryFileAlias).find(LibraryFileAlias).set(contentID=None)
         spr, changelog = self.upload_to_debian(restricted=True)
         collector = self.runHourly()
         log = collector.logger.getLogBuffer()
