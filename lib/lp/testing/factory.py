@@ -3774,12 +3774,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         return getUtility(ITemporaryStorageManager).fetch(new_uuid)
 
-    def makeLaunchpadService(self, person=None):
+    def makeLaunchpadService(self, person=None, version=None):
         if person is None:
             person = self.makePerson()
         from canonical.testing import BaseLayer
-        launchpad = launchpadlib_for("test", person,
-            service_root=BaseLayer.appserver_root_url("api"))
+        launchpad = launchpadlib_for(
+            "test", person, service_root=BaseLayer.appserver_root_url("api"),
+            version=version)
         login_person(person)
         return launchpad
 

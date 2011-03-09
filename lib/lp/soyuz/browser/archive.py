@@ -36,7 +36,6 @@ from urlparse import urlparse
 import pytz
 from sqlobject import SQLObjectNotFound
 from storm.expr import Desc
-from storm.zope.interfaces import IResultSet
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
@@ -62,6 +61,7 @@ from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.components.tokens import create_token
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp import (
     canonical_url,
     enabled_with_permission,
@@ -151,7 +151,11 @@ from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     )
 from lp.soyuz.model.archive import Archive
-from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 from lp.soyuz.scripts.packagecopier import do_copy
 
 
@@ -1388,6 +1392,15 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
             self.setFieldError(
                 'selected_sources', structured('\n'.join(messages)))
             return
+
+        # Preload BPNs to save queries when calculating display names.
+        needed_bpn_ids = set(
+            copy.binarypackagerelease.binarypackagenameID for copy in copies
+            if isinstance(copy, BinaryPackagePublishingHistory))
+        if needed_bpn_ids:
+            list(IStore(BinaryPackageName).find(
+                BinaryPackageName,
+                BinaryPackageName.id.is_in(needed_bpn_ids)))
 
         # Present a page notification describing the action.
         messages = []
