@@ -271,7 +271,12 @@ class BugContextMenu(ContextMenu):
 
     def mute_subscription(self):
         """Return the 'Mute subscription' Link."""
-        text = 'Mute bug mail'
+        user = getUtility(ILaunchBag).user
+        if self.context.bug.isMuted(user):
+            text = "Unmute bug mail"
+        else:
+            text = "Mute bug mail"
+
         # We link to '#' here because we don't yet have a view to handle
         # this link.
         return Link(

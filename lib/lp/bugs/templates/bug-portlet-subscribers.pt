@@ -38,7 +38,8 @@
         var subscription_link = Y.one('.menu-link-subscription');
         var subscription_link_handler;
         if (subscription_link) {
-            subscription_link_handler = subscription_link.on('click', function(e) {
+            subscription_link_handler = subscription_link.on(
+                'click', function(e) {
                 e.preventDefault();
             });
         }
