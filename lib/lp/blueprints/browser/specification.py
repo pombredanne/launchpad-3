@@ -1400,7 +1400,7 @@ class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
 @implementer(IFieldHTMLRenderer)
 def starter_xhtml_representation(context, field, request):
     """Render the starter as XHTML to populate the page using AJAX."""
-    def render(value):
+    def render(value=None):
         # The value is a webservice link to the object, we want field value.
         starter = context.starter
         if starter is None:
@@ -1415,7 +1415,7 @@ def starter_xhtml_representation(context, field, request):
 @implementer(IFieldHTMLRenderer)
 def completer_xhtml_representation(context, field, request):
     """Render the completer as XHTML to populate the page using AJAX."""
-    def render(value):
+    def render(value=None):
         # The value is a webservice link to the object, we want field value.
         completer = context.completer
         if completer is None:
