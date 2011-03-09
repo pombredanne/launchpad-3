@@ -48,8 +48,14 @@ from lp.app.browser.launchpadform import (
 from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.enum import BugNotificationLevel, HIDDEN_BUG_NOTIFICATION_LEVELS
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
-from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    IBugTaskSet,
+    )
 from lp.bugs.browser.structuralsubscription import (
+    expose_enum_to_js,
+    expose_user_administered_teams_to_js,
     expose_user_subscriptions_to_js,
     )
 from lp.services import features
@@ -562,8 +568,11 @@ class BugSubscriptionListView(LaunchpadView):
 
     def __init__(self, context, request):
         super(BugSubscriptionListView, self).__init__(context, request)
+        expose_user_administered_teams_to_js(self.request, self.user)
         expose_user_subscriptions_to_js(
             self.user, self.context.bug.bugtasks, request)
+        expose_enum_to_js(self.request, BugTaskImportance, 'importances')
+        expose_enum_to_js(self.request, BugTaskStatus, 'statuses')
 
     @property
     def label(self):
@@ -576,4 +585,3 @@ class BugSubscriptionListView(LaunchpadView):
     def structural_subscriptions(self):
         return getUtility(IBugTaskSet).getAllStructuralSubscriptions(
             self.context.bug.bugtasks, self.user)
-

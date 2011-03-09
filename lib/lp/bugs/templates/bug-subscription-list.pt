@@ -13,9 +13,10 @@
 <head>
   <tal:head-epilogue metal:fill-slot="head_epilogue">
     <script type="text/javascript">
-        LPS.use('lp.registry.structural_subscription', function(Y) {
-            Y.lp.registry.structural_subscription.render_bug_subscriptions();
-        });
+      LPS.use('lp.registry.structural_subscription', function(Y) {
+          Y.lp.registry.structural_subscription.setup_bug_subscriptions(
+            {content_box: "#structural-subscription-content-box"});
+      });
     </script>
 
   </tal:head-epilogue>
@@ -26,6 +27,9 @@
     <div id="maincontent">
       <div id="nonportlets" class="readable">
         <div id="subscription-listing"></div>
+
+            <div id="structural-subscription-content-box"></div>
+
       </div>
     </div>
   </div>
