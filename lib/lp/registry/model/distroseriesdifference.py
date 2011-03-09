@@ -9,6 +9,7 @@ __all__ = [
     'DistroSeriesDifference',
     ]
 
+from debian.changelog import Changelog
 from lazr.enum import DBItem
 from storm.expr import Desc
 from storm.locals import (
@@ -300,29 +301,22 @@ class DistroSeriesDifference(Storm):
             DistroSeriesDifferenceType.DIFFERENT_VERSIONS):
             return False
 
-        # Find all source package releases for the derived and parent
-        # series and get the most recent common version.
-        derived_sprs = self.source_pub.meta_sourcepackage.distinctreleases
-        derived_versions = [
-            Version(spr.version) for spr in derived_sprs]
+        changelog = self.source_pub.sourcepackagerelease.changelog
+        parent_changelog = (
+            self.parent_source_pub.sourcepackagerelease.changelog)
 
-        parent_sourcepkg = self.parent_source_pub.meta_sourcepackage
-        parent_sprs = parent_sourcepkg.distinctreleases
-        parent_versions = [
-            Version(spr.version) for spr in parent_sprs]
-
-        common_versions = list(
-            set(derived_versions).intersection(parent_versions))
-        if common_versions:
-            common_versions.sort()
-            self.base_version = unicode(common_versions.pop())
-            return True
-
-        if self.base_version is None:
-            return False
-        else:
-            self.base_version = None
-            return True
+        # If both the parents and descendants changelog are available, we
+        # can parse the changelog versions and reliably work out the most
+        # recent common ancestor using set arithmetic.
+        if changelog is not None and parent_changelog is not None:
+            ancestry = set(Changelog(changelog.read()).versions)
+            parent_ancestry = set(
+                Changelog(parent_changelog.read()).versions)
+            intersection = ancestry.intersection(parent_ancestry)
+            if len(intersection) > 0:
+                self.base_version = unicode(max(intersection))
+                return True
+        return False
 
     def addComment(self, commenter, comment):
         """See `IDistroSeriesDifference`."""

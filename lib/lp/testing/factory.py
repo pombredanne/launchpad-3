@@ -2218,7 +2218,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         self, derived_series=None, source_package_name_str=None,
         versions=None,
         difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
-        status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION):
+        status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+        changelogs=None):
         """Create a new distro series source package difference."""
         if derived_series is None:
             parent_series = self.makeDistroSeries()
@@ -2233,32 +2234,38 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         if versions is None:
             versions = {}
+        if changelogs is None:
+            changelogs = {}
 
         base_version = versions.get('base')
         if base_version is not None:
             for series in [derived_series, derived_series.parent_series]:
-                self.makeSourcePackagePublishingHistory(
-                    distroseries=series,
-                    version=base_version,
+                spr = self.makeSourcePackageRelease(
                     sourcepackagename=source_package_name,
+                    version=base_version)
+                self.makeSourcePackagePublishingHistory(
+                    distroseries=series, sourcepackagerelease=spr,
                     status=PackagePublishingStatus.SUPERSEDED)
 
         if difference_type is not (
             DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES):
-
-            self.makeSourcePackagePublishingHistory(
-                distroseries=derived_series,
-                version=versions.get('derived'),
+            spr = self.makeSourcePackageRelease(
                 sourcepackagename=source_package_name,
+                version=versions.get('derived'),
+                changelog=changelogs.get('derived'))
+            self.makeSourcePackagePublishingHistory(
+                distroseries=derived_series, sourcepackagerelease=spr,
                 status = PackagePublishingStatus.PUBLISHED)
 
         if difference_type is not (
             DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES):
-
+            spr = self.makeSourcePackageRelease(
+                sourcepackagename=source_package_name,
+                version=versions.get('parent'),
+                changelog=changelogs.get('parent'))
             self.makeSourcePackagePublishingHistory(
                 distroseries=derived_series.parent_series,
-                version=versions.get('parent'),
-                sourcepackagename=source_package_name,
+                sourcepackagerelease=spr,
                 status = PackagePublishingStatus.PUBLISHED)
 
         diff = getUtility(IDistroSeriesDifferenceSource).new(
@@ -2554,7 +2561,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     source_package_recipe_build=sprb,
                     sourcepackagename=sourcepackagename,
                     distroseries=distroseries, archive=archive)
-                spph = self.makeSourcePackagePublishingHistory(
+                self.makeSourcePackagePublishingHistory(
                     sourcepackagerelease=spr, archive=archive,
                     distroseries=distroseries)
 
@@ -3143,7 +3150,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                  dscsigningkey=None,
                                  user_defined_fields=None,
                                  changelog_entry=None,
-                                 homepage=None):
+                                 homepage=None,
+                                 changelog=None):
         """Make a `SourcePackageRelease`."""
         if distroseries is None:
             if source_package_recipe_build is not None:
@@ -3199,7 +3207,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             build_conflicts=build_conflicts,
             build_conflicts_indep=build_conflicts_indep,
             architecturehintlist=architecturehintlist,
-            changelog=None,
+            changelog=changelog,
             changelog_entry=changelog_entry,
             dsc=None,
             copyright=self.getUniqueString(),

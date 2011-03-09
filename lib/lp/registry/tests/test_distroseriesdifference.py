@@ -5,10 +5,10 @@
 
 __metaclass__ = type
 
-import unittest
-
 from storm.exceptions import IntegrityError
 from storm.store import Store
+from textwrap import dedent
+import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -39,7 +39,7 @@ from lp.testing import (
 
 class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_implements_interface(self):
         # The implementation implements the interface correctly.
@@ -458,24 +458,44 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
     def test_base_version_multiple(self):
         # The latest common base version is set as the base-version.
-        # Publish v1.0 and 1.1 of foo in both series.
         derived_series = self.factory.makeDistroSeries(
             parent_series=self.factory.makeDistroSeries())
         source_package_name = self.factory.getOrMakeSourcePackageName('foo')
-        for series in [derived_series, derived_series.parent_series]:
-            for version in ['1.0', '1.1']:
-                self.factory.makeSourcePackagePublishingHistory(
-                    distroseries=series,
-                    version=version,
-                    sourcepackagename=source_package_name,
-                    status=PackagePublishingStatus.SUPERSEDED)
-
+        # Create changelogs for both.
+        changelog_lfa = self.factory.makeLibraryFileAlias(
+            content=dedent('''
+            foo (1.2) unstable; urgency=low
+            
+              * 1.2
+            
+             -- Foo Bar <foo@example.com>  Tue, 28 Dec 2010 01:50:41 +0000
+            
+            foo (1.1) unstable; urgency=low
+            
+              * 1.1
+            
+             -- Foo Bar <foo@example.com>  Sun, 28 Nov 2010 01:50:41 +0000
+            '''))
+        parent_changelog_lfa = self.factory.makeLibraryFileAlias(
+            content=dedent('''
+            foo (1.1) unstable; urgency=low
+            
+              * 1.1
+            
+             -- Foo Bar <foo@example.com>  Sun, 28 Nov 2010 01:50:41 +0000
+            '''))
+        # Yay, librarian.
+        transaction.commit()
+        
         ds_diff = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series, source_package_name_str='foo',
             versions={
                 'derived': '1.2',
                 'parent': '1.3',
-                })
+                },
+            changelogs={
+                'derived': changelog_lfa,
+                'parent': parent_changelog_lfa})
 
         self.assertEqual('1.1', ds_diff.base_version)
 
@@ -647,7 +667,3 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
             ds_diff.derived_series, 'fooname')
 
         self.assertEqual(ds_diff, result)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
