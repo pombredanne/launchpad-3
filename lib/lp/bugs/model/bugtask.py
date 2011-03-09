@@ -2468,8 +2468,9 @@ class BugTaskSet:
             [query, clauseTables, ignore, decorator, join_tables,
              has_duplicate_results, with_clause] = self.buildQuery(arg)
             origin = self.buildOrigin(join_tables, [], clauseTables)
-            next_result = orig_store.with_(with_clause).using(*origin).find(
-                inner_resultrow, query)
+            if with_clause:
+                store = orig_store.with_(with_clause)
+            next_result = store.using(*origin).find(inner_resultrow, query)
             resultset = resultset.union(next_result)
             # NB: assumes the decorators are all compatible.
             # This may need revisiting if e.g. searches on behalf of different
