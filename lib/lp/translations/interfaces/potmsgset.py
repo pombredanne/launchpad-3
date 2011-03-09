@@ -195,14 +195,17 @@ class IPOTMsgSet(Interface):
         :param language: language we want translations for.
         """
 
-    def getExternallySuggestedOrUsedTranslationMessages(language):
+    def getExternallySuggestedOrUsedTranslationMessages(suggested_languages=(),
+        used_languages=()):
         """Find externally suggested or used translations for the same message.
 
-        This returns a tuple (suggested, used) containing the results of
+        This returns a mapping: language -> namedtuple (suggested, used)
+        containing the results of
         self.getExternallySuggestedTranslationMessages and
-        self.getExternallyUsedTranslationMessages respectively.
+        self.getExternallyUsedTranslationMessages for each language.
 
-        :param language: language we want translations for.
+        :param suggested_languages: languages we want suggestions for.
+        :param used_languages: languges we want used messages for.
         """
 
     def hasTranslationChangedInLaunchpad(potemplate, language):
