@@ -747,6 +747,7 @@
                     getSubscriptionsFromDuplicates
                     getSubscribersForPerson
                     getSubscriptionForPerson
+                    getStructuralSubscriptionsForPerson
                     getSubscriptionInfo
                     indexed_messages
                     _indexed_messages
@@ -771,7 +772,9 @@
                     bug_messages
                     isUserAffected
                     getHWSubmissions
-                    isExpirable"/>
+                    isExpirable
+                    isMuted
+                    "/>
             <require
                 permission="launchpad.Edit"
                 attributes="

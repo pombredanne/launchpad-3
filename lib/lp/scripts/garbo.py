@@ -124,12 +124,6 @@ class BulkPruner(TunableLoop):
     # See `TunableLoop`. May be overridden.
     maximum_chunk_size = 10000
 
-    # Optional extra WHERE clause fragment for the deletion to skip
-    # arbitrary rows flagged for deletion. For example, skip rows
-    # that might have been modified since the set of ids_to_prune
-    # was calculated.
-    extra_prune_clause = None
-
     def getStore(self):
         """The master Store for the table we are pruning.
 
@@ -156,20 +150,15 @@ class BulkPruner(TunableLoop):
 
     def __call__(self, chunk_size):
         """See `ITunableLoop`."""
-        if self.extra_prune_clause:
-            extra = "AND (%s)" % self.extra_prune_clause
-        else:
-            extra = ""
         result = self.store.execute("""
             DELETE FROM %s
             WHERE %s IN (
                 SELECT id FROM
                 cursor_fetch('bulkprunerid', %d) AS f(id %s))
-                %s
             """
             % (
                 self.target_table_name, self.target_table_key,
-                chunk_size, self.target_table_key_type, extra))
+                chunk_size, self.target_table_key_type))
         self._num_removed = result.rowcount
         transaction.commit()
 
@@ -242,10 +231,33 @@ class UnusedSessionPruner(SessionPruner):
                     AND key='logintime')
         """
 
-    # Don't delete a session if it has been used between calculating
-    # the list of sessions to remove and the current iteration.
-    prune_extra_clause = """
-        last_accessed < CURRENT_TIMESTAMP - CAST('1 day' AS interval)
+
+class DuplicateSessionPruner(SessionPruner):
+    """Remove all but the most recent 6 authenticated sessions for a user.
+
+    We sometimes see users with dozens or thousands of authenticated
+    sessions. To limit exposure to replay attacks, we remove all but
+    the most recent 6 of them for a given user.
+    """
+
+    ids_to_prune_query = """
+        SELECT client_id AS id
+        FROM (
+            SELECT
+                sessiondata.client_id,
+                last_accessed,
+                rank() OVER pickle AS rank
+            FROM SessionData, SessionPkgData
+            WHERE
+                SessionData.client_id = SessionPkgData.client_id
+                AND product_id = 'launchpad.authenticateduser'
+                AND key='accountid'
+            WINDOW pickle AS (PARTITION BY pickle ORDER BY last_accessed DESC)
+            ) AS whatever
+        WHERE
+            rank > 6
+            AND last_accessed < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - CAST('1 hour' AS interval)
         """
 
 
@@ -1042,6 +1054,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         BugWatchScheduler,
         AntiqueSessionPruner,
         UnusedSessionPruner,
+        DuplicateSessionPruner,
         ]
     experimental_tunable_loops = []
 

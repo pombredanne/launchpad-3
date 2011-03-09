@@ -74,6 +74,7 @@ from lp.scripts.garbo import (
     AntiqueSessionPruner,
     BulkPruner,
     DailyDatabaseGarbageCollector,
+    DuplicateSessionPruner,
     HourlyDatabaseGarbageCollector,
     OpenIDConsumerAssociationPruner,
     UnusedSessionPruner,
@@ -205,26 +206,37 @@ class TestSessionPruner(TestCase):
         yesterday = recent - timedelta(days=1)
         ancient = recent - timedelta(days=61)
 
-        def make_session(client_id, accessed, authenticated=None):
-            session_data = SessionData()
-            session_data.client_id = client_id
-            session_data.last_accessed = accessed
-            IMasterStore(SessionData).add(session_data)
+        self.make_session(u'recent_auth', recent, 'auth1')
+        self.make_session(u'recent_unauth', recent, False)
+        self.make_session(u'yesterday_auth', yesterday, 'auth2')
+        self.make_session(u'yesterday_unauth', yesterday, False)
+        self.make_session(u'ancient_auth', ancient, 'auth3')
+        self.make_session(u'ancient_unauth', ancient, False)
 
-            if authenticated:
-                session_pkg_data = SessionPkgData()
-                session_pkg_data.client_id = client_id
-                session_pkg_data.product_id = u'launchpad.authenticateduser'
-                session_pkg_data.key = u'logintime'
-                session_pkg_data.pickle = 'value is ignored'
-                IMasterStore(SessionPkgData).add(session_pkg_data)
+    def make_session(self, client_id, accessed, authenticated=None):
+        session_data = SessionData()
+        session_data.client_id = client_id
+        session_data.last_accessed = accessed
+        IMasterStore(SessionData).add(session_data)
 
-        make_session(u'recent_auth', recent, True)
-        make_session(u'recent_unauth', recent, False)
-        make_session(u'yesterday_auth', yesterday, True)
-        make_session(u'yesterday_unauth', yesterday, False)
-        make_session(u'ancient_auth', ancient, True)
-        make_session(u'ancient_unauth', ancient, False)
+        if authenticated:
+            # Add login time information.
+            session_pkg_data = SessionPkgData()
+            session_pkg_data.client_id = client_id
+            session_pkg_data.product_id = u'launchpad.authenticateduser'
+            session_pkg_data.key = u'logintime'
+            session_pkg_data.pickle = 'value is ignored'
+            IMasterStore(SessionPkgData).add(session_pkg_data)
+
+            # Add authenticated as information.
+            session_pkg_data = SessionPkgData()
+            session_pkg_data.client_id = client_id
+            session_pkg_data.product_id = u'launchpad.authenticateduser'
+            session_pkg_data.key = u'accountid'
+            # Normally Account.id, but the session pruning works
+            # at the SQL level and doesn't unpickle anything.
+            session_pkg_data.pickle = authenticated
+            IMasterStore(SessionPkgData).add(session_pkg_data)
 
     def sessionExists(self, client_id):
         store = IMasterStore(SessionData)
@@ -273,6 +285,51 @@ class TestSessionPruner(TestCase):
             u'ancient_auth',
             # u'ancient_unauth',
             ])
+
+        found_sessions = set(
+            IMasterStore(SessionData).find(SessionData.client_id))
+
+        self.assertEqual(expected_sessions, found_sessions)
+
+    def test_duplicate_session_pruner(self):
+        # None of the sessions created in setUp() are duplicates, so
+        # they will all survive the pruning.
+        expected_sessions = set([
+            u'recent_auth',
+            u'recent_unauth',
+            u'yesterday_auth',
+            u'yesterday_unauth',
+            u'ancient_auth',
+            u'ancient_unauth',
+            ])
+
+        now = datetime.now(UTC)
+
+        # Make some duplicate logins from a few days ago.
+        # Only the most recent 6 will be kept. Oldest is 'old dupe 9',
+        # most recent 'old dupe 1'.
+        for count in range(1, 10):
+            self.make_session(
+                u'old dupe %d' % count,
+                now - timedelta(days=2, seconds=count),
+                'old dupe')
+        for count in range(1, 7):
+            expected_sessions.add(u'old dupe %d' % count)
+
+        # Make some other duplicate logins less than an hour old.
+        # All of these will be kept.
+        for count in range(1, 10):
+            self.make_session(u'new dupe %d' % count, now, 'new dupe')
+            expected_sessions.add(u'new dupe %d' % count)
+
+        chunk_size = 2
+        log = BufferLogger()
+        pruner = DuplicateSessionPruner(log)
+        try:
+            while not pruner.isDone():
+                pruner(chunk_size)
+        finally:
+            pruner.cleanUp()
 
         found_sessions = set(
             IMasterStore(SessionData).find(SessionData.client_id))

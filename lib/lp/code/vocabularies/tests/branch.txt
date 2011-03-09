@@ -130,6 +130,7 @@ Here's a vocabulary for all hosted branches owned by the current user.
     >>> from lp.code.enums import BranchType
 
     >>> a_user = factory.makePerson(name='a-branching-user')
+    >>> a_team = factory.makeTeam(name='a-team', members=[a_user])
     >>> product1 = factory.makeProduct(name='product-one')
     >>> mirrored_branch = factory.makeBranch(
     ...     owner=a_user, product=product1, name='mirrored',
@@ -137,12 +138,15 @@ Here's a vocabulary for all hosted branches owned by the current user.
     >>> product2 = factory.makeProduct(name='product-two')
     >>> hosted_branch = factory.makeBranch(
     ...     owner=a_user, product=product2, name='hosted')
+    >>> another_hosted_branch = factory.makeBranch(
+    ...     owner=a_team, product=product2, name='another_hosted')
     >>> foreign_branch = factory.makeBranch()
 
-It returns branches owned by the user, but not ones owned by others, nor
-ones that aren't hosted on Launchpad.
+It returns branches owned by the user, or teams a user belongs to, but not
+ones owned by others, nor ones that aren't hosted on Launchpad.
 
     >>> branch_vocabulary = vocabulary_registry.get(
     ...     a_user, "HostedBranchRestrictedOnOwner")
     >>> print_vocab_branches(branch_vocabulary, None)
     ~a-branching-user/product-two/hosted
+    ~a-team/product-two/another_hosted
