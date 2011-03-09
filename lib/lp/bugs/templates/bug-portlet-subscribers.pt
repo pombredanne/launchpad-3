@@ -13,6 +13,17 @@
       tal:content="structure context_menu/subscription/render" />
     <div id="sub-unsub-spinner">Subscribing...</div>
     <div tal:content="structure context_menu/addsubscriber/render" />
+    <tal:comment replace="nothing">
+      <!-- This section enables the mute link; it's disabled since
+      that's a work-in-progress. -->
+      <tal:show-mute
+          condition="request/features/malone.advanced-subscriptions.enabled">
+        <div
+          tal:attributes="class view/current_user_subscription_class"
+          tal:content="structure context_menu/mute_subscription/render" />
+        <div id="mute-unmute-spinner">Unmuting...</div>
+      </tal:show-mute>
+    </tal:comment>
   </div>
   <a id="subscribers-ids-link"
      tal:define="bug context/bug|context"
@@ -32,9 +43,7 @@
         var subscription_link_handler;
         if (subscription_link) {
             subscription_link_handler = subscription_link.on(
-                'click', function(e) {
-                e.preventDefault();
-            });
+                'click', function(e) { e.preventDefault(); });
         }
 
         Y.on('domready', function() {
