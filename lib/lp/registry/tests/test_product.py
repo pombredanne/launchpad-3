@@ -21,6 +21,7 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.product import (
     IProduct,
     License,
@@ -36,7 +37,9 @@ from lp.testing import (
     login,
     login_person,
     TestCaseWithFactory,
+    WebServiceTestCase,
     )
+from lp.translations.enums import TranslationPermission
 
 
 class TestProduct(TestCaseWithFactory):
@@ -352,6 +355,35 @@ class BugSupervisorTestCase(TestCaseWithFactory):
             "Instead, bug supervisor for firefox is %s" % (
             self.person.name, self.product.name,
             self.product.bug_supervisor.name))
+
+
+class TestWebService(WebServiceTestCase):
+
+    def test_translations_usage(self):
+        """The translations_usage field should be writable."""
+        product = self.factory.makeProduct()
+        transaction.commit()
+        ws_product = self.wsObject(product, product.owner)
+        ws_product.translations_usage = ServiceUsage.EXTERNAL.title
+        ws_product.lp_save()
+
+    def test_translationpermission(self):
+        """The translationpermission field should be writable."""
+        product = self.factory.makeProduct()
+        transaction.commit()
+        ws_product = self.wsObject(product, product.owner)
+        ws_product.translationpermission = TranslationPermission.CLOSED.title
+        ws_product.lp_save()
+
+    def test_translationgroup(self):
+        """The translationgroup field should be writable."""
+        product = self.factory.makeProduct()
+        group = self.factory.makeTranslationGroup()
+        transaction.commit()
+        ws_product = self.wsObject(product, product.owner)
+        ws_group = self.wsObject(group)
+        ws_product.translationgroup = ws_group
+        ws_product.lp_save()
 
 
 def test_suite():

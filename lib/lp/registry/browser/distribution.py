@@ -714,7 +714,9 @@ class DistributionSetActionNavigationMenu(RegistryCollectionActionMenuBase):
     """Action menu for `DistributionSetView`."""
 
     usedfor = IDistributionSet
-    links = ['register_team', 'register_project', 'create_account']
+    links = [
+        'register_team', 'register_project', 'register_distribution',
+        'create_account']
 
 
 class DistributionSetView(LaunchpadView):

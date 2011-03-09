@@ -1,4 +1,4 @@
-# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0401,C0301,F0401
@@ -790,6 +790,38 @@ class WindmillTestCase(TestCaseWithFactory):
         return client, obj_url
 
 
+class WebServiceTestCase(TestCaseWithFactory):
+    """Test case optimized for testing the web service using launchpadlib."""
+
+    @property
+    def layer(self):
+        # XXX wgrant 2011-03-09 bug=505913:
+        # TestTwistedJobRunner.test_timeout fails if this is at the
+        # module level. There is probably some hidden circular import.
+        from canonical.testing.layers import AppServerLayer
+        return AppServerLayer
+
+    def setUp(self):
+        super(WebServiceTestCase, self).setUp()
+        self.ws_version = 'devel'
+        self.service = self.factory.makeLaunchpadService(
+            version=self.ws_version)
+
+    def wsObject(self, obj, user=None):
+        """Return the launchpadlib version of the supplied object.
+
+        :param obj: The object to find the launchpadlib equivalent of.
+        :param user: The user to use for accessing the object over
+            lauchpadlib.  Defaults to an arbitrary logged-in user.
+        """
+        if user is not None:
+            service = self.factory.makeLaunchpadService(
+                user, version=self.ws_version)
+        else:
+            service = self.service
+        return ws_object(service, obj)
+
+
 def quote_jquery_expression(expression):
     """jquery requires meta chars used in literals escaped with \\"""
     return re.sub(
@@ -1159,11 +1191,8 @@ def ws_object(launchpad, obj):
     :param obj: The object to convert.
     :return: A launchpadlib Entry object.
     """
-    api_request = WebServiceTestRequest()
-    obj_url = canonical_url(obj, request=api_request)
-    return launchpad.load(
-        obj_url.replace('http://api.launchpad.dev/',
-        str(launchpad._root_uri)))
+    api_request = WebServiceTestRequest(SERVER_URL=str(launchpad._root_uri))
+    return launchpad.load(canonical_url(obj, request=api_request))
 
 
 @contextmanager

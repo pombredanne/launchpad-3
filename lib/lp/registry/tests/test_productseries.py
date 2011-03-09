@@ -1,10 +1,11 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for ProductSeries and ProductSeriesSet."""
 
 __metaclass__ = type
 
+import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import login
@@ -19,7 +20,10 @@ from lp.registry.interfaces.productseries import (
     IProductSeries,
     IProductSeriesSet,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCaseWithFactory,
+    WebServiceTestCase,
+    )
 from lp.testing.matchers import DoesNotSnapshot
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
@@ -318,3 +322,15 @@ class ProductSeriesSnapshotTestCase(TestCaseWithFactory):
         self.assertThat(
             productseries,
             DoesNotSnapshot(skipped, IProductSeries))
+
+
+class TestWebService(WebServiceTestCase):
+
+    def test_translations_autoimport_mode(self):
+        """Autoimport mode can be set over Web Service."""
+        series = self.factory.makeProductSeries()
+        transaction.commit()
+        ws_series = self.wsObject(series, series.owner)
+        mode = TranslationsBranchImportMode.IMPORT_TRANSLATIONS
+        ws_series.translations_autoimport_mode = mode.title
+        ws_series.lp_save()
