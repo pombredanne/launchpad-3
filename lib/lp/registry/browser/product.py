@@ -42,7 +42,6 @@ __all__ = [
     ]
 
 
-from cgi import escape
 from datetime import (
     datetime,
     timedelta,
@@ -1109,6 +1108,13 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         """
         return (check_permission('launchpad.Edit', self.context) or
                 check_permission('launchpad.Commercial', self.context))
+
+    @cachedproperty
+    def show_license_info(self):
+        """Should the view show the extra license information."""
+        return (
+            License.OTHER_OPEN_SOURCE in self.context.licenses
+            or License.OTHER_PROPRIETARY in self.context.licenses)
 
 
 class ProductPackagesView(LaunchpadView):

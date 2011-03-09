@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'BooleanChoiceWidget',
+    'EnumChoiceWidget',
     'InlineEditPickerWidget',
     'standard_text_html_representation',
     'TextAreaEditorWidget',
