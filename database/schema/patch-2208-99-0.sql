@@ -3,8 +3,19 @@
 
 SET client_min_messages=ERROR;
 
--- add a registrant column to distributions
+BEGIN;
+
+-- Add a registrant column to distributions.
 ALTER TABLE Distribution
     ADD COLUMN registrant integer REFERENCES Person;
 
+-- Set registrant to ~registry for existing distros.
+update Distribution
+    SET registrant = (select id from Person where name='registry');
+
+-- Add NOT NULL constraint to registrant column.
+ALTER TABLE Distribution  ALTER COLUMN registrant SET NOT NULL;
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+
+COMMIT;
