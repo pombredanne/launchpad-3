@@ -175,7 +175,7 @@ from canonical.launchpad.interfaces.message import (
     QuotaReachedError,
     )
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
-from canonical.launchpad.mailnotification import send_direct_contact_email
+from lp.registry.mail.notification import send_direct_contact_email
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
