@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for ISourcePackage implementations."""
@@ -7,6 +7,8 @@ __metaclass__ = type
 
 import unittest
 
+from storm.locals import Store
+import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -23,6 +25,7 @@ from lp.code.interfaces.seriessourcepackagebranch import (
 from lp.registry.interfaces.distribution import NoPartnerArchive
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.model.packaging import Packaging
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -31,6 +34,7 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
+    WebServiceTestCase,
     )
 from lp.testing.views import create_initialized_view
 
@@ -253,6 +257,48 @@ class TestSourcePackage(TestCaseWithFactory):
             u'mozilla-firefox-data: No summary available for '
             u'mozilla-firefox-data in ubuntu warty.')
         self.assertEqual(''.join(expected_summary), sp.summary)
+
+    def test_deletePackaging(self):
+        """Ensure deletePackaging completely removes packaging."""
+        packaging = self.factory.makePackagingLink()
+        packaging_id = packaging.id
+        store = Store.of(packaging)
+        packaging.sourcepackage.deletePackaging()
+        result = store.find(Packaging, Packaging.id==packaging_id)
+        self.assertIs(None, result.one())
+
+
+class TestSourcePackageWebService(WebServiceTestCase):
+
+    def test_setPackaging(self):
+        """setPackaging is accessible and works."""
+        sourcepackage = self.factory.makeSourcePackage()
+        self.assertIs(None, sourcepackage.direct_packaging)
+        productseries = self.factory.makeProductSeries()
+        transaction.commit()
+        ws_sourcepackage = self.wsObject(sourcepackage)
+        ws_productseries = self.wsObject(productseries)
+        ws_sourcepackage.setPackaging(productseries=ws_productseries)
+        transaction.commit()
+        self.assertEqual(
+            productseries, sourcepackage.direct_packaging.productseries)
+
+    def test_deletePackaging(self):
+        """Deleting a packaging should work."""
+        packaging = self.factory.makePackagingLink()
+        sourcepackage = packaging.sourcepackage
+        transaction.commit()
+        self.wsObject(sourcepackage).deletePackaging()
+        transaction.commit()
+        self.assertIs(None, sourcepackage.direct_packaging)
+
+    def test_deletePackaging_with_no_packaging(self):
+        """Deleting when there's no packaging should be a no-op."""
+        sourcepackage = self.factory.makeSourcePackage()
+        transaction.commit()
+        self.wsObject(sourcepackage).deletePackaging()
+        transaction.commit()
+        self.assertIs(None, sourcepackage.direct_packaging)
 
 
 class TestSourcePackageSecurity(TestCaseWithFactory):
