@@ -9,8 +9,30 @@ Prints out a CSV of all of the pages that exist in Launchpad. A "page" is a
 whole, actual, web page. Something you might actually want to see filling a
 browser window. Page fragments, portlets etc. are excluded.
 
-The output contains the page ID, content interface, layer and template.  Here
-'layer' is a clue as to the subdomain.
+The output contains the page ID, content interface, layer, template and
+example URL.  Here 'layer' is a clue as to the subdomain.
+
+The example URLs will look like::
+
+  https://launchpad.dev/~<ITeam.name>/+addmember
+
+Which means all segments are present, and you can get a real URL by
+substituting data (in this case, a team name),
+
+or::
+
+  https://launchpad.dev/[[ITranslator]]/+admin
+
+Which means we couldn't actually figure out the proper URL. [[ITranslator]]
+might actually be made of multiple URL segments,
+
+or::
+
+  <IPOFile>/+export
+
+Which means we have no clue how to figure out the URL.  This is generally
+because our cheat objects don't match the app-encoded business logic.
+
 """
 
 # The implementation approach here is fairly simple:
