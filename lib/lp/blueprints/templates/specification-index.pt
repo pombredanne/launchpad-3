@@ -323,7 +323,7 @@
             }
         });
         Y.on('lp:context:lifecycle_status:changed', function(e) {
-            Y.lp.ui.update_field('#lifecycle-status', e.entry.get(e.name));
+            Y.lp.ui.update_field('#lifecycle-status', e.new_value);
         });
         Y.on('lp:context:is_started:changed', function(e) {
             var started = Y.one('#started-by');
@@ -344,6 +344,13 @@
             } else {
               completed.addClass('unseen');
             }
+        });
+        Y.on('lp:context:title:changed', function(e) {
+            // change the window title and breadcrumb.
+            Y.lp.ui.update_field('ol.breadcrumbs li:last-child', e.new_value);
+            var title = window.document.title;
+            title = e.new_value + title.substring(e.old_value.length);
+            window.document.title = title;
         });
 
       });
