@@ -17,7 +17,6 @@ from canonical.database.sqlbase import sqlvalues
 from lp.archivepublisher import ELIGIBLE_DOMINATION_STATES
 from lp.archivepublisher.config import (
     getPubConfig,
-    LucilleConfigError,
     )
 from lp.archivepublisher.diskpool import DiskPool
 from lp.archivepublisher.utils import process_in_batches
@@ -40,12 +39,8 @@ def getDeathRow(archive, log, pool_root_override):
          the one provided by the publishing-configuration, it will be only
          used for PRIMARY archives.
     """
-    log.debug("Grab Lucille config.")
-    try:
-        pubconf = getPubConfig(archive)
-    except LucilleConfigError, info:
-        log.error(info)
-        raise
+    log.debug("Grab publisher config.")
+    pubconf = getPubConfig(archive)
 
     if (pool_root_override is not None and
         archive.purpose == ArchivePurpose.PRIMARY):

@@ -83,10 +83,6 @@ def getPubConfig(archive):
     return pubconf
 
 
-class LucilleConfigError(Exception):
-    """Lucille configuration was not present."""
-
-
 class Config(object):
     """Manage a publisher configuration from the database. (Read Only)
     This class provides a useful abstraction so that if we change
