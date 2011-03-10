@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for translation pages for sourcepackages."""
@@ -112,10 +112,14 @@ class SourcePackageTranslationSharingStatus(LaunchpadView):
     @property
     def packaging_configured(self):
         """Is a packaging link defined for this branch?"""
+        return self.context.direct_packaging is not None
 
-    @propeprty
-    def upstream_branch_exists(self):
-        """Does teh upstream series has at least one source code branch?"""
+    @property
+    def has_upstream_branch(self):
+        """Does the upstream series have a source code branch?"""
+        if not self.packaging_configured:
+            return False
+        return self.context.direct_packaging.productseries.branch is not None
 
     @property
     def upstream_translations_enabled(self):
@@ -123,7 +127,7 @@ class SourcePackageTranslationSharingStatus(LaunchpadView):
 
     @property
     def upstream_synchronizes_translations(self):
-        """Is antuomatic synchronization of upstream translation enabled?"""
+        """Is automatic synchronization of upstream translation enabled?"""
 
     @property
     def configuration_is_incomplete(self):
