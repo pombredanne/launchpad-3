@@ -632,6 +632,7 @@ class SpecificationView(SpecificationSimpleView):
         return EnumChoiceWidget(
             self.context, ISpecification['definition_status'],
             header='Change definition status to', edit_view='+status',
+            edit_title='Change definition status',
             css_class_prefix='specstatus')
 
     @property
@@ -639,6 +640,7 @@ class SpecificationView(SpecificationSimpleView):
         return EnumChoiceWidget(
             self.context, ISpecification['implementation_status'],
             header='Change implementation status to', edit_view='+status',
+            edit_title='Change implementation status',
             css_class_prefix='specdelivery')
 
     @property
@@ -646,6 +648,7 @@ class SpecificationView(SpecificationSimpleView):
         return EnumChoiceWidget(
             self.context, ISpecification['priority'],
             header='Change priority to', edit_view='+priority',
+            edit_title='Change priority',
             css_class_prefix='specpriority')
 
     @property
