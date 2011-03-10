@@ -299,7 +299,7 @@ class InlineMultiCheckboxWidget(WidgetBase):
 
     def __init__(self, context, exported_field,
                  label, label_tag="span", attribute_type="default",
-                 vocabulary_name=None, header=None,
+                 vocabulary=None, header=None,
                  empty_display_value="None", content_box_id=None,
                  selected_items=list(), items_tag="span", items_style=''):
         """Create a widget wrapper.
@@ -312,8 +312,8 @@ class InlineMultiCheckboxWidget(WidgetBase):
         :param attribute_type: The attribute type. Currently only "reference"
             is supported. Used to determine whether to linkify the checkbox
             items.
-        :param vocabulary_name: The name of the vocabulary which provides the
-            items.
+        :param vocabulary: The name of the vocabulary which provides the
+            items or a vocabulary instance.
         :param header: The text to display as the title of the popup form.
         :param empty_display_value: The text to display if no items are
             selected.
@@ -340,21 +340,24 @@ class InlineMultiCheckboxWidget(WidgetBase):
         self.items_close_tag = "</%s>" % items_tag
         self.linkify_items = linkify_items
 
-        if vocabulary_name is None:
+        if vocabulary is None or type(vocabulary) is str:
             try:
                 vocabulary_name = exported_field.vocabularyName
             except:
                 vocabulary_name = exported_field.value_type.vocabularyName
-
-        vocab = getVocabularyRegistry().get(context, vocabulary_name)
+            vocab = getVocabularyRegistry().get(context, vocabulary_name)
+        else:
+            vocab = vocabulary
+            
         items = []
         style = ';'.join(['font-weight: normal', items_style])
         for item in vocab:
             item_value = item.value if safe_hasattr(item, 'value') else item
             checked = item_value in selected_items
-            save_value = item_value
             if linkify_items:
                 save_value = canonical_url(item_value, force_local_path=True)
+            else:
+                save_value = item_value.name
             new_item = {
                 'name': item.title,
                 'token': item.token,
