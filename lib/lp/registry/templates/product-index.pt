@@ -34,7 +34,9 @@
 
     <script type="text/javascript">
         LPS.use('lp.registry.structural_subscription', function(Y) {
-            Y.lp.registry.structural_subscription.setup({content_box: "#structural-subscription-content-box"});
+            module = Y.lp.registry.structural_subscription;
+            Y.on('domready',
+                 module.setup({content_box: "#structural-subscription-content-box"}))
         });
     </script>
 
