@@ -453,7 +453,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         changelog_lfa = self.factory.makeChangelog('foo', ['1.2', '1.1'])
         parent_changelog_lfa = self.factory.makeChangelog('foo', ['1.1'])
         transaction.commit() # Yay, librarian.
-        
+
         ds_diff = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series, source_package_name_str='foo',
             versions={
@@ -480,7 +480,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         parent_changelog = self.factory.makeChangelog(
             versions=['1.0', '1.3'])
         transaction.commit() # Yay, librarian.
-        
+
         ds_diff = self.factory.makeDistroSeriesDifference(versions={
             'derived': '1.2',
             'parent': '1.3',
@@ -503,7 +503,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         parent_changelog = self.factory.makeChangelog(
             versions=['1.0', '1.3'])
         transaction.commit() # Yay, librarian.
-        
+
         ds_diff = self.factory.makeDistroSeriesDifference(versions={
             'derived': '1.2',
             'parent': '1.3',
