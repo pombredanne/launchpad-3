@@ -179,21 +179,10 @@ class SourcePackageRecipe(Storm):
         return self.builder_recipe.get_recipe_text()
 
     def updateSeries(self, distroseries):
-#        recipe_before_modification = Snapshot(
-#            self, providing=providedBy(context))
-
         if distroseries != self.distroseries:
             self.distroseries.clear()
             for distroseries_item in distroseries:
                 self.distroseries.add(distroseries_item)
-#            changed = True
-
-#        notify(ObjectModifiedEvent(
-#            self.context, recipe_before_modification, field_names))
-#        # Only specify that the context was modified if there
-#        # was in fact a change.
-#        self.context.date_last_modified = UTC_NOW
-
 
     @staticmethod
     def new(registrant, owner, name, recipe, description,
