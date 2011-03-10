@@ -10,11 +10,12 @@ files representing a source uploaded.
 __metaclass__ = type
 
 __all__ = [
-    'SignableTagFile',
     'DSCFile',
     'DSCUploadedFile',
+    'findFile',
     'find_changelog',
     'find_copyright',
+    'SignableTagFile',
     ]
 
 from cStringIO import StringIO
@@ -28,7 +29,6 @@ import apt_pkg
 from debian.deb822 import Deb822Dict
 from zope.component import getUtility
 
-from lp.services.encoding import guess as guess_encoding
 from canonical.launchpad.interfaces.gpghandler import (
     GPGVerificationError,
     IGPGHandler,
@@ -64,6 +64,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.encoding import guess as guess_encoding
 from lp.soyuz.enums import (
     ArchivePurpose,
     SourcePackageFormat,
