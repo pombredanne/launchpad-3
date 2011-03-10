@@ -419,6 +419,7 @@ def expose_user_subscriptions_to_js(user, bugtasks, request):
     """Make the user's subscriptions available to JavaScript."""
 
     info = []
+    api_request = IWebServiceClientRequest(request)
     for target, subscriptions in get_user_subscriptions(user, bugtasks):
         record = {}
         record['target_title'] = target.title
@@ -428,6 +429,8 @@ def expose_user_subscriptions_to_js(user, bugtasks, request):
             for filter in subscription.bug_filters:
                 record['filters'].append(dict(
                     filter=filter,
+                    subscriber_link=absoluteURL(
+                        subscription.subscriber, api_request),
                     subscriber_title=subscription.subscriber.title,
                     subscriber_is_team=subscription.subscriber.isTeam()))
         info.append(record)
