@@ -101,6 +101,7 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.sorting import sorted_version_numbers
 from lp.app.enums import ServiceUsage
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
 from lp.blueprints.enums import (
@@ -1829,7 +1830,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeSignedMessage(self, msgid=None, body=None, subject=None,
             attachment_contents=None, force_transfer_encoding=False,
-            email_address=None, signing_context=None):
+            email_address=None, signing_context=None, to_address=None):
         """Return an ISignedMessage.
 
         :param msgid: An rfc2822 message-id.
@@ -1847,8 +1848,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             person = self.makePerson()
             email_address = removeSecurityProxy(person).preferredemail.email
         mail['From'] = email_address
-        mail['To'] = removeSecurityProxy(
-            self.makePerson()).preferredemail.email
+        if to_address is None:
+            to_address = removeSecurityProxy(
+                self.makePerson()).preferredemail.email
+        mail['To'] = to_address
         if subject is None:
             subject = self.getUniqueString('subject')
         mail['Subject'] = subject
@@ -1950,6 +1953,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_spec.implementation_status = implementation_status
             naked_spec.updateLifecycleStatus(owner)
         return spec
+
+    makeBlueprint = makeSpecification
 
     def makeQuestion(self, target=None, title=None):
         """Create and return a new, arbitrary Question.
@@ -3850,6 +3855,20 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if description is None:
             description = self.getUniqueString()
         return getUtility(ICveSet).new(sequence, description, cvestate)
+
+    def makePublisherConfig(self, distribution=None, root_dir=None,
+                            base_url=None, copy_base_url=None):
+        """Create a new `PublisherConfig` record."""
+        if distribution is None:
+            distribution = self.makeDistribution()
+        if root_dir is None:
+            root_dir = self.getUniqueUnicode()
+        if base_url is None:
+            base_url = self.getUniqueUnicode()
+        if copy_base_url is None:
+            copy_base_url = self.getUniqueUnicode()
+        return getUtility(IPublisherConfigSet).new(
+            distribution, root_dir, base_url, copy_base_url)
 
 
 # Some factory methods return simple Python types. We don't add

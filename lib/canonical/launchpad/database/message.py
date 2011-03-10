@@ -14,7 +14,6 @@ __all__ = [
     'UserToUserEmail',
     ]
 
-
 from cStringIO import StringIO as cStringIO
 from datetime import datetime
 import email
@@ -29,6 +28,7 @@ from email.Utils import (
     parsedate_tz,
     )
 from operator import attrgetter
+import os.path
 
 from lazr.config import as_timedelta
 from lazr.enum import (
@@ -478,6 +478,8 @@ class MessageSet:
                     sequence += 1
             else:
                 filename = part.get_filename() or 'unnamed'
+                # Strip off any path information.
+                filename = os.path.basename(filename)
                 # Note we use the Content-Type header instead of
                 # part.get_content_type() here to ensure we keep
                 # parameters as sent. If Content-Type is None we default
