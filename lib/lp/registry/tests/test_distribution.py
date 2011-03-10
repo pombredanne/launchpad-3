@@ -13,7 +13,11 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     )
 from lp.registry.errors import NoSuchDistroSeries
-from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distribution import (
+    IDistribution,
+    IDistributionSet,
+    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.tests.test_distroseries import (
     TestDistroSeriesCurrentSourceReleases,
@@ -22,7 +26,15 @@ from lp.services.propertycache import get_property_cache
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCaseWithFactory,
+    login_person,
+    )
+from lp.testing.views import create_initialized_view
+
+import soupmatchers
+
+from zope.component import getUtility
 
 
 class TestDistribution(TestCaseWithFactory):
@@ -174,3 +186,79 @@ class DistroSnapshotTestCase(TestCaseWithFactory):
             self.assertFalse(
                 hasattr(snapshot, attribute),
                 "Snapshot should not include %s." % attribute)
+
+
+class DistroRegistrantTestCase(TestCaseWithFactory):
+    """A TestCase for registrants and owners of a distribution.
+
+    The registrant is the creator of the distribution (read-only field).
+    The owner is really the maintainer.
+    """
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(DistroRegistrantTestCase, self).setUp()
+        self.owner = self.factory.makePerson()
+        self.registrant = self.factory.makePerson()
+        self.admin = getUtility(IPersonSet).getByEmail('admin@canonical.com')
+        self.registry = getUtility(IPersonSet).getByName('registry')
+
+    def test_registrant_owner_differ(self):
+        distribution = self.factory.makeDistribution(
+            name="boobuntu", owner=self.owner, registrant=self.registrant)
+        self.assertNotEqual(distribution.owner, distribution.registrant)
+        self.assertEqual(distribution.owner, self.owner)
+        self.assertEqual(distribution.registrant, self.registrant)
+
+    def test_registrant_set_by_creation(self):
+        """The registrant field should be set to the Person creating
+        the distribution.
+        """
+        login_person(self.admin)
+        distributionset = getUtility(IDistributionSet)
+        creation_form = {
+            'field.name': 'newbuntu',
+            'field.displayname': 'newbuntu',
+            'field.title': 'newbuntu',
+            'field.summary': 'newbuntu',
+            'field.description': 'newbuntu',
+            'field.domainname': 'newbuntu',
+            'field.members': 'registry',
+            'field.actions.save': 'Save',
+            }
+        view = create_initialized_view(
+            distributionset, '+add', principal=self.admin,
+            method='POST', form=creation_form)
+        distribution = distributionset.getByName('newbuntu')
+        self.assertEqual(distribution.owner, self.admin)
+        self.assertEqual(distribution.registrant, self.admin)
+
+    def test_reassign_change_owner_not_registrant(self):
+        """Reassigning a distribution should not change the registrant."""
+        login_person(self.admin)
+        distribution = self.factory.makeDistribution(
+            name="boobuntu", owner=self.owner, registrant=self.registrant)
+        reassign_form = {
+            'field.owner': 'registry',
+            'field.existing': 'existing',
+            'field.actions.change': 'Change',
+            }
+        view = create_initialized_view(
+            distribution, '+reassign', principal=self.admin,
+            method='POST', form=reassign_form)
+        self.assertEqual(distribution.owner, self.registry)
+        self.assertEqual(distribution.registrant, self.registrant)
+
+    def test_reassign_page_title(self):
+        """Reassign should say maintainer instead of owner."""
+        login_person(self.admin)
+        distribution = self.factory.makeDistribution(
+            name="boobuntu", owner=self.owner, registrant=self.registrant)
+        view = create_initialized_view(
+            distribution, '+reassign', principal=self.admin, method='GET')
+        header_match = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Header should say maintainer (not owner)', 'h1',
+                text='Change the maintainer of Boobuntu'))
+        self.assertThat(view.render(), header_match)

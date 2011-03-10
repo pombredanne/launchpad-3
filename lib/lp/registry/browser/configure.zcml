@@ -1948,7 +1948,7 @@
         for="lp.registry.interfaces.distribution.IDistribution"
         permission="launchpad.Edit"
         facet="overview"
-        class="canonical.launchpad.browser.ObjectReassignmentView">
+        class="lp.registry.browser.distribution.DistributionReassignmentView">
         <browser:page
             name="+reassign"
             template="../../../canonical/launchpad/templates/object-reassignment.pt"/>
