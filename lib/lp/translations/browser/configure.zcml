@@ -607,10 +607,10 @@
         permission="zope.Public"/>
     <browser:page
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-        name="+translation-sharing-details"
-        class="lp.translations.browser.sourcepackage.SourcePackageTranslationSharingStatus"
+        name="+sharing-details"
+        class="lp.translations.browser.sourcepackage.SourcePackageTranslationSharingDetailsView"
         permission="zope.Public"
-        template="../templates/translation-sharing-status.pt"
+        template="../templates/sourcepackage-sharing-details.pt"
         layer="lp.translations.publisher.TranslationsLayer"/>
     <browser:pages
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"

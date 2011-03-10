@@ -112,7 +112,7 @@
              <td class="upstream_link_column"><a href="#">View upstream</a></td>
            </tr>
            <tr>
-             <td class="name_column"><a href="#">gimp20-new</a></td>
+             <td class="name_column">gimp20-new</td>
              <td class="state_column">only in upstream</td>
              <td class="length_ubuntu_column"></td>
              <td class="updated_ubuntu_column"></td>
