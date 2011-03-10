@@ -29,7 +29,7 @@ class HasRecipesMenuMixin:
     def view_recipes(self):
         text = 'View source package recipes'
         enabled = False
-        if self.context.getRecipes().count():
+        if self.context.recipes.count():
             enabled = True
         if not getFeatureFlag(RECIPE_ENABLED_FLAG):
             enabled = False
@@ -51,7 +51,7 @@ class RecipeListingView(LaunchpadView, FeedsMixin):
 
     def initialize(self):
         super(RecipeListingView, self).initialize()
-        recipes = self.context.getRecipes()
+        recipes = self.context.recipes
         if recipes.count() == 1:
             recipe = recipes.one()
             self.request.response.redirect(canonical_url(recipe))

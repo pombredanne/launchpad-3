@@ -12,7 +12,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-from unittest import TestLoader
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.revision import NULL_REVISION
@@ -35,7 +34,7 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-from lp.blueprints.enums import SpecificationDefinitionStatus
+from lp.blueprints.enums import NewSpecificationDefinitionStatus
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.model.specificationbranch import SpecificationBranch
 from lp.bugs.interfaces.bug import (
@@ -1100,7 +1099,7 @@ class TestBranchDeletion(TestCaseWithFactory):
         spec = getUtility(ISpecificationSet).new(
             name='some-spec', title='Some spec', product=self.product,
             owner=self.user, summary='', specurl=None,
-            definition_status=SpecificationDefinitionStatus.NEW)
+            definition_status=NewSpecificationDefinitionStatus.NEW)
         spec.linkBranch(self.branch, self.user)
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch linked to a spec is not deletable.")
@@ -2787,7 +2786,7 @@ class TestWebservice(TestCaseWithFactory):
             db_queue = self.factory.makeBranchMergeQueue()
             db_branch = self.factory.makeBranch()
             launchpad = launchpadlib_for('test', db_branch.owner,
-                service_root="http://api.launchpad.dev:8085")
+                service_root=self.layer.appserver_root_url('api'))
 
         configuration = simplejson.dumps({'test': 'make check'})
 
@@ -2804,7 +2803,7 @@ class TestWebservice(TestCaseWithFactory):
         with person_logged_in(ANONYMOUS):
             db_branch = self.factory.makeBranch()
             launchpad = launchpadlib_for('test', db_branch.owner,
-                service_root="http://api.launchpad.dev:8085")
+                service_root=self.layer.appserver_root_url('api'))
 
         configuration = simplejson.dumps({'test': 'make check'})
 
@@ -2814,20 +2813,3 @@ class TestWebservice(TestCaseWithFactory):
 
         branch2 = ws_object(launchpad, db_branch)
         self.assertEqual(branch2.merge_queue_config, configuration)
-
-    def test_getMergeProposals_with_merged_revnos(self):
-        """Specifying merged revnos selects the correct merge proposal."""
-        mp = self.factory.makeBranchMergeProposal()
-        launchpad = launchpadlib_for('test', mp.registrant,
-            service_root="http://api.launchpad.dev:8085")
-        with person_logged_in(mp.registrant):
-            mp.markAsMerged(merged_revno=123)
-            transaction.commit()
-            target = ws_object(launchpad, mp.target_branch)
-            mp = ws_object(launchpad, mp)
-        self.assertEqual([mp], list(target.getMergeProposals(
-            status=['Merged'], merged_revnos=[123])))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

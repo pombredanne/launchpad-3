@@ -20,6 +20,7 @@ from lp.testing import (
     set_feature_flag,
     TestCaseWithFactory,
     )
+from lp.testing.views import create_initialized_view
 
 
 class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
@@ -249,6 +250,31 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     bug.default_bugtask, BugSubscriptionSubscribeSelfView)
                 self.assertFalse(
                     harness.view.widgets['bug_notification_level'].visible)
+
+    def test_bug_721400(self):
+        # If a subscription exists with a BugNotificationLevel of
+        # NOTHING the view will still render correctly, even though
+        # NOTHING is not accepted as a valid value for the
+        # bug_notification_level field.
+        # This is a regression test for bug 721400.
+        bug = self.factory.makeBug()
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            subscription = bug.subscribe(
+                person, person, level=BugNotificationLevel.NOTHING)
+
+        with feature_flags():
+            with person_logged_in(person):
+                subscribe_view = create_initialized_view(
+                    bug.default_bugtask, name='+subscribe')
+                self.assertEqual(0, len(subscribe_view.errors))
+                bug_notification_level_widget = (
+                    subscribe_view.widgets['bug_notification_level'])
+                default_notification_level_value = (
+                    bug_notification_level_widget._getDefault())
+                self.assertEqual(
+                    BugNotificationLevel.COMMENTS,
+                    default_notification_level_value)
 
 
 class BugPortletSubcribersIdsTests(TestCaseWithFactory):

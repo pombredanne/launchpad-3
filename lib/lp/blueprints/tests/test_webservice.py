@@ -9,9 +9,7 @@ from zope.security.management import endInteraction
 
 from canonical.testing import DatabaseFunctionalLayer
 from canonical.launchpad.testing.pages import webservice_for_person
-from lp.blueprints.interfaces.specification import (
-    SpecificationDefinitionStatus,
-    )
+from lp.blueprints.enums import SpecificationDefinitionStatus
 from lp.testing import (
     launchpadlib_for,
     person_logged_in,
