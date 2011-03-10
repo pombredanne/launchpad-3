@@ -66,7 +66,7 @@ reported bugs.
     0 High importance bugs
     <BLANKLINE>
     0 Bugs assigned to me
-    3 Bugs reported by me
+    0 Bugs reported by me
     0 Bugs with patches
     0 Bugs fixed elsewhere
     2 Open CVE bugs - CVE reports
@@ -138,7 +138,7 @@ reported bugs.
     0 High importance bugs
     <BLANKLINE>
     0 Bugs assigned to me
-    2 Bugs reported by me
+    0 Bugs reported by me
     0 Bugs with patches
     0 Bugs fixed elsewhere
     1 Open CVE bug - CVE report
@@ -205,7 +205,7 @@ reported bugs.
     0 High importance bugs
     <BLANKLINE>
     0 Bugs assigned to me
-    3 Bugs reported by me
+    0 Bugs reported by me
     0 Bugs with patches
     0 Bugs fixed elsewhere
     2 Open CVE bugs
@@ -272,7 +272,7 @@ reported bugs.
     0 High importance bugs
     <BLANKLINE>
     0 Bugs assigned to me
-    2 Bugs reported by me
+    0 Bugs reported by me
     0 Bugs with patches
     0 Bugs fixed elsewhere
     1 Open CVE bug
@@ -342,7 +342,7 @@ and reported bugs.
     0 High importance bugs
     <BLANKLINE>
     0 Bugs assigned to me
-    4 Bugs reported by me
+    0 Bugs reported by me
     0 Bugs with patches
     0 Bugs fixed elsewhere
     1 Open CVE bug
@@ -412,7 +412,7 @@ bugs is also shown.
     0 High importance bugs
     <BLANKLINE>
     0 Bugs assigned to me
-    3 Bugs reported by me
+    0 Bugs reported by me
     0 Bugs with patches
     0 Bugs fixed elsewhere
     1 Open CVE bug - CVE report
