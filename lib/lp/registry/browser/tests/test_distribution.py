@@ -42,19 +42,15 @@ class TestDistributionPublisherConfigView(TestCaseWithFactory):
         # Test that the initial values are the same as the ones in the
         # existing database record.
         pubconf = self.factory.makePublisherConfig(
-            distribution=self.distro,
-            root_dir=self.ROOT_DIR,
-            base_url=self.BASE_URL,
-            copy_base_url=self.COPY_BASE_URL,
-            )
+            distribution=self.distro)
 
         view = DistributionPublisherConfigView(
             self.distro, LaunchpadTestRequest())
 
-        self.assertEqual(self.ROOT_DIR, view.initial_values["root_dir"])
-        self.assertEqual(self.BASE_URL, view.initial_values["base_url"])
+        self.assertEqual(pubconf.root_dir, view.initial_values["root_dir"])
+        self.assertEqual(pubconf.base_url, view.initial_values["base_url"])
         self.assertEqual(
-            self.COPY_BASE_URL, view.initial_values["copy_base_url"])
+            pubconf.copy_base_url, view.initial_values["copy_base_url"])
 
     def _change_and_test_config(self):
         form = {
