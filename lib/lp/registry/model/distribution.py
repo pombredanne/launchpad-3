@@ -243,6 +243,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
+    registrant = ForeignKey(
+        dbName='registrant', foreignKey='Person',
+        storm_validator=validate_public_person, notNull=True)
     bug_supervisor = ForeignKey(
         dbName='bug_supervisor', foreignKey='Person',
         storm_validator=validate_person,
@@ -1882,7 +1885,7 @@ class DistributionSet:
         return pillar
 
     def new(self, name, displayname, title, description, summary, domainname,
-            members, owner, mugshot=None, logo=None, icon=None):
+            members, owner, registrant, mugshot=None, logo=None, icon=None):
         """See `IDistributionSet`."""
         distro = Distribution(
             name=name,
@@ -1894,6 +1897,7 @@ class DistributionSet:
             members=members,
             mirror_admin=owner,
             owner=owner,
+            registrant=registrant,
             mugshot=mugshot,
             logo=logo,
             icon=icon)

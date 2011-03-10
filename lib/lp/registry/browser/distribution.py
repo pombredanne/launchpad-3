@@ -21,6 +21,7 @@ __all__ = [
     'DistributionPPASearchView',
     'DistributionPackageSearchView',
     'DistributionPendingReviewMirrorsView',
+    'DistributionReassignmentView',
     'DistributionSeriesView',
     'DistributionSeriesMirrorsRSSView',
     'DistributionSeriesMirrorsView',
@@ -92,6 +93,7 @@ from lp.registry.browser.menu import (
     RegistryCollectionActionMenuBase,
     )
 from lp.registry.browser.pillar import PillarBugsMenu
+from lp.registry.browser.objectreassignment import ObjectReassignmentView
 from lp.registry.interfaces.distribution import (
     IDerivativeDistribution,
     IDistribution,
@@ -325,7 +327,7 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
 
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
-        text = 'Change registrant'
+        text = 'Change maintainer'
         return Link('+reassign', text, icon='edit')
 
     def newmirror(self):
@@ -770,6 +772,7 @@ class DistributionAddView(LaunchpadFormView):
             domainname=data['domainname'],
             members=data['members'],
             owner=self.user,
+            registrant=self.user,
             )
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)
@@ -1081,3 +1084,8 @@ class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
     @cachedproperty
     def mirrors(self):
         return self.context.disabled_mirrors
+
+
+class DistributionReassignmentView(ObjectReassignmentView):
+    """View class for changing distribution maintainer."""
+    ownerOrMaintainerName = 'maintainer'
