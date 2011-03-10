@@ -201,7 +201,8 @@ class BugContextMenu(ContextMenu):
         'editdescription', 'markduplicate', 'visibility', 'addupstream',
         'adddistro', 'subscription', 'addsubscriber', 'addcomment',
         'nominate', 'addbranch', 'linktocve', 'unlinkcve',
-        'createquestion', 'removequestion', 'activitylog', 'affectsmetoo']
+        'createquestion', 'mute_subscription', 'removequestion',
+        'activitylog', 'affectsmetoo']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -271,6 +272,21 @@ class BugContextMenu(ContextMenu):
             '+addsubscriber', text, icon='add', summary=(
                 'Launchpad will email that person whenever this bugs '
                 'changes'))
+
+    def mute_subscription(self):
+        """Return the 'Mute subscription' Link."""
+        user = getUtility(ILaunchBag).user
+        if self.context.bug.isMuted(user):
+            text = "Unmute bug mail"
+        else:
+            text = "Mute bug mail"
+
+        # We link to '#' here because we don't yet have a view to handle
+        # this link.
+        return Link(
+            '#', text, icon='remove', summary=(
+                "Mute this bug so that you will never receive emails "
+                "about it."))
 
     def nominate(self):
         """Return the 'Target/Nominate for series' Link."""
