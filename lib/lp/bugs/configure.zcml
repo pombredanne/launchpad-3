@@ -668,10 +668,34 @@
 
     <!-- PersonSubscriptionInfo -->
 
-    <class class="lp.bugs.model.personsubscriptioninfo.PersonSubscriptionInfo">
+    <class class="lp.bugs.model.personsubscriptioninfo.RealSubscriptionInfo">
         <allow
             interface="
-              lp.bugs.interfaces.personsubscriptioninfo.IPersonSubscriptionInfo"/>
+              lp.bugs.interfaces.personsubscriptioninfo.IRealSubscriptionInfo"/>
+    </class>
+
+    <class class="lp.bugs.model.personsubscriptioninfo.VirtualSubscriptionInfo">
+        <allow
+            interface="
+              lp.bugs.interfaces.personsubscriptioninfo.IVirtualSubscriptionInfo"/>
+    </class>
+
+    <class class="lp.bugs.model.personsubscriptioninfo.DirectSubscriptionInfoCollection">
+        <allow
+            interface="
+              lp.bugs.interfaces.personsubscriptioninfo.IDirectSubscriptionInfoCollection"/>
+    </class>
+
+    <class class="lp.bugs.model.personsubscriptioninfo.DuplicateSubscriptionInfoCollection">
+        <allow
+            interface="
+              lp.bugs.interfaces.personsubscriptioninfo.IDuplicateSubscriptionInfoCollection"/>
+    </class>
+
+    <class class="lp.bugs.model.personsubscriptioninfo.VirtualSubscriptionInfoCollection">
+        <allow
+            interface="
+              lp.bugs.interfaces.personsubscriptioninfo.IVirtualSubscriptionInfoCollection"/>
     </class>
 
     <class class="lp.bugs.model.personsubscriptioninfo.PersonSubscriptions">

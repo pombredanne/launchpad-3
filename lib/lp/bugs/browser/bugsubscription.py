@@ -551,22 +551,20 @@ class BugSubscriptionListView(LaunchpadView):
 
     @property
     def label(self):
-        return "%s's subscriptions to bug %d" % (
-            self.user.displayname, self.context.bug.id)
+        return "Your subscriptions to bug %d" % self.context.bug.id
 
     page_title = label
 
     def initialize(self):
         super(BugSubscriptionListView, self).initialize()
         if self.user is not None:
+            self.structural_subscriptions = (
+                self.context.bug.getStructuralSubscriptionsForPerson(
+                    self.user))
             self.subscriptions_info = PersonSubscriptions(
                 self.user, self.context.bug)
         else:
             self.subscriptions_info = None
-
-    @property
-    def structural_subscriptions(self):
-        return self.context.bug.getStructuralSubscriptionsForPerson(self.user)
 
     def _getSupervisedTargets(self):
         owned = self.subscriptions_info.supervisor_subscriptions.owner_for

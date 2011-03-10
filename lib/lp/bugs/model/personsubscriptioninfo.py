@@ -3,20 +3,25 @@
 
 __metaclass__ = type
 __all__ = [
-    'PersonSubscriptionInfo',
     'PersonSubscriptions',
     ]
 
 from storm.expr import Or
 from storm.store import Store
 from zope.interface import implements
+from zope.proxy import sameProxiedObjects
 
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bug import Bug
 from lp.bugs.interfaces.personsubscriptioninfo import (
-    IPersonSubscriptionInfo,
+    IAbstractSubscriptionInfoCollection,
+    IDirectSubscriptionInfoCollection,
+    IDuplicateSubscriptionInfoCollection,
     IPersonSubscriptions,
-    PersonSubscriptionType,
+    IRealSubscriptionInfo,
+    IVirtualSubscriptionInfo,
+    IVirtualSubscriptionInfoCollection,
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -24,85 +29,146 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
 
-class PersonSubscriptionInfo(object):
-    """See `IPersonSubscriptionInfo`."""
 
-    implements(IPersonSubscriptionInfo)
+class RealSubscriptionInfo:
+    """See `IRealSubscriptionInfo`"""
 
-    def __init__(self, person, bug,
-                 subscription_type=PersonSubscriptionType.DIRECT,
-                 duplicates=None, as_team_member=None, as_team_admin=None,
-                 owner_for=None, supervisor_for=None):
+    implements(IRealSubscriptionInfo)
 
-        self.subscription_type = subscription_type
-
+    def __init__(self, principal, bug, subscription):
+        self.principal = principal
         self.bug = bug
+        self.subscription = subscription
+        self.principal_is_reporter = False
+        self.security_contact_tasks = []
+        self.bug_supervisor_tasks = []
+
+
+class VirtualSubscriptionInfo:
+    """See `IVirtualSubscriptionInfo`"""
+
+    implements(IVirtualSubscriptionInfo)
+
+    def __init__(self, principal, bug, pillar):
+        self.principal = principal
+        self.bug = bug
+        self.pillar = pillar
+        self.tasks = []
+
+
+class AbstractSubscriptionInfoCollection:
+    """See `IAbstractSubscriptionInfoCollection`"""
+
+    implements(IAbstractSubscriptionInfoCollection)
+
+    def __init__(self, person, is_team_admin):
         self.person = person
-        self.personally = False
+        self._is_team_admin = is_team_admin
+        self._personal = []
+        self.as_team_member = []
+        self.as_team_admin = []
+        self.count = 0
 
-        # For duplicates.
-        self.duplicates = duplicates
+    @property
+    def personal(self):
+        return self._personal
 
-        # For supervisor.
-        self.supervisor_for = supervisor_for
-        self.owner_for = owner_for
-
-        # For all types if subscription is through team membership.
-        self.as_team_member = as_team_member
-        self.as_team_admin = as_team_admin
-
-    def addDuplicate(self, bug):
-        assert self.subscription_type == PersonSubscriptionType.DUPLICATE, (
-            "Subscription type is %s instead of DUPLICATE." % (
-                self.subscription_type))
-        assert bug.duplicateof == self.bug or self.bug.duplicateof == bug
-        if self.duplicates is None:
-            self.duplicates = set([bug])
+    def add(self, principal, bug, *args):
+        if sameProxiedObjects(principal, self.person):
+            collection = self._personal
         else:
-            self.duplicates.add(bug)
+            assert principal.isTeam(), (principal, self.person)
+            if self._is_team_admin(principal):
+                collection = self.as_team_admin
+            else:
+                collection = self.as_team_member
+        self._add_item_to_collection(
+            collection, principal, bug, *args)
 
-    def _addAdmin(self, subscriber):
-        if self.as_team_admin is None:
-            self.as_team_admin = set([subscriber])
-        else:
-            self.as_team_admin.add(subscriber)
+    def _add_item_to_collection(self, *args):
+        raise NotImplementedError('Programmer error: use a subclass')
 
-    def _addMember(self, subscriber):
-        if self.as_team_member is None:
-            self.as_team_member = set([subscriber])
-        else:
-            self.as_team_member.add(subscriber)
 
-    def addSubscriber(self, subscriber, subscribed_bug=None):
-        if subscriber.is_team:
-            is_admin = False
-            admins = subscriber.adminmembers
-            for admin in admins:
-                if self.person.inTeam(admin):
-                    self._addAdmin(subscriber)
-                    is_admin = True
-                    break
+class VirtualSubscriptionInfoCollection(AbstractSubscriptionInfoCollection):
+    """See `IVirtualSubscriptionInfoCollection`"""
 
-            if not is_admin:
-                self._addMember(subscriber)
-        else:
-            assert self.person == subscriber, (
-                "Non-team subscription for a different person.")
-            self.personally = True
+    implements(IVirtualSubscriptionInfoCollection)
 
-    def addSupervisedTarget(self, target):
-        assert self.subscription_type == PersonSubscriptionType.SUPERVISOR
-        if self.supervisor_for is None:
-            self.supervisor_for = set([target])
-        else:
-            self.supervisor_for.add(target)
+    def __init__(self, person, is_team_admin):
+        super(VirtualSubscriptionInfoCollection, self).__init__(
+            person, is_team_admin)
+        self._principal_pillar_to_info = {}
 
-    def addOwnedTarget(self, target):
-        assert self.subscription_type == PersonSubscriptionType.SUPERVISOR
-        if self.owner_for is None:
-            self.owner_for = set([target])
-        else:
-            self.owner_for.add(target)
+    def _add_item_to_collection(self,
+                                collection, principal, bug, pillar, task):
+        key = (principal, pillar)
+        info = self._principal_pillar_to_info.get(key)
+        if info is None:
+            info = VirtualSubscriptionInfo(principal, bug, pillar)
+            collection.append(info)
+            self.count += 1
+        info.tasks.append(task)
+
+
+class AbstractRealSubscriptionInfoCollection(
+    AbstractSubscriptionInfoCollection):
+    """Core functionality for Duplicate and Direct"""
+
+    def __init__(self, person, is_team_admin):
+        super(AbstractRealSubscriptionInfoCollection, self).__init__(
+            person, is_team_admin)
+        self._principal_bug_to_infos = {}
+
+    def _add_item_to_collection(self, collection, principal, bug, subscription):
+        info = RealSubscriptionInfo(principal, bug, subscription)
+        key = (principal, bug)
+        infos = self._principal_bug_to_infos.get(key)
+        if infos is None:
+            infos = self._principal_bug_to_infos[key] = []
+        infos.append(info)
+        collection.append(info)
+        self.count += 1
+
+    def annotateReporter(self, bug, principal):
+        key = (principal, bug)
+        infos = self._principal_bug_to_infos.get(key)
+        if infos is not None:
+            for info in infos:
+                info.principal_is_reporter = True
+
+    def annotateBugTaskResponsibilities(
+        self, bugtask, pillar, security_contact, bug_supervisor):
+        for principal, collection_name in (
+            (security_contact, 'security_contact_tasks'),
+            (bug_supervisor, 'bug_supervisor_tasks')):
+            if principal is not None:
+                key = (principal, bugtask.bug)
+                infos = self._principal_bug_to_infos.get(key)
+                if infos is not None:
+                    value = {'task': bugtask, 'pillar': pillar}
+                    for info in infos:
+                        getattr(info, collection_name).append(value)
+
+
+class DirectSubscriptionInfoCollection(
+    AbstractRealSubscriptionInfoCollection):
+    """See `IDirectSubscriptionInfoCollection`."""
+
+    implements(IDirectSubscriptionInfoCollection)
+
+    @property
+    def personal(self):
+        if self._personal:
+            assert len(self._personal) == 1
+            return self._personal[0]
+        return None
+
+
+class DuplicateSubscriptionInfoCollection(
+    AbstractRealSubscriptionInfoCollection):
+    """See `IDuplicateSubscriptionInfoCollection`."""
+
+    implements(IDuplicateSubscriptionInfoCollection)
 
 
 class PersonSubscriptions(object):
@@ -111,12 +177,6 @@ class PersonSubscriptions(object):
     implements(IPersonSubscriptions)
 
     def __init__(self, person, bug):
-        self.direct_subscriptions = None
-        self.duplicate_subscriptions = None
-        self.supervisor_subscriptions = None
-        self.assignee_subscriptions = None
-        self.person = person
-        self.bug = bug
         self.loadSubscriptionsFor(person, bug)
 
     def reload(self):
@@ -139,31 +199,37 @@ class PersonSubscriptions(object):
             TeamParticipation.personID == person.id,
             TeamParticipation.teamID == Person.id)
 
-        has_direct = False
-        direct = PersonSubscriptionInfo(
-            person, bug, PersonSubscriptionType.DIRECT)
-        has_duplicates = False
-        duplicates = PersonSubscriptionInfo(
-            person, bug, PersonSubscriptionType.DUPLICATE)
+        direct = DirectSubscriptionInfoCollection(
+            self.person, self.is_team_admin)
+        duplicates = DuplicateSubscriptionInfoCollection(
+            self.person, self.is_team_admin)
+        bugs = set()
         for subscription, subscribed_bug, subscriber in info:
+            bugs.add(subscribed_bug)
             if subscribed_bug != bug:
                 # This is a subscription through a duplicate.
-                duplicates.addDuplicate(subscribed_bug)
-                duplicates.addSubscriber(subscriber, subscribed_bug)
-                has_duplicates = True
+                collection = duplicates
             else:
                 # This is a direct subscription.
-                direct.addSubscriber(subscriber)
-                has_direct = True
-        if not has_duplicates:
-            duplicates = None
-
-        if not has_direct:
-            direct = None
-
+                collection = direct
+            collection.add(
+                subscriber, subscribed_bug, subscription)
+        for bug in bugs:
+            # indicate the reporter, bug_supervisor, and security_contact
+            duplicates.annotateReporter(bug, bug.owner)
+            direct.annotateReporter(bug, bug.owner)
+            for task in bug.bugtasks:
+                # get security_contact and bug_supervisor
+                pillar = self._get_pillar(task.target)
+                duplicates.annotateBugTaskResponsibilities(
+                    task, pillar,
+                    pillar.security_contact, pillar.bug_supervisor)
+                direct.annotateBugTaskResponsibilities(
+                    task, pillar,
+                    pillar.security_contact, pillar.bug_supervisor)
         return (direct, duplicates)
 
-    def _getAttributeForPillar(self, target, attribute):
+    def _get_pillar(self, target):
         if IProductSeries.providedBy(target):
             pillar = target.product
         elif IDistroSeries.providedBy(target):
@@ -172,52 +238,49 @@ class PersonSubscriptions(object):
             pillar = target.distribution
         else:
             pillar = target
-        return getattr(pillar, attribute)
+        return pillar
+
+    def is_team_admin(self, team):
+        answer = self._is_team_admin.get(team)
+        if answer is None:
+            answer = False
+            admins = team.adminmembers
+            for admin in admins:
+                if self.person.inTeam(admin):
+                    answer = True
+                    break
+            self._is_team_admin[team] = answer
+        return answer
 
     def loadSubscriptionsFor(self, person, bug):
-        # Categorise all subscriptions into three types:
-        # direct, through duplicates, as supervisor.
+        self.person = person
+        self.bug = bug
+        self._is_team_admin = {} # team to bool answer
 
-        # First get direct and duplicate subscriptions.
-        direct, duplicate = self._getDirectAndDuplicateSubscriptions(
-            person, bug)
-        self.direct_subscriptions = direct
-        self.duplicate_subscriptions = duplicate
+        # First get direct and duplicate real subscriptions.
+        direct, from_duplicate = (
+            self._getDirectAndDuplicateSubscriptions(person, bug))
 
-        # Then get supervisor subscriptions.
-        has_supervisor = False
-        has_assignee = False
-        supervisor = PersonSubscriptionInfo(
-            person, bug, PersonSubscriptionType.SUPERVISOR)
-        assignee = PersonSubscriptionInfo(
-            person, bug, PersonSubscriptionType.ASSIGNEE)
+        # Then get owner and assignee virtual subscriptions.
+        as_owner = VirtualSubscriptionInfoCollection(
+            self.person, self.is_team_admin)
+        as_assignee = VirtualSubscriptionInfoCollection(
+            self.person, self.is_team_admin)
         for bugtask in bug.bugtasks:
-            target = bugtask.target
-            owner = self._getAttributeForPillar(target, "owner")
-            bug_supervisor = self._getAttributeForPillar(
-                target, "bug_supervisor")
-            is_owner = person.inTeam(owner)
-            is_supervisor = person.inTeam(bug_supervisor)
-            is_assignee = person.inTeam(bugtask.assignee)
-            # If person is a bug supervisor, or there is no
-            # supervisor, but person is the team owner.
-            if (is_supervisor or
-                (is_owner and bug_supervisor is None)):
-                # Owner can change the supervisor.
-                if is_owner:
-                    supervisor.addOwnedTarget(target)
-                    supervisor.addSubscriber(owner)
-                else:
-                    supervisor.addSupervisedTarget(target)
-                    supervisor.addSubscriber(bug_supervisor)
-                has_supervisor = True
-            if is_assignee:
-                assignee.addSubscriber(bugtask.assignee)
-                has_assignee = True
-        if not has_supervisor:
-            supervisor = None
-        self.supervisor_subscriptions = supervisor
-        if not has_assignee:
-            assignee = None
-        self.assignee_subscriptions = assignee
+            pillar = self._get_pillar(bugtask.target)
+            owner = pillar.owner
+            if person.inTeam(owner) and pillar.bug_supervisor is None:
+                as_owner.add(owner, bug, pillar, bugtask)
+            assignee = bugtask.assignee
+            if person.inTeam(assignee):
+                as_assignee.add(assignee, bug, pillar, bugtask)
+        self.muted = (direct.personal is not None
+                      and direct.personal.subscription.bug_notification_level
+                          == BugNotificationLevel.NOTHING)
+        self.count = 0
+        for name, collection in (
+            ('direct', direct), ('from_duplicate', from_duplicate),
+            ('as_owner', as_owner), ('as_assignee', as_assignee)):
+            self.count += collection.count
+            setattr(self, name, collection if collection.count > 0 else None)
 
