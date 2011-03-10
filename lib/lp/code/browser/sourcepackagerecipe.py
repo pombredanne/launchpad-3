@@ -24,15 +24,21 @@ from bzrlib.plugins.builder.recipe import (
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import use_template
+from lazr.restful.interfaces import (
+    IFieldHTMLRenderer,
+    IWebServiceClientRequest,
+    )
 import simplejson
 from storm.locals import Store
 from z3c.ptcompat import ViewPageTemplateFile
+from zope import component
 from zope.app.form.browser.widget import Widget
 from zope.app.form.interfaces import IView
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
 from zope.interface import (
+    implementer,
     implements,
     Interface,
     providedBy,
@@ -44,6 +50,7 @@ from zope.schema import (
     Text,
     TextLine,
     )
+from zope.schema.interfaces import ICollection
 from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
@@ -312,36 +319,13 @@ class SourcePackageRecipeView(LaunchpadView):
             )
 
 
-from lazr.restful.interfaces import (
-    IFieldHTMLRenderer,
-    IReference,
-    IWebServiceClientRequest,
-    )
-from z3c.ptcompat import ViewPageTemplateFile
-from zope import (
-    component,
-    )
-from zope.schema.interfaces import ICollection
-from zope.interface import (
-    implementer,
-    implements,
-    Interface,
-    providedBy,
-    )
-
 @component.adapter(ISourcePackageRecipe, ICollection, IWebServiceClientRequest)
 @implementer(IFieldHTMLRenderer)
 def distroseries_renderer(context, field, request):
-    """Render a bugtarget as a link."""
+    """Render a distroseries collection as a set of links."""
 
     def render(value):
         html = "<p>Hello world</p>"
-#        html = """<span>
-#          <a href="%(href)s" class="%(class)s">%(displayname)s</a>
-#        </span>""" % {
-#            'href': canonical_url(context.target),
-#            'class': ObjectImageDisplayAPI(context.target).sprite_css(),
-#            'displayname': cgi.escape(context.bugtargetdisplayname)}
         return html
     return render
 
