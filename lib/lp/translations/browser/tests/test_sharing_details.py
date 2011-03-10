@@ -37,12 +37,31 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory):
         # returns False.
         self.assertFalse(self.view.is_packaging_configured)
 
+    def configureSharing(
+        self, set_upstream_branch=False, enable_translations=False,
+        translation_import_mode=TranslationsBranchImportMode.NO_IMPORT):
+        """Configure trnasaltion sharing, at least partially.
+
+        A packaging link is always set; the remaining configuration is
+        done only if explicitly specified.
+        """
+        self.sourcepackage.setPackaging(
+            self.productseries, self.productseries.owner)
+        with person_logged_in(self.productseries.owner):
+            if set_upstream_branch:
+                self.productseries.branch = self.factory.makeBranch(
+                    product=self.productseries.product)
+            if enable_translations:
+                self.productseries.product.translations_usage = (
+                    ServiceUsage.LAUNCHPAD)
+            self.productseries.translations_autoimport_mode = (
+                translation_import_mode)
+
     def test_is_packaging_configured__configured(self):
         # If a sourcepackage is linked to a product series,
         # SourcePackageTranslationSharingStatus.is_packaging_configured
         # returns True.
-        self.sourcepackage.setPackaging(
-            self.productseries, self.productseries.owner)
+        self.configureSharing()
         self.assertTrue(self.view.is_packaging_configured)
 
     def test_has_upstream_branch__no_packaging_link(self):
@@ -56,8 +75,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory):
         # code branch,
         # SourcePackageTranslationSharingStatus.has_upstream_branch
         # returns False.
-        self.sourcepackage.setPackaging(
-            self.productseries, self.productseries.owner)
+        self.configureSharing()
         self.assertFalse(self.view.has_upstream_branch)
 
     def test_has_upstream_branch__branch_exists(self):
@@ -65,11 +83,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory):
         # code branch,
         # SourcePackageTranslationSharingStatus.has_upstream_branch
         # returns True.
-        self.sourcepackage.setPackaging(
-            self.productseries, self.productseries.owner)
-        with person_logged_in(self.productseries.owner):
-            self.productseries.branch = self.factory.makeBranch(
-                product=self.productseries.product)
+        self.configureSharing(set_upstream_branch=True)
         self.assertTrue(self.view.has_upstream_branch)
 
     def test_is_upstream_translations_enabled__no_packaging_link(self):
@@ -80,18 +94,13 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory):
     def test_is_upstream_translations_enabled__when_disabled(self):
         # If the upstream product series does not use Launchpad for
         # translations, is_upstream_translations_enabled returns False.
-        self.sourcepackage.setPackaging(
-            self.productseries, self.productseries.owner)
+        self.configureSharing()
         self.assertFalse(self.view.is_upstream_translations_enabled)
 
     def test_is_upstream_translations_enabled__when_enabled(self):
         # If the upstream product series uses Launchpad for
         # translations, is_upstream_translations_enabled returns True.
-        self.sourcepackage.setPackaging(
-            self.productseries, self.productseries.owner)
-        with person_logged_in(self.productseries.product.owner):
-            self.productseries.product.translations_usage = (
-                ServiceUsage.LAUNCHPAD)
+        self.configureSharing(enable_translations=True)
         self.assertTrue(self.view.is_upstream_translations_enabled)
 
     def test_is_upstream_synchronization_enabled__no_packaging_link(self):
@@ -102,30 +111,23 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory):
     def test_is_upstream_synchronization_enabled__no_import(self):
         # If the source package is not linked to an upstream series,
         # is_upstream_synchronization_enabled returns False.
-        self.sourcepackage.setPackaging(
-            self.productseries, self.productseries.owner)
-        with person_logged_in(self.productseries.owner):
-            self.productseries.translations_autoimport_mode = (
-                TranslationsBranchImportMode.NO_IMPORT)
+        self.configureSharing(
+            translation_import_mode=TranslationsBranchImportMode.NO_IMPORT)
         self.assertFalse(self.view.is_upstream_synchronization_enabled)
 
     def test_is_upstream_synchronization_enabled__import_templates(self):
         # If the source package is not linked to an upstream series,
         # is_upstream_synchronization_enabled returns False.
-        self.sourcepackage.setPackaging(
-            self.productseries, self.productseries.owner)
-        with person_logged_in(self.productseries.owner):
-            self.productseries.translations_autoimport_mode = (
+        self.configureSharing(
+            translation_import_mode=
                 TranslationsBranchImportMode.IMPORT_TEMPLATES)
         self.assertFalse(self.view.is_upstream_synchronization_enabled)
 
     def test_is_upstream_synchronization_enabled__import_translations(self):
         # If the source package is not linked to an upstream series,
         # is_upstream_synchronization_enabled returns False.
-        self.sourcepackage.setPackaging(
-            self.productseries, self.productseries.owner)
-        with person_logged_in(self.productseries.owner):
-            self.productseries.translations_autoimport_mode = (
+        self.configureSharing(
+            translation_import_mode=
                 TranslationsBranchImportMode.IMPORT_TRANSLATIONS)
         self.assertTrue(self.view.is_upstream_synchronization_enabled)
 
@@ -139,31 +141,21 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory):
         # If the packaging link is set but the other conditions for
         # translation sharing are not fulfilled, is_configuration_complete
         # is False.
-        self.sourcepackage.setPackaging(
-            self.productseries, self.productseries.owner)
+        self.configureSharing()
         self.assertFalse(self.view.is_configuration_complete)
 
     def test_is_configuration_complete__packaging_upstream_branch_set(self):
         # If the packaging link is set and if an upstream branch is
         # configuerd but if the other conditions are not fulfilled,
         # is_configuration_complete is False.
-        self.sourcepackage.setPackaging(
-            self.productseries, self.productseries.owner)
-        with person_logged_in(self.productseries.owner):
-            branch = self.factory.makeBranch(
-                product=self.productseries.product)
-            self.productseries.branch = branch
+        self.configureSharing(set_upstream_branch=True)
         self.assertFalse(self.view.is_configuration_complete)
 
     def test_is_configuration_complete__packaging_transl_enabled(self):
         # If the packaging link is set and if an upstream series
         # uses Launchpad translations but if the other conditions
         # are not fulfilled, is_configuration_complete is False.
-        self.sourcepackage.setPackaging(
-            self.productseries, self.productseries.owner)
-        with person_logged_in(self.productseries.product.owner):
-            self.productseries.product.translations_usage = (
-                ServiceUsage.LAUNCHPAD)
+        self.configureSharing(enable_translations=True)
         self.assertFalse(self.view.is_configuration_complete)
 
     def test_is_configuration_complete__no_auto_sync(self):
@@ -173,13 +165,8 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory):
         #   - the upstream series uses Launchpad translations
         # but if the upstream series does not synchronize translations
         # then is_configuration_complete is False.
-        self.sourcepackage.setPackaging(
-            self.productseries, self.productseries.owner)
-        with person_logged_in(self.productseries.product.owner):
-            self.productseries.product.translations_usage = (
-                ServiceUsage.LAUNCHPAD)
-            self.productseries.branch = self.factory.makeBranch(
-                product=self.productseries.product)
+        self.configureSharing(
+            set_upstream_branch=True, enable_translations=True)
         self.assertFalse(self.view.is_configuration_complete)
 
     def test_is_configuration_complete__all_conditions_fulfilled(self):
@@ -189,13 +176,8 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory):
         #   - the upstream series uses Launchpad translations
         #   - the upstream series synchronizes translations
         # then is_configuration_complete is True.
-        self.sourcepackage.setPackaging(
-            self.productseries, self.productseries.owner)
-        with person_logged_in(self.productseries.product.owner):
-            self.productseries.product.translations_usage = (
-                ServiceUsage.LAUNCHPAD)
-            self.productseries.branch = self.factory.makeBranch(
-                product=self.productseries.product)
-            self.productseries.translations_autoimport_mode = (
+        self.configureSharing(
+            set_upstream_branch=True, enable_translations=True,
+            translation_import_mode=
                 TranslationsBranchImportMode.IMPORT_TRANSLATIONS)
         self.assertTrue(self.view.is_configuration_complete)
