@@ -326,7 +326,8 @@ class SearchTestBase:
                 expected = [bug.default_bugtask]
             else:
                 bug = self.factory.makeBug(
-                    distribution=self.searchtarget.distribution)
+                    distribution=self.searchtarget.distribution,
+                    sourcepackagename=self.factory.makeSourcePackageName())
                 bugtask = self.factory.makeBugTask(
                     bug=bug, target=self.searchtarget)
                 expected = [bugtask]

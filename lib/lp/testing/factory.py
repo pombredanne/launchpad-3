@@ -1571,7 +1571,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 private=False, date_closed=None, title=None,
                 date_created=None, description=None, comment=None,
                 status=None, distribution=None, milestone=None, series=None,
-                tags=None):
+                tags=None, sourcepackagename=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -1591,7 +1591,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             parameter, or the series.distribution must match the distribution
             parameter, or the those parameters must be None.
         :param tags: If set, the tags to be added with the bug.
-
+        :param distribution: If set, the sourcepackagename is used as the
+            default bug target.
         At least one of the parameters distribution and product must be
         None, otherwise, an assertion error will be raised.
         """
@@ -1613,12 +1614,17 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString()
         if comment is None:
             comment = self.getUniqueString()
+        if sourcepackagename is not None:
+            self.makeSourcePackagePublishingHistory(
+                distroseries=distribution.currentseries,
+                sourcepackagename=sourcepackagename)
         create_bug_params = CreateBugParams(
             owner, title, comment=comment, private=private,
             datecreated=date_created, description=description,
             status=status, tags=tags)
         create_bug_params.setBugTarget(
-            product=product, distribution=distribution)
+            product=product, distribution=distribution,
+            sourcepackagename=sourcepackagename)
         bug = getUtility(IBugSet).createBug(create_bug_params)
         if bug_watch_url is not None:
             # fromText() creates a bug watch associated with the bug.
