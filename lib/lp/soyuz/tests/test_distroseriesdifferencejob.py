@@ -121,6 +121,9 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         job.start()
         self.assertContentEqual(
             [], find_waiting_jobs(distroseries, sourcepackagename))
+        job.complete()
+        self.assertContentEqual(
+            [], find_waiting_jobs(distroseries, sourcepackagename))
 
     def test_createForPackagedPublication_creates_job_for_parent_series(self):
         derived_series = self.factory.makeDistroSeries(
