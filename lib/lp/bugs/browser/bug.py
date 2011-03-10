@@ -511,6 +511,15 @@ class BugViewMixin:
         else:
             return 'subscribed-false %s' % dup_class
 
+    @property
+    def current_user_mute_class(self):
+        bug = self.context
+        subscription_class = self.current_user_subscription_class
+        if bug.isMuted(self.user):
+            return 'muted-true %s' % subscription_class
+        else:
+            return 'muted-false %s' % subscription_class
+
     @cachedproperty
     def _bug_attachments(self):
         """Get a dict of attachment type -> attachments list."""
