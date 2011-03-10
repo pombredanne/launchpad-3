@@ -46,6 +46,7 @@ from zope.schema import (
     Choice,
     Datetime,
     Int,
+    List,
     Text,
     TextLine,
     )
@@ -205,10 +206,10 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
             vocabulary='UserTeamsParticipationPlusSelf',
             description=_("The person or team who can edit this recipe.")))
 
-    distroseries = CollectionField(
+    distroseries = exported(List(
         Reference(IDistroSeries), title=_("The distroseries this recipe will"
             " build a source package for"),
-        readonly=False)
+        readonly=True))
     build_daily = exported(Bool(
         title=_("Built daily"),
         description=_("Automatically build each day, if the source has changed.")))
@@ -229,6 +230,15 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
 
     is_stale = Bool(title=_('Recipe is stale.'))
 
+    @mutator_for(distroseries)
+    @operation_for_version("devel")
+    @operation_parameters(
+        distroseries=List(
+            value_type=Reference(
+                IDistroSeries, title=_('DistroSeries'), required=True)))
+    @export_write_operation()
+    def updateSeries(distroseries):
+        """Replace this recipe's distro series."""
 
 class ISourcePackageRecipe(ISourcePackageRecipeData,
     ISourcePackageRecipeEdit, ISourcePackageRecipeEditableAttributes,

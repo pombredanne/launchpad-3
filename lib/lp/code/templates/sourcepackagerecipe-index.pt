@@ -119,14 +119,18 @@
             <dd tal:content="structure view/archive_picker"/>
           </dl>
 
+          <!--<dl id="distros">-->
+            <!--<dt>Distribution series:</dt>-->
+            <!--<dd>-->
+              <!--<ul>-->
+                  <!--<li tal:repeat="curseries context/distroseries"-->
+                      <!--tal:content="structure curseries/fmt:link" />-->
+              <!--</ul>-->
+            <!--</dd>-->
+          <!--</dl>-->
+
           <dl id="distros">
-            <dt>Distribution series:</dt>
-            <dd>
-              <ul>
-                  <li tal:repeat="curseries context/distroseries"
-                      tal:content="structure curseries/fmt:link" />
-              </ul>
-            </dd>
+            <tal:distroseries tal:replace="structure view/distroseries_widget"/>
           </dl>
         </div>
       </div>

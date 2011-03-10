@@ -997,6 +997,10 @@
         name="RECIPEBRANCHBUILD"
         permission="zope.Public"/>
 
+  <adapter
+    factory="lp.code.browser.sourcepackagerecipe.distroseries_renderer"
+    name="distroseries"/>
+
   <!-- RecipeBuildRecordSet and related classes-->
 
   <securedutility
