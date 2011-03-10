@@ -195,7 +195,8 @@ def notify_team_join(event):
         if reviewer != person:
             headers = {"Reply-To": reviewer.preferredemail.email}
             template = get_email_template(
-                'pending-membership-approval-for-third-party.txt', app='registry')
+                'pending-membership-approval-for-third-party.txt',
+                app='registry')
         else:
             headers = {"Reply-To": person.preferredemail.email}
             template = get_email_template(
