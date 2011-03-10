@@ -11,10 +11,126 @@
       <h1>Translation sharing details</h1>
     </div>
     <div metal:fill-slot="main">
-      <h2 tal:condition:view/configuration_is_incomplete>
-        Translation sharing configuration is incomplete
-      </h2>
-
+      <dl>
+        <dt><span>
+            Translation sharing configuration is incomplete.
+          </span>
+          <span>
+            Translation sharing with upstream is active.
+          </span>
+        </dt>
+        <dd>
+          <ul>
+            <li class="sprite no">No upstream project series has been linked.
+              <a class="sprite edit"
+                 title="Change upstream project series."
+                 href="#"><span
+                   class="invisible-link">Change upstream series</span></a>
+            </li>
+            <li class="sprite yes">Linked upstream series is
+              <a class="sprite product" href="#">Gimp trunk</a>.
+              <a class="sprite edit"
+                 title="Change upstream project series."
+                 href="#"><span
+                   class="invisible-link">Change upstream series</span></a>
+            </li>
+            <li class="sprite no">No source branch exists for the upstream series.
+              <a class="sprite edit"
+                 title="Change upstream source branch."
+                 href="#"><span
+                   class="invisible-link">Change source branch</span></a>
+            </li>
+            <li class="sprite yes">Upstream source branch is
+              <a class="sprite branch" href="#">lp:gimp</a>.
+              <a class="sprite edit"
+                 title="Change upstream source branch."
+                 href="#"><span
+                   class="invisible-link">Change source branch</span></a>
+            </li>
+            <li class="sprite no">Translations are not enabled for the upstream series.
+              <a class="sprite edit"
+                 title="Enable translations on upstream series."
+                 href="#"><span
+                   class="invisible-link">Enable translations</span></a>
+            </li>
+            <li class="sprite yes">Translations are enable on the upstream project.
+              <a class="sprite edit"
+                 title="Disable translations on upstream series."
+                 href="#"><span
+                   class="invisible-link">Disable translations</span></a>
+            </li>
+            <li class="sprite no">Translations are not enabled on the upstream series.
+              <a class="sprite edit"
+                 title="Enable translations on upstream series."
+                 href="#"><span
+                   class="invisible-link">Enable translations</span></a>
+            </li>
+            <li class="sprite yes">Translations are enable on the upstream project.
+              <a class="sprite edit"
+                 title="Disable translations on upstream series."
+                 href="#"><span
+                   class="invisible-link">Disable translations</span></a>
+            </li>
+            <li class="sprite no">Automatic synchronization of translations is not enabled.
+              <a class="sprite edit"
+                 title="Configure automatic synchronization."
+                 href="#"><span
+                   class="invisible-link">Configure automatic synchronization</span></a>
+            </li>
+            <li class="sprite yes">Automatic synchronization of translations is enabled.
+              <a class="sprite edit"
+                 title="Configure automatic synchronization."
+                 href="#"><span
+                   class="invisible-link">Configure automatic synchronization</span></a>
+            </li>
+          </ul>
+       </dd>
+       <table class="sortable listing">
+         <thead>
+           <tr>
+             <th class="name_column" rowspan="2">Template name</th>
+             <th class="state_column" rowspan="2">State</th>
+             <th style="text-align: center" colspan="2">Ubuntu</th>
+             <th style="text-align: center" colspan="3">Upstream</th>
+           </tr>
+           <tr>
+             <th class="length_ubuntu_column">Length</th>
+             <th class="updated_ubuntu_column">Updated</th>
+             <th class="length_upstream_column">Length</th>
+             <th class="updated_upstream_column">Updated</th>
+             <th class="upstream_link_column">Upstream template</th>
+           </tr>
+         </thead>
+         <tbody>
+           <tr>
+             <td class="name_column"><a href="#">gimp20</a></td>
+             <td class="state_column">sharing</td>
+             <td class="length_ubuntu_column">82</td>
+             <td class="updated_ubuntu_column">2011-02-28</td>
+             <td class="length_upstream_column">85</td>
+             <td class="updated_upstream_column">2 minutes ago</td>
+             <td class="upstream_link_column"><a href="#">View upstream</a></td>
+           </tr>
+           <tr>
+             <td class="name_column"><a href="#">gimp20-new</a></td>
+             <td class="state_column">only in upstream</td>
+             <td class="length_ubuntu_column"></td>
+             <td class="updated_ubuntu_column"></td>
+             <td class="length_upstream_column">54</td>
+             <td class="updated_upstream_column">2011-03-04</td>
+             <td class="upstream_link_column"><a href="#">View upstream</a></td>
+           </tr>
+           <tr>
+             <td class="name_column"><a href="#">gimp20-old</a></td>
+             <td class="state_column">only in Ubuntu</td>
+             <td class="length_ubuntu_column">82</td>
+             <td class="updated_ubuntu_column">2010-04-01</td>
+             <td class="length_upstream_column"></td>
+             <td class="updated_upstream_column"></td>
+             <td class="upstream_link_column"></td>
+           </tr>
+         </tbody>
+       </table>
     </div>
   </body>
 </html>
