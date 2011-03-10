@@ -21,12 +21,10 @@ The output contains the page ID, content interface, layer and template.  Here
 # - print the nourishing nutty goodness to stdout
 
 import _pythonpath
+_pythonpath
 
 from inspect import getmro
 import os
-from pprint import pformat, pprint
-import sys
-from xml.dom import minidom
 
 from zope.app.pagetemplate.simpleviewclass import simple
 from zope.app.testing.functional import FunctionalTestSetup
