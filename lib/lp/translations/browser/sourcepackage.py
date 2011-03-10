@@ -104,29 +104,29 @@ class SourcePackageTranslationsExportView(BaseExportView):
         return "Download translations for %s" % self.download_description
 
 
-class SourcePackageTranslationSharingStatus(LaunchpadView):
+class SourcePackageTranslationSharingDetailsView(LaunchpadView):
     """Details about translation sharing."""
 
     page_title = "Sharing details"
 
     @property
-    def packaging_configured(self):
+    def is_packaging_configured(self):
         """Is a packaging link defined for this branch?"""
 
-    @propeprty
-    def upstream_branch_exists(self):
-        """Does teh upstream series has at least one source code branch?"""
+    @property
+    def has_upstream_branch(self):
+        """Does the upstream series have at least one source code branch?"""
 
     @property
-    def upstream_translations_enabled(self):
+    def is_upstream_translations_enabled(self):
         """Are Launchpad translations enabled for the upstream series?"""
 
     @property
-    def upstream_synchronizes_translations(self):
+    def is_upstream_synchronization_enabled(self):
         """Is antuomatic synchronization of upstream translation enabled?"""
 
     @property
-    def configuration_is_incomplete(self):
+    def is_configuration_complete(self):
         """Is anything missing in the set up for translation sharing?"""
 
     @property
