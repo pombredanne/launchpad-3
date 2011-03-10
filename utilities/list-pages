@@ -1,4 +1,24 @@
-#!/usr/bin/python2.6
+#!/usr/bin/python -S
+#
+# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+"""list-pages -- list the pages that are in Launchpad
+
+Prints out a CSV of all of the pages that exist in Launchpad. A "page" is a
+whole, actual, web page. Something you might actually want to see filling a
+browser window. Page fragments, portlets etc. are excluded.
+
+The output contains the page ID, content interface, layer and template.  Here
+'layer' is a clue as to the subdomain.
+"""
+
+# The implementation approach here is fairly simple:
+# - load the ZCML
+# - go through all of the adapters, find the ones that look like they might
+#   be for pages.
+# - bang the adapter nut against the hardest rock we can find until it cracks
+# - print the nourishing nutty goodness to stdout
 
 import _pythonpath
 
@@ -21,6 +41,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 
 def load_zcml(zopeless=False):
+    """Load ZCML the way we do in our tests."""
     if zopeless:
         execute_zcml_for_scripts()
     else:
@@ -29,6 +50,11 @@ def load_zcml(zopeless=False):
 
 
 def is_page_adapter(adapter):
+    """Is 'adapter' a page adapter?
+
+    We figure this out by checking to see whether it is adapting from
+    IDefaultBrowserLayer or one of its subclasses.
+    """
     for interface in adapter.required:
         if issubclass(interface, IDefaultBrowserLayer):
             return True
@@ -36,10 +62,12 @@ def is_page_adapter(adapter):
 
 
 def get_view(adapter):
+    """Get the view factory associated with 'adapter'."""
     return adapter.factory
 
 
 def get_template_filename(view):
+    """Return the template filename associated with 'view'."""
     try:
         filename = view.index.filename
     except AttributeError:
@@ -49,6 +77,12 @@ def get_template_filename(view):
 
 
 def has_page_title(adapter):
+    """Does 'adapter' have a page title?
+
+    We use this to tell if 'adapter' is indeed an adapter for rendering an
+    entire page. The theory goes that if there's a page title associated with
+    something, then it's a page.
+    """
     view = get_view(adapter)
     marker = object()
     if getattr(view, 'page_title', marker) is not marker:
@@ -62,20 +96,27 @@ def has_page_title(adapter):
 
 def iter_page_adapters():
     """Iterate over adapters for browser:page directives."""
-    # XXX: Gets all of the browser:page declarations. Many of these aren't
-    # actually pages, but portlets.
     gsm = getGlobalSiteManager()
     return (a for a in gsm.registeredAdapters()
             if is_page_adapter(a) and has_page_title(a))
 
 
 def format_page_adapter(a):
-#    return pformat(a.__dict__)
+    """Format the adapter 'a' for end-user display.
+
+    :return: A string of the form, "pageid,content,layer,template".
+    """
     factory = a.factory
     try:
         bases = getmro(factory)
     except AttributeError:
         return a.name
+    # Zope, bless it, does all sorts of type shenanigans to obscure the name
+    # of the factory as it appears in our code. (See
+    # z.browserpage.metaconfigure.page and
+    # z.app.pagetemplate.simpleviewclass). Ideally, we'd just construct the
+    # view, but that's hard, since in general they won't construct without an
+    # object that implements the interface they need.
     bases = [b for b in bases
              if b is not simple
              and 'SimpleViewClass' not in b.__name__]
