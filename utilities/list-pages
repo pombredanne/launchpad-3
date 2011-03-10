@@ -26,6 +26,7 @@ from inspect import getmro
 import os
 from pprint import pformat, pprint
 import sys
+from xml.dom import minidom
 
 from zope.app.pagetemplate.simpleviewclass import simple
 from zope.app.testing.functional import FunctionalTestSetup
@@ -74,8 +75,7 @@ def get_template_filename(view):
         filename = view.index.filename
     except AttributeError:
         return None
-    filename = os.path.abspath(filename)[len(ROOT)+1:]
-    return filename
+    return os.path.abspath(filename)
 
 
 def has_page_title(adapter):
@@ -87,13 +87,18 @@ def has_page_title(adapter):
     """
     view = get_view(adapter)
     marker = object()
-    if getattr(view, 'page_title', marker) is not marker:
-        return True
     template = get_template_filename(view)
     if template is None:
         return False
     name = os.path.splitext(os.path.basename(template))[0].replace('-', '_')
-    return getattr(pagetitles, name, marker) is not marker
+    if (getattr(view, 'page_title', marker) is marker and
+        getattr(pagetitles, name, marker) is marker):
+        return False
+    return has_html_element(template)
+
+
+def has_html_element(template):
+    return '</html>' in open(template).read()
 
 
 def iter_page_adapters():
@@ -129,6 +134,8 @@ def format_page_adapter(a):
              if b is not simple
              and 'SimpleViewClass' not in b.__name__]
     template = get_template_filename(get_view(a))
+    if template:
+        template = template[len(ROOT)+1:]
     url = '%s/%s' % (get_example_canonical_url(a.required[0]), a.name)
     return '%s:%s,%s,%s,%s,%s' % (
         bases[0].__name__,
@@ -161,12 +168,12 @@ class Whatever(object):
         return 1
 
     def __call__(self, *args, **kwargs):
-        # lib/canonical/launchpad/webapp/metazcml.py(365)path()
-        #  -> return self._compiled_path_expression(self._expression_context)
         args = map(repr, args)
         args.extend('%s=%r' % (k, v) for k, v in kwargs.iteritems())
         # If we're being called with no args, assume this is part of crazy
-        # TALES stuff (see comment above).
+        # TALES stuff:
+        #   lib/canonical/launchpad/webapp/metazcml.py(365)path()
+        #   -> return self._compiled_path_expression(self._expression_context)
         if args:
             name = '%s(%s)' % (self._name, ', '.join(args))
             return Whatever(name)
