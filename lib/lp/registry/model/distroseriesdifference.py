@@ -183,6 +183,12 @@ class DistroSeriesDifference(Storm):
                     'source_version': self.source_version,
                     })
 
+    def getAncestry(self, spr):
+        """Return the version ancestry for the given SPR, or None."""
+        if spr.changelog is None:
+            return None
+        return set(Changelog(spr.changelog.read()).versions)
+
     def _getPackageDiffURL(self, package_diff):
         """Check status and return URL if appropriate."""
         if package_diff is None or (
@@ -300,17 +306,14 @@ class DistroSeriesDifference(Storm):
             DistroSeriesDifferenceType.DIFFERENT_VERSIONS):
             return False
 
-        changelog = self.source_pub.sourcepackagerelease.changelog
-        parent_changelog = (
-            self.parent_source_pub.sourcepackagerelease.changelog)
+        ancestry = self.getAncestry(self.source_pub.sourcepackagerelease)
+        parent_ancestry = self.getAncestry(
+            self.parent_source_pub.sourcepackagerelease)
 
-        # If both the parents and descendants changelog are available, we
-        # can parse the changelog versions and reliably work out the most
-        # recent common ancestor using set arithmetic.
-        if changelog is not None and parent_changelog is not None:
-            ancestry = set(Changelog(changelog.read()).versions)
-            parent_ancestry = set(
-                Changelog(parent_changelog.read()).versions)
+        # If the ancestry for the parent and the descendant is available, we
+        # can reliably work out the most recent common ancestor using set
+        # arithmetic.
+        if ancestry is not None and parent_ancestry is not None:
             intersection = ancestry.intersection(parent_ancestry)
             if len(intersection) > 0:
                 self.base_version = unicode(max(intersection))

@@ -475,7 +475,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
     def test_base_source_pub(self):
         # The publishing in the derived series with base_version is returned.
-        dervied_changelog = self.factory.makeChangelog(
+        derived_changelog = self.factory.makeChangelog(
             versions=['1.0', '1.2'])
         parent_changelog = self.factory.makeChangelog(
             versions=['1.0', '1.3'])
@@ -487,7 +487,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             'base': '1.0',
             },
             changelogs={
-                'derived': dervied_changelog,
+                'derived': derived_changelog,
                 'parent': parent_changelog,
             })
 
@@ -498,7 +498,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
     def test_base_source_pub_not_published(self):
         # If the base version isn't published, the base version is
         # calculated, but the source publication isn't set.
-        dervied_changelog = self.factory.makeChangelog(
+        derived_changelog = self.factory.makeChangelog(
             versions=['1.0', '1.2'])
         parent_changelog = self.factory.makeChangelog(
             versions=['1.0', '1.3'])
@@ -509,7 +509,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             'parent': '1.3',
             },
             changelogs={
-                'derived': dervied_changelog,
+                'derived': derived_changelog,
                 'parent': parent_changelog,
             })
         self.assertEqual('1.0', ds_diff.base_version)
