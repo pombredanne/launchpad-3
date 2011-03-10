@@ -98,21 +98,25 @@ class EditableWidgetBase(WidgetBase):
     """Adds an edit_url property to WidgetBase."""
 
     def __init__(self, context, exported_field, content_box_id,
-                 edit_view, edit_url):
+                 edit_view, edit_url, edit_title):
         super(EditableWidgetBase, self).__init__(
             context, exported_field, content_box_id)
         if edit_url is None:
             edit_url = canonical_url(self.context, view_name=edit_view)
         self.edit_url = edit_url
+        if edit_title is None:
+            edit_title = ''
+        self.edit_title = edit_title
 
 
 class TextWidgetBase(EditableWidgetBase):
     """Abstract base for the single and multiline text editor widgets."""
 
     def __init__(self, context, exported_field, title, content_box_id,
-                 edit_view, edit_url):
+                 edit_view, edit_url, edit_title):
         super(TextWidgetBase, self).__init__(
-            context, exported_field, content_box_id, edit_view, edit_url)
+            context, exported_field, content_box_id,
+            edit_view, edit_url, edit_title)
         self.accept_empty = simplejson.dumps(self.optional_field)
         self.title = title
         self.widget_css_selector = simplejson.dumps('#' + self.content_box_id)
@@ -141,6 +145,7 @@ class TextLineEditorWidget(TextWidgetBase, DefinedTagMixin):
 
     def __init__(self, context, exported_field, title, tag,
                  content_box_id=None, edit_view="+edit", edit_url=None,
+                 edit_title='',
                  default_text=None, initial_value_override=None, width=None):
         """Create a widget wrapper.
 
@@ -163,7 +168,7 @@ class TextLineEditorWidget(TextWidgetBase, DefinedTagMixin):
         """
         super(TextLineEditorWidget, self).__init__(
             context, exported_field, title, content_box_id,
-            edit_view, edit_url)
+            edit_view, edit_url, edit_title)
         self.tag = tag
         self.default_text = default_text
         self.initial_value_override = simplejson.dumps(initial_value_override)
@@ -183,7 +188,7 @@ class TextAreaEditorWidget(TextWidgetBase):
     __call__ = ViewPageTemplateFile('../templates/text-area-editor.pt')
 
     def __init__(self, context, exported_field, title, content_box_id=None,
-                 edit_view="+edit", edit_url=None,
+                 edit_view="+edit", edit_url=None, edit_title='',
                  hide_empty=True, linkify_text=True):
         """Create the widget wrapper.
 
@@ -204,7 +209,7 @@ class TextAreaEditorWidget(TextWidgetBase):
         """
         super(TextAreaEditorWidget, self).__init__(
             context, exported_field, title, content_box_id,
-            edit_view, edit_url)
+            edit_view, edit_url, edit_title)
         self.hide_empty = hide_empty
         self.linkify_text = linkify_text
 
@@ -358,7 +363,7 @@ class BooleanChoiceWidget(EditableWidgetBase, DefinedTagMixin):
 
     def __init__(self, context, exported_field,
                  tag, false_text, true_text, prefix=None,
-                 edit_view="+edit", edit_url=None,
+                 edit_view="+edit", edit_url=None, edit_title='',
                  content_box_id=None, header='Select an item'):
         """Create a widget wrapper.
 
@@ -378,7 +383,8 @@ class BooleanChoiceWidget(EditableWidgetBase, DefinedTagMixin):
         :param header: The large text at the top of the choice popup.
         """
         super(BooleanChoiceWidget, self).__init__(
-            context, exported_field, content_box_id, edit_view, edit_url)
+            context, exported_field, content_box_id,
+            edit_view, edit_url, edit_title)
         self.header = header
         self.tag = tag
         self.prefix = prefix
@@ -417,10 +423,11 @@ class EnumChoiceWidget(EditableWidgetBase):
 
     def __init__(self, context, exported_field, header,
                  content_box_id=None, enum=None,
-                 edit_view="+edit", edit_url=None,
+                 edit_view="+edit", edit_url=None, edit_title='',
                  css_class_prefix=''):
         super(EnumChoiceWidget, self).__init__(
-            context, exported_field, content_box_id, edit_view, edit_url)
+            context, exported_field, content_box_id,
+            edit_view, edit_url, edit_title)
         self.header = header
         value = getattr(self.context, self.attribute_name)
         self.css_class = "value %s%s" % (css_class_prefix, value.name)
