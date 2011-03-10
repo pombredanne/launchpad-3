@@ -18,6 +18,9 @@ from zope.component.interfaces import ComponentLookupError
 from zope.interface import implements
 
 from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
+from lp.archivepublisher.interfaces.publisherconfig import (
+    IPublisherConfigSet,
+    )
 from lp.registry.interfaces.poll import (
     IPollSet,
     IPollSubset,
@@ -112,3 +115,10 @@ def productseries_to_product(productseries):
     or `ILaunchpadUsage`.
     """
     return productseries.product
+
+
+def distribution_to_publisherconfig(distro):
+    """Adapts `IDistribution` to `IPublisherConfig`."""
+    # Used for traversal from distro to +pubconf.
+    config = getUtility(IPublisherConfigSet).getByDistribution(distro)
+    return config
