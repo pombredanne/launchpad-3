@@ -19,11 +19,15 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.translations import TranslationsMixin
 from lp.translations.browser.translationsharing import (
     TranslationSharingDetailsMixin,
+    )
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode,
     )
 from lp.translations.utilities.translationsharinginfo import (
     has_upstream_template,
@@ -117,21 +121,38 @@ class SourcePackageTranslationSharingDetailsView(LaunchpadView):
     @property
     def has_upstream_branch(self):
         """Does the upstream series have a source code branch?"""
-        if not self.packaging_configured:
+        if not self.is_packaging_configured:
             return False
         return self.context.direct_packaging.productseries.branch is not None
 
     @property
     def is_upstream_translations_enabled(self):
         """Are Launchpad translations enabled for the upstream series?"""
+        if not self.is_packaging_configured:
+            return False
+        return (
+            self.context.direct_packaging.productseries.translations_usage ==
+            ServiceUsage.LAUNCHPAD)
 
     @property
     def is_upstream_synchronization_enabled(self):
-        """Is antuomatic synchronization of upstream translation enabled?"""
+        """Is automatic synchronization of upstream translations enabled?"""
+        if not self.is_packaging_configured:
+            return False
+        series = self.context.direct_packaging.productseries
+        return (
+            series.translations_autoimport_mode ==
+            TranslationsBranchImportMode.IMPORT_TRANSLATIONS)
 
     @property
     def is_configuration_complete(self):
         """Is anything missing in the set up for translation sharing?"""
+        # A check if the required packaging link exists is implicitly
+        # done in the implementation of the other properties.
+        return (
+            self.has_upstream_branch and
+            self.is_upstream_translations_enabled and
+            self.is_upstream_synchronization_enabled)
 
     @property
     def template_info(self):
