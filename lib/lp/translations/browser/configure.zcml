@@ -607,7 +607,7 @@
         permission="zope.Public"/>
     <browser:page
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-        name="+translation-sharing-status"
+        name="+translation-sharing-details"
         class="lp.translations.browser.sourcepackage.SourcePackageTranslationSharingStatus"
         permission="zope.Public"
         template="../templates/translation-sharing-status.pt"
