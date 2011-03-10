@@ -84,7 +84,7 @@ from lp.app.browser.lazrjs import (
     TextAreaEditorWidget,
     TextLineEditorWidget,
     )
-from lp.app.browser.tales import format_link
+from lp.app.browser.tales import format_link, DistroSeriesFormatterAPI
 from lp.app.validators.name import name_validator
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
@@ -325,7 +325,12 @@ def distroseries_renderer(context, field, request):
     """Render a distroseries collection as a set of links."""
 
     def render(value):
-        html = "<p>Hello world</p>"
+        html = "<ul>"
+        html += ''.join(
+            ["<li>%s</li>" % DistroSeriesFormatterAPI(distroseries).link(None)
+                for distroseries in context.distroseries]
+        )
+        html += "</ul>"
         return html
     return render
 
