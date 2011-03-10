@@ -112,6 +112,25 @@ def suggest_batch_size(remote_system, num_watches):
             int(SUGGESTED_BATCH_SIZE_PROPORTION * num_watches))
 
 
+@contextmanager
+def record_errors(transaction, bug_watch_ids):
+    """Context manager to record errors in BugWatchActivity.
+
+    If an exception occurs, it will be logged in BugWatchActivity
+    against all the given watches.
+    """
+    try:
+        yield
+    except Exception, e:
+        # We record the error against all the bugwatches that should
+        # have been updated before re-raising it. We also update the
+        # bug watches' lastchecked dates so that checkwatches
+        # doesn't keep trying to update them every time it runs.
+        with transaction:
+            getUtility(IBugWatchSet).bulkSetError(
+                bug_watch_ids, get_bugwatcherrortype_for_error(e))
+        raise
+
 class CheckwatchesMaster(WorkingBase):
     """Takes responsibility for updating remote bug watches."""
 
@@ -190,25 +209,6 @@ class CheckwatchesMaster(WorkingBase):
                     self.logger.debug(
                         "Updates are disabled for bug tracker at %s" %
                         bug_tracker_baseurl)
-
-    @contextmanager
-    def record_errors(self, bug_watch_ids):
-        """Context manager to record errors in BugWatchActivity.
-
-        If an exception occurs, it will be logged in BugWatchActivity
-        against all the given watches.
-        """
-        try:
-            yield
-        except Exception, e:
-            # We record the error against all the bugwatches that should
-            # have been updated before re-raising it. We also update the
-            # bug watches' lastchecked dates so that checkwatches
-            # doesn't keep trying to update them every time it runs.
-            with self.transaction:
-                getUtility(IBugWatchSet).bulkSetError(
-                    bug_watch_ids, get_bugwatcherrortype_for_error(e))
-            raise
 
     @commit_before
     def updateBugTrackers(
@@ -597,7 +597,7 @@ class CheckwatchesMaster(WorkingBase):
         # Fetch the time on the server. We'll use this in
         # _getRemoteIdsToCheck() and when determining whether we can
         # sync comments or not.
-        with self.record_errors(bug_watch_ids):
+        with record_errors(self.transaction, bug_watch_ids):
             server_time = remotesystem.getCurrentDBTime()
             remote_ids = self._getRemoteIdsToCheck(
                 remotesystem, bug_watches, server_time, now, batch_size)
@@ -618,7 +618,7 @@ class CheckwatchesMaster(WorkingBase):
             "Updating %i watches for %i bugs on %s" % (
                 len(bug_watches), len(remote_ids_to_check), bug_tracker_url))
 
-        with self.record_errors(bug_watch_ids):
+        with record_errors(self.transaction, bug_watch_ids):
             remotesystem.initializeRemoteBugDB(remote_ids_to_check)
 
         for remote_bug_id in all_remote_ids:
