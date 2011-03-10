@@ -1,0 +1,31 @@
+REQUIRED
+
+* Selectively enable team drop down.
+
+* Handle case for no adminstered teams.
+
+* Place subscription link on page when user is not a project admin.
+   (Portlet isn't visible in that case.)
+
+* Add 'check all/none' controls within the accordion
+
+
+OPTIONAL
+
+* Make accordion item labels update based on selection
+
+* JS value validation, consistency checking (tags, etc)
+
+o [gmb] Try to fix styling on 'Cancel' button
+
+
+
+DONE
+
+o [gmb] Fix leftover elements when overlay disappears due to selecting
+   another part of the web page
+
+o [bac] Split Status and Importance checkboxes into more columns
+
+o [bac] All AccordionItem bodyContent must be wrapped in a <div> or
+   funny things happen. (done)
