@@ -34,9 +34,12 @@ child's parent
     >>> child_name = child.name
     >>> series = webservice.get(series_url).jsonBody()
     >>> other_series = webservice.get(other_series_url).jsonBody()
+    >>> distribution_url = '/%s' % child.parent.name
+    >>> distribution = webservice.get(distribution_url).jsonBody()
     >>> derived = soyuz_webservice.named_post(
     ...     other_series['self_link'], 'deriveDistroSeries', {},
-    ...     name=child_name, rebuild=False)
+    ...     name=child_name, distribution=distribution['self_link'],
+    ...     rebuild=False)
     >>> print derived
     HTTP/1.1 400 Bad Request
     ...
@@ -46,7 +49,8 @@ If we call it correctly, it works.
 
     >>> derived = soyuz_webservice.named_post(
     ...     series['self_link'], 'deriveDistroSeries', {},
-    ...     name=child_name, rebuild=False)
+    ...     name=child_name, distribution=distribution['self_link'],
+    ...     rebuild=False)
     >>> print derived
     HTTP/1.1 200 Ok
     ...
@@ -65,7 +69,7 @@ If we call it with all of the arguments, it also works.
     HTTP/1.1 200 Ok
     ...
 
-And we can verify both jobs exists.
+And we can verify both jobs exist.
 
     >>> from zope.component import getUtility
     >>> from lp.soyuz.interfaces.distributionjob import (
