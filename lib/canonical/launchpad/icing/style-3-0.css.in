@@ -1618,7 +1618,7 @@ a.unofficial-tag {
     }
 .branchstatusMERGED, .branchstatusMERGED a,
 .branchstatusABANDONED, .branchstatusABANDONED a {
-    color: #gray;
+    color: gray;
     }
 .branchstatusNEW, .branchstatusNEW a {
     color: black;
