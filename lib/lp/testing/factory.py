@@ -1954,6 +1954,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_spec.updateLifecycleStatus(owner)
         return spec
 
+    makeBlueprint = makeSpecification
+
     def makeQuestion(self, target=None, title=None):
         """Create and return a new, arbitrary Question.
 
