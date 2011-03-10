@@ -608,7 +608,7 @@ class SpecificationView(SpecificationSimpleView):
         return InlineEditPickerWidget(
             self.context, ISpecification['approver'],
             format_link(self.context.approver),
-            header='Change approver',
+            header='Change approver', edit_view='+people',
             step_title='Select a new approver')
 
     @property
@@ -616,7 +616,7 @@ class SpecificationView(SpecificationSimpleView):
         return InlineEditPickerWidget(
             self.context, ISpecification['drafter'],
             format_link(self.context.drafter),
-            header='Change drafter',
+            header='Change drafter', edit_view='+people',
             step_title='Select a new drafter')
 
     @property
@@ -624,7 +624,7 @@ class SpecificationView(SpecificationSimpleView):
         return InlineEditPickerWidget(
             self.context, ISpecification['assignee'],
             format_link(self.context.assignee),
-            header='Change assignee',
+            header='Change assignee', edit_view='+people',
             step_title='Select a new assignee')
 
     @property
@@ -668,7 +668,8 @@ class SpecificationView(SpecificationSimpleView):
         """The description as a widget."""
         return TextAreaEditorWidget(
             self.context, ISpecification['whiteboard'], title="Whiteboard",
-            edit_view='+whiteboard', hide_empty=False)
+            edit_view='+whiteboard', edit_title='Edit whiteboard',
+            hide_empty=False)
 
     @property
     def direction_widget(self):
@@ -693,7 +694,7 @@ class SpecificationEditSchema(ISpecification):
     """Provide overrides for the implementaion and definition status."""
 
     definition_status = Choice(
-        title=_('Definition Status'), readonly=True,
+        title=_('Definition Status'), required=True,
         vocabulary=SpecificationDefinitionStatus,
         default=SpecificationDefinitionStatus.NEW,
         description=_(

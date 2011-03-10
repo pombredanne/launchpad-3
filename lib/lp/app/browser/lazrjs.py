@@ -37,7 +37,8 @@ from lp.services.propertycache import cachedproperty
 class WidgetBase:
     """Useful methods for all widgets."""
 
-    def __init__(self, context, exported_field, content_box_id):
+    def __init__(self, context, exported_field, content_box_id,
+                 edit_view, edit_url, edit_title):
         self.context = context
         self.exported_field = exported_field
 
@@ -48,6 +49,13 @@ class WidgetBase:
         if content_box_id is None:
             content_box_id = "edit-%s" % self.attribute_name
         self.content_box_id = content_box_id
+
+        if edit_url is None:
+            edit_url = canonical_url(self.context, view_name=edit_view)
+        self.edit_url = edit_url
+        if edit_title is None:
+            edit_title = ''
+        self.edit_title = edit_title
 
         # The mutator method name is used to determine whether or not the
         # current user has permission to alter the attribute if the attribute
@@ -94,22 +102,7 @@ class WidgetBase:
             return False
 
 
-class EditableWidgetBase(WidgetBase):
-    """Adds an edit_url property to WidgetBase."""
-
-    def __init__(self, context, exported_field, content_box_id,
-                 edit_view, edit_url, edit_title):
-        super(EditableWidgetBase, self).__init__(
-            context, exported_field, content_box_id)
-        if edit_url is None:
-            edit_url = canonical_url(self.context, view_name=edit_view)
-        self.edit_url = edit_url
-        if edit_title is None:
-            edit_title = ''
-        self.edit_title = edit_title
-
-
-class TextWidgetBase(EditableWidgetBase):
+class TextWidgetBase(WidgetBase):
     """Abstract base for the single and multiline text editor widgets."""
 
     def __init__(self, context, exported_field, title, content_box_id,
@@ -160,6 +153,7 @@ class TextLineEditorWidget(TextWidgetBase, DefinedTagMixin):
             one is not specified.
         :param edit_url: The URL to use for editing when the user isn't logged
             in and when JS is off.  Defaults to the edit_view on the context.
+        :param edit_title: Used to set the title attribute of the anchor.
         :param default_text: Text to show in the unedited field, if the
             parameter value is missing or None.
         :param initial_value_override: Use this text for the initial edited
@@ -202,6 +196,7 @@ class TextAreaEditorWidget(TextWidgetBase):
             one is not specified.
         :param edit_url: The URL to use for editing when the user isn't logged
             in and when JS is off.  Defaults to the edit_view on the context.
+        :param edit_title: Used to set the title attribute of the anchor.
         :param hide_empty: If the attribute has no value, or is empty, then
             hide the editor by adding the "unseen" CSS class.
         :param linkify_text: If True the HTML version of the text will have
@@ -239,7 +234,8 @@ class InlineEditPickerWidget(WidgetBase):
     def __init__(self, context, exported_field, default_html,
                  content_box_id=None, header='Select an item',
                  step_title='Search', remove_button_text='Remove',
-                 null_display_value='None'):
+                 null_display_value='None',
+                 edit_view="+edit", edit_url=None, edit_title=''):
         """Create a widget wrapper.
 
         :param context: The object that is being edited.
@@ -252,9 +248,15 @@ class InlineEditPickerWidget(WidgetBase):
         :param step_title: Smaller line of text below the header.
         :param remove_button_text: Override default button text: "Remove"
         :param null_display_value: This will be shown for a missing value
+        :param edit_view: The view name to use to generate the edit_url if
+            one is not specified.
+        :param edit_url: The URL to use for editing when the user isn't logged
+            in and when JS is off.  Defaults to the edit_view on the context.
+        :param edit_title: Used to set the title attribute of the anchor.
         """
         super(InlineEditPickerWidget, self).__init__(
-            context, exported_field, content_box_id)
+            context, exported_field, content_box_id,
+            edit_view, edit_url, edit_title)
         self.default_html = default_html
         self.header = header
         self.step_title = step_title
@@ -356,7 +358,7 @@ def standard_text_html_representation(value, linkify_text=True):
     return FormattersAPI(nomail).text_to_html(linkify_text=linkify_text)
 
 
-class BooleanChoiceWidget(EditableWidgetBase, DefinedTagMixin):
+class BooleanChoiceWidget(WidgetBase, DefinedTagMixin):
     """A ChoiceEdit for a boolean field."""
 
     __call__ = ViewPageTemplateFile('../templates/boolean-choice-widget.pt')
@@ -378,6 +380,7 @@ class BooleanChoiceWidget(EditableWidgetBase, DefinedTagMixin):
             one is not specified.
         :param edit_url: The URL to use for editing when the user isn't logged
             in and when JS is off.  Defaults to the edit_view on the context.
+        :param edit_title: Used to set the title attribute of the anchor.
         :param content_box_id: The HTML id to use for this widget. Automatically
             generated if this is not provided.
         :param header: The large text at the top of the choice popup.
@@ -416,7 +419,7 @@ class BooleanChoiceWidget(EditableWidgetBase, DefinedTagMixin):
         return simplejson.dumps(self.config)
 
 
-class EnumChoiceWidget(EditableWidgetBase):
+class EnumChoiceWidget(WidgetBase):
     """A popup choice widget."""
 
     __call__ = ViewPageTemplateFile('../templates/enum-choice-widget.pt')
@@ -425,6 +428,22 @@ class EnumChoiceWidget(EditableWidgetBase):
                  content_box_id=None, enum=None,
                  edit_view="+edit", edit_url=None, edit_title='',
                  css_class_prefix=''):
+        """Create a widget wrapper.
+
+        :param context: The object that is being edited.
+        :param exported_field: The attribute being edited. This should be
+            a field from an interface of the form ISomeInterface['fieldname']
+        :param header: The large text at the top of the picker.
+        :param content_box_id: The HTML id to use for this widget. Automatically
+            generated if this is not provided.
+        :param enum: The enumerated type used to generate the widget items.
+        :param edit_view: The view name to use to generate the edit_url if
+            one is not specified.
+        :param edit_url: The URL to use for editing when the user isn't logged
+            in and when JS is off.  Defaults to the edit_view on the context.
+        :param edit_title: Used to set the title attribute of the anchor.
+        :param css_class_prefix: Added to the start of the enum titles.
+        """
         super(EnumChoiceWidget, self).__init__(
             context, exported_field, content_box_id,
             edit_view, edit_url, edit_title)
