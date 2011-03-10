@@ -1881,7 +1881,7 @@ class BugsInfoMixin:
         """A URL to a list of bugs reported by the user, or None."""
         if self.user is None:
             return None
-        return get_buglisting_search_filter_url(reporter=self.user.name)
+        return get_buglisting_search_filter_url(bug_reporter=self.user.name)
 
 
 class BugsStatsMixin(BugsInfoMixin):
@@ -1998,7 +1998,7 @@ class BugListingPortletStatsView(LaunchpadView, BugsStatsMixin):
 
 def get_buglisting_search_filter_url(
         assignee=None, importance=None, status=None, status_upstream=None,
-        has_patches=None, reporter=None):
+        has_patches=None, bug_reporter=None):
     """Return the given URL with the search parameters specified."""
     search_params = []
 
@@ -2012,8 +2012,8 @@ def get_buglisting_search_filter_url(
         search_params.append(('field.status_upstream', status_upstream))
     if has_patches is not None:
         search_params.append(('field.has_patch', 'on'))
-    if reporter is not None:
-        search_params.append(('field.reporter', reporter))
+    if bug_reporter is not None:
+        search_params.append(('field.bug_reporter', bug_reporter))
 
     query_string = urllib.urlencode(search_params, doseq=True)
 
