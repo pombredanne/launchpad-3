@@ -292,6 +292,97 @@ class InlineEditPickerWidget(WidgetBase):
         return user and user in vocabulary
 
 
+class InlineMultiCheckboxWidget(WidgetBase):
+    """Wrapper for the lazr-js multicheckbox widget."""
+
+    __call__ = ViewPageTemplateFile('../templates/inline-multicheckbox-widget.pt')
+
+    def __init__(self, context, exported_field,
+                 label, label_tag="span", attribute_type="default",
+                 vocabulary_name=None, header=None,
+                 empty_display_value="None", content_box_id=None,
+                 selected_items=list(), items_tag="span", items_style=''):
+        """Create a widget wrapper.
+
+        :param context: The object that is being edited.
+        :param exported_field: The attribute being edited. This should be
+            a field from an interface of the form ISomeInterface['fieldname']
+        :param label: The label text to display above the checkboxes
+        :param label_tag: The tag in which to wrap the label text.
+        :param attribute_type: The attribute type. Currently only "reference"
+            is supported. Used to determine whether to linkify the checkbox
+            items.
+        :param vocabulary_name: The name of the vocabulary which provides the
+            items.
+        :param header: The text to display as the title of the popup form.
+        :param empty_display_value: The text to display if no items are
+            selected.
+        :param content_box_id: The HTML id to use for this widget. Automatically
+            generated if this is not provided.
+        :param selected_items: The currently selected items.
+        :param items_tag: The tag in which to wrap the items checkboxes.
+        :param items_style: The css style to use for each item checkbox.
+        """
+        super(InlineMultiCheckboxWidget, self).__init__(
+            context, exported_field, content_box_id)
+
+        linkify_items = attribute_type == "reference"
+
+        if header is None:
+            header = self.exported_field.title+":"
+        self.header = header,
+        self.empty_display_value = empty_display_value
+        self.label = label
+        self.label_open_tag = "<%s>" % label_tag
+        self.label_close_tag = "</%s>" % label_tag
+        self.items = selected_items
+        self.items_open_tag = "<%s>" % items_tag
+        self.items_close_tag = "</%s>" % items_tag
+        self.linkify_items = linkify_items
+
+        if vocabulary_name is None:
+            try:
+                vocabulary_name = exported_field.vocabularyName
+            except:
+                vocabulary_name = exported_field.value_type.vocabularyName
+
+        vocab = getVocabularyRegistry().get(context, vocabulary_name)
+        items = []
+        style = ';'.join(['font-weight: normal', items_style])
+        for item in vocab:
+            item_value = item.value if safe_hasattr(item, 'value') else item
+            checked = item_value in selected_items
+            save_value = item_value
+            if linkify_items:
+                save_value = canonical_url(item_value, force_local_path=True)
+            new_item = {
+                'name': item.title,
+                'token': item.token,
+                'style': style,
+                'checked': checked,
+                'value': save_value}
+            items.append(new_item)
+
+        # JSON encoded attributes.
+        self.json_content_box_id = simplejson.dumps(self.content_box_id)
+        self.json_attribute = simplejson.dumps(self.api_attribute)
+        self.json_attribute_type = simplejson.dumps(attribute_type)
+        self.json_items = simplejson.dumps(items)
+        self.json_description = simplejson.dumps(
+                                    self.exported_field.description)
+
+    @property
+    def config(self):
+        return dict(
+            header=self.header,
+            empty_display_value=self.empty_display_value,
+            )
+
+    @property
+    def json_config(self):
+        return simplejson.dumps(self.config)
+
+    
 def vocabulary_to_choice_edit_items(
     vocab, css_class_prefix=None, disabled_items=None, as_json=False,
     name_fn=None, value_fn=None):

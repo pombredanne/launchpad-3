@@ -1,0 +1,55 @@
+<div tal:define="items view/items|nothing"
+      tal:attributes="id view/content_box_id">
+
+  <tal:label-open-tag replace="structure view/label_open_tag"/>
+    <span tal:replace="structure view/label"/>
+    <button class="lazr-btn yui3-activator-act yui3-activator-hidden">
+      Edit
+    </button>
+  <tal:label-close-tag replace="structure view/label_close_tag"/>
+
+  <span class="yui3-activator-data-box">
+    <tal:items-open-tag replace="structure view/items_open_tag"/>
+      <span tal:condition="not:items" tal:content="structure view/empty_display_value"/>
+
+        <ul tal:condition="items">
+              <li tal:condition="view/linkify_items"
+                  tal:repeat="item items"
+                  tal:content="structure item/fmt:link" />
+    
+              <li tal:condition="not:view/linkify_items"
+                  tal:repeat="item items"
+                  tal:content="structure item" />
+        </ul>
+    <tal:items-close-tag replace="structure view/items_close_tag"/>
+  </span>
+  <div class="yui3-activator-message-box yui3-activator-hidden"/>
+</div>
+<style type="text/css">
+  .close button {
+    float: right;
+    width: 15px;
+    height: 15px;
+    display: block;
+    margin-top: 4px;
+  }
+</style>
+<script tal:condition="view/can_write"
+        tal:content="structure string:
+LPS.use('lp.app.multicheckbox', function(Y) {
+    if (Y.UA.ie) {
+        return;
+    }
+
+    Y.on('load', function(e) {
+      Y.lp.app.multicheckbox.addMultiCheckboxPatcher(
+        ${view/json_items},
+        ${view/json_description},
+        ${view/json_resource_uri},
+        ${view/json_attribute},
+        ${view/json_attribute_type},
+        ${view/json_content_box_id},
+        ${view/json_config});
+      }, window);
+});
+"/>
