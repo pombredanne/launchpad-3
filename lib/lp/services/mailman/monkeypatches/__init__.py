@@ -42,7 +42,8 @@ def monkey_patch(mailman_path, config):
         os.path.dirname(os.path.dirname(canonical.__file__)))
     # Read the email footer template for all Launchpad messages.
     from canonical.launchpad.helpers import get_email_template
-    footer = get_email_template('mailinglist-footer.txt')
+    footer = get_email_template(
+        'mailinglist-footer.txt', app='services/mailman/monkeypatches')
     # Write the mm_cfg.py file, filling in the dynamic values now.
     host, port = as_host_port(config.mailman.smtp)
     owner_address, owner_password = configure_siteowner(
