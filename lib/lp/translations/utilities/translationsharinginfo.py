@@ -37,6 +37,7 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.productseries import ProductSeries
+from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.translations.model.potemplate import POTemplate
 
@@ -100,7 +101,7 @@ def find_ubuntu_sharing_info(productseries, templatename=None,
         result_classes, *conditions)
 
 
-def find_upstream_sharing_info(distroseries, sourcepackagename,
+def find_upstream_sharing_info(sourcepackage,
                               templatename=None, template_only=False):
     """Return a `ResultSet` of sharing information for this sourcepackage.
 
@@ -141,8 +142,8 @@ def find_upstream_sharing_info(distroseries, sourcepackagename,
             potemplate_condition)
         result_classes = (ProductSeries, POTemplate)
     conditions = [
-        Packaging.distroseries == distroseries,
-        Packaging.sourcepackagename == sourcepackagename,
+        Packaging.distroseries == sourcepackage.distroseries,
+        Packaging.sourcepackagename == sourcepackage.sourcepackagename,
         ]
 
     return IStore(Packaging).using(prejoin).find(
@@ -151,14 +152,15 @@ def find_upstream_sharing_info(distroseries, sourcepackagename,
 
 def get_ubuntu_sharing_info(productseries, templatename=None):
     """Return a list of sharing information for the given target."""
-    return list(find_ubuntu_sharing_info(productseries, templatename))
+    return [
+        (SourcePackage(packagename, series), name)
+        for series, packagename, name in find_ubuntu_sharing_info(
+            productseries, templatename)]
 
 
-def get_upstream_sharing_info(distroseries, sourcepackagename,
-                              templatename=None):
+def get_upstream_sharing_info(sourcepackage, templatename=None):
     """Return a list of sharing information for the given target."""
-    return list(find_upstream_sharing_info(
-        distroseries, sourcepackagename, templatename))
+    return list(find_upstream_sharing_info(sourcepackage, templatename))
 
 
 def has_ubuntu_template(productseries, templatename=None):
@@ -168,9 +170,8 @@ def has_ubuntu_template(productseries, templatename=None):
     return not result.is_empty()
 
 
-def has_upstream_template(distroseries, sourcepackagename, templatename=None):
+def has_upstream_template(sourcepackage, templatename=None):
     """Check for existence of upstream template."""
     result = find_upstream_sharing_info(
-            distroseries, sourcepackagename, templatename,
-            template_only=True)
+            sourcepackage, templatename, template_only=True)
     return not result.is_empty()

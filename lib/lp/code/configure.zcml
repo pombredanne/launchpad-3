@@ -247,7 +247,7 @@
                     getIncrementalDiffs
                     votes
                     all_comments
-                    related_bugs
+                    getRelatedBugTasks
                     revision_end_date
                     isMergable
                     getComment
@@ -1007,7 +1007,8 @@
 
   <class class="lp.code.model.recipebuild.RecipeBuildRecord">
     <allow attributes="sourcepackagename recipeowner recipe archive
-                        most_recent_build_time distro_source_package"/>
+                        most_recent_build_time distro_source_package
+                        recipe_name recipe_url"/>
   </class>
 
   <class class="lp.code.model.recipebuild.RecipeBuildRecordResultSet">

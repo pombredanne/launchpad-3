@@ -102,6 +102,10 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
 """
 
 
+class AptFTPArchiveFailure(Exception):
+    """Failure while running apt-ftparchive."""
+
+
 class FTPArchiveHandler:
     """Produces Sources and Packages files via apt-ftparchive.
 
@@ -135,34 +139,52 @@ class FTPArchiveHandler:
         apt_config_filename = self.generateConfig(is_careful)
         self.runApt(apt_config_filename)
 
+    def _getArchitectureTags(self):
+        """List tags of all architectures enabled in this distro."""
+        archs = set()
+        for series in self.distro.series:
+            archs.update(set([
+                distroarchseries.architecturetag
+                for distroarchseries in series.enabled_architectures]))
+        return archs
+
     def runApt(self, apt_config_filename):
-        """Run apt in a subprocess and verify its return value. """
+        """Run apt-ftparchive in subprocesses.
+
+        :raise: AptFTPArchiveFailure if any of the apt-ftparchive
+            commands failed.
+        """
         self.log.debug("Filepath: %s" % apt_config_filename)
-        # XXX JeroenVermeulen 2011-02-01 bug=181368: Run parallel
-        # apt-ftparchive processes for the various architectures (plus
-        # source).
+
         stdout_handler = OutputLineHandler(self.log.debug, "a-f: ")
         stderr_handler = OutputLineHandler(self.log.warning, "a-f: ")
-        completion_handler = ReturnCodeReceiver()
-        command = [
+        base_command = [
             "apt-ftparchive",
             "--no-contents",
             "generate",
             apt_config_filename,
             ]
         spawner = CommandSpawner()
+
+        returncodes = {}
+        completion_handler = ReturnCodeReceiver()
+        returncodes['all'] = completion_handler
         spawner.start(
-            command, stdout_handler=stdout_handler,
+            base_command, stdout_handler=stdout_handler,
             stderr_handler=stderr_handler,
             completion_handler=completion_handler)
+
         spawner.complete()
         stdout_handler.finalize()
         stderr_handler.finalize()
-        if completion_handler.returncode != 0:
-            raise AssertionError(
-                "Failure from apt-ftparchive. Return code %s"
-                % completion_handler.returncode)
-        return completion_handler.returncode
+        failures = sorted([
+            (tag, receiver.returncode)
+            for tag, receiver in returncodes.iteritems()
+                if receiver.returncode != 0])
+        if len(failures) > 0:
+            by_arch = ["%s (returned %d)" % failure for failure in failures]
+            raise AptFTPArchiveFailure(
+                "Failure(s) from apt-ftparchive: %s" % ", ".join(by_arch))
 
     #
     # Empty Pocket Requests

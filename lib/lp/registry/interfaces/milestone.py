@@ -48,7 +48,7 @@ from canonical.launchpad import _
 from canonical.launchpad.components.apihelpers import (
     patch_plain_parameter_type,
     )
-from canonical.launchpad.validators.name import name_validator
+from lp.app.validators.name import name_validator
 from lp.bugs.interfaces.bugtarget import (
     IHasBugs,
     IHasOfficialBugTags,

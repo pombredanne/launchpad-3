@@ -163,14 +163,14 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
-from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.validators.name import (
-    sanitize_name,
-    valid_name,
-    )
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.lazr.utils import get_current_browser_request
+from lp.app.validators.email import valid_email
+from lp.app.validators.name import (
+    sanitize_name,
+    valid_name,
+    )
 from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
@@ -235,6 +235,7 @@ from lp.registry.interfaces.person import (
     validate_public_person,
     )
 from lp.registry.interfaces.personnotification import IPersonNotificationSet
+from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
@@ -2133,6 +2134,12 @@ class Person(
         else:
             return True
 
+    @property
+    def is_merge_pending(self):
+        """See `IPublicPerson`."""
+        return not getUtility(
+            IPersonMergeJobSource).find(from_person=self).is_empty()
+
     def visibilityConsistencyWarning(self, new_value):
         """Warning used when changing the team's visibility.
 
@@ -2851,7 +2858,8 @@ class Person(
         from lp.hardwaredb.model.hwdb import HWSubmissionSet
         return HWSubmissionSet().search(owner=self)
 
-    def getRecipes(self):
+    @property
+    def recipes(self):
         """See `IHasRecipes`."""
         from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
         store = Store.of(self)
@@ -3454,8 +3462,8 @@ class PersonSet:
 
     def _mergeSourcePackageRecipes(self, from_person, to_person):
         # This shouldn't use removeSecurityProxy.
-        recipes = from_person.getRecipes()
-        existing_names = [r.name for r in to_person.getRecipes()]
+        recipes = from_person.recipes
+        existing_names = [r.name for r in to_person.recipes]
         for recipe in recipes:
             new_name = recipe.name
             count = 1
@@ -3858,6 +3866,11 @@ class PersonSet:
                 WHERE id in (%(to_id)d, %(from_id)d) LIMIT 1)
             WHERE id = %(to_id)d
             ''' % vars())
+
+    def mergeAsync(self, from_person, to_person):
+        """See `IPersonSet`."""
+        return getUtility(IPersonMergeJobSource).create(
+            from_person=from_person, to_person=to_person)
 
     def merge(self, from_person, to_person):
         """See `IPersonSet`."""
@@ -4472,7 +4485,7 @@ def _is_nick_registered(nick):
 def generate_nick(email_addr, is_registered=_is_nick_registered):
     """Generate a LaunchPad nick from the email address provided.
 
-    See canonical.launchpad.validators.name for the definition of a
+    See lp.app.validators.name for the definition of a
     valid nick.
 
     It is technically possible for this function to raise a

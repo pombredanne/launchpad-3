@@ -128,6 +128,9 @@ class IPOTMsgSet(Interface):
             queries that search for credits messages.
             """))
 
+    def clone():
+        """Return a new copy of this POTMsgSet."""
+
     def getCurrentTranslationMessageOrDummy(pofile):
         """Return the current `TranslationMessage`, or a dummy.
 
@@ -188,6 +191,16 @@ class IPOTMsgSet(Interface):
         same English text, and are not in actual use.
 
         The suggestions are read-only; they come from the slave store.
+
+        :param language: language we want translations for.
+        """
+
+    def getExternallySuggestedOrUsedTranslationMessages(language):
+        """Find externally suggested or used translations for the same message.
+
+        This returns a tuple (suggested, used) containing the results of
+        self.getExternallySuggestedTranslationMessages and
+        self.getExternallyUsedTranslationMessages respectively.
 
         :param language: language we want translations for.
         """

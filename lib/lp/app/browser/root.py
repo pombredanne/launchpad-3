@@ -10,13 +10,11 @@ __all__ = [
 
 
 import re
-import sys
 import time
 
 import feedparser
 from lazr.batchnavigator.z3batching import batch
 from zope.component import getUtility
-from zope.error.interfaces import IErrorReportingUtility
 from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import getVocabularyRegistry
 
@@ -28,11 +26,10 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet,
     )
-from canonical.launchpad.interfaces.searchservice import (
+from lp.services.googlesearch.interfaces import (
     GoogleResponseError,
     ISearchService,
     )
-from canonical.launchpad.validators.name import sanitize_name
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -46,6 +43,7 @@ from lp.app.browser.launchpadform import (
     safe_action,
     )
 from lp.app.errors import NotFoundError
+from lp.app.validators.name import sanitize_name
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.bugs.interfaces.bug import IBugSet
 from lp.code.interfaces.branchcollection import IAllBranches
@@ -489,8 +487,8 @@ class LaunchpadSearchView(LaunchpadFormView):
             page_matches = google_search.search(
                 terms=query_terms, start=start)
         except GoogleResponseError:
-            error_utility = getUtility(IErrorReportingUtility)
-            error_utility.raising(sys.exc_info(), self.request)
+            # There was a connectivity or Google service issue that means
+            # there is no data available at this moment.
             self.has_page_service = False
             return None
         if len(page_matches) == 0:

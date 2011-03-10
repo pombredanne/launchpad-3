@@ -284,20 +284,26 @@ class RunJobCommand(amp.Command):
     response = [('success', amp.Integer()), ('oops_id', amp.String())]
 
 
+def import_source(job_source_name):
+    """Return the IJobSource specified by its full name."""
+    module, name = job_source_name.rsplit('.', 1)
+    source_module = __import__(module, fromlist=[name])
+    return getattr(source_module, name)
+
+
 class JobRunnerProcess(child.AMPChild):
     """Base class for processes that run jobs."""
 
     def __init__(self, job_source_name, dbuser):
         child.AMPChild.__init__(self)
-        module, name = job_source_name.rsplit('.', 1)
-        source_module = __import__(module, fromlist=[name])
-        self.job_source = getattr(source_module, name)
+        self.job_source = import_source(job_source_name)
         self.context_manager = self.job_source.contextManager()
         # icky, but it's really a global value anyhow.
         self.__class__.dbuser = dbuser
 
     @classmethod
     def __enter__(cls):
+
         def handler(signum, frame):
             raise TimeoutError
         scripts.execute_zcml_for_scripts(use_web_security=False)
@@ -368,6 +374,7 @@ class TwistedJobRunner(BaseJobRunner):
             'Running %r, lease expires %s', job, job.lease_expires)
         deferred = self.pool.doWork(
             RunJobCommand, job_id = job_id, _deadline=deadline)
+
         def update(response):
             if response['success']:
                 self.completed_jobs.append(job)
@@ -377,6 +384,7 @@ class TwistedJobRunner(BaseJobRunner):
                 self.logger.debug('Incomplete %r', job)
             if response['oops_id'] != '':
                 self._logOopsId(response['oops_id'])
+
         def job_raised(failure):
             self.incomplete_jobs.append(job)
             info = (failure.type, failure.value, failure.tb)
@@ -387,6 +395,7 @@ class TwistedJobRunner(BaseJobRunner):
 
     def getTaskSource(self):
         """Return a task source for all jobs in job_source."""
+
         def producer():
             while True:
                 jobs = list(self.job_source.iterReady())
@@ -442,10 +451,16 @@ class JobCronScript(LaunchpadCronScript):
 
     config_name = None
 
-    def __init__(self, runner_class=JobRunner, test_args=None, name=None):
+    def __init__(self, runner_class=JobRunner, test_args=None, name=None,
+                 commandline_config=False):
         super(JobCronScript, self).__init__(
             name=name, dbuser=None, test_args=test_args)
         self._runner_class = runner_class
+        if not commandline_config:
+            return
+        self.config_name = self.args[0]
+        self.source_interface = import_source(
+            self.config_section.source_interface)
 
     @property
     def dbuser(self):

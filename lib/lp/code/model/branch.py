@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'Branch',
     'BranchSet',
+    'filter_one_task_per_bug',
     ]
 
 from datetime import datetime
@@ -63,6 +64,7 @@ from canonical.launchpad import _
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities,
     IPrivacy,
@@ -70,6 +72,10 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp import urlappend
 from lp.app.errors import UserCannotUnsubscribePerson
+from lp.bugs.interfaces.bugtask import (
+    IBugTaskSet,
+    BugTaskSearchParams,
+    )
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.bzr import (
     BranchFormat,
@@ -137,6 +143,7 @@ from lp.registry.interfaces.person import (
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
+from lp.services.propertycache import cachedproperty
 
 
 class Branch(SQLBase, BzrIdentityMixin):
@@ -302,16 +309,14 @@ class Branch(SQLBase, BzrIdentityMixin):
         'Bug', joinColumn='branch', otherColumn='bug',
         intermediateTable='BugBranch', orderBy='id')
 
-    def getLinkedBugsAndTasks(self):
-        """Return a result set for the bugs with their tasks."""
-        from lp.bugs.model.bug import Bug
-        from lp.bugs.model.bugbranch import BugBranch
-        from lp.bugs.model.bugtask import BugTask
-        return Store.of(self).find(
-            (Bug, BugTask),
-            BugBranch.branch == self,
-            BugBranch.bug == Bug.id,
-            BugTask.bug == Bug.id)
+    def getLinkedBugTasks(self, user, status_filter=None):
+        """See `IBranch`."""
+        params = BugTaskSearchParams(user=user, linked_branches=self.id,
+            status=status_filter)
+        tasks = shortlist(getUtility(IBugTaskSet).search(params), 1000)
+        # Post process to discard irrelevant tasks: we only return one task per
+        # bug, and cannot easily express this in sql (yet).
+        return filter_one_task_per_bug(self, tasks)
 
     def linkBug(self, bug, registrant):
         """See `IBranch`."""
@@ -665,7 +670,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             map(ClearOfficialPackageBranch, series_set.findForBranch(self)))
         deletion_operations.extend(
             DeletionCallable.forSourcePackageRecipe(recipe)
-            for recipe in self.getRecipes())
+            for recipe in self.recipes)
         return (alteration_operations, deletion_operations)
 
     def deletionRequirements(self):
@@ -704,13 +709,19 @@ class Branch(SQLBase, BzrIdentityMixin):
             DeleteCodeImport(self.code_import)()
         Store.of(self).flush()
 
-    def associatedProductSeries(self):
-        """See `IBranch`."""
+    @cachedproperty
+    def _associatedProductSeries(self):
+        """Helper for eager loading associatedProductSeries."""
+        # This is eager loaded by BranchCollection.getBranches.
         # Imported here to avoid circular import.
         from lp.registry.model.productseries import ProductSeries
         return Store.of(self).find(
             ProductSeries,
             ProductSeries.branch == self)
+
+    def associatedProductSeries(self):
+        """See `IBranch`."""
+        return self._associatedProductSeries
 
     def getProductSeriesPushingTranslations(self):
         """See `IBranch`."""
@@ -720,13 +731,20 @@ class Branch(SQLBase, BzrIdentityMixin):
             ProductSeries,
             ProductSeries.translations_branch == self)
 
-    def associatedSuiteSourcePackages(self):
-        """See `IBranch`."""
+    @cachedproperty
+    def _associatedSuiteSourcePackages(self):
+        """Helper for associatedSuiteSourcePackages."""
+        # This is eager loaded by BranchCollection.getBranches.
         series_set = getUtility(IFindOfficialBranchLinks)
-        # Order by the pocket to get the release one first.
+        # Order by the pocket to get the release one first. If changing this be
+        # sure to also change BranchCollection.getBranches.
         links = series_set.findForBranch(self).order_by(
             SeriesSourcePackageBranch.pocket)
         return [link.suite_sourcepackage for link in links]
+
+    def associatedSuiteSourcePackages(self):
+        """See `IBranch`."""
+        return self._associatedSuiteSourcePackages
 
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines,
@@ -1160,7 +1178,8 @@ class Branch(SQLBase, BzrIdentityMixin):
                     user, checked_branches)
         return can_access
 
-    def getRecipes(self):
+    @property
+    def recipes(self):
         """See `IHasRecipes`."""
         from lp.code.model.sourcepackagerecipedata import (
             SourcePackageRecipeData)
@@ -1290,7 +1309,8 @@ class BranchSet:
         branches = all_branches.visibleByUser(
             visible_by_user).withLifecycleStatus(*lifecycle_statuses)
         branches = branches.withBranchType(
-            BranchType.HOSTED, BranchType.MIRRORED).scanned().getBranches()
+            BranchType.HOSTED, BranchType.MIRRORED).scanned().getBranches(
+                eager_load=False)
         branches.order_by(
             Desc(Branch.date_last_modified), Desc(Branch.id))
         if branch_count is not None:
@@ -1306,7 +1326,7 @@ class BranchSet:
         branches = all_branches.visibleByUser(
             visible_by_user).withLifecycleStatus(*lifecycle_statuses)
         branches = branches.withBranchType(
-            BranchType.IMPORTED).scanned().getBranches()
+            BranchType.IMPORTED).scanned().getBranches(eager_load=False)
         branches.order_by(
             Desc(Branch.date_last_modified), Desc(Branch.id))
         if branch_count is not None:
@@ -1320,7 +1340,8 @@ class BranchSet:
         """See `IBranchSet`."""
         all_branches = getUtility(IAllBranches)
         branches = all_branches.withLifecycleStatus(
-            *lifecycle_statuses).visibleByUser(visible_by_user).getBranches()
+            *lifecycle_statuses).visibleByUser(visible_by_user).getBranches(
+                eager_load=False)
         branches.order_by(
             Desc(Branch.date_created), Desc(Branch.id))
         if branch_count is not None:
@@ -1339,10 +1360,10 @@ class BranchSet:
         """See `IBranchSet`."""
         return getUtility(IBranchLookup).getByUrls(urls)
 
-    def getBranches(self, limit=50):
+    def getBranches(self, limit=50, eager_load=True):
         """See `IBranchSet`."""
         anon_branches = getUtility(IAllBranches).visibleByUser(None)
-        branches = anon_branches.scanned().getBranches()
+        branches = anon_branches.scanned().getBranches(eager_load=eager_load)
         branches.order_by(
             Desc(Branch.date_last_modified), Desc(Branch.id))
         branches.config(limit=limit)
@@ -1367,3 +1388,27 @@ def branch_modified_subscriber(branch, event):
     """
     update_trigger_modified_fields(branch)
     send_branch_modified_notifications(branch, event)
+
+
+def filter_one_task_per_bug(branch, tasks):
+    """Given bug tasks for a branch, discard irrelevant ones.
+
+    Cannot easily be expressed in SQL yet, so we need this helper method.
+    """
+    order = {}
+    bugtarget = branch.target.context
+    # First pass calculates the order and selects the bugtasks that match
+    # our target.
+    # Second pass selects the earliest bugtask where the bug has no task on
+    # our target.
+    for pos, task in enumerate(tasks):
+        bug = task.bug
+        if bug not in order:
+            order[bug] = [pos, None]
+        if task.target == bugtarget:
+            order[bug][1] = task
+    for task in tasks:
+        index = order[task.bug]
+        if index[1] is None:
+            index[1] = task
+    return [task for pos, task in sorted(order.values())]

@@ -39,7 +39,9 @@ from lazr.restful.declarations import (
     export_read_operation,
     export_write_operation,
     exported,
+    operation_for_version,
     operation_parameters,
+    operation_returns_collection_of,
     operation_returns_entry,
     rename_parameters_as,
     REQUEST_USER,
@@ -69,7 +71,6 @@ from canonical.database.constants import DEFAULT
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IPrivacy
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
-from lp.bugs.interfaces.bug import IBug
 from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
@@ -277,10 +278,6 @@ class IBranchMergeProposal(IPrivacy):
             value_type=Reference(schema=Interface), # ICodeReviewComment
             readonly=True))
 
-    related_bugs = CollectionField(
-        title=_("Bugs related to this merge proposal."),
-        value_type=Reference(schema=IBug), readonly=True)
-
     address = exported(
         TextLine(
             title=_('The email address for this proposal.'),
@@ -295,6 +292,13 @@ class IBranchMergeProposal(IPrivacy):
     @export_read_operation()
     def getComment(id):
         """Return the CodeReviewComment with the specified ID."""
+
+    @call_with(user=REQUEST_USER)
+    @operation_returns_collection_of(Interface) # IBugTask
+    @export_read_operation()
+    @operation_for_version('devel')
+    def getRelatedBugTasks(user):
+        """Return the Bug tasks related to this merge proposal."""
 
     def getRevisionsSinceReviewStart():
         """Return all the revisions added since the review began.

@@ -248,8 +248,12 @@ class BugContextMenu(ContextMenu):
             self.context.bug.isSubscribed(user) or
             self.context.bug.isSubscribedToDupes(user)):
             if self._use_advanced_features:
-                text = 'Edit subscription'
-                icon = 'edit'
+                if self.context.bug.isMuted(user):
+                    text = 'Subscribe'
+                    icon = 'add'
+                else:
+                    text = 'Edit subscription'
+                    icon = 'edit'
             else:
                 text = 'Unsubscribe'
                 icon = 'remove'
@@ -371,6 +375,9 @@ class MaloneView(LaunchpadFormView):
 
     def _redirectToBug(self, bug_id):
         """Redirect to the specified bug id."""
+        if not isinstance(bug_id, basestring):
+            self.error_message = "Bug %r is not registered." % bug_id
+            return
         if bug_id.startswith("#"):
             # Be nice to users and chop off leading hashes
             bug_id = bug_id[1:]

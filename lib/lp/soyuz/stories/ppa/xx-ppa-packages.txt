@@ -276,14 +276,14 @@ for iceweasel before marking it as superseded.
     >>> login('foo.bar@canonical.com')
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> iceweasel_pub = cprov.archive.getPublishedSources(
-    ...     name='iceweasel')[0]
+    ...     name='iceweasel').first()
     >>> bpr = test_publisher.uploadBinaryForBuild(
     ...     iceweasel_pub.getBuilds()[0], 'bar-bin')
     >>> pub_bins = test_publisher.publishBinaryInArchive(
     ...     bpr, cprov.archive, status=PackagePublishingStatus.PUBLISHED)
     >>> iceweasel_pub.status = (
     ...     PackagePublishingStatus.SUPERSEDED)
-    >>> pmount_pub = cprov.archive.getPublishedSources(name='pmount')[0]
+    >>> pmount_pub = cprov.archive.getPublishedSources(name='pmount').first()
     >>> pmount_pub.status = PackagePublishingStatus.DELETED
     >>> pmount_pub.removed_by = cprov
     >>> pmount_pub.removal_comment = 'nhack !'

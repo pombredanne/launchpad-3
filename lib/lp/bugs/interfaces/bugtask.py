@@ -105,9 +105,9 @@ from canonical.launchpad.searchbuilder import (
     any,
     NULL,
     )
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.name import name_validator
 from lp.bugs.interfaces.bugwatch import (
     IBugWatch,
     IBugWatchSet,
@@ -1596,18 +1596,6 @@ class IBugTaskSet(Interface):
 
     def getOpenBugTasksPerProduct(user, products):
         """Return open bugtask count for multiple products."""
-
-    def getAllStructuralSubscriptions(bugtasks):
-        """Return all potential structural subscriptions for the bugtasks.
-
-        This method ignores subscription filters.
-        """
-
-    def getStructuralSubscribers(bugtasks, recipients=None, level=None):
-        """Return `IPerson`s subscribed to the given bug tasks.
-
-        This takes into account bug subscription filters.
-        """
 
     def getPrecachedNonConjoinedBugTasks(user, milestone):
         """List of non-conjoined bugtasks targeted to the milestone.

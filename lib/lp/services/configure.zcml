@@ -8,6 +8,7 @@
   <include package=".features" />
   <include package=".fields" />
   <include package=".geoip" />
+  <include package=".googlesearch" />
   <include package=".inlinehelp" file="meta.zcml" />
   <include package=".job" />
   <include package=".memcache" />
