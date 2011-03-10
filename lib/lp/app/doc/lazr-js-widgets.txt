@@ -326,3 +326,60 @@ Changing the edit link
 
 The edit link can be changed in exactly the same way as for the
 TextLineEditorWidget above.
+
+
+EnumChoiceWidget
+----------------
+
+This widget is primarily there allow setting of enum fields easily
+using the popup chooser.
+
+    >>> from lp.app.browser.lazrjs import EnumChoiceWidget
+
+As with the other widgets, this one requires a context object and a Choice type
+field.  The rendering of the widget hooks up to the lazr ChoiceSource with the
+standard patch plugin.
+
+One of the different things about this widget is the styles that are added.
+Many enums have specific colour styles.  Generally these are the names of
+the enum values (the upper-case bit) with a defined prefix.  This prefix
+is passed in to the constructor of the widget.
+
+A list of items is generated from the vocabulary.
+
+If the user does not have edit rights, the widget just renders the text based
+on the current value of the field on the object:
+
+    >>> login(ANONYMOUS)
+    >>> from lp.code.interfaces.branch import IBranch
+    >>> branch = factory.makeAnyBranch()
+    >>> widget = EnumChoiceWidget(
+    ...     branch, IBranch['lifecycle_status'],
+    ...     header='Change status to', css_class_prefix='branchstatus')
+    >>> print widget()
+    <span id="edit-lifecycle_status">
+       <span class="value branchstatusDEVELOPMENT">Development</span>
+    </span>
+
+If the user has edit rights, an edit icon is rendered and some javascript is
+rendered to hook up the widget.
+
+    >>> login_person(branch.owner)
+    >>> print widget()
+    <span id="edit-lifecycle_status">
+        <span class="value branchstatusDEVELOPMENT">Development</span>
+        <span>&nbsp;
+          <a class="editicon sprite edit" href="http://.../+edit"></a>
+        </span>
+    </span>
+    <script>
+    LPS.use('lp.app.choice', function(Y) {
+    ...
+    </script>
+
+
+Changing the edit link
+**********************
+
+The edit link can be changed in exactly the same way as for the
+TextLineEditorWidget above.

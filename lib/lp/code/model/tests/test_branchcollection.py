@@ -192,6 +192,16 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         collection = self.all_branches.ownedBy(branch.owner)
         self.assertEqual([branch], list(collection.getBranches()))
 
+    def test_ownedByTeamMember(self):
+        # 'ownedBy' returns a new collection restricted to branches owned by
+        # any team of which the given person is a member.
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam(members=[person])
+        branch = self.factory.makeAnyBranch(owner=team)
+        branch2 = self.factory.makeAnyBranch()
+        collection = self.all_branches.ownedByTeamMember(person)
+        self.assertEqual([branch], list(collection.getBranches()))
+
     def test_in_product(self):
         # 'inProduct' returns a new collection restricted to branches in the
         # given product.
@@ -229,6 +239,24 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         self.assertEqual([branch], list(collection.getBranches()))
         collection = self.all_branches.ownedBy(person).inProduct(product)
         self.assertEqual([branch], list(collection.getBranches()))
+
+    def test_ownedByTeamMember_and_inProduct(self):
+        # 'ownedBy' and 'inProduct' can combine to form a collection that is
+        # restricted to branches of a particular product owned by a particular
+        # person or team of which the person is a member.
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam(members=[person])
+        product = self.factory.makeProduct()
+        branch = self.factory.makeProductBranch(product=product, owner=person)
+        branch2 = self.factory.makeProductBranch(product=product, owner=team)
+        branch3 = self.factory.makeAnyBranch(owner=person)
+        branch4 = self.factory.makeProductBranch(product=product)
+        product_branches = self.all_branches.inProduct(product)
+        collection = product_branches.ownedByTeamMember(person)
+        self.assertContentEqual([branch, branch2], collection.getBranches())
+        person_branches = self.all_branches.ownedByTeamMember(person)
+        collection = person_branches.inProduct(product)
+        self.assertContentEqual([branch, branch2], collection.getBranches())
 
     def test_in_source_package(self):
         # 'inSourcePackage' returns a new collection that only has branches in

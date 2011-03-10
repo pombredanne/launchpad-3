@@ -4,6 +4,7 @@
 # This file is imported by parts/scripts/sitecustomize.py, as set up in our
 # buildout.cfg (see the "initialization" key in the "[scripts]" section).
 
+from collections import defaultdict
 import itertools
 import os
 import warnings
@@ -129,6 +130,7 @@ def main(instance_name):
     add_custom_loglevels()
     customizeMimetypes()
     dont_wrap_class_and_subclasses(Branch)
+    checker.BasicTypes.update({defaultdict: checker.NoProxy})
     checker.BasicTypes.update({Deferred: checker.NoProxy})
     checker.BasicTypes.update({DeferredList: checker.NoProxy})
     checker.BasicTypes[itertools.groupby] = checker._iteratorChecker

@@ -152,6 +152,11 @@ class IBranchCollection(Interface):
     def ownedBy(person):
         """Restrict the collection to branches owned by 'person'."""
 
+    def ownedByTeamMember(person):
+        """Restrict the collection to branches owned by 'person' or a team
+        of which person is a member.
+        """
+
     def registeredBy(person):
         """Restrict the collection to branches registered by 'person'."""
 

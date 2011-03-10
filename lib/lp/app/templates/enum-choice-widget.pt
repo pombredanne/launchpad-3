@@ -1,0 +1,17 @@
+<span tal:attributes="id view/content_box_id">
+  <span tal:attributes="class view/css_class"
+        tal:content="structure view/value" />
+  <span tal:condition="view/can_write">&nbsp;
+    <a tal:attributes="href view/edit_url"
+       class="editicon sprite edit"></a>
+  </span>
+</span>
+<script tal:condition="view/can_write"
+        tal:content="structure string:
+LPS.use('lp.app.choice', function(Y) {
+    Y.lp.app.choice.addEnumChoice(
+        ${view/json_config},
+        ${view/json_resource_uri},
+        ${view/json_attribute});
+});
+"/>
