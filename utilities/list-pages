@@ -54,6 +54,7 @@ from zope.component import adapts, getGlobalSiteManager
 from zope.interface import directlyProvides, implements
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 
+from canonical.config import config
 from canonical.launchpad import pagetitles
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
@@ -64,12 +65,13 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 
 
 def load_zcml(zopeless=False):
-    """Load ZCML the way we do in our tests."""
+    """Load ZCML the way we do in the web site."""
+    # We can't load ZCML without generating configuration.
+    config.generate_overrides()
     if zopeless:
         execute_zcml_for_scripts()
     else:
-        FunctionalTestSetup(
-            os.path.join(ROOT, 'zcml', 'ftesting.zcml')).setUp()
+        FunctionalTestSetup(os.path.join(ROOT, 'site.zcml')).setUp()
 
 
 def is_page_adapter(adapter):
