@@ -1976,7 +1976,7 @@ class BugsStatsMixin(BugsInfoMixin):
         if self.user is None:
             return None
         params = get_default_search_params(self.user)
-        params.reporter = self.user
+        params.bug_reporter = self.user
         return self.context.searchTasks(params).count()
 
     @property
