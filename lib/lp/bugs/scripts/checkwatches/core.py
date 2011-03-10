@@ -251,19 +251,20 @@ class CheckwatchesMaster(WorkingBase):
             # If something unexpected goes wrong, we log it and
             # continue: a failure shouldn't break the updating of
             # the other bug trackers.
-            info = sys.exc_info()
-            properties = [
-                ('bugtracker', bug_tracker_name),
-                ('baseurl', bug_tracker_url)]
             if isinstance(error, BugWatchUpdateError):
-                self.error(
-                    str(error), properties=properties, info=info)
+                self.logger.info(
+                    "Error updating %s: %s" % (
+                        bug_tracker.baseurl, error))
             elif isinstance(error, socket.timeout):
-                self.error(
-                    "Connection timed out when updating %s" %
-                    bug_tracker_url,
-                    properties=properties, info=info)
+                self.logger.info(
+                    "Connection timed out when updating %s" % (
+                        bug_tracker.baseurl))
             else:
+                # Unknown exceptions are logged as OOPSes.
+                info = sys.exc_info()
+                properties = [
+                    ('bugtracker', bug_tracker_name),
+                    ('baseurl', bug_tracker_url)]
                 self.error(
                     "An exception was raised when updating %s" %
                     bug_tracker_url,
