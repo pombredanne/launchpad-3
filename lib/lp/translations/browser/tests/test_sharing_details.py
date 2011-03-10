@@ -25,8 +25,18 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory):
 
     def setUp(self):
         super(TestSourcePackageTranslationSharingDetailsView, self).setUp()
-        self.sourcepackage = self.factory.makeSourcePackage()
+        distroseries = self.factory.makeUbuntuDistroSeries()
+        self.sourcepackage = self.factory.makeSourcePackage(
+            distroseries=distroseries)
+        self.ubuntu_only_template = self.factory.makePOTemplate(
+            sourcepackage=self.sourcepackage, name='ubuntu-only')
+        self.shared_template_ubuntu_side = self.factory.makePOTemplate(
+            sourcepackage=self.sourcepackage, name='shared-template')
         self.productseries = self.factory.makeProductSeries()
+        self.shared_template_upstream_side = self.factory.makePOTemplate(
+            productseries=self.productseries, name='shared-template')
+        self.upstream_only_template = self.factory.makePOTemplate(
+            productseries=self.productseries, name='upstream-only')
         self.view = SourcePackageTranslationSharingDetailsView(
             self.sourcepackage, LaunchpadTestRequest())
         self.view.initialize()
@@ -181,3 +191,23 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory):
             translation_import_mode=
                 TranslationsBranchImportMode.IMPORT_TRANSLATIONS)
         self.assertTrue(self.view.is_configuration_complete)
+
+    def test_template_info__no_sharing(self):
+        # If translation sharing is not configured,
+        # SourcePackageTranslationSharingDetailsView.info returns
+        # only data about templates in Ubuntu.
+        expected = [
+            {
+                'name': 'shared-template',
+                'package_template': self.shared_template_ubuntu_side,
+                'upstream_template': None,
+                'status': 'only in Ubuntu'
+                },
+            {
+                'name': 'ubuntu-only',
+                'upstream_template': None,
+                'status': 'only in Ubuntu',
+                'package_template': self.ubuntu_only_template,
+                },
+            ]
+        self.assertEqual(expected, self.view.template_info)
