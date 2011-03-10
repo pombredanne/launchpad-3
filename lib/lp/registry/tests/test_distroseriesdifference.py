@@ -7,7 +7,6 @@ __metaclass__ = type
 
 from storm.exceptions import IntegrityError
 from storm.store import Store
-from textwrap import dedent
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -445,47 +444,15 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         self.assertIs(None, ds_diff.base_version)
 
-    def test_base_version_common(self):
-        # The common base version is set when the difference is created.
-        # Publish v1.0 of foo in both series.
-        ds_diff = self.factory.makeDistroSeriesDifference(versions={
-            'derived': '1.2',
-            'parent': '1.3',
-            'base': '1.0',
-            })
-
-        self.assertEqual('1.0', ds_diff.base_version)
-
     def test_base_version_multiple(self):
         # The latest common base version is set as the base-version.
         derived_series = self.factory.makeDistroSeries(
             parent_series=self.factory.makeDistroSeries())
         source_package_name = self.factory.getOrMakeSourcePackageName('foo')
         # Create changelogs for both.
-        changelog_lfa = self.factory.makeLibraryFileAlias(
-            content=dedent('''
-            foo (1.2) unstable; urgency=low
-            
-              * 1.2
-            
-             -- Foo Bar <foo@example.com>  Tue, 28 Dec 2010 01:50:41 +0000
-            
-            foo (1.1) unstable; urgency=low
-            
-              * 1.1
-            
-             -- Foo Bar <foo@example.com>  Sun, 28 Nov 2010 01:50:41 +0000
-            '''))
-        parent_changelog_lfa = self.factory.makeLibraryFileAlias(
-            content=dedent('''
-            foo (1.1) unstable; urgency=low
-            
-              * 1.1
-            
-             -- Foo Bar <foo@example.com>  Sun, 28 Nov 2010 01:50:41 +0000
-            '''))
-        # Yay, librarian.
-        transaction.commit()
+        changelog_lfa = self.factory.makeChangelog('foo', ['1.2', '1.1'])
+        parent_changelog_lfa = self.factory.makeChangelog('foo', ['1.1'])
+        transaction.commit() # Yay, librarian.
         
         ds_diff = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series, source_package_name_str='foo',
@@ -508,22 +475,61 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
     def test_base_source_pub(self):
         # The publishing in the derived series with base_version is returned.
+        dervied_changelog = self.factory.makeChangelog(
+            versions=['1.0', '1.2'])
+        parent_changelog = self.factory.makeChangelog(
+            versions=['1.0', '1.3'])
+        transaction.commit() # Yay, librarian.
+        
         ds_diff = self.factory.makeDistroSeriesDifference(versions={
             'derived': '1.2',
             'parent': '1.3',
             'base': '1.0',
+            },
+            changelogs={
+                'derived': dervied_changelog,
+                'parent': parent_changelog,
             })
 
         base_pub = ds_diff.base_source_pub
         self.assertEqual('1.0', base_pub.source_package_version)
         self.assertEqual(ds_diff.derived_series, base_pub.distroseries)
 
+    def test_base_source_pub_not_published(self):
+        # If the base version isn't published, the base version is
+        # calculated, but the source publication isn't set.
+        dervied_changelog = self.factory.makeChangelog(
+            versions=['1.0', '1.2'])
+        parent_changelog = self.factory.makeChangelog(
+            versions=['1.0', '1.3'])
+        transaction.commit() # Yay, librarian.
+        
+        ds_diff = self.factory.makeDistroSeriesDifference(versions={
+            'derived': '1.2',
+            'parent': '1.3',
+            },
+            changelogs={
+                'derived': dervied_changelog,
+                'parent': parent_changelog,
+            })
+        self.assertEqual('1.0', ds_diff.base_version)
+        self.assertIs(None, ds_diff.base_source_pub)
+
     def test_requestPackageDiffs(self):
         # IPackageDiffs are created for the corresponding versions.
+        dervied_changelog = self.factory.makeChangelog(
+            versions=['1.0', '1.2'])
+        parent_changelog = self.factory.makeChangelog(
+            versions=['1.0', '1.3'])
+        transaction.commit() # Yay, librarian.
         ds_diff = self.factory.makeDistroSeriesDifference(versions={
             'derived': '1.2',
             'parent': '1.3',
             'base': '1.0',
+            },
+            changelogs={
+                'derived': dervied_changelog,
+                'parent': parent_changelog,
             })
 
         with person_logged_in(ds_diff.owner):

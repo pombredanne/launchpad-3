@@ -2047,6 +2047,23 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             removeSecurityProxy(code_import).review_status = review_status
         return code_import
 
+    def makeChangelog(self, spn=None, versions=[]):
+        """Create and return a LFA of a valid Debian-style changelog."""
+        if spn is None:
+            spn = self.getUniqueString()
+        changelog = ''
+        for version in versions:
+            entry = dedent('''
+            %s (%s) unstable; urgency=low
+            
+              * %s. 
+            
+             -- Foo Bar <foo@example.com>  Tue, 01 Jan 1970 01:50:41 +0000
+            
+            ''' % (spn, version, version))
+            changelog += entry
+        return self.makeLibraryFileAlias(content=changelog)
+
     def makeCodeImportEvent(self):
         """Create and return a CodeImportEvent."""
         code_import = self.makeCodeImport()
