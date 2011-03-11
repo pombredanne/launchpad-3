@@ -834,6 +834,15 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
+
+
+
 SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE account DISABLE TRIGGER ALL;
@@ -1905,21 +1914,21 @@ ALTER TABLE translationgroup ENABLE TRIGGER ALL;
 
 ALTER TABLE distribution DISABLE TRIGGER ALL;
 
-INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (1, 'ubuntu', 'Ubuntu Linux', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 'ubuntulinux.org', 17, 'Ubuntu', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 17, NULL, 1, NULL, true, true, NULL, NULL, 3, 59, NULL, NULL, '2006-10-16 18:31:43.415195', NULL, NULL, NULL, NULL, NULL, true, NULL, true, true, NULL, NULL, NULL, NULL, 10, 10, 10);
-INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 'redhat.com', 1, 'Red Hat', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.417928', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL, NULL, 10, 10, 10);
-INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (3, 'debian', 'Debian GNU/Linux', 'Debian GNU/Linux is
+INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage, registrant) VALUES (1, 'ubuntu', 'Ubuntu Linux', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 'ubuntulinux.org', 17, 'Ubuntu', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 17, NULL, 1, NULL, true, true, NULL, NULL, 3, 59, NULL, NULL, '2006-10-16 18:31:43.415195', NULL, NULL, NULL, NULL, NULL, true, NULL, true, true, NULL, NULL, NULL, NULL, 10, 10, 10, 60);
+INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage, registrant) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 'redhat.com', 1, 'Red Hat', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.417928', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL, NULL, 10, 10, 10, 60);
+INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage, registrant) VALUES (3, 'debian', 'Debian GNU/Linux', 'Debian GNU/Linux is
 a non commercial distribution of a GNU/Linux Operating System for many
 platforms.', 'debian.org', 1, 'Debian', 'Debian GNU/Linux is
 a non commercial distribution of a GNU/Linux Operating System for many
-platforms.', 1, NULL, 1, NULL, false, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.418942', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL, NULL, 10, 10, 10);
-INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (4, 'gentoo', 'The Gentoo Linux', 'Gentoo is a very
+platforms.', 1, NULL, 1, NULL, false, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.418942', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL, NULL, 10, 10, 10, 60);
+INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage, registrant) VALUES (4, 'gentoo', 'The Gentoo Linux', 'Gentoo is a very
 customizeable GNU/Linux Distribution that is designed to let you build every
-single package yourself, with your own preferences.', 'gentoo.org', 1, 'Gentoo', 'Gentoo is a very customizeable GNU/Linux Distribution that is designed to let you build every single package yourself, with your own preferences.', 1, NULL, 1, NULL, true, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.41974', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL, NULL, 10, 10, 10);
-INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (5, 'kubuntu', 'Kubuntu - Free KDE-based Linux', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
+single package yourself, with your own preferences.', 'gentoo.org', 1, 'Gentoo', 'Gentoo is a very customizeable GNU/Linux Distribution that is designed to let you build every single package yourself, with your own preferences.', 1, NULL, 1, NULL, true, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.41974', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL, NULL, 10, 10, 10, 60);
+INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage, registrant) VALUES (5, 'kubuntu', 'Kubuntu - Free KDE-based Linux', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
 Environment as its default desktop after install.', 'kubuntu.org', 1, 'Kubuntu', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
-Environment as its default desktop after install.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.420551', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL, NULL, 10, 10, 10);
-INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (7, 'guadalinex', 'GuadaLinex: Linux for Andalucia', 'GuadaLinex is based on Ubuntu and adds full support for applications specific to the local environment in Andalucia.', 'guadalinex.es', 4, 'GuadaLinex', 'The GuadaLinex team produces a high quality linux for the Andalucian marketplace.', 32, NULL, 1, NULL, false, false, NULL, NULL, NULL, 4, NULL, NULL, '2006-10-16 18:31:43.421329', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL, NULL, 10, 10, 10);
-INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (8, 'ubuntutest', 'Ubuntu Test', 'Ubuntu Test', 'ubuntulinux.org', 17, 'ubuntutest', 'Ubuntu Test summary', 17, NULL, 1, NULL, false, false, NULL, NULL, NULL, 17, NULL, NULL, '2006-10-16 18:31:43.422162', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL, NULL, 10, 10, 10);
+Environment as its default desktop after install.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.420551', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL, NULL, 10, 10, 10, 60);
+INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage, registrant) VALUES (7, 'guadalinex', 'GuadaLinex: Linux for Andalucia', 'GuadaLinex is based on Ubuntu and adds full support for applications specific to the local environment in Andalucia.', 'guadalinex.es', 4, 'GuadaLinex', 'The GuadaLinex team produces a high quality linux for the Andalucian marketplace.', 32, NULL, 1, NULL, false, false, NULL, NULL, NULL, 4, NULL, NULL, '2006-10-16 18:31:43.421329', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL, NULL, 10, 10, 10, 60);
+INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage, registrant) VALUES (8, 'ubuntutest', 'Ubuntu Test', 'Ubuntu Test', 'ubuntulinux.org', 17, 'ubuntutest', 'Ubuntu Test summary', 17, NULL, 1, NULL, false, false, NULL, NULL, NULL, 17, NULL, NULL, '2006-10-16 18:31:43.422162', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL, NULL, 10, 10, 10, 60);
 
 
 ALTER TABLE distribution ENABLE TRIGGER ALL;
@@ -3451,6 +3460,50 @@ ALTER TABLE bugnotificationattachment DISABLE TRIGGER ALL;
 ALTER TABLE bugnotificationattachment ENABLE TRIGGER ALL;
 
 
+ALTER TABLE milestone DISABLE TRIGGER ALL;
+
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (1, 4, '1.0', NULL, '2056-10-16 18:31:44.293448', true, 1, NULL, '2006-10-16 18:31:44.293448', NULL, NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (2, NULL, '3.1', 3, '2056-05-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574', NULL, NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (3, NULL, '3.1-rc1', 3, '2056-02-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574', NULL, NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (4, 4, '0.9.2', NULL, NULL, false, 1, NULL, '2009-03-02 18:31:35.911331', 'This was a security fix release for 0.9.', 'One (secure) Tree Hill');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (5, 4, '0.9.1', NULL, NULL, false, 1, NULL, '2009-03-02 18:31:35.911331', 'This was a bugfix release to patch up problems with the new extension system.', 'One Tree Hill (v2)');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (6, 4, '0.9', NULL, NULL, false, 1, NULL, '2009-03-02 18:31:35.911331', 'Release 0.9 of Firefox introduced a new theme as well as improved migration tools for people switching to Firefox.', 'One Tree Hill');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (7, 4, '1.0.0', NULL, NULL, false, 2, NULL, '2009-03-02 18:31:35.911331', 'After four years of work the Mozilla project makes its first public stable release. Mozilla 1.0.0 is a major milestone in open source history.', 'First Stable Release');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (8, 5, '2.1.6', NULL, NULL, false, 3, NULL, '2009-03-02 18:31:35.911331', '', NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (9, 8, '0.8', NULL, NULL, false, 4, NULL, '2009-03-02 18:31:35.911331', '', NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (10, 11, '1.0', NULL, NULL, false, 5, NULL, '2009-03-02 18:31:35.911331', '', NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (11, 15, '1.0.9a', NULL, NULL, false, 8, NULL, '2009-03-02 18:31:35.911331', '', NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (12, 15, '1.0.8', NULL, NULL, false, 8, NULL, '2009-03-02 18:31:35.911331', '', NULL);
+
+
+ALTER TABLE milestone ENABLE TRIGGER ALL;
+
+
+ALTER TABLE structuralsubscription DISABLE TRIGGER ALL;
+
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (1, NULL, NULL, NULL, NULL, 1, NULL, 1, 16, 16, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (2, NULL, NULL, NULL, NULL, 1, NULL, 14, 16, 16, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (3, 22, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (4, 16, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
+
+
+ALTER TABLE structuralsubscription ENABLE TRIGGER ALL;
+
+
+ALTER TABLE bugsubscriptionfilter DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE bugsubscriptionfilter ENABLE TRIGGER ALL;
+
+
+ALTER TABLE bugnotificationfilter DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE bugnotificationfilter ENABLE TRIGGER ALL;
+
+
 ALTER TABLE bugnotificationrecipient DISABLE TRIGGER ALL;
 
 
@@ -3470,25 +3523,6 @@ ALTER TABLE bugpackageinfestation DISABLE TRIGGER ALL;
 
 
 ALTER TABLE bugpackageinfestation ENABLE TRIGGER ALL;
-
-
-ALTER TABLE milestone DISABLE TRIGGER ALL;
-
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (1, 4, '1.0', NULL, '2056-10-16 18:31:44.293448', true, 1, NULL, '2006-10-16 18:31:44.293448', NULL, NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (2, NULL, '3.1', 3, '2056-05-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574', NULL, NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (3, NULL, '3.1-rc1', 3, '2056-02-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574', NULL, NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (4, 4, '0.9.2', NULL, NULL, false, 1, NULL, '2009-03-02 18:31:35.911331', 'This was a security fix release for 0.9.', 'One (secure) Tree Hill');
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (5, 4, '0.9.1', NULL, NULL, false, 1, NULL, '2009-03-02 18:31:35.911331', 'This was a bugfix release to patch up problems with the new extension system.', 'One Tree Hill (v2)');
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (6, 4, '0.9', NULL, NULL, false, 1, NULL, '2009-03-02 18:31:35.911331', 'Release 0.9 of Firefox introduced a new theme as well as improved migration tools for people switching to Firefox.', 'One Tree Hill');
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (7, 4, '1.0.0', NULL, NULL, false, 2, NULL, '2009-03-02 18:31:35.911331', 'After four years of work the Mozilla project makes its first public stable release. Mozilla 1.0.0 is a major milestone in open source history.', 'First Stable Release');
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (8, 5, '2.1.6', NULL, NULL, false, 3, NULL, '2009-03-02 18:31:35.911331', '', NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (9, 8, '0.8', NULL, NULL, false, 4, NULL, '2009-03-02 18:31:35.911331', '', NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (10, 11, '1.0', NULL, NULL, false, 5, NULL, '2009-03-02 18:31:35.911331', '', NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (11, 15, '1.0.9a', NULL, NULL, false, 8, NULL, '2009-03-02 18:31:35.911331', '', NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (12, 15, '1.0.8', NULL, NULL, false, 8, NULL, '2009-03-02 18:31:35.911331', '', NULL);
-
-
-ALTER TABLE milestone ENABLE TRIGGER ALL;
 
 
 ALTER TABLE productrelease DISABLE TRIGGER ALL;
@@ -3690,24 +3724,6 @@ INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by, bug_n
 
 
 ALTER TABLE bugsubscription ENABLE TRIGGER ALL;
-
-
-ALTER TABLE structuralsubscription DISABLE TRIGGER ALL;
-
-INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (1, NULL, NULL, NULL, NULL, 1, NULL, 1, 16, 16, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
-INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (2, NULL, NULL, NULL, NULL, 1, NULL, 14, 16, 16, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
-INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (3, 22, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
-INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (4, 16, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
-
-
-ALTER TABLE structuralsubscription ENABLE TRIGGER ALL;
-
-
-ALTER TABLE bugsubscriptionfilter DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE bugsubscriptionfilter ENABLE TRIGGER ALL;
 
 
 ALTER TABLE bugsubscriptionfilterimportance DISABLE TRIGGER ALL;
@@ -3988,6 +4004,13 @@ ALTER TABLE databasecpustats DISABLE TRIGGER ALL;
 
 
 ALTER TABLE databasecpustats ENABLE TRIGGER ALL;
+
+
+ALTER TABLE databasediskutilization DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE databasediskutilization ENABLE TRIGGER ALL;
 
 
 ALTER TABLE databasereplicationlag DISABLE TRIGGER ALL;
@@ -4377,6 +4400,13 @@ ALTER TABLE featureflag DISABLE TRIGGER ALL;
 
 
 ALTER TABLE featureflag ENABLE TRIGGER ALL;
+
+
+ALTER TABLE featureflagchangelogentry DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE featureflagchangelogentry ENABLE TRIGGER ALL;
 
 
 ALTER TABLE flatpackagesetinclusion DISABLE TRIGGER ALL;
@@ -6265,6 +6295,13 @@ INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productse
 
 
 ALTER TABLE packaging ENABLE TRIGGER ALL;
+
+
+ALTER TABLE packagingjob DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE packagingjob ENABLE TRIGGER ALL;
 
 
 ALTER TABLE parsedapachelog DISABLE TRIGGER ALL;
@@ -9884,6 +9921,13 @@ ALTER TABLE projectrelationship DISABLE TRIGGER ALL;
 
 
 ALTER TABLE projectrelationship ENABLE TRIGGER ALL;
+
+
+ALTER TABLE publisherconfig DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE publisherconfig ENABLE TRIGGER ALL;
 
 
 ALTER TABLE pushmirroraccess DISABLE TRIGGER ALL;
