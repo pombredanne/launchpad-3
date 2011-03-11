@@ -4,6 +4,7 @@
 # This file is imported by parts/scripts/sitecustomize.py, as set up in our
 # buildout.cfg (see the "initialization" key in the "[scripts]" section).
 
+from collections import defaultdict
 import itertools
 import os
 import warnings
@@ -102,13 +103,6 @@ def silence_warnings():
     warnings.filterwarnings(
         'ignore', '.*apt_pkg.*', category=DeprecationWarning)
 
-    # pygments-0.8 on Python 2.6:
-    #   DeprecationWarning: object.__init__() takes no parameters
-    warnings.filterwarnings(
-        'ignore',
-        category=DeprecationWarning,
-        module='pygments')
-
 
 def customize_logger():
     """Customize the logging system.
@@ -136,6 +130,7 @@ def main(instance_name):
     add_custom_loglevels()
     customizeMimetypes()
     dont_wrap_class_and_subclasses(Branch)
+    checker.BasicTypes.update({defaultdict: checker.NoProxy})
     checker.BasicTypes.update({Deferred: checker.NoProxy})
     checker.BasicTypes.update({DeferredList: checker.NoProxy})
     checker.BasicTypes[itertools.groupby] = checker._iteratorChecker

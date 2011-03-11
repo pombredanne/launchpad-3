@@ -14,6 +14,7 @@ from storm.expr import (
     And,
     Count,
     Desc,
+    In,
     Join,
     LeftJoin,
     Or,
@@ -26,15 +27,21 @@ from zope.interface import implements
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp.vocabulary import CountableIterator
 from canonical.lazr.utils import safe_hasattr
-from lp.bugs.model.bug import Bug
+from lp.bugs.interfaces.bugtask import (
+    IBugTaskSet,
+    BugTaskSearchParams,
+    )
 from lp.bugs.model.bugbranch import BugBranch
+from lp.bugs.model.bugtask import BugTask
 from lp.code.interfaces.branch import user_has_special_branch_access
 from lp.code.interfaces.branchcollection import (
     IBranchCollection,
@@ -46,7 +53,10 @@ from lp.code.interfaces.seriessourcepackagebranch import (
 from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
-from lp.code.model.branch import Branch
+from lp.code.model.branch import (
+    Branch,
+    filter_one_task_per_bug,
+    )
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.branchsubscription import BranchSubscription
 from lp.code.model.codereviewcomment import CodeReviewComment
@@ -158,6 +168,7 @@ class GenericBranchCollection:
         resultset = self.store.using(*tables).find(Branch, *expressions)
         if not eager_load:
             return resultset
+
         def do_eager_load(rows):
             branch_ids = set(branch.id for branch in rows)
             if not branch_ids:
@@ -186,7 +197,8 @@ class GenericBranchCollection:
                 SeriesSourcePackageBranch.pocket)
             for link in links:
                 cache = caches[link.branchID]
-                cache._associatedSuiteSourcePackages.append(link)
+                cache._associatedSuiteSourcePackages.append(
+                    link.suite_sourcepackage)
         return DecoratedResultSet(resultset, pre_iter_hook=do_eager_load)
 
     def getMergeProposals(self, statuses=None, for_branches=None,
@@ -253,23 +265,24 @@ class GenericBranchCollection:
         proposals.order_by(Desc(CodeReviewComment.vote))
         return proposals
 
-    def getExtendedRevisionDetails(self, revisions):
+    def getExtendedRevisionDetails(self, user, revisions):
         """See `IBranchCollection`."""
 
         if not revisions:
             return []
         branch = revisions[0].branch
 
-        def make_rev_info(branch_revision, merge_proposal_revs, linked_bugs):
+        def make_rev_info(
+                branch_revision, merge_proposal_revs, linked_bugtasks):
             rev_info = {
                 'revision': branch_revision,
-                'linked_bugs': None,
+                'linked_bugtasks': None,
                 'merge_proposal': None,
                 }
             merge_proposal = merge_proposal_revs.get(branch_revision.sequence)
             rev_info['merge_proposal'] = merge_proposal
             if merge_proposal is not None:
-                rev_info['linked_bugs'] = linked_bugs.get(
+                rev_info['linked_bugtasks'] = linked_bugtasks.get(
                     merge_proposal.source_branch.id)
             return rev_info
 
@@ -280,19 +293,40 @@ class GenericBranchCollection:
         merge_proposal_revs = dict(
                 [(mp.merged_revno, mp) for mp in merge_proposals])
         source_branch_ids = [mp.source_branch.id for mp in merge_proposals]
+        linked_bugtasks = defaultdict(list)
 
-        filter = [
-            BugBranch.bug == Bug.id,
-            BugBranch.branchID.is_in(
-                source_branch_ids),
-            ]
-        bugs = self.store.find((Bug, BugBranch), filter)
-        linked_bugs = defaultdict(list)
-        for (bug, bugbranch) in bugs:
-            linked_bugs[bugbranch.branchID].append(bug)
+        if source_branch_ids:
+            # We get the bugtasks for our merge proposal branches
+
+            # First, the bug ids
+            params = BugTaskSearchParams(
+                user=user, status=None,
+                linked_branches=any(*source_branch_ids))
+            bug_ids = getUtility(IBugTaskSet).searchBugIds(params)
+
+            # Then the bug tasks and branches
+            store = IStore(BugBranch)
+            rs = store.using(
+                BugBranch,
+                Join(BugTask, BugTask.bugID == BugBranch.bugID),
+            ).find(
+                (BugTask, BugBranch),
+                BugBranch.bugID.is_in(bug_ids),
+                BugBranch.branchID.is_in(source_branch_ids)
+            )
+
+            # Build up a collection of bugtasks for each branch
+            bugtasks_for_branch = defaultdict(list)
+            for bugtask, bugbranch in rs:
+                bugtasks_for_branch[bugbranch.branch].append(bugtask)
+
+            # Now filter those down to one bugtask per branch
+            for branch, tasks in bugtasks_for_branch.iteritems():
+                linked_bugtasks[branch.id].extend(
+                    filter_one_task_per_bug(branch, tasks))
 
         return [make_rev_info(
-                rev, merge_proposal_revs, linked_bugs)
+                rev, merge_proposal_revs, linked_bugtasks)
                 for rev in revisions]
 
     def getTeamsWithBranches(self, person):
@@ -370,6 +404,15 @@ class GenericBranchCollection:
     def ownedBy(self, person):
         """See `IBranchCollection`."""
         return self._filterBy([Branch.owner == person])
+
+    def ownedByTeamMember(self, person):
+        """See `IBranchCollection`."""
+        subquery = Select(
+            TeamParticipation.teamID,
+            where=TeamParticipation.personID==person.id)
+        filter = [In(Branch.ownerID, subquery)]
+
+        return self._filterBy(filter)
 
     def registeredBy(self, person):
         """See `IBranchCollection`."""

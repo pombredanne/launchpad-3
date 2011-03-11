@@ -24,8 +24,27 @@
                  context/distroseries/distribution/@@+portlet-translation-groups-and-permission"/>
             </p>
           </div>
+          <div class="portlet" id="sharing-information"
+               tal:condition="features/translations.sharing_information.enabled">
+            <h3>Sharing Information</h3>
+            <p tal:condition="not:view/is_sharing">
+              This source package is not sharing translations with
+              an upstream project.
+            </p>
+            <p tal:condition="view/is_sharing"
+               tal:define="productseries view/sharing_productseries">
+              This source package is sharing translations with
+              <a class="sprite product"
+              tal:attributes="href productseries/fmt:url"
+              tal:content="productseries/title">Evolution trunk</a>.
+            </p>
+            <a tal:replace="structure view/sharing_details">
+              View sharing details
+            </a>
+          </div>
         </div>
         <div class="yui-u">
+
           <div class="portlet">
             <h3>Administration</h3>
             <p>Translation files that are waiting to be imported are shown in

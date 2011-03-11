@@ -418,7 +418,7 @@ class TestDistributionMilestoneIndexQueryCount(TestQueryCountBase):
         #  9. Load links to milestones.
         bugtask_count = 10
         self.assert_bugtasks_query_count(
-            self.milestone, bugtask_count, query_limit=10)
+            self.milestone, bugtask_count, query_limit=11)
 
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more

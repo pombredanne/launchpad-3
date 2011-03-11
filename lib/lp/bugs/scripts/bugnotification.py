@@ -31,6 +31,39 @@ from lp.bugs.mail.newbug import generate_bug_add_email
 from lp.services.mail.mailwrapper import MailWrapper
 
 
+def get_activity_key(notification):
+    """Given a notification, return a key for the activity if it exists.
+
+    The key will be used to determine whether changes for the activity are
+    undone within the same batch of notifications (which are supposed to
+    be all for the same bug when they get to this function).  Therefore,
+    the activity's attribute is a good start for the key.
+
+    If the activity was on a bugtask, we will also want to distinguish
+    by bugtask, because, for instance, changing a status from INPROGRESS
+    to FIXCOMMITED on one bug task is not undone if the status changes
+    from FIXCOMMITTED to INPROGRESS on another bugtask.
+
+    Similarly, if the activity is about adding or removing something
+    that we can have multiple of, like a branch or an attachment, the
+    key should include information on that value, because adding one
+    attachment is not undone by removing another one.
+    """
+    activity = notification.activity
+    if activity is not None:
+        key = activity.attribute
+        if activity.target is not None:
+            key = ':'.join((activity.target, key))
+        if key in ('attachments', 'watches', 'cves', 'linked_branches'):
+            # We are intentionally leaving bug task bugwatches out of this
+            # list, so we use the key rather than the activity.attribute.
+            if activity.oldvalue is not None:
+                key = ':'.join((key, activity.oldvalue))
+            elif activity.newvalue is not None:
+                key = ':'.join((key, activity.newvalue))
+        return key
+
+
 def construct_email_notifications(bug_notifications):
     """Construct an email from a list of related bug notifications.
 
@@ -39,31 +72,48 @@ def construct_email_notifications(bug_notifications):
     """
     first_notification = bug_notifications[0]
     bug = first_notification.bug
-    person_causing_change = first_notification.message.owner
+    actor = first_notification.message.owner
     subject = first_notification.message.subject
 
     comment = None
     references = []
     text_notifications = []
-
-    recipients = {}
-    for notification in bug_notifications:
-        for recipient in notification.recipients:
-            email_people = emailPeople(recipient.person)
-            if (not person_causing_change.selfgenerated_bugnotifications and
-                person_causing_change in email_people):
-                email_people.remove(person_causing_change)
-            for email_person in email_people:
-                recipients[email_person] = recipient
+    old_values = {}
+    new_values = {}
 
     for notification in bug_notifications:
         assert notification.bug == bug, bug.id
-        assert notification.message.owner == person_causing_change, (
-            person_causing_change.id)
+        assert notification.message.owner == actor, actor.id
         if notification.is_comment:
             assert comment is None, (
                 "Only one of the notifications is allowed to be a comment.")
             comment = notification.message
+        else:
+            key = get_activity_key(notification)
+            if key is not None:
+                if key not in old_values:
+                    old_values[key] = notification.activity.oldvalue
+                new_values[key] = notification.activity.newvalue
+
+    recipients = {}
+    filtered_notifications = []
+    omitted_notifications = []
+    for notification in bug_notifications:
+        key = get_activity_key(notification)
+        if (notification.is_comment or
+            key is None or
+            old_values[key] != new_values[key]):
+            # We will report this notification.
+            filtered_notifications.append(notification)
+            for recipient in notification.recipients:
+                email_people = emailPeople(recipient.person)
+                if (not actor.selfgenerated_bugnotifications and
+                    actor in email_people):
+                    email_people.remove(actor)
+                for email_person in email_people:
+                    recipients[email_person] = recipient
+        else:
+            omitted_notifications.append(notification)
 
     if bug.duplicateof is not None:
         text_notifications.append(
@@ -88,7 +138,7 @@ def construct_email_notifications(bug_notifications):
         msgid = first_notification.message.rfc822msgid
         email_date = first_notification.message.datecreated
 
-    for notification in bug_notifications:
+    for notification in filtered_notifications:
         if notification.message == comment:
             # Comments were just handled in the previous if block.
             continue
@@ -104,9 +154,8 @@ def construct_email_notifications(bug_notifications):
     messages = []
     mail_wrapper = MailWrapper(width=72)
     content = '\n\n'.join(text_notifications)
-    from_address = get_bugmail_from_address(person_causing_change, bug)
-    bug_notification_builder = BugNotificationBuilder(
-        bug, person_causing_change)
+    from_address = get_bugmail_from_address(actor, bug)
+    bug_notification_builder = BugNotificationBuilder(bug, actor)
     sorted_recipients = sorted(
         recipients.items(), key=lambda t: t[0].preferredemail.email)
     for email_person, recipient in sorted_recipients:
@@ -114,6 +163,18 @@ def construct_email_notifications(bug_notifications):
         reason = recipient.reason_body
         rationale = recipient.reason_header
 
+        filters = set()
+        for notification in filtered_notifications:
+            notification_filters = notification.getFiltersByRecipient(
+                email_person)
+            for notification_filter in notification_filters:
+                if notification_filter.description is not None:
+                    filters.add(notification_filter.description)
+        if filters:
+            # There are some filters as well, add it to the email body.
+            filters_text = u"\nMatching filters: %s" % ", ".join(filters)
+        else:
+            filters_text = u""
         # XXX deryck 2009-11-17 Bug #484319
         # This should be refactored to add a link inside the
         # code where we build `reason`.  However, this will
@@ -131,7 +192,9 @@ def construct_email_notifications(bug_notifications):
             'bug_title': data_wrapper.format(bug.title),
             'bug_url': canonical_url(bug),
             'unsubscribe_notice': unsubscribe_notice,
-            'notification_rationale': mail_wrapper.format(reason)}
+            'notification_rationale': mail_wrapper.format(reason),
+            'subscription_filters': filters_text,
+            }
 
         # If the person we're sending to receives verbose notifications
         # we include the description and status of the bug in the email
@@ -151,13 +214,14 @@ def construct_email_notifications(bug_notifications):
         else:
             email_template = 'bug-notification.txt'
 
-        body = (get_email_template(email_template) % body_data).strip()
+        body_template = get_email_template(email_template, 'bugs')
+        body = (body_template % body_data).strip()
         msg = bug_notification_builder.build(
             from_address, address, body, subject, email_date,
-            rationale, references, msgid)
+            rationale, references, msgid, filters=filters)
         messages.append(msg)
 
-    return bug_notifications, messages
+    return filtered_notifications, omitted_notifications, messages
 
 
 def notification_comment_batches(notifications):

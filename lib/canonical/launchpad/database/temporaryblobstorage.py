@@ -151,10 +151,4 @@ class TemporaryStorageManager:
 
     def default_temporary_blob_storage_list(self):
         """See `ITemporaryStorageManager`."""
-        # Return the 50 most recent blobs.
-        store = IStore(TemporaryBlobStorage)
-        return store.find(
-            TemporaryBlobStorage,
-            TemporaryBlobStorage.file_alias == LibraryFileAlias.id,
-            LibraryFileAlias.expires > datetime.utcnow().replace(tzinfo=utc)
-            ).order_by(TemporaryBlobStorage.date_created)
+        return []

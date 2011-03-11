@@ -49,6 +49,9 @@ from lp.services.propertycache import cachedproperty
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.potemplate import BaseSeriesTemplatesView
 from lp.translations.browser.translations import TranslationsMixin
+from lp.translations.browser.translationsharing import (
+    TranslationSharingDetailsMixin,
+    )
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguageSet,
     )
@@ -60,6 +63,10 @@ from lp.translations.interfaces.translationimportqueue import (
     )
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
+    )
+from lp.translations.utilities.translationsharinginfo import (
+    has_ubuntu_template,
+    get_ubuntu_sharing_info,
     )
 
 
@@ -340,7 +347,9 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
         return check_permission("launchpad.Edit", self.context)
 
 
-class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
+class ProductSeriesView(LaunchpadView,
+                        ProductSeriesTranslationsMixin,
+                        TranslationSharingDetailsMixin):
     """A view to show a series with translations."""
 
     label = "Translation status by language"
@@ -446,6 +455,23 @@ class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
     def is_translations_admin(self):
         """Whether or not the user is a translations admin."""
         return check_permission("launchpad.TranslationsAdmin", self.context)
+
+    def is_sharing(self):
+        return has_ubuntu_template(productseries=self.context)
+
+    @property
+    def sharing_sourcepackage(self):
+        infos = get_ubuntu_sharing_info(productseries=self.context)
+        if len(infos) == 0:
+            return None
+        sourcepackage, template = infos[0]
+        return sourcepackage
+
+    def getTranslationTarget(self):
+        """See `TranslationSharingDetailsMixin`."""
+        return self.context
+
+    can_edit_sharing_details = can_configure_translations
 
 
 class SettingsRadioWidget(LaunchpadRadioWidgetWithDescription):

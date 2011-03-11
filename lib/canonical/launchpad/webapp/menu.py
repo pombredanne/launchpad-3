@@ -72,13 +72,21 @@ class structured:
                 "You must provide either positional arguments or keyword "
                 "arguments to structured(), not both.")
         if replacements:
-            self.escapedtext = text % tuple(
-                cgi.escape(unicode(replacement))
-                for replacement in replacements)
+            escaped = []
+            for replacement in replacements:
+                if isinstance(replacement, structured):
+                    escaped.append(unicode(replacement.escapedtext))
+                else:
+                    escaped.append(cgi.escape(unicode(replacement)))
+            self.escapedtext = text % tuple(escaped)
         elif kwreplacements:
-            self.escapedtext = text % dict(
-                (key, cgi.escape(unicode(value)))
-                for key, value in kwreplacements.iteritems())
+            escaped = {}
+            for key, value in kwreplacements.iteritems():
+                if isinstance(value, structured):
+                    escaped[key] = unicode(value.escapedtext)
+                else:
+                    escaped[key] = cgi.escape(unicode(value))
+            self.escapedtext = text % escaped
         else:
             self.escapedtext = unicode(text)
 
