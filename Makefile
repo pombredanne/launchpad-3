@@ -28,9 +28,9 @@ endif
 
 JS_YUI := $(shell utilities/yui-deps.py $(JS_BUILD))
 JS_LAZR := $(LAZR_BUILT_JS_ROOT)/lazr.js
-JS_LEGACY := $(wildcard lib/canonical/launchpad/javascript/*/*.js)
+JS_OTHER := $(wildcard lib/canonical/launchpad/javascript/*/*.js)
 JS_LP := $(shell find lib/lp/*/javascript ! -path '*/tests/*' -name '*.js')
-JS_ALL := $(JS_YUI) $(JS_LAZR) $(JS_LEGACY) $(JS_LP)
+JS_ALL := $(JS_YUI) $(JS_LAZR) $(JS_OTHER) $(JS_LP)
 JS_OUT := $(LP_BUILT_JS_ROOT)/launchpad.js
 
 MINS_TO_SHUTDOWN=15
