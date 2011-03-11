@@ -102,9 +102,9 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
     @classmethod
     def createForPackagePublication(cls, distroseries, sourcepackagename):
         """See `IDistroSeriesDifferenceJobSource`."""
-        child_series = distroseries.getDerivedSeries()
-        parent_series = distroseries.parent_series
-        for relative in list(child_series) + [parent_series]:
+        children = distroseries.getDerivedSeries()
+        parent = distroseries.parent_series
+        for relative in list(children) + [parent]:
             if may_require_job(relative, sourcepackagename):
                 create_job(relative, sourcepackagename)
 
