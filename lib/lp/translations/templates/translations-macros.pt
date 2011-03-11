@@ -67,9 +67,9 @@
       </td>
     </tr>
     <tr
+      tal:condition="submission/suggestion_text"
       tal:attributes="id string:${submission/origin_html_id};
-                      class string:discreet secondary ${dismissable}"
-      tal:condition="submission/suggestion_text">
+                      class string:discreet secondary ${dismissable}">
       <td colspan="3"></td>
       <td class="icon left right">
         <tal:legal-warning condition="submission/legal_warning">
