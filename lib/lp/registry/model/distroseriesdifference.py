@@ -9,6 +9,7 @@ __all__ = [
     'DistroSeriesDifference',
     ]
 
+from debian.changelog import Changelog
 from lazr.enum import DBItem
 from storm.expr import Desc
 from storm.locals import (
@@ -157,10 +158,9 @@ class DistroSeriesDifference(Storm):
                 name=self.source_package_name.name,
                 version=self.base_version,
                 distroseries=self.derived_series)
-            # As we know there is a base version published in the
-            # distroseries' main archive, we don't check (equivalent
-            # of calling .one() for a storm resultset.
-            return pubs[0]
+            # We know there is a base version published in the distroseries'
+            # main archive.
+            return pubs.first()
 
         return None
 
@@ -182,6 +182,12 @@ class DistroSeriesDifference(Storm):
                     'parent_version': self.parent_source_version,
                     'source_version': self.source_version,
                     })
+
+    def getAncestry(self, spr):
+        """Return the version ancestry for the given SPR, or None."""
+        if spr.changelog is None:
+            return None
+        return set(Changelog(spr.changelog.read()).versions)
 
     def _getPackageDiffURL(self, package_diff):
         """Check status and return URL if appropriate."""
@@ -211,9 +217,9 @@ class DistroSeriesDifference(Storm):
             self.source_package_name, include_pending=True)
 
         # The most recent published source is the first one.
-        if pubs:
+        try:
             return pubs[0]
-        else:
+        except IndexError:
             return None
 
     def update(self):
@@ -300,29 +306,19 @@ class DistroSeriesDifference(Storm):
             DistroSeriesDifferenceType.DIFFERENT_VERSIONS):
             return False
 
-        # Find all source package releases for the derived and parent
-        # series and get the most recent common version.
-        derived_sprs = self.source_pub.meta_sourcepackage.distinctreleases
-        derived_versions = [
-            Version(spr.version) for spr in derived_sprs]
+        ancestry = self.getAncestry(self.source_pub.sourcepackagerelease)
+        parent_ancestry = self.getAncestry(
+            self.parent_source_pub.sourcepackagerelease)
 
-        parent_sourcepkg = self.parent_source_pub.meta_sourcepackage
-        parent_sprs = parent_sourcepkg.distinctreleases
-        parent_versions = [
-            Version(spr.version) for spr in parent_sprs]
-
-        common_versions = list(
-            set(derived_versions).intersection(parent_versions))
-        if common_versions:
-            common_versions.sort()
-            self.base_version = unicode(common_versions.pop())
-            return True
-
-        if self.base_version is None:
-            return False
-        else:
-            self.base_version = None
-            return True
+        # If the ancestry for the parent and the descendant is available, we
+        # can reliably work out the most recent common ancestor using set
+        # arithmetic.
+        if ancestry is not None and parent_ancestry is not None:
+            intersection = ancestry.intersection(parent_ancestry)
+            if len(intersection) > 0:
+                self.base_version = unicode(max(intersection))
+                return True
+        return False
 
     def addComment(self, commenter, comment):
         """See `IDistroSeriesDifference`."""

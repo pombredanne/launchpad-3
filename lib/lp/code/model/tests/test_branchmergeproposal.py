@@ -3,8 +3,6 @@
 
 # pylint: disable-msg=F0401
 
-from __future__ import with_statement
-
 """Tests for BranchMergeProposals."""
 
 __metaclass__ = type
@@ -16,7 +14,6 @@ from datetime import (
 from difflib import unified_diff
 from unittest import (
     TestCase,
-    TestLoader,
     )
 
 from lazr.lifecycle.event import ObjectModifiedEvent
@@ -28,15 +25,13 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import (
-    import_secret_test_key,
-    syncUpdate,
-    )
+from canonical.launchpad.ftests import import_secret_test_key
 from canonical.launchpad.interfaces.launchpad import IPrivacy
 from canonical.launchpad.interfaces.message import IMessageJob
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
+    AppServerLayer,
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -83,11 +78,12 @@ from lp.code.tests.helpers import (
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.testing import (
-    ANONYMOUS,
+    launchpadlib_for,
     login,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
+    ws_object,
     )
 from lp.testing.factory import (
     GPGSigningContext,
@@ -1248,29 +1244,45 @@ class TestBranchMergeProposalBugs(TestCaseWithFactory):
         self.user = self.factory.makePerson()
         login_person(self.user)
 
-    def test_related_bugs_includes_source_bugs(self):
-        """related_bugs includes bugs linked to the source branch."""
+    def test_related_bugtasks_includes_source_bugtasks(self):
+        """related_bugtasks includes bugtasks linked to the source branch."""
         bmp = self.factory.makeBranchMergeProposal()
         source_branch = bmp.source_branch
         bug = self.factory.makeBug()
         source_branch.linkBug(bug, bmp.registrant)
         self.assertEqual(
-            list(source_branch.linked_bugs), list(bmp.related_bugs))
+            bug.bugtasks, list(bmp.getRelatedBugTasks(self.user)))
 
-    def test_related_bugs_excludes_target_bugs(self):
-        """related_bugs ignores bugs linked to the source branch."""
+    def test_related_bugtasks_excludes_target_bugs(self):
+        """related_bugtasks ignores bugs linked to the source branch."""
         bmp = self.factory.makeBranchMergeProposal()
         bug = self.factory.makeBug()
         bmp.target_branch.linkBug(bug, bmp.registrant)
-        self.assertEqual([], list(bmp.related_bugs))
+        self.assertEqual([], list(bmp.getRelatedBugTasks(self.user)))
 
-    def test_related_bugs_excludes_mutual_bugs(self):
-        """related_bugs ignores bugs linked to both branches."""
+    def test_related_bugtasks_excludes_mutual_bugs(self):
+        """related_bugtasks ignores bugs linked to both branches."""
         bmp = self.factory.makeBranchMergeProposal()
         bug = self.factory.makeBug()
         bmp.source_branch.linkBug(bug, bmp.registrant)
         bmp.target_branch.linkBug(bug, bmp.registrant)
-        self.assertEqual([], list(bmp.related_bugs))
+        self.assertEqual([], list(bmp.getRelatedBugTasks(self.user)))
+
+    def test_related_bugtasks_excludes_private_bugs(self):
+        """related_bugtasks ignores private bugs for non-authorised users."""
+        bmp = self.factory.makeBranchMergeProposal()
+        bug = self.factory.makeBug()
+        bmp.source_branch.linkBug(bug, bmp.registrant)
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            private_bug = self.factory.makeBug(private=True, owner=person)
+            bmp.source_branch.linkBug(private_bug, person)
+        self.assertEqual(
+            bug.bugtasks, list(bmp.getRelatedBugTasks(self.user)))
+        all_bugtasks = list(bug.bugtasks)
+        all_bugtasks.extend(private_bug.bugtasks)
+        self.assertEqual(
+            all_bugtasks, list(bmp.getRelatedBugTasks(person)))
 
 
 class TestNotifyModified(TestCaseWithFactory):
@@ -1959,5 +1971,38 @@ class TestGetUnlandedSourceBranchRevisions(TestCaseWithFactory):
         self.assertNotIn(r1, partial_revisions)
 
 
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+class TestWebservice(TestCaseWithFactory):
+    """Tests for the webservice."""
+
+    layer = AppServerLayer
+
+    def test_getMergeProposals_with_merged_revnos(self):
+        """Specifying merged revnos selects the correct merge proposal."""
+        mp = self.factory.makeBranchMergeProposal()
+        launchpad = launchpadlib_for(
+            'test', mp.registrant,
+            service_root=self.layer.appserver_root_url('api'))
+
+        with person_logged_in(mp.registrant):
+            mp.markAsMerged(merged_revno=123)
+            transaction.commit()
+            target = ws_object(launchpad, mp.target_branch)
+            mp = ws_object(launchpad, mp)
+        self.assertEqual([mp], list(target.getMergeProposals(
+            status=['Merged'], merged_revnos=[123])))
+
+    def test_getRelatedBugTasks(self):
+        """Test the getRelatedBugTasks API."""
+        db_bmp = self.factory.makeBranchMergeProposal()
+        launchpad = launchpadlib_for(
+            'test', db_bmp.registrant, version="devel",
+            service_root=self.layer.appserver_root_url('api'))
+
+        with person_logged_in(db_bmp.registrant):
+            db_bug = self.factory.makeBug()
+            db_bmp.source_branch.linkBug(db_bug, db_bmp.registrant)
+            transaction.commit()
+            bmp = ws_object(launchpad, db_bmp)
+            bugtask = ws_object(launchpad, db_bug.default_bugtask)
+        self.assertEqual(
+            [bugtask], list(bmp.getRelatedBugTasks()))

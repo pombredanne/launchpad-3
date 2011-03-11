@@ -20,7 +20,11 @@ from zope.interface import implements
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.publisher import LaunchpadView
+from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.publisher import (
+    canonical_url,
+    LaunchpadView,
+    )
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
@@ -342,6 +346,26 @@ class SourcePublishingRecordView(BasePublishingRecordView):
             return False
 
         return check_permission('launchpad.View', archive)
+
+    @property
+    def recipe_build_details(self): 
+        """Return a linkified string containing details about a
+        SourcePackageRecipeBuild.
+        """
+        sprb = self.context.sourcepackagerelease.source_package_recipe_build
+        if sprb is not None:
+            if sprb.recipe is None:
+                recipe = 'deleted recipe'
+            else:
+                recipe = structured(
+                    'recipe <a href="%s">%s</a>',
+                    canonical_url(sprb.recipe), sprb.recipe.name)
+            return structured(
+                '<a href="%s">Built</a> by %s for <a href="%s">%s</a>',
+                    canonical_url(sprb), recipe,
+                    canonical_url(sprb.requester),
+                    sprb.requester.displayname).escapedtext
+        return None
 
 
 class SourcePublishingRecordSelectableView(SourcePublishingRecordView):

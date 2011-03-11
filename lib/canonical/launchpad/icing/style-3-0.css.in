@@ -158,6 +158,9 @@ h3 {
     font-size: 16px;
     line-height: 20px;
     }
+.yui-u > div > h3:first-child {
+    margin-top: 0;
+    }
 p {
     width: auto;
     margin-bottom: 0.8em;
@@ -400,13 +403,17 @@ ol.subordinate {
     width: 48%;
     float: left;
     display: inline;
-    margin: 0 0.25em 0.75em 0;
+    margin: 0 0.25em 0 0;
+    }
+.two-column-list dl:first-child dt,
+.two-column-list dl:first-child + dl dt {
+    margin-top: 0;
     }
 .three-column-list dl {
     width: 31%;
     float: left;
     display: inline;
-    margin: 0 0.25em 0.75em 0;
+    margin: 0 0.25em 0 0;
     }
 .two-column-list li {
     width: 48%;
@@ -1467,65 +1474,63 @@ span.help {
     }
 
 
-.specstatusAPPROVED {
+.specstatusAPPROVED, .specstatusAPPROVED a {
     color: green;
     }
-.specstatusPENDINGAPPROVAL,
-.specstatusPENDINGREVIEW {
+.specstatusPENDINGAPPROVAL, .specstatusPENDINGAPPROVAL a,
+.specstatusPENDINGREVIEW, .specstatusPENDINGREVIEW a {
     color: #f09;
     }
-.specstatusDRAFT,
-.specstatusDISCUSSION {
+.specstatusDRAFT, .specstatusDRAFT a,
+.specstatusDISCUSSION, .specstatusDISCUSSION a {
     color: #930;
     }
-.specstatusNEW {
+.specstatusNEW, .specstatusNEW a {
     color: red;
     }
-.specstatusSUPERSEDED,
-.specstatusOBSOLETE,
-.specpriorityNOTFORUS,
-.specpriorityUNDEFINED {
+.specstatusSUPERSEDED, .specstatusSUPERSEDED a,
+.specstatusOBSOLETE, .specstatusOBSOLETE a,
+.specpriorityNOTFORUS, .specpriorityNOTFORUS a,
+.specpriorityUNDEFINED, .specpriorityUNDEFINED a {
     color: gray;
     }
-.specpriorityLOW {
+.specpriorityLOW, .specpriorityLOW a {
     color: black;
     }
-.specpriorityMEDIUM {
+.specpriorityMEDIUM, .specpriorityMEDIUM a {
     color: #f60;
     }
-.specpriorityHIGH,
-.specpriorityESSENTIAL {
+.specpriorityHIGH, .specpriorityHIGH a,
+.specpriorityESSENTIAL, .specpriorityESSENTIAL a {
     color: red;
     }
-.specdeliveryUNKNOWN,
-.specdeliveryNOTSTARTED {
+.specdeliveryUNKNOWN, .specdeliveryUNKNOWN a,
+.specdeliveryNOTSTARTED, .specdeliveryNOTSTARTED a {
     color: gray;
     }
-.specdeliveryDEFERRED,
-.specdeliveryNEEDSINFRASTUCTURE,
-.specdeliveryBLOCKED {
+.specdeliveryDEFERRED, .specdeliveryDEFERRED a,
+.specdeliveryNEEDSINFRASTUCTURE, .specdeliveryNEEDSINFRASTUCTURE a,
+.specdeliveryBLOCKED, .specdeliveryBLOCKED a {
     color: red;
     }
-.specdeliverySTARTED {
+.specdeliverySTARTED, .specdeliverySTARTED a,
+.specdeliveryGOOD, .specdeliveryGOOD a {
     color: blue;
     }
-.specdeliverySLOW {
+.specdeliverySLOW, .specdeliverySLOW a {
     color: red;
     }
-.specdeliveryGOOD {
-    color: blue;
-    }
-.specdeliveryBETA {
+.specdeliveryBETA, .specdeliveryBETA a {
     color: #f60;
     }
-.specdeliveryNEEDSREVIEW {
+.specdeliveryNEEDSREVIEW, .specdeliveryNEEDSREVIEW a {
     color: purple;
     }
-.specdeliveryAWAITINGDEPLOYMENT {
+.specdeliveryAWAITINGDEPLOYMENT, .specdeliveryAWAITINGDEPLOYMENT a {
     color: red;
     }
-.specdeliveryIMPLEMENTED,
-.specdeliveryINFORMATIONAL {
+.specdeliveryIMPLEMENTED, .specdeliveryIMPLEMENTED a,
+.specdeliveryINFORMATIONAL, .specdeliveryINFORMATIONAL a {
     color: green;
     }
 
@@ -1611,7 +1616,7 @@ a.unofficial-tag {
     }
 .branchstatusMERGED, .branchstatusMERGED a,
 .branchstatusABANDONED, .branchstatusABANDONED a {
-    color: #gray;
+    color: gray;
     }
 .branchstatusNEW, .branchstatusNEW a {
     color: black;

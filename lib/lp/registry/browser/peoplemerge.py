@@ -137,7 +137,11 @@ class AdminMergeBaseView(ValidatingMergeView):
         self.dupe_person_emails = emailset.getByPerson(self.dupe_person)
 
     def doMerge(self, data):
-        """Merge the two person/team entries specified in the form."""
+        """Merge the two person/team entries specified in the form.
+
+        Before merging this moves each email address of the duplicate person
+        to the target person, and resets them to `NEW`.
+        """
         for email in self.dupe_person_emails:
             email = IMasterObject(email)
             # EmailAddress.person and EmailAddress.account are readonly
@@ -215,7 +219,21 @@ class AdminTeamMergeView(AdminMergeBaseView):
         return getUtility(ILaunchpadCelebrities).registry_experts
 
     def doMerge(self, data):
-        """Purge the non-transferable team data and merge."""
+        """Purge the non-transferable team data and merge.
+
+        For the duplicate team:
+
+        - If a mailing list exists, and is REGISTERED, DECLINED, FAILED or
+          INACTIVE, it is purged.
+
+        - Unsets the contact address.
+
+        If the target team is the Registry Experts:
+
+        - The duplicate team is withdrawn from all teams that it is itself a
+          member of.
+
+        """
         # A team cannot have more than one mailing list. The old list will
         # remain in the archive.
         purge_list = (self.dupe_person.mailing_list is not None

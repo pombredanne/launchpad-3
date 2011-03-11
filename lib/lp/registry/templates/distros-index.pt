@@ -19,8 +19,7 @@
 
   <div metal:fill-slot="main">
     There are currently
-    <strong class="registry-stat"
-            tal:content="view/count">2</strong>
+    <strong tal:content="view/count">2</strong>
     distributions registered in Launchpad.
 
     <h2>Distributions that use Launchpad</h2>
@@ -35,7 +34,7 @@
         <tr tal:repeat="distribution context">
           <td tal:condition="distribution/@@+get-involved/has_involvement">
             <img src="/@@/distribution" />
-            <a tal:content="distribution/title" 
+            <a tal:content="distribution/title"
                tal:attributes="href distribution/fmt:url">
                   distribution title
             </a>
@@ -46,9 +45,9 @@
           </td>
         </tr>
       </tbody>
-    </table>    
+    </table>
 
-    <h2 style="margin-top: 1em;">Distributions that do not use Launchpad</h2>
+    <h2>Distributions that do not use Launchpad</h2>
     <table class="listing">
       <thead>
         <tr>
@@ -60,7 +59,7 @@
         <tr tal:repeat="distribution context">
           <td tal:condition="not:distribution/@@+get-involved/has_involvement">
             <img src="/@@/distribution" />
-            <a tal:content="distribution/title" 
+            <a tal:content="distribution/title"
                tal:attributes="href distribution/fmt:url">
                   distribution title
             </a>
@@ -71,7 +70,7 @@
           </td>
         </tr>
       </tbody>
-    </table>    
+    </table>
 
     <div id="application-summary" class="application-summary">
       Launchpad manages the source packages, builds, archive publishing, bugs,

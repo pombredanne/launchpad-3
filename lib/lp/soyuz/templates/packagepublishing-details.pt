@@ -28,18 +28,7 @@
             tal:content="context/datesuperseded/fmt:displaydate"/>
       by <span tal:replace="context/supersededby/title" />
     </li>
-    <tal:sourcepackagerecipe condition="view/is_source">
-      <li tal:define="sprb context/sourcepackagerelease/source_package_recipe_build" tal:condition="sprb">
-        <a tal:attributes="href sprb/fmt:url">Built</a> by
-        <tal:existingrecipe condition="sprb/recipe">
-         recipe <a tal:attributes="href sprb/recipe/fmt:url" tal:content="sprb/recipe/name" ></a>
-        </tal:existingrecipe>
-        <tal:deletedrecipe condition="not: sprb/recipe">
-         deleted recipe
-        </tal:deletedrecipe>
-         for <a tal:attributes="href sprb/requester/fmt:url" tal:content="sprb/requester/displayname" ></a>.
-      </li>
-    </tal:sourcepackagerecipe>
+    <li tal:content="structure view/recipe_build_details" tal:condition="view/is_source" />
     <li tal:condition="context/datepublished">
       Published
       <span tal:attributes="title context/datepublished/fmt:datetime"

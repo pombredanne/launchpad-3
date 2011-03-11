@@ -1459,12 +1459,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return DecoratedResultSet(package_caches, result_to_dsbp)
 
     def newArch(self, architecturetag, processorfamily, official, owner,
-                supports_virtualized=False):
+                supports_virtualized=False, enabled=True):
         """See `IDistroSeries`."""
         distroarchseries = DistroArchSeries(
             architecturetag=architecturetag, processorfamily=processorfamily,
             official=official, distroseries=self, owner=owner,
-            supports_virtualized=supports_virtualized)
+            supports_virtualized=supports_virtualized, enabled=enabled)
         return distroarchseries
 
     def newMilestone(self, name, dateexpected=None, summary=None,
@@ -1886,10 +1886,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # or the child.parent's drivers.
         if not (user.inTeam('soyuz-team') or user.inTeam('admins')):
             raise Unauthorized
-        child = IStore(self).find(DistroSeries, name=name).one()
+        if distribution is None:
+            distribution = self.distribution
+        child = IStore(self).find(
+            DistroSeries, name=name, distribution=distribution).one()
         if child is None:
-            if distribution is None:
-                distribution = self.distribution
             if not displayname:
                 raise DerivationError(
                     "Display Name needs to be set when creating a "

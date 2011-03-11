@@ -34,4 +34,11 @@
         permission="launchpad.Edit"
         template="../templates/feature-info.pt"/>
 
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        class="lp.services.features.browser.changelog.FeatureChangeLogView"
+        name="+feature-changelog"
+        permission="launchpad.Edit"
+        template="../templates/feature-changelog.pt"/>
+
 </configure>

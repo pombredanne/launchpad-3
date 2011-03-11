@@ -151,7 +151,7 @@ class BugNotificationBuilder:
                         event_creator.name)))
 
     def build(self, from_address, to_address, body, subject, email_date,
-              rationale=None, references=None, message_id=None):
+              rationale=None, references=None, message_id=None, filters=None):
         """Construct the notification.
 
         :param from_address: The From address of the notification.
@@ -191,5 +191,10 @@ class BugNotificationBuilder:
 
         if rationale is not None:
             message.add_header('X-Launchpad-Message-Rationale', rationale)
+
+        if filters is not None:
+            for filter in filters:
+                message.add_header(
+                    'X-Launchpad-Subscription-Filter', filter)
 
         return message
