@@ -20,7 +20,12 @@ ICING=lib/canonical/launchpad/icing
 LP_BUILT_JS_ROOT=${ICING}/build
 LAZR_BUILT_JS_ROOT=lazr-js/build
 
+ifeq ($(LPCONFIG), development)
+JS_BUILD := debug
+else
 JS_BUILD := min
+endif
+
 JS_YUI := $(shell utilities/yui-deps.py $(JS_BUILD))
 JS_LAZR := $(LAZR_BUILT_JS_ROOT)/lazr.js
 JS_LEGACY := $(wildcard lib/canonical/launchpad/javascript/*/*.js)
@@ -162,8 +167,10 @@ sprite_image:
 # launchpad.js roll-up files.  They fiddle with built-in functions!
 # See Bug 482340.
 jsbuild_lazr: bin/jsbuild
-	${SHHH} bin/jsbuild -b $(LAZR_BUILT_JS_ROOT) -x testing/ \
-		-c $(LAZR_BUILT_JS_ROOT)/yui
+	${SHHH} bin/jsbuild \
+	    --builddir $(LAZR_BUILT_JS_ROOT) \
+	    --exclude testing/ --filetype $(JS_BUILD) \
+	    --copy-yui-to $(LAZR_BUILT_JS_ROOT)/yui
 
 $(JS_YUI) $(JS_LAZR): jsbuild_lazr
 
