@@ -3,10 +3,18 @@
 
 __metaclass__ = type
 
+from canonical.launchpad.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,  
+    LaunchpadFunctionalLayer,
+    )
 from lp.app.enums import ServiceUsage
 from lp.testing import (
+    BrowserTestCase,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -211,3 +219,28 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory):
                 },
             ]
         self.assertEqual(expected, self.view.template_info)
+
+
+class TestSourcePackageSharingDetailsPage(BrowserTestCase):
+    """Test for the sharing details page of a source package."""
+
+    layer = DatabaseFunctionalLayer
+
+    def _makeSourcePackage(self):
+        """Make a source package in Ubuntu."""
+        distroseries = self.factory.makeUbuntuDistroSeries()
+        return self.factory.makeSourcePackage(distroseries=distroseries)
+
+    def test_checklist_unconfigured(self):
+        sourcepackage = self._makeSourcePackage()
+        browser = self.getViewBrowser(
+            sourcepackage, no_login=True, rootsite="translations",
+            view_name="+sharing-details")
+        checklist = find_tag_by_id(browser.contents, 'sharing-checklist')
+        self.assertIsNot(None, checklist)
+        self.assertTextMatchesExpressionIgnoreWhitespace("""
+            Translation sharing configuration is incomplete.
+            No upstream project series has been linked. Change upstream link
+            No source branch exists for the upstream series.
+            Translations are not enabled on the upstream series.""",
+            extract_text(checklist))
