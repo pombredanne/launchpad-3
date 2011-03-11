@@ -35,7 +35,14 @@ from lp.translations.utilities.translationsharinginfo import (
     )
 
 
+class SharingDetailsPermissionsMixin:
+
+    def can_edit_sharing_details(self):
+        return check_permission('launchpad.Edit', self.context.distroseries)
+
+
 class SourcePackageTranslationsView(TranslationsMixin,
+                                    SharingDetailsPermissionsMixin,
                                     TranslationSharingDetailsMixin):
 
     @property
@@ -61,9 +68,6 @@ class SourcePackageTranslationsView(TranslationsMixin,
     def getTranslationTarget(self):
         """See `TranslationSharingDetailsMixin`."""
         return self.context
-
-    def can_edit_sharing_details(self):
-        return check_permission('launchpad.Edit', self.context.distroseries)
 
 
 class SourcePackageTranslationsMenu(NavigationMenu):
@@ -108,7 +112,9 @@ class SourcePackageTranslationsExportView(BaseExportView):
         return "Download translations for %s" % self.download_description
 
 
-class SourcePackageTranslationSharingDetailsView(LaunchpadView):
+class SourcePackageTranslationSharingDetailsView(
+                                            LaunchpadView,
+                                            SharingDetailsPermissionsMixin):
     """Details about translation sharing."""
 
     page_title = "Sharing details"
