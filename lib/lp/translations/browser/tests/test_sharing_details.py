@@ -10,7 +10,6 @@ from canonical.launchpad.testing.pages import (
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,  
-    LaunchpadFunctionalLayer,
     )
 from lp.app.enums import ServiceUsage
 from lp.testing import (
@@ -48,7 +47,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
                                             ConfigureUpstreamProjectMixin):
     """Tests for SourcePackageTranslationSharingStatus."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestSourcePackageTranslationSharingDetailsView, self).setUp()
