@@ -30,12 +30,12 @@ from lp.bugs.externalbugtracker import (
     UnknownRemoteStatusError,
     UnparsableBugData,
     )
-from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
     )
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
+from lp.services.database.isolation import ensure_no_transaction
 from lp.services.propertycache import cachedproperty
 
 

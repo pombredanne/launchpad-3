@@ -32,7 +32,7 @@ from canonical.launchpad.webapp.errorlog import (
 from canonical.launchpad.webapp.interaction import setupInteraction
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from lp.bugs.externalbugtracker import BugWatchUpdateWarning
-from lp.bugs.externalbugtracker.isolation import check_no_transaction
+from lp.services.database.isolation import check_no_transaction
 from lp.services.limitedlist import LimitedList
 
 # For OOPS reporting keep up to this number of SQL statements.
