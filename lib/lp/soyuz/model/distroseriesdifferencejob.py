@@ -14,6 +14,7 @@ from zope.interface import (
     )
 
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from lp.services.features import getFeatureFlag
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.distributionjob import (
     DistributionJobType,
@@ -26,6 +27,9 @@ from lp.soyuz.model.distributionjob import (
 from lp.soyuz.interfaces.distroseriesdifferencejob import (
     IDistroSeriesDifferenceJobSource,
     )
+
+
+FEATURE_FLAG = "soyuz.distroseriesdifferencejob.enabled"
 
 
 def make_metadata(sourcepackagename):
@@ -102,6 +106,8 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
     @classmethod
     def createForPackagePublication(cls, distroseries, sourcepackagename):
         """See `IDistroSeriesDifferenceJobSource`."""
+        if getFeatureFlag(FEATURE_FLAG) != 'on':
+            return
         children = distroseries.getDerivedSeries()
         parent = distroseries.parent_series
         for relative in list(children) + [parent]:

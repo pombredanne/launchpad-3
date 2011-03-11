@@ -9,12 +9,14 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
 from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.distroseriesdifferencejob import (
     IDistroSeriesDifferenceJobSource,
     )
 from lp.soyuz.model.distroseriesdifferencejob import (
     create_job,
+    FEATURE_FLAG,
     find_waiting_jobs,
     make_metadata,
     may_require_job,
@@ -26,6 +28,10 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
     """Tests for `IDistroSeriesDifferenceJobSource`."""
 
     layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestDistroSeriesDifferenceJobSource, self).setUp()
+        self.useFixture(FeatureFixture({FEATURE_FLAG: 'on'}))
 
     def getJobSource(self):
         return getUtility(IDistroSeriesDifferenceJobSource)
@@ -144,3 +150,10 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         jobs = list(find_waiting_jobs(derived_series, package))
         self.assertEqual(1, len(jobs))
         self.assertEqual(package.id, jobs[0].metadata['sourcepackagename'])
+
+    def test_createForPackagePublication_obeys_feature_flag(self):
+        distroseries = self.makeDerivedDistroSeries()
+        package = self.factory.makeSourcePackageName()
+        self.useFixture(FeatureFixture({FEATURE_FLAG: 'off'}))
+        self.getJobSource().createForPackagePublication(distroseries, package)
+        self.assertContentEqual([], find_waiting_jobs(distroseries, package))
