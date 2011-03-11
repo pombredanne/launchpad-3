@@ -8,11 +8,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'INewSpecification',
-    'INewSpecificationSeriesGoal',
-    'INewSpecificationSprint',
-    'INewSpecificationTarget',
-    'INewSpecificationProjectTarget',
     'ISpecification',
     'ISpecificationPublic',
     'ISpecificationSet',
@@ -21,14 +16,21 @@ __all__ = [
 
 
 from lazr.restful.declarations import (
+    call_with,
     export_as_webservice_entry,
+    export_write_operation,
     exported,
+    mutator_for,
+    operation_for_version,
+    operation_parameters,
+    REQUEST_USER,
     )
 from lazr.restful.fields import (
     CollectionField,
     Reference,
     ReferenceChoice,
     )
+from lazr.restful.interface import copy_field
 from zope.component import getUtility
 from zope.interface import (
     Attribute,
@@ -47,7 +49,6 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.validation import valid_webref
 from lp.app.validators import LaunchpadValidationError
 from lp.blueprints.enums import (
-    NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
     SpecificationGoalStatus,
     SpecificationImplementationStatus,
@@ -131,8 +132,10 @@ class SpecURLField(TextLine):
             raise LaunchpadValidationError(self.errormessage % specurl)
 
 
-class INewSpecification(Interface):
-    """A schema for a new specification."""
+class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
+    """Specification's public attributes and methods."""
+
+    id = Int(title=_("Database ID"), required=True, readonly=True)
 
     name = exported(
         SpecNameField(
@@ -163,18 +166,17 @@ class INewSpecification(Interface):
                 "A single-paragraph description of the feature. "
                 "This will also be displayed in most feature listings.")),
         ('devel', dict(exported=True)), exported=False)
-    # XXX: salgado, 2010-11-25, bug=680880: We need a method for changing the
-    # definition_status because when that happens we may need to call
-    # updateLifecycleStatus().
+
     definition_status = exported(
         Choice(
-            title=_('Definition Status'),
-            vocabulary=NewSpecificationDefinitionStatus,
-            default=NewSpecificationDefinitionStatus.NEW,
+            title=_('Definition Status'), readonly=True,
+            vocabulary=SpecificationDefinitionStatus,
+            default=SpecificationDefinitionStatus.NEW,
             description=_(
                 "The current status of the process to define the "
                 "feature and get approval for the implementation plan.")),
-        ('devel', dict(exported=True, readonly=True)), exported=False)
+        ('devel', dict(exported=True)), exported=False)
+
     assignee = exported(
         PublicPersonChoice(
             title=_('Assignee'), required=False,
@@ -198,96 +200,6 @@ class INewSpecification(Interface):
             vocabulary='ValidPersonOrTeam'),
         ('devel', dict(exported=True)), exported=False)
 
-
-class INewSpecificationProjectTarget(Interface):
-    """A mixin schema for a new specification.
-
-    Requires the user to specify a product from a given project.
-    """
-    target = Choice(title=_("For"),
-                    description=_("The project for which this "
-                                  "proposal is being made."),
-                    required=True, vocabulary='ProjectProducts')
-
-
-class INewSpecificationSeriesGoal(Interface):
-    """A mixin schema for a new specification.
-
-    Allows the user to propose the specification as a series goal.
-    """
-    goal = Bool(title=_('Propose for series goal'),
-                description=_("Check this to indicate that you wish to "
-                              "propose this blueprint as a series goal."),
-                required=True, default=False)
-
-
-class INewSpecificationSprint(Interface):
-    """A mixin schema for a new specification.
-
-    Allows the user to propose the specification for discussion at a sprint.
-    """
-    sprint = Choice(title=_("Propose for sprint"),
-                    description=_("The sprint to which agenda this "
-                                  "blueprint is being suggested."),
-                    required=False, vocabulary='FutureSprint')
-
-
-class INewSpecificationTarget(Interface):
-    """A mixin schema for a new specification.
-
-    Requires the user to specify a distribution or a product as a target.
-    """
-    # Exported as readonly for simplicity, but could be exported as read-write
-    # using setTarget() as the mutator.
-    target = exported(
-        ReferenceChoice(
-            title=_('For'), required=True, vocabulary='DistributionOrProduct',
-            description=_(
-                "The project for which this proposal is being made."),
-            schema=ISpecificationTarget),
-        ('devel', dict(exported=True, readonly=True)), exported=False)
-
-
-class ISpecificationEditRestricted(Interface):
-    """Specification's attributes and methods protected with launchpad.Edit.
-    """
-
-    def setTarget(target):
-        """Set this specification's target.
-
-        :param target: an IProduct or IDistribution.
-        """
-
-    def retarget(target):
-        """Move the spec to the given target.
-
-        The new target must be an IProduct or IDistribution.
-        """
-
-
-class ISpecificationPublic(
-        INewSpecification, INewSpecificationTarget, IHasOwner,
-        IHasLinkedBranches):
-    """Specification's public attributes and methods."""
-
-    # TomBerger 2007-06-20: 'id' is required for
-    #      SQLObject to be able to assign a security-proxied
-    #      specification to an attribute of another SQL object
-    #      referencing it.
-    id = Int(title=_("Database ID"), required=True, readonly=True)
-
-    # Redefine definition_status to support all definition statuses for
-    # life cycle events.
-    definition_status = exported(
-        Choice(
-            title=_('Definition Status'),
-            vocabulary=SpecificationDefinitionStatus,
-            default=SpecificationDefinitionStatus.NEW,
-            description=_(
-                "The current status of the process to define the "
-                "feature and get approval for the implementation plan.")),
-        ('devel', dict(exported=True, readonly=True)), exported=False)
-
     priority = exported(
         Choice(
             title=_('Priority'), vocabulary=SpecificationPriority,
@@ -308,6 +220,16 @@ class ISpecificationPublic(
                      vocabulary='Product')
     distribution = Choice(title=_('Distribution'), required=False,
                           vocabulary='Distribution')
+
+    # Exported as readonly for simplicity, but could be exported as read-write
+    # using setTarget() as the mutator.
+    target = exported(
+        ReferenceChoice(
+            title=_('For'), required=True, vocabulary='DistributionOrProduct',
+            description=_(
+                "The project for which this proposal is being made."),
+            schema=ISpecificationTarget),
+        ('devel', dict(exported=True, readonly=True)), exported=False)
 
     productseries = Choice(
         title=_('Series Goal'), required=False,
@@ -356,11 +278,14 @@ class ISpecificationPublic(
                 "Any notes on the status of this spec you would like to "
                 "make. Your changes will override the current text.")),
         ('devel', dict(exported=True)), exported=False)
-    direction_approved = Bool(title=_('Basic direction approved?'),
-        required=False, default=False, description=_("Check this to "
-        "indicate that the drafter and assignee have satisfied the "
-        "approver that they are headed in the right basic direction "
-        "with this specification."))
+    direction_approved = exported(
+        Bool(title=_('Basic direction approved?'),
+             required=True, default=False,
+             description=_(
+                "Check this to indicate that the drafter and assignee "
+                "have satisfied the approver that they are headed in "
+                "the right basic direction with this specification.")),
+        ('devel', dict(exported=True)), exported=False)
     man_days = Int(title=_("Estimated Developer Days"),
         required=False, default=None, description=_("An estimate of the "
         "number of developer days it will take to implement this feature. "
@@ -368,13 +293,13 @@ class ISpecificationPublic(
         "in the number."))
     implementation_status = exported(
         Choice(
-            title=_("Implementation Status"), required=True,
+            title=_("Implementation Status"), required=True, readonly=True,
             default=SpecificationImplementationStatus.UNKNOWN,
             vocabulary=SpecificationImplementationStatus,
             description=_(
                 "The state of progress being made on the actual "
                 "implementation or delivery of this feature.")),
-        ('devel', dict(exported=True, readonly=True)), exported=False)
+        ('devel', dict(exported=True)), exported=False)
     superseded_by = Choice(title=_("Superseded by"),
         required=False, default=None,
         vocabulary='Specification', description=_("The specification "
@@ -383,16 +308,38 @@ class ISpecificationPublic(
         "status to Superseded."))
 
     # lifecycle
-    starter = Attribute('The person who first set the state of the '
-        'spec to the values that we consider mark it as started.')
-    date_started = Attribute('The date when this spec was marked '
-        'started.')
-    completer = Attribute('The person who finally set the state of the '
-        'spec to the values that we consider mark it as complete.')
-    date_completed = Attribute('The date when this spec was marked '
-        'complete. Note that complete also includes "obsolete" and '
-        'superseded. Essentially, it is the state where no more work '
-        'will be done on the feature.')
+    starter = exported(
+        PublicPersonChoice(
+            title=_('Starter'), required=False, readonly=True,
+            description=_(
+                'The person who first set the state of the '
+                'spec to the values that we consider mark it as started.'),
+            vocabulary='ValidPersonOrTeam'),
+        ('devel', dict(exported=True)), exported=False)
+    date_started = exported(
+        Datetime(
+            title=_('Date Started'), required=False, readonly=True,
+            description=_('The date when this spec was marked started.')),
+        ('devel', dict(exported=True)), exported=False)
+
+    completer = exported(
+        PublicPersonChoice(
+            title=_('Starter'), required=False, readonly=True,
+            description=_(
+            'The person who finally set the state of the '
+            'spec to the values that we consider mark it as complete.'),
+            vocabulary='ValidPersonOrTeam'),
+        ('devel', dict(exported=True)), exported=False)
+
+    date_completed = exported(
+        Datetime(
+            title=_('Date Completed'), required=False, readonly=True,
+            description=_(
+                'The date when this spec was marked '
+                'complete. Note that complete also includes "obsolete" and '
+                'superseded. Essentially, it is the state where no more work '
+                'will be done on the feature.')),
+        ('devel', dict(exported=True)), exported=False)
 
     # joins
     subscriptions = Attribute('The set of subscriptions to this spec.')
@@ -422,26 +369,39 @@ class ISpecificationPublic(
     # emergent properties
     informational = Attribute('Is True if this spec is purely informational '
         'and requires no implementation.')
-    is_complete = Attribute('Is True if this spec is already completely '
-        'implemented. Note that it is True for informational specs, since '
-        'they describe general functionality rather than specific '
-        'code to be written. It is also true of obsolete and superseded '
-        'specs, since there is no longer any need to schedule work for '
-        'them.')
+    is_complete = exported(
+        Bool(title=_('Is started'),
+             readonly=True, required=True,
+             description=_(
+                'Is True if this spec is already completely implemented. '
+                'Note that it is True for informational specs, since '
+                'they describe general functionality rather than specific '
+                'code to be written. It is also true of obsolete and '
+                'superseded specs, since there is no longer any need '
+                'to schedule work for them.')),
+        ('devel', dict(exported=True)), exported=False)
+
     is_incomplete = Attribute('Is True if this work still needs to '
         'be done. Is in fact always the opposite of is_complete.')
     is_blocked = Attribute('Is True if this spec depends on another spec '
         'which is still incomplete.')
-    is_started = Attribute('Is True if the spec is in a state which '
-        'we consider to be "started". This looks at the delivery '
-        'attribute, and also considers informational specs to be '
-        'started when they are approved.')
+    is_started = exported(
+        Bool(title=_('Is started'),
+             readonly=True, required=True,
+             description=_(
+                'Is True if the spec is in a state which '
+                'we consider to be "started". This looks at the delivery '
+                'attribute, and also considers informational specs to be '
+                'started when they are approved.')),
+        ('devel', dict(exported=True)), exported=False)
 
-    lifecycle_status = Choice(
-        title=_('Lifecycle Status'),
-        vocabulary=SpecificationLifecycleStatus,
-        default=SpecificationLifecycleStatus.NOTSTARTED,
-        readonly=True)
+    lifecycle_status = exported(
+        Choice(
+            title=_('Lifecycle Status'),
+            vocabulary=SpecificationLifecycleStatus,
+            default=SpecificationLifecycleStatus.NOTSTARTED,
+            readonly=True),
+        ('devel', dict(exported=True)), exported=False)
 
     def validateMove(target):
         """Check that the specification can be moved to the target."""
@@ -545,6 +505,43 @@ class ISpecificationPublic(
     # branches
     def getBranchLink(branch):
         """Return the SpecificationBranch link for the branch, or None."""
+
+
+class ISpecificationEditRestricted(Interface):
+    """Specification's attributes and methods protected with launchpad.Edit.
+    """
+
+    @mutator_for(ISpecificationPublic['definition_status'])
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        definition_status=copy_field(
+            ISpecificationPublic['definition_status']))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setDefinitionStatus(definition_status, user):
+        """Mutator for definition_status that calls updateLifeCycle."""
+
+    @mutator_for(ISpecificationPublic['implementation_status'])
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        implementation_status=copy_field(
+            ISpecificationPublic['implementation_status']))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setImplementationStatus(implementation_status, user):
+        """Mutator for implementation_status that calls updateLifeCycle."""
+
+    def setTarget(target):
+        """Set this specification's target.
+
+        :param target: an IProduct or IDistribution.
+        """
+
+    def retarget(target):
+        """Move the spec to the given target.
+
+        The new target must be an IProduct or IDistribution.
+        """
 
 
 class ISpecification(ISpecificationPublic, ISpecificationEditRestricted,

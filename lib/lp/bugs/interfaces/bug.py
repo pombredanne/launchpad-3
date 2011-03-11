@@ -381,7 +381,7 @@ class IBug(IPrivacy, IHasLinkedBranches):
         title=_('Heat Last Updated'), required=False, readonly=True)
 
     # Adding related BugMessages provides a hook for getting at
-    # BugMessage.visible when building bug comments.
+    # BugMessage.message.visible when building bug comments.
     bug_messages = Attribute('The bug messages related to this object.')
     comment_count = Attribute(
         "The number of comments on this bug, not including the initial "

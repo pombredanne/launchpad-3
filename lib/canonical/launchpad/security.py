@@ -35,6 +35,7 @@ from canonical.launchpad.interfaces.oauth import (
     IOAuthAccessToken,
     IOAuthRequestToken,
     )
+from canonical.launchpad.interfaces.message import IMessage
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     IAuthorization,
@@ -2587,6 +2588,15 @@ class ViewLibraryFileAliasWithParent(AuthorizationBase):
         if parent is None:
             return False
         return check_permission(self.permission, parent)
+    
+
+class SetMessageVisibility(AuthorizationBase):
+    permission = 'launchpad.Admin'
+    usedfor = IMessage
+
+    def checkAuthenticated(self, user):
+        """Admins and registry admins can set bug comment visibility."""
+        return (user.in_admin or user.in_registry_experts)
 
 
 class ViewPublisherConfig(AdminByAdminsTeam):

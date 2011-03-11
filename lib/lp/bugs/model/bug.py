@@ -1781,7 +1781,7 @@ BugMessage""" % sqlvalues(self.id))
         bug_message_set = getUtility(IBugMessageSet)
         bug_message = bug_message_set.getByBugAndMessage(
             self, self.messages[comment_number])
-        bug_message.visible = visible
+        bug_message.message.visible = visible
 
     @cachedproperty
     def _known_viewers(self):

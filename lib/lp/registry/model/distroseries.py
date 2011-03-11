@@ -1891,10 +1891,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # or the child.parent's drivers.
         if not (user.inTeam('soyuz-team') or user.inTeam('admins')):
             raise Unauthorized
-        child = IStore(self).find(DistroSeries, name=name).one()
+        if distribution is None:
+            distribution = self.distribution
+        child = IStore(self).find(
+            DistroSeries, name=name, distribution=distribution).one()
         if child is None:
-            if distribution is None:
-                distribution = self.distribution
             if not displayname:
                 raise DerivationError(
                     "Display Name needs to be set when creating a "

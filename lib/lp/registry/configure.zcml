@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -1067,10 +1067,10 @@
 
     <subscriber
         for="lp.registry.interfaces.mailinglist.IMailingList         lazr.lifecycle.interfaces.IObjectModifiedEvent"
-        handler="canonical.launchpad.mailnotification.notify_mailinglist_activated"/>
+        handler="lp.registry.mail.notification.notify_mailinglist_activated"/>
     <subscriber
         for="lp.registry.interfaces.mailinglist.IMessageApproval                                        lazr.lifecycle.interfaces.IObjectCreatedEvent"
-        handler="canonical.launchpad.mailnotification.notify_message_held"/>
+        handler="lp.registry.mail.notification.notify_message_held"/>
     <class
         class="lp.registry.model.person.WikiName">
         <allow
@@ -1376,10 +1376,10 @@
     </securedutility>
     <subscriber
         for="canonical.launchpad.event.interfaces.IJoinTeamEvent"
-        handler="canonical.launchpad.mailnotification.notify_team_join"/>
+        handler="lp.registry.mail.notification.notify_team_join"/>
     <subscriber
         for="canonical.launchpad.event.interfaces.ITeamInvitationEvent"
-        handler="canonical.launchpad.mailnotification.notify_invitation_to_join_team"/>
+        handler="lp.registry.mail.notification.notify_invitation_to_join_team"/>
 
     <!-- This is class ProductSeries -->
 
@@ -1535,6 +1535,7 @@
                 addAnswerContact
                 removeAnswerContact"/>
 
+
         <!-- IFAQTarget -->
 
         <allow
@@ -1578,6 +1579,12 @@
         for="lp.registry.interfaces.distribution.IDistributionSet"
         factory="lp.registry.browser.distribution.DistributionSetBreadcrumb"
         permission="zope.Public"/>
+    <adapter
+        provides="lp.archivepublisher.interfaces.publisherconfig.IPublisherConfig"
+        for="lp.registry.interfaces.distribution.IDistribution"
+        factory="lp.registry.adapters.distribution_to_publisherconfig"
+        permission="zope.Public"/>
+
 
     <!-- DistributionSet -->
 
