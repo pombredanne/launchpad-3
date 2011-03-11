@@ -131,12 +131,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
-from lp.bugs.model.structuralsubscription import (
-    get_all_structural_subscriptions,
-    get_structural_subscribers_for_bugtasks,
-    get_structural_subscription_targets,
-    StructuralSubscription,
-    )
+from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -1773,6 +1768,7 @@ class BugTaskSet:
         join_tables = []
         decorators = []
         has_duplicate_results = False
+        with_clauses = []
 
         # These arguments can be processed in a loop without any other
         # special handling.
@@ -1964,8 +1960,6 @@ class BugTaskSet:
                                 Product.active))))
 
         if params.component:
-            clauseTables += [SourcePackagePublishingHistory,
-                             SourcePackageRelease]
             distroseries = None
             if params.distribution:
                 distroseries = params.distribution.currentseries
@@ -1983,19 +1977,21 @@ class BugTaskSet:
             distro_archive_ids = [
                 archive.id
                 for archive in distroseries.distribution.all_distro_archives]
-            extra_clauses.extend(["""
-            BugTask.sourcepackagename =
-                SourcePackageRelease.sourcepackagename AND
-            SourcePackageRelease.id =
-                SourcePackagePublishingHistory.sourcepackagerelease AND
-            SourcePackagePublishingHistory.distroseries = %s AND
-            SourcePackagePublishingHistory.archive IN %s AND
-            SourcePackagePublishingHistory.component IN %s AND
-            SourcePackagePublishingHistory.status = %s
-            """ % sqlvalues(distroseries,
-                            distro_archive_ids,
-                            component_ids,
-                            PackagePublishingStatus.PUBLISHED)])
+            with_clauses.append("""spns as (
+                SELECT sourcepackagename from SourcePackagePublishingHistory
+                JOIN SourcePackageRelease on SourcePackageRelease.id =
+                    SourcePackagePublishingHistory.sourcepackagerelease AND
+                SourcePackagePublishingHistory.distroseries = %s AND
+                SourcePackagePublishingHistory.archive IN %s AND
+                SourcePackagePublishingHistory.component IN %s AND
+                SourcePackagePublishingHistory.status = %s
+                )""" % sqlvalues(distroseries,
+                                distro_archive_ids,
+                                component_ids,
+                                PackagePublishingStatus.PUBLISHED))
+            extra_clauses.append(
+                """BugTask.sourcepackagename in (
+                    select sourcepackagename from spns)""")
 
         upstream_clause = self._buildUpstreamClause(params)
         if upstream_clause:
@@ -2140,9 +2136,13 @@ class BugTaskSet:
                 for decor in decorators:
                     obj = decor(obj)
                 return obj
+        if with_clauses:
+            with_clause = SQL(', '.join(with_clauses))
+        else:
+            with_clause = None
         return (
             query, clauseTables, orderby_arg, decorator, join_tables,
-            has_duplicate_results)
+            has_duplicate_results, with_clause)
 
     def _buildUpstreamClause(self, params):
         """Return an clause for returning upstream data if the data exists.
@@ -2434,9 +2434,11 @@ class BugTaskSet:
         :param params: A BugTaskSearchParams instance.
         :param args: optional additional BugTaskSearchParams instances,
         """
-        store = IStore(BugTask)
+        orig_store = store = IStore(BugTask)
         [query, clauseTables, orderby, bugtask_decorator, join_tables,
-        has_duplicate_results] = self.buildQuery(params)
+        has_duplicate_results, with_clause] = self.buildQuery(params)
+        if with_clause:
+            store = store.with_(with_clause)
         if len(args) == 0:
             if has_duplicate_results:
                 origin = self.buildOrigin(join_tables, [], clauseTables)
@@ -2464,8 +2466,10 @@ class BugTaskSet:
         decorators = [bugtask_decorator]
         for arg in args:
             [query, clauseTables, ignore, decorator, join_tables,
-             has_duplicate_results] = self.buildQuery(arg)
+             has_duplicate_results, with_clause] = self.buildQuery(arg)
             origin = self.buildOrigin(join_tables, [], clauseTables)
+            if with_clause:
+                store = orig_store.with_(with_clause)
             next_result = store.using(*origin).find(inner_resultrow, query)
             resultset = resultset.union(next_result)
             # NB: assumes the decorators are all compatible.
@@ -3107,20 +3111,3 @@ class BugTaskSet:
             counts.append(package_counts)
 
         return counts
-
-    def _getStructuralSubscriptionTargets(self, bugtasks):
-        """Return (bugtask, target) pairs for each target of the bugtasks.
-
-        Each bugtask may be responsible theoretically for 0 or more targets.
-        In practice, each generates one, two or three.
-        """
-        return get_structural_subscription_targets(bugtasks)
-
-    def getAllStructuralSubscriptions(self, bugtasks, recipient=None):
-        """See `IBugTaskSet`."""
-        return get_all_structural_subscriptions(bugtasks, recipient)
-
-    def getStructuralSubscribers(self, bugtasks, recipients=None, level=None):
-        """See `IBugTaskSet`."""
-        return get_structural_subscribers_for_bugtasks(
-            bugtasks, recipients, level)

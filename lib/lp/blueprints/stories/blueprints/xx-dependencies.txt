@@ -173,7 +173,7 @@ regardless of its status. Let's mark mergewin as Implemented:
 
   >>> owner_browser.open(
   ...   'http://blueprints.launchpad.dev/firefox/+spec/mergewin')
-  >>> owner_browser.getLink('Change status').click()
+  >>> owner_browser.getLink(url='+status').click()
   >>> owner_browser.getControl(
   ...     'Implementation Status').value = ['IMPLEMENTED']
   >>> owner_browser.getControl('Change').click()
