@@ -10,8 +10,15 @@ from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.registry.browser.distribution import DistributionPublisherConfigView
-from lp.testing import TestCaseWithFactory
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.testing import (
+    login_celebrity,
+    TestCaseWithFactory,
+    )
+from lp.testing.views import create_initialized_view
 from lp.testing.sampledata import LAUNCHPAD_ADMIN
+
+import soupmatchers
 
 
 class TestDistributionPublisherConfigView(TestCaseWithFactory):
@@ -84,3 +91,79 @@ class TestDistributionPublisherConfigView(TestCaseWithFactory):
             copy_base_url=u"foo",
             )
         self._change_and_test_config()
+
+
+class TestDistroAddView(TestCaseWithFactory):
+    """Test the +add page for a new distribution."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDistroAddView, self).setUp()
+        self.owner = self.factory.makePerson()
+        self.registrant = self.factory.makePerson()
+        self.simple_user = self.factory.makePerson()
+
+    def test_registrant_set_by_creation(self):
+        """The registrant field should be set to the Person creating
+        the distribution.
+        """
+        admin = login_celebrity('admin')
+        distributionset = getUtility(IDistributionSet)
+        creation_form = {
+            'field.name': 'newbuntu',
+            'field.displayname': 'newbuntu',
+            'field.title': 'newbuntu',
+            'field.summary': 'newbuntu',
+            'field.description': 'newbuntu',
+            'field.domainname': 'newbuntu',
+            'field.members': self.simple_user.name,
+            'field.actions.save': 'Save',
+            }
+        view = create_initialized_view(
+            distributionset, '+add', principal=admin,
+            method='POST', form=creation_form)
+        distribution = distributionset.getByName('newbuntu')
+        self.assertEqual(distribution.owner, admin)
+        self.assertEqual(distribution.registrant, admin)
+
+
+class TestDistroReassignView(TestCaseWithFactory):
+    """Test the +reassign page for a new distribution."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDistroReassignView, self).setUp()
+        self.owner = self.factory.makePerson()
+        self.registrant = self.factory.makePerson()
+        self.simple_user = self.factory.makePerson()
+
+    def test_reassign_distro_change_owner_not_registrant(self):
+        """Reassigning a distribution should not change the registrant."""
+        admin = login_celebrity('admin')
+        distribution = self.factory.makeDistribution(
+            name="boobuntu", owner=self.owner, registrant=self.registrant)
+        reassign_form = {
+            'field.owner': self.simple_user.name,
+            'field.existing': 'existing',
+            'field.actions.change': 'Change',
+            }
+        view = create_initialized_view(
+            distribution, '+reassign', principal=admin,
+            method='POST', form=reassign_form)
+        self.assertEqual(distribution.owner, self.simple_user)
+        self.assertEqual(distribution.registrant, self.registrant)
+
+    def test_reassign_distro_page_title(self):
+        """Reassign should say maintainer instead of owner."""
+        admin = login_celebrity('admin')
+        distribution = self.factory.makeDistribution(
+            name="boobuntu", owner=self.owner, registrant=self.registrant)
+        view = create_initialized_view(
+            distribution, '+reassign', principal=admin, method='GET')
+        header_match = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Header should say maintainer (not owner)', 'h1',
+                text='Change the maintainer of Boobuntu'))
+        self.assertThat(view.render(), header_match)
