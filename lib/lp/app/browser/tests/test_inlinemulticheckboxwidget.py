@@ -68,6 +68,21 @@ class TestInlineMultiCheckboxWidget(TestCaseWithFactory):
             expected_items.append(new_item)
         self.assertEqual(simplejson.dumps(expected_items), widget.json_items)
 
+    def test_items_for_custom_vocabulary_name(self):
+        widget = self.getWidget(vocabulary="CountryName")
+        expected_items = []
+        style = 'font-weight: normal;'
+        vocab = getVocabularyRegistry().get(None, "CountryName")
+        for item in vocab:
+            new_item = {
+                'name': item.title,
+                'token': item.token,
+                'style': style,
+                'checked': False,
+                'value': item.value.name}
+            expected_items.append(new_item)
+        self.assertEqual(simplejson.dumps(expected_items), widget.json_items)
+
     def test_selected_items_checked(self):
         widget = self.getWidget(
             vocabulary=Alphabet, selected_items=[Alphabet.A])

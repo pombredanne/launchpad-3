@@ -1,5 +1,5 @@
-<div tal:define="items view/items|nothing"
-      tal:attributes="id view/content_box_id">
+<span tal:define="items view/items|nothing"
+     tal:attributes="id view/content_box_id">
 
   <tal:label-open-tag replace="structure view/label_open_tag"/>
     <span tal:replace="structure view/label"/>
@@ -11,7 +11,6 @@
   <span class="yui3-activator-data-box">
     <tal:items-open-tag replace="structure view/items_open_tag"/>
       <span tal:condition="not:items" tal:content="structure view/empty_display_value"/>
-
         <ul tal:condition="items">
               <li tal:condition="view/linkify_items"
                   tal:repeat="item items"
@@ -24,16 +23,7 @@
     <tal:items-close-tag replace="structure view/items_close_tag"/>
   </span>
   <div class="yui3-activator-message-box yui3-activator-hidden"/>
-</div>
-<style type="text/css">
-  .close button {
-    float: right;
-    width: 15px;
-    height: 15px;
-    display: block;
-    margin-top: 4px;
-  }
-</style>
+</span>
 <script tal:condition="view/can_write"
         tal:content="structure string:
 LPS.use('lp.app.multicheckbox', function(Y) {

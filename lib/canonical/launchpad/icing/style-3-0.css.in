@@ -791,6 +791,13 @@ textarea {
 button {
     padding:0;
     }
+button.overlay-close-button {
+    float: right;
+    width: 15px;
+    height: 15px;
+    display: block;
+    margin-top: 4px;
+    }
 .fieldRequired, .fieldOptional {
     color: #999;
     }
