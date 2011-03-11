@@ -29,7 +29,7 @@ from lp.soyuz.interfaces.distroseriesdifferencejob import (
     )
 
 
-FEATURE_FLAG = "soyuz.distroseriesdifferencejob.enabled"
+FEATURE_FLAG = "soyuz.derived_series_jobs.enabled"
 
 
 def make_metadata(sourcepackagename):
