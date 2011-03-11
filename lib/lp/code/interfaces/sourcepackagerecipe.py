@@ -24,6 +24,7 @@ from textwrap import dedent
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
+    export_read_operation,
     export_write_operation,
     exported,
     mutator_for,
@@ -165,6 +166,19 @@ class ISourcePackageRecipeView(Interface):
     @export_write_operation()
     def performDailyBuild():
         """Perform a build into the daily build archive."""
+
+    @export_read_operation()
+    def getPendingBuildInfo():
+        """Find distroseries and archive data for pending builds.
+
+        Return a list of {
+            distroseries:distroseries.displayname
+            archive:archive.token
+            }
+        The archive token is the same as that defined by the archive vocab:
+            archive.owner.name/archive.name
+        This information is used to construct the request builds popup form.
+        """
 
 
 class ISourcePackageRecipeEdit(Interface):
