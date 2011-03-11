@@ -84,7 +84,7 @@ from lp.app.browser.lazrjs import (
     TextAreaEditorWidget,
     TextLineEditorWidget,
     )
-from lp.app.browser.tales import format_link, DistroSeriesFormatterAPI
+from lp.app.browser.tales import format_link
 from lp.app.validators.name import name_validator
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
@@ -310,6 +310,7 @@ class SourcePackageRecipeView(LaunchpadView):
             self.context,
             field,
             attribute_type="reference",
+            vocabulary='BuildableDistroSeries',
             label="Distribution Series:",
             label_tag="dt",
             header="Change default distribution series:",
@@ -327,7 +328,7 @@ def distroseries_renderer(context, field, request):
     def render(value):
         html = "<ul>"
         html += ''.join(
-            ["<li>%s</li>" % DistroSeriesFormatterAPI(distroseries).link(None)
+            ["<li>%s</li>" % format_link(distroseries)
                 for distroseries in context.distroseries]
         )
         html += "</ul>"
@@ -549,18 +550,13 @@ class ISourcePackageEditSchema(Interface):
         'description',
         'owner',
         'build_daily',
+        'distroseries',
         ])
     daily_build_archive = Choice(vocabulary='TargetPPAs',
         title=u'Daily build archive',
         description=(
             u'If built daily, this is the archive where the package '
             u'will be uploaded.'))
-    distroseries = List(
-        Choice(vocabulary='BuildableDistroSeries'),
-        title=u'Default distribution series',
-        description=(
-            u'If built daily, these are the distribution versions that '
-            u'the recipe will be built for.'))
     recipe_text = has_structured_doc(
         Text(
             title=u'Recipe text', required=True,

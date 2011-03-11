@@ -207,8 +207,9 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
             description=_("The person or team who can edit this recipe.")))
 
     distroseries = exported(List(
-        Reference(IDistroSeries), title=_("The distroseries this recipe will"
-            " build a source package for"),
+        Reference(IDistroSeries), title=_("Default distribution series"),
+        description=_("If built daily, these are the distribution"
+            "versions that the recipe will be built for."),
         readonly=True))
     build_daily = exported(Bool(
         title=_("Built daily"),
@@ -231,12 +232,9 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
     is_stale = Bool(title=_('Recipe is stale.'))
 
     @mutator_for(distroseries)
-    @operation_for_version("devel")
-    @operation_parameters(
-        distroseries=List(
-            value_type=Reference(
-                IDistroSeries, title=_('DistroSeries'), required=True)))
+    @operation_parameters(distroseries=copy_field(distroseries))
     @export_write_operation()
+    @operation_for_version("devel")
     def updateSeries(distroseries):
         """Replace this recipe's distro series."""
 
