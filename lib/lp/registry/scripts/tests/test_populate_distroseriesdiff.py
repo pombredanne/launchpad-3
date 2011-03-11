@@ -14,6 +14,7 @@ from canonical.database.sqlbase import (
     )
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     ZopelessDatabaseLayer,
     )
 from lp.registry.enum import (
@@ -398,7 +399,7 @@ class TestFindDerivedSeries(TestCaseWithFactory, FactoryHelper):
 class TestPopulateDistroSeriesDiff(TestCaseWithFactory, FactoryHelper):
     """Test `populate_distroseriesdiff`."""
 
-    layer = ZopelessDatabaseLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_baseline(self):
         distroseries = self.factory.makeDistroSeries()
@@ -418,17 +419,25 @@ class TestPopulateDistroSeriesDiff(TestCaseWithFactory, FactoryHelper):
 
     def test_does_not_overwrite_distroseriesdifference(self):
         distroseries = self.makeDerivedDistroSeries()
+        changelog = self.factory.makeChangelog(versions=['3.1', '3.141'])
+        parent_changelog = self.factory.makeChangelog(
+            versions=['3.1', '3.14'])
+        transaction.commit() # Yay, librarian.
         existing_versions = {
             'base': '3.1',
             'parent': '3.14',
             'derived': '3.141',
+        }
+        changelogs = {
+            'derived': changelog,
+            'parent': parent_changelog,
         }
         spph = self.makeSPPH(distroseries=distroseries)
         spr = spph.sourcepackagerelease
         self.factory.makeDistroSeriesDifference(
             derived_series=distroseries,
             source_package_name_str=spr.sourcepackagename.name,
-            versions=existing_versions)
+            versions=existing_versions, changelogs=changelogs)
         dsd = self.getDistroSeriesDiff(distroseries).one()
         self.assertEqual(existing_versions['base'], dsd.base_version)
         self.assertEqual(
