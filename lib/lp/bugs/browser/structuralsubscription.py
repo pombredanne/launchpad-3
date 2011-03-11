@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     'expose_user_administered_teams_to_js',
     'expose_user_subscription_status_to_js',
+    'expose_user_subscriptions_to_js',
     'StructuralSubscriptionMenuMixin',
     'StructuralSubscriptionTargetTraversalMixin',
     'StructuralSubscriptionView',
@@ -29,6 +30,7 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 from zope.traversing.browser import absoluteURL
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import Link
@@ -44,6 +46,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscription,
     IStructuralSubscriptionForm,
@@ -359,10 +362,7 @@ def expose_enum_to_js(request, enum, name):
     """Make a list of enum titles and value available to JavaScript."""
     info = []
     for item in enum:
-        info.append({
-            'title': item.title,
-            'value': item.value.value,
-        })
+        info.append(item.title)
     IJSONRequestCache(request).objects[name] = info
 
 
@@ -383,6 +383,59 @@ def expose_user_subscription_status_to_js(context, request, user):
     """Make the user's subscription state available to JavaScript."""
     IJSONRequestCache(request).objects['userHasBugSubscriptions'] = (
         context.userHasBugSubscriptions(user))
+
+
+def get_user_subscriptions(user, bugtasks):
+    teams = user.getAdministratedTeams()
+    bugtaskset = getUtility(IBugTaskSet)
+    targets = [target for (bugtask, target)
+        in bugtaskset.getStructuralSubscriptionTargets(bugtasks)]
+
+    if len(targets) == 0:
+        return EmptyResultSet()
+
+    result = {}
+    for target in targets:
+        result.setdefault(target, []).extend(
+            list(removeSecurityProxy(target).getSubscriptions(user)))
+        for team in teams:
+            result[target].extend(
+                list(removeSecurityProxy(target).getSubscriptions(team)))
+
+    # The user may not have subscriptions to all of the targets, filter
+    # those out.
+    deletable = [target for target in result if len(result[target]) == 0]
+    for target in deletable:
+        del result[target]
+
+    def key((target, subscriptions)):
+        """Sort on the title of the target."""
+        return target.title
+
+    return sorted(result.items(), key=key)
+
+
+def expose_user_subscriptions_to_js(user, bugtasks, request):
+    """Make the user's subscriptions available to JavaScript."""
+
+    info = []
+    api_request = IWebServiceClientRequest(request)
+    for target, subscriptions in get_user_subscriptions(user, bugtasks):
+        record = {}
+        record['target_title'] = target.title
+        record['target_url'] = absoluteURL(target, request)
+        record['filters'] = []
+        for subscription in subscriptions:
+            for filter in subscription.bug_filters:
+                record['filters'].append(dict(
+                    filter=filter,
+                    subscriber_link=absoluteURL(
+                        subscription.subscriber, api_request),
+                    subscriber_title=subscription.subscriber.title,
+                    subscriber_is_team=subscription.subscriber.isTeam()))
+        info.append(record)
+
+    IJSONRequestCache(request).objects['subscription_info'] = info
 
 
 class StructuralSubscribersPortletView(LaunchpadView):

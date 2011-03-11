@@ -131,7 +131,12 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
-from lp.bugs.model.structuralsubscription import StructuralSubscription
+from lp.bugs.model.structuralsubscription import (
+    get_all_structural_subscriptions,
+    get_structural_subscribers_for_bugtasks,
+    get_structural_subscription_targets,
+    StructuralSubscription,
+    )
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -3111,3 +3116,20 @@ class BugTaskSet:
             counts.append(package_counts)
 
         return counts
+
+    def getStructuralSubscriptionTargets(self, bugtasks):
+        """Return (bugtask, target) pairs for each target of the bugtasks.
+
+        Each bugtask may be responsible theoretically for 0 or more targets.
+        In practice, each generates one, two or three.
+        """
+        return get_structural_subscription_targets(bugtasks)
+
+    def getAllStructuralSubscriptions(self, bugtasks, recipient=None):
+        """See `IBugTaskSet`."""
+        return get_all_structural_subscriptions(bugtasks, recipient)
+
+    def getStructuralSubscribers(self, bugtasks, recipients=None, level=None):
+        """See `IBugTaskSet`."""
+        return get_structural_subscribers_for_bugtasks(
+            bugtasks, recipients, level)

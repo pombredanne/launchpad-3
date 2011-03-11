@@ -12,10 +12,16 @@ __all__ = [
     'BugSubscriptionListView',
     ]
 
+from operator import attrgetter
 import cgi
 
 from lazr.delegates import delegates
+from lazr.restful.interfaces import (
+    IJSONRequestCache,
+    IWebServiceClientRequest,
+    )
 from simplejson import dumps
+from storm.store import EmptyResultSet
 from zope import formlib
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import RadioWidget
@@ -24,6 +30,7 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
+from zope.traversing.browser import absoluteURL
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
@@ -40,6 +47,15 @@ from lp.app.browser.launchpadform import (
 from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.enum import BugNotificationLevel, HIDDEN_BUG_NOTIFICATION_LEVELS
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
+from lp.bugs.browser.structuralsubscription import (
+    expose_enum_to_js,
+    expose_user_administered_teams_to_js,
+    expose_user_subscriptions_to_js,
+    )
 from lp.services import features
 from lp.services.propertycache import cachedproperty
 
@@ -547,6 +563,14 @@ class SubscriptionAttrDecorator:
 
 class BugSubscriptionListView(LaunchpadView):
     """A view to show all a person's subscriptions to a bug."""
+
+    def __init__(self, context, request):
+        super(BugSubscriptionListView, self).__init__(context, request)
+        expose_user_administered_teams_to_js(self.request, self.user)
+        expose_user_subscriptions_to_js(
+            self.user, self.context.bug.bugtasks, request)
+        expose_enum_to_js(self.request, BugTaskImportance, 'importances')
+        expose_enum_to_js(self.request, BugTaskStatus, 'statuses')
 
     @property
     def label(self):

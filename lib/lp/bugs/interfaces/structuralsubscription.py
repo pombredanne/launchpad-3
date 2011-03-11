@@ -85,7 +85,7 @@ class IStructuralSubscriptionPublic(Interface):
     bug_filters = exported(CollectionField(
         title=_('List of bug filters that narrow this subscription.'),
         readonly=True, required=False,
-        value_type=Reference(schema=Interface)))
+        value_type=Reference(schema=Interface))) # IBugSubscriptionFilter
 
 
 class IStructuralSubscriptionRestricted(Interface):
