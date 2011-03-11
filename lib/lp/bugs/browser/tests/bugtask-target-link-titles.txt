@@ -178,20 +178,31 @@ bug's target to its current release is set up.
     >>> bug_targets = [
     ...     product,
     ...     product_series,
-    ...     published_distro,
     ...     published_evolution,
-    ...     published_distro_series,
     ...     published_series_evolution,
-    ...     unpublished_distro,
     ...     unpublished_evolution,
-    ...     unpublished_distro_series,
     ...     unpublished_series_evolution,
     ...     ]
     >>> for bug_target in bug_targets:
     ...     bugtask = factory.makeBugTask(bug=bug, target=bug_target)
+    >>> bug = factory.makeBug(product=product)
+    >>> distro_bug_targets = [
+    ...     published_distro,
+    ...     unpublished_distro,
+    ...     ]
+    >>> for bug_target in distro_bug_targets:
+    ...     bugtask = factory.makeBugTask(bug=bug, target=bug_target)
+    >>> distroseries_bug_targets = [
+    ...     published_distro_series,
+    ...     unpublished_distro_series,
+    ...     ]
+    >>> for bug_target in distroseries_bug_targets:
+    ...     bugtask = factory.makeBugTask(bug=bug, target=bug_target)
     >>> view = BugTasksAndNominationsView(bug, None)
     >>> view.initialize()
-    >>> for bug_target in bug_targets:
+    >>> all_targets = (
+    ...     bug_targets + distro_bug_targets + distroseries_bug_targets)
+    >>> for bug_target in all_targets:
     ...     release = view.target_releases.get(bug_target)
     ...     if release is None:
     ...         version = 'No releases'
@@ -200,12 +211,12 @@ bug's target to its current release is set up.
     ...     print "%s: %s" % (bug_target.bugtargetname, version)
     product: No releases
     product/product-series: No releases
-    published-distro: No releases
     evolution (Published Distro): 2.0
-    Published-distro Published-distro-series: No releases
     evolution (Published-distro Published-distro-series): 1.0
-    unpublished-distro: No releases
     evolution (Unpublished Distro): No releases
-    Unpublished-distro Unpublished-distro-series: No releases
     evolution (Unpublished-distro Unpublished-distro-series): No releases
+    published-distro: No releases
+    unpublished-distro: No releases
+    Published-distro Published-distro-series: No releases
+    Unpublished-distro Unpublished-distro-series: No releases
 
