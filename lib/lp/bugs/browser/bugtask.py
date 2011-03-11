@@ -144,7 +144,6 @@ from canonical.launchpad.searchbuilder import (
     any,
     NULL,
     )
-from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
     canonical_url,
     enabled_with_permission,
@@ -185,6 +184,7 @@ from lp.app.errors import (
     UnexpectedFormData,
     )
 from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.app.widgets.project import ProjectScopeWidget
 from lp.bugs.browser.bug import (
@@ -509,7 +509,7 @@ class BugTargetTraversalMixin:
         # anonymous user is presented with a login screen at the correct URL,
         # rather than making it look as though this task was "not found",
         # because it was filtered out by privacy-aware code.
-        for bugtask in list(bug.bugtasks):
+        for bugtask in bug.bugtasks:
             if bugtask.target == context:
                 # Security proxy this object on the way out.
                 return getUtility(IBugTaskSet).get(bugtask.id)
@@ -650,6 +650,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             self.context = getUtility(ILaunchBag).bugtask
         else:
             self.context = context
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            [self.context.bug.ownerID], need_validity=True))
 
     @property
     def page_title(self):
@@ -3166,6 +3168,13 @@ class BugTasksAndNominationsView(LaunchpadView):
         distro_series_set = getUtility(IDistroSeriesSet)
         self.target_releases.update(
             distro_series_set.getCurrentSourceReleases(distro_series_packages))
+        ids = set()
+        for release_person_ids in map(attrgetter('creatorID', 'maintainerID'),
+            self.target_releases.values()):
+            ids.update(release_person_ids)
+        ids.discard(None)
+        if ids:
+            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(ids))
 
     def getTargetLinkTitle(self, target):
         """Return text to put as the title for the link to the target."""
@@ -3246,6 +3255,13 @@ class BugTasksAndNominationsView(LaunchpadView):
         # nominations here, so we can pass it to getNominations() later
         # on.
         nominations = list(bug.getNominations())
+        # Eager load validity for all the persons we know of that will be
+        # displayed.
+        ids = set(map(attrgetter('ownerID'), nominations))
+        ids.discard(None)
+        if ids:
+            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                ids, need_validity=True))
 
         # Build a cache we can pass on to getConjoinedMaster(), so that
         # it doesn't have to iterate over all the bug tasks in each loop
@@ -3270,16 +3286,6 @@ class BugTasksAndNominationsView(LaunchpadView):
                     nomination, is_converted_to_question, False)
                 for nomination in target_nominations
                 if nomination.status != BugNominationStatus.APPROVED)
-
-        # Fill the ValidPersonOrTeamCache cache (using getValidPersons()),
-        # so that checking person.is_valid_person, when rendering the
-        # link, won't issue a DB query.
-        assignees = set(
-            bugtask.assignee for bugtask in all_bugtasks
-            if bugtask.assignee is not None)
-        reporters = set(
-            bugtask.owner for bugtask in all_bugtasks)
-        getUtility(IPersonSet).getValidPersons(assignees.union(reporters))
 
         return bugtask_and_nomination_views
 
@@ -3817,7 +3823,13 @@ class BugActivityItem:
     @property
     def change_summary(self):
         """Return a formatted summary of the change."""
-        return self.attribute
+        if self.target is not None:
+            # This is a bug task.  We want the attribute, as filtered out.
+            return self.attribute
+        else:
+            # Otherwise, the attribute is more normalized than what we want.
+            # Use "whatchanged," which sometimes is more descriptive.
+            return self.whatchanged
 
     @property
     def _formatted_tags_change(self):
@@ -3861,30 +3873,31 @@ class BugActivityItem:
             'old_value': self.oldvalue,
             'new_value': self.newvalue,
             }
-        if self.attribute == 'summary':
+        attribute = self.attribute
+        if attribute == 'title':
             # We display summary changes as a unified diff, replacing
             # \ns with <br />s so that the lines are separated properly.
             diff = cgi.escape(
                 get_unified_diff(self.oldvalue, self.newvalue, 72), True)
             return diff.replace("\n", "<br />")
 
-        elif self.attribute == 'description':
+        elif attribute == 'description':
             # Description changes can be quite long, so we just return
             # 'updated' rather than returning the whole new description
             # or a diff.
             return 'updated'
 
-        elif self.attribute == 'tags':
+        elif attribute == 'tags':
             # We special-case tags because we can work out what's been
             # added and what's been removed.
             return self._formatted_tags_change.replace('\n', '<br />')
 
-        elif self.attribute == 'assignee':
+        elif attribute == 'assignee':
             for key in return_dict:
                 if return_dict[key] is None:
                     return_dict[key] = 'nobody'
 
-        elif self.attribute == 'milestone':
+        elif attribute == 'milestone':
             for key in return_dict:
                 if return_dict[key] is None:
                     return_dict[key] = 'none'

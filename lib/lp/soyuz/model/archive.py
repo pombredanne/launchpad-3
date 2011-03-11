@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = ['Archive', 'ArchiveSet']
 
+from operator import attrgetter
 import re
 
 from lazr.lifecycle.event import ObjectCreatedEvent
@@ -25,6 +26,7 @@ from storm.expr import (
     Or,
     Select,
     Sum,
+    SQL,
     )
 from storm.locals import (
     Count,
@@ -50,6 +52,9 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.components.tokens import (
     create_unique_token_for_table,
     )
@@ -62,7 +67,6 @@ from canonical.launchpad.interfaces.lpstorm import (
     ISlaveStore,
     IStore,
     )
-from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -70,6 +74,7 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.url import urlappend
 from lp.app.errors import NotFoundError
+from lp.app.validators.name import valid_name
 from lp.archivepublisher.debversion import Version
 from lp.archiveuploader.utils import (
     re_isadeb,
@@ -81,6 +86,7 @@ from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
+    IPersonSet,
     OPEN_TEAM_POLICY,
     PersonVisibility,
     validate_person,
@@ -88,6 +94,7 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import (
@@ -182,6 +189,7 @@ from lp.soyuz.model.queue import (
     PackageUpload,
     PackageUploadSource,
     )
+from lp.soyuz.model.section import Section
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.soyuz.scripts.packagecopier import do_copy
 
@@ -458,76 +466,94 @@ class Archive(SQLBase):
                             distroseries=None, pocket=None,
                             exact_match=False, created_since_date=None):
         """See `IArchive`."""
-        clauses = ["""
-            SourcePackagePublishingHistory.archive = %s AND
-            SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename =
+        # clauses contains literal sql expressions for things that don't work
+        # easily in storm : this method was migrated from sqlobject but some
+        # callers are problematic. (Migrate them and test to see).
+        clauses = []
+        storm_clauses = [
+            SourcePackagePublishingHistory.archiveID==self.id,
+            SourcePackagePublishingHistory.sourcepackagereleaseID==
+                SourcePackageRelease.id,
+            SourcePackageRelease.sourcepackagenameID==
                 SourcePackageName.id
-            """ % sqlvalues(self)]
-        clauseTables = ['SourcePackageRelease', 'SourcePackageName']
-        orderBy = ['SourcePackageName.name',
-                   '-SourcePackagePublishingHistory.id']
+            ]
+        orderBy = [SourcePackageName.name,
+                   Desc(SourcePackagePublishingHistory.id)]
 
         if name is not None:
             if exact_match:
-                clauses.append("""
-                    SourcePackageName.name=%s
-                """ % sqlvalues(name))
+                storm_clauses.append(SourcePackageName.name==name)
             else:
-                clauses.append("""
-                    SourcePackageName.name LIKE '%%' || %s || '%%'
-                """ % quote_like(name))
+                clauses.append(
+                    "SourcePackageName.name LIKE '%%%%' || %s || '%%%%'"
+                    % quote_like(name))
 
         if version is not None:
             if name is None:
                 raise VersionRequiresName(
                     "The 'version' parameter can be used only together with"
                     " the 'name' parameter.")
-            clauses.append("""
-                SourcePackageRelease.version = %s
-            """ % sqlvalues(version))
+            storm_clauses.append(SourcePackageRelease.version==version)
         else:
-            order_const = "SourcePackageRelease.version"
-            desc_version_order = SQLConstant(order_const+" DESC")
-            orderBy.insert(1, desc_version_order)
+            orderBy.insert(1, Desc(SourcePackageRelease.version))
 
         if status is not None:
             try:
                 status = tuple(status)
             except TypeError:
                 status = (status, )
-            clauses.append("""
-                SourcePackagePublishingHistory.status IN %s
-            """ % sqlvalues(status))
+            clauses.append(
+                "SourcePackagePublishingHistory.status IN %s "
+                % sqlvalues(status))
 
         if distroseries is not None:
-            clauses.append("""
-                SourcePackagePublishingHistory.distroseries = %s
-            """ % sqlvalues(distroseries))
+            storm_clauses.append(
+                SourcePackagePublishingHistory.distroseriesID==distroseries.id)
 
         if pocket is not None:
-            clauses.append("""
-                SourcePackagePublishingHistory.pocket = %s
-            """ % sqlvalues(pocket))
+            storm_clauses.append(
+                SourcePackagePublishingHistory.pocket==pocket)
 
         if created_since_date is not None:
-            clauses.append("""
-                SourcePackagePublishingHistory.datecreated >= %s
-            """ % sqlvalues(created_since_date))
+            clauses.append(
+                "SourcePackagePublishingHistory.datecreated >= %s"
+                % sqlvalues(created_since_date))
 
-        preJoins = [
-            'sourcepackagerelease.creator',
-            'sourcepackagerelease.dscsigningkey',
-            'distroseries',
-            'section',
-            ]
-
-        sources = SourcePackagePublishingHistory.select(
-            ' AND '.join(clauses), clauseTables=clauseTables, orderBy=orderBy,
-            prejoins=preJoins)
-
-        return sources
+        store = Store.of(self)
+        if clauses:
+            storm_clauses.append(SQL(' AND '.join(clauses)))
+        resultset = store.find(SourcePackagePublishingHistory,
+            *storm_clauses).order_by(
+            *orderBy)
+        # Its not clear that this eager load is necessary or sufficient, it
+        # replaces a prejoin that had pathological query plans.
+        def eager_load(rows):
+            # \o/ circular imports.
+            from lp.registry.model.distroseries import DistroSeries
+            from lp.registry.model.gpgkey import GPGKey
+            ids = set(map(attrgetter('distroseriesID'), rows))
+            ids.discard(None)
+            if ids:
+                list(store.find(DistroSeries, DistroSeries.id.is_in(ids)))
+            ids = set(map(attrgetter('sectionID'), rows))
+            ids.discard(None)
+            if ids:
+                list(store.find(Section, Section.id.is_in(ids)))
+            ids = set(map(attrgetter('sourcepackagereleaseID'), rows))
+            ids.discard(None)
+            if not ids:
+                return
+            releases = list(store.find(
+                SourcePackageRelease, SourcePackageRelease.id.is_in(ids)))
+            ids = set(map(attrgetter('creatorID'), releases))
+            ids.discard(None)
+            if ids:
+                list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(ids))
+            ids = set(map(attrgetter('dscsigningkeyID'), releases))
+            ids.discard(None)
+            if ids:
+                list(store.find(GPGKey, GPGKey.id.is_in(ids)))
+        return DecoratedResultSet(resultset, pre_iter_hook=eager_load)
 
     def getSourcesForDeletion(self, name=None, status=None,
             distroseries=None):
@@ -1419,7 +1445,7 @@ class Archive(SQLBase):
         getUtility(ISourcePackageNameSet)[source_name]
         # Find and validate the source package version required.
         source = from_archive.getPublishedSources(
-            name=source_name, version=version, exact_match=True)[0]
+            name=source_name, version=version, exact_match=True).first()
 
         self._copySources([source], to_pocket, to_series, include_binaries)
 
@@ -1441,8 +1467,9 @@ class Archive(SQLBase):
             published_sources = from_archive.getPublishedSources(
                 name=name, exact_match=True,
                 status=PackagePublishingStatus.PUBLISHED)
-            if published_sources.count() > 0:
-                sources.append(published_sources[0])
+            first_source = published_sources.first()
+            if first_source is not None:
+                sources.append(first_source)
         return sources
 
     def _copySources(self, sources, to_pocket, to_series=None,

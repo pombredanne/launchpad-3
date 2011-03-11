@@ -327,6 +327,8 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
+    sourcepackagereleaseID = Attribute(
+        "The DB id for the sourcepackagerelease.")
     sourcepackagerelease = Int(
             title=_('The source package release being published'),
             required=False, readonly=False,
@@ -338,6 +340,7 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
             vocabulary=PackagePublishingStatus,
             required=False, readonly=False,
             ))
+    distroseriesID = Attribute("DB ID for distroseries.")
     distroseries = exported(
         Reference(
             IDistroSeries,
@@ -349,6 +352,7 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
             title=_('The component being published into'),
             required=False, readonly=False,
             )
+    sectionID = Attribute("DB ID for the section")
     section = Int(
             title=_('The section being published into'),
             required=False, readonly=False,

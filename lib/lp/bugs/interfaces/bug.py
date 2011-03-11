@@ -20,9 +20,8 @@ __all__ = [
     'IProjectGroupBugAddForm',
     ]
 
-from textwrap import dedent
-
 from lazr.enum import DBEnumeratedType
+
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     call_with,
@@ -65,10 +64,8 @@ from zope.schema.vocabulary import SimpleVocabulary
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IPrivacy
 from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.validators.attachment import (
-    attachment_size_constraint,
-    )
-from canonical.launchpad.validators.name import name_validator
+from lp.app.validators.attachment import attachment_size_constraint
+from lp.app.validators.name import bug_name_validator
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bugactivity import IBugActivity
 from lp.bugs.interfaces.bugattachment import IBugAttachment
@@ -208,7 +205,7 @@ class IBug(IPrivacy, IHasLinkedBranches):
             description=_("""A short and unique name.
                 Add one only if you often need to retype the URL
                 but have trouble remembering the bug number."""),
-            constraint=name_validator))
+            constraint=bug_name_validator))
     title = exported(
         Title(title=_('Summary'), required=True,
               description=_("""A one-line summary of the problem.""")))
@@ -311,15 +308,8 @@ class IBug(IPrivacy, IHasLinkedBranches):
             readonly=True))
     tags = exported(List(
         title=_("Tags"),
-        description=_(dedent("""
-            The tags applied to this bug.
-
-            Web service:
-                The list of tags is whitespace delimited.
-
-            Launchpadlib:
-                The list of tags is represented as a sequence of strings.
-            """)),
+        description=_("Space-separated keywords for classifying "
+            "this bug report."),
             value_type=Tag(), required=False))
     is_complete = Bool(
         title=_("Is Complete?"),
@@ -556,8 +546,11 @@ class IBug(IPrivacy, IHasLinkedBranches):
         True to include the master bug's subscribers as recipients.
         """
 
-    def addCommentNotification(message, recipients=None):
-        """Add a bug comment notification."""
+    def addCommentNotification(message, recipients=None, activity=None):
+        """Add a bug comment notification.
+        
+        If a BugActivity instance is provided as an `activity`, it is linked
+        to the notification."""
 
     def addChange(change, recipients=None):
         """Record a change to the bug.
@@ -707,7 +700,7 @@ class IBug(IPrivacy, IHasLinkedBranches):
 
     def getMessagesForView(slice_info):
         """Return BugMessage,Message,MessageChunks for renderinger.
-        
+
         This eager loads message.owner validity associated with the
         bugmessages.
 

@@ -16,13 +16,33 @@ from lp.translations.utilities.translationsplitter import (
     )
 
 
+def use_in_template(factory, potmsgset, potemplate):
+    return potmsgset.setSequence(
+        potemplate, factory.getUniqueInteger())
+
+
+def make_translation_splitter(factory):
+    return TranslationSplitter(
+        factory.makeProductSeries(), factory.makeSourcePackage())
+
+
+def make_shared_potmsgset(factory, splitter=None):
+    if splitter is None:
+        splitter = make_translation_splitter(factory)
+    upstream_template = factory.makePOTemplate(
+        productseries=splitter.productseries)
+    potmsgset = factory.makePOTMsgSet(
+        upstream_template, sequence=factory.getUniqueInteger())
+    (upstream_item,) = potmsgset.getAllTranslationTemplateItems()
+    ubuntu_template = factory.makePOTemplate(
+        sourcepackage=splitter.sourcepackage)
+    ubuntu_item = use_in_template(factory, potmsgset, ubuntu_template)
+    return upstream_item, ubuntu_item
+
+
 class TestTranslationSplitter(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
-
-    def useInTemplate(self, potmsgset, potemplate):
-        return potmsgset.setSequence(
-            potemplate, self.factory.getUniqueInteger())
 
     def test_findShared_requires_both(self):
         """Results are only included when both sides have the POTMsgSet."""
@@ -36,41 +56,27 @@ class TestTranslationSplitter(TestCaseWithFactory):
         splitter = TranslationSplitter(productseries, package)
         self.assertContentEqual([], splitter.findShared())
         (upstream_item,) = potmsgset.getAllTranslationTemplateItems()
-        ubuntu_item = self.useInTemplate(potmsgset, ubuntu_template)
+        ubuntu_item = use_in_template(
+            self.factory, potmsgset, ubuntu_template)
         self.assertContentEqual(
             [(upstream_item, ubuntu_item)], splitter.findShared())
         removeSecurityProxy(upstream_item).destroySelf()
         self.assertContentEqual([], splitter.findShared())
 
-    def makeTranslationSplitter(self):
-        return TranslationSplitter(
-            self.factory.makeProductSeries(),
-            self.factory.makeSourcePackage())
-
-    def makeSharedPOTMsgSet(self, splitter):
-        upstream_template = self.factory.makePOTemplate(
-            productseries=splitter.productseries)
-        potmsgset = self.factory.makePOTMsgSet(
-            upstream_template, sequence=self.factory.getUniqueInteger())
-        (upstream_item,) = potmsgset.getAllTranslationTemplateItems()
-        ubuntu_template = self.factory.makePOTemplate(
-            sourcepackage=splitter.sourcepackage)
-        ubuntu_item = self.useInTemplate(potmsgset, ubuntu_template)
-        return upstream_item, ubuntu_item
-
     def test_findSharedGroupsPOTMsgSet(self):
         """POTMsgSets are correctly grouped."""
-        splitter = self.makeTranslationSplitter()
-        self.makeSharedPOTMsgSet(splitter)
-        self.makeSharedPOTMsgSet(splitter)
+        splitter = make_translation_splitter(self.factory)
+        make_shared_potmsgset(self.factory, splitter)
+        make_shared_potmsgset(self.factory, splitter)
         for num, (upstream, ubuntu) in enumerate(splitter.findShared()):
             self.assertEqual(upstream.potmsgset, ubuntu.potmsgset)
         self.assertEqual(1, num)
 
     def test_splitPOTMsgSet(self):
         """Splitting a POTMsgSet clones it and updates TemplateItem."""
-        splitter = self.makeTranslationSplitter()
-        upstream_item, ubuntu_item = self.makeSharedPOTMsgSet(splitter)
+        splitter = make_translation_splitter(self.factory)
+        upstream_item, ubuntu_item = make_shared_potmsgset(
+            self.factory, splitter)
         ubuntu_template = ubuntu_item.potemplate
         ubuntu_sequence = ubuntu_item.sequence
         new_potmsgset = splitter.splitPOTMsgSet(ubuntu_item)
@@ -78,8 +84,9 @@ class TestTranslationSplitter(TestCaseWithFactory):
 
     def test_migrateTranslations_diverged_upstream(self):
         """Diverged upstream translation stays put."""
-        splitter = self.makeTranslationSplitter()
-        upstream_item, ubuntu_item = self.makeSharedPOTMsgSet(splitter)
+        splitter = make_translation_splitter(self.factory)
+        upstream_item, ubuntu_item = make_shared_potmsgset(
+            self.factory, splitter)
         upstream_message = self.factory.makeCurrentTranslationMessage(
             potmsgset=upstream_item.potmsgset,
             potemplate=upstream_item.potemplate, diverged=True)
@@ -94,8 +101,9 @@ class TestTranslationSplitter(TestCaseWithFactory):
 
     def test_migrateTranslations_diverged_ubuntu(self):
         """Diverged ubuntu translation moves."""
-        splitter = self.makeTranslationSplitter()
-        upstream_item, ubuntu_item = self.makeSharedPOTMsgSet(splitter)
+        splitter = make_translation_splitter(self.factory)
+        upstream_item, ubuntu_item = make_shared_potmsgset(
+            self.factory, splitter)
         ubuntu_message = self.factory.makeCurrentTranslationMessage(
             potmsgset=ubuntu_item.potmsgset,
             potemplate=ubuntu_item.potemplate, diverged=True)
@@ -111,8 +119,9 @@ class TestTranslationSplitter(TestCaseWithFactory):
 
     def test_migrateTranslations_shared(self):
         """Shared translation is copied."""
-        splitter = self.makeTranslationSplitter()
-        upstream_item, ubuntu_item = self.makeSharedPOTMsgSet(splitter)
+        splitter = make_translation_splitter(self.factory)
+        upstream_item, ubuntu_item = make_shared_potmsgset(
+            self.factory, splitter)
         self.factory.makeCurrentTranslationMessage(
             potmsgset=upstream_item.potmsgset)
         splitter.splitPOTMsgSet(ubuntu_item)
@@ -127,8 +136,9 @@ class TestTranslationSplitter(TestCaseWithFactory):
 
     def test_split_translations(self):
         """Split translations splits POTMsgSet and TranslationMessage."""
-        splitter = self.makeTranslationSplitter()
-        upstream_item, ubuntu_item = self.makeSharedPOTMsgSet(splitter)
+        splitter = make_translation_splitter(self.factory)
+        upstream_item, ubuntu_item = make_shared_potmsgset(
+            self.factory, splitter)
         upstream_message = self.factory.makeCurrentTranslationMessage(
             potmsgset=upstream_item.potmsgset,
             potemplate=upstream_item.potemplate)
