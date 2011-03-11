@@ -263,6 +263,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase):
         return self.factory.makeSourcePackage(distroseries=distroseries)
 
     def test_checklist_unconfigured(self):
+        # Without a packaging link, sharing is completely unconfigured
         sourcepackage = self._makeSourcePackage()
         browser = self.getViewBrowser(
             sourcepackage, no_login=True, rootsite="translations",
@@ -272,6 +273,22 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase):
         self.assertTextMatchesExpressionIgnoreWhitespace("""
             Translation sharing configuration is incomplete.
             No upstream project series has been linked. Change upstream link
+            No source branch exists for the upstream series.
+            Translations are not enabled on the upstream series.""",
+            extract_text(checklist))
+
+    def test_checklist_partly_configured(self):
+        # Linking a source package takes care of one item.
+        packaging = self.factory.makePackagingLink(in_ubuntu=True)
+        browser = self.getViewBrowser(
+            packaging.sourcepackage, no_login=True, rootsite="translations",
+            view_name="+sharing-details")
+        checklist = find_tag_by_id(browser.contents, 'sharing-checklist')
+        self.assertIsNot(None, checklist)
+        self.assertTextMatchesExpressionIgnoreWhitespace("""
+            Translation sharing configuration is incomplete.
+            Linked upstream series is .+ trunk series.
+                Change upstream link Remove upstream link
             No source branch exists for the upstream series.
             Translations are not enabled on the upstream series.""",
             extract_text(checklist))
