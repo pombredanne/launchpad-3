@@ -83,10 +83,6 @@ exist in Launchpad. we'll get an error message.
 An error is reported to the user when a bug is retargeted and there is
 an existing task for the same target.
 
-
-
-
-
 == Edit the Product ==
 
 +editstatus-page allows a bug to be retargeted to another product.
