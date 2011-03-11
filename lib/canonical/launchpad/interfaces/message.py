@@ -104,6 +104,8 @@ class IMessage(Interface):
         title=_("Whether or not the title of this message "
                 "is different to that of its parent."),
         readonly=True)
+    visible = Bool(title=u"This message is visible or not.", required=False,
+        default=True)
 
     bugattachments = exported(
         CollectionField(
