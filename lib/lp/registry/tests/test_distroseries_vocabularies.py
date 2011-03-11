@@ -81,6 +81,9 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
         # the vocabulary factory returns a vocabulary for all distroseries of
         # the distribution from which the derived series have been derived.
         parent_distroseries = self.factory.makeDistroSeries()
+        # Create a sibling to the parent.
+        self.factory.makeDistroSeries(
+            distribution=parent_distroseries.distribution)
         distroseries = self.factory.makeDistroSeries(
             parent_series=parent_distroseries)
         vocabulary = self.vocabulary_factory(distroseries.distribution)
@@ -168,12 +171,11 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
         distribution = self.factory.makeDistribution()
         self.factory.makeDistroSeries(distribution=distribution)
         flush_database_caches()
-        # Getting terms issues two queries: one for the distribution's
-        # serieses, a second to search for parent serieses (of which there are
-        # none) and a third for all serieses.
+        # Getting terms issues two queries: one to search for parent serieses
+        # (of which there are none) and a second for all serieses.
         with StormStatementRecorder() as recorder:
             self.vocabulary_factory(distribution).terms
-            self.assertThat(recorder, HasQueryCount(Equals(3)))
+            self.assertThat(recorder, HasQueryCount(Equals(2)))
 
     def test_queries_for_distribution_with_derived_series(self):
         for index in range(10):
@@ -184,8 +186,7 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
             parent_series=parent_distroseries,
             distribution=distribution)
         flush_database_caches()
-        # Getting terms issues two queries: one for the distribution's
-        # serieses and a second to find parent serieses.
+        # Getting terms issues one query to find parent serieses.
         with StormStatementRecorder() as recorder:
             self.vocabulary_factory(distribution).terms
-            self.assertThat(recorder, HasQueryCount(Equals(2)))
+            self.assertThat(recorder, HasQueryCount(Equals(1)))

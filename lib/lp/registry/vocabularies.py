@@ -59,10 +59,8 @@ __all__ = [
     ]
 
 
-from datetime import datetime
 from operator import attrgetter
 
-from pytz import utc
 from sqlobject import (
     AND,
     CONTAINSSTRING,
@@ -76,8 +74,10 @@ from storm.expr import (
     LeftJoin,
     Not,
     Or,
+    Select,
     SQL,
     )
+from storm.info import ClassAlias
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import (
@@ -1526,24 +1526,19 @@ class DistroSeriesDerivationVocabularyFactory:
         The order is the same as for `DistroSeriesVocabulary`.
         """
         distribution = IDistribution(self.context)
-        context_serieses = set(distribution)
-        if len(context_serieses) == 0:
-            # Derive from any series.
-            return self.find_terms()
-        else:
-            # Derive only from series in the same distribution as other
-            # derived series in this distribution.
+        parent = ClassAlias(DistroSeries, "parent")
+        child = ClassAlias(DistroSeries, "child")
+        parent_distributions = Select(
+            parent.distributionID, And(
+                parent.distributionID != distribution.id,
+                child.distributionID == distribution.id,
+                child.parent_seriesID == parent.id))
+        terms = self.find_terms(
+            DistroSeries.distributionID.is_in(parent_distributions))
+        if len(terms) == 0:
             terms = self.find_terms(
-                DistroSeries.distribution != distribution,
-                DistroSeries.id.is_in(
-                    removeSecurityProxy(series).parent_seriesID
-                    for series in context_serieses))
-            if len(terms) == 0:
-                # Derive from any series, except those in this distribution.
-                return self.find_terms(
-                    DistroSeries.distribution != distribution)
-            else:
-                return terms
+                DistroSeries.distribution != distribution)
+        return terms
 
     @cachedproperty
     def terms_by_value(self):
