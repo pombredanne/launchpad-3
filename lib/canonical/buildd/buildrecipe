@@ -7,13 +7,12 @@
 __metaclass__ = type
 
 
-import errno
 import os
+import os.path
 import pwd
-import re
 from resource import RLIMIT_AS, setrlimit
 import socket
-from subprocess import call, Popen, PIPE
+from subprocess import call
 import sys
 
 
@@ -27,21 +26,8 @@ RETCODE_FAILURE_BUILD_SOURCE_PACKAGE = 203
 class NotVirtualized(Exception):
     """Exception raised when not running in a virtualized environment."""
 
-
-class NoXenDetect(NotVirtualized):
-    """xen-detect not installed."""
-
     def __init__(self):
-        NotVirtualized.__init__(self, 'xen-detect is not installed.')
-
-
-class BadXenDetect(NotVirtualized):
-    """xen-detect's output not not indicate that we are virtualized."""
-
-    def __init__(self, xen_detect_output):
-        NotVirtualized.__init__(
-            self, 'Bad xen-detect output: %s' % xen_detect_output)
-        self.xen_detect_output = xen_detect_output
+        Exception.__init__(self, 'Not running under Xen.')
 
 
 class RecipeBuilder:
@@ -192,18 +178,10 @@ def get_build_path(build_id, *extra):
 def ensure_virtualized():
     """Raise an exception if not running in a virtualized environment.
 
-    Raises if unsure, or if not running under Xen.
+    Raises if not running under Xen.
     """
-    try:
-        proc = Popen(['xen-detect'], stdout=PIPE)
-    except OSError, e:
-        if e.errno != errno.ENOENT:
-            raise
-        raise NoXenDetect()
-    status_code = proc.wait()
-    output = proc.stdout.read()
-    if not re.match('Running in .* context on Xen', output):
-        raise BadXenDetect(output)
+    if not os.path.isdir('/proc/xen') or os.path.exists('/proc/xen/xsd_kva'):
+        raise NotVirtualized()
 
 
 if __name__ == '__main__':

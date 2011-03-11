@@ -30,12 +30,15 @@ class ISourcePackageRelease(Interface):
     """A source package release, e.g. apache-utils 2.0.48-3"""
 
     id = Attribute("SourcePackageRelease identifier")
+    creatorID = Attribute("DB ID of creator")
     creator = Attribute("Person that created this release")
+    maintainerID = Attribute("DB ID of the maintainer")
     maintainer = Attribute("The person in general responsible for this "
         "release")
     version = Attribute("A version string")
     dateuploaded = Attribute("Date of Upload")
     urgency = Attribute("Source Package Urgency")
+    dscsigningkeyID = Attribute("DB ID of the DSC Signing Key")
     dscsigningkey = Attribute("DSC Signing Key")
     component = Attribute("Source Package Component")
     format = Attribute("The Source Package Format")

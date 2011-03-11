@@ -57,8 +57,7 @@ class TestSourcePublicationListingExtra(BrowserTestCase):
         spph.sourcepackagerelease.source_package_recipe_build = sprb
         recipe_link_matches = soupmatchers.HTMLContains(
             soupmatchers.Tag(
-                'link to build', 'a',
-                attrs={'href': canonical_url(sprb, force_local_path=True)},
+                'link to build', 'a', attrs={'href': canonical_url(sprb)},
                 text='Built'),
             soupmatchers.Tag(
                 'recipe name', 'a', attrs={'href': canonical_url(recipe)},
@@ -66,7 +65,7 @@ class TestSourcePublicationListingExtra(BrowserTestCase):
             soupmatchers.Tag(
                 'requester', 'a',
                 attrs={
-                    'href': canonical_url(requester, force_local_path=True)},
+                    'href': canonical_url(requester)},
                 text=requester.displayname))
         browser = self.getViewBrowser(spph, '+listing-archive-extra')
         self.assertThat(browser.contents, recipe_link_matches)
@@ -94,12 +93,12 @@ class TestSourcePublicationListingExtra(BrowserTestCase):
         recipe_link_matches = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'link to build', 'a',
-                attrs={'href': canonical_url(sprb, force_local_path=True)},
+                attrs={'href': canonical_url(sprb)},
                 text='Built'),
             soupmatchers.Tag(
                 'requester', 'a',
                 attrs={
-                    'href': canonical_url(requester, force_local_path=True)},
+                    'href': canonical_url(requester)},
                 text=requester.displayname))
         browser = self.getViewBrowser(spph, '+listing-archive-extra')
         self.assertThat(browser.contents, recipe_link_matches)

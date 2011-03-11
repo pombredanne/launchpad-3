@@ -351,7 +351,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         bar = archive.getPublishedSources(
             name='bar', version="1.0-1", exact_match=True)
         changes_lfa = getUtility(IPublishingSet).getChangesFileLFA(
-            bar[0].sourcepackagerelease)
+            bar.first().sourcepackagerelease)
         changes_file = changes_lfa.read()
         self.assertTrue(
             "Format: " in changes_file, "Does not look like a changes file")
@@ -823,8 +823,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Upload 'bar-1.0-1' source and binary to ubuntu/breezy.
         upload_dir = self.queueUpload("bar_1.0-2")
         self.processUpload(uploadprocessor, upload_dir)
-        [bar_source_pub] = self.ubuntu.main_archive.getPublishedSources(
-            name='bar', version='1.0-2', exact_match=True)
+        bar_source_pub = self.ubuntu.main_archive.getPublishedSources(
+            name='bar', version='1.0-2', exact_match=True).one()
         [bar_original_build] = bar_source_pub.getBuilds()
 
         self.options.context = 'buildd'
@@ -1096,8 +1096,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Single source uploads also get their corrsponding builds created
         # at upload-time. 'foocomm' only builds in 'i386', thus only one
         # build gets created.
-        [foocomm_source] = partner_archive.getPublishedSources(
-            name='foocomm', version='1.0-2')
+        foocomm_source = partner_archive.getPublishedSources(
+            name='foocomm', version='1.0-2').one()
         [build] = foocomm_source.sourcepackagerelease.builds
         self.assertEqual(
             build.title,

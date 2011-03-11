@@ -248,7 +248,7 @@ Sometimes certain paragraphs should not be wrapped, e.g. a line containing a
 long hyphenated URL.  Under normal circumstances, this will get wrapped.
 
     >>> from canonical.launchpad.helpers import get_email_template
-    >>> template = get_email_template('new-held-message.txt')
+    >>> template = get_email_template('new-held-message.txt', app='registry')
     >>> text = template % dict(
     ...     user="Scarlett O'Hara",
     ...     team='frankly-my-dear-i-dont-give-a-damn',

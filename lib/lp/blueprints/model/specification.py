@@ -52,6 +52,7 @@ from canonical.launchpad.helpers import (
     )
 from lp.blueprints.adapters import SpecificationDelta
 from lp.blueprints.enums import (
+    NewSpecificationDefinitionStatus,
     SpecificationDefinitionStatus,
     SpecificationFilter,
     SpecificationGoalStatus,
@@ -398,6 +399,14 @@ class Specification(SQLBase, BugLinkTargetMixin):
         else:
             return SpecificationLifecycleStatus.NOTSTARTED
 
+    def setDefinitionStatus(self, definition_status, user):
+        self.definition_status = definition_status
+        self.updateLifecycleStatus(user)
+
+    def setImplementationStatus(self, implementation_status, user):
+        self.implementation_status = implementation_status
+        self.updateLifecycleStatus(user)
+
     def updateLifecycleStatus(self, user):
         """See ISpecification."""
         newstatus = None
@@ -689,6 +698,7 @@ class HasSpecificationsMixin:
         """
         # Circular import.
         from lp.registry.model.person import Person
+
         def cache_people(rows):
             # Find the people we need:
             person_ids = set()
@@ -717,6 +727,7 @@ class HasSpecificationsMixin:
                     column = row[index]
                     index += 1
                     decorator(person, column)
+
         results = Store.of(self).find(
             Specification,
             SQL(query),
@@ -900,6 +911,15 @@ class SpecificationSet(HasSpecificationsMixin):
         drafter=None, whiteboard=None,
         priority=SpecificationPriority.UNDEFINED):
         """See ISpecificationSet."""
+        # Adapt the NewSpecificationDefinitionStatus item to a
+        # SpecificationDefinitionStatus item.
+        status_name = definition_status.name
+        status_names = NewSpecificationDefinitionStatus.items.mapping.keys()
+        if status_name not in status_names:
+            raise AssertionError(
+                "definition_status must an item found in "
+                "NewSpecificationDefinitionStatus.")
+        definition_status = SpecificationDefinitionStatus.items[status_name]
         return Specification(name=name, title=title, specurl=specurl,
             summary=summary, priority=priority,
             definition_status=definition_status, owner=owner,

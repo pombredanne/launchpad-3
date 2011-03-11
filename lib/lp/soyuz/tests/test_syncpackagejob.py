@@ -105,8 +105,7 @@ class SyncPackageJobTests(TestCaseWithFactory):
         job.run()
 
         published_sources = archive2.getPublishedSources()
-        self.assertEquals(1, published_sources.count())
-        spr = published_sources[0].sourcepackagerelease
+        spr = published_sources.one().sourcepackagerelease
         self.assertEquals("libc", spr.name)
         self.assertEquals("2.8-1", spr.version)
 

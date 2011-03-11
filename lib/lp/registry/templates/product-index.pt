@@ -41,7 +41,7 @@
                   },
                   window);
           });
-        "/>
+        "></script>
   </tal:head-epilogue>
 </head>
 
@@ -162,9 +162,9 @@
                         condition="not:repeat/license/end">,</tal:comma>
                   </tal:licenses>
                   <tal:none condition="not:context/licenses">None specified</tal:none>
-                  <tal:has_description condition="context/license_info">
-                    (<tal:description replace="context/license_info" />)
-                  </tal:has_description>
+                  <tal:has_license_info condition="view/show_license_info">
+                    (<tal:license_info replace="context/license_info" />)
+                  </tal:has_license_info>
                 </dd>
                 <dd id="commercial_subscription"
                   tal:condition="context/commercial_subscription">

@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Job classes related to PersonTransferJob."""
@@ -25,11 +25,17 @@ from zope.interface import (
 
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from canonical.launchpad.mail import (
     format_address,
     simple_sendmail,
@@ -45,14 +51,16 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.persontransferjob import (
     IMembershipNotificationJob,
     IMembershipNotificationJobSource,
+    IPersonMergeJob,
+    IPersonMergeJobSource,
     IPersonTransferJob,
     IPersonTransferJobSource,
     )
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.person import Person
+from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
-from lp.services.database.stormbase import StormBase
 
 
 class PersonTransferJob(StormBase):
@@ -119,17 +127,6 @@ class PersonTransferJobDerived(BaseRunnableJob):
 
     def __init__(self, job):
         self.context = job
-
-    def __repr__(self):
-        return (
-            '<%(job_type)s branch job (%(id)s) for %(minor_person)s '
-            'as part of %(major_person)s. status=%(status)s>' % {
-                'job_type': self.context.job_type.name,
-                'id': self.context.id,
-                'minor_person': self.minor_person.name,
-                'major_person': self.major_person.name,
-                'status': self.job.status,
-                })
 
     @classmethod
     def create(cls, minor_person, major_person, metadata):
@@ -297,7 +294,7 @@ class MembershipNotificationJob(PersonTransferJobDerived):
 
         if len(admin_emails) != 0:
             admin_template = get_email_template(
-                "%s-bulk.txt" % template_name)
+                "%s-bulk.txt" % template_name, app='registry')
             for address in admin_emails:
                 recipient = getUtility(IPersonSet).getByEmail(address)
                 replacements['recipient_name'] = recipient.displayname
@@ -313,7 +310,8 @@ class MembershipNotificationJob(PersonTransferJobDerived):
                 template = '%s-bulk.txt' % template_name
             else:
                 template = '%s-personal.txt' % template_name
-            self.member_template = get_email_template(template)
+            self.member_template = get_email_template(
+                template, app='registry')
             for address in self.member_email:
                 recipient = getUtility(IPersonSet).getByEmail(address)
                 replacements['recipient_name'] = recipient.displayname
@@ -321,3 +319,78 @@ class MembershipNotificationJob(PersonTransferJobDerived):
                     self.member_template % replacements, force_wrap=True)
                 simple_sendmail(from_addr, address, subject, msg)
         log.debug('MembershipNotificationJob sent email')
+
+    def __repr__(self):
+        return (
+            "<{self.__class__.__name__} about "
+            "~{self.minor_person.name} in ~{self.major_person.name}; "
+            "status={self.job.status}>").format(self=self)
+
+
+class PersonMergeJob(PersonTransferJobDerived):
+    """A Job that merges one person or team into another."""
+
+    implements(IPersonMergeJob)
+    classProvides(IPersonMergeJobSource)
+
+    class_job_type = PersonTransferJobType.MERGE
+
+    @classmethod
+    def create(cls, from_person, to_person):
+        """See `IPersonMergeJobSource`."""
+        return super(PersonMergeJob, cls).create(
+            minor_person=from_person, major_person=to_person, metadata={})
+
+    @classmethod
+    def find(cls, from_person=None, to_person=None):
+        """See `IPersonMergeJobSource`."""
+        conditions = [
+            PersonTransferJob.job_type == cls.class_job_type,
+            PersonTransferJob.job_id == Job.id,
+            Job._status.is_in(Job.PENDING_STATUSES)]
+        if from_person is not None:
+            conditions.append(
+                PersonTransferJob.minor_person == from_person)
+        if to_person is not None:
+            conditions.append(
+                PersonTransferJob.major_person == to_person)
+        return DecoratedResultSet(
+            IStore(PersonTransferJob).find(
+                PersonTransferJob, *conditions), cls)
+
+    @property
+    def from_person(self):
+        """See `IPersonMergeJob`."""
+        return self.minor_person
+
+    @property
+    def to_person(self):
+        """See `IPersonMergeJob`."""
+        return self.major_person
+
+    @property
+    def log_name(self):
+        return self.__class__.__name__
+
+    def run(self):
+        """Perform the merge."""
+        from_person_name = self.from_person.name
+        to_person_name = self.to_person.name
+
+        from canonical.launchpad.scripts import log
+        log.debug(
+            "%s is about to merge ~%s into ~%s", self.log_name,
+            from_person_name, to_person_name)
+
+        getUtility(IPersonSet).merge(
+            from_person=self.from_person, to_person=self.to_person)
+
+        log.debug(
+            "%s has merged ~%s into ~%s", self.log_name,
+            from_person_name, to_person_name)
+
+    def __repr__(self):
+        return (
+            "<{self.__class__.__name__} to merge "
+            "~{self.from_person.name} into ~{self.to_person.name}; "
+            "status={self.job.status}>").format(self=self)

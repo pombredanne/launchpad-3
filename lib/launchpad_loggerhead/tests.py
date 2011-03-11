@@ -203,17 +203,26 @@ class TestOopsMiddleware(TestCase):
             raise socket.error(errno.EPIPE, 'Connection closed')
         return fail_write
 
+    def multi_yielding_app(self, environ, start_response):
+        writer = start_response('200 OK', {})
+        yield 'content\n'
+        yield 'I want\n'
+        yield 'to give to the user\n'
+
+    def _get_default_environ(self):
+        return {'wsgi.version': (1, 0),
+                'wsgi.url_scheme': 'http',
+                'PATH_INFO': '/test/path',
+                'REQUEST_METHOD': 'GET',
+                'SERVER_NAME': 'localhost',
+                'SERVER_PORT': '8080',
+               }
+
     def wrap_and_run(self, app, failing_write=False):
         app = oops_middleware(app)
         # Just random env data, rather than setting up a whole wsgi stack just
         # to pass in values for this dict
-        environ = {'wsgi.version': (1, 0),
-                   'wsgi.url_scheme': 'http',
-                   'PATH_INFO': '/test/path',
-                   'REQUEST_METHOD': 'GET',
-                   'SERVER_NAME': 'localhost',
-                   'SERVER_PORT': '8080',
-                  }
+        environ = self._get_default_environ()
         if failing_write:
             result = list(app(environ, self.failing_start_response))
         else:
@@ -241,6 +250,23 @@ class TestOopsMiddleware(TestCase):
         self.assertEqual(0, len(self.oopses))
         self.assertContainsRe(self.log_stream.getvalue(),
             'Caught socket exception from <unknown>:.*Connection closed')
+
+    def test_stopping_early_no_oops(self):
+        # See bug #726985.
+        # If content is being streamed, and the pipe closes, we'll get a
+        # 'GeneratorExit', because it is closed before finishing. This doesn't
+        # need to become an OOPS.
+        self.catchLogEvents()
+        app = oops_middleware(self.multi_yielding_app)
+        environ = self._get_default_environ()
+        result = app(environ, self.noop_start_response)
+        self.assertEqual('content\n', result.next())
+        # At this point, we intentionally kill the app and the response, so
+        # that they will get GeneratorExit
+        del app, result
+        self.assertEqual([], self.oopses)
+        self.assertContainsRe(self.log_stream.getvalue(),
+            'Caught GeneratorExit from <unknown>')
 
 
 def test_suite():

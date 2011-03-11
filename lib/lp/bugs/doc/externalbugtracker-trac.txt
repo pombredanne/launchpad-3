@@ -33,7 +33,7 @@ to validate the token.
 
     >>> import urllib2
     >>> class TracHavingLPPlugin401(Trac):
-    ...     def urlopen(self, url):
+    ...     def urlopen(self, url, data=None):
     ...         print url
     ...         raise urllib2.HTTPError(
     ...             url, 401, "Unauthorized", None, None)
@@ -60,13 +60,13 @@ not include a "trac_auth" cookie.
     >>> from urllib import addinfourl
 
     >>> class TracReturning200ForPageNotFound(Trac):
-    ...     def urlopen(self, url):
+    ...     def urlopen(self, url, data=None):
     ...         print url
     ...         return addinfourl(
     ...             StringIO(''), HTTPMessage(StringIO('')), url)
 
     >>> class TracHavingLPPlugin200(Trac):
-    ...     def urlopen(self, url):
+    ...     def urlopen(self, url, data=None):
     ...         print url
     ...         return addinfourl(
     ...             StringIO(''), HTTPMessage(
@@ -99,11 +99,26 @@ the external bug tracker that groks the plugin is selected:
 If a 404 is returned, the normal Trac instance is returned.
 
     >>> class TracNotHavingLPPlugin(Trac):
-    ...     def urlopen(self, url):
+    ...     def urlopen(self, url, data=None):
     ...         print url
     ...         raise urllib2.HTTPError(
     ...             url, 404, "Not found", None, None)
     >>> trac = TracNotHavingLPPlugin('http://example.com/')
+    >>> chosen_trac = trac.getExternalBugTrackerToUse()
+    http://example.com/launchpad-auth/check
+
+    >>> chosen_trac is trac
+    True
+
+In the event that a connection error is returned, we return a normal Trac
+instance. It will deal with the connection error later, if the situation
+persists.
+
+    >>> class TracWithConnectionError(Trac):
+    ...     def urlopen(self, url, data=None):
+    ...         print url
+    ...         raise urllib2.URLError("Connection timed out")
+    >>> trac = TracWithConnectionError('http://example.com/')
     >>> chosen_trac = trac.getExternalBugTrackerToUse()
     http://example.com/launchpad-auth/check
 

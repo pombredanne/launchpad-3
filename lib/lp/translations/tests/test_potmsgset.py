@@ -366,7 +366,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             [])
         self.assertEquals(
             self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
-                language)[1],
+                used_languages=[language])[language].used,
             [])
 
         # If there are only suggestions on the external POTMsgSet,
@@ -381,7 +381,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             [])
         self.assertEquals(
             self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
-                language)[1],
+                used_languages=[language])[language].used,
             [])
 
         # If there is a translation for the other side on the external
@@ -397,7 +397,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             [other_translation])
         self.assertEquals(
             self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
-                language)[1],
+                used_languages=[language])[language].used,
             [other_translation])
 
         # If there is a current translation on the external POTMsgSet,
@@ -412,7 +412,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             [other_translation, current_translation])
         self.assertEquals(
             self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
-                language)[1],
+                used_languages=[language])[language].used,
             [other_translation, current_translation])
 
     def test_getExternallySuggestedTranslationMessages(self):
@@ -440,7 +440,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             [])
         self.assertEquals(
             self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
-                language)[0],
+                suggested_languages=[language])[language].suggested,
             [])
 
         # If there is a suggestion on the external POTMsgSet,
@@ -456,7 +456,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             [external_suggestion])
         self.assertEquals(
             self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
-                language)[0],
+                suggested_languages=[language])[language].suggested,
             [external_suggestion])
 
         # If there is a translation for the other side on the external
@@ -472,7 +472,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             [external_suggestion])
         self.assertEquals(
             self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
-                language)[0],
+                suggested_languages=[language])[language].suggested,
             [external_suggestion])
 
         # A current translation on the external POTMsgSet is not
@@ -488,7 +488,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             [external_suggestion])
         self.assertEquals(
             self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
-                language)[0],
+                suggested_languages=[language])[language].suggested,
             [external_suggestion])
 
     def test_hasTranslationChangedInLaunchpad(self):
