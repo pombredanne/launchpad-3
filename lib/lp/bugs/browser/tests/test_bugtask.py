@@ -24,9 +24,10 @@ from canonical.launchpad.testing.systemdocs import (
     setUp,
     tearDown,
     )
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.browser import bugtask
 from lp.bugs.browser.bugtask import (
     BugTaskEditView,
@@ -51,7 +52,7 @@ from lp.testing.views import create_initialized_view
 
 class TestBugTaskView(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def invalidate_caches(self, obj):
         store = Store.of(obj)
@@ -119,7 +120,7 @@ class TestBugTaskView(TestCaseWithFactory):
 
 class TestBugTasksAndNominationsView(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestBugTasksAndNominationsView, self).setUp()
@@ -320,7 +321,7 @@ class TestBugTaskEditViewStatusField(TestCaseWithFactory):
     field that the user can select.
     """
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestBugTaskEditViewStatusField, self).setUp()
@@ -407,7 +408,7 @@ class TestBugTaskEditViewStatusField(TestCaseWithFactory):
 
 class TestBugTaskEditViewAssigneeField(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestBugTaskEditViewAssigneeField, self).setUp()
@@ -451,10 +452,48 @@ class TestBugTaskEditViewAssigneeField(TestCaseWithFactory):
             view.form_fields['assignee'].field.vocabularyName)
 
 
+class TestBugTaskEditView(TestCaseWithFactory):
+    """Test the bugs overview page for Project Groups."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_retartget_already_exists_error(self):
+        user = self.factory.makePerson()
+        login_person(user)
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        dsp_1 = self.factory.makeDistributionSourcePackage(
+            distribution=ubuntu, sourcepackagename='mouse')
+        ignore = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=ubuntu.currentseries,
+            sourcepackagename=dsp_1.sourcepackagename)
+        bug_task_1 = self.factory.makeBugTask(target=dsp_1)
+        dsp_2 = self.factory.makeDistributionSourcePackage(
+            distribution=ubuntu, sourcepackagename='rabbit')
+        ignore = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=ubuntu.currentseries,
+            sourcepackagename=dsp_2.sourcepackagename)
+        bug_task_2 = self.factory.makeBugTask(
+            bug=bug_task_1.bug, target=dsp_2)
+        form = {
+            'ubuntu_rabbit.actions.save': 'Save Changes',
+            'ubuntu_rabbit.status': 'In Progress',
+            'ubuntu_rabbit.importance': 'High',
+            'ubuntu_rabbit.assignee.option':
+                'ubuntu_rabbit.assignee.assign_to_nobody',
+            'ubuntu_rabbit.sourcepackagename': 'mouse',
+            }
+        view = create_initialized_view(
+            bug_task_2, name='+editstatus-page', form=form, principal=user)
+        self.assertEqual(1, len(view.errors))
+        self.assertEqual(
+            'This bug has already been reported on mouse (ubuntu).',
+            view.errors[0])
+
+
 class TestProjectGroupBugs(TestCaseWithFactory):
     """Test the bugs overview page for Project Groups."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestProjectGroupBugs, self).setUp()
@@ -555,7 +594,7 @@ def test_suite():
     suite.addTest(DocTestSuite(bugtask))
     suite.addTest(LayeredDocFileSuite(
         'bugtask-target-link-titles.txt', setUp=setUp, tearDown=tearDown,
-        layer=LaunchpadFunctionalLayer))
+        layer=DatabaseFunctionalLayer))
     return suite
 
 
