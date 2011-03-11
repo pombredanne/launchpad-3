@@ -5,7 +5,6 @@
 
 """Print the YUI modules we are using."""
 
-from os.path import isfile
 from sys import argv
 
 
@@ -116,6 +115,4 @@ if __name__ == '__main__':
             yui_dep_path = "%s/%s" % (yui_root, yui_dep)
         else:
             yui_dep_path = "%s/%s%s" % (yui_root, yui_dep, ext)
-        assert isfile(yui_dep_path), (
-            "%s does not exist or is not a file." % yui_dep_path)
         print yui_dep_path
