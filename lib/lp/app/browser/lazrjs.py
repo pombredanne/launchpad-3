@@ -18,7 +18,10 @@ import simplejson
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.security.checker import canAccess, canWrite
-from zope.schema.interfaces import IVocabulary
+from zope.schema.interfaces import (
+    ICollection,
+    IVocabulary,
+    )
 from zope.schema.vocabulary import getVocabularyRegistry
 
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
@@ -336,22 +339,24 @@ class InlineMultiCheckboxWidget(WidgetBase):
         self.label_open_tag = "<%s>" % label_tag
         self.label_close_tag = "</%s>" % label_tag
         self.items = selected_items
-        self.items_open_tag = "<%s>" % items_tag
+        self.items_open_tag = ("<%s id='%s'>" %
+                                (items_tag, self.content_box_id+"-items"))
         self.items_close_tag = "</%s>" % items_tag
         self.linkify_items = linkify_items
 
-        if vocabulary is None or type(vocabulary) is str:
-            try:
-                vocabulary_name = exported_field.vocabularyName
-            except:
-                vocabulary_name = exported_field.value_type.vocabularyName
-            vocab = getVocabularyRegistry().get(context, vocabulary_name)
-        else:
-            vocab = vocabulary
-            
+        if vocabulary is None:
+            if ICollection.providedBy(exported_field):
+                vocabulary = exported_field.value_type.vocabularyName
+            else:
+                vocabulary = exported_field.vocabularyName
+
+
+        if isinstance(vocabulary, basestring):
+            vocabulary = getVocabularyRegistry().get(context, vocabulary)
+
         items = []
         style = ';'.join(['font-weight: normal', items_style])
-        for item in vocab:
+        for item in vocabulary:
             item_value = item.value if safe_hasattr(item, 'value') else item
             checked = item_value in selected_items
             if linkify_items:
