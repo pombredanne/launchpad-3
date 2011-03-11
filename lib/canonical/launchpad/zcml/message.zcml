@@ -9,11 +9,12 @@
     i18n_domain="launchpad">
 
     <!-- Message -->
-    <class class="canonical.launchpad.database.message.Message">
+    <class
+        class="canonical.launchpad.database.message.Message">
         <allow interface="canonical.launchpad.interfaces.message.IMessage" />
         <require
-            permission="zope.Public"
-            set_schema="canonical.launchpad.interfaces.message.IMessage" />
+            permission="launchpad.Admin"
+            set_attributes="visible"/>
     </class>
 
     <class class="canonical.launchpad.interfaces.message.IndexedMessage">

@@ -47,3 +47,21 @@ class TestBugContextMenu(TestCaseWithFactory):
                     person, person, level=BugNotificationLevel.NOTHING)
                 link = self.context_menu.subscription()
                 self.assertEqual('Subscribe', link.text)
+
+    def test_mute_subscription_link(self):
+        # The mute_subscription() method of BugContextMenu will return a
+        # Link whose text will alter depending on whether or not they
+        # have a mute on the bug.
+        person = self.factory.makePerson()
+        with feature_flags():
+            with person_logged_in(person):
+                # If the user hasn't muted the bug, the link text will
+                # reflect this.
+                link = self.context_menu.mute_subscription()
+                self.assertEqual("Mute bug mail", link.text)
+                # Once the user has muted the bug, the link text will
+                # change.
+                self.bug.subscribe(
+                    person, person, level=BugNotificationLevel.NOTHING)
+                link = self.context_menu.mute_subscription()
+                self.assertEqual("Unmute bug mail", link.text)

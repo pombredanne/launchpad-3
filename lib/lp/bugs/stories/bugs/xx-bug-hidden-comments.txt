@@ -30,7 +30,7 @@ is now set to be hidden.
     This comment will not be visible when the test completes.
     >>> bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
     ...     bug_11, message)
-    >>> bug_message.visible = False
+    >>> bug_message.message.visible = False
     >>> transaction.commit()
     >>> logout()
 

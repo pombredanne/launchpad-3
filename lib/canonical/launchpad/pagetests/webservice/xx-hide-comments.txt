@@ -27,7 +27,7 @@ not access in the Bug.messages array.
     >>> bug_11 = getUtility(IBugSet).get(11)
     >>> bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
     ...     bug_11, bug_11.messages[2])
-    >>> bug_message.visible
+    >>> bug_message.message.visible
     False
     >>> logout()
 
@@ -46,7 +46,7 @@ And indeed, the comment is visible again.
     >>> bug_11 = getUtility(IBugSet).get(11)
     >>> bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
     ...     bug_11, bug_11.messages[2])
-    >>> bug_message.visible
+    >>> bug_message.message.visible
     True
     >>> logout()
 

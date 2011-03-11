@@ -39,7 +39,6 @@ from lp.bugs.externalbugtracker.base import (
     UnparsableBugData,
     UnparsableBugTrackerVersion,
     )
-from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 from lp.bugs.externalbugtracker.xmlrpc import UrlLib2Transport
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
@@ -52,6 +51,7 @@ from lp.bugs.interfaces.externalbugtracker import (
     UNKNOWN_REMOTE_IMPORTANCE,
     )
 from lp.services import encoding
+from lp.services.database.isolation import ensure_no_transaction
 
 
 class Bugzilla(ExternalBugTracker):

@@ -62,7 +62,7 @@ class TestSetCommentVisibility(TestCaseWithFactory):
         with person_logged_in(self.admin):
             bug_message = bug_msg_set.getByBugAndMessage(
                 self.bug, self.message)
-            self.assertFalse(bug_message.visible)
+            self.assertFalse(bug_message.message.visible)
 
     def test_random_user_cannot_set_visible(self):
         # Logged in users without privs can't set bug comment
