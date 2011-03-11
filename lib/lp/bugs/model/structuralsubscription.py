@@ -12,13 +12,6 @@ __all__ = [
     ]
 
 import pytz
-
-from storm.locals import (
-    DateTime,
-    Int,
-    Reference,
-    )
-
 from storm.base import Storm
 from storm.expr import (
     And,
@@ -34,9 +27,14 @@ from storm.expr import (
     SQL,
     Union,
     )
+from storm.locals import (
+    DateTime,
+    Int,
+    Reference,
+    )
 from storm.store import (
-    Store,
     EmptyResultSet,
+    Store,
     )
 from zope.component import (
     adapts,

@@ -34,8 +34,8 @@ from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTargetHelper,
     )
 from lp.bugs.model.structuralsubscription import (
-    StructuralSubscription,
     get_all_structural_subscriptions_for_target,
+    StructuralSubscription,
     )
 from lp.bugs.tests.test_bugtarget import bugtarget_filebug
 from lp.registry.errors import (
@@ -53,8 +53,8 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.matchers import Provides
 from lp.testing.factory import is_security_proxied_or_harmless
+from lp.testing.matchers import Provides
 
 
 class RestrictedStructuralSubscriptionTestBase:
