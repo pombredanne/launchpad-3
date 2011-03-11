@@ -2260,8 +2260,7 @@ class BugTaskSet:
             # instead.
             params.orderby = [
                 SQLConstant("-rank(Bug.fti, ftq(%s))" % searchtext_quoted),
-                SQLConstant(
-                    "-rank(BugTask.fti, ftq(%s))" % searchtext_quoted)]
+                ]
 
         comment_clause = """BugTask.id IN (
             SELECT BugTask.id
@@ -2272,7 +2271,6 @@ class BugTaskSet:
                 AND MessageChunk.fti @@ ftq(%s))""" % searchtext_quoted
         text_search_clauses = [
             "Bug.fti @@ ftq(%s)" % searchtext_quoted,
-            "BugTask.fti @@ ftq(%s)" % searchtext_quoted,
             ]
         no_targetnamesearch = bool(features.getFeatureFlag(
             'malone.disable_targetnamesearch'))
@@ -2458,8 +2456,7 @@ class BugTaskSet:
             return DecoratedResultSet(resultset, result_decorator=decorator,
                 pre_iter_hook=pre_iter_hook)
 
-        bugtask_fti = SQL('BugTask.fti')
-        inner_resultrow = (BugTask, bugtask_fti)
+        inner_resultrow = (BugTask,)
         origin = self.buildOrigin(join_tables, [], clauseTables)
         resultset = store.using(*origin).find(inner_resultrow, query)
 
