@@ -129,6 +129,9 @@ from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 from lp.bugs.model.bugtask import BugTask
+from lp.bugs.model.structuralsubscription import (
+    get_all_structural_subscriptions_for_target,
+    )
 from lp.bugs.utilities.filebugdataparser import FileBugData
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
 from lp.registry.browser.product import ProductConfigureBase
@@ -1560,3 +1563,18 @@ class BugsPatchesView(LaunchpadView):
     def proxiedUrlForLibraryFile(self, patch):
         """Return the proxied download URL for a Librarian file."""
         return ProxiedLibraryFileAlias(patch.libraryfile, patch).http_url
+
+
+class TargetSubscriptionView(LaunchpadView):
+    """A view to show all a person's structural subscriptions to a target."""
+
+    @property
+    def label(self):
+        return "Your subscriptions to %s" % (self.context.displayname,)
+
+    page_title = label
+
+    @property
+    def structural_subscriptions(self):
+        return get_all_structural_subscriptions_for_target(
+            self.context, self.user)

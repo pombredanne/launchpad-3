@@ -24,6 +24,7 @@ from canonical.launchpad.testing.systemdocs import (
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
@@ -32,7 +33,10 @@ from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
     IStructuralSubscriptionTargetHelper,
     )
-from lp.bugs.model.structuralsubscription import StructuralSubscription
+from lp.bugs.model.structuralsubscription import (
+    StructuralSubscription,
+    get_all_structural_subscriptions_for_target,
+    )
 from lp.bugs.tests.test_bugtarget import bugtarget_filebug
 from lp.registry.errors import (
     DeleteSubscriptionError,
@@ -46,9 +50,11 @@ from lp.testing import (
     login,
     login_celebrity,
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.matchers import Provides
+from lp.testing.factory import is_security_proxied_or_harmless
 
 
 class RestrictedStructuralSubscriptionTestBase:
@@ -426,6 +432,51 @@ class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
             compile_storm(helper.join))
 
 
+class TestGetAllStructuralSubscriptionsForTarget(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGetAllStructuralSubscriptionsForTarget, self).setUp()
+        self.subscriber = self.factory.makePerson()
+        self.team = self.factory.makeTeam(members=[self.subscriber])
+        login_person(self.subscriber)
+        self.product = self.factory.makeProduct()
+        self.milestone = self.factory.makeMilestone(product=self.product)
+
+    def getSubscriptions(self):
+        subscriptions = get_all_structural_subscriptions_for_target(
+            self.product, self.subscriber)
+        self.assertTrue(is_security_proxied_or_harmless(subscriptions))
+        return subscriptions
+
+    def test_no_subscriptions(self):
+        subscriptions = self.getSubscriptions()
+        self.assertEqual([], list(subscriptions))
+
+    def test_self_subscription(self):
+        sub = self.product.addBugSubscription(
+            self.subscriber, self.subscriber)
+        subscriptions = self.getSubscriptions()
+        self.assertEqual([sub], list(subscriptions))
+
+    def test_team_subscription(self):
+        with person_logged_in(self.team.teamowner):
+            sub = self.product.addBugSubscription(
+                self.team, self.team.teamowner)
+        subscriptions = self.getSubscriptions()
+        self.assertEqual([sub], list(subscriptions))
+
+    def test_both_subscriptions(self):
+        self_sub = self.product.addBugSubscription(
+            self.subscriber, self.subscriber)
+        with person_logged_in(self.team.teamowner):
+            team_sub = self.product.addBugSubscription(
+                self.team, self.team.teamowner)
+        subscriptions = self.getSubscriptions()
+        self.assertEqual(set([self_sub, team_sub]), set(subscriptions))
+
+
 def distributionSourcePackageSetUp(test):
     setUp(test)
     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -499,3 +550,4 @@ def test_suite():
         suite.addTest(test)
 
     return suite
+
