@@ -506,6 +506,7 @@ def get_structural_subscription_targets(bugtasks):
         if bugtask.milestone is not None:
             yield (bugtask, bugtask.milestone)
 
+
 @ProxyFactory
 def get_all_structural_subscriptions_for_target(target, person):
     """Find the personal and team structural subscriptions to the target.

@@ -550,4 +550,3 @@ def test_suite():
         suite.addTest(test)
 
     return suite
-

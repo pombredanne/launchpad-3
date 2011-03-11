@@ -24,10 +24,7 @@ __all__ = [
 import cgi
 from cStringIO import StringIO
 from datetime import datetime
-from operator import (
-    attrgetter,
-    itemgetter,
-    )
+from operator import itemgetter
 import urllib
 
 from lazr.restful.interface import copy_field
