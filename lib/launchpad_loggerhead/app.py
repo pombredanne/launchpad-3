@@ -356,8 +356,16 @@ def oops_middleware(app):
             # just because the connection was closed prematurely.
             logger = logging.getLogger('lp-loggerhead')
             logger.info('Caught socket exception from %s: %s %s'
-                         % (environ.get('REMOTE_ADDR', '<unknown>'),
-                            e.__class__, e,))
+                        % (environ.get('REMOTE_ADDR', '<unknown>'),
+                           e.__class__, e,))
+            return
+        except GeneratorExit, e:
+            # This generally means a client closed early during a streaming
+            # body. Nothing to worry about. GeneratorExit doesn't usually have
+            # any context associated with it, so not worth printing to the log.
+            logger = logging.getLogger('lp-loggerhead')
+            logger.info('Caught GeneratorExit from %s'
+                        % (environ.get('REMOTE_ADDR', '<unknown>')))
             return
         except:
             error_page_sent = wrapped.generate_oops(environ, error_utility)
