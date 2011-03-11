@@ -152,22 +152,6 @@ about the current release is displayed.
     by Foo Bar (name16), maintained by No Privileges Person (no-priv)
 
 
-== Products and product series ==
-
-Products and product series don't have any link titles.
-
-    >>> product = factory.makeProduct(name='product')
-    >>> view = set_up_view(product)
-    >>> print view.getTargetLinkTitle(product)
-    None
-
-    >>> product_series = factory.makeProductSeries(
-    ...     product=product, name='product-series')
-    >>> view = set_up_view(product_series)
-    >>> print view.getTargetLinkTitle(product_series)
-    None
-
-
 == Initializing ==
 
 Before the BugTasksAndNominationsView is usable, it needs to be

@@ -315,6 +315,18 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
             "This bug affects 2 people",
             self.view.anon_affected_statement)
 
+    def test_getTargetLinkTitle_product(self):
+        # The target link title is always none for products.
+        target = self.factory.makeProduct()
+        bug_task = self.factory.makeBugTask(bug=self.bug, target=target)
+        self.assertEqual(None, self.view.getTargetLinkTitle(bug_task))
+
+    def test_getTargetLinkTitle_productseries(self):
+        # The target link title is always none for products.
+        target = self.factory.makeProductSeries()
+        bug_task = self.factory.makeBugTask(bug=self.bug, target=target)
+        self.assertEqual(None, self.view.getTargetLinkTitle(bug_task))
+
 
 class TestBugTaskEditViewStatusField(TestCaseWithFactory):
     """We show only those options as possible value in the status
