@@ -182,3 +182,29 @@ class SourcePackageTranslationSharingDetailsView(
                 'status': one of the string 'linking', 'shared',
                     'only in Ubuntu', 'only in upstream'
         """
+        info = {}
+        templates_on_this_side = self.context.getCurrentTranslationTemplates()
+        for template in templates_on_this_side:
+            info[template.name] = {
+                'name': template.name,
+                'package_template': template,
+                'upstream_template': None,
+                'status': 'only in Ubuntu',
+                }
+        if self.is_configuration_complete:
+            upstream_templates = get_upstream_sharing_info(
+                self.context, template_only=True)
+            for template in upstream_templates:
+                if template.name in info:
+                    info[template.name]['upstream_template'] = template
+                    # xxxxxxxx this could also be 'linking' instead of 'shared'
+                    info[template.name]['status'] = 'shared'
+                else:
+                    info[template.name] = {
+                        'name': template.name,
+                        'package_template': None,
+                        'upstream_template': template,
+                        'status': 'only in upstream',
+                        }
+        info = info.values()
+        return sorted(info, key=lambda template: template['name'])
