@@ -168,15 +168,15 @@ class ISourcePackageRecipeView(Interface):
         """Perform a build into the daily build archive."""
 
     @export_read_operation()
+    @operation_for_version("devel")
     def getPendingBuildInfo():
         """Find distroseries and archive data for pending builds.
 
-        Return a list of {
-            distroseries:distroseries.displayname
-            archive:archive.token
-            }
+        Return a list of dict(
+        distroseries:distroseries.displayname
+        archive:archive.token)
         The archive token is the same as that defined by the archive vocab:
-            archive.owner.name/archive.name
+        archive.owner.name/archive.name
         This information is used to construct the request builds popup form.
         """
 
@@ -225,7 +225,8 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
         readonly=False)
     build_daily = exported(Bool(
         title=_("Built daily"),
-        description=_("Automatically build each day, if the source has changed.")))
+        description=_(
+            "Automatically build each day, if the source has changed.")))
 
     name = exported(TextLine(
             title=_("Name"), required=True,
