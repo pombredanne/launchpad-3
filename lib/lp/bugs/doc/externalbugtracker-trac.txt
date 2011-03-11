@@ -110,6 +110,21 @@ If a 404 is returned, the normal Trac instance is returned.
     >>> chosen_trac is trac
     True
 
+In the event that a connection error is returned, we return a normal Trac
+instance. It will deal with the connection error later, if the situation
+persists.
+
+    >>> class TracWithConnectionError(Trac):
+    ...     def urlopen(self, url, data=None):
+    ...         print url
+    ...         raise urllib2.URLError("Connection timed out")
+    >>> trac = TracWithConnectionError('http://example.com/')
+    >>> chosen_trac = trac.getExternalBugTrackerToUse()
+    http://example.com/launchpad-auth/check
+
+    >>> chosen_trac is trac
+    True
+
 
 == Status Conversion ==
 

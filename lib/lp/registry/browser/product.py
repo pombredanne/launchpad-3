@@ -335,7 +335,8 @@ class ProductLicenseMixin:
         subject = (
             "License information for %(product_name)s "
             "in Launchpad" % substitutions)
-        template = helpers.get_email_template('product-other-license.txt')
+        template = helpers.get_email_template(
+            'product-other-license.txt', app='registry')
         message = template % substitutions
         simple_sendmail(
             from_address, user_address,

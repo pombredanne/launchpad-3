@@ -265,12 +265,11 @@ class SearchTestBase:
         self.assertSearchFinds(params, self.bugtasks[:2])
 
     def setUpFullTextSearchTests(self):
-        # Set text fields indexed by Bug.fti, BugTask.fti or
+        # Set text fields indexed by Bug.fti, or
         # MessageChunk.fti to values we can search for.
         for bugtask, number in zip(self.bugtasks, ('one', 'two', 'three')):
             commenter = self.bugtasks[0].bug.owner
             with person_logged_in(commenter):
-                bugtask.statusexplanation = 'status explanation %s' % number
                 bugtask.bug.title = 'bug title %s' % number
                 bugtask.bug.newMessage(
                     owner=commenter, content='comment %s' % number)
@@ -281,10 +280,6 @@ class SearchTestBase:
         params = self.getBugTaskSearchParams(
             user=None, searchtext='one title')
         self.assertSearchFinds(params, self.bugtasks[:1])
-        # ... by BugTask.fti ...
-        params = self.getBugTaskSearchParams(
-            user=None, searchtext='two explanation')
-        self.assertSearchFinds(params, self.bugtasks[1:2])
         # ...and by MessageChunk.fti
         params = self.getBugTaskSearchParams(
             user=None, searchtext='three comment')
@@ -296,10 +291,6 @@ class SearchTestBase:
         params = self.getBugTaskSearchParams(
             user=None, fast_searchtext='one title')
         self.assertSearchFinds(params, self.bugtasks[:1])
-        # ... but not text indexed by BugTask.fti ...
-        params = self.getBugTaskSearchParams(
-            user=None, fast_searchtext='two explanation')
-        self.assertSearchFinds(params, [])
         # ..or by MessageChunk.fti
         params = self.getBugTaskSearchParams(
             user=None, fast_searchtext='three comment')
