@@ -125,6 +125,15 @@ class SourcePackageTranslationSharingDetailsView(
         return self.context.direct_packaging is not None
 
     @property
+    def no_item_class(self):
+        """CSS class for 'no' items."""
+        css_class = "sprite no"
+        if self.is_packaging_configured:
+            return css_class
+        else:
+            return css_class + " lowlight"
+
+    @property
     def has_upstream_branch(self):
         """Does the upstream series have a source code branch?"""
         if not self.is_packaging_configured:
