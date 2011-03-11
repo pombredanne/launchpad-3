@@ -118,8 +118,7 @@
             <dt>Daily build archive:</dt>
             <dd tal:content="structure view/archive_picker"/>
           </dl>
-
-          <dl id="distros">
+          <dl id="distroseries">
             <tal:distroseries tal:replace="structure view/distroseries_widget"/>
           </dl>
         </div>
