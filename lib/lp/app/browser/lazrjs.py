@@ -312,8 +312,10 @@ class InlineMultiCheckboxWidget(WidgetBase):
     def __init__(self, context, exported_field,
                  label, label_tag="span", attribute_type="default",
                  vocabulary=None, header=None,
-                 empty_display_value="None", content_box_id=None,
-                 selected_items=list(), items_tag="span", items_style=''):
+                 empty_display_value="None", selected_items=list(),
+                 items_tag="span", items_style='',
+                 content_box_id=None, edit_view="+edit", edit_url=None,
+                 edit_title=''):
         """Create a widget wrapper.
 
         :param context: The object that is being edited.
@@ -329,14 +331,21 @@ class InlineMultiCheckboxWidget(WidgetBase):
         :param header: The text to display as the title of the popup form.
         :param empty_display_value: The text to display if no items are
             selected.
-        :param content_box_id: The HTML id to use for this widget. Automatically
-            generated if this is not provided.
         :param selected_items: The currently selected items.
         :param items_tag: The tag in which to wrap the items checkboxes.
         :param items_style: The css style to use for each item checkbox.
+        :param content_box_id: The HTML id to use for this widget. Automatically
+            generated if this is not provided.
+        :param edit_view: The view name to use to generate the edit_url if
+            one is not specified.
+        :param edit_url: The URL to use for editing when the user isn't logged
+            in and when JS is off.  Defaults to the edit_view on the context.
+        :param edit_title: Used to set the title attribute of the anchor.
+
         """
         super(InlineMultiCheckboxWidget, self).__init__(
-            context, exported_field, content_box_id)
+            context, exported_field, content_box_id,
+            edit_view, edit_url, edit_title)
 
         linkify_items = attribute_type == "reference"
 
