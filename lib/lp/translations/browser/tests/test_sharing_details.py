@@ -207,15 +207,46 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory):
         expected = [
             {
                 'name': 'shared-template',
+                'status': 'only in Ubuntu',
                 'package_template': self.shared_template_ubuntu_side,
                 'upstream_template': None,
-                'status': 'only in Ubuntu'
                 },
             {
                 'name': 'ubuntu-only',
-                'upstream_template': None,
                 'status': 'only in Ubuntu',
                 'package_template': self.ubuntu_only_template,
+                'upstream_template': None,
+                },
+            ]
+        self.assertEqual(expected, self.view.template_info)
+
+    def test_template_info___sharing(self):
+        # If translation sharing is configured,
+        # SourcePackageTranslationSharingDetailsView.info returns
+        # only data about templates in Ubuntu and about upstream
+        # templates.
+        self.configureSharing(
+            set_upstream_branch=True, enable_translations=True,
+            translation_import_mode=
+                TranslationsBranchImportMode.IMPORT_TRANSLATIONS)
+        expected = [
+            {
+                'name': 'shared-template',
+                'status': 'shared',
+                'package_template': self.shared_template_ubuntu_side,
+                'upstream_template': self.shared_template_upstream_side,
+                },
+            {
+                'name': 'ubuntu-only',
+                'status': 'only in Ubuntu',
+                'package_template': self.ubuntu_only_template,
+                'upstream_template': None,
+                },
+            {
+                'name': 'upstream-only',
+                'status': 'only in upstream',
+                'package_template': None,
+                'upstream_template': self.upstream_only_template,
                 },
             ]
         self.assertEqual(expected, self.view.template_info)

@@ -192,9 +192,8 @@ class SourcePackageTranslationSharingDetailsView(
                 'status': 'only in Ubuntu',
                 }
         if self.is_configuration_complete:
-            upstream_templates = get_upstream_sharing_info(
-                self.context, template_only=True)
-            for template in upstream_templates:
+            upstream_info = get_upstream_sharing_info(self.context)
+            for series, template in upstream_info:
                 if template.name in info:
                     info[template.name]['upstream_template'] = template
                     # xxxxxxxx this could also be 'linking' instead of 'shared'
