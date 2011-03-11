@@ -32,7 +32,6 @@ from zope.interface import implements
 
 from canonical.config import config
 from lp.bugs.adapters import treelookup
-from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.interfaces.externalbugtracker import (
     IExternalBugTracker,
@@ -40,6 +39,7 @@ from lp.bugs.interfaces.externalbugtracker import (
     ISupportsCommentImport,
     ISupportsCommentPushing,
     )
+from lp.services.database.isolation import ensure_no_transaction
 
 # The user agent we send in our requests
 LP_USER_AGENT = "Launchpad Bugscraper/0.2 (https://bugs.launchpad.net/)"
