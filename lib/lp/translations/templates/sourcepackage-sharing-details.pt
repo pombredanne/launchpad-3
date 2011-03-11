@@ -92,32 +92,24 @@
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td class="name_column"><a href="#">gimp20</a></td>
-            <td class="state_column">sharing</td>
-            <td class="length_ubuntu_column">82</td>
-            <td class="updated_ubuntu_column">2011-02-28</td>
-            <td class="length_upstream_column">85</td>
-            <td class="updated_upstream_column">2 minutes ago</td>
-            <td class="upstream_link_column"><a href="#">View upstream</a></td>
-          </tr>
-          <tr>
-            <td class="name_column">gimp20-new</td>
-            <td class="state_column">only in upstream</td>
-            <td class="length_ubuntu_column"></td>
-            <td class="updated_ubuntu_column"></td>
-            <td class="length_upstream_column">54</td>
-            <td class="updated_upstream_column">2011-03-04</td>
-            <td class="upstream_link_column"><a href="#">View upstream</a></td>
-          </tr>
-          <tr>
-            <td class="name_column"><a href="#">gimp20-old</a></td>
-            <td class="state_column">only in Ubuntu</td>
-            <td class="length_ubuntu_column">82</td>
-            <td class="updated_ubuntu_column">2010-04-01</td>
-            <td class="length_upstream_column"></td>
-            <td class="updated_upstream_column"></td>
-            <td class="upstream_link_column"></td>
+          <tr tal:repeat="info view/template_info">
+            <td class="name_column">
+              <a tal:content="info/name"
+                 tal:attributes="href info/package_template/fmt:url">gimp20</a></td>
+            <td class="state_column" tal:content="info/status">sharing</td>
+            <td class="length_ubuntu_column"
+                tal:content="info/package_template/messagecount">82</td>
+            <td class="updated_ubuntu_column"
+                tal:content="info/package_template/date_last_updated/fmt:approximatedate">2011-02-28</td>
+            <td class="length_upstream_column">
+                <tal:content tal:condition="info/upstream_template"
+                             tal:content="info/upstream_template/messagecount">85</tal:content></td>
+            <td class="updated_upstream_column">
+                <tal:content tal:condition="info/upstream_template"
+                             tal:content="info/upstream_template/date_last_updated/fmt:approximatedate">2 minutes ago</tal:content></td>
+            <td class="upstream_link_column">
+              <a tal:condition="info/upstream_template"
+                 tal:attributes="href info/upstream_template/fmt:url">View upstream</a></td>
           </tr>
         </tbody>
       </table>
