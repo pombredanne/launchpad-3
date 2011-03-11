@@ -2228,7 +2228,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             displayname=displayname,
             title=self.getUniqueString(), summary=self.getUniqueString(),
             description=self.getUniqueString(),
-            parent_series=parent_series, owner=distribution.owner)
+            parent_series=parent_series, registrant=distribution.owner)
         series.status = status
         return ProxyFactory(series)
 

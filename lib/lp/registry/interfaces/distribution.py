@@ -123,7 +123,7 @@ class IDistributionDriverRestricted(Interface):
     """IDistribution properties requiring launchpad.Driver permission."""
 
     def newSeries(name, displayname, title, summary, description,
-                  version, parent_series, owner):
+                  version, parent_series, registrant):
         """Creates a new distroseries."""
 
 

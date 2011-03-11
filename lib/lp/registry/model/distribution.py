@@ -1776,7 +1776,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return user.inTeam(self.owner) or user.inTeam(admins)
 
     def newSeries(self, name, displayname, title, summary,
-                  description, version, parent_series, owner):
+                  description, version, parent_series, registrant):
         """See `IDistribution`."""
         series = DistroSeries(
             distribution=self,
@@ -1788,10 +1788,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             version=version,
             status=SeriesStatus.EXPERIMENTAL,
             parent_series=parent_series,
-            owner=owner)
-        if owner.inTeam(self.driver) and not owner.inTeam(self.owner):
+            registrant=registrant)
+        if (registrant.inTeam(self.driver)
+            and not registrant.inTeam(self.owner)):
             # This driver is a release manager.
-            series.driver = owner
+            series.driver = registrant
 
         # May wish to add this to the series rather than clearing the cache --
         # RBC 20100816.

@@ -406,6 +406,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return self.distribution
 
     @property
+    def owner(self):
+        """See `IDistroSeries`."""
+        return self.distribution.owner
+
+    @property
     def sortkey(self):
         """A string to be used for sorting distro seriess.
 
