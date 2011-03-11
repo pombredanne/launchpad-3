@@ -3,10 +3,17 @@
 
 __metaclass__ = type
 
+from canonical.launchpad.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,  
+    )
 from lp.app.enums import ServiceUsage
 from lp.testing import (
+    BrowserTestCase,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -18,10 +25,29 @@ from lp.translations.interfaces.translations import (
     )
 
 
-class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory):
+class ConfigureUpstreamProjectMixin:
+    """Provide a method for project configuration."""
+    
+    def configureUpstreamProject(self, productseries,
+            set_upstream_branch=False, enable_translations=False,
+            translation_import_mode=TranslationsBranchImportMode.NO_IMPORT):
+        """Configure the productseries and its product as an upstream project."""
+        with person_logged_in(productseries.product.owner):
+            if set_upstream_branch:
+                productseries.branch = self.factory.makeBranch(
+                    product=productseries.product)
+            if enable_translations:
+                productseries.product.translations_usage = (
+                    ServiceUsage.LAUNCHPAD)
+            productseries.translations_autoimport_mode = (
+                translation_import_mode)
+
+
+class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
+                                            ConfigureUpstreamProjectMixin):
     """Tests for SourcePackageTranslationSharingStatus."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestSourcePackageTranslationSharingDetailsView, self).setUp()
@@ -41,31 +67,25 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory):
             self.sourcepackage, LaunchpadTestRequest())
         self.view.initialize()
 
-    def test_is_packaging_configured__not_configured(self):
-        # If a sourcepackage is not linked to a product series,
-        # SourcePackageTranslationSharingStatus.is_packaging_configured
-        # returns False.
-        self.assertFalse(self.view.is_packaging_configured)
-
-    def configureSharing(
-        self, set_upstream_branch=False, enable_translations=False,
-        translation_import_mode=TranslationsBranchImportMode.NO_IMPORT):
-        """Configure trnasaltion sharing, at least partially.
+    def configureSharing(self,
+            set_upstream_branch=False, enable_translations=False,
+            translation_import_mode=TranslationsBranchImportMode.NO_IMPORT):
+        """Configure translation sharing, at least partially.
 
         A packaging link is always set; the remaining configuration is
         done only if explicitly specified.
         """
         self.sourcepackage.setPackaging(
             self.productseries, self.productseries.owner)
-        with person_logged_in(self.productseries.owner):
-            if set_upstream_branch:
-                self.productseries.branch = self.factory.makeBranch(
-                    product=self.productseries.product)
-            if enable_translations:
-                self.productseries.product.translations_usage = (
-                    ServiceUsage.LAUNCHPAD)
-            self.productseries.translations_autoimport_mode = (
-                translation_import_mode)
+        self.configureUpstreamProject(
+            self.productseries, set_upstream_branch, enable_translations,
+            translation_import_mode)
+
+    def test_is_packaging_configured__not_configured(self):
+        # If a sourcepackage is not linked to a product series,
+        # SourcePackageTranslationSharingStatus.is_packaging_configured
+        # returns False.
+        self.assertFalse(self.view.is_packaging_configured)
 
     def test_is_packaging_configured__configured(self):
         # If a sourcepackage is linked to a product series,
@@ -242,3 +262,71 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory):
                 },
             ]
         self.assertEqual(expected, self.view.template_info)
+
+
+class TestSourcePackageSharingDetailsPage(BrowserTestCase,
+                                          ConfigureUpstreamProjectMixin):
+    """Test for the sharing details page of a source package."""
+
+    layer = DatabaseFunctionalLayer
+
+    def _makeSourcePackage(self):
+        """Make a source package in Ubuntu."""
+        distroseries = self.factory.makeUbuntuDistroSeries()
+        return self.factory.makeSourcePackage(distroseries=distroseries)
+
+    def test_checklist_unconfigured(self):
+        # Without a packaging link, sharing is completely unconfigured
+        sourcepackage = self._makeSourcePackage()
+        browser = self.getViewBrowser(
+            sourcepackage, no_login=True, rootsite="translations",
+            view_name="+sharing-details")
+        checklist = find_tag_by_id(browser.contents, 'sharing-checklist')
+        self.assertIsNot(None, checklist)
+        self.assertTextMatchesExpressionIgnoreWhitespace("""
+            Translation sharing configuration is incomplete.
+            No upstream project series has been linked. Change upstream link
+            No source branch exists for the upstream series.
+            Translations are not enabled on the upstream series.
+            Automatic synchronization of translations is not enabled.""",
+            extract_text(checklist))
+
+    def test_checklist_partly_configured(self):
+        # Linking a source package takes care of one item.
+        packaging = self.factory.makePackagingLink(in_ubuntu=True)
+        browser = self.getViewBrowser(
+            packaging.sourcepackage, no_login=True, rootsite="translations",
+            view_name="+sharing-details")
+        checklist = find_tag_by_id(browser.contents, 'sharing-checklist')
+        self.assertIsNot(None, checklist)
+        self.assertTextMatchesExpressionIgnoreWhitespace("""
+            Translation sharing configuration is incomplete.
+            Linked upstream series is .+ trunk series.
+                Change upstream link Remove upstream link
+            No source branch exists for the upstream series.
+            Translations are not enabled on the upstream series.
+            Automatic synchronization of translations is not enabled.""",
+            extract_text(checklist))
+
+    def test_checklist_fully_configured(self):
+        # A fully configured sharing setup.
+        packaging = self.factory.makePackagingLink(in_ubuntu=True)
+        productseries = packaging.productseries
+        self.configureUpstreamProject(
+            productseries,
+            set_upstream_branch=True, enable_translations=True,
+            translation_import_mode=(
+                TranslationsBranchImportMode.IMPORT_TRANSLATIONS))
+        browser = self.getViewBrowser(
+            packaging.sourcepackage, no_login=True, rootsite="translations",
+            view_name="+sharing-details")
+        checklist = find_tag_by_id(browser.contents, 'sharing-checklist')
+        self.assertIsNot(None, checklist)
+        self.assertTextMatchesExpressionIgnoreWhitespace("""
+            Translation sharing with upstream is active.
+            Linked upstream series is .+ trunk series.
+                Change upstream link Remove upstream link
+            Upstream source branch is .+[.]
+            Translations are enable on the upstream project.
+            Automatic synchronization of translations is enabled.""",
+            extract_text(checklist))
