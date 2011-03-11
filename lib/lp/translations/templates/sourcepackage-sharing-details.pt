@@ -12,76 +12,65 @@
     </div>
     <div metal:fill-slot="main">
       <dl>
-        <dt><span>
+        <dt><span tal:condition="not:view/is_configuration_complete">
             Translation sharing configuration is incomplete.
           </span>
-          <span>
+          <span tal:condition="view/is_configuration_complete">
             Translation sharing with upstream is active.
           </span>
         </dt>
         <dd>
           <ul>
-            <li class="sprite no">No upstream project series has been linked.
-              <a class="sprite edit"
-                 title="Change upstream project series."
-                 href="#"><span
-                   class="invisible-link">Change upstream series</span></a>
+            <li class="sprite no"
+                tal:condition="not:view/is_packaging_configured">
+                No upstream project series has been linked.
+                <a tal:replace="structure context/menu:overview/edit_packaging/fmt:icon" />
             </li>
-            <li class="sprite yes">Linked upstream series is
-              <a class="sprite product" href="#">Gimp trunk</a>.
-              <a class="sprite edit"
-                 title="Change upstream project series."
-                 href="#"><span
-                   class="invisible-link">Change upstream series</span></a>
+            <li class="sprite yes"
+                tal:condition="view/is_packaging_configured">
+              Linked upstream series is
+              <a tal:replace="structure context/productseries/fmt:link">
+                Gimp trunk</a>.
+              <a tal:replace="structure context/menu:overview/edit_packaging/fmt:icon" />
+              <a tal:replace="structure context/menu:overview/remove_packaging/fmt:icon" />
             </li>
-            <li class="sprite no">No source branch exists for the upstream series.
-              <a class="sprite edit"
-                 title="Change upstream source branch."
-                 href="#"><span
-                   class="invisible-link">Change source branch</span></a>
+            <li tal:attributes="class view/no_item_class"
+                tal:condition="not:view/has_upstream_branch">
+              No source branch exists for the upstream series.
+              <a tal:condition="view/is_packaging_configured"
+                 tal:replace="structure context/productseries/menu:overview/set_branch/fmt:icon" />
             </li>
-            <li class="sprite yes">Upstream source branch is
-              <a class="sprite branch" href="#">lp:gimp</a>.
-              <a class="sprite edit"
-                 title="Change upstream source branch."
-                 href="#"><span
-                   class="invisible-link">Change source branch</span></a>
+            <li class="sprite yes"
+                tal:condition="view/has_upstream_branch">
+              Upstream source branch is
+              <a tal:replace="structure context/productseries/branch/fmt:link">
+                lp:gimp</a>.
+              <a tal:condition="view/is_packaging_configured"
+                 tal:replace="structure context/productseries/menu:overview/set_branch/fmt:icon" />
             </li>
-            <li class="sprite no">Translations are not enabled for the upstream series.
-              <a class="sprite edit"
-                 title="Enable translations on upstream series."
-                 href="#"><span
-                   class="invisible-link">Enable translations</span></a>
+            <li tal:attributes="class view/no_item_class"
+                tal:condition="not:view/is_upstream_translations_enabled">
+              Translations are not enabled on the upstream series.
+              <a tal:condition="view/is_packaging_configured"
+                 tal:replace="structure context/productseries/product/menu:translations/settings/fmt:icon" />
             </li>
-            <li class="sprite yes">Translations are enable on the upstream project.
-              <a class="sprite edit"
-                 title="Disable translations on upstream series."
-                 href="#"><span
-                   class="invisible-link">Disable translations</span></a>
+            <li class="sprite yes"
+                tal:condition="view/is_upstream_translations_enabled">
+              Translations are enable on the upstream project.
+              <a tal:condition="view/is_packaging_configured"
+                 tal:replace="structure context/productseries/product/menu:translations/settings/fmt:icon" />
             </li>
-            <li class="sprite no">Translations are not enabled on the upstream series.
-              <a class="sprite edit"
-                 title="Enable translations on upstream series."
-                 href="#"><span
-                   class="invisible-link">Enable translations</span></a>
+            <li tal:attributes="class view/no_item_class"
+                tal:condition="not:view/is_upstream_synchronization_enabled">
+              Automatic synchronization of translations is not enabled.
+              <a tal:condition="view/is_packaging_configured"
+                 tal:replace="structure context/productseries/menu:translations/settings/fmt:icon" />
             </li>
-            <li class="sprite yes">Translations are enable on the upstream project.
-              <a class="sprite edit"
-                 title="Disable translations on upstream series."
-                 href="#"><span
-                   class="invisible-link">Disable translations</span></a>
-            </li>
-            <li class="sprite no">Automatic synchronization of translations is not enabled.
-              <a class="sprite edit"
-                 title="Configure automatic synchronization."
-                 href="#"><span
-                   class="invisible-link">Configure automatic synchronization</span></a>
-            </li>
-            <li class="sprite yes">Automatic synchronization of translations is enabled.
-              <a class="sprite edit"
-                 title="Configure automatic synchronization."
-                 href="#"><span
-                   class="invisible-link">Configure automatic synchronization</span></a>
+            <li class="sprite yes"
+                tal:condition="view/is_upstream_synchronization_enabled">
+              Automatic synchronization of translations is enabled.
+              <a tal:condition="view/is_packaging_configured"
+                 tal:replace="structure context/productseries/menu:translations/settings/fmt:icon" />
             </li>
           </ul>
        </dd>
