@@ -5,10 +5,15 @@
 
 __metaclass__ = type
 
+import transaction
+from psycopg2 import ProgrammingError
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
-from canonical.testing.layers import ZopelessDatabaseLayer
+from canonical.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.distroseriesdifferencejob import (
@@ -157,3 +162,34 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         self.useFixture(FeatureFixture({FEATURE_FLAG: 'off'}))
         self.getJobSource().createForPackagePublication(distroseries, package)
         self.assertContentEqual([], find_waiting_jobs(distroseries, package))
+
+
+class TestDistroSeriesDifferenceJobPermissions(TestCaseWithFactory):
+    """Database permissions test for `DistroSeriesDifferenceJob`."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_permissions(self):
+        script_users = [
+            'archivepublisher',
+            'queued',
+            'uploader',
+            ]
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+        packages = dict(
+            (user, self.factory.makeSourcePackageName())
+            for user in script_users)
+        transaction.commit()
+        for user in script_users:
+            self.layer.switchDbUser(user)
+            try:
+                create_job(derived_series, packages[user])
+            except ProgrammingError, e:
+                self.assertTrue(
+                    False,
+                    "Database role %s was unable to create a job.  "
+                    "Error was: %s" % (user, e))
+
+        # The test is that we get here without exceptions.
+        pass
