@@ -42,7 +42,7 @@
       </td>
       <td>
         <div tal:condition="not:submission/suggestion_text">
-          (not translated)
+          (not translated yet)
         </div>
         <div
           tal:condition="python: not user_is_official_translator and submission.suggestion_text"
