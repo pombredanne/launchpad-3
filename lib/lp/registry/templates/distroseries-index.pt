@@ -121,9 +121,6 @@
           <li tal:condition="overview_menu/admin/enabled">
             <a tal:replace="structure overview_menu/admin/fmt:link" />
           </li>
-          <li tal:condition="overview_menu/reassign/enabled">
-            <a tal:replace="structure overview_menu/reassign/fmt:link" />
-          </li>
           <li>
             <a tal:replace="structure overview_menu/subscribe/fmt:link" />
           </li>

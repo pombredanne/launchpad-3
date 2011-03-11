@@ -181,7 +181,7 @@ class DistroSeriesOverviewMenu(
 
     usedfor = IDistroSeries
     facet = 'overview'
-    links = ['edit', 'reassign', 'driver', 'answers',
+    links = ['edit', 'driver', 'answers',
              'packaging', 'needs_packaging', 'builds', 'queue',
              'add_port', 'create_milestone', 'subscribe', 'admin']
 
@@ -195,11 +195,6 @@ class DistroSeriesOverviewMenu(
         text = 'Appoint driver'
         summary = 'Someone with permission to set goals for this series'
         return Link('+driver', text, summary, icon='edit')
-
-    @enabled_with_permission('launchpad.Admin')
-    def reassign(self):
-        text = 'Change registrant'
-        return Link('+reassign', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def create_milestone(self):
