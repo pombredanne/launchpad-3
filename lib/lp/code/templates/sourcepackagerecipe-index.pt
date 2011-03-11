@@ -27,11 +27,18 @@
         color: black;
         padding: 5px 5px 5px 5px;
         margin-right: 40px
-        }
+    }
     .build-informational::before {
         padding-right: 5px;
         content: url('/@@/info');
-        }
+    }
+    .popup-build-informational {
+        color: black;
+    }
+    .popup-build-informational::before {
+        padding-right: 5px;
+        content: url('/@@/info');
+    }
   </style>
 </metal:block>
 
@@ -52,7 +59,7 @@
 </metal:side>
 
 <metal:heading fill-slot="heading">
-  <h1 tal:content="context/name">
+  <h1 tal:replace="structure view/name_widget">
     recipe name
   </h1>
 </metal:heading>
@@ -168,8 +175,7 @@
 
             }
         }, window);
-      });"
-    >
+      });
     </script>
 </div>
 </body>

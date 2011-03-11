@@ -631,4 +631,12 @@
         facet="specifications"
         permission="launchpad.AnyPerson"
         template="../../app/templates/generic-edit.pt"/>
+
+  <adapter
+      factory="lp.blueprints.browser.specification.starter_xhtml_representation"
+      name="starter"/>
+  <adapter
+      factory="lp.blueprints.browser.specification.completer_xhtml_representation"
+      name="completer"/>
+
 </configure>

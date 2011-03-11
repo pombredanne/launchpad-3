@@ -65,12 +65,12 @@ from canonical.database.sqlbase import (
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from lp.app.validators.name import valid_name
 from lp.bugs.model.bug import (
     Bug,
     BugAffectsPerson,

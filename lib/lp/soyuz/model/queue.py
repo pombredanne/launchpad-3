@@ -1457,12 +1457,9 @@ class PackageUploadBuild(SQLBase):
         """See `IPackageUploadBuild`."""
         # Determine the build's architecturetag
         build_archtag = self.build.distro_arch_series.architecturetag
-        # Determine the target arch series.
-        # This will raise NotFoundError if anything odd happens.
-        target_das = self.packageupload.distroseries[build_archtag]
+        distroseries = self.packageupload.distroseries
         debug(logger, "Publishing build to %s/%s/%s" % (
-            target_das.distroseries.distribution.name,
-            target_das.distroseries.name,
+            distroseries.distribution.name, distroseries.name,
             build_archtag))
 
         # First up, publish everything in this build into that dar.
@@ -1478,7 +1475,7 @@ class PackageUploadBuild(SQLBase):
                 getUtility(IPublishingSet).publishBinary(
                     archive=self.packageupload.archive,
                     binarypackagerelease=binary,
-                    distroarchseries=target_das,
+                    distroseries=distroseries,
                     component=binary.component,
                     section=binary.section,
                     priority=binary.priority,

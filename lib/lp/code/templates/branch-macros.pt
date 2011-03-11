@@ -179,7 +179,7 @@
           revisions - the revisions to list.
         or
           revision_info - extended revision information (revision,
-                          merge_proposal, linked_bugs) to list.
+                          merge_proposal, linked_bugtasks) to list.
 
   </tal:comment>
   <style type="text/css">
@@ -214,7 +214,7 @@
           rev_no - the branch revision to be displayed.
         or
           rev_info - a dict of the branch revision information (revision,
-                     merge_proposal, linked_bugs) to be displayed.
+                     merge_proposal, linked_bugtasks) to be displayed.
       codebrowse - the branch's codebrowse root.
 
     It is expected that this macro is called from within a definition
@@ -263,12 +263,12 @@
         Merged branch <a tal:attributes="href merge_proposal/fmt:url"
                     tal:content="merge_proposal/source_branch/displayname">source branch</a>
         <tal:linkedbugs
-                define="linked_bugs python:rev_info['linked_bugs']"
-                condition="linked_bugs">with linked bugs
+                define="linked_bugtasks python:rev_info['linked_bugtasks']"
+                condition="linked_bugtasks">
           <dl>
-              <tal:bug repeat="bug linked_bugs">
+              <tal:bug repeat="bugtask linked_bugtasks">
                 <dd class="subordinate revision-comment">
-                  <tal:bug-link replace="structure bug/fmt:link"/>
+                  <tal:bug-link replace="structure bugtask/fmt:link"/>
                 </dd>
               </tal:bug>
           </dl>

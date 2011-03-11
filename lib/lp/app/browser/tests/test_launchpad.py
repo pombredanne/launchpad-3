@@ -313,6 +313,10 @@ class TestPersonTraversal(TestCaseWithFactory, TraversalMixin):
         super(TestPersonTraversal, self).setUp()
         self.any_user = self.factory.makePerson()
         self.admin = getUtility(IPersonSet).getByName('name16')
+        self.registry_expert = self.factory.makePerson()
+        registry = getUtility(ILaunchpadCelebrities).registry_experts
+        with person_logged_in(registry.teamowner):
+            registry.addMember(self.registry_expert, registry.teamowner)
 
     def test_person(self):
         # Verify a user is returned.
@@ -322,7 +326,7 @@ class TestPersonTraversal(TestCaseWithFactory, TraversalMixin):
         traversed = self.traverse(segment, segment)
         self.assertEqual(person, traversed)
 
-    def test_suspended_person_visible_to_admin_only(self):
+    def test_suspended_person_visibility(self):
         # Verify a suspended user is only traversable by an admin.
         name = 'suspended-person'
         person = self.factory.makePerson(name=name)
@@ -332,6 +336,9 @@ class TestPersonTraversal(TestCaseWithFactory, TraversalMixin):
         # Admins can see the suspended user.
         traversed = self.traverse(segment, segment)
         self.assertEqual(person, traversed)
+        # Registry experts can see the suspended user.
+        login_person(self.registry_expert)
+        traversed = self.traverse(segment, segment)
         # Regular users cannot see the suspended user.
         login_person(self.any_user)
         self.assertRaises(GoneError, self.traverse, segment, segment)

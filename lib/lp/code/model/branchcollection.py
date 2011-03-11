@@ -14,6 +14,7 @@ from storm.expr import (
     And,
     Count,
     Desc,
+    In,
     Join,
     LeftJoin,
     Or,
@@ -23,24 +24,39 @@ from storm.expr import (
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     )
+from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp.vocabulary import CountableIterator
+from canonical.lazr.utils import safe_hasattr
+from lp.bugs.interfaces.bugtask import (
+    IBugTaskSet,
+    BugTaskSearchParams,
+    )
+from lp.bugs.model.bugbranch import BugBranch
+from lp.bugs.model.bugtask import BugTask
 from lp.code.interfaces.branch import user_has_special_branch_access
 from lp.code.interfaces.branchcollection import (
     IBranchCollection,
     InvalidFilter,
     )
-
-from lp.bugs.model.bug import Bug
-from lp.bugs.model.bugbranch import BugBranch
+from lp.code.interfaces.seriessourcepackagebranch import (
+    IFindOfficialBranchLinks,
+    )
 from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
-from lp.code.model.branch import Branch
+from lp.code.model.branch import (
+    Branch,
+    filter_one_task_per_bug,
+    )
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.branchsubscription import BranchSubscription
 from lp.code.model.codereviewcomment import CodeReviewComment
@@ -55,6 +71,7 @@ from lp.registry.model.person import (
 from lp.registry.model.product import Product
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.propertycache import get_property_cache
 
 
 class GenericBranchCollection:
@@ -89,7 +106,7 @@ class GenericBranchCollection:
 
     def count(self):
         """See `IBranchCollection`."""
-        return self.getBranches().count()
+        return self.getBranches(eager_load=False).count()
 
     def ownerCounts(self):
         """See `IBranchCollection`."""
@@ -136,7 +153,7 @@ class GenericBranchCollection:
 
     def _getBranchIdQuery(self):
         """Return a Storm 'Select' for the branch IDs in this collection."""
-        select = self.getBranches()._get_select()
+        select = self.getBranches(eager_load=False)._get_select()
         select.columns = (Branch.id,)
         return select
 
@@ -144,11 +161,45 @@ class GenericBranchCollection:
         """Return the where expressions for this collection."""
         return self._branch_filter_expressions
 
-    def getBranches(self):
+    def getBranches(self, eager_load=False):
         """See `IBranchCollection`."""
         tables = [Branch] + self._tables.values()
         expressions = self._getBranchExpressions()
-        return self.store.using(*tables).find(Branch, *expressions)
+        resultset = self.store.using(*tables).find(Branch, *expressions)
+        if not eager_load:
+            return resultset
+
+        def do_eager_load(rows):
+            branch_ids = set(branch.id for branch in rows)
+            if not branch_ids:
+                return
+            branches = dict((branch.id, branch) for branch in rows)
+            caches = dict((branch.id, get_property_cache(branch))
+                for branch in rows)
+            for cache in caches.values():
+                if not safe_hasattr(cache, '_associatedProductSeries'):
+                    cache._associatedProductSeries = []
+                if not safe_hasattr(cache, '_associatedSuiteSourcePackages'):
+                    cache._associatedSuiteSourcePackages = []
+            # associatedProductSeries
+            # Imported here to avoid circular import.
+            from lp.registry.model.productseries import ProductSeries
+            for productseries in self.store.find(
+                ProductSeries,
+                ProductSeries.branchID.is_in(branch_ids)):
+                cache = caches[productseries.branchID]
+                cache._associatedProductSeries.append(productseries)
+            # associatedSuiteSourcePackages
+            series_set = getUtility(IFindOfficialBranchLinks)
+            # Order by the pocket to get the release one first. If changing
+            # this be sure to also change BranchCollection.getBranches.
+            links = series_set.findForBranches(rows).order_by(
+                SeriesSourcePackageBranch.pocket)
+            for link in links:
+                cache = caches[link.branchID]
+                cache._associatedSuiteSourcePackages.append(
+                    link.suite_sourcepackage)
+        return DecoratedResultSet(resultset, pre_iter_hook=do_eager_load)
 
     def getMergeProposals(self, statuses=None, for_branches=None,
                           target_branch=None, merged_revnos=None):
@@ -214,23 +265,24 @@ class GenericBranchCollection:
         proposals.order_by(Desc(CodeReviewComment.vote))
         return proposals
 
-    def getExtendedRevisionDetails(self, revisions):
+    def getExtendedRevisionDetails(self, user, revisions):
         """See `IBranchCollection`."""
 
         if not revisions:
             return []
         branch = revisions[0].branch
 
-        def make_rev_info(branch_revision, merge_proposal_revs, linked_bugs):
+        def make_rev_info(
+                branch_revision, merge_proposal_revs, linked_bugtasks):
             rev_info = {
                 'revision': branch_revision,
-                'linked_bugs': None,
+                'linked_bugtasks': None,
                 'merge_proposal': None,
                 }
             merge_proposal = merge_proposal_revs.get(branch_revision.sequence)
             rev_info['merge_proposal'] = merge_proposal
             if merge_proposal is not None:
-                rev_info['linked_bugs'] = linked_bugs.get(
+                rev_info['linked_bugtasks'] = linked_bugtasks.get(
                     merge_proposal.source_branch.id)
             return rev_info
 
@@ -241,19 +293,40 @@ class GenericBranchCollection:
         merge_proposal_revs = dict(
                 [(mp.merged_revno, mp) for mp in merge_proposals])
         source_branch_ids = [mp.source_branch.id for mp in merge_proposals]
+        linked_bugtasks = defaultdict(list)
 
-        filter = [
-            BugBranch.bug == Bug.id,
-            BugBranch.branchID.is_in(
-                source_branch_ids),
-            ]
-        bugs = self.store.find((Bug, BugBranch), filter)
-        linked_bugs = defaultdict(list)
-        for (bug, bugbranch) in bugs:
-            linked_bugs[bugbranch.branchID].append(bug)
+        if source_branch_ids:
+            # We get the bugtasks for our merge proposal branches
+
+            # First, the bug ids
+            params = BugTaskSearchParams(
+                user=user, status=None,
+                linked_branches=any(*source_branch_ids))
+            bug_ids = getUtility(IBugTaskSet).searchBugIds(params)
+
+            # Then the bug tasks and branches
+            store = IStore(BugBranch)
+            rs = store.using(
+                BugBranch,
+                Join(BugTask, BugTask.bugID == BugBranch.bugID),
+            ).find(
+                (BugTask, BugBranch),
+                BugBranch.bugID.is_in(bug_ids),
+                BugBranch.branchID.is_in(source_branch_ids)
+            )
+
+            # Build up a collection of bugtasks for each branch
+            bugtasks_for_branch = defaultdict(list)
+            for bugtask, bugbranch in rs:
+                bugtasks_for_branch[bugbranch.branch].append(bugtask)
+
+            # Now filter those down to one bugtask per branch
+            for branch, tasks in bugtasks_for_branch.iteritems():
+                linked_bugtasks[branch.id].extend(
+                    filter_one_task_per_bug(branch, tasks))
 
         return [make_rev_info(
-                rev, merge_proposal_revs, linked_bugs)
+                rev, merge_proposal_revs, linked_bugtasks)
                 for rev in revisions]
 
     def getTeamsWithBranches(self, person):
@@ -332,6 +405,15 @@ class GenericBranchCollection:
         """See `IBranchCollection`."""
         return self._filterBy([Branch.owner == person])
 
+    def ownedByTeamMember(self, person):
+        """See `IBranchCollection`."""
+        subquery = Select(
+            TeamParticipation.teamID,
+            where=TeamParticipation.personID==person.id)
+        filter = [In(Branch.ownerID, subquery)]
+
+        return self._filterBy(filter)
+
     def registeredBy(self, person):
         """See `IBranchCollection`."""
         return self._filterBy([Branch.registrant == person])
@@ -364,7 +446,7 @@ class GenericBranchCollection:
         # of the unique name and sort based on relevance.
         branch = self._getExactMatch(search_term)
         if branch is not None:
-            if branch in self.getBranches():
+            if branch in self.getBranches(eager_load=False):
                 return CountableIterator(1, [branch])
             else:
                 return CountableIterator(0, [])
@@ -397,7 +479,8 @@ class GenericBranchCollection:
 
         # Get the results.
         collection = self._filterBy([Branch.id.is_in(Union(*queries))])
-        results = collection.getBranches().order_by(Branch.name, Branch.id)
+        results = collection.getBranches(eager_load=False).order_by(
+            Branch.name, Branch.id)
         return CountableIterator(results.count(), results)
 
     def scanned(self):

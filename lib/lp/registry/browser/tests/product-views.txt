@@ -441,37 +441,6 @@ All the product series can be viewed in batches.
 Product index view
 ==================
 
-Programming languages
----------------------
-
-When the product has no programming languages specified, nothing is displayed
-on the index page.
-
-    >>> login('no-priv@canonical.com')
-    >>> view = create_initialized_view(firefox, name='+index')
-    >>> view.show_programming_languages
-    False
-
-But if the project owner logs in, they will see the programming language
-details, so that they can edit them.
-
-    >>> login_person(firefox.owner)
-    >>> view = create_initialized_view(firefox, name='+index')
-    >>> view.show_programming_languages
-    True
-
-Once the programming languages are specified though, even users who aren't the
-owner will see the list.
-
-    >>> firefox.programminglang = 'C++'
-    >>> transaction.commit()
-
-    >>> login('no-priv@canonical.com')
-    >>> view = create_initialized_view(firefox, name='+index')
-    >>> view.show_programming_languages
-    True
-
-
 +index portlets
 ---------------
 

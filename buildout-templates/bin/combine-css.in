@@ -23,7 +23,6 @@ target = os.path.join(icing, 'combo.css')
 names = [
     'style.css',
     'lazr/build/yui/cssreset/reset.css',
-    'lazr/build/yui/cssfonts/fonts.css',
     # Use the old cssgrids instead of the new cssgrids.
     #'lazr/build/yui/cssgrids/grids.css',
     'cssgrids/grids.css',

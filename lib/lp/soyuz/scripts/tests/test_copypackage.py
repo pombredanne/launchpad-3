@@ -1813,8 +1813,8 @@ class CopyPackageTestCase(TestCaseWithFactory):
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 3)
 
-        [copied_source] = ubuntu.main_archive.getPublishedSources(
-            name='boing')
+        copied_source = ubuntu.main_archive.getPublishedSources(
+            name='boing').one()
         self.assertEqual(copied_source.displayname, 'boing 1.0 in hoary')
         self.assertEqual(len(copied_source.getPublishedBinaries()), 2)
         self.assertEqual(len(copied_source.getBuilds()), 1)
@@ -1891,8 +1891,8 @@ class CopyPackageTestCase(TestCaseWithFactory):
         # The source and the only existing binary were correctly copied.
         # No build was created, but the architecture independent binary
         # was propagated to the new architecture (hoary/amd64).
-        [copied_source] = ubuntu.main_archive.getPublishedSources(
-            name='boing', distroseries=hoary)
+        copied_source = ubuntu.main_archive.getPublishedSources(
+            name='boing', distroseries=hoary).one()
         self.assertEqual(copied_source.displayname, 'boing 1.0 in hoary')
 
         self.assertEqual(len(copied_source.getBuilds()), 0)
@@ -1925,8 +1925,8 @@ class CopyPackageTestCase(TestCaseWithFactory):
 
         # The source and the only existing binary were correctly copied.
         hoary = ubuntu.getSeries('hoary')
-        [copied_source] = ubuntu.main_archive.getPublishedSources(
-            name='boing', distroseries=hoary)
+        copied_source = ubuntu.main_archive.getPublishedSources(
+            name='boing', distroseries=hoary).one()
         self.assertEqual(copied_source.displayname, 'boing 1.0 in hoary')
 
         [copied_binary] = copied_source.getPublishedBinaries()
