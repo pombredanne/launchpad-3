@@ -326,10 +326,12 @@ def distroseries_renderer(context, field, request):
     """Render a distroseries collection as a set of links."""
 
     def render(value):
+        distroseries = sorted(context.distroseries)
+        if not distroseries:
+            return 'None'
         html = "<ul>"
         html += ''.join(
-            ["<li>%s</li>" % format_link(distroseries)
-                for distroseries in context.distroseries]
+            ["<li>%s</li>" % format_link(series) for series in distroseries]
         )
         html += "</ul>"
         return html
