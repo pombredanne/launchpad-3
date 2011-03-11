@@ -41,8 +41,11 @@
         </tal:form-writeable>
       </td>
       <td>
+        <div tal:condition="not:submission/suggestion_text">
+          (not translated)
+        </div>
         <div
-          tal:condition="not:user_is_official_translator"
+          tal:condition="python: not user_is_official_translator and submission.suggestion_text"
           tal:attributes="
             lang submission/language/dashedcode;
             dir submission/language/abbreviated_text_dir;
@@ -52,7 +55,7 @@
         </div>
         <label
           style="white-space: normal"
-          tal:condition="user_is_official_translator"
+          tal:condition="python: user_is_official_translator and submission.suggestion_text"
           tal:attributes="
             lang submission/language/dashedcode;
             dir submission/language/abbreviated_text_dir;
