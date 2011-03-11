@@ -36,7 +36,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
 
     def setUp(self):
         super(TestDistroSeriesDifferenceJobSource, self).setUp()
-        self.useFixture(FeatureFixture({FEATURE_FLAG: 'on'}))
+        self.useFixture(FeatureFixture({FEATURE_FLAG: u'on'}))
 
     def getJobSource(self):
         return getUtility(IDistroSeriesDifferenceJobSource)
@@ -159,7 +159,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
     def test_createForPackagePublication_obeys_feature_flag(self):
         distroseries = self.makeDerivedDistroSeries()
         package = self.factory.makeSourcePackageName()
-        self.useFixture(FeatureFixture({FEATURE_FLAG: 'off'}))
+        self.useFixture(FeatureFixture({FEATURE_FLAG: ''}))
         self.getJobSource().createForPackagePublication(distroseries, package)
         self.assertContentEqual([], find_waiting_jobs(distroseries, package))
 

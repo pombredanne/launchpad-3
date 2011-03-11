@@ -29,7 +29,7 @@ from lp.soyuz.interfaces.distroseriesdifferencejob import (
     )
 
 
-FEATURE_FLAG = "soyuz.derived_series_jobs.enabled"
+FEATURE_FLAG = u"soyuz.derived_series_jobs.enabled"
 
 
 def make_metadata(sourcepackagename):
@@ -106,7 +106,7 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
     @classmethod
     def createForPackagePublication(cls, distroseries, sourcepackagename):
         """See `IDistroSeriesDifferenceJobSource`."""
-        if getFeatureFlag(FEATURE_FLAG) != 'on':
+        if not getFeatureFlag(FEATURE_FLAG):
             return
         children = distroseries.getDerivedSeries()
         parent = distroseries.parent_series
