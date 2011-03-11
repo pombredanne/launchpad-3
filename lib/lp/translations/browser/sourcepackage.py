@@ -16,16 +16,21 @@ from canonical.launchpad.webapp import (
     Link,
     NavigationMenu,
     )
+from canonical.launchpad.webapp.authorization import check_permission
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.translations import TranslationsMixin
+from lp.translations.browser.translationsharing import (
+    TranslationSharingDetailsMixin,
+    )
 from lp.translations.utilities.translationsharinginfo import (
     has_upstream_template,
     get_upstream_sharing_info,
     )
 
 
-class SourcePackageTranslationsView(TranslationsMixin):
+class SourcePackageTranslationsView(TranslationsMixin,
+                                    TranslationSharingDetailsMixin):
 
     @property
     def potemplates(self):
@@ -46,6 +51,13 @@ class SourcePackageTranslationsView(TranslationsMixin):
 
         productseries, template = infos[0]
         return productseries
+
+    def getTranslationTarget(self):
+        """See `TranslationSharingDetailsMixin`."""
+        return self.context
+
+    def can_edit_sharing_details(self):
+        return check_permission('launchpad.Edit', self.context.distroseries)
 
 
 class SourcePackageTranslationsMenu(NavigationMenu):

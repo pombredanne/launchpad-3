@@ -399,6 +399,14 @@ class Specification(SQLBase, BugLinkTargetMixin):
         else:
             return SpecificationLifecycleStatus.NOTSTARTED
 
+    def setDefinitionStatus(self, definition_status, user):
+        self.definition_status = definition_status
+        self.updateLifecycleStatus(user)
+
+    def setImplementationStatus(self, implementation_status, user):
+        self.implementation_status = implementation_status
+        self.updateLifecycleStatus(user)
+
     def updateLifecycleStatus(self, user):
         """See ISpecification."""
         newstatus = None

@@ -295,12 +295,15 @@ class WrappedStartResponse(object):
             self.response_start += (exc_info,)
         return self.write_wrapper
 
-    def really_start(self):
+    def ensure_started(self):
+        if not self.body_started and self.response_start is not None:
+            self._really_start()
+
+    def _really_start(self):
         self._write_callable = self._real_start_response(*self.response_start)
 
     def write_wrapper(self, data):
-        if not self.body_started:
-            self.really_start()
+        self.ensure_started()
         self._write_callable(data)
 
     def generate_oops(self, environ, error_utility):
@@ -312,7 +315,7 @@ class WrappedStartResponse(object):
         oopsid = report_oops(environ, error_utility)
         if self.body_started:
             return False
-        write = self._real_start_response(_error_status, _error_headers)
+        write = self.start_response(_error_status, _error_headers)
         write(_oops_html_template % {'oopsid': oopsid})
         return True
 
@@ -341,14 +344,15 @@ def oops_middleware(app):
             # Start processing this request, build the app
             app_iter = iter(app(environ, wrapped.start_response))
             # Start yielding the response
-            while True:
+            stopping = False
+            while not stopping:
                 try:
                     data = app_iter.next()
                 except StopIteration:
-                    return
-                if not wrapped.body_started:
-                    wrapped.really_start()
-                yield data
+                    stopping = True
+                wrapped.ensure_started()
+                if not stopping:
+                    yield data
         except httpserver.SocketErrors, e:
             # The Paste WSGIHandler suppresses these exceptions.
             # Generally it means something like 'EPIPE' because the
@@ -356,8 +360,16 @@ def oops_middleware(app):
             # just because the connection was closed prematurely.
             logger = logging.getLogger('lp-loggerhead')
             logger.info('Caught socket exception from %s: %s %s'
-                         % (environ.get('REMOTE_ADDR', '<unknown>'),
-                            e.__class__, e,))
+                        % (environ.get('REMOTE_ADDR', '<unknown>'),
+                           e.__class__, e,))
+            return
+        except GeneratorExit, e:
+            # This generally means a client closed early during a streaming
+            # body. Nothing to worry about. GeneratorExit doesn't usually have
+            # any context associated with it, so not worth printing to the log.
+            logger = logging.getLogger('lp-loggerhead')
+            logger.info('Caught GeneratorExit from %s'
+                        % (environ.get('REMOTE_ADDR', '<unknown>')))
             return
         except:
             error_page_sent = wrapped.generate_oops(environ, error_utility)

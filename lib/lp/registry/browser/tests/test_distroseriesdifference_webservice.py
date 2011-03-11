@@ -103,11 +103,19 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
 
     def test_requestDiffs(self):
         # The generation of package diffs can be requested via the API.
+        derived_changelog = self.factory.makeChangelog(
+            versions=['1.0', '1.2'])
+        parent_changelog = self.factory.makeChangelog(
+            versions=['1.0', '1.3'])
+        transaction.commit() # Yay, librarian.
         ds_diff = self.factory.makeDistroSeriesDifference(
             source_package_name_str='foo', versions={
                 'derived': '1.2',
                 'parent': '1.3',
-                'base': '1.0',
+                'base': '1.0'},
+            changelogs={
+                'derived': derived_changelog,
+                'parent': parent_changelog,
                 })
         ws_diff = ws_object(self.factory.makeLaunchpadService(
             ds_diff.owner), ds_diff)
