@@ -36,6 +36,7 @@ from lp.bugs.browser.bugtask import (
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.services.propertycache import get_property_cache
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -319,13 +320,96 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         # The target link title is always none for products.
         target = self.factory.makeProduct()
         bug_task = self.factory.makeBugTask(bug=self.bug, target=target)
-        self.assertEqual(None, self.view.getTargetLinkTitle(bug_task))
+        self.view.initialize()
+        self.assertEqual(None, self.view.getTargetLinkTitle(bug_task.target))
 
     def test_getTargetLinkTitle_productseries(self):
-        # The target link title is always none for products.
+        # The target link title is always none for productseries.
         target = self.factory.makeProductSeries()
         bug_task = self.factory.makeBugTask(bug=self.bug, target=target)
-        self.assertEqual(None, self.view.getTargetLinkTitle(bug_task))
+        self.view.initialize()
+        self.assertEqual(None, self.view.getTargetLinkTitle(bug_task.target))
+
+    def test_getTargetLinkTitle_distribution(self):
+        # The target link title is always none for distributions.
+        target = self.factory.makeDistribution()
+        bug_task = self.factory.makeBugTask(bug=self.bug, target=target)
+        self.view.initialize()
+        self.assertEqual(None, self.view.getTargetLinkTitle(bug_task.target))
+
+    def test_getTargetLinkTitle_distroseries(self):
+        # The target link title is always none for distroseries.
+        target = self.factory.makeDistroSeries()
+        bug_task = self.factory.makeBugTask(bug=self.bug, target=target)
+        self.view.initialize()
+        self.assertEqual(None, self.view.getTargetLinkTitle(bug_task.target))
+
+    def test_getTargetLinkTitle_unpublished_distributionsourcepackage(self):
+        # The target link title states that the package is not published
+        # in the current release.
+        distribution = self.factory.makeDistribution(name='boy')
+        spn = self.factory.makeSourcePackageName('badger')
+        component = getUtility(IComponentSet)['universe']
+        maintainer = self.factory.makePerson(name="jim")
+        creator = self.factory.makePerson(name="tim")
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distribution.currentseries, version='2.0',
+            component=component, sourcepackagename=spn,
+            date_uploaded=datetime(2008, 7, 18, 10, 20, 30, tzinfo=UTC),
+            maintainer=maintainer, creator=creator)
+        target = distribution.getSourcePackage('badger')
+        bug_task = self.factory.makeBugTask(
+            bug=self.bug, target=target, publish=False)
+        self.view.initialize()
+        self.assertEqual(
+            'No current release for this source package in Boy',
+            self.view.getTargetLinkTitle(bug_task.target))
+
+    def test_getTargetLinkTitle_published_distributionsourcepackage(self):
+        # The target link title states the information about the current
+        # package in the distro.
+        distribution = self.factory.makeDistribution(name='koi')
+        distroseries = self.factory.makeDistroSeries(
+            distribution=distribution)
+        spn = self.factory.makeSourcePackageName('finch')
+        component = getUtility(IComponentSet)['universe']
+        maintainer = self.factory.makePerson(name="jim")
+        creator = self.factory.makePerson(name="tim")
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, version='2.0',
+            component=component, sourcepackagename=spn,
+            date_uploaded=datetime(2008, 7, 18, 10, 20, 30, tzinfo=UTC),
+            maintainer=maintainer, creator=creator)
+        target = distribution.getSourcePackage('finch')
+        bug_task = self.factory.makeBugTask(
+            bug=self.bug, target=target, publish=False)
+        self.view.initialize()
+        self.assertEqual(
+            'Latest release: 2.0, uploaded to universe on '
+            '2008-07-18 10:20:30+00:00 by Tim (tim), maintained by Jim (jim)',
+            self.view.getTargetLinkTitle(bug_task.target))
+
+    def test_getTargetLinkTitle_published_sourcepackage(self):
+        # The target link title states the information about the current
+        # package in the distro.
+        distroseries = self.factory.makeDistroSeries()
+        spn = self.factory.makeSourcePackageName('bunny')
+        component = getUtility(IComponentSet)['universe']
+        maintainer = self.factory.makePerson(name="jim")
+        creator = self.factory.makePerson(name="tim")
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, version='2.0',
+            component=component, sourcepackagename=spn,
+            date_uploaded=datetime(2008, 7, 18, 10, 20, 30, tzinfo=UTC),
+            maintainer=maintainer, creator=creator)
+        target = distroseries.getSourcePackage('bunny')
+        bug_task = self.factory.makeBugTask(
+            bug=self.bug, target=target, publish=False)
+        self.view.initialize()
+        self.assertEqual(
+            'Latest release: 2.0, uploaded to universe on '
+            '2008-07-18 10:20:30+00:00 by Tim (tim), maintained by Jim (jim)',
+            self.view.getTargetLinkTitle(bug_task.target))
 
 
 class TestBugTaskEditViewStatusField(TestCaseWithFactory):

@@ -1641,7 +1641,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         return bug
 
-    def makeBugTask(self, bug=None, target=None, owner=None):
+    def makeBugTask(self, bug=None, target=None, owner=None, publish=True):
         """Create and return a bug task.
 
         If the bug is already targeted to the given target, the existing
@@ -1674,9 +1674,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             # We can't have a series task without a distribution task.
             prerequisite_target = target.distribution.getSourcePackage(
                 target.sourcepackagename)
-            self.makeSourcePackagePublishingHistory(
-                distroseries=target.distribution.currentseries,
-                sourcepackagename=target.sourcepackagename)
+            if publish:
+                self.makeSourcePackagePublishingHistory(
+                    distroseries=target.distribution.currentseries,
+                    sourcepackagename=target.sourcepackagename)
         if prerequisite_target is not None:
             prerequisite = bug.getBugTask(prerequisite_target)
             if prerequisite is None:

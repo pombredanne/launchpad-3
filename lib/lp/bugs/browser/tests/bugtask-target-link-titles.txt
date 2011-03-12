@@ -1,5 +1,6 @@
 = Titles for bug task target links =
 
+# XXX sinzui 2011-03-12: delete this test.
 Some links to targets in the affects table have a title, which contains
 some information about the target. There is a method,
 getTargetLinkTitle() on BugTasksAndNominationsView, which generates the
