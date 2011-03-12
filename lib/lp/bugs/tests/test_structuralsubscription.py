@@ -25,7 +25,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
 from lp.bugs.model.structuralsubscription import (
-    get_all_structural_subscriptions,
+    get_structural_subscriptions_for_bug,
     get_structural_subscribers,
     get_structural_subscription_targets,
     )
@@ -35,6 +35,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.factory import is_security_proxied_or_harmless
 
 
 class TestStructuralSubscription(TestCaseWithFactory):
@@ -512,29 +513,33 @@ class TestGetStructuralSubscriptionTargets(TestCaseWithFactory):
              (dist_sourcepackage_bugtask, distribution))))
 
 
-class TestGetAllStructuralSubscriptions(TestCaseWithFactory):
+class TestGetStructuralSubscriptionsForBug(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestGetAllStructuralSubscriptions, self).setUp()
+        super(TestGetStructuralSubscriptionsForBug, self).setUp()
         self.subscriber = self.factory.makePerson()
+        self.team = self.factory.makeTeam(members=[self.subscriber])
         login_person(self.subscriber)
         self.product = self.factory.makeProduct()
         self.milestone = self.factory.makeMilestone(product=self.product)
         self.bug = self.factory.makeBug(
             product=self.product, milestone=self.milestone)
 
+    def getSubscriptions(self, person=None):
+        result = get_structural_subscriptions_for_bug(self.bug, person)
+        self.assertTrue(is_security_proxied_or_harmless(result))
+        return result
+
     def test_no_subscriptions(self):
-        subscriptions = get_all_structural_subscriptions(
-            self.bug.bugtasks, self.subscriber)
+        subscriptions = self.getSubscriptions(self.subscriber)
         self.assertEqual([], list(subscriptions))
 
     def test_one_subscription(self):
         sub = self.product.addBugSubscription(
             self.subscriber, self.subscriber)
-        subscriptions = get_all_structural_subscriptions(
-            self.bug.bugtasks, self.subscriber)
+        subscriptions = self.getSubscriptions(self.subscriber)
         self.assertEqual([sub], list(subscriptions))
 
     def test_two_subscriptions(self):
@@ -542,8 +547,7 @@ class TestGetAllStructuralSubscriptions(TestCaseWithFactory):
             self.subscriber, self.subscriber)
         sub2 = self.milestone.addBugSubscription(
             self.subscriber, self.subscriber)
-        subscriptions = get_all_structural_subscriptions(
-            self.bug.bugtasks, self.subscriber)
+        subscriptions = self.getSubscriptions(self.subscriber)
         self.assertEqual(set([sub1, sub2]), set(subscriptions))
 
     def test_two_bugtasks_one_subscription(self):
@@ -551,8 +555,7 @@ class TestGetAllStructuralSubscriptions(TestCaseWithFactory):
             self.subscriber, self.subscriber)
         product2 = self.factory.makeProduct()
         self.bug.addTask(self.subscriber, product2)
-        subscriptions = get_all_structural_subscriptions(
-            self.bug.bugtasks, self.subscriber)
+        subscriptions = self.getSubscriptions(self.subscriber)
         self.assertEqual([sub], list(subscriptions))
 
     def test_two_bugtasks_two_subscriptions(self):
@@ -562,8 +565,7 @@ class TestGetAllStructuralSubscriptions(TestCaseWithFactory):
         self.bug.addTask(self.subscriber, product2)
         sub2 = product2.addBugSubscription(
             self.subscriber, self.subscriber)
-        subscriptions = get_all_structural_subscriptions(
-            self.bug.bugtasks, self.subscriber)
+        subscriptions = self.getSubscriptions(self.subscriber)
         self.assertEqual(set([sub1, sub2]), set(subscriptions))
 
     def test_ignore_other_subscriptions(self):
@@ -573,12 +575,26 @@ class TestGetAllStructuralSubscriptions(TestCaseWithFactory):
         login_person(another_subscriber)
         sub2 = self.product.addBugSubscription(
             another_subscriber, another_subscriber)
-        subscriptions = get_all_structural_subscriptions(
-            self.bug.bugtasks, self.subscriber)
+        subscriptions = self.getSubscriptions(self.subscriber)
         self.assertEqual([sub1], list(subscriptions))
-        subscriptions = get_all_structural_subscriptions(
-            self.bug.bugtasks, another_subscriber)
+        subscriptions = self.getSubscriptions(another_subscriber)
         self.assertEqual([sub2], list(subscriptions))
+
+    def test_team_subscription(self):
+        with person_logged_in(self.team.teamowner):
+            sub = self.product.addBugSubscription(
+                self.team, self.team.teamowner)
+        subscriptions = self.getSubscriptions(self.subscriber)
+        self.assertEqual([sub], list(subscriptions))
+
+    def test_both_subscriptions(self):
+        self_sub = self.product.addBugSubscription(
+            self.subscriber, self.subscriber)
+        with person_logged_in(self.team.teamowner):
+            team_sub = self.product.addBugSubscription(
+                self.team, self.team.teamowner)
+        subscriptions = self.getSubscriptions(self.subscriber)
+        self.assertEqual(set([self_sub, team_sub]), set(subscriptions))
 
 
 class TestGetStructuralSubscribers(TestCaseWithFactory):

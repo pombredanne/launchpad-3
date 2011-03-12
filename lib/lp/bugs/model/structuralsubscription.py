@@ -3,8 +3,8 @@
 
 __metaclass__ = type
 __all__ = [
-    'get_all_structural_subscriptions',
-    'get_all_structural_subscriptions_for_target',
+    'get_structural_subscriptions_for_bug',
+    'get_structural_subscriptions_for_target',
     'get_structural_subscribers',
     'get_structural_subscription_targets',
     'StructuralSubscription',
@@ -505,7 +505,7 @@ def get_structural_subscription_targets(bugtasks):
 
 
 @ProxyFactory
-def get_all_structural_subscriptions_for_target(target, person):
+def get_structural_subscriptions_for_target(target, person):
     """Find the personal and team structural subscriptions to the target.
     """
     # This is here because of a circular import.
@@ -518,7 +518,7 @@ def get_all_structural_subscriptions_for_target(target, person):
         TeamParticipation.teamID == Person.id)
 
 
-def _get_all_structural_subscriptions(find, targets, *conditions):
+def _get_structural_subscriptions(find, targets, *conditions):
     """Find the structural subscriptions for the given targets.
 
     :param find: what to find (typically StructuralSubscription or
@@ -536,14 +536,25 @@ def _get_all_structural_subscriptions(find, targets, *conditions):
             find, Or(*target_descriptions), *conditions))
 
 
-def get_all_structural_subscriptions(bugtasks, person=None):
+@ProxyFactory
+def get_structural_subscriptions_for_bug(bug, person=None):
+    """Find the structural subscriptions to the bug.
+    
+    If `person` is provided, only subscriptions that affect the person,
+    because of personal or team memberships, are included.
+    """
+    # This is here because of a circular import.
+    from lp.registry.model.person import Person
+    bugtasks = bug.bugtasks
     if not bugtasks:
         return EmptyResultSet()
     conditions = []
     if person is not None:
-        conditions.append(
-            StructuralSubscription.subscriber == person)
-    return _get_all_structural_subscriptions(
+        conditions.extend([
+            StructuralSubscription.subscriber == Person.id,
+            TeamParticipation.personID == person.id,
+            TeamParticipation.teamID == Person.id])
+    return _get_structural_subscriptions(
         StructuralSubscription,
         get_structural_subscription_targets(bugtasks),
         *conditions)
@@ -687,7 +698,7 @@ def _get_structural_subscription_filter_id_query(
             Not(In(StructuralSubscription.subscriberID,
                    Select(BugSubscription.person_id,
                           BugSubscription.bug == bug))))
-    candidates = _get_all_structural_subscriptions(
+    candidates = _get_structural_subscriptions(
         StructuralSubscription.id, query_arguments, *filters)
     if not candidates:
         # If there are no structural subscriptions for these targets,

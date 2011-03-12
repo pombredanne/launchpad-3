@@ -172,7 +172,7 @@ from lp.bugs.model.bugtask import (
     )
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (
-    get_all_structural_subscriptions,
+    get_structural_subscriptions_for_bug,
     get_structural_subscribers,
     )
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
@@ -981,10 +981,6 @@ BugMessage""" % sqlvalues(self.id))
             BugSubscription,
             BugSubscription.person == person,
             BugSubscription.bug == self).one()
-
-    def getStructuralSubscriptionsForPerson(self, person):
-        """See `IBug`."""
-        return get_all_structural_subscriptions(self.bugtasks, person)
 
     def getAlsoNotifiedSubscribers(self, recipients=None, level=None):
         """See `IBug`.
@@ -2223,7 +2219,7 @@ class BugSubscriptionInfo:
     @freeze(StructuralSubscriptionSet)
     def structural_subscriptions(self):
         """Structural subscriptions to the bug's targets."""
-        return get_all_structural_subscriptions(self.bug.bugtasks)
+        return get_structural_subscriptions_for_bug(self.bug)
 
     @cachedproperty
     @freeze(BugSubscriberSet)
