@@ -4,8 +4,6 @@
 __metaclass__ = type
 
 from datetime import datetime
-from doctest import DocTestSuite
-import unittest
 
 from pytz import UTC
 from storm.store import Store
@@ -19,16 +17,10 @@ from canonical.launchpad.ftests import (
     login_person,
     )
 from canonical.launchpad.testing.pages import find_tag_by_id
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite,
-    setUp,
-    tearDown,
-    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.bugs.browser import bugtask
 from lp.bugs.browser.bugtask import (
     BugTaskEditView,
     BugTasksAndNominationsView,
@@ -361,6 +353,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         bug_task = self.factory.makeBugTask(
             bug=self.bug, target=target, publish=False)
         self.view.initialize()
+        self.assertEqual({}, self.view.target_releases)
         self.assertEqual(
             'No current release for this source package in Boy',
             self.view.getTargetLinkTitle(bug_task.target))
@@ -384,6 +377,8 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         bug_task = self.factory.makeBugTask(
             bug=self.bug, target=target, publish=False)
         self.view.initialize()
+        self.assertTrue(
+            target in self.view.target_releases.keys())
         self.assertEqual(
             'Latest release: 2.0, uploaded to universe on '
             '2008-07-18 10:20:30+00:00 by Tim (tim), maintained by Jim (jim)',
@@ -406,6 +401,8 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         bug_task = self.factory.makeBugTask(
             bug=self.bug, target=target, publish=False)
         self.view.initialize()
+        self.assertTrue(
+            target in self.view.target_releases.keys())
         self.assertEqual(
             'Latest release: 2.0, uploaded to universe on '
             '2008-07-18 10:20:30+00:00 by Tim (tim), maintained by Jim (jim)',
@@ -683,16 +680,3 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         contents = view.render()
         help_link = find_tag_by_id(contents, 'getting-started-help')
         self.assertIs(None, help_link)
-
-
-def test_suite():
-    suite = unittest.TestLoader().loadTestsFromName(__name__)
-    suite.addTest(DocTestSuite(bugtask))
-    suite.addTest(LayeredDocFileSuite(
-        'bugtask-target-link-titles.txt', setUp=setUp, tearDown=tearDown,
-        layer=DatabaseFunctionalLayer))
-    return suite
-
-
-if __name__ == '__main__':
-    unittest.TextTestRunner().run(test_suite())
