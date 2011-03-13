@@ -12,7 +12,6 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.factory import is_security_proxied_or_harmless
 
 
 class TestBug(TestCaseWithFactory):
@@ -248,36 +247,3 @@ class TestBug(TestCaseWithFactory):
         with person_logged_in(bug.owner):
             info = bug.getSubscriptionInfo(BugNotificationLevel.METADATA)
         self.assertEqual(BugNotificationLevel.METADATA, info.level)
-
-
-class TestGetStructuralSubscriptionsForPerson(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def getStructuralSubscriptionsForPerson(self, bug, recipient):
-        # Call bug.getStructuralSubscriptionsForPerson() and check that the
-        # result is security proxied.
-        result = bug.getStructuralSubscriptionsForPerson(recipient)
-        self.assertTrue(is_security_proxied_or_harmless(result))
-        return result
-
-    def setUp(self):
-        super(TestGetStructuralSubscriptionsForPerson, self).setUp()
-        self.subscriber = self.factory.makePerson()
-        login_person(self.subscriber)
-        self.product = self.factory.makeProduct()
-        self.milestone = self.factory.makeMilestone(product=self.product)
-        self.bug = self.factory.makeBug(
-            product=self.product, milestone=self.milestone)
-
-    def test_no_subscriptions(self):
-        subscriptions = self.getStructuralSubscriptionsForPerson(
-            self.bug, self.subscriber)
-        self.assertEqual([], list(subscriptions))
-
-    def test_one_subscription(self):
-        sub = self.product.addBugSubscription(
-            self.subscriber, self.subscriber)
-        subscriptions = self.getStructuralSubscriptionsForPerson(
-            self.bug, self.subscriber)
-        self.assertEqual([sub], list(subscriptions))

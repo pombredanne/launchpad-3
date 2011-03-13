@@ -3,7 +3,8 @@
 
 __metaclass__ = type
 __all__ = [
-    'get_all_structural_subscriptions',
+    'get_structural_subscriptions_for_bug',
+    'get_structural_subscriptions_for_target',
     'get_structural_subscribers',
     'get_structural_subscription_targets',
     'StructuralSubscription',
@@ -11,13 +12,6 @@ __all__ = [
     ]
 
 import pytz
-
-from storm.locals import (
-    DateTime,
-    Int,
-    Reference,
-    )
-
 from storm.base import Storm
 from storm.expr import (
     And,
@@ -33,15 +27,21 @@ from storm.expr import (
     SQL,
     Union,
     )
+from storm.locals import (
+    DateTime,
+    Int,
+    Reference,
+    )
 from storm.store import (
-    Store,
     EmptyResultSet,
+    Store,
     )
 from zope.component import (
     adapts,
     getUtility,
     )
 from zope.interface import implements
+from zope.security.proxy import ProxyFactory
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import quote
@@ -81,6 +81,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.propertycache import cachedproperty
 
 
@@ -503,7 +504,21 @@ def get_structural_subscription_targets(bugtasks):
             yield (bugtask, bugtask.milestone)
 
 
-def _get_all_structural_subscriptions(find, targets, *conditions):
+@ProxyFactory
+def get_structural_subscriptions_for_target(target, person):
+    """Find the personal and team structural subscriptions to the target.
+    """
+    # This is here because of a circular import.
+    from lp.registry.model.person import Person
+    return IStore(StructuralSubscription).find(
+        StructuralSubscription,
+        IStructuralSubscriptionTargetHelper(target).join,
+        StructuralSubscription.subscriber == Person.id,
+        TeamParticipation.personID == person.id,
+        TeamParticipation.teamID == Person.id)
+
+
+def _get_structural_subscriptions(find, targets, *conditions):
     """Find the structural subscriptions for the given targets.
 
     :param find: what to find (typically StructuralSubscription or
@@ -521,14 +536,25 @@ def _get_all_structural_subscriptions(find, targets, *conditions):
             find, Or(*target_descriptions), *conditions))
 
 
-def get_all_structural_subscriptions(bugtasks, person=None):
+@ProxyFactory
+def get_structural_subscriptions_for_bug(bug, person=None):
+    """Find the structural subscriptions to the bug.
+    
+    If `person` is provided, only subscriptions that affect the person,
+    because of personal or team memberships, are included.
+    """
+    # This is here because of a circular import.
+    from lp.registry.model.person import Person
+    bugtasks = bug.bugtasks
     if not bugtasks:
         return EmptyResultSet()
     conditions = []
     if person is not None:
-        conditions.append(
-            StructuralSubscription.subscriber == person)
-    return _get_all_structural_subscriptions(
+        conditions.extend([
+            StructuralSubscription.subscriber == Person.id,
+            TeamParticipation.personID == person.id,
+            TeamParticipation.teamID == Person.id])
+    return _get_structural_subscriptions(
         StructuralSubscription,
         get_structural_subscription_targets(bugtasks),
         *conditions)
@@ -672,7 +698,7 @@ def _get_structural_subscription_filter_id_query(
             Not(In(StructuralSubscription.subscriberID,
                    Select(BugSubscription.person_id,
                           BugSubscription.bug == bug))))
-    candidates = _get_all_structural_subscriptions(
+    candidates = _get_structural_subscriptions(
         StructuralSubscription.id, query_arguments, *filters)
     if not candidates:
         # If there are no structural subscriptions for these targets,
