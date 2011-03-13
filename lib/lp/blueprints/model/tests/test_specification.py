@@ -43,4 +43,31 @@ class TestSpecificationDependencies(TestCaseWithFactory):
         self.assertThat(sorted(do_last.dependencies), Equals([do_next]))
         self.assertThat(sorted(do_last.all_deps), Equals([do_first, do_next]))
 
+    def test_diamond_dependency(self):
+        #             do_first
+        #            /        \
+        #    do_next_lhs    do_next_rhs
+        #            \        /
+        #             do_last
+        do_first = self.factory.makeBlueprint()
+        do_next_lhs = self.factory.makeBlueprint()
+        do_next_lhs.createDependency(do_first)
+        do_next_rhs = self.factory.makeBlueprint()
+        do_next_rhs.createDependency(do_first)
+        do_last = self.factory.makeBlueprint()
+        do_last.createDependency(do_next_lhs)
+        do_last.createDependency(do_next_rhs)
+        self.assertThat(
+            sorted(do_first.blocked_specs),
+            Equals([do_next_lhs, do_next_rhs]))
+        self.assertThat(
+            sorted(do_first.all_blocked),
+            Equals([do_next_lhs, do_next_rhs, do_last]))
+        self.assertThat(
+            sorted(do_last.dependencies),
+            Equals([do_next_lhs, do_next_rhs]))
+        self.assertThat(
+            sorted(do_last.all_deps),
+            Equals([do_first, do_next_lhs, do_next_rhs]))
+
 
