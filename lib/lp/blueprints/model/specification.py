@@ -609,42 +609,47 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 SpecificationDependency.delete(deplink.id)
                 return deplink
 
-    def _find_all_deps(self, deps):
-        """This adds all dependencies of this spec (and their deps) to
-        deps.
-
-        The function is called recursively, as part of self.all_deps.
-        """
-        for dep in self.dependencies:
-            if dep not in deps:
-                deps.add(dep)
-                dep._find_all_deps(deps)
+    def _recursive_dependent_query(self):
+        return SQL("""
+            RECURSIVE dependencies(id) AS (
+                SELECT s.id
+                FROM specification s
+                WHERE s.id = %s
+            UNION
+                SELECT s.id
+                FROM specificationdependency sd, dependencies d, specification s
+                WHERE sd.specification = d.id
+                AND s.id = sd.dependency
+            )""" % self.id)
 
     @property
     def all_deps(self):
-        deps = set()
-        self._find_all_deps(deps)
-        return sorted(shortlist(deps),
-                    key=lambda s: (s.definition_status, s.priority, s.title))
+        return Store.of(self).with_(self._recursive_dependent_query()).find(
+            Specification,
+            Specification.id != self.id,
+            SQL('Specification.id in (select id from dependencies)'))
 
-    def _find_all_blocked(self, blocked):
-        """This adds all blockers of this spec (and their blockers) to
-        blocked.
 
-        The function is called recursively, as part of self.all_blocked.
-        """
-        for blocker in self.blocked_specs:
-            if blocker not in blocked:
-                blocked.add(blocker)
-                blocker._find_all_blocked(blocked)
+    def _recursive_blocked_query(self):
+        return SQL("""
+            RECURSIVE blocked(id) AS (
+                SELECT s.id
+                FROM specification s
+                WHERE s.id = %s
+            UNION
+                SELECT s.id
+                FROM specificationdependency sd, blocked b, specification s
+                WHERE sd.dependency = b.id
+                AND s.id = sd.specification
+            )""" % self.id)
 
     @property
     def all_blocked(self):
         """See `ISpecification`."""
-        blocked = set()
-        self._find_all_blocked(blocked)
-        return sorted(blocked, key=lambda s: (s.definition_status,
-                                              s.priority, s.title))
+        return Store.of(self).with_(self._recursive_blocked_query()).find(
+            Specification,
+            Specification.id != self.id,
+            SQL('Specification.id in (select id from blocked)'))
 
     # branches
     def getBranchLink(self, branch):
