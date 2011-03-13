@@ -1918,7 +1918,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             child = distribution.newSeries(
                 name=name, displayname=displayname, title=title,
                 summary=summary, description=description,
-                version=version, parent_series=self, owner=user)
+                version=version, parent_series=self, registrant=user)
             IStore(self).add(child)
         else:
             if child.parent_series is not self:

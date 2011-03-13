@@ -988,8 +988,8 @@ class AdminDistroSeries(AdminByAdminsTeam):
 
 
 class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
-    """The owner of the distro series should be able to modify some of the
-    fields on the IDistroSeries
+    """The owner of the distro series (i.e. the owner of the distribution)
+    should be able to modify some of the fields on the IDistroSeries
 
     NB: there is potential for a great mess if this is not done correctly so
     please consult with Kiko and MDZ on the mailing list before modifying
@@ -2588,7 +2588,7 @@ class ViewLibraryFileAliasWithParent(AuthorizationBase):
         if parent is None:
             return False
         return check_permission(self.permission, parent)
-    
+
 
 class SetMessageVisibility(AuthorizationBase):
     permission = 'launchpad.Admin'

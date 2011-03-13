@@ -157,16 +157,16 @@ As we can see from the translation import queue content.
   ...     print '%s/%s by %s: %s' % (
   ...         entry.distroseries.name, entry.sourcepackagename.name,
   ...         entry.importer.name, entry.path)
-  dapper/pmount by mark: po/es_ES.po
-  dapper/pmount by mark: po/ca.po
-  dapper/pmount by mark: po/de.po
-  dapper/pmount by mark: po/cs.po
-  dapper/pmount by mark: po/es.po
-  dapper/pmount by mark: po/fr.po
-  dapper/pmount by mark: po/hr.po
-  dapper/pmount by mark: po/nb.po
-  dapper/pmount by mark: po/pmount.pot
-  dapper/pmount by mark: po/it_IT.po
+  dapper/pmount by ubuntu-team: po/es_ES.po
+  dapper/pmount by ubuntu-team: po/ca.po
+  dapper/pmount by ubuntu-team: po/de.po
+  dapper/pmount by ubuntu-team: po/cs.po
+  dapper/pmount by ubuntu-team: po/es.po
+  dapper/pmount by ubuntu-team: po/fr.po
+  dapper/pmount by ubuntu-team: po/hr.po
+  dapper/pmount by ubuntu-team: po/nb.po
+  dapper/pmount by ubuntu-team: po/pmount.pot
+  dapper/pmount by ubuntu-team: po/it_IT.po
 
   # Abort the transaction so we can check the same upload in a different
   # pocket.
@@ -207,16 +207,16 @@ As we can see from the translation import queue content.
   ...     print '%s/%s by %s: %s' % (
   ...         entry.distroseries.name, entry.sourcepackagename.name,
   ...         entry.importer.name, entry.path)
-  dapper/pmount by mark: po/es_ES.po
-  dapper/pmount by mark: po/ca.po
-  dapper/pmount by mark: po/de.po
-  dapper/pmount by mark: po/cs.po
-  dapper/pmount by mark: po/es.po
-  dapper/pmount by mark: po/fr.po
-  dapper/pmount by mark: po/hr.po
-  dapper/pmount by mark: po/nb.po
-  dapper/pmount by mark: po/pmount.pot
-  dapper/pmount by mark: po/it_IT.po
+  dapper/pmount by ubuntu-team: po/es_ES.po
+  dapper/pmount by ubuntu-team: po/ca.po
+  dapper/pmount by ubuntu-team: po/de.po
+  dapper/pmount by ubuntu-team: po/cs.po
+  dapper/pmount by ubuntu-team: po/es.po
+  dapper/pmount by ubuntu-team: po/fr.po
+  dapper/pmount by ubuntu-team: po/hr.po
+  dapper/pmount by ubuntu-team: po/nb.po
+  dapper/pmount by ubuntu-team: po/pmount.pot
+  dapper/pmount by ubuntu-team: po/it_IT.po
 
   # Let's abort the transaction so we can check the same upload in a different
   # pocket.
@@ -240,16 +240,16 @@ As we can see from the translation import queue content.
   ...     print '%s/%s by %s: %s' % (
   ...         entry.distroseries.name, entry.sourcepackagename.name,
   ...         entry.importer.name, entry.path)
-  dapper/pmount by mark: po/es_ES.po
-  dapper/pmount by mark: po/ca.po
-  dapper/pmount by mark: po/de.po
-  dapper/pmount by mark: po/cs.po
-  dapper/pmount by mark: po/es.po
-  dapper/pmount by mark: po/fr.po
-  dapper/pmount by mark: po/hr.po
-  dapper/pmount by mark: po/nb.po
-  dapper/pmount by mark: po/pmount.pot
-  dapper/pmount by mark: po/it_IT.po
+  dapper/pmount by ubuntu-team: po/es_ES.po
+  dapper/pmount by ubuntu-team: po/ca.po
+  dapper/pmount by ubuntu-team: po/de.po
+  dapper/pmount by ubuntu-team: po/cs.po
+  dapper/pmount by ubuntu-team: po/es.po
+  dapper/pmount by ubuntu-team: po/fr.po
+  dapper/pmount by ubuntu-team: po/hr.po
+  dapper/pmount by ubuntu-team: po/nb.po
+  dapper/pmount by ubuntu-team: po/pmount.pot
+  dapper/pmount by ubuntu-team: po/it_IT.po
 
   # Let's abort the transaction so we can check the same upload in a different
   # component.

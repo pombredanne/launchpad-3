@@ -109,7 +109,7 @@ class TestDistributionCurrentSourceReleases(
         distribution.newSeries(
             name='bar', displayname='Bar', title='Bar', summary='',
             description='', version='1', parent_series=None,
-            owner=self.factory.makePerson())
+            registrant=self.factory.makePerson())
         self.assertNotIn("series", cache)
 
         # New cached value.
