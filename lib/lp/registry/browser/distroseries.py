@@ -488,9 +488,9 @@ class DistroSeriesAddView(LaunchpadFormView):
     @action(_('Create Series'), name='create')
     def createAndAdd(self, action, data):
         """Create and add a new Distribution Series"""
-        owner = getUtility(ILaunchBag).user
+        registrant = getUtility(ILaunchBag).user
 
-        assert owner is not None
+        assert registrant is not None
         distroseries = self.context.newSeries(
             name=data['name'],
             displayname=data['displayname'],
@@ -499,7 +499,7 @@ class DistroSeriesAddView(LaunchpadFormView):
             description=data['description'],
             version=data['version'],
             parent_series=data['parent_series'],
-            owner=owner)
+            registrant=registrant)
         notify(ObjectCreatedEvent(distroseries))
         self.next_url = canonical_url(distroseries)
         return distroseries
