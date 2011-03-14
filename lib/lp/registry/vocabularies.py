@@ -1500,7 +1500,11 @@ class DistroSeriesDerivationVocabularyFactory:
 
     def __init__(self, context):
         """See `IVocabularyFactory.__call__`."""
-        self.context = context
+        if IDistroSeries.providedBy(context):
+            self.distribution = context.distribution
+        else:
+            assert IDistribution.providedBy(context)
+            self.distribution = context
 
     def find_terms(self, *where):
         """Return a `tuple` of terms matching the given criteria.
@@ -1525,19 +1529,18 @@ class DistroSeriesDerivationVocabularyFactory:
 
         The order is the same as for `DistroSeriesVocabulary`.
         """
-        distribution = IDistribution(self.context)
         parent = ClassAlias(DistroSeries, "parent")
         child = ClassAlias(DistroSeries, "child")
         parent_distributions = Select(
             parent.distributionID, And(
-                parent.distributionID != distribution.id,
-                child.distributionID == distribution.id,
+                parent.distributionID != self.distribution.id,
+                child.distributionID == self.distribution.id,
                 child.parent_seriesID == parent.id))
         terms = self.find_terms(
             DistroSeries.distributionID.is_in(parent_distributions))
         if len(terms) == 0:
             terms = self.find_terms(
-                DistroSeries.distribution != distribution)
+                DistroSeries.distribution != self.distribution)
         return terms
 
     @cachedproperty
