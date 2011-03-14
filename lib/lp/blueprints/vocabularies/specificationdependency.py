@@ -75,7 +75,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
         """
         if ISpecification(spec, None) is None:
             return False
-        return spec != self.context and spec not in self.context.all_blocked
+        return spec != self.context and spec not in set(self.context.all_blocked)
 
     def _order_by(self):
         """Look at the context to provide grouping."""
@@ -94,7 +94,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
             order_statements.append(
                 "(CASE Specification.distribution WHEN %s THEN 0 ELSE 1 END)" %
                 spec.distribution.id)
-            if spec.productseries is not None:
+            if spec.distroseries is not None:
                 order_statements.append(
                     "(CASE Specification.distroseries"
                     " WHEN %s THEN 0 ELSE 1 END)" %

@@ -671,6 +671,9 @@ class Specification(SQLBase, BugLinkTargetMixin):
         spec_branch = self.getBranchLink(branch)
         spec_branch.destroySelf()
 
+    def __repr__(self):
+        return '<Specification %r for %r>' % (self.name, self.target.name)
+
 
 class HasSpecificationsMixin:
     """A mixin class that implements many of the common shortcut properties
