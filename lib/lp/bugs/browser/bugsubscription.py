@@ -545,6 +545,147 @@ class SubscriptionAttrDecorator:
     def css_name(self):
         return 'subscriber-%s' % self.subscription.person.id
 
+# These are the descriptions strings of what might be the cause of you getting
+# an email.
+
+_BECAUSE_YOU_ARE = 'You receive emails about this bug because you are '
+# These are components for team participation.
+_OF_TEAM = 'of the team $(team)s. That team is '
+_OF_TEAMS = 'of the teams $(teams)s.  Those teams are '
+_BECAUSE_TEAM_IS = _BECAUSE_YOU_ARE + 'a member ' + _OF_TEAM
+_ADMIN_BECAUSE_TEAM_IS = (
+    _BECAUSE_YOU_ARE + 'a member and administrator ' + _OF_TEAM)
+_BECAUSE_TEAMS_ARE = _BECAUSE_YOU_ARE + 'a member ' + _OF_TEAMS
+_ADMIN_BECAUSE_TEAMS_ARE = (
+    _BECAUSE_YOU_ARE + 'a member and administrator ' + _OF_TEAMS)
+    
+# These are the assignment variations.
+# These are components.
+_ASSIGNED = 'assigned to work on it.'
+# These are the actual strings to use.
+YOU_ASSIGNED = _BECAUSE_YOU_ARE + _ASSIGNED
+TEAM_ASSIGNED = _BECAUSE_TEAM_IS + _ASSIGNED
+ADMIN_TEAM_ASSIGNED = _ADMIN_BECAUSE_TEAM_IS + _ASSIGNED
+TEAMS_ASSIGNED = _BECAUSE_TEAMS_ARE + _ASSIGNED
+ADMIN_TEAMS_ASSIGNED = _ADMIN_BECAUSE_TEAMS_ARE + _ASSIGNED
+
+# These are the direct subscription variations.
+# First we have the string components.
+_SUBSCRIBED = 'directly subscribed to it.'
+_MAY_HAVE_BEEN_CREATED = ' This subscription may have been created '
+# Now these are the actual options we use.
+YOU_SUBSCRIBED = _BECAUSE_YOU_ARE + _SUBSCRIBED
+YOU_REPORTED = (YOU_SUBSCRIBED + _MAY_HAVE_BEEN_CREATED +
+                'when you reported the bug.')
+YOU_SUBSCRIBED_BUG_SUPERVISOR = (
+    YOU_SUBSCRIBED + _MAY_HAVE_BEEN_CREATED +
+    'because the bug was private and you are a bug supervisor.')
+YOU_SUBSCRIBED_SECURITY_CONTACT = (
+    YOU_SUBSCRIBED + _MAY_HAVE_BEEN_CREATED +
+    'because the bug was security related and you are a security contact.')
+TEAM_SUBSCRIBED = _BECAUSE_TEAM_IS + _SUBSCRIBED
+ADMIN_TEAM_SUBSCRIBED = _ADMIN_BECAUSE_TEAM_IS + _SUBSCRIBED
+TEAMS_SUBSCRIBED = _BECAUSE_TEAMS_ARE + _SUBSCRIBED
+ADMIN_TEAMS_SUBSCRIBED = _ADMIN_BECAUSE_TEAMS_ARE + _SUBSCRIBED
+
+# These are the duplicate bug variations.
+_SUBSCRIBED_TO_DUPLICATE = (
+    'a direct subscriber to bug #$(dupe_bug_id)s, which is marked as a '
+    'duplicate of this bug, #$(bug_id)s')
+_SUBSCRIBED_TO_PRIMARY = (
+    'a direct subscriber to bug #$(primary_bug_id)s, of which this bug, '
+    '#$(bug_id)s, is marked a duplicate.')
+# These are the actual strings to use.
+YOU_SUBSCRIBED_TO_DUPLICATE = _BECAUSE_YOU_ARE + _SUBSCRIBED_TO_DUPLICATE
+YOU_SUBSCRIBED_TO_PRIMARY = _BECAUSE_YOU_ARE + _SUBSCRIBED_TO_PRIMARY
+TEAM_SUBSCRIBED_TO_DUPLICATE = _BECAUSE_TEAM_IS + _SUBSCRIBED_TO_DUPLICATE
+ADMIN_TEAM_SUBSCRIBED_TO_DUPLICATE = (
+    _ADMIN_BECAUSE_TEAM_IS + _SUBSCRIBED_TO_DUPLICATE)
+TEAMS_SUBSCRIBED_TO_DUPLICATE = _BECAUSE_TEAMS_ARE + _SUBSCRIBED_TO_DUPLICATE
+ADMIN_TEAMS_SUBSCRIBED_TO_DUPLICATE = (
+    _ADMIN_BECAUSE_TEAMS_ARE + _SUBSCRIBED_TO_DUPLICATE)
+TEAM_SUBSCRIBED_TO_PRIMARY = _BECAUSE_TEAM_IS + _SUBSCRIBED_TO_PRIMARY
+ADMIN_TEAM_SUBSCRIBED_TO_PRIMARY = (
+    _ADMIN_BECAUSE_TEAM_IS + _SUBSCRIBED_TO_PRIMARY)
+TEAMS_SUBSCRIBED_TO_PRIMARY = _BECAUSE_TEAMS_ARE + _SUBSCRIBED_TO_PRIMARY
+ADMIN_TEAMS_SUBSCRIBED_TO_PRIMARY = (
+    _ADMIN_BECAUSE_TEAMS_ARE + _SUBSCRIBED_TO_PRIMARY)
+
+# These are the owner variations.
+_OWNER = ("the owner of the $(pillar_type) "
+          "<a href='$(pillar_url)'>$(pillar_name)</a>, which has no bug "
+          "supervisor."
+YOU_OWNER = _BECAUSE_YOU_ARE + _OWNER
+TEAM_OWNER = _BECAUSE_TEAM_IS + _OWNER
+ADMIN_TEAM_OWNER = _ADMIN_BECAUSE_TEAM_IS + _OWNER
+TEAMS_OWNER = _BECAUSE_TEAMS_ARE + _OWNER
+
+# That's 27 options.
+# Also: "You are not subscribed to this bug." or similar.
+# Also: "You have muted all email from this bug."
+
+# Actions for a person
+# "Control the email you receive about bug #XXXX"
+MUTE_ACTION = ( # Always present.
+    ('title', "Mute all email from bug #$(bug_id)s"),
+    ('description', "You will receive no further email about the bug."))
+CHANGE_SUBSCRIPTION_ACTION = ( # If you are subscribed directly.
+    ('title', 'Change your subscription to bug #$(bug_id)s'),
+    ('description', 'Change which events will trigger an email.'))
+UNSUBSCRIBE_ACTION = ( # If you are subscribed directly.
+    # WARNING: IF THIS IS A PRIVATE BUG, YOU ARE TAKING AWAY THE PRIVILEGES
+    # TO SEE THE BUG. XXX
+    ('title', 'Unsubscribe from bug #$(bug_id)s'),
+    ('description', "You will no longer receive email about this bug."))
+REPORTER_UNSUBSCRIBE_ACTION = ( # If you are subscribed directly and reporter.
+    # WARNING: IF THIS IS A PRIVATE BUG, YOU ARE TAKING AWAY THE PRIVILEGES
+    # TO SEE THE BUG. XXX
+    ('title', 'Unsubscribe from bug #$(bug_id)s'),
+    ('description', "You will no longer receive email about this bug. It "
+                    "will still show in the list of bugs you've reported."))
+MUTE_COMMENTS_ACTION = ( # If you are not subscribed directly
+    ('title', 'Mute emails from bug #$(bug_id)s that only contain comments.'),
+    ('description', 'Add a direct subscription to the bug that limits the '
+                    'emails you receive about it.'))
+MUTE_ALL_BUT_CLOSE_ACTION = ( # If you are not subscribed directly
+    ('title': 'Mute all emails from bug #$(bug_id)s except when it closes.'),
+    ('description', 'Add a direct subscription to the bug that limits the '
+                    'emails you receive about it.'))
+"""
+
+
+  * Unsubscribe from duplicate — subscribed from duplicate
+
+    * ACTION: Unsubscribe from bug #XXXX
+
+    * DESCRIPTION: You subscribed to a bug that was later marked as a duplicate of another bug. You will receive no further email about this bug but you'll still receive email about the other bug.
+
+GROUP "Control the email you and others receive about bug #XXXX"
+
+  * Unsubscribe team from the bug — indirectly through team as team admin
+
+    * ACTION: Unsubscribe $TEAM from bug #XXX
+
+    * DESCRIPTION: This team will no longer receive email about this bug. This will not affect individual subscriptions made by team members.
+
+  * Unsubscribe team from the duplicate — admin of a team subscribed to the duplicate
+
+    * ACTION: Unsubscribe $TEAM from bug #XXXX
+
+    * DESCRIPTION: You subscribed this team to a bug that was later marked as a duplicate of another bug. The team will receive no further email about this bug but will still receive email about the other bug.
+
+  * Change team subscription level — indirectly through team as team admin
+
+    * ACTION: Change $TEAM's subscription to bug #XXXX
+
+    * DESCRIPTION: Change which events will trigger an email to this team.
+
+  * Set the bug supervisor — no bug supervisor, you are the product owner
+
+    * ACTION: Set $PROJECT's bug supervisor
+
+    * DESCRIPTION: Choose an individual or team who will manage bug reports for this project.
+"""
 
 class BugSubscriptionListView(LaunchpadView):
     """A view to show all a person's subscriptions to a bug."""
@@ -563,71 +704,6 @@ class BugSubscriptionListView(LaunchpadView):
                     self.user))
             self.subscriptions_info = PersonSubscriptions(
                 self.user, self.context.bug)
+            self.
         else:
-            self.subscriptions_info = None
-
-    def _getSupervisedTargets(self):
-        owned = self.subscriptions_info.supervisor_subscriptions.owner_for
-        supervised = (
-            self.subscriptions_info.supervisor_subscriptions.supervisor_for)
-        if owned is None:
-            owned = set()
-        if supervised is None:
-            supervised = set()
-        all_targets = list(owned.union(supervised))
-        target_names = [
-            target.displayname for target in all_targets]
-        target_names = sorted(target_names)
-        if len(target_names) > 1:
-            text = ", ".join(target_names[:-1]) + " and " + target_names[-1]
-        else:
-            text = target_names[0]
-        return text
-
-    def _getDuplicates(self):
-        duplicates = list(
-            self.subscriptions_info.duplicate_subscriptions.duplicates)
-        dupe_names = [
-            "#%d" % dupe.id for dupe in duplicates]
-        dupe_names = sorted(dupe_names)
-        if len(dupe_names) > 1:
-            text = ", ".join(dupe_names[:-1]) + " and " + dupe_names[-1]
-        else:
-            text = dupe_names[0]
-        return text
-
-    @property
-    def description(self):
-        """Describes all subscriptions that exist in English."""
-        if self.subscriptions_info is None:
-            return u"ERROR: Not logged in"
-        has_direct = (
-            self.subscriptions_info.direct_subscriptions is not None)
-        personally = (
-            self.subscriptions_info.direct_subscriptions.personally)
-        has_duplicate = (
-            self.subscriptions_info.duplicate_subscriptions is not None)
-        has_supervisor = (
-            self.subscriptions_info.supervisor_subscriptions is not None)
-
-        if has_direct and has_duplicate and has_supervisor:
-            if personally:
-                return (
-                    "You are subscribed to this bug directly. "
-                    "However, you are also the bug supervisor for "
-                    "%(supervised_targets)s and have subscriptions "
-                    "on duplicate bugs %(duplicate_bugs)s." % (
-                        {"supervised_targets": self._getSupervisedTargets(),
-                         "duplicate_bugs": self._getDuplicates(),
-                         }))
-            else:
-                return (
-                    "You are subscribed to this bug through team membership. "
-                    "However, you are also the bug supervisor for "
-                    "%(supervised_targets)s and have subscriptions "
-                    "on duplicate bugs %(duplicate_bugs)s." % (
-                        {"supervised_targets": self._getSupervisedTargets(),
-                         "duplicate_bugs": self._getDuplicates(),
-                         }))
-        else:
-            return None
+            self.subscriptions_info = self.structural_subscriptions = None
