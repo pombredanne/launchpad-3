@@ -205,6 +205,14 @@ class TestDistroSeries(TestCaseWithFactory):
             distroseries.getDistroArchSeriesByProcessor(
                 processorfamily.processors[0]))
 
+    def test_registrant_owner_differ(self):
+        # The registrant is the creator whereas the owner is the distribution's
+        # owner
+        registrant = self.factory.makePerson()
+        distroseries = self.factory.makeDistroRelease(registrant=registrant)
+        self.assertEquals(distroseries.distribution.owner, distroseries.owner)
+        self.assertEquals(registrant, distroseries.registrant)
+        self.assertNotEqual(distroseries.registrant, distroseries.owner)
 
 class TestDistroSeriesPackaging(TestCaseWithFactory):
 
