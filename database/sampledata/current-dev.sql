@@ -840,6 +840,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE account DISABLE TRIGGER ALL;
@@ -9913,6 +9916,15 @@ ALTER TABLE projectrelationship DISABLE TRIGGER ALL;
 
 
 ALTER TABLE projectrelationship ENABLE TRIGGER ALL;
+
+
+ALTER TABLE publisherconfig DISABLE TRIGGER ALL;
+
+INSERT INTO publisherconfig (id, distribution, root_dir, base_url, copy_base_url) VALUES (1, 1, '/var/tmp/archive/', 'http://archive.launchpad.dev/', 'http://rebuild-test.internal/');
+INSERT INTO publisherconfig (id, distribution, root_dir, base_url, copy_base_url) VALUES (2, 8, '/var/tmp/archive/', 'http://archive.launchpad.dev/', 'http://rebuild-test.internal/');
+
+
+ALTER TABLE publisherconfig ENABLE TRIGGER ALL;
 
 
 ALTER TABLE pushmirroraccess DISABLE TRIGGER ALL;
