@@ -33,7 +33,7 @@ class TestDistributionPage(TestCaseWithFactory):
         self.simple_user = self.factory.makePerson()
 
     def test_distributionpage_addseries_link(self):
-        """ Verify that an admin sees the +addseries link."""
+        # An admin sees the +addseries link.
         self.admin = login_celebrity('admin')
         view = create_initialized_view(
             self.distro, '+index', principal=self.admin)
@@ -50,9 +50,8 @@ class TestDistributionPage(TestCaseWithFactory):
         self.assertThat(view.render(), series_matches)
 
     def test_distributionpage_addseries_link_noadmin(self):
-        """Verify that a non-admin does not see the +addseries link
-        nor the series header (since there is no series yet).
-        """
+        # A non-admin does not see the +addseries link nor the series
+        # header (since there is no series yet).
         login_person(self.simple_user)
         view = create_initialized_view(
             self.distro, '+index', principal=self.simple_user)
@@ -71,9 +70,7 @@ class TestDistributionPage(TestCaseWithFactory):
             Not(MatchesAny(add_series_match, series_header_match)))
 
     def test_distributionpage_series_list_noadmin(self):
-        """Verify that a non-admin does see the series list
-        when there is a series.
-        """
+        # A non-admin does see the series list when there is a series.
         series = self.factory.makeDistroSeries(distribution=self.distro,
             status=SeriesStatus.CURRENT)
         login_person(self.simple_user)
