@@ -238,11 +238,6 @@
         factory="lp.registry.adapters.distroseries_to_distribution"
         permission="zope.Public"/>
     <adapter
-        provides="lp.registry.interfaces.distribution.IDistribution"
-        for="lp.registry.interfaces.distroseries.IDistroSeries"
-        factory="lp.registry.adapters.distroseries_to_distribution"
-        permission="zope.Public"/>
-    <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         factory="lp.registry.browser.distroseries.DistroSeriesBreadcrumb"
@@ -1426,11 +1421,6 @@
         permission="zope.Public"/>
     <adapter
         provides="lp.app.interfaces.launchpad.ILaunchpadUsage"
-        for="lp.registry.interfaces.productseries.IProductSeries"
-        factory="lp.registry.adapters.productseries_to_product"
-        permission="zope.Public"/>
-    <adapter
-        provides="lp.registry.interfaces.product.IProduct"
         for="lp.registry.interfaces.productseries.IProductSeries"
         factory="lp.registry.adapters.productseries_to_product"
         permission="zope.Public"/>
