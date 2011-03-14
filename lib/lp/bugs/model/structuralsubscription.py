@@ -383,7 +383,7 @@ class StructuralSubscriptionTargetMixin:
                 subscriber=subscriber,
                 subscribed_by=subscribed_by,
                 **self._target_args)
-            subscription_filter = new_subscription.newBugFilter()
+            new_subscription.newBugFilter()
             return new_subscription
 
     def userCanAlterBugSubscription(self, subscriber, subscribed_by):
@@ -414,6 +414,26 @@ class StructuralSubscriptionTargetMixin:
                     subscribed_by.name, subscriber.name))
 
         return self.addSubscription(subscriber, subscribed_by)
+
+    def addBugSubscriptionFilter(self, subscriber, subscribed_by):
+        """See `IStructuralSubscriptionTarget`."""
+        if not self.userCanAlterBugSubscription(subscriber, subscribed_by):
+            raise UserCannotSubscribePerson(
+                '%s does not have permission to subscribe %s' % (
+                    subscribed_by.name, subscriber.name))
+
+        subscription = self.getSubscription(subscriber)
+        if subscription is None:
+            # No subscription exists for this target for the subscriber so
+            # create a new one.
+            subscription = self.addSubscription(subscriber, subscribed_by)
+            # Newly created subscriptions automatically get a subscription
+            # filter, this is the new filter being requested so return it.
+            return subscription.bug_filters[0]
+        else:
+            # Since the subscription already exists, we need a new filter to
+            # return.
+            return subscription.newBugFilter()
 
     def removeBugSubscription(self, subscriber, unsubscribed_by):
         """See `IStructuralSubscriptionTarget`."""
