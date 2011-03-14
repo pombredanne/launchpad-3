@@ -9,7 +9,7 @@ from canonical.launchpad.testing.pages import (
     )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
-    DatabaseFunctionalLayer,  
+    DatabaseFunctionalLayer,
     )
 from lp.app.enums import ServiceUsage
 from lp.testing import (
@@ -27,11 +27,12 @@ from lp.translations.interfaces.translations import (
 
 class ConfigureUpstreamProjectMixin:
     """Provide a method for project configuration."""
-    
+
     def configureUpstreamProject(self, productseries,
             set_upstream_branch=False, enable_translations=False,
             translation_import_mode=TranslationsBranchImportMode.NO_IMPORT):
-        """Configure the productseries and its product as an upstream project."""
+        """Configure the productseries and its product as an upstream project.
+        """
         with person_logged_in(productseries.product.owner):
             if set_upstream_branch:
                 productseries.branch = self.factory.makeBranch(
@@ -373,7 +374,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
 
     def test_potlist_only_upstream(self):
         # A template that is only present in upstream is called
-        # "only in upstream". 
+        # "only in upstream".
         packaging = self.factory.makePackagingLink(in_ubuntu=True)
         productseries = packaging.productseries
         sourcepackage = packaging.sourcepackage

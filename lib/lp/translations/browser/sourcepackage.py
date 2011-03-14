@@ -196,7 +196,6 @@ class SourcePackageTranslationSharingDetailsView(
             for template in upstream_templates:
                 if template.name in info:
                     info[template.name]['upstream_template'] = template
-                    # xxxxxxxx this could also be 'linking' instead of 'shared'
                     info[template.name]['status'] = 'shared'
                 else:
                     info[template.name] = {
