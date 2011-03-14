@@ -75,7 +75,7 @@
           </ul>
         </dd>
       </dl>
-      <table class="sortable listing">
+      <table class="sortable listing" id="template-table">
         <thead>
           <tr>
             <th class="name_column" rowspan="2">Template name</th>
@@ -95,12 +95,15 @@
           <tr tal:repeat="info view/template_info">
             <td class="name_column">
               <a tal:content="info/name"
-                 tal:attributes="href info/package_template/fmt:url">gimp20</a></td>
+                 tal:attributes="href info/package_template/fmt:url"
+                 tal:omit-tag="not:info/package_template">gimp20</a></td>
             <td class="state_column" tal:content="info/status">sharing</td>
-            <td class="length_ubuntu_column"
-                tal:content="info/package_template/messagecount">82</td>
-            <td class="updated_ubuntu_column"
-                tal:content="info/package_template/date_last_updated/fmt:approximatedate">2011-02-28</td>
+            <td class="length_ubuntu_column">
+                <tal:content tal:condition="info/package_template"
+                             tal:content="info/package_template/messagecount">82</tal:content></td>
+            <td class="updated_ubuntu_column">
+                <tal:content tal:condition="info/package_template"
+                             tal:content="info/package_template/date_last_updated/fmt:approximatedate">2 minutes ago</tal:content></td>
             <td class="length_upstream_column">
                 <tal:content tal:condition="info/upstream_template"
                              tal:content="info/upstream_template/messagecount">85</tal:content></td>
