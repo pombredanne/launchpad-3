@@ -2160,9 +2160,10 @@ class IPersonSet(Interface):
         This schedules a call to `merge()` to happen outside of the current
         context/request. The intention is that it is called soon after this
         method is called but there is no guarantee of that, nor is that call
-        guaranteed to succeed.
+        guaranteed to succeed. If either user is in a pending person merge
+        job, None is returned.
 
-        :return: A `PersonMergeJob`.
+        :return: A `PersonMergeJob` or None.
         """
 
     def merge(from_person, to_person):

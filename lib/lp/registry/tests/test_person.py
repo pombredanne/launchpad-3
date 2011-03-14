@@ -300,6 +300,17 @@ class TestPerson(TestCaseWithFactory):
         self.assertEqual(from_person, job.from_person)
         self.assertEqual(to_person, job.to_person)
 
+    def test_mergeAsync_job_already_exists(self):
+        # mergeAsync returns None if either the of the persons are already
+        # in a pending merge job.
+        from_person = self.factory.makePerson()
+        to_person = self.factory.makePerson()
+        first_job = getUtility(IPersonSet).mergeAsync(from_person, to_person)
+        second_job = getUtility(IPersonSet).mergeAsync(from_person, to_person)
+        third_job = getUtility(IPersonSet).mergeAsync(to_person, from_person)
+        self.assertEqual(None, second_job)
+        self.assertEqual(None, third_job)
+
     def test_selfgenerated_bugnotifications_none_by_default(self):
         # Default for new accounts is to not get any
         # self-generated bug notifications by default.
