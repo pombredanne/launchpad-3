@@ -67,7 +67,7 @@ class POSTToNonCanonicalURL(UnexpectedFormData):
 
 @error_status(401)
 class UserCannotUnsubscribePerson(Unauthorized):
-    """User does not have persmisson to unsubscribe person or team."""
+    """User does not have permission to unsubscribe person or team."""
 
 
 # Slam a 401 response code onto all ForbiddenAttribute errors.

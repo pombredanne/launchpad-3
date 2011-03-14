@@ -339,7 +339,7 @@ class TestErrorHandling(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_add_bugtask_for_project_that_already_has_one_gives_bad_request(self):
+    def test_add_duplicate_bugtask_for_project_gives_bad_request(self):
         bug = self.factory.makeBug()
         product = self.factory.makeProduct()
         bugtask = self.factory.makeBugTask(bug=bug, target=product)
@@ -356,7 +356,7 @@ class TestErrorHandling(TestCaseWithFactory):
         slave_bugtask = self.factory.makeBugTask(target=product)
         master_bugtask = self.factory.makeBugTask(
             bug=slave_bugtask.bug, target=product.development_focus)
-        self.assertNotEquals(slave_bugtask.conjoined_master, None)
+        self.assertNotEquals(None, slave_bugtask.conjoined_master)
 
         # Try to edit the slave bugtask through the web service.
         launchpad = launchpadlib_for('test', slave_bugtask.bug.owner)

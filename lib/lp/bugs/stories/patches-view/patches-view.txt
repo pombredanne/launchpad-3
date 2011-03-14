@@ -218,9 +218,6 @@ Bugs in a product series show up in the patches view for that series.
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> hoary = ubuntu.getSeries('hoary')
     >>> spph = factory.makeSourcePackagePublishingHistory(
-    ...     sourcepackagename=factory.getOrMakeSourcePackageName('evoltuion'),
-    ...     distroseries=hoary)
-    >>> spph = factory.makeSourcePackagePublishingHistory(
     ...     sourcepackagename=factory.getOrMakeSourcePackageName('a52dec'),
     ...     distroseries=hoary)
     >>> logout()
