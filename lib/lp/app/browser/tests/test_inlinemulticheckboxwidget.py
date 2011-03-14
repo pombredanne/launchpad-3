@@ -27,11 +27,13 @@ class Alphabet(EnumeratedType):
     A = Item("A", "Letter A")
     B = Item("B", "Letter B")
 
+
 class TestInlineMultiCheckboxWidget(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def getWidget(self, **kwargs):
+
         class ITest(Interface):
             test_field = List(
                 Choice(vocabulary='BuildableDistroSeries'))

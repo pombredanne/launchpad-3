@@ -21,11 +21,11 @@
         <ul tal:condition="items">
               <li tal:condition="view/linkify_items"
                   tal:repeat="item items"
-                  tal:content="structure item/fmt:link" />
-    
+                  tal:content="structure item/fmt:link"/>
+
               <li tal:condition="not:view/linkify_items"
                   tal:repeat="item items"
-                  tal:content="structure item" />
+                  tal:content="structure item"/>
         </ul>
     <tal:items-close-tag replace="structure view/items_close_tag"/>
   </span>

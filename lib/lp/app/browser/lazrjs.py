@@ -392,7 +392,7 @@ class InlineMultiCheckboxWidget(WidgetBase):
                 'value': save_value}
             items.append(new_item)
         self.has_choices = len(items)
-            
+
         # JSON encoded attributes.
         self.json_content_box_id = simplejson.dumps(self.content_box_id)
         self.json_attribute = simplejson.dumps(self.api_attribute)
@@ -411,7 +411,7 @@ class InlineMultiCheckboxWidget(WidgetBase):
     def json_config(self):
         return simplejson.dumps(self.config)
 
-    
+
 def vocabulary_to_choice_edit_items(
     vocab, css_class_prefix=None, disabled_items=None, as_json=False,
     name_fn=None, value_fn=None):
