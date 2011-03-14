@@ -580,13 +580,10 @@ packaged translation anymore.
     ...              '+source/evolution/+pots/evolution-2.2/es/5/+translate')
     >>> packaged = find_tag_by_id(browser.contents, 'msgset_134_other')
 
-XXX: 2011-01-25 henninge, bug=707825: This should either display nothing or
-a string like "(no translation)". This documents the current behavior although
-it would be different if the translation had been properly reset. Also the
-wording here ("packaged") needs to be adapted.
+Also, the page now displays a "(not translated yet)" message.
 
     >>> print extract_text(packaged)
-    In upstream:
+    In upstream: (not translated yet)
 
 
 Shared and diverged translations
