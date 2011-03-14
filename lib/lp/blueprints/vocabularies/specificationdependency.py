@@ -11,13 +11,12 @@ __all__ = [
 
 from operator import attrgetter
 
-from storm.locals import Select, SQL
+from storm.locals import Not, SQL, Store
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
 
-from canonical.database.sqlbase import quote_like
-from canonical.launchpad.helpers import shortlist
+from canonical.database.sqlbase import quote
 from canonical.launchpad.webapp import (
     canonical_url,
     urlparse,
@@ -28,9 +27,11 @@ from canonical.launchpad.webapp.vocabulary import (
     NamedSQLObjectVocabulary,
     SQLObjectVocabularyBase,
     )
-
-from lp.blueprints.enums import SpecificationFilter
-from lp.blueprints.model.specification import Specification
+from lp.blueprints.interfaces.specification import ISpecification
+from lp.blueprints.model.specification import (
+    recursive_blocked_query,
+    Specification,
+    )
 from lp.registry.interfaces.pillar import IPillarNameSet
 
 
@@ -66,13 +67,13 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
 
         Invalid candidates are:
 
-         * None
+         * Anything not a specification
          * The spec that we're adding a depdency to
          * Specs that depend on this one
 
         Preventing the last category prevents loops in the dependency graph.
         """
-        if spec is None:
+        if ISpecification(spec, None) is None:
             return False
         return spec != self.context and spec not in self.context.all_blocked
 
@@ -104,9 +105,8 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
 
     def _blocked_subselect(self):
         """Return the select statement to exclude already blocked specs."""
-        return Select(
-            SQL("Specification.id not in (%s select id from dependencies)"
-                % self.context._recursive_dependent_query()))
+        return SQL("Specification.id not in (WITH %s select id from blocked)"
+                   % recursive_blocked_query(self.context))
 
     def toTerm(self, obj):
         if obj.target == self.context.target:
@@ -166,25 +166,16 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
         spec = self._spec_from_url(query)
         if self._is_valid_candidate(spec):
             return CountableIterator(1, [spec])
-        quoted_query = quote_like(query)
-        sql_query = ("""
-            (Specification.name LIKE %s OR
-             Specification.title LIKE %s OR
-             fti @@ ftq(%s))
-            """
-            % (quoted_query, quoted_query, quoted_query))
-        all_specs = Specification.select(sql_query, orderBy=self._orderBy)
-        candidate_specs = self._filter_specs(all_specs, check_target=True)
-        return CountableIterator(len(candidate_specs), candidate_specs)
 
-    @property
-    def _all_specs(self):
-        return self.context.target.specifications(
-            filter=[SpecificationFilter.ALL], prejoin_people=False)
+        return Store.of(self.context).find(
+            Specification,
+            SQL('Specification.fti @@ ftq(%s)' % quote(query)),
+            self._blocked_subselect(),
+            ).order_by(self._order_by())
 
     def __iter__(self):
-        return (
-            self.toTerm(spec) for spec in self._filter_specs(self._all_specs))
+        # We don't ever want to iterate over everything.
+        raise NotImplementedError()
 
     def __contains__(self, obj):
         return self._is_valid_candidate(obj)
