@@ -7,9 +7,9 @@ SET client_min_messages=ERROR;
 ALTER TABLE Distribution
     ADD COLUMN registrant integer REFERENCES Person;
 
--- Set registrant to ~registry for existing distros.
+-- Set registrant to owner for existing distros.
 update Distribution
-    SET registrant = (select id from Person where name='registry');
+    SET registrant = owner;
 
 -- Add NOT NULL constraint to registrant column.
 ALTER TABLE Distribution ALTER COLUMN registrant SET NOT NULL;
