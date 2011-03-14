@@ -1,0 +1,22 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_side"
+>
+<body>
+<metal:block fill-slot="head_epilogue">
+    <script type="text/javascript">
+      LPS.use('test', 'console', 'lp.translations.translation_sharing_config', function(Y) {
+        Y.on('domready', function() {
+          Y.lp.translations.translation_sharing_config.prepare()
+        });
+      })
+  </script>
+  </metal:block>
+  <metal:block fill-slot="main">
+    <a href="#pickbranch" id="pickbranch">Pick a branch</a>
+  </metal:block>
+  </body>
+</html>
