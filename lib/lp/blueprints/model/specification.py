@@ -612,9 +612,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
     def _recursive_dependent_query(self):
         return """
             RECURSIVE dependencies(id) AS (
-                SELECT s.id
-                FROM specification s
-                WHERE s.id = %s
+                SELECT %s
             UNION
                 SELECT s.id
                 FROM specificationdependency sd, dependencies d, specification s
@@ -634,9 +632,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
     def _recursive_blocked_query(self):
         return """
             RECURSIVE blocked(id) AS (
-                SELECT s.id
-                FROM specification s
-                WHERE s.id = %s
+                SELECT %s
             UNION
                 SELECT s.id
                 FROM specificationdependency sd, blocked b, specification s
