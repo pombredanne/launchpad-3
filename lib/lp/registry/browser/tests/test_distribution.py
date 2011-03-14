@@ -4,9 +4,14 @@
 
 __metaclass__ = type
 
+import soupmatchers
+from testtools.matchers import (
+    MatchesAny,
+    Not,
+    )
+
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
-
 from lp.registry.interfaces.series import SeriesStatus
 from lp.testing import (
     login_celebrity,
@@ -14,11 +19,6 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.views import create_initialized_view
-
-from testtools.matchers import MatchesAny
-from testtools.matchers import Not
-
-import soupmatchers
 
 
 class TestDistributionPage(TestCaseWithFactory):
