@@ -63,7 +63,8 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         vocabulary = self.vocabulary_factory(distroseries)
         expected_distroseries = (
-            set(self.all_distroseries) - set(distroseries.distribution))
+            set(self.all_distroseries).difference(
+                distroseries.distribution.series))
         observed_distroseries = set(term.value for term in vocabulary)
         self.assertEqual(expected_distroseries, observed_distroseries)
 
@@ -78,7 +79,7 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries(
             parent_series=parent_distroseries)
         vocabulary = self.vocabulary_factory(distroseries)
-        expected_distroseries = set(parent_distroseries.distribution)
+        expected_distroseries = set(parent_distroseries.distribution.series)
         observed_distroseries = set(term.value for term in vocabulary)
         self.assertEqual(expected_distroseries, observed_distroseries)
 
@@ -93,7 +94,8 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
             parent_series=parent_distroseries)
         vocabulary = self.vocabulary_factory(distroseries)
         expected_distroseries = (
-            set(self.all_distroseries) - set(distroseries.distribution))
+            set(self.all_distroseries).difference(
+                distroseries.distribution.series))
         observed_distroseries = set(term.value for term in vocabulary)
         self.assertEqual(expected_distroseries, observed_distroseries)
 
@@ -103,7 +105,8 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         vocabulary = self.vocabulary_factory(distroseries)
         expected_distroseries = (
-            set(self.all_distroseries) - set(distroseries.distribution))
+            set(self.all_distroseries).difference(
+                distroseries.distribution.series))
         observed_distroseries = set(term.value for term in vocabulary)
         self.assertEqual(expected_distroseries, observed_distroseries)
 
