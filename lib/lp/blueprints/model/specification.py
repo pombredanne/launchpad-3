@@ -638,7 +638,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
             SQL(recursive_dependent_query(self))).find(
             Specification,
             Specification.id != self.id,
-            SQL('Specification.id in (select id from dependencies)'))
+            SQL('Specification.id in (select id from dependencies)')
+            ).order_by(Specification.name, Specification.id)
 
     @property
     def all_blocked(self):
@@ -647,7 +648,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
             SQL(recursive_blocked_query(self))).find(
             Specification,
             Specification.id != self.id,
-            SQL('Specification.id in (select id from blocked)'))
+            SQL('Specification.id in (select id from blocked)')
+            ).order_by(Specification.name, Specification.id)
 
     # branches
     def getBranchLink(self, branch):

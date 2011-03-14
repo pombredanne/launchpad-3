@@ -281,12 +281,12 @@ block-them-too.
     >>> canvas = efourx.blocked_specs[0]
     >>> svg = efourx.dependencies[0]
     >>> for spec in svg.all_blocked: print spec.name
-    e4x
     canvas
+    e4x
 
     >>> for spec in canvas.all_deps: print spec.name
-    svg-support
     e4x
+    svg-support
 
 
 Dependency mapping - `ISpecificationSet.getDependencyDict`
