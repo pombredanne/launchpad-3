@@ -284,13 +284,13 @@ class TestPerson(TestCaseWithFactory):
         self.assertFalse(person.is_merge_pending)
 
     def test_merge_pending(self):
-        # is_merge_pending returns True when this person is the "from" person
-        # of an active merge job.
+        # is_merge_pending returns True when this person is being merged with
+        # another person in an active merge job.
         from_person = self.factory.makePerson()
         to_person = self.factory.makePerson()
         getUtility(IPersonSet).mergeAsync(from_person, to_person)
         self.assertTrue(from_person.is_merge_pending)
-        self.assertFalse(to_person.is_merge_pending)
+        self.assertTrue(to_person.is_merge_pending)
 
     def test_selfgenerated_bugnotifications_none_by_default(self):
         # Default for new accounts is to not get any

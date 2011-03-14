@@ -2138,7 +2138,8 @@ class Person(
     def is_merge_pending(self):
         """See `IPublicPerson`."""
         return not getUtility(
-            IPersonMergeJobSource).find(from_person=self).is_empty()
+            IPersonMergeJobSource).find(
+                from_person=self, to_person=self, any_person=True).is_empty()
 
     def visibilityConsistencyWarning(self, new_value):
         """Warning used when changing the team's visibility.
