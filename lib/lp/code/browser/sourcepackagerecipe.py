@@ -315,7 +315,8 @@ class SourcePackageRecipeView(LaunchpadView):
             label_tag="dt",
             header="Change default distribution series:",
             empty_display_value="None",
-            selected_items=sorted(list(self.context.distroseries)),
+            selected_items=sorted(
+                self.context.distroseries, key=lambda ds: ds.displayname),
             items_tag="dd",
             )
 
@@ -326,7 +327,8 @@ def distroseries_renderer(context, field, request):
     """Render a distroseries collection as a set of links."""
 
     def render(value):
-        distroseries = sorted(context.distroseries)
+        distroseries = sorted(
+            context.distroseries, key=lambda ds: ds.displayname)
         if not distroseries:
             return 'None'
         html = "<ul>"
@@ -377,7 +379,7 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
 
         The distroseries function as defaults for requesting a build.
         """
-        initial_values = {'distroseries': self.context.distroseries}
+        initial_values = {'distros': self.context.distroseries}
         build = self.context.last_build
         if build is not None:
             initial_values['archive'] = build.archive
