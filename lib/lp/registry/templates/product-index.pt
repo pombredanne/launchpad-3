@@ -35,10 +35,12 @@
     <script type="text/javascript">
         LPS.use('lp.registry.structural_subscription', function(Y) {
             module = Y.lp.registry.structural_subscription;
-            Y.on('domready',
-                 module.setup({content_box: "#structural-subscription-content-box"}))
+            Y.on('domready', function() {
+              module.setup({content_box: "#structural-subscription-content-box"});
+            });
         });
     </script>
+    <!-- Commented out to stop JS from breaking.
     <script type="text/javascript"
             tal:content="string:
       LPS.use('lp.registry.pillar', function(Y) {
@@ -49,6 +51,7 @@
               window);
           });
         "></script>
+    -->
   </tal:head-epilogue>
 </head>
 
