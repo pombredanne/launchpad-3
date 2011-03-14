@@ -113,6 +113,18 @@ class TestPersonMergeJob(TestCaseWithFactory):
         self.assertEqual(
             [], self.find(from_person=self.to_person))
 
+    def test_find_any_person(self):
+        # find() any_person looks for merge jobs with either from_person
+        # or to_person is true when both are specified.
+        self.assertEqual(
+            [self.job], self.find(
+                from_person=self.to_person, to_person=self.to_person,
+                any_person=True))
+        self.assertEqual(
+            [self.job], self.find(
+                from_person=self.from_person, to_person=self.from_person,
+                any_person=True))
+
     def test_find_only_pending_or_running(self):
         # find() only returns jobs that are pending.
         for status in JobStatus.items:

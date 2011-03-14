@@ -11,7 +11,10 @@ __all__ = [
 
 from lazr.delegates import delegates
 import simplejson
-from storm.expr import And
+from storm.expr import (
+    And,
+    Or,
+    )
 from storm.locals import (
     Int,
     Reference,
@@ -342,18 +345,22 @@ class PersonMergeJob(PersonTransferJobDerived):
             minor_person=from_person, major_person=to_person, metadata={})
 
     @classmethod
-    def find(cls, from_person=None, to_person=None):
+    def find(cls, from_person=None, to_person=None, any_person=False):
         """See `IPersonMergeJobSource`."""
         conditions = [
             PersonTransferJob.job_type == cls.class_job_type,
             PersonTransferJob.job_id == Job.id,
             Job._status.is_in(Job.PENDING_STATUSES)]
+        arg_conditions = []
         if from_person is not None:
-            conditions.append(
+            arg_conditions.append(
                 PersonTransferJob.minor_person == from_person)
         if to_person is not None:
-            conditions.append(
+            arg_conditions.append(
                 PersonTransferJob.major_person == to_person)
+        if any_person and from_person is not None and to_person is not None:
+            arg_conditions = [Or(*arg_conditions)]
+        conditions.extend(arg_conditions)
         return DecoratedResultSet(
             IStore(PersonTransferJob).find(
                 PersonTransferJob, *conditions), cls)
