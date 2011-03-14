@@ -29,7 +29,6 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
-from lp.archivepublisher.debversion import Version
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
@@ -154,14 +153,19 @@ class DistroSeriesDifference(Storm):
     def base_source_pub(self):
         """See `IDistroSeriesDifference`."""
         if self.base_version is not None:
-            pubs = self.derived_series.main_archive.getPublishedSources(
+            parent = self.derived_series.parent_series
+            pubs = parent.main_archive.getPublishedSources(
                 name=self.source_package_name.name,
                 version=self.base_version,
-                distroseries=self.derived_series)
-            # We know there is a base version published in the distroseries'
-            # main archive.
+                distroseries=parent)
+            if pubs.count() == 0:
+                # If the base version isn't in the parent, it may be
+                # published in the child distroseries.
+                pubs = self.derived_series.main_archive.getPublishedSources(
+                    name=self.source_package_name.name,
+                    version=self.base_version,
+                    distroseries=self.derived_series)
             return pubs.first()
-
         return None
 
     @property

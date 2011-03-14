@@ -132,7 +132,8 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
         ISourcePackagePublishingHistory,
         title=_("Base source pub"), readonly=True,
         description=_(
-            "The common base version published in the derived series."))
+            "The common base version published in the parent or the "
+            "derived series."))
 
     owner = Reference(
         IPerson, title=_("Owning team of the derived series"), readonly=True,
