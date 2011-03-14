@@ -51,28 +51,20 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
     def test_interfaces(self):
         # DistroSeriesDerivationVocabularyFactory instances provide
         # IVocabulary and IVocabularyTokenized.
-        distribution = self.factory.makeDistribution()
-        vocabulary = self.vocabulary_factory(distribution)
+        distroseries = self.factory.makeDistroSeries()
+        vocabulary = self.vocabulary_factory(distroseries)
         self.assertProvides(vocabulary, IVocabulary)
         self.assertProvides(vocabulary, IVocabularyTokenized)
-
-    def test_distribution_without_series(self):
-        # Given a distribution without any series, the vocabulary factory
-        # returns a vocabulary for all distroseries in all distributions.
-        distribution = self.factory.makeDistribution()
-        vocabulary = self.vocabulary_factory(distribution)
-        expected_distroseries = set(self.all_distroseries)
-        observed_distroseries = set(term.value for term in vocabulary)
-        self.assertEqual(expected_distroseries, observed_distroseries)
 
     def test_distribution_with_non_derived_series(self):
         # Given a distribution with series, none of which are derived, the
         # vocabulary factory returns a vocabulary for all distroseries in all
         # distributions *except* the given distribution.
         distroseries = self.factory.makeDistroSeries()
-        vocabulary = self.vocabulary_factory(distroseries.distribution)
+        vocabulary = self.vocabulary_factory(distroseries)
         expected_distroseries = (
-            set(self.all_distroseries) - set(distroseries.distribution))
+            set(self.all_distroseries).difference(
+                distroseries.distribution.series))
         observed_distroseries = set(term.value for term in vocabulary)
         self.assertEqual(expected_distroseries, observed_distroseries)
 
@@ -81,10 +73,13 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
         # the vocabulary factory returns a vocabulary for all distroseries of
         # the distribution from which the derived series have been derived.
         parent_distroseries = self.factory.makeDistroSeries()
+        # Create a sibling to the parent.
+        self.factory.makeDistroSeries(
+            distribution=parent_distroseries.distribution)
         distroseries = self.factory.makeDistroSeries(
             parent_series=parent_distroseries)
-        vocabulary = self.vocabulary_factory(distroseries.distribution)
-        expected_distroseries = set(parent_distroseries.distribution)
+        vocabulary = self.vocabulary_factory(distroseries)
+        expected_distroseries = set(parent_distroseries.distribution.series)
         observed_distroseries = set(term.value for term in vocabulary)
         self.assertEqual(expected_distroseries, observed_distroseries)
 
@@ -97,9 +92,10 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries(
             distribution=parent_distroseries.distribution,
             parent_series=parent_distroseries)
-        vocabulary = self.vocabulary_factory(distroseries.distribution)
+        vocabulary = self.vocabulary_factory(distroseries)
         expected_distroseries = (
-            set(self.all_distroseries) - set(distroseries.distribution))
+            set(self.all_distroseries).difference(
+                distroseries.distribution.series))
         observed_distroseries = set(term.value for term in vocabulary)
         self.assertEqual(expected_distroseries, observed_distroseries)
 
@@ -109,7 +105,8 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         vocabulary = self.vocabulary_factory(distroseries)
         expected_distroseries = (
-            set(self.all_distroseries) - set(distroseries.distribution))
+            set(self.all_distroseries).difference(
+                distroseries.distribution.series))
         observed_distroseries = set(term.value for term in vocabulary)
         self.assertEqual(expected_distroseries, observed_distroseries)
 
@@ -137,8 +134,9 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
         removeSecurityProxy(bbb_series_newer).date_created = two_days_ago
 
         ccc = self.factory.makeDistribution(displayname="ccc")
+        ccc_series = self.factory.makeDistroSeries(distribution=ccc)
 
-        vocabulary = self.vocabulary_factory(ccc)
+        vocabulary = self.vocabulary_factory(ccc_series)
         expected_distroseries = [
             aaa_series_newer, aaa_series_older,
             bbb_series_newer, bbb_series_older]
@@ -151,41 +149,35 @@ class TestDistroSeriesDerivationVocabularyFactory(TestCaseWithFactory):
             if series in expected_distroseries]
         self.assertEqual(expected_distroseries, observed_distroseries)
 
-    def test_queries_for_distribution_without_series(self):
-        for index in range(10):
-            self.factory.makeDistroSeries()
-        distribution = self.factory.makeDistribution()
-        flush_database_caches()
-        # Getting terms issues two queries: one for the distribution's
-        # serieses and a second for all serieses.
-        with StormStatementRecorder() as recorder:
-            self.vocabulary_factory(distribution).terms
-            self.assertThat(recorder, HasQueryCount(Equals(2)))
-
     def test_queries_for_distribution_with_non_derived_series(self):
         for index in range(10):
             self.factory.makeDistroSeries()
         distribution = self.factory.makeDistribution()
-        self.factory.makeDistroSeries(distribution=distribution)
+        distroseries = self.factory.makeDistroSeries(
+            distribution=distribution)
         flush_database_caches()
-        # Getting terms issues two queries: one for the distribution's
-        # serieses, a second to search for parent serieses (of which there are
-        # none) and a third for all serieses.
+        # Reload distroseries and distribution; these will reasonably already
+        # be loaded before using the vocabulary.
+        distroseries.distribution
+        # Getting terms issues two queries: one to search for parent serieses
+        # (of which there are none) and a second for all serieses.
         with StormStatementRecorder() as recorder:
-            self.vocabulary_factory(distribution).terms
-            self.assertThat(recorder, HasQueryCount(Equals(3)))
+            self.vocabulary_factory(distroseries).terms
+            self.assertThat(recorder, HasQueryCount(Equals(2)))
 
     def test_queries_for_distribution_with_derived_series(self):
         for index in range(10):
             self.factory.makeDistroSeries()
         distribution = self.factory.makeDistribution()
         parent_distroseries = self.factory.makeDistroSeries()
-        self.factory.makeDistroSeries(
+        distroseries = self.factory.makeDistroSeries(
             parent_series=parent_distroseries,
             distribution=distribution)
         flush_database_caches()
-        # Getting terms issues two queries: one for the distribution's
-        # serieses and a second to find parent serieses.
+        # Reload distroseries and distribution; these will reasonably already
+        # be loaded before using the vocabulary.
+        distroseries.distribution
+        # Getting terms issues one query to find parent serieses.
         with StormStatementRecorder() as recorder:
-            self.vocabulary_factory(distribution).terms
-            self.assertThat(recorder, HasQueryCount(Equals(2)))
+            self.vocabulary_factory(distroseries).terms
+            self.assertThat(recorder, HasQueryCount(Equals(1)))

@@ -25,13 +25,7 @@ class TestAdapters(TestCaseWithFactory):
         distro_series = self.factory.makeDistroSeries()
         distribution = distroseries_to_distribution(distro_series)
         self.assertTrue(IDistribution.providedBy(distribution))
-
-    def test_distroseries_to_distribution_adapter(self):
-        # distroseries_to_distribution() is registered as an adapter from
-        # IDistroSeries to IDistribution.
-        distro_series = self.factory.makeDistroSeries()
-        distribution = IDistribution(distro_series)
-        self.assertTrue(IDistribution.providedBy(distribution))
+        self.assertEqual(distribution, distro_series.distribution)
 
     def test_productseries_to_product(self):
         # productseries_to_product() returns an IProduct given an
@@ -39,10 +33,4 @@ class TestAdapters(TestCaseWithFactory):
         product_series = self.factory.makeProductSeries()
         product = productseries_to_product(product_series)
         self.assertTrue(IProduct.providedBy(product))
-
-    def test_productseries_to_product_adapter(self):
-        # productseries_to_product() is registered as an adapter from
-        # IProductSeries to IProduct.
-        product_series = self.factory.makeProductSeries()
-        product = IProduct(product_series)
-        self.assertTrue(IProduct.providedBy(product))
+        self.assertEqual(product, product_series.product)

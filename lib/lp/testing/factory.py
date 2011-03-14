@@ -3964,7 +3964,9 @@ class LaunchpadObjectFactory:
             return attr
 
     def __dir__(self):
-        """Let interactive users know what can be created."""
+        """Enumerate the attributes and methods of the wrapped object factory.
+
+        This is especially useful for interactive users."""
         return dir(self._factory)
 
 

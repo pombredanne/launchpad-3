@@ -6,8 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'distroseries_to_launchpadusage',
-    'distroseries_to_serviceusage',
+    'distroseries_to_distribution',
     'PollSubset',
     'productseries_to_product',
     ]
