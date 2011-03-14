@@ -974,9 +974,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
             description=_("Private teams are visible only to "
                           "their members.")))
 
-    is_merge_pending = Bool(
-        title=_("Is this person due to be merged into another?"),
-        required=False, default=False)
+    is_merge_pending = exported(Bool(
+        title=_("Is this person due to be merged with another?"),
+        required=False, default=False))
 
     @invariant
     def personCannotHaveIcon(person):
