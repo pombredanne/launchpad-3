@@ -5,14 +5,20 @@
 
 __metaclass__ = type
 
+from lazr.lifecycle.snapshot import Snapshot
+import soupmatchers
+from testtools.matchers import (
+    MatchesAny,
+    Not,
+    )
+from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
-
-from lazr.lifecycle.snapshot import Snapshot
-
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.person import IPersonSet
@@ -25,18 +31,10 @@ from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease,
     )
 from lp.testing import (
-    TestCaseWithFactory,
     login_person,
+    TestCaseWithFactory,
     )
 from lp.testing.views import create_initialized_view
-
-from testtools.matchers import MatchesAny
-from testtools.matchers import Not
-
-import soupmatchers
-
-from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 
 class TestDistribution(TestCaseWithFactory):

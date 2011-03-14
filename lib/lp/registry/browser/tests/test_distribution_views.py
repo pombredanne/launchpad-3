@@ -105,9 +105,8 @@ class TestDistroAddView(TestCaseWithFactory):
         self.simple_user = self.factory.makePerson()
 
     def test_registrant_set_by_creation(self):
-        """The registrant field should be set to the Person creating
-        the distribution.
-        """
+        # The registrant field should be set to the Person creating
+        # the distribution.
         admin = login_celebrity('admin')
         distributionset = getUtility(IDistributionSet)
         creation_form = {
@@ -140,7 +139,7 @@ class TestDistroReassignView(TestCaseWithFactory):
         self.simple_user = self.factory.makePerson()
 
     def test_reassign_distro_change_owner_not_registrant(self):
-        """Reassigning a distribution should not change the registrant."""
+        # Reassigning a distribution should not change the registrant.
         admin = login_celebrity('admin')
         distribution = self.factory.makeDistribution(
             name="boobuntu", owner=self.owner, registrant=self.registrant)
@@ -156,7 +155,7 @@ class TestDistroReassignView(TestCaseWithFactory):
         self.assertEqual(distribution.registrant, self.registrant)
 
     def test_reassign_distro_page_title(self):
-        """Reassign should say maintainer instead of owner."""
+        # Reassign should say maintainer instead of owner.
         admin = login_celebrity('admin')
         distribution = self.factory.makeDistribution(
             name="boobuntu", owner=self.owner, registrant=self.registrant)
