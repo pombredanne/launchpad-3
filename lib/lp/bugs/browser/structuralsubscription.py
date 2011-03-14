@@ -372,11 +372,12 @@ def expose_user_administered_teams_to_js(request, user,
     """Make the list of teams the user adminsters available to JavaScript."""
     info = []
     api_request = IWebServiceClientRequest(request)
-    for team in user.getAdministratedTeams():
-        info.append({
-            'link': absoluteURL(team, api_request),
-            'title': team.title,
-        })
+    if user is not None:
+        for team in user.getAdministratedTeams():
+            info.append({
+                'link': absoluteURL(team, api_request),
+                'title': team.title,
+            })
     IJSONRequestCache(request).objects['administratedTeams'] = info
 
 
