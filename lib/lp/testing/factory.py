@@ -3817,7 +3817,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         return getUtility(ITemporaryStorageManager).fetch(new_uuid)
 
-    def makeLaunchpadService(self, person=None, version=None):
+    def makeLaunchpadService(self, person=None, version="devel"):
         if person is None:
             person = self.makePerson()
         from canonical.testing import BaseLayer
