@@ -321,7 +321,8 @@ class SourcePackageRecipeView(LaunchpadView):
             )
 
 
-@component.adapter(ISourcePackageRecipe, ICollection, IWebServiceClientRequest)
+@component.adapter(ISourcePackageRecipe, ICollection,
+                   IWebServiceClientRequest)
 @implementer(IFieldHTMLRenderer)
 def distroseries_renderer(context, field, request):
     """Render a distroseries collection as a set of links."""
@@ -333,11 +334,11 @@ def distroseries_renderer(context, field, request):
             return 'None'
         html = "<ul>"
         html += ''.join(
-            ["<li>%s</li>" % format_link(series) for series in distroseries]
-        )
+            ["<li>%s</li>" % format_link(series) for series in distroseries])
         html += "</ul>"
         return html
     return render
+
 
 def builds_for_recipe(recipe):
         """A list of interesting builds.
@@ -782,8 +783,8 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
             source_package_recipe = self.error_handler(
                 getUtility(ISourcePackageRecipeSource).new,
                 self.user, owner, data['name'],
-                data['recipe_text'], data['description'], data['distroseries'],
-                ppa, data['build_daily'])
+                data['recipe_text'], data['description'],
+                data['distroseries'], ppa, data['build_daily'])
             Store.of(source_package_recipe).flush()
         except ErrorHandled:
             return

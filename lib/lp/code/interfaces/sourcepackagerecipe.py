@@ -213,7 +213,8 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
         readonly=True))
     build_daily = exported(Bool(
         title=_("Built daily"),
-        description=_("Automatically build each day, if the source has changed.")))
+        description=_("Automatically build each day, if the source has "
+            "changed.")))
 
     name = exported(TextLine(
             title=_("Name"), required=True,
@@ -237,6 +238,7 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
     @operation_for_version("devel")
     def updateSeries(distroseries):
         """Replace this recipe's distro series."""
+
 
 class ISourcePackageRecipe(ISourcePackageRecipeData,
     ISourcePackageRecipeEdit, ISourcePackageRecipeEditableAttributes,

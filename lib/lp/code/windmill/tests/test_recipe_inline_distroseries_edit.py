@@ -60,4 +60,3 @@ class TestRecipeEdit(WindmillTestCase):
         client.asserts.assertTextIn(
             jquery=u"('#edit-distroseries-items ul li a')[0]",
             validator=u'Hoary')
-
