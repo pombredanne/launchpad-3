@@ -2723,10 +2723,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         """Return data used to render the milestone checkboxes."""
         return self.getWidgetValues("Milestone")
 
-    def getAdvancedSearchPageHeading(self):
-        """The header for the advanced search page."""
-        return "Bugs in %s: Advanced search" % self.context.displayname
-
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
         return canonical_url(self.context) + "/+bugs"

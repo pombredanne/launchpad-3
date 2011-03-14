@@ -114,6 +114,33 @@ class TestMessageSet(unittest.TestCase):
         transaction.commit()
         self.assertEqual('This is the diff, honest.', diff.blob.read())
 
+    def test_fromEmail_strips_attachment_paths(self):
+        # Build a simple multipart message with a plain text first part
+        # and an text/x-diff attachment.
+        sender = self.factory.makePerson()
+        msg = MIMEMultipart()
+        msg['Message-Id'] = make_msgid('launchpad')
+        msg['Date'] = formatdate()
+        msg['To'] = 'to@example.com'
+        msg['From'] = sender.preferredemail.email
+        msg['Subject'] = 'Sample'
+        msg.attach(MIMEText('This is the body of the email.'))
+        attachment = Message()
+        attachment.set_payload('This is the diff, honest.')
+        attachment['Content-Type'] = 'text/x-diff'
+        attachment['Content-Disposition'] = (
+            'attachment; filename="/tmp/foo/review.diff"')
+        msg.attach(attachment)
+        # Now create the message from the MessageSet.
+        message = MessageSet().fromEmail(msg.as_string())
+        text, diff = message.chunks
+        self.assertEqual('This is the body of the email.', text.content)
+        self.assertEqual('review.diff', diff.blob.filename)
+        self.assertEqual('text/x-diff', diff.blob.mimetype)
+        # Need to commit in order to read back out of the librarian.
+        transaction.commit()
+        self.assertEqual('This is the diff, honest.', diff.blob.read())
+
 
 class TestMessageJob(TestCaseWithFactory):
     """Tests for MessageJob."""

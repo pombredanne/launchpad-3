@@ -16,10 +16,22 @@ HERE:=$(shell pwd)
 
 LPCONFIG?=development
 
-JSFLAGS=
 ICING=lib/canonical/launchpad/icing
 LP_BUILT_JS_ROOT=${ICING}/build
 LAZR_BUILT_JS_ROOT=lazr-js/build
+
+ifeq ($(LPCONFIG), development)
+JS_BUILD := debug
+else
+JS_BUILD := min
+endif
+
+JS_YUI := $(shell utilities/yui-deps.py $(JS_BUILD))
+JS_LAZR := $(LAZR_BUILT_JS_ROOT)/lazr.js
+JS_OTHER := $(wildcard lib/canonical/launchpad/javascript/*/*.js)
+JS_LP := $(shell find lib/lp/*/javascript ! -path '*/tests/*' -name '*.js')
+JS_ALL := $(JS_YUI) $(JS_LAZR) $(JS_OTHER) $(JS_LP)
+JS_OUT := $(LP_BUILT_JS_ROOT)/launchpad.js
 
 MINS_TO_SHUTDOWN=15
 
@@ -76,14 +88,6 @@ doc:
 	$(MAKE) -C doc/ html
 
 # Run by PQM.
-check_merge: $(BUILDOUT_BIN)
-	[ `PYTHONPATH= bzr status -S database/schema/ | \
-		grep -v "\(^P\|pending\|security.cfg\|Makefile\|unautovacuumable\|_pythonpath.py\)" | wc -l` -eq 0 ]
-	${PY} lib/lp/tests/test_no_conflict_marker.py
-
-check_db_merge: $(PY)
-	${PY} lib/lp/tests/test_no_conflict_marker.py
-
 check_config: build
 	bin/test -m canonical.config.tests -vvt test_config
 
@@ -163,18 +167,21 @@ sprite_image:
 # launchpad.js roll-up files.  They fiddle with built-in functions!
 # See Bug 482340.
 jsbuild_lazr: bin/jsbuild
-	${SHHH} bin/jsbuild $(JSFLAGS) -b $(LAZR_BUILT_JS_ROOT) -x testing/ \
-	-c $(LAZR_BUILT_JS_ROOT)/yui
-
-jsbuild: jsbuild_lazr bin/jsbuild bin/jssize $(BUILDOUT_BIN)
 	${SHHH} bin/jsbuild \
-		$(JSFLAGS) \
-		-n launchpad \
-		-s lib/canonical/launchpad/javascript \
-		-b $(LP_BUILT_JS_ROOT) \
-		$(shell $(HERE)/utilities/yui-deps.py) \
-		$(shell $(PY) $(HERE)/utilities/lp-deps.py) \
-		lib/canonical/launchpad/icing/lazr/build/lazr.js
+	    --builddir $(LAZR_BUILT_JS_ROOT) \
+	    --exclude testing/ --filetype $(JS_BUILD) \
+	    --copy-yui-to $(LAZR_BUILT_JS_ROOT)/yui
+
+$(JS_YUI) $(JS_LAZR): jsbuild_lazr
+
+$(JS_OUT): $(JS_ALL)
+ifeq ($(JS_BUILD), min)
+	cat $^ | $(PY) -m jsmin > $@
+else
+	cat $^ > $@
+endif
+
+jsbuild: $(JS_OUT)
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
@@ -351,7 +358,7 @@ rebuildfti:
 	$(PY) database/schema/fti.py -d launchpad_dev --force
 
 clean_js:
-	$(RM) $(LP_BUILT_JS_ROOT)/launchpad.js
+	$(RM) $(JS_OUT)
 	$(RM) -r $(LAZR_BUILT_JS_ROOT)
 
 clean_buildout:
@@ -380,7 +387,7 @@ clean: clean_js clean_buildout clean_logs
 	    -name '*.pt.py' \) \
 	    -print0 | xargs -r0 $(RM)
 	$(RM) -r lib/mailman
-	$(RM) -rf lib/canonical/launchpad/icing/build/*
+	$(RM) -rf $(LP_BUILT_JS_ROOT)/*
 	$(RM) -rf $(CODEHOSTING_ROOT)
 	$(RM) -rf $(APIDOC_DIR)
 	$(RM) -rf $(APIDOC_DIR).tmp
@@ -467,8 +474,8 @@ pydoctor:
 
 .PHONY: apidoc buildout_bin check doc tags TAGS zcmldocs realclean clean debug \
 	stop start run ftest_build ftest_inplace test_build test_inplace \
-	pagetests check check_merge schema default launchpad.pot \
-	check_merge_ui pull scan sync_branches reload-apache hosted_branches \
-	check_db_merge check_mailman check_config jsbuild jsbuild_lazr \
-	clean_js clean_buildout buildonce_eggs build_eggs sprite_css \
-	sprite_image css_combine compile check_schema pydoctor clean_logs \
+	pagetests check schema default launchpad.pot pull_branches \
+	scan_branches sync_branches reload-apache hosted_branches \
+	check_mailman check_config jsbuild jsbuild_lazr clean_js \
+	clean_buildout buildonce_eggs build_eggs sprite_css sprite_image \
+	css_combine compile check_schema pydoctor clean_logs \

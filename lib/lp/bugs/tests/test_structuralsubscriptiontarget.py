@@ -24,20 +24,19 @@ from canonical.launchpad.testing.systemdocs import (
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bug import CreateBugParams
-from lp.bugs.interfaces.bugtask import (
-    BugTaskImportance,
-    BugTaskStatus,
-    )
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
     IStructuralSubscriptionTargetHelper,
     )
-from lp.bugs.model.structuralsubscription import StructuralSubscription
+from lp.bugs.model.structuralsubscription import (
+    get_structural_subscriptions_for_target,
+    StructuralSubscription,
+    )
 from lp.bugs.tests.test_bugtarget import bugtarget_filebug
 from lp.registry.errors import (
     DeleteSubscriptionError,
@@ -51,8 +50,10 @@ from lp.testing import (
     login,
     login_celebrity,
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.factory import is_security_proxied_or_harmless
 from lp.testing.matchers import Provides
 
 
@@ -172,279 +173,6 @@ class UnrestrictedStructuralSubscriptionTestBase(
             None)
 
 
-class FilteredStructuralSubscriptionTestBase:
-    """Tests for filtered structural subscriptions."""
-
-    layer = LaunchpadFunctionalLayer
-
-    def makeTarget(self):
-        raise NotImplementedError(self.makeTarget)
-
-    def makeBugTask(self):
-        return self.factory.makeBugTask(target=self.target)
-
-    def setUp(self):
-        super(FilteredStructuralSubscriptionTestBase, self).setUp()
-        self.ordinary_subscriber = self.factory.makePerson()
-        login_person(self.ordinary_subscriber)
-        self.target = self.makeTarget()
-        self.bugtask = self.makeBugTask()
-        self.bug = self.bugtask.bug
-        self.subscription = self.target.addSubscription(
-            self.ordinary_subscriber, self.ordinary_subscriber)
-        self.initial_filter = self.subscription.bug_filters[0]
-
-    def assertSubscriptions(
-        self, expected_subscriptions, level=BugNotificationLevel.NOTHING):
-        observed_subscriptions = list(
-            self.target.getSubscriptionsForBugTask(self.bugtask, level))
-        self.assertEqual(expected_subscriptions, observed_subscriptions)
-
-    def test_getSubscriptionsForBugTask(self):
-        # If no one has a filtered subscription for the given bug, the result
-        # of getSubscriptionsForBugTask() is the same as for
-        # getSubscriptions().
-        subscriptions = self.target.getSubscriptions()
-        self.assertSubscriptions(list(subscriptions))
-
-    def test_getSubscriptionsForBugTask_with_filter_on_status(self):
-        # If a status filter exists for a subscription, the result of
-        # getSubscriptionsForBugTask() may be a subset of getSubscriptions().
-
-        # Without any filters the subscription is found.
-        self.assertSubscriptions([self.subscription])
-
-        # Filter the subscription to bugs in the CONFIRMED state.
-        self.initial_filter.statuses = [BugTaskStatus.CONFIRMED]
-
-        # With the filter the subscription is not found.
-        self.assertSubscriptions([])
-
-        # If the filter is adjusted, the subscription is found again.
-        self.initial_filter.statuses = [self.bugtask.status]
-        self.assertSubscriptions([self.subscription])
-
-    def test_getSubscriptionsForBugTask_with_filter_on_importance(self):
-        # If an importance filter exists for a subscription, the result of
-        # getSubscriptionsForBugTask() may be a subset of getSubscriptions().
-
-        # Without any filters the subscription is found.
-        self.assertSubscriptions([self.subscription])
-
-        # Filter the subscription to bugs in the CRITICAL state.
-        self.initial_filter.importances = [BugTaskImportance.CRITICAL]
-
-        # With the filter the subscription is not found.
-        self.assertSubscriptions([])
-
-        # If the filter is adjusted, the subscription is found again.
-        self.initial_filter.importances = [self.bugtask.importance]
-        self.assertSubscriptions([self.subscription])
-
-    def test_getSubscriptionsForBugTask_with_filter_on_level(self):
-        # All structural subscriptions have a level for bug notifications
-        # which getSubscriptionsForBugTask() observes.
-
-        # Adjust the subscription level to METADATA.
-        self.initial_filter.bug_notification_level = (
-            BugNotificationLevel.METADATA)
-
-        # The subscription is found when looking for NOTHING or above.
-        self.assertSubscriptions(
-            [self.subscription], BugNotificationLevel.NOTHING)
-        # The subscription is found when looking for METADATA or above.
-        self.assertSubscriptions(
-            [self.subscription], BugNotificationLevel.METADATA)
-        # The subscription is not found when looking for COMMENTS or above.
-        self.assertSubscriptions(
-            [], BugNotificationLevel.COMMENTS)
-
-    def test_getSubscriptionsForBugTask_with_filter_include_any_tags(self):
-        # If a subscription filter has include_any_tags, a bug with one or
-        # more tags is matched.
-
-        self.initial_filter.include_any_tags = True
-
-        # Without any tags the subscription is not found.
-        self.assertSubscriptions([])
-
-        # With any tag the subscription is found.
-        self.bug.tags = ["foo"]
-        self.assertSubscriptions([self.subscription])
-
-    def test_getSubscriptionsForBugTask_with_filter_exclude_any_tags(self):
-        # If a subscription filter has exclude_any_tags, only bugs with no
-        # tags are matched.
-
-        self.initial_filter.exclude_any_tags = True
-
-        # Without any tags the subscription is found.
-        self.assertSubscriptions([self.subscription])
-
-        # With any tag the subscription is not found.
-        self.bug.tags = ["foo"]
-        self.assertSubscriptions([])
-
-    def test_getSubscriptionsForBugTask_with_filter_for_any_tag(self):
-        # If a subscription filter specifies that any of one or more specific
-        # tags must be present, bugs with any of those tags are matched.
-
-        # Looking for either the "foo" or the "bar" tag.
-        self.initial_filter.tags = [u"foo", u"bar"]
-        self.initial_filter.find_all_tags = False
-
-        # Without either tag the subscription is not found.
-        self.assertSubscriptions([])
-
-        # With either tag the subscription is found.
-        self.bug.tags = ["bar", "baz"]
-        self.assertSubscriptions([self.subscription])
-
-    def test_getSubscriptionsForBugTask_with_filter_for_all_tags(self):
-        # If a subscription filter specifies that all of one or more specific
-        # tags must be present, bugs with all of those tags are matched.
-
-        # Looking for both the "foo" and the "bar" tag.
-        self.initial_filter.tags = [u"foo", u"bar"]
-        self.initial_filter.find_all_tags = True
-
-        # Without either tag the subscription is not found.
-        self.assertSubscriptions([])
-
-        # Without only one of the required tags the subscription is not found.
-        self.bug.tags = ["foo"]
-        self.assertSubscriptions([])
-
-        # With both required tags the subscription is found.
-        self.bug.tags = ["foo", "bar"]
-        self.assertSubscriptions([self.subscription])
-
-    def test_getSubscriptionsForBugTask_with_filter_for_not_any_tag(self):
-        # If a subscription filter specifies that any of one or more specific
-        # tags must not be present, bugs without any of those tags are
-        # matched.
-
-        # Looking to exclude the "foo" or "bar" tags.
-        self.initial_filter.tags = [u"-foo", u"-bar"]
-        self.initial_filter.find_all_tags = False
-
-        # Without either tag the subscription is found.
-        self.assertSubscriptions([self.subscription])
-
-        # With both tags, the subscription is omitted.
-        self.bug.tags = ["foo", "bar"]
-        self.assertSubscriptions([])
-
-        # With only one tag, the subscription is found again.
-        self.bug.tags = ["foo"]
-        self.assertSubscriptions([self.subscription])
-
-        # However, if find_all_tags is True, even a single excluded tag
-        # causes the subscription to be skipped.
-        self.initial_filter.find_all_tags = True
-        self.assertSubscriptions([])
-
-        # This is also true, of course, if the bug has both tags.
-        self.bug.tags = ["foo", "bar"]
-        self.assertSubscriptions([])
-
-    def test_getSubscriptionsForBugTask_with_filter_for_not_all_tags(self):
-        # If a subscription filter specifies that all of one or more specific
-        # tags must not be present, bugs without all of those tags are
-        # matched.
-
-        # Looking to exclude the "foo" and "bar" tags.
-        self.initial_filter.tags = [u"-foo", u"-bar"]
-        self.initial_filter.find_all_tags = True
-
-        # Without either tag the subscription is found.
-        self.assertSubscriptions([self.subscription])
-
-        # With only one of the excluded tags the subscription is not
-        # found--we are saying that we want to find both an absence of foo
-        # and an absence of bar, and yet foo exists.
-        self.bug.tags = ["foo"]
-        self.assertSubscriptions([])
-
-        # With both tags the subscription is also not found.
-        self.bug.tags = ["foo", "bar"]
-        self.assertSubscriptions([])
-
-    def test_getSubscriptionsForBugTask_with_multiple_filters(self):
-        # If multiple filters exist for a subscription, all filters must
-        # match.
-
-        # Add the "foo" tag to the bug.
-        self.bug.tags = ["foo"]
-        self.assertSubscriptions([self.subscription])
-
-        # Filter the subscription to bugs in the CRITICAL state.
-        self.initial_filter.statuses = [BugTaskStatus.CONFIRMED]
-        self.initial_filter.importances = [BugTaskImportance.CRITICAL]
-
-        # With the filter the subscription is not found.
-        self.assertSubscriptions([])
-
-        # If the filter is adjusted to match status but not importance, the
-        # subscription is still not found.
-        self.initial_filter.statuses = [self.bugtask.status]
-        self.assertSubscriptions([])
-
-        # If the filter is adjusted to also match importance, the subscription
-        # is found again.
-        self.initial_filter.importances = [self.bugtask.importance]
-        self.assertSubscriptions([self.subscription])
-
-        # If the filter is given some tag criteria, the subscription is not
-        # found.
-        self.initial_filter.tags = [u"-foo", u"bar", u"baz"]
-        self.initial_filter.find_all_tags = False
-        self.assertSubscriptions([])
-
-        # After removing the "foo" tag and adding the "bar" tag, the
-        # subscription is found.
-        self.bug.tags = ["bar"]
-        self.assertSubscriptions([self.subscription])
-
-        # Requiring that all tag criteria are fulfilled causes the
-        # subscription to no longer be found.
-        self.initial_filter.find_all_tags = True
-        self.assertSubscriptions([])
-
-        # After adding the "baz" tag, the subscription is found again.
-        self.bug.tags = ["bar", "baz"]
-        self.assertSubscriptions([self.subscription])
-
-    def test_getSubscriptionsForBugTask_any_filter_is_a_match(self):
-        # If a subscription has multiple filters, the subscription is selected
-        # when any filter is found to match. Put another way, the filters are
-        # ORed together.
-        subscription_filter1 = self.initial_filter
-        subscription_filter1.statuses = [BugTaskStatus.CONFIRMED]
-        subscription_filter2 = self.subscription.newBugFilter()
-        subscription_filter2.tags = [u"foo"]
-
-        # With the filter the subscription is not found.
-        self.assertSubscriptions([])
-
-        # If the bugtask is adjusted to match the criteria of the first filter
-        # but not those of the second, the subscription is found.
-        self.bugtask.transitionToStatus(
-            BugTaskStatus.CONFIRMED, self.ordinary_subscriber)
-        self.assertSubscriptions([self.subscription])
-
-        # If the filter is adjusted to also match the criteria of the second
-        # filter, the subscription is still found.
-        self.bugtask.bug.tags = [u"foo"]
-        self.assertSubscriptions([self.subscription])
-
-        # If the bugtask is adjusted to no longer match the criteria of the
-        # first filter, the subscription is still found.
-        self.bugtask.transitionToStatus(
-            BugTaskStatus.INPROGRESS, self.ordinary_subscriber)
-        self.assertSubscriptions([self.subscription])
-
-
 class TestStructuralSubscriptionForDistro(
     RestrictedStructuralSubscriptionTestBase, TestCaseWithFactory):
 
@@ -509,13 +237,6 @@ class TestStructuralSubscriptionForDistro(
             StructuralSubscription)
 
 
-class TestStructuralSubscriptionFiltersForDistro(
-    FilteredStructuralSubscriptionTestBase, TestCaseWithFactory):
-
-    def makeTarget(self):
-        return self.factory.makeDistribution()
-
-
 class TestStructuralSubscriptionForProduct(
     UnrestrictedStructuralSubscriptionTestBase, TestCaseWithFactory):
 
@@ -524,13 +245,6 @@ class TestStructuralSubscriptionForProduct(
     def setUp(self):
         super(TestStructuralSubscriptionForProduct, self).setUp()
         self.target = self.factory.makeProduct()
-
-
-class TestStructuralSubscriptionFiltersForProduct(
-    FilteredStructuralSubscriptionTestBase, TestCaseWithFactory):
-
-    def makeTarget(self):
-        return self.factory.makeProduct()
 
 
 class TestStructuralSubscriptionForDistroSourcePackage(
@@ -544,13 +258,6 @@ class TestStructuralSubscriptionForDistroSourcePackage(
         self.target = ProxyFactory(self.target)
 
 
-class TestStructuralSubscriptionFiltersForDistroSourcePackage(
-    FilteredStructuralSubscriptionTestBase, TestCaseWithFactory):
-
-    def makeTarget(self):
-        return self.factory.makeDistributionSourcePackage()
-
-
 class TestStructuralSubscriptionForMilestone(
     UnrestrictedStructuralSubscriptionTestBase, TestCaseWithFactory):
 
@@ -560,17 +267,6 @@ class TestStructuralSubscriptionForMilestone(
         super(TestStructuralSubscriptionForMilestone, self).setUp()
         self.target = self.factory.makeMilestone()
         self.target = ProxyFactory(self.target)
-
-
-class TestStructuralSubscriptionFiltersForMilestone(
-    FilteredStructuralSubscriptionTestBase, TestCaseWithFactory):
-
-    def makeTarget(self):
-        return self.factory.makeMilestone()
-
-    def makeBugTask(self):
-        bug = self.factory.makeBug(milestone=self.target)
-        return bug.bugtasks[0]
 
 
 class TestStructuralSubscriptionForDistroSeries(
@@ -584,13 +280,6 @@ class TestStructuralSubscriptionForDistroSeries(
         self.target = ProxyFactory(self.target)
 
 
-class TestStructuralSubscriptionFiltersForDistroSeries(
-    FilteredStructuralSubscriptionTestBase, TestCaseWithFactory):
-
-    def makeTarget(self):
-        return self.factory.makeDistroSeries()
-
-
 class TestStructuralSubscriptionForProjectGroup(
     UnrestrictedStructuralSubscriptionTestBase, TestCaseWithFactory):
 
@@ -602,17 +291,6 @@ class TestStructuralSubscriptionForProjectGroup(
         self.target = ProxyFactory(self.target)
 
 
-class TestStructuralSubscriptionFiltersForProjectGroup(
-    FilteredStructuralSubscriptionTestBase, TestCaseWithFactory):
-
-    def makeTarget(self):
-        return self.factory.makeProject()
-
-    def makeBugTask(self):
-        return self.factory.makeBugTask(
-            target=self.factory.makeProduct(project=self.target))
-
-
 class TestStructuralSubscriptionForProductSeries(
     UnrestrictedStructuralSubscriptionTestBase, TestCaseWithFactory):
 
@@ -622,13 +300,6 @@ class TestStructuralSubscriptionForProductSeries(
         super(TestStructuralSubscriptionForProductSeries, self).setUp()
         self.target = self.factory.makeProductSeries()
         self.target = ProxyFactory(self.target)
-
-
-class TestStructuralSubscriptionFiltersForProductSeries(
-    FilteredStructuralSubscriptionTestBase, TestCaseWithFactory):
-
-    def makeTarget(self):
-        return self.factory.makeProductSeries()
 
 
 class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
@@ -759,6 +430,51 @@ class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
             u"StructuralSubscription.distribution = ? AND "
             u"StructuralSubscription.sourcepackagename IS NULL",
             compile_storm(helper.join))
+
+
+class TestGetAllStructuralSubscriptionsForTarget(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGetAllStructuralSubscriptionsForTarget, self).setUp()
+        self.subscriber = self.factory.makePerson()
+        self.team = self.factory.makeTeam(members=[self.subscriber])
+        login_person(self.subscriber)
+        self.product = self.factory.makeProduct()
+        self.milestone = self.factory.makeMilestone(product=self.product)
+
+    def getSubscriptions(self):
+        subscriptions = get_structural_subscriptions_for_target(
+            self.product, self.subscriber)
+        self.assertTrue(is_security_proxied_or_harmless(subscriptions))
+        return subscriptions
+
+    def test_no_subscriptions(self):
+        subscriptions = self.getSubscriptions()
+        self.assertEqual([], list(subscriptions))
+
+    def test_self_subscription(self):
+        sub = self.product.addBugSubscription(
+            self.subscriber, self.subscriber)
+        subscriptions = self.getSubscriptions()
+        self.assertEqual([sub], list(subscriptions))
+
+    def test_team_subscription(self):
+        with person_logged_in(self.team.teamowner):
+            sub = self.product.addBugSubscription(
+                self.team, self.team.teamowner)
+        subscriptions = self.getSubscriptions()
+        self.assertEqual([sub], list(subscriptions))
+
+    def test_both_subscriptions(self):
+        self_sub = self.product.addBugSubscription(
+            self.subscriber, self.subscriber)
+        with person_logged_in(self.team.teamowner):
+            team_sub = self.product.addBugSubscription(
+                self.team, self.team.teamowner)
+        subscriptions = self.getSubscriptions()
+        self.assertEqual(set([self_sub, team_sub]), set(subscriptions))
 
 
 def distributionSourcePackageSetUp(test):

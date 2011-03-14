@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'expose_enum_to_js',
     'expose_user_administered_teams_to_js',
     'expose_user_subscription_status_to_js',
     'expose_user_subscriptions_to_js',
@@ -371,11 +372,12 @@ def expose_user_administered_teams_to_js(request, user,
     """Make the list of teams the user adminsters available to JavaScript."""
     info = []
     api_request = IWebServiceClientRequest(request)
-    for team in user.getAdministratedTeams():
-        info.append({
-            'link': absoluteURL(team, api_request),
-            'title': team.title,
-        })
+    if user is not None:
+        for team in user.getAdministratedTeams():
+            info.append({
+                'link': absoluteURL(team, api_request),
+                'title': team.title,
+            })
     IJSONRequestCache(request).objects['administratedTeams'] = info
 
 
@@ -385,56 +387,27 @@ def expose_user_subscription_status_to_js(context, request, user):
         context.userHasBugSubscriptions(user))
 
 
-def get_user_subscriptions(user, bugtasks):
-    teams = user.getAdministratedTeams()
-    bugtaskset = getUtility(IBugTaskSet)
-    targets = [target for (bugtask, target)
-        in bugtaskset.getStructuralSubscriptionTargets(bugtasks)]
-
-    if len(targets) == 0:
-        return EmptyResultSet()
-
-    result = {}
-    for target in targets:
-        result.setdefault(target, []).extend(
-            list(removeSecurityProxy(target).getSubscriptions(user)))
-        for team in teams:
-            result[target].extend(
-                list(removeSecurityProxy(target).getSubscriptions(team)))
-
-    # The user may not have subscriptions to all of the targets, filter
-    # those out.
-    deletable = [target for target in result if len(result[target]) == 0]
-    for target in deletable:
-        del result[target]
-
-    def key((target, subscriptions)):
-        """Sort on the title of the target."""
-        return target.title
-
-    return sorted(result.items(), key=key)
-
-
-def expose_user_subscriptions_to_js(user, bugtasks, request):
+def expose_user_subscriptions_to_js(user, subscriptions, request):
     """Make the user's subscriptions available to JavaScript."""
-
-    info = []
+    info = {}
     api_request = IWebServiceClientRequest(request)
-    for target, subscriptions in get_user_subscriptions(user, bugtasks):
-        record = {}
-        record['target_title'] = target.title
-        record['target_url'] = absoluteURL(target, request)
-        record['filters'] = []
-        for subscription in subscriptions:
-            for filter in subscription.bug_filters:
-                record['filters'].append(dict(
-                    filter=filter,
-                    subscriber_link=absoluteURL(
-                        subscription.subscriber, api_request),
-                    subscriber_title=subscription.subscriber.title,
-                    subscriber_is_team=subscription.subscriber.isTeam()))
-        info.append(record)
-
+    for subscription in subscriptions:
+        target = subscription.target
+        record = info.get(target)
+        if record is None:
+            record = info[target] = dict(
+                target_title=target.title,
+                target_url=absoluteURL(target, request),
+                filters=[])
+        for filter in subscription.bug_filters:
+            record['filters'].append(dict(
+                filter=filter,
+                subscriber_link=absoluteURL(
+                    subscription.subscriber, api_request),
+                subscriber_title=subscription.subscriber.title,
+                subscriber_is_team=subscription.subscriber.isTeam()))
+    info = info.values()
+    info.sort(key=lambda item: item['target_url'])
     IJSONRequestCache(request).objects['subscription_info'] = info
 
 
