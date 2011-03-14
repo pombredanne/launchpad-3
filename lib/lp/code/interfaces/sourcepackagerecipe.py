@@ -208,7 +208,7 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
 
     distroseries = exported(List(
         Reference(IDistroSeries), title=_("Default distribution series"),
-        description=_("If built daily, these are the distribution"
+        description=_("If built daily, these are the distribution "
             "versions that the recipe will be built for."),
         readonly=True))
     build_daily = exported(Bool(
