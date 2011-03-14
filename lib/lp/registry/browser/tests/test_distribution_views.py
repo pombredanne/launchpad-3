@@ -3,11 +3,12 @@
 
 __metaclass__ = type
 
+import soupmatchers
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.registry.browser.distribution import DistributionPublisherConfigView
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -15,10 +16,8 @@ from lp.testing import (
     login_celebrity,
     TestCaseWithFactory,
     )
-from lp.testing.views import create_initialized_view
 from lp.testing.sampledata import LAUNCHPAD_ADMIN
-
-import soupmatchers
+from lp.testing.views import create_initialized_view
 
 
 class TestDistributionPublisherConfigView(TestCaseWithFactory):
