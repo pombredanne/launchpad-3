@@ -1200,6 +1200,12 @@
             permission="zope.Public"
             class="lp.bugs.browser.structuralsubscription.StructuralSubscribersPortletView"
             template="../templates/structural-subscription-target-portlet-subscribers.pt"/>
+        <browser:page
+            for="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTarget"
+            name="+subscriptions"
+            class="lp.bugs.browser.bugtarget.TargetSubscriptionView"
+            permission="launchpad.AnyPerson"
+            template="../templates/bugtarget-subscription-list.pt"/>
     </facet>
 
     <browser:url

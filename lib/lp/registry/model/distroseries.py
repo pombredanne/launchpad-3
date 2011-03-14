@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -739,10 +739,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def bugtargetname(self):
         """See IBugTarget."""
-        return self.fullseriesname
         # XXX mpt 2007-07-10 bugs 113258, 113262:
         # The distribution's and series' names should be used instead
         # of fullseriesname.
+        return self.fullseriesname
 
     @property
     def bugtargetdisplayname(self):
@@ -984,7 +984,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getCurrentSourceReleases(self, source_package_names):
         """See `IDistroSeries`."""
         return getUtility(IDistroSeriesSet).getCurrentSourceReleases(
-            {self:source_package_names})
+            {self: source_package_names})
 
     def getTranslatableSourcePackages(self):
         """See `IDistroSeries`."""
@@ -1886,10 +1886,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # or the child.parent's drivers.
         if not (user.inTeam('soyuz-team') or user.inTeam('admins')):
             raise Unauthorized
-        child = IStore(self).find(DistroSeries, name=name).one()
+        if distribution is None:
+            distribution = self.distribution
+        child = IStore(self).find(
+            DistroSeries, name=name, distribution=distribution).one()
         if child is None:
-            if distribution is None:
-                distribution = self.distribution
             if not displayname:
                 raise DerivationError(
                     "Display Name needs to be set when creating a "
@@ -1926,6 +1927,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             raise DerivationError(e)
         getUtility(IInitialiseDistroSeriesJobSource).create(
             child, architectures, packagesets, rebuild)
+
+    def getDerivedSeries(self):
+        """See `IDistroSeriesPublic`."""
+        return Store.of(self).find(
+            DistroSeries, DistroSeries.parent_series == self)
 
 
 class DistroSeriesSet:
