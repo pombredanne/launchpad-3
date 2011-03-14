@@ -16,6 +16,12 @@
   </script>
   </metal:block>
   <metal:block fill-slot="main">
+    <div id="branch">
+      <div class="complete">Branch selected: <a href="#"></a>
+      </div>
+      <div class="incomplete">No branch selected.
+      </div>
+    </div>
     <a href="#pickbranch" id="pickbranch">Pick a branch</a>
   </metal:block>
   </body>
