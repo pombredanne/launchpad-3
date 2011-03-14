@@ -13,11 +13,18 @@ from datetime import (
     datetime,
     timedelta,
     )
+from fixtures import TempDir
+import os
+import signal
+import subprocess
 import time
 
 from psycopg2 import IntegrityError
 import pytz
+from storm.expr import LeftJoin
 from storm.locals import (
+    And,
+    Count,
     Max,
     Min,
     Select,
@@ -43,6 +50,7 @@ from canonical.launchpad.database.librarian import (
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.utilities.looptuner import TunableLoop
 from canonical.launchpad.webapp.interfaces import (
@@ -50,6 +58,9 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
+from canonical.librarian.utils import copy_and_close
+from lp.archiveuploader.dscfile import findFile
+from lp.archiveuploader.nascentuploadfile import UploadError
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
@@ -70,14 +81,127 @@ from lp.code.model.revision import (
 from lp.hardwaredb.model.hwdb import HWSubmission
 from lp.registry.model.person import Person
 from lp.services.job.model.job import Job
+from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     SilentLaunchpadScriptFailure,
     )
+from lp.soyuz.model.files import SourcePackageReleaseFile
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.model.potranslation import POTranslation
 
 
 ONE_DAY_IN_SECONDS = 24*60*60
+
+
+def subprocess_setup():
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+
+
+class BulkPruner(TunableLoop):
+    """A abstract ITunableLoop base class for simple pruners.
+
+    This is designed for the case where calculating the list of items
+    is expensive, and this list may be huge. For this use case, it
+    is impractical to calculate a batch of ids to remove each
+    iteration.
+
+    One approach is using a temporary table, populating it
+    with the set of items to remove at the start. However, this
+    approach can perform badly as you either need to prune the
+    temporary table as you go, or using OFFSET to skip to the next
+    batch to remove which gets slower as we progress further through
+    the list.
+
+    Instead, this implementation declares a CURSOR that can be used
+    across multiple transactions, allowing us to calculate the set
+    of items to remove just once and iterate over it, avoiding the
+    seek-to-batch issues with a temporary table and OFFSET yet
+    deleting batches of rows in separate transactions.
+    """
+
+    # The Storm database class for the table we are removing records
+    # from. Must be overridden.
+    target_table_class = None
+
+    # The column name in target_table we use as the integer key. May be
+    # overridden.
+    target_table_key = 'id'
+
+    # An SQL query returning a list of ids to remove from target_table.
+    # The query must return a single column named 'id' and should not
+    # contain duplicates. Must be overridden.
+    ids_to_prune_query = None
+
+    # See `TunableLoop`. May be overridden.
+    maximum_chunk_size = 10000
+
+    def __init__(self, log, abort_time=None):
+        super(BulkPruner, self).__init__(log, abort_time)
+
+        self.store = IMasterStore(self.target_table_class)
+        self.target_table_name = self.target_table_class.__storm_table__
+
+        # Open the cursor.
+        self.store.execute(
+            "DECLARE bulkprunerid NO SCROLL CURSOR WITH HOLD FOR %s"
+            % self.ids_to_prune_query)
+
+    _num_removed = None
+
+    def isDone(self):
+        """See `ITunableLoop`."""
+        return self._num_removed == 0
+
+    def __call__(self, chunk_size):
+        """See `ITunableLoop`."""
+        result = self.store.execute("""
+            DELETE FROM %s WHERE %s IN (
+                SELECT id FROM
+                cursor_fetch('bulkprunerid', %d) AS f(id integer))
+            """
+            % (self.target_table_name, self.target_table_key, chunk_size))
+        self._num_removed = result.rowcount
+        transaction.commit()
+
+    def cleanUp(self):
+        """See `ITunableLoop`."""
+        self.store.execute("CLOSE bulkprunerid")
+
+
+class POTranslationPruner(BulkPruner):
+    """Remove unlinked POTranslation entries.
+
+    XXX bug=723596 StuartBishop: This job only needs to run once per month.
+    """
+
+    target_table_class = POTranslation
+
+    ids_to_prune_query = """
+        SELECT POTranslation.id AS id FROM POTranslation
+        EXCEPT (
+            SELECT potranslation FROM POComment
+
+            UNION ALL SELECT msgstr0 FROM TranslationMessage
+                WHERE msgstr0 IS NOT NULL
+
+            UNION ALL SELECT msgstr1 FROM TranslationMessage
+                WHERE msgstr1 IS NOT NULL
+
+            UNION ALL SELECT msgstr2 FROM TranslationMessage
+                WHERE msgstr2 IS NOT NULL
+
+            UNION ALL SELECT msgstr3 FROM TranslationMessage
+                WHERE msgstr3 IS NOT NULL
+
+            UNION ALL SELECT msgstr4 FROM TranslationMessage
+                WHERE msgstr4 IS NOT NULL
+
+            UNION ALL SELECT msgstr5 FROM TranslationMessage
+                WHERE msgstr5 IS NOT NULL
+            )
+        """
 
 
 class OAuthNoncePruner(TunableLoop):
@@ -173,7 +297,7 @@ class OpenIDConsumerAssociationPruner(TunableLoop):
                 LIMIT %d
                 )
             """ % (self.table_name, self.table_name, int(chunksize)))
-        self._num_removed = result._raw_cursor.rowcount
+        self._num_removed = result.rowcount
         transaction.commit()
 
     def isDone(self):
@@ -787,6 +911,124 @@ class SuggestiveTemplatesCacheUpdater(TunableLoop):
         self.done = True
 
 
+class PopulateSPRChangelogs(TunableLoop):
+    maximum_chunk_size = 1
+
+    def __init__(self, log, abort_time=None):
+        super(PopulateSPRChangelogs, self).__init__(log, abort_time)
+        value = getUtility(IMemcacheClient).get('populate-spr-changelogs')
+        if not value:
+            self.start_at = 0
+        else:
+            self.start_at = value
+        self.finish_at = self.getCandidateSPRs(0).last()
+
+    def getCandidateSPRs(self, start_at):
+        return IMasterStore(SourcePackageRelease).using(
+            SourcePackageRelease,
+            # Find any SPRFs that have expired (LFA.content IS NULL).
+            LeftJoin(
+                SourcePackageReleaseFile,
+                SourcePackageReleaseFile.sourcepackagereleaseID ==
+                    SourcePackageRelease.id),
+            LeftJoin(
+                LibraryFileAlias,
+                And(LibraryFileAlias.id ==
+                    SourcePackageReleaseFile.libraryfileID,
+                    LibraryFileAlias.content == None)),
+            # And exclude any SPRs that have any expired SPRFs.
+            ).find(
+                SourcePackageRelease.id,
+                SourcePackageRelease.id >= start_at,
+                SourcePackageRelease.changelog == None,
+            ).group_by(SourcePackageRelease.id).having(
+                Count(LibraryFileAlias) == 0
+            ).order_by(SourcePackageRelease.id)
+
+    def isDone(self):
+        return self.start_at > self.finish_at
+
+    def __call__(self, chunk_size):
+        for sprid in self.getCandidateSPRs(self.start_at)[:chunk_size]:
+            spr = SourcePackageRelease.get(sprid)
+            with TempDir() as tmp_dir:
+                dsc_file = None
+
+                # Grab the files from the librarian into a temporary
+                # directory.
+                try:
+                    for sprf in spr.files:
+                        dest = os.path.join(
+                            tmp_dir.path, sprf.libraryfile.filename)
+                        dest_file = open(dest, 'w')
+                        sprf.libraryfile.open()
+                        copy_and_close(sprf.libraryfile, dest_file)
+                        if dest.endswith('.dsc'):
+                            dsc_file = dest
+                except LookupError:
+                    self.log.warning(
+                        'SPR %d (%s %s) has missing library files.' % (
+                            spr.id, spr.name, spr.version))
+                    continue
+
+                if dsc_file is None:
+                    self.log.warning(
+                        'SPR %d (%s %s) has no DSC.' % (
+                            spr.id, spr.name, spr.version))
+                    continue
+
+                # Extract the source package. Throw away stdout/stderr
+                # -- we only really care about the return code.
+                fnull = open('/dev/null', 'w')
+                ret = subprocess.call(
+                    ['dpkg-source', '-x', dsc_file, os.path.join(
+                        tmp_dir.path, 'extracted')],
+                        stdout=fnull, stderr=fnull,
+                        preexec_fn=subprocess_setup)
+                fnull.close()
+                if ret != 0:
+                    self.log.warning(
+                        'SPR %d (%s %s) failed to unpack: returned %d' % (
+                            spr.id, spr.name, spr.version, ret))
+                    continue
+
+                # We have an extracted source package. Let's get the
+                # changelog. findFile ensures that it's not too huge, and
+                # not a symlink.
+                try:
+                    changelog_path = findFile(
+                        tmp_dir.path, 'debian/changelog')
+                except UploadError, e:
+                    changelog_path = None
+                    self.log.warning(
+                        'SPR %d (%s %s) changelog could not be '
+                        'imported: %s' % (
+                            spr.id, spr.name, spr.version, e))
+                if changelog_path:
+                    # The LFA should be restricted only if there aren't any
+                    # public publications.
+                    restricted = not any(
+                        not a.private for a in spr.published_archives)
+                    spr.changelog = getUtility(ILibraryFileAliasSet).create(
+                        'changelog',
+                        os.stat(changelog_path).st_size,
+                        open(changelog_path, "r"),
+                        "text/x-debian-source-changelog",
+                        restricted=restricted)
+                    self.log.info('SPR %d (%s %s) changelog imported.' % (
+                        spr.id, spr.name, spr.version))
+                else:
+                    self.log.warning('SPR %d (%s %s) had no changelog.' % (
+                        spr.id, spr.name, spr.version))
+
+        self.start_at = spr.id + 1
+        result = getUtility(IMemcacheClient).set(
+            'populate-spr-changelogs', self.start_at)
+        if not result:
+            self.log.warning('Failed to set start_at in memcache.')
+        transaction.commit()
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None # Script name for locking and database user. Override.
@@ -871,6 +1113,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         RevisionCachePruner,
         BugHeatUpdater,
         BugWatchScheduler,
+        PopulateSPRChangelogs,
         ]
     experimental_tunable_loops = []
 
@@ -895,6 +1138,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         OldTimeLimitedTokenDeleter,
         RevisionAuthorEmailLinker,
         SuggestiveTemplatesCacheUpdater,
+        POTranslationPruner,
         ]
     experimental_tunable_loops = [
         PersonPruner,

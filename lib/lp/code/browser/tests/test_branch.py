@@ -508,7 +508,8 @@ class TestBranchView(BrowserTestCase):
             for x in range(0, 2):
                 bug = self.factory.makeBug()
                 mp.source_branch.linkBug(bug, branch.owner)
-                linked_bug_urls.append(canonical_url(bug, rootsite='bugs'))
+                linked_bug_urls.append(
+                    canonical_url(bug.default_bugtask, rootsite='bugs'))
                 bug_text = "Bug #%s: %s" % (bug.id, bug.title)
                 linked_bug_text.append(bug_text)
 
@@ -534,7 +535,7 @@ class TestBranchView(BrowserTestCase):
             .*
             Testing the email address in revisions\n
             email Bob \(bob@example.com\) for details.
-            Merged branch %s with linked bugs
+            Merged branch %s
             %s
             """ % (branch_display_name, linked_bug_rendered_text)
 

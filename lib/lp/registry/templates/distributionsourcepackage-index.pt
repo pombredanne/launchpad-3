@@ -37,13 +37,13 @@
     <p>
       This package has
       <a tal:attributes="href view/menu:overview/new_bugs/url">
-        <strong class="bugs-stat">
+        <strong>
           <tal:newbugs content="newbugs"/> new bug<tal:plural content="string:s" condition="python: newbugs!=1"/>
         </strong>
       </a>
       and
       <a tal:attributes="href view/menu:overview/open_questions/url">
-      <strong class="answers-stat">
+      <strong>
         <tal:openq content="open_questions"/> open question<tal:plural content="string:s" condition="python: open_questions!=1"/>.
         </strong>
       </a>

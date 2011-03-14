@@ -985,7 +985,7 @@ class TestWebservice(TestCaseWithFactory):
         e = self.assertRaises(Exception, recipe.requestBuild,
             archive=archive, distroseries=distroseries,
             pocket=PackagePublishingPocket.RELEASE.title)
-        self.assertIn('A build against this distro is not allowed', str(e))
+        self.assertIn('build against this distro is not allowed', str(e))
 
     def test_getBuilds(self):
         """SourcePackageRecipe.[pending_|completed_]builds is as expected."""

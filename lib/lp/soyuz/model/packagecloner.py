@@ -135,10 +135,6 @@ class PackageCloner:
         sources_published = archive.getPublishedSources(
             distroseries=distroseries, status=active_publishing_status)
 
-        def get_spn(pub):
-            """Return the source package name for a publishing record."""
-            return pub.sourcepackagerelease.sourcepackagename.name
-
         for pubrec in sources_published:
             builds = pubrec.createMissingBuilds(
                 architectures_available=architectures)

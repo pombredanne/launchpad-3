@@ -1234,10 +1234,10 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
     custom_widget('assignee', BugTaskAssigneeWidget)
 
     def initialize(self):
-        super(BugTaskEditView, self).initialize()
         # Initialize user_is_subscribed, if it hasn't already been set.
         if self.user_is_subscribed is None:
             self.user_is_subscribed = self.context.bug.isSubscribed(self.user)
+        super(BugTaskEditView, self).initialize()
 
     page_title = 'Edit status'
 
@@ -2723,10 +2723,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         """Return data used to render the milestone checkboxes."""
         return self.getWidgetValues("Milestone")
 
-    def getAdvancedSearchPageHeading(self):
-        """The header for the advanced search page."""
-        return "Bugs in %s: Advanced search" % self.context.displayname
-
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
         return canonical_url(self.context) + "/+bugs"
@@ -3124,14 +3120,25 @@ class CachedMilestoneSourceFactory:
 
     def __init__(self):
         self.vocabularies = {}
+        self.contexts = set()
 
     def __call__(self, context):
+        assert context in self.contexts, ("context %r not added to "
+            "self.contexts (%r)." % (context, self.contexts))
+        self._load()
         target = MilestoneVocabulary.getMilestoneTarget(context)
-        milestone_vocabulary = self.vocabularies.get(target)
-        if milestone_vocabulary is None:
-            milestone_vocabulary = MilestoneVocabulary(context)
+        return self.vocabularies[target]
+
+    def _load(self):
+        """Load all the vocabularies, once only."""
+        if self.vocabularies:
+            return
+        targets = set(
+            map(MilestoneVocabulary.getMilestoneTarget, self.contexts))
+        # TODO: instantiate for all targets at once.
+        for target in targets:
+            milestone_vocabulary = MilestoneVocabulary(target)
             self.vocabularies[target] = milestone_vocabulary
-        return milestone_vocabulary
 
 
 class BugTasksAndNominationsView(LaunchpadView):
@@ -3205,6 +3212,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         The view's is_conjoined_slave and is_converted_to_question
         attributes are set, as well as the edit view.
         """
+        self.cached_milestone_source.contexts.add(context)
         view = getMultiAdapter(
             (context, self.request),
             name='+bugtasks-and-nominations-table-row')
@@ -3212,6 +3220,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         view.is_conjoined_slave = is_conjoined_slave
         if IBugTask.providedBy(context):
             view.target_link_title = self.getTargetLinkTitle(context.target)
+        view.milestone_source = self.cached_milestone_source
 
         view.edit_view = getMultiAdapter(
             (context, self.request), name='+edit-form')
@@ -3383,6 +3392,10 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
     target_link_title = None
     many_bugtasks = False
 
+    def __init__(self, context, request):
+        super(BugTaskTableRowView, self).__init__(context, request)
+        self.milestone_source = MilestoneVocabulary
+
     def canSeeTaskDetails(self):
         """Whether someone can see a task's status details.
 
@@ -3509,7 +3522,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
     @cachedproperty
     def _visible_milestones(self):
         """The visible milestones for this context."""
-        return MilestoneVocabulary(self.context).visible_milestones
+        return self.milestone_source(self.context).visible_milestones
 
     @property
     def milestone_widget_items(self):
@@ -3823,7 +3836,13 @@ class BugActivityItem:
     @property
     def change_summary(self):
         """Return a formatted summary of the change."""
-        return self.attribute
+        if self.target is not None:
+            # This is a bug task.  We want the attribute, as filtered out.
+            return self.attribute
+        else:
+            # Otherwise, the attribute is more normalized than what we want.
+            # Use "whatchanged," which sometimes is more descriptive.
+            return self.whatchanged
 
     @property
     def _formatted_tags_change(self):
@@ -3867,30 +3886,31 @@ class BugActivityItem:
             'old_value': self.oldvalue,
             'new_value': self.newvalue,
             }
-        if self.attribute == 'summary':
+        attribute = self.attribute
+        if attribute == 'title':
             # We display summary changes as a unified diff, replacing
             # \ns with <br />s so that the lines are separated properly.
             diff = cgi.escape(
                 get_unified_diff(self.oldvalue, self.newvalue, 72), True)
             return diff.replace("\n", "<br />")
 
-        elif self.attribute == 'description':
+        elif attribute == 'description':
             # Description changes can be quite long, so we just return
             # 'updated' rather than returning the whole new description
             # or a diff.
             return 'updated'
 
-        elif self.attribute == 'tags':
+        elif attribute == 'tags':
             # We special-case tags because we can work out what's been
             # added and what's been removed.
             return self._formatted_tags_change.replace('\n', '<br />')
 
-        elif self.attribute == 'assignee':
+        elif attribute == 'assignee':
             for key in return_dict:
                 if return_dict[key] is None:
                     return_dict[key] = 'nobody'
 
-        elif self.attribute == 'milestone':
+        elif attribute == 'milestone':
             for key in return_dict:
                 if return_dict[key] is None:
                     return_dict[key] = 'none'

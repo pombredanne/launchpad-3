@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Job classes related to PersonTransferJob."""
@@ -294,7 +294,7 @@ class MembershipNotificationJob(PersonTransferJobDerived):
 
         if len(admin_emails) != 0:
             admin_template = get_email_template(
-                "%s-bulk.txt" % template_name)
+                "%s-bulk.txt" % template_name, app='registry')
             for address in admin_emails:
                 recipient = getUtility(IPersonSet).getByEmail(address)
                 replacements['recipient_name'] = recipient.displayname
@@ -310,7 +310,8 @@ class MembershipNotificationJob(PersonTransferJobDerived):
                 template = '%s-bulk.txt' % template_name
             else:
                 template = '%s-personal.txt' % template_name
-            self.member_template = get_email_template(template)
+            self.member_template = get_email_template(
+                template, app='registry')
             for address in self.member_email:
                 recipient = getUtility(IPersonSet).getByEmail(address)
                 replacements['recipient_name'] = recipient.displayname
