@@ -9,7 +9,7 @@ from canonical.launchpad.testing.pages import (
     )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
-    DatabaseFunctionalLayer,  
+    DatabaseFunctionalLayer,
     )
 from lp.app.enums import ServiceUsage
 from lp.testing import (
@@ -27,11 +27,12 @@ from lp.translations.interfaces.translations import (
 
 class ConfigureUpstreamProjectMixin:
     """Provide a method for project configuration."""
-    
+
     def configureUpstreamProject(self, productseries,
             set_upstream_branch=False, enable_translations=False,
             translation_import_mode=TranslationsBranchImportMode.NO_IMPORT):
-        """Configure the productseries and its product as an upstream project."""
+        """Configure the productseries and its product as an upstream project.
+        """
         with person_logged_in(productseries.product.owner):
             if set_upstream_branch:
                 productseries.branch = self.factory.makeBranch(
@@ -330,3 +331,67 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             Translations are enable on the upstream project.
             Automatic synchronization of translations is enabled.""",
             extract_text(checklist))
+
+    def test_potlist_only_ubuntu(self):
+        # Without a packaging link, only Ubuntu templates are listed.
+        sourcepackage = self._makeSourcePackage()
+        self.factory.makePOTemplate(
+            name='foo-template', sourcepackage=sourcepackage)
+        browser = self.getViewBrowser(
+            sourcepackage, no_login=True, rootsite="translations",
+            view_name="+sharing-details")
+        tbody = find_tag_by_id(
+            browser.contents, 'template-table').find('tbody')
+        self.assertIsNot(None, tbody)
+        self.assertTextMatchesExpressionIgnoreWhitespace("""
+            foo-template  only in Ubuntu  0  . seconds ago""",
+            extract_text(tbody))
+
+    def test_potlist_sharing(self):
+        # With sharing configured, templates on both sides are listed.
+        packaging = self.factory.makePackagingLink(in_ubuntu=True)
+        productseries = packaging.productseries
+        sourcepackage = packaging.sourcepackage
+        self.configureUpstreamProject(
+            productseries,
+            set_upstream_branch=True, enable_translations=True,
+            translation_import_mode=(
+                TranslationsBranchImportMode.IMPORT_TRANSLATIONS))
+        template_name = 'foo-template'
+        self.factory.makePOTemplate(
+            name=template_name, sourcepackage=sourcepackage)
+        self.factory.makePOTemplate(
+            name=template_name, productseries=productseries)
+        browser = self.getViewBrowser(
+            sourcepackage, no_login=True, rootsite="translations",
+            view_name="+sharing-details")
+        tbody = find_tag_by_id(
+            browser.contents, 'template-table').find('tbody')
+        self.assertIsNot(None, tbody)
+        self.assertTextMatchesExpressionIgnoreWhitespace("""
+            foo-template  shared  0  . seconds ago  0  . seconds ago""",
+            extract_text(tbody))
+
+    def test_potlist_only_upstream(self):
+        # A template that is only present in upstream is called
+        # "only in upstream".
+        packaging = self.factory.makePackagingLink(in_ubuntu=True)
+        productseries = packaging.productseries
+        sourcepackage = packaging.sourcepackage
+        self.configureUpstreamProject(
+            productseries,
+            set_upstream_branch=True, enable_translations=True,
+            translation_import_mode=(
+                TranslationsBranchImportMode.IMPORT_TRANSLATIONS))
+        template_name = 'foo-template'
+        self.factory.makePOTemplate(
+            name=template_name, productseries=productseries)
+        browser = self.getViewBrowser(
+            sourcepackage, no_login=True, rootsite="translations",
+            view_name="+sharing-details")
+        tbody = find_tag_by_id(
+            browser.contents, 'template-table').find('tbody')
+        self.assertIsNot(None, tbody)
+        self.assertTextMatchesExpressionIgnoreWhitespace("""
+            foo-template  only in upstream  0  . seconds ago""",
+            extract_text(tbody))

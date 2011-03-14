@@ -169,11 +169,10 @@ class SourcePackageTranslationSharingDetailsView(
             self.is_upstream_translations_enabled and
             self.is_upstream_synchronization_enabled)
 
-    @property
     def template_info(self):
         """Details about translation templates.
 
-        :return: A list of dictionaries contaiing details about each
+        :return: A list of dictionaries containing details about each
             template. Each dictionary contains:
                 'name': The name of the template
                 'package_template': The package template (may be None)
@@ -192,11 +191,11 @@ class SourcePackageTranslationSharingDetailsView(
                 'status': 'only in Ubuntu',
                 }
         if self.is_configuration_complete:
-            upstream_info = get_upstream_sharing_info(self.context)
-            for series, template in upstream_info:
+            upstream_templates = (
+                self.context.productseries.getCurrentTranslationTemplates())
+            for template in upstream_templates:
                 if template.name in info:
                     info[template.name]['upstream_template'] = template
-                    # xxxxxxxx this could also be 'linking' instead of 'shared'
                     info[template.name]['status'] = 'shared'
                 else:
                     info[template.name] = {
