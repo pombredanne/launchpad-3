@@ -14,8 +14,11 @@
   <tal:head-epilogue metal:fill-slot="head_epilogue">
     <script type="text/javascript">
       LPS.use('lp.registry.structural_subscription', function(Y) {
-          Y.lp.registry.structural_subscription.setup_bug_subscriptions(
-            {content_box: "#structural-subscription-content-box"});
+          module = Y.lp.registry.structural_subscription;
+          Y.on('domready', function() {
+              module.setup_bug_subscriptions(
+                  {content_box: "#structural-subscription-content-box"})
+                  });
       });
     </script>
 

@@ -122,6 +122,7 @@ from lp.bugs.interfaces.bugtarget import (
     IOfficialBugTagTargetRestricted,
     )
 from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
     IBugTaskSet,
@@ -1572,7 +1573,7 @@ class TargetSubscriptionView(LaunchpadView):
 
     def __init__(self, context, request):
         # XXX initialize?
-        super(BugSubscriptionListView, self).__init__(context, request)
+        super(TargetSubscriptionView, self).__init__(context, request)
         expose_user_administered_teams_to_js(self.request, self.user)
         subscriptions = get_structural_subscriptions_for_target(
             self.context, self.user)
