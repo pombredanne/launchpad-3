@@ -3,9 +3,7 @@
 
 SET client_min_messages=ERROR;
 
--- Renaming owner to registrant for
--- DistroSeries
-BEGIN;
+-- Renaming owner to registrant for DistroSeries
 
 -- Add a registrant column to DistroSeries.
 ALTER TABLE DistroSeries
@@ -22,6 +20,7 @@ ALTER TABLE DistroSeries
 -- Add NOT NULL constraint to registrant column.
 ALTER TABLE DistroSeries ALTER COLUMN registrant SET NOT NULL;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+-- Add index.
+CREATE INDEX distroseries__registrant__idx ON DistroSeries(registrant);
 
-COMMIT;
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
