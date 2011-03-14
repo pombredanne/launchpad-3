@@ -401,7 +401,6 @@ class InlineMultiCheckboxWidget(WidgetBase):
     def config(self):
         return dict(
             header=self.header,
-            empty_display_value=self.empty_display_value,
             )
 
     @property
