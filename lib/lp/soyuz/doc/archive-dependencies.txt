@@ -226,11 +226,11 @@ no need to request the builder to load its archive indexes.
     0
 
     >>> print_building_sources_list(a_build)
-    deb http://ftpmaster.internal/ubuntu hoary
+    deb http://archive.launchpad.dev/ubuntu hoary
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security
+    deb http://archive.launchpad.dev/ubuntu hoary-security
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-updates
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
 
 Once we publish a test binary in Celso's PPA hoary/i386,
@@ -243,11 +243,11 @@ returned 'sources_list' content.
 
     >>> print_building_sources_list(a_build)
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb http://ftpmaster.internal/ubuntu hoary
+    deb http://archive.launchpad.dev/ubuntu hoary
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security
+    deb http://archive.launchpad.dev/ubuntu hoary-security
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-updates
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
 
 Similarly, unpopulated PPA dependencies are *not* listed in the building
@@ -259,11 +259,11 @@ Similarly, unpopulated PPA dependencies are *not* listed in the building
     ...     getUtility(IComponentSet)['main'])
     >>> print_building_sources_list(a_build)
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb http://ftpmaster.internal/ubuntu hoary
+    deb http://archive.launchpad.dev/ubuntu hoary
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security
+    deb http://archive.launchpad.dev/ubuntu hoary-security
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-updates
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
 
 But *populated* PPA dependencies *are* listed in the building 'sources_list'.
@@ -274,9 +274,9 @@ But *populated* PPA dependencies *are* listed in the building 'sources_list'.
     >>> print_building_sources_list(a_build)
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
     deb http://ppa.launchpad.dev/mark/ppa/ubuntu hoary main
-    deb http://ftpmaster.internal/ubuntu hoary
+    deb http://archive.launchpad.dev/ubuntu hoary
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security
+    deb http://archive.launchpad.dev/ubuntu hoary-security
         main restricted universe multiverse
     deb http://ftpmaster.internal/ubuntu hoary-updates
         main restricted universe multiverse
@@ -300,11 +300,11 @@ new private PPA.
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
     deb http://buildd:sekrit@private-ppa.launchpad.dev/mark/p3a/ubuntu
         hoary main
-    deb http://ftpmaster.internal/ubuntu hoary
+    deb http://archive.launchpad.dev/ubuntu hoary
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security
+    deb http://archive.launchpad.dev/ubuntu hoary-security
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-updates
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
 
 Remove the private PPA dependency before continuing.
@@ -332,11 +332,11 @@ dependencies are returned as normal.
     ValueError: incomplete format
     <BLANKLINE>
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb http://ftpmaster.internal/ubuntu hoary
+    deb http://archive.launchpad.dev/ubuntu hoary
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security
+    deb http://archive.launchpad.dev/ubuntu hoary-security
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-updates
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
 
 However, in order to avoid the problem going forward (and to allow the PPA
@@ -372,11 +372,11 @@ dependencies are returned as normal.
     ValueError: incomplete format
     <BLANKLINE>
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb http://ftpmaster.internal/ubuntu hoary
+    deb http://archive.launchpad.dev/ubuntu hoary
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security
+    deb http://archive.launchpad.dev/ubuntu hoary-security
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-updates
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
 
 However, in order to avoid the problem going forward (and to allow the PPA
@@ -407,11 +407,11 @@ dependencies.
 
     >>> print_building_sources_list(a_build)
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb http://ftpmaster.internal/ubuntu hoary
+    deb http://archive.launchpad.dev/ubuntu hoary
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security
+    deb http://archive.launchpad.dev/ubuntu hoary-security
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-updates
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
 
 The default build behaviour will remain unchanged when we override the
@@ -423,11 +423,11 @@ default primary archive dependencies with exactly the same values.
 
     >>> print_building_sources_list(a_build)
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb http://ftpmaster.internal/ubuntu hoary
+    deb http://archive.launchpad.dev/ubuntu hoary
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security
+    deb http://archive.launchpad.dev/ubuntu hoary-security
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-updates
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
 
     >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
@@ -450,9 +450,9 @@ the primary archive.
 
     >>> print_building_sources_list(a_build)
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb http://ftpmaster.internal/ubuntu hoary
+    deb http://archive.launchpad.dev/ubuntu hoary
         main universe
-    deb http://ftpmaster.internal/ubuntu hoary-security
+    deb http://archive.launchpad.dev/ubuntu hoary-security
         main universe
 
     >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
@@ -467,7 +467,7 @@ original ubuntu release.
 
     >>> print_building_sources_list(a_build)
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb http://ftpmaster.internal/ubuntu hoary main restricted
+    deb http://archive.launchpad.dev/ubuntu hoary main restricted
 
     >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
 
@@ -480,13 +480,13 @@ environment.
 
     >>> print_building_sources_list(a_build)
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb http://ftpmaster.internal/ubuntu hoary
+    deb http://archive.launchpad.dev/ubuntu hoary
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security
+    deb http://archive.launchpad.dev/ubuntu hoary-security
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-updates
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-proposed
+    deb http://archive.launchpad.dev/ubuntu hoary-proposed
         main restricted universe multiverse
 
     >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
@@ -499,13 +499,13 @@ Similarly an extension of the BACKPORTS environment can be set.
 
     >>> print_building_sources_list(a_build)
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb http://ftpmaster.internal/ubuntu hoary
+    deb http://archive.launchpad.dev/ubuntu hoary
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security
+    deb http://archive.launchpad.dev/ubuntu hoary-security
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-updates
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-backports
+    deb http://archive.launchpad.dev/ubuntu hoary-backports
         main restricted universe multiverse
 
     >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
@@ -532,12 +532,12 @@ other partner applications by default.
     >>> [partner_build] = pub_source.createMissingBuilds()
 
     >>> print_building_sources_list(partner_build)
-    deb http://ftpmaster.internal/ubuntu-partner hoary partner
-    deb http://ftpmaster.internal/ubuntu hoary
+    deb http://archive.launchpad.dev/ubuntu-partner hoary partner
+    deb http://archive.launchpad.dev/ubuntu hoary
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security
+    deb http://archive.launchpad.dev/ubuntu hoary-security
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-updates
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
 
 
@@ -570,9 +570,9 @@ Now builds in Celso's PPA will use the external dependencies.
     deb http://user:pass@repository zoing everything
     deb http://user:pass@repository hoary public private
     deb http://user:pass@repository hoary-extra public
-    deb http://ftpmaster.internal/ubuntu hoary
+    deb http://archive.launchpad.dev/ubuntu hoary
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security
+    deb http://archive.launchpad.dev/ubuntu hoary-security
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-updates
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
