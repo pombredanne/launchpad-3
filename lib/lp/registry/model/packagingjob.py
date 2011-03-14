@@ -193,8 +193,7 @@ class PackagingJobDerived:
                 packaging.sourcepackagename.id,
             PackagingJob.productseries_id == packaging.productseries.id,
             PackagingJob.job_type == cls.class_job_type,
-            Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING])
-            )
+            Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING]))
         result.order_by(PackagingJob.id)
         job = result.first()
         if job is None:

@@ -181,7 +181,8 @@ class TestTranslationMergeJob(TestCaseWithFactory):
         self.assertIs(None, TranslationMergeJob.getNextJobStatus(packaging))
         TranslationMergeJob.forPackaging(packaging)
         self.assertEqual(
-            JobStatus.WAITING, TranslationMergeJob.getNextJobStatus(packaging))
+            JobStatus.WAITING,
+            TranslationMergeJob.getNextJobStatus(packaging))
 
     def test_getNextJobStatus_wrong_packaging(self):
         """Jobs on wrong packaging should be ignored."""
