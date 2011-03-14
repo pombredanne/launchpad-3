@@ -3,8 +3,6 @@
 
 SET client_min_messages=ERROR;
 
-BEGIN;
-
 -- Add a registrant column to distributions.
 ALTER TABLE Distribution
     ADD COLUMN registrant integer REFERENCES Person;
@@ -14,8 +12,9 @@ update Distribution
     SET registrant = (select id from Person where name='registry');
 
 -- Add NOT NULL constraint to registrant column.
-ALTER TABLE Distribution  ALTER COLUMN registrant SET NOT NULL;
+ALTER TABLE Distribution ALTER COLUMN registrant SET NOT NULL;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+-- Add index to registrant column.
+CREATE INDEX distribution__registrant__idx ON Distribution(registrant);
 
-COMMIT;
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 53, 0);
