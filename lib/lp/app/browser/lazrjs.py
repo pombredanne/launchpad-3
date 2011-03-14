@@ -307,7 +307,8 @@ class InlineEditPickerWidget(WidgetBase):
 class InlineMultiCheckboxWidget(WidgetBase):
     """Wrapper for the lazr-js multicheckbox widget."""
 
-    __call__ = ViewPageTemplateFile('../templates/inline-multicheckbox-widget.pt')
+    __call__ = ViewPageTemplateFile(
+                        '../templates/inline-multicheckbox-widget.pt')
 
     def __init__(self, context, exported_field,
                  label, label_tag="span", attribute_type="default",
@@ -324,8 +325,9 @@ class InlineMultiCheckboxWidget(WidgetBase):
         :param label: The label text to display above the checkboxes
         :param label_tag: The tag in which to wrap the label text.
         :param attribute_type: The attribute type. Currently only "reference"
-            is supported. Used to determine whether to linkify the checkbox
-            items.
+            is supported. Used to determine whether to linkify the selected
+            checkbox item values. So ubuntu/hoary becomes
+            http://launchpad.net/devel/api/ubuntu/hoary
         :param vocabulary: The name of the vocabulary which provides the
             items or a vocabulary instance.
         :param header: The text to display as the title of the popup form.
@@ -334,8 +336,8 @@ class InlineMultiCheckboxWidget(WidgetBase):
         :param selected_items: The currently selected items.
         :param items_tag: The tag in which to wrap the items checkboxes.
         :param items_style: The css style to use for each item checkbox.
-        :param content_box_id: The HTML id to use for this widget. Automatically
-            generated if this is not provided.
+        :param content_box_id: The HTML id to use for this widget.
+            Automatically generated if this is not provided.
         :param edit_view: The view name to use to generate the edit_url if
             one is not specified.
         :param edit_url: The URL to use for editing when the user isn't logged
@@ -372,6 +374,7 @@ class InlineMultiCheckboxWidget(WidgetBase):
         if isinstance(vocabulary, basestring):
             vocabulary = getVocabularyRegistry().get(context, vocabulary)
 
+        # Construct checkbox data dict for each item in the vocabulary.
         items = []
         style = ';'.join(['font-weight: normal', items_style])
         for item in vocabulary:
@@ -388,7 +391,8 @@ class InlineMultiCheckboxWidget(WidgetBase):
                 'checked': checked,
                 'value': save_value}
             items.append(new_item)
-
+        self.has_choices = len(items)
+            
         # JSON encoded attributes.
         self.json_content_box_id = simplejson.dumps(self.content_box_id)
         self.json_attribute = simplejson.dumps(self.api_attribute)
