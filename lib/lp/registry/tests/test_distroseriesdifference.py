@@ -526,9 +526,10 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             versions=['1.0', '1.3'])
         transaction.commit() # Yay, librarian.
 
-        ds_diff = self.factory.makeDistroSeriesDifference(versions={
-            'derived': '1.2',
-            'parent': '1.3',
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            versions={
+                'derived': '1.2',
+                'parent': '1.3',
             },
             changelogs={
                 'derived': derived_changelog,
@@ -536,13 +537,13 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             })
 
         # Passing in a base version to makeDistroSeriesDifference() creates
-        # it in both distroseries, so we need to do it ourselves.
+        # it in both distroseries, which we don't want, so we need to do it
+        # ourselves.
         spr = self.factory.makeSourcePackageRelease(
             sourcepackagename=ds_diff.source_package_name, version='1.0')
         self.factory.makeSourcePackagePublishingHistory(
             distroseries=ds_diff.derived_series, sourcepackagerelease=spr,
             status=PackagePublishingStatus.SUPERSEDED)
-        ds_diff.update()
         self.assertEqual('1.0', ds_diff.base_version)
         self.assertEqual(
             ds_diff.derived_series, ds_diff.base_source_pub.distroseries)
