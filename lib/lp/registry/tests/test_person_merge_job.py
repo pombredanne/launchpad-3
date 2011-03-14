@@ -55,6 +55,16 @@ class TestPersonMergeJob(TestCaseWithFactory):
         # Newly created jobs are enqueued.
         self.assertEqual([self.job], list(self.job_source.iterReady()))
 
+    def test_create_job_already_exists(self):
+        # create returns None if either of the persons are already
+        # in a pending merge job.
+        duplicate_job = self.job_source.create(
+            from_person=self.from_person, to_person=self.to_person)
+        inverted_job = self.job_source.create(
+            from_person=self.to_person, to_person=self.from_person)
+        self.assertEqual(None, duplicate_job)
+        self.assertEqual(None, inverted_job)
+
     def test_run(self):
         # When run it merges from_person into to_person. First we need to
         # reassign from_person's email address over to to_person because

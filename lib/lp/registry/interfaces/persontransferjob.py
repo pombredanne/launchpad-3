@@ -100,7 +100,11 @@ class IPersonMergeJobSource(IJobSource):
     """An interface for acquiring IMembershipNotificationJobs."""
 
     def create(from_person, to_person):
-        """Create a new IMembershipNotificationJob."""
+        """Create a new IMembershipNotificationJob.
+
+        None is returned if either the from_person or to_person are already
+        in a pending merge.
+        """
 
     def find(from_person=None, to_person=None, any_person=False):
         """Finds pending merge jobs.

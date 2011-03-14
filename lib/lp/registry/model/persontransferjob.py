@@ -341,6 +341,8 @@ class PersonMergeJob(PersonTransferJobDerived):
     @classmethod
     def create(cls, from_person, to_person):
         """See `IPersonMergeJobSource`."""
+        if from_person.is_merge_pending or to_person.is_merge_pending:
+            return None
         return super(PersonMergeJob, cls).create(
             minor_person=from_person, major_person=to_person, metadata={})
 

@@ -3870,8 +3870,6 @@ class PersonSet:
 
     def mergeAsync(self, from_person, to_person):
         """See `IPersonSet`."""
-        if from_person.is_merge_pending or to_person.is_merge_pending:
-            return None
         return getUtility(IPersonMergeJobSource).create(
             from_person=from_person, to_person=to_person)
 
