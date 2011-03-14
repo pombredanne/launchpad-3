@@ -39,9 +39,13 @@ class TestSpecificationDependencies(TestCaseWithFactory):
         do_last = self.factory.makeBlueprint()
         do_last.createDependency(do_next)
         self.assertThat(sorted(do_first.blocked_specs), Equals([do_next]))
-        self.assertThat(sorted(do_first.all_blocked), Equals([do_next, do_last]))
+        self.assertThat(
+            sorted(do_first.all_blocked),
+            Equals(sorted([do_next, do_last])))
         self.assertThat(sorted(do_last.dependencies), Equals([do_next]))
-        self.assertThat(sorted(do_last.all_deps), Equals([do_first, do_next]))
+        self.assertThat(
+            sorted(do_last.all_deps),
+            Equals(sorted([do_first, do_next])))
 
     def test_diamond_dependency(self):
         #             do_first
@@ -59,15 +63,13 @@ class TestSpecificationDependencies(TestCaseWithFactory):
         do_last.createDependency(do_next_rhs)
         self.assertThat(
             sorted(do_first.blocked_specs),
-            Equals([do_next_lhs, do_next_rhs]))
+            Equals(sorted([do_next_lhs, do_next_rhs])))
         self.assertThat(
             sorted(do_first.all_blocked),
-            Equals([do_next_lhs, do_next_rhs, do_last]))
+            Equals(sorted([do_next_lhs, do_next_rhs, do_last])))
         self.assertThat(
             sorted(do_last.dependencies),
-            Equals([do_next_lhs, do_next_rhs]))
+            Equals(sorted([do_next_lhs, do_next_rhs])))
         self.assertThat(
             sorted(do_last.all_deps),
-            Equals([do_first, do_next_lhs, do_next_rhs]))
-
-
+            Equals(sorted([do_first, do_next_lhs, do_next_rhs])))
