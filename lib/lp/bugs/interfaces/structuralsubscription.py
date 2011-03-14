@@ -157,7 +157,7 @@ class IStructuralSubscriptionTargetWrite(Interface):
         """Add a subscription for this structure.
 
         This method is used to create a new `IStructuralSubscription`
-        for the target, without filters.
+        for the target.
 
         :subscriber: The IPerson who will be subscribed. If omitted,
             subscribed_by will be used.
@@ -177,14 +177,35 @@ class IStructuralSubscriptionTargetWrite(Interface):
     def addBugSubscription(subscriber, subscribed_by):
         """Add a bug subscription for this structure.
 
-        This method is used to create a new `IStructuralSubscription`
-        for the target.  This initially is without filters, which will
-        mean that all notifications will be sent.
+        This method is used to create a new `IStructuralSubscription` for the
+        target.  This initially has a single filter which will allow all
+        notifications will be sent.
 
         :subscriber: The IPerson who will be subscribed. If omitted,
             subscribed_by will be used.
         :subscribed_by: The IPerson creating the subscription.
         :return: The new bug subscription.
+        """
+
+    @operation_parameters(
+        subscriber=Reference(
+            schema=IPerson,
+            title=_(
+                'Person to subscribe. If omitted, the requesting user will be'
+                ' subscribed.'),
+            required=False))
+    @call_with(subscribed_by=REQUEST_USER)
+    @export_factory_operation(Interface, []) # Really IBugSubscriptionFilter
+    def addBugSubscriptionFilter(subscriber, subscribed_by):
+        """Add a bug subscription filter for this structure.
+
+        This method is used to create a new `IBugSubscriptionFilter` for the
+        target.  It will initially allow all notifications to be sent.
+
+        :subscriber: The IPerson who will be subscribed. If omitted,
+            subscribed_by will be used.
+        :subscribed_by: The IPerson creating the subscription.
+        :return: The new bug subscription filter.
         """
 
     @operation_parameters(
