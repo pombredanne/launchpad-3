@@ -3,9 +3,11 @@
 
   <tal:label-open-tag replace="structure view/label_open_tag"/>
     <span tal:replace="structure view/label"/>
-    <button class="lazr-btn yui3-activator-act yui3-activator-hidden">
-      Edit
-    </button>
+    <tal:has_choices condition="view/has_choices">
+      <button class="lazr-btn yui3-activator-act yui3-activator-hidden">
+        Edit
+      </button>
+    </tal:has_choices>
     <noscript tal:condition="view/can_write">
       <a tal:attributes="href view/edit_url;
                          title view/edit_title"
