@@ -1500,11 +1500,8 @@ class DistroSeriesDerivationVocabularyFactory:
 
     def __init__(self, context):
         """See `IVocabularyFactory.__call__`."""
-        if IDistroSeries.providedBy(context):
-            self.distribution = context.distribution
-        else:
-            assert IDistribution.providedBy(context)
-            self.distribution = context
+        assert IDistroSeries.providedBy(context)
+        self.distribution = context.distribution
 
     def find_terms(self, *where):
         """Return a `tuple` of terms matching the given criteria.
