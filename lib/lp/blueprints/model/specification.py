@@ -610,7 +610,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 return deplink
 
     def _recursive_dependent_query(self):
-        return SQL("""
+        return """
             RECURSIVE dependencies(id) AS (
                 SELECT %s
             UNION
@@ -618,18 +618,19 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 FROM specificationdependency sd, dependencies d, specification s
                 WHERE sd.specification = d.id
                 AND s.id = sd.dependency
-            )""" % self.id)
+            )""" % self.id
 
     @property
     def all_deps(self):
-        return Store.of(self).with_(self._recursive_dependent_query()).find(
+        return Store.of(self).with_(
+            SQL(self._recursive_dependent_query())).find(
             Specification,
             Specification.id != self.id,
             SQL('Specification.id in (select id from dependencies)'))
 
 
     def _recursive_blocked_query(self):
-        return SQL("""
+        return """
             RECURSIVE blocked(id) AS (
                 SELECT %s
             UNION
@@ -637,12 +638,13 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 FROM specificationdependency sd, blocked b, specification s
                 WHERE sd.dependency = b.id
                 AND s.id = sd.specification
-            )""" % self.id)
+            )""" % self.id
 
     @property
     def all_blocked(self):
         """See `ISpecification`."""
-        return Store.of(self).with_(self._recursive_blocked_query()).find(
+        return Store.of(self).with_(
+            SQL(self._recursive_blocked_query())).find(
             Specification,
             Specification.id != self.id,
             SQL('Specification.id in (select id from blocked)'))
