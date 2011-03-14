@@ -15,8 +15,12 @@ from canonical.testing.layers import (
     )
 from lp.registry.interfaces.packaging import IPackagingUtil
 from lp.registry.model.packagingjob import PackagingJob, PackagingJobDerived
-from lp.services.job.interfaces.job import IRunnableJob
+from lp.services.job.interfaces.job import (
+    IRunnableJob,
+    JobStatus,
+    )
 from lp.testing import (
+    EventRecorder,
     TestCaseWithFactory,
     )
 from lp.translations.interfaces.side import TranslationSide
@@ -168,6 +172,73 @@ class TestTranslationMergeJob(TestCaseWithFactory):
         self.assertNotEqual([], finder.find())
         # Ensure no constraints were violated.
         transaction.commit()
+
+    def test_getNextJobStatus(self):
+        """Should find next packaging job."""
+        #suppress job creation.
+        with EventRecorder() as recorder:
+            packaging = self.factory.makePackagingLink()
+        self.assertIs(None, TranslationMergeJob.getNextJobStatus(packaging))
+        TranslationMergeJob.forPackaging(packaging)
+        self.assertEqual(
+            JobStatus.WAITING, TranslationMergeJob.getNextJobStatus(packaging))
+
+    def test_getNextJobStatus_wrong_packaging(self):
+        """Jobs on wrong packaging should be ignored."""
+        #suppress job creation.
+        with EventRecorder() as recorder:
+            packaging = self.factory.makePackagingLink()
+        self.factory.makePackagingLink(
+            productseries=packaging.productseries)
+        self.assertIs(None, TranslationMergeJob.getNextJobStatus(packaging))
+        self.factory.makePackagingLink()
+        other_packaging = self.factory.makePackagingLink(
+            distroseries=packaging.distroseries)
+        other_packaging = self.factory.makePackagingLink(
+            distroseries=packaging.distroseries)
+        self.assertIs(None, TranslationMergeJob.getNextJobStatus(packaging))
+        TranslationMergeJob.create(
+            sourcepackagename=packaging.sourcepackagename,
+            distroseries=packaging.distroseries,
+            productseries=self.factory.makeProductSeries())
+        self.assertIs(None, TranslationMergeJob.getNextJobStatus(packaging))
+
+    def test_getNextJobStatus_wrong_type(self):
+        """Only TranslationMergeJobs should result."""
+        #suppress job creation.
+        with EventRecorder() as recorder:
+            packaging = self.factory.makePackagingLink()
+        job = TranslationSplitJob.forPackaging(packaging)
+        self.assertIs(
+            None, TranslationMergeJob.getNextJobStatus(packaging))
+
+    def test_getNextJobStatus_status(self):
+        """Only RUNNING and WAITING jobs should influence status."""
+        #suppress job creation.
+        with EventRecorder() as recorder:
+            packaging = self.factory.makePackagingLink()
+        job = TranslationMergeJob.forPackaging(packaging)
+        job.start()
+        self.assertEqual(JobStatus.RUNNING,
+            TranslationMergeJob.getNextJobStatus(packaging))
+        job.fail()
+        self.assertIs(None, TranslationMergeJob.getNextJobStatus(packaging))
+        job2 = TranslationMergeJob.forPackaging(packaging)
+        job2.start()
+        job2.complete()
+        job3 = TranslationMergeJob.forPackaging(packaging)
+        job3.suspend()
+        self.assertIs(None, TranslationMergeJob.getNextJobStatus(packaging))
+
+    def test_getNextJobStatus_order(self):
+        """Status should order by id."""
+        with EventRecorder() as recorder:
+            packaging = self.factory.makePackagingLink()
+        job = TranslationMergeJob.forPackaging(packaging)
+        job.start()
+        job2 = TranslationMergeJob.forPackaging(packaging)
+        self.assertEqual(JobStatus.RUNNING,
+            TranslationMergeJob.getNextJobStatus(packaging))
 
 
 class TestTranslationSplitJob(TestCaseWithFactory):
