@@ -154,18 +154,19 @@ class DistroSeriesDifference(Storm):
         """See `IDistroSeriesDifference`."""
         if self.base_version is not None:
             parent = self.derived_series.parent_series
-            pubs = parent.main_archive.getPublishedSources(
+            result = parent.main_archive.getPublishedSources(
                 name=self.source_package_name.name,
                 version=self.base_version,
-                distroseries=parent)
-            if pubs.count() == 0:
+                distroseries=parent).first()
+            if result is None:
                 # If the base version isn't in the parent, it may be
                 # published in the child distroseries.
-                pubs = self.derived_series.main_archive.getPublishedSources(
+                child = self.derived_series
+                result = child.main_archive.getPublishedSources(
                     name=self.source_package_name.name,
                     version=self.base_version,
-                    distroseries=self.derived_series)
-            return pubs.first()
+                    distroseries=self.derived_series).first()
+            return result
         return None
 
     @property
