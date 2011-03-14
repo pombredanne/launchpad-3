@@ -50,7 +50,6 @@ from canonical.launchpad.components.decoratedresultset import (
     )
 from canonical.launchpad.helpers import (
     get_contact_email_addresses,
-    shortlist,
     )
 from lp.blueprints.adapters import SpecificationDelta
 from lp.blueprints.enums import (
@@ -86,16 +85,14 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.product import IProduct
 
 
-
 def recursive_blocked_query(spec):
     return """
         RECURSIVE blocked(id) AS (
             SELECT %s
         UNION
-            SELECT s.id
-            FROM specificationdependency sd, blocked b, specification s
+            SELECT sd.specification
+            FROM specificationdependency sd, blocked b
             WHERE sd.dependency = b.id
-            AND s.id = sd.specification
         )""" % spec.id
 
 
@@ -104,10 +101,9 @@ def recursive_dependent_query(spec):
         RECURSIVE dependencies(id) AS (
             SELECT %s
         UNION
-            SELECT s.id
-            FROM specificationdependency sd, dependencies d, specification s
+            SELECT sd.dependency
+            FROM specificationdependency sd, dependencies d
             WHERE sd.specification = d.id
-            AND s.id = sd.dependency
         )""" % spec.id
 
 
@@ -672,7 +668,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
         spec_branch.destroySelf()
 
     def __repr__(self):
-        return '<Specification %r for %r>' % (self.name, self.target.name)
+        return '<Specification %s %r for %r>' % (
+            self.id, self.name, self.target.name)
 
 
 class HasSpecificationsMixin:
