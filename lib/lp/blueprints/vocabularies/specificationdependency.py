@@ -11,6 +11,7 @@ __all__ = [
 
 from operator import attrgetter
 
+from storm.locals import Select, SQL
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
@@ -47,10 +48,10 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
        as the context, or
      - the full URL of the spec, in which case it can be any spec at all.
 
-    For the purposes of enumeration and searching we only consider the first
-    sort of spec for now.  The URL form of token only matches precisely,
-    searching only looks for specs on the current target if the search term is
-    not a URL.
+    For the purposes of enumeration and searching we look at all the possible
+    specifications, but order those of the same target first.  If there is an
+    associated series as well, then those are shown before other matches not
+    linked to the same series.
     """
 
     implements(IHugeVocabulary)
@@ -60,30 +61,52 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
     displayname = 'Select a blueprint'
     step_title = 'Search'
 
-    def _is_valid_candidate(self, spec, check_target=False):
+    def _is_valid_candidate(self, spec):
         """Is `spec` a valid candidate spec for self.context?
 
         Invalid candidates are:
 
-         * The spec that we're adding a depdency to,
-         * Specs for a different target, and
-         * Specs that depend on this one.
+         * None
+         * The spec that we're adding a depdency to
+         * Specs that depend on this one
 
         Preventing the last category prevents loops in the dependency graph.
         """
-        if check_target and spec.target != self.context.target:
+        if spec is None:
             return False
         return spec != self.context and spec not in self.context.all_blocked
 
-    def _filter_specs(self, specs, check_target=False):
-        """Filter `specs` to remove invalid candidates.
+    def _order_by(self):
+        """Look at the context to provide grouping."""
+        order_statements = []
+        spec = self.context
+        if spec.product is not None:
+            order_statements.append(
+                "(CASE Specification.product WHEN %s THEN 0 ELSE 1 END)" %
+                spec.product.id)
+            if spec.productseries is not None:
+                order_statements.append(
+                    "(CASE Specification.productseries"
+                    " WHEN %s THEN 0 ELSE 1 END)" %
+                    spec.productseries.id)
+        elif spec.distribution is not None:
+            order_statements.append(
+                "(CASE Specification.distribution WHEN %s THEN 0 ELSE 1 END)" %
+                spec.distribution.id)
+            if spec.productseries is not None:
+                order_statements.append(
+                    "(CASE Specification.distroseries"
+                    " WHEN %s THEN 0 ELSE 1 END)" %
+                    spec.distroseries.id)
+        order_statements.append("Specification.name")
+        order_statements.append("Specification.id")
+        return SQL(', '.join(order_statements))
 
-        See `_is_valid_candidate` for what an invalid candidate is.
-        """
-        # XXX intellectronica 2007-07-05: is 100 a reasonable count before
-        # starting to warn?
-        return [spec for spec in shortlist(specs, 100)
-                if self._is_valid_candidate(spec, check_target)]
+    def _blocked_subselect(self):
+        """Return the select statement to exclude already blocked specs."""
+        return Select(
+            SQL("Specification.id not in (%s select id from dependencies)"
+                % self.context._recursive_dependent_query()))
 
     def toTerm(self, obj):
         if obj.target == self.context.target:
@@ -127,7 +150,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
         spec = self._spec_from_url(token)
         if spec is None:
             spec = self.context.target.getSpecification(token)
-        if spec and self._is_valid_candidate(spec):
+        if self._is_valid_candidate(spec):
             return self.toTerm(spec)
         raise LookupError(token)
 
@@ -141,7 +164,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
         if not query:
             return CountableIterator(0, [])
         spec = self._spec_from_url(query)
-        if spec is not None and self._is_valid_candidate(spec):
+        if self._is_valid_candidate(spec):
             return CountableIterator(1, [spec])
         quoted_query = quote_like(query)
         sql_query = ("""
