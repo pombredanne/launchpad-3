@@ -6,6 +6,8 @@
 __metaclass__ = type
 __all__ = [
     'HasSpecificationsMixin',
+    'recursive_blocked_query',
+    'recursive_dependent_query',
     'Specification',
     'SpecificationSet',
     ]
@@ -82,6 +84,31 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.product import IProduct
+
+
+
+def recursive_blocked_query(spec):
+    return """
+        RECURSIVE blocked(id) AS (
+            SELECT %s
+        UNION
+            SELECT s.id
+            FROM specificationdependency sd, blocked b, specification s
+            WHERE sd.dependency = b.id
+            AND s.id = sd.specification
+        )""" % spec.id
+
+
+def recursive_dependent_query(spec):
+    return """
+        RECURSIVE dependencies(id) AS (
+            SELECT %s
+        UNION
+            SELECT s.id
+            FROM specificationdependency sd, dependencies d, specification s
+            WHERE sd.specification = d.id
+            AND s.id = sd.dependency
+        )""" % spec.id
 
 
 class Specification(SQLBase, BugLinkTargetMixin):
@@ -609,42 +636,19 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 SpecificationDependency.delete(deplink.id)
                 return deplink
 
-    def _recursive_dependent_query(self):
-        return """
-            RECURSIVE dependencies(id) AS (
-                SELECT %s
-            UNION
-                SELECT s.id
-                FROM specificationdependency sd, dependencies d, specification s
-                WHERE sd.specification = d.id
-                AND s.id = sd.dependency
-            )""" % self.id
-
     @property
     def all_deps(self):
         return Store.of(self).with_(
-            SQL(self._recursive_dependent_query())).find(
+            SQL(recursive_dependent_query(self))).find(
             Specification,
             Specification.id != self.id,
             SQL('Specification.id in (select id from dependencies)'))
-
-
-    def _recursive_blocked_query(self):
-        return """
-            RECURSIVE blocked(id) AS (
-                SELECT %s
-            UNION
-                SELECT s.id
-                FROM specificationdependency sd, blocked b, specification s
-                WHERE sd.dependency = b.id
-                AND s.id = sd.specification
-            )""" % self.id
 
     @property
     def all_blocked(self):
         """See `ISpecification`."""
         return Store.of(self).with_(
-            SQL(self._recursive_blocked_query())).find(
+            SQL(recursive_blocked_query(self))).find(
             Specification,
             Specification.id != self.id,
             SQL('Specification.id in (select id from blocked)'))
