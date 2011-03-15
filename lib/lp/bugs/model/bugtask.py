@@ -467,9 +467,10 @@ def validate_target_attribute(self, attr, value):
     else:
         target_params[attr[:-2]] = getUtility(utility_iface).get(value)
 
-    # Use a NullBugTask to determine the new target.
-    nulltask = NullBugTask(self.bug, **target_params)
-    self.updateTargetNameCache(nulltask.target)
+    # Update the target name cache with the potential new target. The
+    # attribute changes haven't been made yet, so we need to calculate the
+    # target manually.
+    self.updateTargetNameCache(determine_target(**target_params))
 
     return value
 
