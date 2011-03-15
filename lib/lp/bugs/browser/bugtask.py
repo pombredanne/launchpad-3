@@ -3167,7 +3167,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         # they'll be needed for the vocabulary used in this view.
         bugtask_set = getUtility(IBugTaskSet)
         self.milestones = list(
-            bugtask_set.getBugTaskMilestones(self.bugtasks, eager=True))
+            bugtask_set.getBugTaskTargetMilestones(self.bugtasks, eager=True))
 
         distro_packages = defaultdict(list)
         distro_series_packages = defaultdict(list)
@@ -3238,28 +3238,8 @@ class BugTasksAndNominationsView(LaunchpadView):
         view.edit_view.user_is_subscribed = self.user_is_subscribed
         # Hint to optimize when there are many bugtasks.
         view.many_bugtasks = self.many_bugtasks
-        self._preloadTableRowMilestones(view, context) 
         return view
     
-    def _preloadTableRowMilestones(self, view, context):
-        view_cache = get_property_cache(view)
-        if IProduct.providedBy(context):
-            view_cache._visible_milestones = [
-                stone for stone in self.milestones if
-                removeSecurityProxy(stone).productID is not None]
-        if IProductSeries.providedBy(context):
-            view_cache._visible_milestones = [
-                stone for stone in self.milestones if
-                removeSecurityProxy(stone).productseriesID is not None]
-        if IDistribution.providedBy(context):
-            view_cache._visible_milestones = [
-                stone for stone in self.milestones if
-                removeSecurityProxy(stone).distributionID is not None]
-        if IDistroSeries.providedBy(context):
-            view_cache._visible_milestones = [
-                stone for stone in self.milestones if
-                removeSecurityProxy(stone).distroseriesID is not None]
-
     def getBugTaskAndNominationViews(self):
         """Return the IBugTasks and IBugNominations views for this bug.
 
