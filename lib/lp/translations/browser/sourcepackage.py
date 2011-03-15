@@ -135,9 +135,10 @@ class SourcePackageTranslationSharingDetailsView(
                 structured(
                 'No upstream templates have been found yet. Please follow '
                 'the import process by going to the '
-                '<a href="%s">Translation Import Queue</a>.' %(
+                '<a href="%s">Translation Import Queue</a> of the '
+                'upstream project series.' %(
                 canonical_url(
-                    self.context, rootsite='translations',
+                    self.context.productseries, rootsite='translations',
                     view_name="+imports"))))
 
     @property

@@ -423,7 +423,8 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             view_name="+sharing-details")
         self.assertEqual(
             ["No upstream templates have been found yet. Please follow "
-             "the import process by going to the Translation Import Queue."],
+             "the import process by going to the Translation Import Queue "
+             "of the upstream project series."],
             get_feedback_messages(browser.contents))
 
     def test_no_message_with_templates(self):
