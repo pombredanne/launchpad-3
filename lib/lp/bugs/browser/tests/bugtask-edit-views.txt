@@ -77,86 +77,17 @@ exist in Launchpad. we'll get an error message.
     >>> edit_view.initialize()
     >>> for error in edit_view.errors:
     ...     print error
-    (u"Launchpad doesn't know of any source package named 'no-such-package' in Ubuntu.", None)
+    (u"Launchpad doesn't know of any source package named 'no-such-package'
+     in Ubuntu.", None)
 
-If we try to change the source package to a package name that another
-distribution task already has, an error message will occur. First,
-let's add an evolution (Ubuntu) task to bug two.
-
-    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> bug_two = getUtility(IBugSet).get(2)
-    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
-    >>> ubuntu_evolution = ubuntu.getSourcePackage('evolution')
-    >>> ubuntu_evolution_task = getUtility(IBugTaskSet).createTask(
-    ...     bug=bug_two, owner=getUtility(ILaunchBag).user,
-    ...     distribution=ubuntu,
-    ...     sourcepackagename=ubuntu_evolution.sourcepackagename)
-    >>> import transaction
-    >>> transaction.commit()
-
-Now we try changing the generic Ubuntu task to evolution, which will
-fail.
-
-    >>> ubuntu_task = bug_two.bugtasks[1]
-    >>> ubuntu_task.bugtargetdisplayname
-    u'Ubuntu'
-    >>> edit_form = {
-    ...    'ubuntu.actions.save': 'Save Changes',
-    ...    'ubuntu.status': 'In Progress',
-    ...    'ubuntu.importance':
-    ...        ubuntu_thunderbird_task.importance.title,
-    ...    'ubuntu.ubuntu_thunderbird.assignee.option':
-    ...        'ubuntu.assignee.assign_to_nobody',
-    ...    'ubuntu.sourcepackagename': ubuntu_evolution.name,
-    ...     }
-    >>> request = LaunchpadTestRequest(form=edit_form, method='POST')
-    >>> edit_view = getMultiAdapter(
-    ...     (ubuntu_task, request), name='+editstatus-page')
-    >>> edit_view.initialize()
-    >>> for error in edit_view.errors:
-    ...     print error
-    This bug has already been reported on evolution (ubuntu).
-
-This also works if we try to reassign an accepted distribution series
-task. Since we aren't allowed to edit the current development task
-directly, let's add a grumpy task first.
-
-    >>> login('foo.bar@canonical.com')
-    >>> ubuntu_grumpy = ubuntu.getSeries('grumpy')
-    >>> nomination = bug_two.addNomination(
-    ...     target=ubuntu_grumpy, owner=getUtility(ILaunchBag).user)
-    >>> nomination.approve(getUtility(ILaunchBag).user)
-    >>> transaction.commit()
-
-    >>> ubuntu_grumpy_task = bug_two.bugtasks[5]
-    >>> ubuntu_grumpy_task.bugtargetdisplayname
-    u'Ubuntu Grumpy'
-
-    >>> edit_form = {
-    ...    'ubuntu_grumpy.actions.save': 'Save Changes',
-    ...    'ubuntu_grumpy.status': 'In Progress',
-    ...    'ubuntu_grumpy.importance':
-    ...        ubuntu_grumpy_task.importance.title,
-    ...    'ubuntu_grumpy.assignee.option':
-    ...        'ubuntu_grumpy.assignee.assign_to_nobody',
-    ...    'ubuntu_grumpy.sourcepackagename': ubuntu_evolution.name,
-    ...     }
-    >>> request = LaunchpadTestRequest(form=edit_form, method='POST')
-    >>> edit_view = getMultiAdapter(
-    ...     (ubuntu_grumpy_task, request), name='+editstatus-page')
-    >>> edit_view.initialize()
-    >>> for error in edit_view.errors:
-    ...     print error
-    This bug has already been reported on evolution (ubuntu).
-
-    >>> login('test@canonical.com')
-
+An error is reported to the user when a bug is retargeted and there is
+an existing task for the same target.
 
 == Edit the Product ==
 
 +editstatus-page allows a bug to be retargeted to another product.
 
+    >>> login('test@canonical.com')
     >>> bug_seven = getUtility(IBugSet).get(7)
     >>> product_task = bug_seven.bugtasks[0]
     >>> product_task.bugtargetname
@@ -303,6 +234,7 @@ A bug supervisor can also change the milestone. Let's set no-priv as
 Ubuntu's bug supervisor.
 
     >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> login("foo.bar@canonical.com")
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")

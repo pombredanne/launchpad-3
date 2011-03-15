@@ -173,19 +173,11 @@ be exactly one bugtask having a non-Invalid status. The question's
 target come from the bugtask's target.
 
     >>> login('no-priv@canonical.com')
-    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> big_bug = filebug(
     ...     bugtarget, "Print is borked", status=BugTaskStatus.NEW)
 
-    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-
-    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-    >>> evo_ubuntu = getUtility(ISourcePackageNameSet)['evolution']
-    >>> evo_bugtask = getUtility(IBugTaskSet).createTask(
-    ...     bug=big_bug, distribution=ubuntu, sourcepackagename=evo_ubuntu,
-    ...     owner=no_priv)
+    >>> evo_project = factory.makeProduct()
+    >>> evo_bugtask = factory.makeBugTask(bug=big_bug, target=evo_project)
     >>> bugtasks = big_bug.bugtasks
     >>> len(bugtasks) > 1
     True
