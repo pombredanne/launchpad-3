@@ -4,7 +4,8 @@
   <tal:label-open-tag replace="structure view/label_open_tag"/>
     <span tal:replace="structure view/label"/>
     <tal:has_choices condition="view/has_choices">
-      <button class="lazr-btn yui3-activator-act yui3-activator-hidden">
+      <button tal:attributes="id string:${view/content_box_id}-btn"
+              class="lazr-btn yui3-activator-act yui3-activator-hidden">
         Edit
       </button>
     </tal:has_choices>
