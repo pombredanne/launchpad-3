@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for a difference between two distribution series."""
@@ -12,7 +12,9 @@ __all__ = [
 from debian.changelog import Changelog
 from lazr.enum import DBItem
 from storm.expr import Desc
+
 from storm.locals import (
+    And,
     Int,
     Reference,
     Storm,
@@ -114,6 +116,7 @@ class DistroSeriesDifference(Storm):
     def getForDistroSeries(
         distro_series,
         difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
+        source_package_name_filter=None,
         status=None):
         """See `IDistroSeriesDifferenceSource`."""
         if status is None:
@@ -123,11 +126,20 @@ class DistroSeriesDifference(Storm):
         elif isinstance(status, DBItem):
             status = (status, )
 
-        return IStore(DistroSeriesDifference).find(
-            DistroSeriesDifference,
+        conditions = [
             DistroSeriesDifference.derived_series == distro_series,
             DistroSeriesDifference.difference_type == difference_type,
-            DistroSeriesDifference.status.is_in(status))
+            DistroSeriesDifference.status.is_in(status),
+        ]
+        if source_package_name_filter:
+            conditions.extend([
+                DistroSeriesDifference.source_package_name ==
+                    SourcePackageName.id,
+                SourcePackageName.name == source_package_name_filter])
+
+        return IStore(DistroSeriesDifference).find(
+            DistroSeriesDifference,
+            And(*conditions))
 
     @staticmethod
     def getByDistroSeriesAndName(distro_series, source_package_name):
@@ -156,14 +168,14 @@ class DistroSeriesDifference(Storm):
             parent = self.derived_series.parent_series
             result = parent.main_archive.getPublishedSources(
                 name=self.source_package_name.name,
-                version=self.base_version, distroseries=parent).first()
+                version=self.base_version).first()
             if result is None:
                 # If the base version isn't in the parent, it may be
                 # published in the child distroseries.
                 child = self.derived_series
                 result = child.main_archive.getPublishedSources(
                     name=self.source_package_name.name,
-                    version=self.base_version, distroseries=child).first()
+                    version=self.base_version).first()
             return result
         return None
 

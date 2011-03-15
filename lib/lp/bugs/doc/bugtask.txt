@@ -70,10 +70,11 @@ Next, we need to grab some values to provide for importance and status.
   ii. Distro -- a bug that has to be fixed in a specific distro
 
     >>> ubuntu = distroset.get(1)
+    >>> a_distro = factory.makeDistribution(name='tubuntu')
     >>> distro_task = bugtaskset.createTask(
-    ...     bug=bug_one, distribution=ubuntu, owner=mark,
+    ...     bug=bug_one, distribution=a_distro, owner=mark,
     ...     status=STATUS_NEW, importance=IMPORTANCE_MEDIUM)
-    >>> distro_task.distribution == ubuntu
+    >>> distro_task.distribution == a_distro
     True
 
     >>> from lp.bugs.interfaces.bugtask import IDistroBugTask
@@ -139,7 +140,7 @@ list.
 
   * a distribution
 
-    >>> distro_task.target == ubuntu
+    >>> distro_task.target == a_distro
     True
 
   * a distroseries
@@ -973,10 +974,10 @@ Let's just make sure that the tasks on bug_one sort correctly.
     Evolution
     Mozilla Firefox
     Mozilla Firefox 1.0
-    Ubuntu
     mozilla-firefox (Ubuntu)
     Ubuntu Warty
     mozilla-firefox (Debian)
+    Tubuntu
 
 
 == BugTask Adaptation ==
@@ -1145,10 +1146,10 @@ target uses Malone as its official bugtracker.
     Mozilla Firefox                True
     Mozilla Firefox 1.0            True
     Mozilla Thunderbird            False
-    Ubuntu                         True
     mozilla-firefox (Ubuntu)       True
     Ubuntu Warty                   True
     mozilla-firefox (Debian)       False
+    Tubuntu                        False
 
 
 == BugTask badges ==
@@ -1232,12 +1233,12 @@ This also works for distributions...
     ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
     1: Firefox does not support SVG
 
-
 ... and for SourcePackages.
 
+    >>> a_ff_bug = factory.makeBug(product=firefox, title="a Firefox")
     >>> firefox_package = ubuntu.getSourcePackage('mozilla-firefox')
     >>> firefox_package_bugtask = factory.makeBugTask(
-    ...     bug=new_ff_bug, target=firefox_package)
+    ...     bug=a_ff_bug, target=firefox_package)
 
     >>> similar_bugs = firefox_package_bugtask.findSimilarBugs(
     ...     user=sample_person)
@@ -1269,25 +1270,4 @@ list for no_priv any more, since they're not a direct subscriber.
     ...     print "%s: %s" % (similar_bug.id, similar_bug.title)
     1: Firefox does not support SVG
     5: Firefox install instructions should be complete
-
-
-== Handling IntegrityError and ProgrammingError ==
-
-# XXX: Brad Bollenbach 2005-02-24: This bit testing the IntegrityError
-# should be higher up in the file (under the explanation about creating
-# tasks), but I can't figure out how to reset the connection properly after
-# an IntegrityError is raised. ARGH.
-
-Note that a task filed on a specific distro series does *not* have its
-distribution column set. In fact, a task must have exactly one of its product,
-distribution or distroseries fields set, otherwise the database integrity
-constraints will be violated.
-
-    >>> bad_task = bugtaskset.createTask(
-    ...     bug=bug_one, distribution=ubuntu, distroseries=warty,
-    ...     owner=mark, status=STATUS_NEW,
-    ...     importance=IMPORTANCE_MEDIUM)
-    Traceback (most recent call last):
-    ...
-    IntegrityError: new row for relation "bugtask" violates check
-                    constraint "bugtask_assignment_checks"
+    ...: a Firefox
