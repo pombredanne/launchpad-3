@@ -1,3 +1,13 @@
+launchpad-buildd (76~1) hardy-cat; urgency=low
+
+  [ various ]
+  * ProjectGroup.products sort order and remove Author: comments.
+  * Fix some tests to not print stuff
+  * Make buildd pointer check regexes work on natty
+  * merge before rollout + text conflict patch by wgrant
+
+ -- LaMont Jones <lamont@canonical.com>  Tue, 15 Mar 2011 16:59:36 -0600
+
 launchpad-buildd (74) hardy-cat; urgency=low
 
   [ Aaron Bentley]
