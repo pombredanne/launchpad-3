@@ -415,7 +415,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         When multiple tasks are on a bug, if one of the tasks is for the
         branch.target, then only that task is returned. Otherwise the default
         bug task is returned.
-        
+
         :param user: The user doing the search.
         :param status_filter: Passed onto the bug search as a constraint.
         """
