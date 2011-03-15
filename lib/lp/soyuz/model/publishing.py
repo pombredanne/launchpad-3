@@ -85,6 +85,9 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,
     IBinaryPackageBuildSet,
     )
+from lp.soyuz.interfaces.distroseriesdifferencejob import (
+    IDistroSeriesDifferenceJobSource,
+    )
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     IBinaryPackageFilePublishing,
@@ -1422,6 +1425,10 @@ class PublishingSet:
             datecreated=UTC_NOW,
             ancestor=ancestor)
         DistributionSourcePackage.ensure(pub)
+
+        dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
+        dsd_job_source.createForPackagePublication(
+            distroseries, sourcepackagerelease.sourcepackagename)
         return pub
 
     def getBuildsForSourceIds(

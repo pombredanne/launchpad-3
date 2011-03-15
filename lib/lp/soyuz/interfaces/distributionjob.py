@@ -76,6 +76,13 @@ class DistributionJobType(DBEnumeratedType):
         This job copies a single package, optionally including binaries.
         """)
 
+    DISTROSERIESDIFFERENCE = DBItem(3, """
+        Create, delete, or update a Distro Series Difference.
+
+        Updates the status of a potential difference between a derived
+        distribution release series and its parent series.
+        """)
+
 
 class IInitialiseDistroSeriesJobSource(IJobSource):
     """An interface for acquiring IInitialiseDistroSeriesJobs."""
