@@ -56,7 +56,7 @@
             </li>
             <li class="sprite yes"
                 tal:condition="view/is_upstream_translations_enabled">
-              Translations are enable on the upstream project.
+              Translations are enabled on the upstream project.
               <a tal:condition="view/is_packaging_configured"
                  tal:replace="structure context/productseries/product/menu:translations/settings/fmt:icon" />
             </li>
