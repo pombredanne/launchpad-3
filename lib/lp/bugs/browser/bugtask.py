@@ -523,28 +523,6 @@ class BugTaskNavigation(Navigation):
     """Navigation for the `IBugTask`."""
     usedfor = IBugTask
 
-    def traverse(self, name):
-        """Traverse the `IBugTask`."""
-        # Are we traversing to the view or edit status page of the
-        # bugtask? If so, and the task actually exists, return the
-        # appropriate page. If the task doesn't yet exist (i.e. it's a
-        # NullBugTask), then return a 404. In other words, the URL:
-        #
-        #   /products/foo/+bug/1/+viewstatus
-        #
-        # will return the +viewstatus page if bug 1 has actually been
-        # reported in "foo". If bug 1 has not yet been reported in "foo",
-        # a 404 will be returned.
-        if name not in ("+viewstatus", "+editstatus"):
-            # You're going in the wrong direction.
-            return None
-        if INullBugTask.providedBy(self.context):
-            # The bug has not been reported in this context.
-            return None
-        # Yes! The bug has been reported in this context.
-        return getMultiAdapter((self.context, self.request),
-            name=(name + "-page"))
-
     @stepthrough('attachments')
     def traverse_attachments(self, name):
         """traverse to an attachment by id."""
