@@ -18,6 +18,7 @@ from canonical.launchpad.webapp import (
     NavigationMenu,
     )
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.sourcepackage import ISourcePackage
@@ -118,6 +119,21 @@ class SourcePackageTranslationSharingDetailsView(
     """Details about translation sharing."""
 
     page_title = "Sharing details"
+
+    def initialize(self):
+        super(SourcePackageTranslationSharingDetailsView, self).initialize()
+        has_no_upstream_templates = (
+            self.is_packaging_configured and
+            not has_upstream_template(self.context))
+        if has_no_upstream_templates:
+            self.request.response.addInfoNotification(
+                structured(
+                'No upstream templates have been found yet. Please follow '
+                'the import process by going to the '
+                '<a href="%s">Translation Import Queue</a>.' %(
+                canonical_url(
+                    self.context, rootsite='translations',
+                    view_name="+imports"))))
 
     @property
     def is_packaging_configured(self):
