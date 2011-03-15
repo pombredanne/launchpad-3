@@ -1688,12 +1688,14 @@ def filter_bugtasks_by_context(context, bugtasks):
 
     An initial constraint is to not require any database queries from this method.
 
-    Current valid contexts include:
+    Current contexts that impact selection:
       IProduct
       IProductSeries
       IDistribution
       IDistroSeries
       ISourcePackage
+    Others:
+      get the first bugtask for any particular bug
 
     If the context is a Product, then return the product bug task if there is
     one.  If the context is a ProductSeries, then return the productseries
