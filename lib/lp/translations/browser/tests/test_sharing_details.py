@@ -156,14 +156,14 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         self.assertFalse(self.view.is_upstream_synchronization_enabled)
 
     def test_is_upstream_synchronization_enabled__no_import(self):
-        # If the source package is not linked to an upstream series,
+        # If no synchronization is enabled on the upstream series,
         # is_upstream_synchronization_enabled returns False.
         self.configureSharing(
             translation_import_mode=TranslationsBranchImportMode.NO_IMPORT)
         self.assertFalse(self.view.is_upstream_synchronization_enabled)
 
     def test_is_upstream_synchronization_enabled__import_templates(self):
-        # If the source package is not linked to an upstream series,
+        # If only template synchronization is enabled on the upstream series,
         # is_upstream_synchronization_enabled returns False.
         self.configureSharing(
             translation_import_mode=
@@ -171,8 +171,8 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         self.assertFalse(self.view.is_upstream_synchronization_enabled)
 
     def test_is_upstream_synchronization_enabled__import_translations(self):
-        # If the source package is not linked to an upstream series,
-        # is_upstream_synchronization_enabled returns False.
+        # If full translation synchronization is enabled on the upstream
+        # series, is_upstream_synchronization_enabled returns False.
         self.configureSharing(
             translation_import_mode=
                 TranslationsBranchImportMode.IMPORT_TRANSLATIONS)
@@ -301,7 +301,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         return self.factory.makeSourcePackage(distroseries=distroseries)
 
     def _makeFullyConfiguredSharing(self):
-        """Remove some redundant code from the tests."""
+        """Setup a fully configured sharing scenario."""
         packaging = self.factory.makePackagingLink(in_ubuntu=True)
         productseries = packaging.productseries
         sourcepackage = packaging.sourcepackage
@@ -313,12 +313,15 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
                 TranslationsBranchImportMode.IMPORT_TRANSLATIONS))
         return (sourcepackage, productseries)
 
+    def _getSharingDetailsViewBrowser(self, sourcepackage):
+        return self.getViewBrowser(
+            sourcepackage, no_login=True, rootsite="translations",
+            view_name="+sharing-details")
+
     def test_checklist_unconfigured(self):
         # Without a packaging link, sharing is completely unconfigured
         sourcepackage = self._makeSourcePackage()
-        browser = self.getViewBrowser(
-            sourcepackage, no_login=True, rootsite="translations",
-            view_name="+sharing-details")
+        browser = self._getSharingDetailsViewBrowser(sourcepackage)
         checklist = find_tag_by_id(browser.contents, 'sharing-checklist')
         self.assertIsNot(None, checklist)
         self.assertTextMatchesExpressionIgnoreWhitespace("""
@@ -332,9 +335,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
     def test_checklist_partly_configured(self):
         # Linking a source package takes care of one item.
         packaging = self.factory.makePackagingLink(in_ubuntu=True)
-        browser = self.getViewBrowser(
-            packaging.sourcepackage, no_login=True, rootsite="translations",
-            view_name="+sharing-details")
+        browser = self._getSharingDetailsViewBrowser(packaging.sourcepackage)
         checklist = find_tag_by_id(browser.contents, 'sharing-checklist')
         self.assertIsNot(None, checklist)
         self.assertTextMatchesExpressionIgnoreWhitespace("""
@@ -349,9 +350,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
     def test_checklist_fully_configured(self):
         # A fully configured sharing setup.
         sourcepackage = self._makeFullyConfiguredSharing()[0]
-        browser = self.getViewBrowser(
-            sourcepackage, no_login=True, rootsite="translations",
-            view_name="+sharing-details")
+        browser = self._getSharingDetailsViewBrowser(sourcepackage)
         checklist = find_tag_by_id(browser.contents, 'sharing-checklist')
         self.assertIsNot(None, checklist)
         self.assertTextMatchesExpressionIgnoreWhitespace("""
@@ -359,7 +358,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             Linked upstream series is .+ trunk series.
                 Change upstream link Remove upstream link
             Upstream source branch is .+[.]
-            Translations are enable on the upstream project.
+            Translations are enabled on the upstream project.
             Automatic synchronization of translations is enabled.""",
             extract_text(checklist))
 
@@ -368,9 +367,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         sourcepackage = self._makeSourcePackage()
         self.factory.makePOTemplate(
             name='foo-template', sourcepackage=sourcepackage)
-        browser = self.getViewBrowser(
-            sourcepackage, no_login=True, rootsite="translations",
-            view_name="+sharing-details")
+        browser = self._getSharingDetailsViewBrowser(sourcepackage)
         tbody = find_tag_by_id(
             browser.contents, 'template-table').find('tbody')
         self.assertIsNot(None, tbody)
@@ -386,9 +383,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             name=template_name, sourcepackage=sourcepackage)
         self.factory.makePOTemplate(
             name=template_name, productseries=productseries)
-        browser = self.getViewBrowser(
-            sourcepackage, no_login=True, rootsite="translations",
-            view_name="+sharing-details")
+        browser = self._getSharingDetailsViewBrowser(sourcepackage)
         tbody = find_tag_by_id(
             browser.contents, 'template-table').find('tbody')
         self.assertIsNot(None, tbody)
@@ -404,9 +399,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         template_name = 'foo-template'
         self.factory.makePOTemplate(
             name=template_name, productseries=productseries)
-        browser = self.getViewBrowser(
-            sourcepackage, no_login=True, rootsite="translations",
-            view_name="+sharing-details")
+        browser = self._getSharingDetailsViewBrowser(sourcepackage)
         tbody = find_tag_by_id(
             browser.contents, 'template-table').find('tbody')
         self.assertIsNot(None, tbody)
@@ -418,9 +411,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         # When sharing is fully configured but no upstream templates are
         # found, a message is displayed.
         sourcepackage = self._makeFullyConfiguredSharing()[0]
-        browser = self.getViewBrowser(
-            sourcepackage, no_login=True, rootsite="translations",
-            view_name="+sharing-details")
+        browser = self._getSharingDetailsViewBrowser(sourcepackage)
         self.assertEqual(
             ["No upstream templates have been found yet. Please follow "
              "the import process by going to the Translation Import Queue "
@@ -432,9 +423,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         # message should be displayed.
         sourcepackage, productseries = self._makeFullyConfiguredSharing()
         self.factory.makePOTemplate(productseries=productseries)
-        browser = self.getViewBrowser(
-            sourcepackage, no_login=True, rootsite="translations",
-            view_name="+sharing-details")
+        browser = self._getSharingDetailsViewBrowser(sourcepackage)
         self.assertEqual([], get_feedback_messages(browser.contents))
 
     def test_no_message_with_incomplate_sharing(self):
@@ -444,7 +433,5 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         productseries = packaging.productseries
         sourcepackage = packaging.sourcepackage
         self.factory.makePOTemplate(productseries=productseries)
-        browser = self.getViewBrowser(
-            sourcepackage, no_login=True, rootsite="translations",
-            view_name="+sharing-details")
+        browser = self._getSharingDetailsViewBrowser(sourcepackage)
         self.assertEqual([], get_feedback_messages(browser.contents))
