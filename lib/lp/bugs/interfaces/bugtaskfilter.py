@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 from collections import defaultdict, namedtuple
+from operator import attrgetter
 
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
@@ -106,4 +107,5 @@ def filter_bugtasks_by_context(context, bugtasks):
     for task in bugtasks:
         bug_mapping[task.bugID].append(weight_calculator(task))
 
-    return [sorted(tasks)[0].task for tasks in bug_mapping.itervalues()]
+    filtered = [sorted(tasks)[0].task for tasks in bug_mapping.itervalues()]
+    return sorted(filtered, key=attrgetter('bugID'))

@@ -28,6 +28,19 @@ class TestFilterBugTasksByContext(TestCaseWithFactory):
             filter_bugtasks_by_context(None, tasks),
             Equals(tasks))
 
+    def test_multiple_bugs(self):
+        bug1 = self.factory.makeBug()
+        bug2 = self.factory.makeBug()
+        bug3 = self.factory.makeBug()
+        tasks = list(bug1.bugtasks)
+        tasks.extend(bug2.bugtasks)
+        tasks.extend(bug3.bugtasks)
+        with StormStatementRecorder() as recorder:
+            filtered = filter_bugtasks_by_context(None, tasks)
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
+        self.assertThat(len(filtered), Equals(3))
+        self.assertThat(filtered, Equals(tasks))
+
     def test_two_product_tasks_case_no_context(self):
         widget = self.factory.makeProduct()
         bug = self.factory.makeBug(product=widget)
