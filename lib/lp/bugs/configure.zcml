@@ -190,7 +190,10 @@
                     date_fix_released
                     date_left_closed
                     date_closed
+                    distributionID
+                    distroseriesID
                     milestoneID
+                    productID
                     productseriesID
                     task_age
                     bug_subscribers

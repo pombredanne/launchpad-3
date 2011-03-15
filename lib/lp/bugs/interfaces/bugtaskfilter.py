@@ -8,6 +8,43 @@ __all__ = [
     'filter_bugtasks_by_context',
     ]
 
+from collections import defaultdict
+
+from lp.registry.interfaces.product import IProduct
+
+
+class ProductWeightCalculator:
+    """Give higher weighing to tasks for the matching product."""
+
+    def __init__(self, product):
+        self.productID = product.id
+
+    def __call__(self, bugtask):
+        """Full weight is given to tasks for this product.
+
+        Given that there must be a product task for a series of that product
+        to have a task, we give no more weighting to a productseries task than
+        any other.
+        """
+        if bugtask.productID == self.productID:
+            if bugtask.productseriesID is None:
+                return (1, bugtask)
+        return (2, bugtask)
+
+
+class SimpleWeightCalculator:
+    """All tasks have the same weighting."""
+
+    def __call__(self, bugtask):
+        return (1, bugtask)
+
+
+def get_weight_calculator(context):
+    if IProduct.providedBy(context):
+        return ProductWeightCalculator(context)
+    else:
+        return SimpleWeightCalculator()
+
 
 def filter_bugtasks_by_context(context, bugtasks):
     """Return the bugtasks filtered so there is only one bug task per bug.
@@ -37,4 +74,10 @@ def filter_bugtasks_by_context(context, bugtasks):
     If there is no specific matching task, we return the first task (the one
     with the smallest database id).
     """
-    return bugtasks
+    weight_calculator = get_weight_calculator(context)
+
+    bug_mapping = defaultdict(list)
+    for task in bugtasks:
+        bug_mapping[task.bugID].append(weight_calculator(task))
+
+    return [sorted(tasks)[0][1] for tasks in bug_mapping.itervalues()]

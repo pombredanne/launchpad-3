@@ -460,6 +460,7 @@ class IBugTask(IHasDateCreated, IHasBug):
         BugField(title=_("Bug"), readonly=True))
     product = Choice(
         title=_('Project'), required=False, vocabulary='Product')
+    productID = Attribute('The product ID')
     productseries = Choice(
         title=_('Series'), required=False, vocabulary='ProductSeries')
     productseriesID = Attribute('The product series ID')
@@ -468,9 +469,11 @@ class IBugTask(IHasDateCreated, IHasBug):
         vocabulary='SourcePackageName')
     distribution = Choice(
         title=_("Distribution"), required=False, vocabulary='Distribution')
+    distributionID = Attribute('The distributionID ID')
     distroseries = Choice(
         title=_("Series"), required=False,
         vocabulary='DistroSeries')
+    distroseriesID = Attribute('The distroseries ID')
     milestone = exported(ReferenceChoice(
         title=_('Milestone'),
         required=False,
