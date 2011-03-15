@@ -181,9 +181,11 @@ searches for 'ubuntu' and sees it listed..
     >>> print_search_results()
     Exact matches
     Ubuntu
-    Ubuntu is a new approach to Linux Distribution that includes regular
-    releases, and a simplified single-CD installation system.
-    Registered on 2006-10-16
+    Ubuntu is a new approach to Linux Distribution that includes ...
+    Registered
+    by
+    Registry Administrators
+    on 2006-10-16
 
 The user enters the number 1, and he sees a bug and a question in the
 "Exact matches" section.

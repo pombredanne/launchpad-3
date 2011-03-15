@@ -5,14 +5,20 @@
 
 __metaclass__ = type
 
+from lazr.lifecycle.snapshot import Snapshot
+import soupmatchers
+from testtools.matchers import (
+    MatchesAny,
+    Not,
+    )
+from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
-
-from lazr.lifecycle.snapshot import Snapshot
-
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.person import IPersonSet
@@ -24,17 +30,11 @@ from lp.services.propertycache import get_property_cache
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease,
     )
-from lp.testing import TestCaseWithFactory
-from lp.testing import login_person
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
 from lp.testing.views import create_initialized_view
-
-from testtools.matchers import MatchesAny
-from testtools.matchers import Not
-
-import soupmatchers
-
-from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 
 class TestDistribution(TestCaseWithFactory):
@@ -260,3 +260,25 @@ class TestDistributionPage(TestCaseWithFactory):
                 text='Series and milestones'))
         self.assertThat(view.render(), series_header_match)
         self.assertThat(view.render(), Not(add_series_match))
+
+
+class DistroRegistrantTestCase(TestCaseWithFactory):
+    """A TestCase for registrants and owners of a distribution.
+
+    The registrant is the creator of the distribution (read-only field).
+    The owner is really the maintainer.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(DistroRegistrantTestCase, self).setUp()
+        self.owner = self.factory.makePerson()
+        self.registrant = self.factory.makePerson()
+
+    def test_distro_registrant_owner_differ(self):
+        distribution = self.factory.makeDistribution(
+            name="boobuntu", owner=self.owner, registrant=self.registrant)
+        self.assertNotEqual(distribution.owner, distribution.registrant)
+        self.assertEqual(distribution.owner, self.owner)
+        self.assertEqual(distribution.registrant, self.registrant)

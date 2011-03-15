@@ -2460,7 +2460,7 @@ true for all other archive types.
     >>> uber = getUtility(IDistributionSet).new(
     ... 'uberdistro', 'The uberdistro', 'The mother of all distros',
     ... 'All you would want from a distro', 'zero', 'uberdistro.org',
-    ... mark, cprov)
+    ... mark, cprov, cprov)
 
 The primary archive for the Überdistro was created by the
 IDistributionSet.new() method. Let's check its publish flag.

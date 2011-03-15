@@ -4,6 +4,7 @@
 __metaclass__ = type
 __all__ = [
     'get_all_structural_subscriptions',
+    'get_all_structural_subscriptions_for_target',
     'get_structural_subscribers',
     'get_structural_subscription_targets',
     'StructuralSubscription',
@@ -11,13 +12,6 @@ __all__ = [
     ]
 
 import pytz
-
-from storm.locals import (
-    DateTime,
-    Int,
-    Reference,
-    )
-
 from storm.base import Storm
 from storm.expr import (
     And,
@@ -33,15 +27,21 @@ from storm.expr import (
     SQL,
     Union,
     )
+from storm.locals import (
+    DateTime,
+    Int,
+    Reference,
+    )
 from storm.store import (
-    Store,
     EmptyResultSet,
+    Store,
     )
 from zope.component import (
     adapts,
     getUtility,
     )
 from zope.interface import implements
+from zope.security.proxy import ProxyFactory
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import quote
@@ -81,6 +81,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.propertycache import cachedproperty
 
 
@@ -502,6 +503,20 @@ def get_structural_subscription_targets(bugtasks):
             yield (bugtask, bugtask.distroseries)
         if bugtask.milestone is not None:
             yield (bugtask, bugtask.milestone)
+
+
+@ProxyFactory
+def get_all_structural_subscriptions_for_target(target, person):
+    """Find the personal and team structural subscriptions to the target.
+    """
+    # This is here because of a circular import.
+    from lp.registry.model.person import Person
+    return IStore(StructuralSubscription).find(
+        StructuralSubscription,
+        IStructuralSubscriptionTargetHelper(target).join,
+        StructuralSubscription.subscriber == Person.id,
+        TeamParticipation.personID == person.id,
+        TeamParticipation.teamID == Person.id)
 
 
 def _get_all_structural_subscriptions(find, targets, *conditions):

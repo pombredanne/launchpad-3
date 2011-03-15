@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for distroseries."""
@@ -205,6 +205,12 @@ class TestDistroSeries(TestCaseWithFactory):
             distroseries.getDistroArchSeriesByProcessor(
                 processorfamily.processors[0]))
 
+    def test_getDerivedSeries(self):
+        distroseries = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+        self.assertContentEqual(
+            [distroseries], distroseries.parent_series.getDerivedSeries())
+
     def test_registrant_owner_differ(self):
         # The registrant is the creator whereas the owner is the distribution's
         # owner
@@ -213,6 +219,7 @@ class TestDistroSeries(TestCaseWithFactory):
         self.assertEquals(distroseries.distribution.owner, distroseries.owner)
         self.assertEquals(registrant, distroseries.registrant)
         self.assertNotEqual(distroseries.registrant, distroseries.owner)
+
 
 class TestDistroSeriesPackaging(TestCaseWithFactory):
 
