@@ -13,6 +13,7 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     )
 from lp.app.enums import ServiceUsage
+from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
@@ -52,6 +53,8 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
 
     def setUp(self):
         super(TestSourcePackageTranslationSharingDetailsView, self).setUp()
+        self.useFixture(FeatureFixture(
+            {'translations.sharing_information.enabled': 'on'}))
         distroseries = self.factory.makeUbuntuDistroSeries()
         self.sourcepackage = self.factory.makeSourcePackage(
             distroseries=distroseries)
@@ -287,6 +290,11 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestSourcePackageSharingDetailsPage, self).setUp()
+        self.useFixture(FeatureFixture(
+            {'translations.sharing_information.enabled': 'on'}))
+
     def _makeSourcePackage(self):
         """Make a source package in Ubuntu."""
         distroseries = self.factory.makeUbuntuDistroSeries()
@@ -419,9 +427,21 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             get_feedback_messages(browser.contents))
 
     def test_no_message_with_templates(self):
-        # When sharing is fully configured and templates are found, noe
+        # When sharing is fully configured and templates are found, no
         # message should be displayed.
         sourcepackage, productseries = self._makeFullyConfiguredSharing()
+        self.factory.makePOTemplate(productseries=productseries)
+        browser = self.getViewBrowser(
+            sourcepackage, no_login=True, rootsite="translations",
+            view_name="+sharing-details")
+        self.assertEqual([], get_feedback_messages(browser.contents))
+
+    def test_no_message_with_incomplate_sharing(self):
+        # When sharing is not fully configured and templates are found, no
+        # message should be displayed.
+        packaging = self.factory.makePackagingLink(in_ubuntu=True)
+        productseries = packaging.productseries
+        sourcepackage = packaging.sourcepackage
         self.factory.makePOTemplate(productseries=productseries)
         browser = self.getViewBrowser(
             sourcepackage, no_login=True, rootsite="translations",

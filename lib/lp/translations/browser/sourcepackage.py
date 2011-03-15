@@ -11,6 +11,8 @@ __all__ = [
     'SourcePackageTranslationSharingStatus',
     ]
 
+from zope.publisher.interfaces import NotFound
+
 from canonical.launchpad.webapp import (
     canonical_url,
     enabled_with_permission,
@@ -22,6 +24,7 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.features import getFeatureFlag
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.translations import TranslationsMixin
 from lp.translations.browser.translationsharing import (
@@ -121,9 +124,11 @@ class SourcePackageTranslationSharingDetailsView(
     page_title = "Sharing details"
 
     def initialize(self):
+        if not getFeatureFlag('translations.sharing_information.enabled'):
+            raise NotFound(self.context, '+sharing-details')
         super(SourcePackageTranslationSharingDetailsView, self).initialize()
         has_no_upstream_templates = (
-            self.is_packaging_configured and
+            self.is_configuration_complete and
             not has_upstream_template(self.context))
         if has_no_upstream_templates:
             self.request.response.addInfoNotification(
