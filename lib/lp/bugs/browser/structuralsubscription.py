@@ -56,8 +56,11 @@ from lp.bugs.interfaces.structuralsubscription import (
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.propertycache import cachedproperty
 
 
@@ -387,6 +390,17 @@ def expose_user_subscription_status_to_js(context, request, user):
         context.userHasBugSubscriptions(user))
 
 
+def person_is_team_admin(person, team):
+    if answer is None:
+        answer = False
+        admins = team.adminmembers
+        for admin in admins:
+            if person.inTeam(admin):
+                answer = True
+                break
+    return answer
+
+
 def expose_user_subscriptions_to_js(user, subscriptions, request):
     """Make the user's subscriptions available to JavaScript."""
     info = {}
@@ -400,12 +414,16 @@ def expose_user_subscriptions_to_js(user, subscriptions, request):
                 target_url=absoluteURL(target, request),
                 filters=[])
         for filter in subscription.bug_filters:
+            subscriber = subscription.subscriber
+            is_team = subscriber.isTeam()
+            user_is_team_admin = (is_team and
+                                  person_is_team_admin(user, subscriber))
             record['filters'].append(dict(
                 filter=filter,
-                subscriber_link=absoluteURL(
-                    subscription.subscriber, api_request),
-                subscriber_title=subscription.subscriber.title,
-                subscriber_is_team=subscription.subscriber.isTeam()))
+                subscriber_link=absoluteURL(subscriber, api_request),
+                subscriber_title=subscriber.title,
+                subscriber_is_team=is_team,
+                user_is_team_admin=user_is_team_admin,))
     info = info.values()
     info.sort(key=lambda item: item['target_url'])
     IJSONRequestCache(request).objects['subscription_info'] = info
