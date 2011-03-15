@@ -104,6 +104,7 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         Child objects - like `BugSubscriptionFilterTags` - will also be
         deleted.
         """
+        # This is a second filter for the subscription.
         bug_subscription_filter = BugSubscriptionFilter()
         bug_subscription_filter.structural_subscription = self.subscription
         bug_subscription_filter.importances = [BugTaskImportance.LOW]
@@ -118,8 +119,8 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         self.assertIs(None, Store.of(bug_subscription_filter))
 
     def test_delete_final(self):
-        # Final remaining `BugSubscriptionFilter` can't be deleted.
-        # Only the linked data is removed and/or unset.
+        # If you delete the final remaining `BugSubscriptionFilter`, the
+        # parent structural subscription will also be deleted.
         bug_subscription_filter = self.subscription.bug_filters.one()
         bug_subscription_filter.bug_notification_level = (
             BugNotificationLevel.LIFECYCLE)
@@ -137,18 +138,16 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         bug_subscription_filter.delete()
         IStore(bug_subscription_filter).flush()
 
-        # It is not deleted from the database.
-        self.assertIsNot(None, Store.of(bug_subscription_filter))
-        # But all the data is set back to defaults.
-        self.assertIs(None, bug_subscription_filter.description)
-        self.assertFalse(bug_subscription_filter.find_all_tags)
-        self.assertFalse(bug_subscription_filter.include_any_tags)
-        self.assertFalse(bug_subscription_filter.exclude_any_tags)
-        self.assertEquals(BugNotificationLevel.COMMENTS,
-                          bug_subscription_filter.bug_notification_level)
-        self.assertContentEqual([], bug_subscription_filter.statuses)
-        self.assertContentEqual([], bug_subscription_filter.importances)
-        self.assertContentEqual([], bug_subscription_filter.tags)
+        # It is deleted from the database.  Note that the object itself has
+        # not been updated because Storm called the SQL deletion directly,
+        # so we have to be a bit more verbose to show that it is gone.
+        self.assertIs(
+            None,
+            IStore(bug_subscription_filter).find(
+                BugSubscriptionFilter,
+                BugSubscriptionFilter.id==bug_subscription_filter.id).one())
+        # The structural subscription is gone too.
+        self.assertIs(None, Store.of(self.subscription))
 
     def test_statuses(self):
         # The statuses property is a frozenset of the statuses that are
