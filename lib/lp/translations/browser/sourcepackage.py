@@ -11,6 +11,8 @@ __all__ = [
     'SourcePackageTranslationSharingStatus',
     ]
 
+from zope.publisher.interfaces import NotFound
+
 from canonical.launchpad.webapp import (
     canonical_url,
     enabled_with_permission,
@@ -18,9 +20,11 @@ from canonical.launchpad.webapp import (
     NavigationMenu,
     )
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.features import getFeatureFlag
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.translations import TranslationsMixin
 from lp.translations.browser.translationsharing import (
@@ -119,6 +123,24 @@ class SourcePackageTranslationSharingDetailsView(
 
     page_title = "Sharing details"
 
+    def initialize(self):
+        if not getFeatureFlag('translations.sharing_information.enabled'):
+            raise NotFound(self.context, '+sharing-details')
+        super(SourcePackageTranslationSharingDetailsView, self).initialize()
+        has_no_upstream_templates = (
+            self.is_configuration_complete and
+            not has_upstream_template(self.context))
+        if has_no_upstream_templates:
+            self.request.response.addInfoNotification(
+                structured(
+                'No upstream templates have been found yet. Please follow '
+                'the import process by going to the '
+                '<a href="%s">Translation Import Queue</a> of the '
+                'upstream project series.' %(
+                canonical_url(
+                    self.context.productseries, rootsite='translations',
+                    view_name="+imports"))))
+
     @property
     def is_packaging_configured(self):
         """Is a packaging link defined for this branch?"""
@@ -145,9 +167,9 @@ class SourcePackageTranslationSharingDetailsView(
         """Are Launchpad translations enabled for the upstream series?"""
         if not self.is_packaging_configured:
             return False
-        return (
-            self.context.direct_packaging.productseries.translations_usage ==
-            ServiceUsage.LAUNCHPAD)
+        product = self.context.direct_packaging.productseries.product
+        return product.translations_usage in (
+            ServiceUsage.LAUNCHPAD, ServiceUsage.EXTERNAL)
 
     @property
     def is_upstream_synchronization_enabled(self):
