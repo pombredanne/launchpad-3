@@ -245,7 +245,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
                 'upstream_template': None,
                 },
             ]
-        self.assertEqual(expected, self.view.template_info)
+        self.assertEqual(expected, self.view.template_info())
 
     def test_template_info___sharing(self):
         # If translation sharing is configured,
@@ -277,7 +277,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
                 'upstream_template': self.upstream_only_template,
                 },
             ]
-        self.assertEqual(expected, self.view.template_info)
+        self.assertEqual(expected, self.view.template_info())
 
 
 class TestSourcePackageSharingDetailsPage(BrowserTestCase,
