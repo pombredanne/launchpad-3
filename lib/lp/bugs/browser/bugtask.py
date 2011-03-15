@@ -491,16 +491,18 @@ class BugTargetTraversalMixin:
         If the bug has been reported, but not in this specific context, a
         redirect to the default context will be returned.
 
-        Raises NotFoundError if no bug with the given name is found.
-
-        If the context type does provide IProduct, IDistribution,
-        IDistroSeries, ISourcePackage or IDistributionSourcePackage
-        a TypeError is raised.
+        Returns None if no bug with the given name is found, or the
+        bug is not accessible to the current user.
         """
         context = self.context
 
         # Raises NotFoundError if no bug is found
         bug = getUtility(IBugSet).getByNameOrID(name)
+
+        # Get out now if the user cannot view the bug. Continuing may
+        # reveal information about its context
+        if not check_permission('launchpad.View', bug):
+            return None
 
         # Loop through this bug's tasks to try and find the appropriate task
         # for this context. We always want to return a task, whether or not
