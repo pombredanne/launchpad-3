@@ -236,7 +236,6 @@ from lp.bugs.interfaces.bugtask import (
     IDistroSeriesBugTask,
     IFrontPageBugTaskSearch,
     INominationsReviewTableBatchNavigator,
-    INullBugTask,
     IPersonBugTaskSearch,
     IProductSeriesBugTask,
     IRemoveQuestionFromBugTaskForm,
