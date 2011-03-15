@@ -1,11 +1,13 @@
-= Changing the Bazaar import settings for a product series =
+Changing the Bazaar import settings for a product series
+========================================================
 
 Product maintainers can request a one-time import of translation files
 from the Bazaar branch that is officially linked to the release series
 of a product. This function complements the general import settings
 found on the "Settings" page.
 
-== Getting there ==
+Getting there
+-------------
 
 The maintainer of a product sees a menu option called "Settings" that
 leads to the settings page.
@@ -18,7 +20,8 @@ leads to the settings page.
     >>> print browser.url
     http://translations.l...d.dev/evolution/trunk/+translations-settings
 
-== The branch display ==
+The branch display
+------------------
 
 An official Bazaar branch is linked to this product settings. It is
 displayed on the page.
@@ -47,7 +50,8 @@ message also directs to the page where the branch can be set.
     >>> print browser.url
     http://launchpad.dev/evolution/trunk/+linkbranch
 
-== Pointer to one-time import ==
+Pointer to one-time import
+--------------------------
 
 The user is also reminded that a one-time import of translation files
 can be requested and a link to that page is provided.
@@ -63,14 +67,14 @@ can be requested and a link to that page is provided.
     >>> print browser.url
     http://translations.l...d.dev/evolution/trunk/+request-bzr-import
 
-== Changing the setting ==
+Changing the setting
+--------------------
 
 The setting is changed by selecting the desired mode with the radio
 buttons in the form.
 
-    >>> browser.open(
-    ...     'http://translations.launchpad.dev/evolution/trunk/'
-    ...     '+translations-settings')
+    >>> browser.open('http://translations.launchpad.dev/evolution/trunk/')
+    >>> browser.getLink('Set up branch synchronization').click()
     >>> print_radio_button_field(browser.contents,
     ...                          'translations_autoimport_mode')
     (*) None
@@ -80,8 +84,18 @@ buttons in the form.
     ...     name='field.translations_autoimport_mode').value = (
     ...         ['IMPORT_TEMPLATES'])
     >>> browser.getControl('Save settings').click()
+
+The user is automatically redirected to the page he came from.
+
+    >>> print browser.url
+    http://translations.launchpad.dev/evolution/trunk/
     >>> print "\n".join(get_feedback_messages(browser.contents))
     The settings have been updated.
+
+If he looks at the synchonization settings page again, he sees that
+the changes have been saved.
+
+    >>> browser.getLink('Set up branch synchronization').click()
     >>> print_radio_button_field(browser.contents,
     ...                          'translations_autoimport_mode')
     ( ) None
