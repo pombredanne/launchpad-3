@@ -58,6 +58,7 @@ from lp.testing import (
     login_person,
     logout,
     normalize_whitespace,
+    person_logged_in,
     StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
@@ -1008,6 +1009,27 @@ class TestBugTaskSearch(TestCaseWithFactory):
         task2.datecreated += timedelta(days=1)
         result = target.searchTasks(None, created_since=date)
         self.assertEqual([task2], list(result))
+
+
+class BugTaskSetSearchTest(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_explicit_blueprint_specified(self):
+        # If the linked_blueprints is an integer id, then only bugtasks for
+        # bugs that are linked to that blueprint are returned.
+        bug1 = self.factory.makeBug()
+        blueprint1 = self.factory.makeBlueprint()
+        with person_logged_in(blueprint1.owner):
+            blueprint1.linkBug(bug1)
+        bug2 = self.factory.makeBug()
+        blueprint2 = self.factory.makeBlueprint()
+        with person_logged_in(blueprint2.owner):
+            blueprint2.linkBug(bug2)
+        self.factory.makeBug()
+        params = BugTaskSearchParams(user=None, linked_blueprints=blueprint1.id)
+        tasks = set(getUtility(IBugTaskSet).search(params))
+        self.assertThat(set(bug1.bugtasks), Equals(tasks))
 
 
 class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
