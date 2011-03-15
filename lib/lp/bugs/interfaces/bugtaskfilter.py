@@ -8,9 +8,13 @@ __all__ = [
     'filter_bugtasks_by_context',
     ]
 
-from collections import defaultdict
+from collections import defaultdict, namedtuple
 
 from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productseries import IProductSeries
+
+
+OrderedBugTask = namedtuple('OrderedBugTask', 'rank id task')
 
 
 class ProductWeightCalculator:
@@ -28,20 +32,42 @@ class ProductWeightCalculator:
         """
         if bugtask.productID == self.productID:
             if bugtask.productseriesID is None:
-                return (1, bugtask)
-        return (2, bugtask)
+                return OrderedBugTask(1, bugtask.id, bugtask)
+        return OrderedBugTask(2, bugtask.id, bugtask)
+
+
+class ProductSeriesWeightCalculator:
+    """Try for the series first, the product second, everything else thrid."""
+
+    def __init__(self, product_series):
+        self.seriesID = product_series.id
+        self.productID = product_series.productID
+
+    def __call__(self, bugtask):
+        """Full weight is given to tasks for this product series.
+
+        If the series isn't found, the product task is better than others.
+        """
+        if bugtask.productseriesID == self.seriesID:
+            return OrderedBugTask(1, bugtask.id, bugtask)
+        elif bugtask.productID == self.productID:
+            return OrderedBugTask(2, bugtask.id, bugtask)
+        else:
+            return OrderedBugTask(3, bugtask.id, bugtask)
 
 
 class SimpleWeightCalculator:
     """All tasks have the same weighting."""
 
     def __call__(self, bugtask):
-        return (1, bugtask)
+        return OrderedBugTask(1, bugtask.id, bugtask)
 
 
 def get_weight_calculator(context):
     if IProduct.providedBy(context):
         return ProductWeightCalculator(context)
+    elif IProductSeries.providedBy(context):
+        return ProductSeriesWeightCalculator(context)
     else:
         return SimpleWeightCalculator()
 
@@ -80,4 +106,4 @@ def filter_bugtasks_by_context(context, bugtasks):
     for task in bugtasks:
         bug_mapping[task.bugID].append(weight_calculator(task))
 
-    return [sorted(tasks)[0][1] for tasks in bug_mapping.itervalues()]
+    return [sorted(tasks)[0].task for tasks in bug_mapping.itervalues()]

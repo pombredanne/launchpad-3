@@ -44,8 +44,6 @@ class TestFilterBugTasksByContext(TestCaseWithFactory):
     def test_two_product_tasks_case(self):
         widget = self.factory.makeProduct()
         bug = self.factory.makeBug(product=widget)
-        # Make sure the bug and the first task is flushed first.
-        Store.of(bug).flush()
         cogs = self.factory.makeProduct()
         task = self.factory.makeBugTask(bug=bug, target=cogs)
         tasks = list(bug.bugtasks)
@@ -55,13 +53,35 @@ class TestFilterBugTasksByContext(TestCaseWithFactory):
         self.assertThat(filtered, Equals([task]))
 
     def test_product_context_with_series_task(self):
+        bug = self.factory.makeBug()
         widget = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=widget)
-        # Make sure the bug and the first task is flushed first.
-        Store.of(bug).flush()
+        task = self.factory.makeBugTask(bug=bug, target=widget)
         self.factory.makeBugTask(bug=bug, target=widget.development_focus)
         tasks = list(bug.bugtasks)
         with StormStatementRecorder() as recorder:
             filtered = filter_bugtasks_by_context(widget, tasks)
         self.assertThat(recorder, HasQueryCount(Equals(0)))
-        self.assertThat(filtered, Equals([bug.getBugTask(widget)]))
+        self.assertThat(filtered, Equals([task]))
+
+    def test_productseries_context_with_series_task(self):
+        bug = self.factory.makeBug()
+        widget = self.factory.makeProduct()
+        self.factory.makeBugTask(bug=bug, target=widget)
+        series = widget.development_focus
+        task = self.factory.makeBugTask(bug=bug, target=series)
+        tasks = list(bug.bugtasks)
+        with StormStatementRecorder() as recorder:
+            filtered = filter_bugtasks_by_context(series, tasks)
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
+        self.assertThat(filtered, Equals([task]))
+
+    def test_productseries_context_with_only_product_task(self):
+        bug = self.factory.makeBug()
+        widget = self.factory.makeProduct()
+        task = self.factory.makeBugTask(bug=bug, target=widget)
+        series = widget.development_focus
+        tasks = list(bug.bugtasks)
+        with StormStatementRecorder() as recorder:
+            filtered = filter_bugtasks_by_context(series, tasks)
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
+        self.assertThat(filtered, Equals([task]))
