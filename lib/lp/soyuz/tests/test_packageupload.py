@@ -12,6 +12,7 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.tests import datadir
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -158,22 +159,26 @@ class PackageUploadTestCase(TestCaseWithFactory):
             self.assertEqual(
                 restricted, pub_file.libraryfilealias.restricted)
 
-    def removeRepository(self):
+    def removeRepository(self, distro):
         """Remove the testing repository root if it exists."""
-        if os.path.exists(config.archivepublisher.root):
-            shutil.rmtree(config.archivepublisher.root)
+        root = getUtility(
+            IPublisherConfigSet).getByDistribution(distro).root_dir
+        if os.path.exists(root):
+            shutil.rmtree(root)
 
     def test_realiseUpload_for_delayed_copies(self):
         # Delayed-copies result in published records that were overridden
         # and has their files privacy adjusted according test destination
         # context.
 
-        # Add a cleanup for removing the repository where the custom upload
-        # was published.
-        self.addCleanup(self.removeRepository)
-
         # Create the default delayed-copy context.
         delayed_copy = self.createDelayedCopy()
+
+        # Add a cleanup for removing the repository where the custom upload
+        # was published.
+        self.addCleanup(
+            self.removeRepository,
+            self.test_publisher.breezy_autotest.distribution)
 
         # Delayed-copies targeted to unreleased pockets cannot be accepted.
         self.assertRaisesWithContent(
@@ -216,6 +221,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
         # production.  The user's environment might have a different umask, so
         # just force it to what the test expects.
         old_umask = os.umask(022)
+
         try:
             pub_records = delayed_copy.realiseUpload(logger=logger)
         finally:
@@ -271,8 +277,10 @@ class PackageUploadTestCase(TestCaseWithFactory):
         self.assertFalse(package_diff.diff_content.restricted)
 
         # The custom file was also published.
+        root_dir = getUtility(IPublisherConfigSet).getByDistribution(
+            self.test_publisher.breezy_autotest.distribution).root_dir
         custom_path = os.path.join(
-            config.archivepublisher.root,
+            root_dir,
             'ubuntutest/dists/breezy-autotest-security',
             'main/dist-upgrader-all')
         self.assertEquals(
