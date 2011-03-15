@@ -79,9 +79,9 @@ from lp.blueprints.model.specificationsubscription import (
 from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
-    filter_bugtasks_by_context,
     IBugTaskSet,
     )
+from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
