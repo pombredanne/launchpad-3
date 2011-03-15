@@ -209,6 +209,11 @@ class IDistributionPublic(
         PublicPersonChoice(
             title=_("Owner"), vocabulary='ValidOwner',
             description=_("The distro's owner."), required=True))
+    registrant = exported(
+        PublicPersonChoice(
+            title=_("Registrant"), vocabulary='ValidPersonOrTeam',
+            description=_("The distro's registrant."), required=True,
+            readonly=True))
     date_created = exported(
         Datetime(title=_('Date created'),
                  description=_("The date this distribution was registered.")))
@@ -689,7 +694,7 @@ class IDistributionSet(Interface):
         """Return the IDistribution with the given name or None."""
 
     def new(name, displayname, title, description, summary, domainname,
-            members, owner, mugshot=None, logo=None, icon=None):
+            members, owner, registrant, mugshot=None, logo=None, icon=None):
         """Create a new distribution."""
 
     def getCurrentSourceReleases(distro_to_source_packagenames):
