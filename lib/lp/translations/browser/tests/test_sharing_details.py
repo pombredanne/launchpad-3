@@ -6,6 +6,7 @@ __metaclass__ = type
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_tag_by_id,
+    get_feedback_messages,
     )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
@@ -414,3 +415,24 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         self.assertTextMatchesExpressionIgnoreWhitespace("""
             foo-template  only in upstream  0  \d+ second(s)? ago""",
             extract_text(tbody))
+
+    def test_message_no_templates(self):
+        # When sharing is fully configured but no upstream templates are
+        # found, a message is displayed.
+        packaging = self.factory.makePackagingLink(in_ubuntu=True)
+        productseries = packaging.productseries
+        sourcepackage = packaging.sourcepackage
+        self.configureUpstreamProject(
+            productseries,
+            set_upstream_branch=True,
+            translations_usage=ServiceUsage.LAUNCHPAD,
+            translation_import_mode=(
+                TranslationsBranchImportMode.IMPORT_TRANSLATIONS))
+        browser = self.getViewBrowser(
+            sourcepackage, no_login=True, rootsite="translations",
+            view_name="+sharing-details")
+        messages = get_feedback_messages(browser.contents)
+        self.assertEqual(
+            ["No upstream templates have been found yet. Please follow "
+             "the import process by going to the Translation Import Queue."],
+            messages)
