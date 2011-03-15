@@ -13,7 +13,6 @@ __all__ = [
     'BugTaskMixin',
     'BugTask',
     'BugTaskSet',
-    'NullBugTask',
     'bugtask_sort_key',
     'determine_target',
     'get_bug_privacy_filter',
@@ -119,7 +118,6 @@ from lp.bugs.interfaces.bugtask import (
     IDistroSeriesBugTask,
     IllegalRelatedBugTasksParams,
     IllegalTarget,
-    INullBugTask,
     IProductSeriesBugTask,
     IUpstreamBugTask,
     RESOLVED_BUGTASK_STATUSES,
@@ -372,68 +370,6 @@ class BugTaskMixin:
             if that_pillar != this_pillar:
                 result.add(that_pillar)
         return sorted(result, key=pillar_sort_key)
-
-
-class NullBugTask(BugTaskMixin):
-    """A null object for IBugTask.
-
-    This class is used, for example, to be able to render a URL like:
-
-      /products/evolution/+bug/5
-
-    when bug #5 isn't yet reported in evolution.
-    """
-    implements(INullBugTask)
-
-    def __init__(self, bug, product=None, productseries=None,
-                 sourcepackagename=None, distribution=None,
-                 distroseries=None):
-        """Initialize a NullBugTask."""
-        self.id = None
-        self.bug = bug
-        self.product = product
-        self.productseries = productseries
-        self.sourcepackagename = sourcepackagename
-        self.distribution = distribution
-        self.distroseries = distroseries
-
-        # Mark the task with the correct interface, depending on its
-        # context.
-        if self.product:
-            alsoProvides(self, IUpstreamBugTask)
-        elif self.distribution:
-            alsoProvides(self, IDistroBugTask)
-        elif self.distroseries:
-            alsoProvides(self, IDistroSeriesBugTask)
-        elif self.productseries:
-            alsoProvides(self, IProductSeriesBugTask)
-        else:
-            raise AssertionError('Unknown NullBugTask: %r.' % self)
-
-        # Make us provide the interface by setting all required attributes
-        # to None, and define the methods as raising NotImplementedError.
-        # The attributes are set to None because it doesn't make
-        # sense for these attributes to have a value when there is no
-        # real task there. (In fact, it may make sense for these
-        # values to be non-null, but I haven't yet found a use case
-        # for it, and I don't think there's any point on designing for
-        # that until we've encountered one.)
-        def this_is_a_null_bugtask_method(*args, **kwargs):
-            raise NotImplementedError
-
-        for name, spec in INullBugTask.namesAndDescriptions(True):
-            if not hasattr(self, name):
-                if IMethod.providedBy(spec):
-                    value = this_is_a_null_bugtask_method
-                else:
-                    value = None
-                setattr(self, name, value)
-
-    @property
-    def title(self):
-        """See `IBugTask`."""
-        return 'Bug #%s is not in %s: "%s"' % (
-            self.bug.id, self.bugtargetdisplayname, self.bug.title)
 
 
 def BugTaskToBugAdapter(bugtask):
