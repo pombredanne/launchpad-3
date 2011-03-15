@@ -11,7 +11,7 @@ __all__ = [
 
 from operator import attrgetter
 
-from storm.locals import Not, SQL, Store
+from storm.locals import SQL, Store
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.vocabulary import SimpleTerm
@@ -67,18 +67,27 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
 
         Invalid candidates are:
 
-         * Anything not a specification
+         * None
          * The spec that we're adding a depdency to
          * Specs that depend on this one
 
         Preventing the last category prevents loops in the dependency graph.
         """
-        if ISpecification(spec, None) is None:
+        if spec is None or spec == self.context:
             return False
-        return spec != self.context and spec not in set(self.context.all_blocked)
+        return spec not in set(self.context.all_blocked)
 
     def _order_by(self):
-        """Look at the context to provide grouping."""
+        """Look at the context to provide grouping.
+
+        If the blueprint is for a project, then matching results for that
+        project should be first.  If the blueprint is set for a series, then
+        that series should come before others for the project.  Similarly for
+        the distribution, and the series goal for the distribution.
+
+        If all else is equal, the ordering is by name, then database id as a
+        final uniqueness resolver.
+        """
         order_statements = []
         spec = self.context
         if spec.product is not None:
@@ -92,8 +101,8 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
                     spec.productseries.id)
         elif spec.distribution is not None:
             order_statements.append(
-                "(CASE Specification.distribution WHEN %s THEN 0 ELSE 1 END)" %
-                spec.distribution.id)
+                "(CASE Specification.distribution WHEN %s THEN 0 ELSE 1 END)"
+                % spec.distribution.id)
             if spec.distroseries is not None:
                 order_statements.append(
                     "(CASE Specification.distroseries"
@@ -103,7 +112,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
         order_statements.append("Specification.id")
         return SQL(', '.join(order_statements))
 
-    def _blocked_subselect(self):
+    def _exclude_blocked_query(self):
         """Return the select statement to exclude already blocked specs."""
         return SQL("Specification.id not in (WITH %s select id from blocked)"
                    % recursive_blocked_query(self.context))
@@ -170,7 +179,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
         return Store.of(self.context).find(
             Specification,
             SQL('Specification.fti @@ ftq(%s)' % quote(query)),
-            self._blocked_subselect(),
+            self._exclude_blocked_query(),
             ).order_by(self._order_by())
 
     def __iter__(self):
