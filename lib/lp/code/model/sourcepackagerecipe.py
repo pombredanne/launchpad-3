@@ -334,6 +334,17 @@ class SourcePackageRecipe(Storm):
         result.order_by(order_by)
         return result
 
+    def getPendingBuildInfo(self):
+        """See `ISourcePackageRecipe`."""
+        builds = self.pending_builds
+        result = []
+        for build in builds:
+            result.append(
+                {"distroseries": build.distroseries.displayname,
+                 "archive": '%s/%s' %
+                           (build.archive.owner.name, build.archive.name)})
+        return result
+
     @property
     def last_build(self):
         """See `ISourcePackageRecipeBuild`."""
