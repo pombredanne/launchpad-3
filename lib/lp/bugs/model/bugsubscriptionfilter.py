@@ -209,15 +209,13 @@ class BugSubscriptionFilter(StormBase):
 
     def delete(self):
         """See `IBugSubscriptionFilter`."""
+        # This clears up all of the linked sub-records in the associated
+        # tables.
         self.importances = self.statuses = self.tags = ()
-        # Revert attributes to their default values from the interface.
-        for attribute in ['bug_notification_level', 'find_all_tags',
-                          'include_any_tags', 'exclude_any_tags']:
-            default_value = IBugSubscriptionFilter.getDescriptionFor(
-                attribute).default
-            setattr(self, attribute, default_value)
-
-        self.description = None
 
         if self._has_other_filters():
             Store.of(self).remove(self)
+        else:
+            # There are no other filters.  We can delete the parent
+            # subscription.
+            self.structural_subscription.delete()
