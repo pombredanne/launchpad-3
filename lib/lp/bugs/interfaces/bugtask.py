@@ -1603,8 +1603,8 @@ class IBugTaskSet(Interface):
         The assignee and the assignee's validity are precached.
         """
 
-    def getBugTaskMilestones(self, bugtasks, eager=False):
-        """Get all the milestones for the selected bugtasks."""
+    def getBugTaskTargetMilestones(self, bugtasks, eager=False):
+        """Get all the milestones for the selected bugtasks' targets."""
 
     open_bugtask_search = Attribute("A search returning open bugTasks.")
 

@@ -3109,7 +3109,7 @@ class BugTaskSet:
 
         return counts
 
-    def getBugTaskMilestones(self, bugtasks, eager=False):
+    def getBugTaskTargetMilestones(self, bugtasks, eager=False):
         from lp.registry.model.milestone import Milestone
         store = Store.of(bugtasks[0])
         distro_ids = set()
