@@ -393,7 +393,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             browser.contents, 'template-table').find('tbody')
         self.assertIsNot(None, tbody)
         self.assertTextMatchesExpressionIgnoreWhitespace("""
-            foo-template  shared 
+            foo-template  shared
             0  \d+ second(s)? ago  0  \d+ second(s)? ago""",
             extract_text(tbody))
 
