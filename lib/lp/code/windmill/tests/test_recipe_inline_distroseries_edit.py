@@ -8,11 +8,15 @@ __all__ = []
 
 import transaction
 
+from zope.component import getUtility
+from storm.store import Store
+
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.publisher import canonical_url
+from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
 from lp.testing.windmill.constants import (
     FOR_ELEMENT,
     PAGE_LOAD,
-    SLEEP,
     )
 from lp.testing.windmill.lpuser import login_person
 from lp.code.windmill.testing import CodeWindmillLayer
@@ -45,18 +49,31 @@ class TestRecipeEdit(WindmillTestCase):
             id=u'edit-distroseries-items', timeout=PAGE_LOAD)
 
         # Edit the distro series.
-        client.click(
-            jquery=u'("span#edit-distroseries button.yui3-activator-act")[0]')
+        client.click(jquery=u'("#edit-distroseries-btn")[0]')
         client.waits.forElement(
             jquery=u'(".overlay-close-button.lazr-pos")',
             timeout=FOR_ELEMENT)
+        # Click the checkbox to select the first distro series
         client.click(name=u'field.distroseries.0')
+        client.waits.forElement(
+          jquery=u"('[name=\"field.distroseries.0\"][checked=\"checked\"]')",
+          timeout=FOR_ELEMENT)
+        # Save it
         client.click(jquery=u'(".overlay-close-button.lazr-pos")[0]')
 
-        # Give the UI a chance to be updated.
-        client.waits.sleep(milliseconds=SLEEP)
-
-        # Check that the new one is added.
-        client.asserts.assertTextIn(
+        # Wait for the the new one that is added.
+        client.waits.forElement(
             jquery=u"('#edit-distroseries-items ul li a')[0]",
-            validator=u'Hoary')
+            timeout=FOR_ELEMENT)
+
+        # Check that the new data was saved.
+        transaction.commit()
+        hoary = getUtility(ILaunchpadCelebrities).ubuntu['hoary']
+        store = Store.of(self.recipe)
+        saved_recipe = store.find(
+            SourcePackageRecipe,
+            SourcePackageRecipe.name==u'cake_recipe').one()
+        self.assertEqual(len(list(saved_recipe.distroseries)), 2)
+        distroseries=sorted(
+            saved_recipe.distroseries, key=lambda ds: ds.displayname)
+        self.assertEqual(distroseries[0], hoary)
