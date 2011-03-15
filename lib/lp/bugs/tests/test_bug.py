@@ -44,3 +44,24 @@ class TestBugSubscriptionMethods(TestCaseWithFactory):
         # subscription.
         with person_logged_in(self.person):
             self.assertEqual(False, self.bug.isMuted(self.person))
+
+    def test_mute_mutes_user(self):
+        # Bug.mute() adds a muted subscription for the user passed to
+        # it.
+        with person_logged_in(self.person):
+            muted_subscription = self.bug.mute(
+                self.person, self.person)
+            self.assertEqual(
+                BugNotificationLevel.NOTHING,
+                muted_subscription.bug_notification_level)
+
+    def test_mute_mutes_user_with_existing_subscription(self):
+        # Bug.mute() will update an existing subscription so that it
+        # becomes muted.
+        with person_logged_in(self.person):
+            subscription = self.bug.subscribe(self.person, self.person)
+            muted_subscription = self.bug.mute(self.person, self.person)
+            self.assertEqual(subscription, muted_subscription)
+            self.assertEqual(
+                BugNotificationLevel.NOTHING,
+                subscription.bug_notification_level)

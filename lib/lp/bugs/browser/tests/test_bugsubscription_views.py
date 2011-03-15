@@ -29,6 +29,9 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
 
     def setUp(self):
         super(BugSubscriptionAdvancedFeaturesTestCase, self).setUp()
+        self.bug = self.factory.makeBug()
+        self.person = self.factory.makePerson()
+        self.team = self.factory.makeTeam()
         with feature_flags():
             set_feature_flag(u'malone.advanced-subscriptions.enabled', u'on')
 
@@ -276,6 +279,12 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     BugNotificationLevel.COMMENTS,
                     default_notification_level_value)
 
+    def test_muted_subs_have_unmute_option(self):
+        # If a user has a muted subscription, the
+        # BugSubscriptionSubscribeSelfView's subscription field will
+        # show an "Unmute" option.
+        # XXX Do stuff here.
+        return
 
 class BugPortletSubcribersIdsTests(TestCaseWithFactory):
 
