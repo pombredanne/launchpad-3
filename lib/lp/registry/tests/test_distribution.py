@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Distribution."""
@@ -243,7 +243,7 @@ class TestDistributionPage(TestCaseWithFactory):
         """Verify that a non-admin does see the series list
         when there is a series.
         """
-        series = self.factory.makeDistroSeries(distribution=self.distro,
+        self.factory.makeDistroSeries(distribution=self.distro,
             status=SeriesStatus.CURRENT)
         login_person(self.simple_user)
         view = create_initialized_view(
