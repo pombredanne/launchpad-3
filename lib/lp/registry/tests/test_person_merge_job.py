@@ -12,6 +12,11 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterObject,
+    IStore,
+    )
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.scripts import log
 from canonical.testing import DatabaseFunctionalLayer
 from lp.registry.interfaces.persontransferjob import (
@@ -23,6 +28,7 @@ from lp.services.job.model.job import Job
 from lp.services.log.logger import BufferLogger
 from lp.testing import (
     run_script,
+    person_logged_in,
     TestCaseWithFactory,
     )
 
@@ -33,8 +39,10 @@ class TestPersonMergeJob(TestCaseWithFactory):
 
     def setUp(self):
         super(TestPersonMergeJob, self).setUp()
-        self.from_person = self.factory.makePerson(name='void')
-        self.to_person = self.factory.makeTeam(name='gestalt')
+        self.from_person = self.factory.makePerson(
+            name='void', email='void@eg.dom')
+        self.to_person = self.factory.makePerson(
+            name='gestalt', email='gestalt@eg.dom')
         self.job_source = getUtility(IPersonMergeJobSource)
         self.job = self.job_source.create(
             from_person=self.from_person, to_person=self.to_person)
@@ -65,14 +73,18 @@ class TestPersonMergeJob(TestCaseWithFactory):
         self.assertEqual(None, duplicate_job)
         self.assertEqual(None, inverted_job)
 
-    def test_run(self):
-        # When run it merges from_person into to_person. First we need to
-        # reassign from_person's email address over to to_person because
+    def transfer_email(self):
+        # Reassign from_person's email address over to to_person because
         # IPersonSet.merge() does not (yet) promise to do that.
-        from_email = self.from_person.preferredemail
+        from_email = IMasterObject(self.from_person.preferredemail)
         removeSecurityProxy(from_email).personID = self.to_person.id
         removeSecurityProxy(from_email).accountID = self.to_person.accountID
+        removeSecurityProxy(from_email).status = EmailAddressStatus.NEW
+        IStore(from_email).flush()
 
+    def test_run(self):
+        # When run it merges from_person into to_person.
+        self.transfer_email()
         logger = BufferLogger()
         with log.use(logger):
             self.job.run()
@@ -82,12 +94,18 @@ class TestPersonMergeJob(TestCaseWithFactory):
             ["DEBUG PersonMergeJob is about to merge ~void into ~gestalt",
              "DEBUG PersonMergeJob has merged ~void into ~gestalt"],
             logger.getLogBuffer().splitlines())
+        self.assertEqual(self.to_person, self.from_person.merged)
 
     def test_smoke(self):
-        # Smoke test, primarily for DB permissions.
-        from_email = self.from_person.preferredemail
-        removeSecurityProxy(from_email).personID = self.to_person.id
-        removeSecurityProxy(from_email).accountID = self.to_person.accountID
+        # Smoke test, primarily for DB permissions need for users and teams.
+        # Check the oopses in /var/tmp/lperr.test if the person.merged
+        # assertion fails.
+        self.transfer_email()
+        to_team = self.factory.makeTeam(name='legion')
+        from_team = self.factory.makeTeam(name='null')
+        with person_logged_in(from_team.teamowner):
+            from_team.teamowner.leave(from_team)
+        self.job_source.create(from_person=from_team, to_person=to_team)
         transaction.commit()
 
         out, err, exit_code = run_script(
@@ -98,7 +116,9 @@ class TestPersonMergeJob(TestCaseWithFactory):
         self.addDetail("stderr", Content(UTF8_TEXT, lambda: err))
 
         self.assertEqual(0, exit_code)
+        IStore(self.from_person).invalidate()
         self.assertEqual(self.to_person, self.from_person.merged)
+        self.assertEqual(to_team, from_team.merged)
 
     def test_repr(self):
         # A useful representation is available for PersonMergeJob instances.
