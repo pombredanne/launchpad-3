@@ -72,6 +72,7 @@ from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp import urlappend
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
     IBugTaskSet,
     )
 from lp.buildmaster.model.buildqueue import BuildQueue
