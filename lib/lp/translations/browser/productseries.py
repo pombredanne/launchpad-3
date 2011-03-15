@@ -85,7 +85,9 @@ class ProductSeriesTranslationsMenuMixIn:
     @enabled_with_permission('launchpad.Edit')
     def settings(self):
         """Return a link to configure the translations settings."""
-        return Link('+translations-settings', 'Settings', site='translations')
+        return Link(
+            '+translations-settings', 'Settings',
+            site='translations', icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def requestbzrimport(self):

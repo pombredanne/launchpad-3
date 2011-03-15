@@ -1080,10 +1080,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if sourcepackagename is None or isinstance(sourcepackagename, str):
             sourcepackagename = self.makeSourcePackageName(sourcepackagename)
         if distroseries is None:
-            distribution = None
             if in_ubuntu:
-                distribution = getUtility(ILaunchpadCelebrities).ubuntu
-            distroseries = self.makeDistroSeries(distribution=distribution)
+                distroseries = self.makeUbuntuDistroSeries()
+            else:
+                distroseries = self.makeDistroSeries()
         if packaging_type is None:
             packaging_type = PackagingType.PRIME
         if owner is None:
