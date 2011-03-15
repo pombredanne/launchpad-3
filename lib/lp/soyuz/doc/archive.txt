@@ -1289,18 +1289,18 @@ PunlisherConfig require us to log in as an admin:
 
     >>> login('admin@canonical.com')
     >>> print partner_archive.archive_url
-    http://ftpmaster.internal/ubuntutest-partner
+    http://archive.launchpad.dev/ubuntutest-partner
 
     >>> print sandbox_archive.archive_url
     http://ppa.launchpad.dev/name16/ppa/ubuntu
 
     >>> print getUtility(IArchiveSet).getByDistroPurpose(
     ...     ubuntutest, ArchivePurpose.PRIMARY).archive_url
-    http://ftpmaster.internal/ubuntutest
+    http://archive.launchpad.dev/ubuntutest
 
     >>> print getUtility(IArchiveSet).getByDistroPurpose(
     ...     ubuntu, ArchivePurpose.DEBUG).archive_url
-    http://ftpmaster.internal/ubuntu-debug
+    http://archive.launchpad.dev/ubuntu-debug
 
 COPY archives use a URL format of <distro-name>-<archive-name>:
 

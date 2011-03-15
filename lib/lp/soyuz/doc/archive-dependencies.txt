@@ -278,7 +278,7 @@ But *populated* PPA dependencies *are* listed in the building 'sources_list'.
         main restricted universe multiverse
     deb http://archive.launchpad.dev/ubuntu hoary-security
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-updates
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
 
 The authentication information gets added for private PPA
