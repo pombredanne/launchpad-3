@@ -414,10 +414,8 @@ class POTMsgSet(SQLBase):
                 quote(suggested_languages), in_use_clause))
         query = []
         query.append('(' + ' OR '.join(lang_used) + ')')
-        query.append('TranslationMessage.potmsgset <> %s' % sqlvalues(self))
 
-        query.append('''
-            potmsgset IN (
+        pots = SQL('''pots as (
                 SELECT POTMsgSet.id
                 FROM POTMsgSet
                 JOIN TranslationTemplateItem ON
@@ -425,8 +423,8 @@ class POTMsgSet(SQLBase):
                 JOIN SuggestivePOTemplate ON
                     TranslationTemplateItem.potemplate =
                         SuggestivePOTemplate.potemplate
-                WHERE msgid_singular = %s
-            )''' % sqlvalues(self.msgid_singular))
+                WHERE msgid_singular = %s and potmsgset.id <> %s
+            )''' % sqlvalues(self.msgid_singular, self))
 
         # Subquery to find the ids of TranslationMessages that are
         # matching suggestions.
@@ -445,12 +443,12 @@ class POTMsgSet(SQLBase):
         ids_query = '''
             SELECT DISTINCT ON (%(msgstrs)s)
                 TranslationMessage.id
-            FROM TranslationMessage
+            FROM TranslationMessage join pots on pots.id=translationmessage.potmsgset
             WHERE %(where)s
             ORDER BY %(msgstrs)s, date_created DESC
             ''' % ids_query_params
 
-        result = IStore(TranslationMessage).find(
+        result = IStore(TranslationMessage).with_(pots).find(
             TranslationMessage,
             TranslationMessage.id.is_in(SQL(ids_query)))
 
