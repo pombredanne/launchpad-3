@@ -490,7 +490,7 @@ class BugTargetTraversalMixin:
         """Return the IBugTask for this name in this context.
 
         If the bug has been reported, but not in this specific context, a
-        NullBugTask will be returned.
+        redirect to the default context will be returned.
 
         Raises NotFoundError if no bug with the given name is found.
 
