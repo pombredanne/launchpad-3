@@ -360,7 +360,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             browser.contents, 'template-table').find('tbody')
         self.assertIsNot(None, tbody)
         self.assertTextMatchesExpressionIgnoreWhitespace("""
-            foo-template  only in Ubuntu  0  . seconds ago""",
+            foo-template  only in Ubuntu  0  \d+ second(s)? ago""",
             extract_text(tbody))
 
     def test_potlist_sharing(self):
@@ -386,7 +386,8 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             browser.contents, 'template-table').find('tbody')
         self.assertIsNot(None, tbody)
         self.assertTextMatchesExpressionIgnoreWhitespace("""
-            foo-template  shared  0  . seconds ago  0  . seconds ago""",
+            foo-template  shared 
+            0  \d+ second(s)? ago  0  \d+ second(s)? ago""",
             extract_text(tbody))
 
     def test_potlist_only_upstream(self):
@@ -411,5 +412,5 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             browser.contents, 'template-table').find('tbody')
         self.assertIsNot(None, tbody)
         self.assertTextMatchesExpressionIgnoreWhitespace("""
-            foo-template  only in upstream  0  . seconds ago""",
+            foo-template  only in upstream  0  \d+ second(s)? ago""",
             extract_text(tbody))
