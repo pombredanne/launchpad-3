@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for a difference between two distribution series."""
@@ -9,6 +9,7 @@ __all__ = [
     'DistroSeriesDifference',
     ]
 
+from debian.changelog import Changelog
 from lazr.enum import DBItem
 from storm.expr import Desc
 from storm.locals import (
@@ -28,7 +29,6 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
-from lp.archivepublisher.debversion import Version
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
@@ -153,14 +153,18 @@ class DistroSeriesDifference(Storm):
     def base_source_pub(self):
         """See `IDistroSeriesDifference`."""
         if self.base_version is not None:
-            pubs = self.derived_series.main_archive.getPublishedSources(
+            parent = self.derived_series.parent_series
+            result = parent.main_archive.getPublishedSources(
                 name=self.source_package_name.name,
-                version=self.base_version,
-                distroseries=self.derived_series)
-            # We know there is a base version published in the distroseries'
-            # main archive.
-            return pubs.first()
-
+                version=self.base_version).first()
+            if result is None:
+                # If the base version isn't in the parent, it may be
+                # published in the child distroseries.
+                child = self.derived_series
+                result = child.main_archive.getPublishedSources(
+                    name=self.source_package_name.name,
+                    version=self.base_version).first()
+            return result
         return None
 
     @property
@@ -181,6 +185,12 @@ class DistroSeriesDifference(Storm):
                     'parent_version': self.parent_source_version,
                     'source_version': self.source_version,
                     })
+
+    def getAncestry(self, spr):
+        """Return the version ancestry for the given SPR, or None."""
+        if spr.changelog is None:
+            return None
+        return set(Changelog(spr.changelog.read()).versions)
 
     def _getPackageDiffURL(self, package_diff):
         """Check status and return URL if appropriate."""
@@ -299,29 +309,19 @@ class DistroSeriesDifference(Storm):
             DistroSeriesDifferenceType.DIFFERENT_VERSIONS):
             return False
 
-        # Find all source package releases for the derived and parent
-        # series and get the most recent common version.
-        derived_sprs = self.source_pub.meta_sourcepackage.distinctreleases
-        derived_versions = [
-            Version(spr.version) for spr in derived_sprs]
+        ancestry = self.getAncestry(self.source_pub.sourcepackagerelease)
+        parent_ancestry = self.getAncestry(
+            self.parent_source_pub.sourcepackagerelease)
 
-        parent_sourcepkg = self.parent_source_pub.meta_sourcepackage
-        parent_sprs = parent_sourcepkg.distinctreleases
-        parent_versions = [
-            Version(spr.version) for spr in parent_sprs]
-
-        common_versions = list(
-            set(derived_versions).intersection(parent_versions))
-        if common_versions:
-            common_versions.sort()
-            self.base_version = unicode(common_versions.pop())
-            return True
-
-        if self.base_version is None:
-            return False
-        else:
-            self.base_version = None
-            return True
+        # If the ancestry for the parent and the descendant is available, we
+        # can reliably work out the most recent common ancestor using set
+        # arithmetic.
+        if ancestry is not None and parent_ancestry is not None:
+            intersection = ancestry.intersection(parent_ancestry)
+            if len(intersection) > 0:
+                self.base_version = unicode(max(intersection))
+                return True
+        return False
 
     def addComment(self, commenter, comment):
         """See `IDistroSeriesDifference`."""
