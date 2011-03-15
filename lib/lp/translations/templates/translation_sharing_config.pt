@@ -10,7 +10,8 @@
     <script type="text/javascript">
       LPS.use('test', 'console', 'lp.translations.translation_sharing_config', function(Y) {
         Y.on('domready', function() {
-          Y.lp.translations.translation_sharing_config.prepare()
+            Y.lp.translations.translation_sharing_config.prepare(
+                LP.cache['context'])
         });
       })
   </script>
