@@ -717,39 +717,6 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
                 series.bugtargetdisplayname)
         self.request.response.redirect(canonical_url(self.context))
 
-    def reportBugInContext(self):
-        """Report the bug affects the current context."""
-        fake_task = self.context
-        if self.request.form.get("reportbug"):
-            if self.isReportedInContext():
-                self.notices.append(
-                    "The bug is already reported in this context.")
-                return
-            # The user has requested that the bug be reported in this
-            # context.
-            if IUpstreamBugTask.providedBy(fake_task):
-                # Create a real upstream task in this context.
-                real_task = fake_task.bug.addTask(
-                    getUtility(ILaunchBag).user, fake_task.product)
-            elif IDistroBugTask.providedBy(fake_task):
-                # Create a real distro bug task in this context.
-                real_task = fake_task.bug.addTask(
-                    getUtility(ILaunchBag).user, fake_task.target)
-            elif IDistroSeriesBugTask.providedBy(fake_task):
-                self._nominateBug(fake_task.distroseries)
-                return
-            elif IProductSeriesBugTask.providedBy(fake_task):
-                self._nominateBug(fake_task.productseries)
-                return
-            else:
-                raise TypeError(
-                    "Unknown bug task type: %s" % repr(fake_task))
-
-            self.context = real_task
-
-            # Add an appropriate feedback message
-            self.notices.append("Thank you for your bug report.")
-
     def isReportedInContext(self):
         """Is the bug reported in this context? Returns True or False.
 
