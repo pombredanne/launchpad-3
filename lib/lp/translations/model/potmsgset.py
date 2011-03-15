@@ -413,7 +413,7 @@ class POTMsgSet(SQLBase):
                 '(TranslationMessage.language IN %s AND NOT %s)' % (
                 quote(suggested_languages), in_use_clause))
 
-        pots = SQL('''pots as (
+        pots = SQL('''pots AS (
                 SELECT POTMsgSet.id
                 FROM POTMsgSet
                 JOIN TranslationTemplateItem ON
