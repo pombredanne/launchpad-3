@@ -21,12 +21,12 @@ LP_BUILT_JS_ROOT=${ICING}/build
 LAZR_BUILT_JS_ROOT=lazr-js/build
 
 ifeq ($(LPCONFIG), development)
-JS_BUILD := debug
+JS_BUILD := raw
 else
 JS_BUILD := min
 endif
 
-JS_YUI := $(shell utilities/yui-deps.py $(JS_BUILD))
+JS_YUI := $(shell utilities/yui-deps.py $(JS_BUILD:raw=))
 JS_LAZR := $(LAZR_BUILT_JS_ROOT)/lazr.js
 JS_OTHER := $(wildcard lib/canonical/launchpad/javascript/*/*.js)
 JS_LP := $(shell find lib/lp/*/javascript ! -path '*/tests/*' -name '*.js')
