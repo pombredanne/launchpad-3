@@ -292,6 +292,19 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         distroseries = self.factory.makeUbuntuDistroSeries()
         return self.factory.makeSourcePackage(distroseries=distroseries)
 
+    def _makeFullyConfiguredSharing(self):
+        """Remove some redundant code from the tests."""
+        packaging = self.factory.makePackagingLink(in_ubuntu=True)
+        productseries = packaging.productseries
+        sourcepackage = packaging.sourcepackage
+        self.configureUpstreamProject(
+            productseries,
+            set_upstream_branch=True,
+            translations_usage=ServiceUsage.LAUNCHPAD,
+            translation_import_mode=(
+                TranslationsBranchImportMode.IMPORT_TRANSLATIONS))
+        return (sourcepackage, productseries)
+
     def test_checklist_unconfigured(self):
         # Without a packaging link, sharing is completely unconfigured
         sourcepackage = self._makeSourcePackage()
@@ -327,16 +340,9 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
 
     def test_checklist_fully_configured(self):
         # A fully configured sharing setup.
-        packaging = self.factory.makePackagingLink(in_ubuntu=True)
-        productseries = packaging.productseries
-        self.configureUpstreamProject(
-            productseries,
-            set_upstream_branch=True,
-            translations_usage=ServiceUsage.LAUNCHPAD,
-            translation_import_mode=(
-                TranslationsBranchImportMode.IMPORT_TRANSLATIONS))
+        sourcepackage = self._makeFullyConfiguredSharing()[0]
         browser = self.getViewBrowser(
-            packaging.sourcepackage, no_login=True, rootsite="translations",
+            sourcepackage, no_login=True, rootsite="translations",
             view_name="+sharing-details")
         checklist = find_tag_by_id(browser.contents, 'sharing-checklist')
         self.assertIsNot(None, checklist)
@@ -366,15 +372,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
 
     def test_potlist_sharing(self):
         # With sharing configured, templates on both sides are listed.
-        packaging = self.factory.makePackagingLink(in_ubuntu=True)
-        productseries = packaging.productseries
-        sourcepackage = packaging.sourcepackage
-        self.configureUpstreamProject(
-            productseries,
-            set_upstream_branch=True,
-            translations_usage=ServiceUsage.LAUNCHPAD,
-            translation_import_mode=(
-                TranslationsBranchImportMode.IMPORT_TRANSLATIONS))
+        sourcepackage, productseries = self._makeFullyConfiguredSharing()
         template_name = 'foo-template'
         self.factory.makePOTemplate(
             name=template_name, sourcepackage=sourcepackage)
@@ -394,15 +392,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
     def test_potlist_only_upstream(self):
         # A template that is only present in upstream is called
         # "only in upstream".
-        packaging = self.factory.makePackagingLink(in_ubuntu=True)
-        productseries = packaging.productseries
-        sourcepackage = packaging.sourcepackage
-        self.configureUpstreamProject(
-            productseries,
-            set_upstream_branch=True,
-            translations_usage=ServiceUsage.LAUNCHPAD,
-            translation_import_mode=(
-                TranslationsBranchImportMode.IMPORT_TRANSLATIONS))
+        sourcepackage, productseries = self._makeFullyConfiguredSharing()
         template_name = 'foo-template'
         self.factory.makePOTemplate(
             name=template_name, productseries=productseries)
@@ -419,20 +409,21 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
     def test_message_no_templates(self):
         # When sharing is fully configured but no upstream templates are
         # found, a message is displayed.
-        packaging = self.factory.makePackagingLink(in_ubuntu=True)
-        productseries = packaging.productseries
-        sourcepackage = packaging.sourcepackage
-        self.configureUpstreamProject(
-            productseries,
-            set_upstream_branch=True,
-            translations_usage=ServiceUsage.LAUNCHPAD,
-            translation_import_mode=(
-                TranslationsBranchImportMode.IMPORT_TRANSLATIONS))
+        sourcepackage = self._makeFullyConfiguredSharing()[0]
         browser = self.getViewBrowser(
             sourcepackage, no_login=True, rootsite="translations",
             view_name="+sharing-details")
-        messages = get_feedback_messages(browser.contents)
         self.assertEqual(
             ["No upstream templates have been found yet. Please follow "
              "the import process by going to the Translation Import Queue."],
-            messages)
+            get_feedback_messages(browser.contents))
+
+    def test_no_message_with_templates(self):
+        # When sharing is fully configured and templates are found, noe
+        # message should be displayed.
+        sourcepackage, productseries = self._makeFullyConfiguredSharing()
+        self.factory.makePOTemplate(productseries=productseries)
+        browser = self.getViewBrowser(
+            sourcepackage, no_login=True, rootsite="translations",
+            view_name="+sharing-details")
+        self.assertEqual([], get_feedback_messages(browser.contents))
