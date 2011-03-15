@@ -75,7 +75,7 @@
           </ul>
         </dd>
       </dl>
-      <table class="sortable listing" id="template-table">
+      <table class="listing" id="template-table">
         <thead>
           <tr>
             <th class="name_column" rowspan="2">Template name</th>
