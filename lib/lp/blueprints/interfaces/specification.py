@@ -506,6 +506,16 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
     def getBranchLink(branch):
         """Return the SpecificationBranch link for the branch, or None."""
 
+    def getLinkedBugTasks(user):
+        """Return the bug tasks that are relevant to this blueprint.
+
+        When multiple tasks are on a bug, if one of the tasks is for the
+        target, then only that task is returned. Otherwise the default
+        bug task is returned.
+
+        :param user: The user doing the search.
+        """
+
 
 class ISpecificationEditRestricted(Interface):
     """Specification's attributes and methods protected with launchpad.Edit.

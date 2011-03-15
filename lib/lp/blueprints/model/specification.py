@@ -28,6 +28,7 @@ from storm.locals import (
     SQL,
     )
 from storm.store import Store
+from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
@@ -76,6 +77,11 @@ from lp.blueprints.model.specificationsubscription import (
     SpecificationSubscription,
     )
 from lp.bugs.interfaces.buglink import IBugLinkTarget
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    filter_bugtasks_by_context,
+    IBugTaskSet,
+    )
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -663,6 +669,14 @@ class Specification(SQLBase, BugLinkTargetMixin):
     def unlinkBranch(self, branch, user):
         spec_branch = self.getBranchLink(branch)
         spec_branch.destroySelf()
+
+    def getLinkedBugTasks(self, user):
+        """See `IBranch`."""
+        params = BugTaskSearchParams(user=user, linked_blueprints=self.id)
+        tasks = shortlist(getUtility(IBugTaskSet).search(params), 1000)
+        # Post process to discard irrelevant tasks: we only return one task per
+        # bug, and cannot easily express this in sql (yet).
+        return filter_bugtasks_by_context(self, tasks)
 
 
 class HasSpecificationsMixin:
