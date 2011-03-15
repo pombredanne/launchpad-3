@@ -53,3 +53,15 @@ class TestFilterBugTasksByContext(TestCaseWithFactory):
             filtered = filter_bugtasks_by_context(cogs, tasks)
         self.assertThat(recorder, HasQueryCount(Equals(0)))
         self.assertThat(filtered, Equals([task]))
+
+    def test_product_context_with_series_task(self):
+        widget = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=widget)
+        # Make sure the bug and the first task is flushed first.
+        Store.of(bug).flush()
+        self.factory.makeBugTask(bug=bug, target=widget.development_focus)
+        tasks = list(bug.bugtasks)
+        with StormStatementRecorder() as recorder:
+            filtered = filter_bugtasks_by_context(widget, tasks)
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
+        self.assertThat(filtered, Equals([bug.getBugTask(widget)]))
