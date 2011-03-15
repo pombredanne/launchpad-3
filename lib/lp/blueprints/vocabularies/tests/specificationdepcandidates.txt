@@ -57,9 +57,9 @@ spec_b.
 No circular dependencies - the vocabulary excludes specifications that
 are a dependency of the context spec.
 
-    >>> spec_a in spec_b.all_blocked
+    >>> spec_a in set(spec_b.all_blocked)
     True
-    >>> spec_b in spec_c.all_blocked
+    >>> spec_b in set(spec_c.all_blocked)
     True
     >>> vocab = vocabulary_registry.get(
     ...     spec_c, "SpecificationDepCandidates")

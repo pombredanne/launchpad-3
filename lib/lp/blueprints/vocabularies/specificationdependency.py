@@ -73,7 +73,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
         """
         if check_target and spec.target != self.context.target:
             return False
-        return spec != self.context and spec not in self.context.all_blocked
+        return spec != self.context and spec not in set(self.context.all_blocked)
 
     def _filter_specs(self, specs, check_target=False):
         """Filter `specs` to remove invalid candidates.
