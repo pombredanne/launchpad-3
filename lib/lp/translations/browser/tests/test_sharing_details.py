@@ -29,7 +29,8 @@ class ConfigureUpstreamProjectMixin:
     """Provide a method for project configuration."""
 
     def configureUpstreamProject(self, productseries,
-            set_upstream_branch=False, enable_translations=False,
+            set_upstream_branch=False,
+            translations_usage=ServiceUsage.UNKNOWN,
             translation_import_mode=TranslationsBranchImportMode.NO_IMPORT):
         """Configure the productseries and its product as an upstream project.
         """
@@ -37,9 +38,7 @@ class ConfigureUpstreamProjectMixin:
             if set_upstream_branch:
                 productseries.branch = self.factory.makeBranch(
                     product=productseries.product)
-            if enable_translations:
-                productseries.product.translations_usage = (
-                    ServiceUsage.LAUNCHPAD)
+            productseries.product.translations_usage = translations_usage
             productseries.translations_autoimport_mode = (
                 translation_import_mode)
 
@@ -69,7 +68,8 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         self.view.initialize()
 
     def configureSharing(self,
-            set_upstream_branch=False, enable_translations=False,
+            set_upstream_branch=False,
+            translations_usage=ServiceUsage.UNKNOWN,
             translation_import_mode=TranslationsBranchImportMode.NO_IMPORT):
         """Configure translation sharing, at least partially.
 
@@ -79,7 +79,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         self.sourcepackage.setPackaging(
             self.productseries, self.productseries.owner)
         self.configureUpstreamProject(
-            self.productseries, set_upstream_branch, enable_translations,
+            self.productseries, set_upstream_branch, translations_usage,
             translation_import_mode)
 
     def test_is_packaging_configured__not_configured(self):
@@ -122,17 +122,29 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         # is_upstream_translations_enabled returns False.
         self.assertFalse(self.view.is_upstream_translations_enabled)
 
-    def test_is_upstream_translations_enabled__when_disabled(self):
-        # If the upstream product series does not use Launchpad for
+    def test_is_upstream_translations_enabled__when_unknown(self):
+        # If it is unknown what the upstream project uses for
         # translations, is_upstream_translations_enabled returns False.
-        self.configureSharing()
+        self.configureSharing(translations_usage=ServiceUsage.UNKNOWN)
         self.assertFalse(self.view.is_upstream_translations_enabled)
 
-    def test_is_upstream_translations_enabled__when_enabled(self):
+    def test_is_upstream_translations_enabled__when_launchpad(self):
         # If the upstream product series uses Launchpad for
         # translations, is_upstream_translations_enabled returns True.
-        self.configureSharing(enable_translations=True)
+        self.configureSharing(translations_usage=ServiceUsage.LAUNCHPAD)
         self.assertTrue(self.view.is_upstream_translations_enabled)
+
+    def test_is_upstream_translations_enabled__when_external(self):
+        # If the upstream product series uses an external tool for
+        # translations, is_upstream_translations_enabled returns True.
+        self.configureSharing(translations_usage=ServiceUsage.EXTERNAL)
+        self.assertTrue(self.view.is_upstream_translations_enabled)
+
+    def test_is_upstream_translations_enabled__when_not_applicable(self):
+        # If the upstream product series does not do translations at all,
+        # is_upstream_translations_enabled returns False.
+        self.configureSharing(translations_usage=ServiceUsage.NOT_APPLICABLE)
+        self.assertFalse(self.view.is_upstream_translations_enabled)
 
     def test_is_upstream_synchronization_enabled__no_packaging_link(self):
         # If the source package is not linked to an upstream series,
@@ -186,7 +198,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         # If the packaging link is set and if an upstream series
         # uses Launchpad translations but if the other conditions
         # are not fulfilled, is_configuration_complete is False.
-        self.configureSharing(enable_translations=True)
+        self.configureSharing(translations_usage=ServiceUsage.LAUNCHPAD)
         self.assertFalse(self.view.is_configuration_complete)
 
     def test_is_configuration_complete__no_auto_sync(self):
@@ -197,7 +209,8 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         # but if the upstream series does not synchronize translations
         # then is_configuration_complete is False.
         self.configureSharing(
-            set_upstream_branch=True, enable_translations=True)
+            set_upstream_branch=True,
+            translations_usage=ServiceUsage.LAUNCHPAD)
         self.assertFalse(self.view.is_configuration_complete)
 
     def test_is_configuration_complete__all_conditions_fulfilled(self):
@@ -208,7 +221,8 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         #   - the upstream series synchronizes translations
         # then is_configuration_complete is True.
         self.configureSharing(
-            set_upstream_branch=True, enable_translations=True,
+            set_upstream_branch=True,
+            translations_usage=ServiceUsage.LAUNCHPAD,
             translation_import_mode=
                 TranslationsBranchImportMode.IMPORT_TRANSLATIONS)
         self.assertTrue(self.view.is_configuration_complete)
@@ -239,7 +253,8 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         # only data about templates in Ubuntu and about upstream
         # templates.
         self.configureSharing(
-            set_upstream_branch=True, enable_translations=True,
+            set_upstream_branch=True,
+            translations_usage=ServiceUsage.LAUNCHPAD,
             translation_import_mode=
                 TranslationsBranchImportMode.IMPORT_TRANSLATIONS)
         expected = [
@@ -315,7 +330,8 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         productseries = packaging.productseries
         self.configureUpstreamProject(
             productseries,
-            set_upstream_branch=True, enable_translations=True,
+            set_upstream_branch=True,
+            translations_usage=ServiceUsage.LAUNCHPAD,
             translation_import_mode=(
                 TranslationsBranchImportMode.IMPORT_TRANSLATIONS))
         browser = self.getViewBrowser(
@@ -354,7 +370,8 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         sourcepackage = packaging.sourcepackage
         self.configureUpstreamProject(
             productseries,
-            set_upstream_branch=True, enable_translations=True,
+            set_upstream_branch=True,
+            translations_usage=ServiceUsage.LAUNCHPAD,
             translation_import_mode=(
                 TranslationsBranchImportMode.IMPORT_TRANSLATIONS))
         template_name = 'foo-template'
@@ -380,7 +397,8 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         sourcepackage = packaging.sourcepackage
         self.configureUpstreamProject(
             productseries,
-            set_upstream_branch=True, enable_translations=True,
+            set_upstream_branch=True,
+            translations_usage=ServiceUsage.LAUNCHPAD,
             translation_import_mode=(
                 TranslationsBranchImportMode.IMPORT_TRANSLATIONS))
         template_name = 'foo-template'
