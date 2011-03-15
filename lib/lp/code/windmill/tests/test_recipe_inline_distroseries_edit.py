@@ -51,7 +51,7 @@ class TestRecipeEdit(WindmillTestCase):
         # Edit the distro series.
         client.click(jquery=u'("#edit-distroseries-btn")[0]')
         client.waits.forElement(
-            jquery=u'(".overlay-close-button.lazr-pos")',
+            jquery=u'("#edit-distroseries-save")',
             timeout=FOR_ELEMENT)
         # Click the checkbox to select the first distro series
         client.click(name=u'field.distroseries.0')
@@ -59,7 +59,7 @@ class TestRecipeEdit(WindmillTestCase):
           jquery=u"('[name=\"field.distroseries.0\"][checked=\"checked\"]')",
           timeout=FOR_ELEMENT)
         # Save it
-        client.click(jquery=u'(".overlay-close-button.lazr-pos")[0]')
+        client.click(jquery=u'("#edit-distroseries-save")[0]')
 
         # Wait for the the new one that is added.
         client.waits.forElement(
