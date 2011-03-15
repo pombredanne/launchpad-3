@@ -676,10 +676,6 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         # See render() for how this flag is used.
         self._redirecting_to_bug_list = False
 
-        # If the bug is not reported in this context, redirect
-        # to the default bug task.
-        assert self.isReportedInContext()
-
         self.bug_title_edit_widget = TextLineEditorWidget(
             bug, IBug['title'], "Edit this summary", 'h1',
             edit_url=canonical_url(self.context, view_name='+edit'))
@@ -716,36 +712,6 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             'This bug has been nominated to be fixed in %s.' %
                 series.bugtargetdisplayname)
         self.request.response.redirect(canonical_url(self.context))
-
-    def isReportedInContext(self):
-        """Is the bug reported in this context? Returns True or False.
-
-        It considers a nominated bug to be reported.
-
-        This is particularly useful for views that may render a
-        NullBugTask.
-        """
-        if self.context.id is not None:
-            # Fast path for real bugtasks: they have a DB id.
-            return True
-        params = BugTaskSearchParams(user=self.user, bug=self.context.bug)
-        matching_bugtasks = self.context.target.searchTasks(params)
-        if self.context.productseries is not None:
-            nomination_target = self.context.productseries
-        elif self.context.distroseries is not None:
-            nomination_target = self.context.distroseries
-        else:
-            nomination_target = None
-        if nomination_target is not None:
-            try:
-                nomination = self.context.bug.getNominationFor(
-                    nomination_target)
-            except NotFoundError:
-                nomination = None
-        else:
-            nomination = None
-
-        return nomination is not None or matching_bugtasks.count() > 0
 
     def isSeriesTargetableContext(self):
         """Is the context something that supports Series targeting?
