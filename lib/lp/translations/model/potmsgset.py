@@ -412,8 +412,6 @@ class POTMsgSet(SQLBase):
             lang_used.append(
                 '(TranslationMessage.language IN %s AND NOT %s)' % (
                 quote(suggested_languages), in_use_clause))
-        query = []
-        query.append('(' + ' OR '.join(lang_used) + ')')
 
         pots = SQL('''pots as (
                 SELECT POTMsgSet.id
@@ -438,7 +436,7 @@ class POTMsgSet(SQLBase):
             for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)])
         ids_query_params = {
             'msgstrs': msgstrs,
-            'where': ' AND '.join(query),
+            'where': '(' + ' OR '.join(lang_used) + ')',
         }
         ids_query = '''
             SELECT DISTINCT ON (%(msgstrs)s)
