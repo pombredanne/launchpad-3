@@ -611,13 +611,8 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
 
     @property
     def page_title(self):
-        bugtask = self.context
-        if INullBugTask.providedBy(bugtask):
-            heading = 'Bug #%s is not in %s' % (
-                bugtask.bug.id, bugtask.bugtargetdisplayname)
-        else:
-            heading = 'Bug #%s in %s' % (
-                bugtask.bug.id, bugtask.bugtargetdisplayname)
+        heading = 'Bug #%s in %s' % (
+            self.context.bug.id, self.context.bugtargetdisplayname)
         return smartquote('%s: "%s"') % (heading, self.context.bug.title)
 
     @property
@@ -1631,17 +1626,12 @@ class BugTaskListingView(LaunchpadView):
         The assignee is included.
         """
         bugtask = self.context
-
-        if INullBugTask.providedBy(bugtask):
-            return u"Not reported in %s" % bugtask.bugtargetname
-
         assignee = bugtask.assignee
         status = bugtask.status
         status_title = status.title.capitalize()
 
         if not assignee:
             return status_title + ' (unassigned)'
-
         assignee_html = PersonFormatterAPI(assignee).link('+assignedbugs')
 
         if status in (BugTaskStatus.INVALID,
