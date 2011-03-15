@@ -732,83 +732,6 @@ is therefore Invalid also. In other words, conjoined again.
     False
 
 
-== Null Bug Tasks ==
-
-Sometimes we need to be able to render a page for a bug in a context,
-when the bug hasn't actually been filed yet in that context. For cases
-like these, use the NullBugTask object.
-
-
-    >>> from lp.bugs.interfaces.bugtask import INullBugTask
-    >>> netapplet = productset.get(11)
-    >>> null_bugtask = bug_one.getNullBugTask(product=netapplet)
-    >>> verifyObject(INullBugTask, null_bugtask)
-    True
-    >>> IUpstreamBugTask.providedBy(null_bugtask)
-    True
-
-    >>> null_bugtask.id is None
-    True
-    >>> null_bugtask.title
-    u'Bug #1 is not in NetApplet: "Firefox does not support SVG"'
-    >>> null_bugtask.product is netapplet
-    True
-    >>> null_bugtask.bug == bug_one
-    True
-    >>> null_bugtask.datecreated is None
-    True
-    >>> null_bugtask.date_assigned is None
-    True
-    >>> null_bugtask.age is None
-    True
-    >>> null_bugtask.status is None
-    True
-    >>> null_bugtask.sourcepackagename is None
-    True
-    >>> null_bugtask.distribution is None
-    True
-    >>> null_bugtask.distroseries is None
-    True
-    >>> null_bugtask.milestone is None
-    True
-    >>> null_bugtask.importance is None
-    True
-    >>> null_bugtask.assignee is None
-    True
-    >>> null_bugtask.bugwatch is None
-    True
-    >>> null_bugtask.owner is None
-    True
-    >>> null_bugtask.target == netapplet
-    True
-    >>> null_bugtask.bugtargetname
-    u'netapplet'
-    >>> expected_related_task_ids = [
-    ...     task.id for task in null_bugtask.related_tasks]
-    >>> actual_related_task_ids = [task.id for task in bug_one.bugtasks]
-    >>> expected_related_task_ids.sort()
-    >>> actual_related_task_ids.sort()
-    >>> expected_related_task_ids == actual_related_task_ids
-    True
-
-    >>> null_bugtask.conjoined_slave is None
-    True
-    >>> null_bugtask.conjoined_master is None
-    True
-
-The astute reader will have noticed that NullBugTask automatically
-"marked" itself as providing the correct IBugTask interface. Let's see
-two more examples:
-
-    >>> ubuntu_null_bugtask = bug_one.getNullBugTask(distribution=ubuntu)
-    >>> IDistroBugTask.providedBy(ubuntu_null_bugtask)
-    True
-
-    >>> warty_null_bugtask = bug_one.getNullBugTask(distroseries=warty)
-    >>> IDistroSeriesBugTask.providedBy(warty_null_bugtask)
-    True
-
-
 = Bug Privacy =
 
 A bug is either private or public. Private bugs are only visible (e.g. in search
@@ -1080,6 +1003,7 @@ Of course, it's also computed and set when a bugtask is created.
 the latter is not exposed in `IBugTask`, so the `bugtargetdisplayname`
 is used here.
 
+    >>> netapplet = productset.get(11)
     >>> upstream_task = bugtaskset.createTask(
     ...     bug=bug_one, product=netapplet, owner=mark,
     ...     status=STATUS_NEW, importance=IMPORTANCE_MEDIUM)
