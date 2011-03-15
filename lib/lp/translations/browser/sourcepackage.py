@@ -145,9 +145,9 @@ class SourcePackageTranslationSharingDetailsView(
         """Are Launchpad translations enabled for the upstream series?"""
         if not self.is_packaging_configured:
             return False
-        return (
-            self.context.direct_packaging.productseries.translations_usage ==
-            ServiceUsage.LAUNCHPAD)
+        product = self.context.direct_packaging.productseries.product
+        return product.translations_usage in (
+            ServiceUsage.LAUNCHPAD, ServiceUsage.EXTERNAL)
 
     @property
     def is_upstream_synchronization_enabled(self):
