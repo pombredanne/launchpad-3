@@ -82,6 +82,7 @@ from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin,
     )
 from lp.registry.browser import MilestoneOverlayMixin
+from lp.registry.enum import DistroSeriesDifferenceStatus
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
@@ -627,6 +628,13 @@ class DistroSeriesNeedsPackagesView(LaunchpadView):
 
 
 class IDifferencesFormSchema(Interface):
+    name_filter = TextLine(
+        title=_("Package name contains"), required=False)
+
+    include_blacklisted_filter = Bool(
+        title=_("include blacklisted packages"),
+        required=False, default=False)
+
     selected_differences = List(
         title=_('Selected differences'),
         value_type=Choice(vocabulary=SimpleVocabulary([])),
@@ -637,6 +645,7 @@ class IDifferencesFormSchema(Interface):
 class DistroSeriesLocalDifferences(LaunchpadFormView):
     """Present differences between a derived series and its parent."""
     schema = IDifferencesFormSchema
+    field_names = ['selected_differences']
     custom_widget('selected_differences', LabeledMultiCheckBoxWidget)
 
     page_title = 'Local package differences'
@@ -664,13 +673,6 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
                 self.context.parent_series.displayname,
                 ))
 
-    @cachedproperty
-    def cached_differences(self):
-        """Return a batch navigator of potentially filtered results."""
-        utility = getUtility(IDistroSeriesDifferenceSource)
-        differences = utility.getForDistroSeries(self.context)
-        return BatchNavigator(differences, self.request)
-
     def setUpFields(self):
         """Add the selected differences field.
 
@@ -686,6 +688,11 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
         diffs_vocabulary = SimpleVocabulary(terms)
         choice = self.form_fields['selected_differences'].field.value_type
         choice.vocabulary = diffs_vocabulary
+
+    @action(_("Update"), name="update")
+    def update_action(self, action, data):
+        """Simply re-issue the form with the new values."""
+        pass
 
     @action(_("Sync Sources"), name="sync", validator='validate_sync',
             condition='canPerformSync')
@@ -721,3 +728,64 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
         well as directly in the template.
         """
         return check_permission('launchpad.Edit', self.context)
+
+    @property
+    def specified_name_filter(self):
+        """If specified, return the name filter from the GET form data."""
+        requested_name_filter = self.request.query_string_params.get(
+            'field.name_filter')
+
+        if requested_name_filter and requested_name_filter[0]:
+            return requested_name_filter[0]
+        else:
+            return None
+
+    @property
+    def specified_include_blacklisted_filter(self):
+        """If specified, return the 'blacklisted' filter from the GET form
+        data.
+        """
+        include_blacklisted_filter = self.request.query_string_params.get(
+            'field.include_blacklisted_filter')
+
+        if include_blacklisted_filter and include_blacklisted_filter[0]:
+            return include_blacklisted_filter[0]
+        else:
+            return None
+
+    @cachedproperty
+    def cached_differences(self):
+        """Return a batch navigator of filtered results."""
+        if self.specified_include_blacklisted_filter:
+            status=(
+                DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+                DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
+        else:
+            status=(
+                DistroSeriesDifferenceStatus.NEEDS_ATTENTION,)
+        differences = getUtility(
+            IDistroSeriesDifferenceSource).getForDistroSeries(
+                self.context,
+                source_package_name_filter=self.specified_name_filter,
+                status=status)
+        return BatchNavigator(differences, self.request)
+
+    @cachedproperty
+    def has_differences(self):
+        """Whether or not differences between this derived series and
+        its parent exist.
+        """
+        # Performance optimisation: save a query if we have differences
+        # to show in the batch.
+        if self.cached_differences.batch.total() > 0:
+            return True
+        else:
+            # Here we check the whole dataset since the empty batch
+            # might be filtered.
+            differences = getUtility(
+                IDistroSeriesDifferenceSource).getForDistroSeries(
+                    self.context,
+                    status=(
+                        DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+                        DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT))
+            return not differences.is_empty()

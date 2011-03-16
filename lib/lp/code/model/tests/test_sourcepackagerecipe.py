@@ -599,6 +599,22 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertEqual(builds[1:], list(recipe.pending_builds))
         self.assertEqual(builds, list(recipe.builds))
 
+    def test_getPendingBuildInfo(self):
+        """SourcePackageRecipe.getPendingBuildInfo() is as expected."""
+        person = self.factory.makePerson()
+        archives = [self.factory.makeArchive(owner=person) for x in range(4)]
+        distroseries= self.factory.makeSourcePackageRecipeDistroseries()
+        recipe = self.factory.makeSourcePackageRecipe()
+
+        build_info = []
+        for archive in archives:
+            build = recipe.requestBuild(archive, person, distroseries)
+            build_info.insert(0, {
+                "distroseries": distroseries.displayname,
+                "archive": '%s/%s' %
+                           (archive.owner.name, archive.name)})
+        self.assertEqual(build_info, list(recipe.getPendingBuildInfo()))
+
     def test_getBuilds_cancelled(self):
         # Cancelled builds are not considered pending.
         recipe = self.factory.makeSourcePackageRecipe()
@@ -847,7 +863,8 @@ class TestWebservice(TestCaseWithFactory):
         branch = self.factory.makeBranch()
         return MINIMAL_RECIPE_TEXT % branch.bzr_identity
 
-    def makeRecipe(self, user=None, owner=None, recipe_text=None, version='devel'):
+    def makeRecipe(self, user=None, owner=None, recipe_text=None,
+                   version='devel'):
         # rockstar 21 Jul 2010 - This function does more commits than I'd
         # like, but it's the result of the fact that the webservice runs in a
         # separate thread so doesn't get the database updates without those
@@ -1006,3 +1023,24 @@ class TestWebservice(TestCaseWithFactory):
         self.assertEqual(builds, list(recipe.pending_builds))
         self.assertEqual(builds, list(recipe.builds))
         self.assertEqual([], list(recipe.completed_builds))
+
+    def test_getPendingBuildInfo(self):
+        """SourcePackageRecipe.getPendingBuildInfo() is as expected."""
+        person = self.factory.makePerson()
+        archives = [self.factory.makeArchive(owner=person) for x in range(4)]
+        distroseries= self.factory.makeSourcePackageRecipeDistroseries()
+
+        recipe, user, launchpad = self.makeRecipe(person)
+        ws_distroseries = ws_object(launchpad, distroseries)
+
+        build_info = []
+        for archive in archives:
+            ws_archive = ws_object(launchpad, archive)
+            build = recipe.requestBuild(
+                archive=ws_archive, distroseries=ws_distroseries,
+                pocket=PackagePublishingPocket.RELEASE.title)
+            build_info.insert(0, {
+                "distroseries": distroseries.displayname,
+                "archive": '%s/%s' %
+                           (archive.owner.name, archive.name)})
+        self.assertEqual(build_info, list(recipe.getPendingBuildInfo()))

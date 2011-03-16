@@ -275,7 +275,8 @@ class DistributionSourcePackageBaseView:
         else:
             self._person_data = None
         # Collate diffs for relevant SourcePackageReleases
-        pkg_diffs = getUtility(IPackageDiffSet).getDiffsToReleases(sprs)
+        pkg_diffs = getUtility(IPackageDiffSet).getDiffsToReleases(
+            sprs, preload_for_display=True)
         spr_diffs = {}
         for spr, diffs in itertools.groupby(pkg_diffs,
                                             operator.attrgetter('to_source')):

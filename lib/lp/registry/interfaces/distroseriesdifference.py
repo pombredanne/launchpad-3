@@ -132,7 +132,8 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
         ISourcePackagePublishingHistory,
         title=_("Base source pub"), readonly=True,
         description=_(
-            "The common base version published in the derived series."))
+            "The common base version published in the parent or the "
+            "derived series."))
 
     owner = Reference(
         IPerson, title=_("Owning team of the derived series"), readonly=True,
@@ -222,6 +223,7 @@ class IDistroSeriesDifferenceSource(Interface):
     def getForDistroSeries(
         distro_series,
         difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
+        source_package_name_filter=None,
         status=None):
         """Return differences for the derived distro series.
 
@@ -231,6 +233,8 @@ class IDistroSeriesDifferenceSource(Interface):
         :param difference_type: The type of difference to include in the
             results.
         :type difference_type: `DistroSeriesDifferenceType`.
+        :param source_package_name_filter: Package source name filter.
+        :type source_package_name_filter: unicode.
         :param status: Only differences matching the status(es) will be
             included.
         :type status: `DistroSeriesDifferenceStatus`.
