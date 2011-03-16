@@ -125,6 +125,9 @@ be chosen manually, and the user may choose to link the package to the
 project..
 
     >>> ubuntu_thunderbird = ubuntu.getSourcePackage('thunderbird')
+    >>> ignore = factory.makeSourcePackagePublishingHistory(
+    ...     distroseries=ubuntu.currentseries,
+    ...     sourcepackagename=ubuntu_thunderbird.sourcepackagename)
     >>> thunderbird_bug = ubuntu_thunderbird.createBug(create_params)
     >>> ubuntu_thunderbird_task = thunderbird_bug.bugtasks[0]
 
