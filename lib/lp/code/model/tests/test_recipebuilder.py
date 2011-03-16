@@ -21,7 +21,7 @@ from twisted.internet import defer
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
 from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.builder import CannotBuild
@@ -50,7 +50,7 @@ from lp.testing import (
 
 class TestRecipeBuilder(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     def makeJob(self, recipe_registrant=None, recipe_owner=None):
         """Create a sample `ISourcePackageRecipeBuildJob`."""
