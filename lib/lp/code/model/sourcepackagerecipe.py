@@ -41,6 +41,7 @@ from zope.interface import (
     implements,
     )
 
+from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import (
@@ -89,6 +90,15 @@ def get_buildable_distroseries_set(user):
         if distro.active and distro.distribution in supported_distros:
             buildables.append(distro)
     return buildables
+
+
+def recipe_modified(recipe, event):
+    """Update the date_last_modified property when a recipe is modified.
+
+    This method is registered as a subscriber to `IObjectModifiedEvent` events
+    on recipes.
+    """
+    recipe.date_last_modified = UTC_NOW
 
 
 class NonPPABuildRequest(Exception):
@@ -176,7 +186,8 @@ class SourcePackageRecipe(Storm):
 
     @staticmethod
     def new(registrant, owner, name, recipe, description,
-            distroseries=None, daily_build_archive=None, build_daily=False):
+            distroseries=None, daily_build_archive=None, build_daily=False,
+            date_created=None):
         """See `ISourcePackageRecipeSource.new`."""
         store = IMasterStore(SourcePackageRecipe)
         sprecipe = SourcePackageRecipe()
@@ -191,6 +202,8 @@ class SourcePackageRecipe(Storm):
         sprecipe.description = description
         sprecipe.daily_build_archive = daily_build_archive
         sprecipe.build_daily = build_daily
+        if date_created is not None:
+            sprecipe.date_created = date_created
         store.add(sprecipe)
         return sprecipe
 

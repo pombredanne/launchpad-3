@@ -2073,11 +2073,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         for version in versions:
             entry = dedent('''
             %s (%s) unstable; urgency=low
-            
-              * %s. 
-            
+
+              * %s.
+
              -- Foo Bar <foo@example.com>  Tue, 01 Jan 1970 01:50:41 +0000
-            
+
             ''' % (spn, version, version))
             changelog += entry
         return self.makeLibraryFileAlias(content=changelog)
@@ -2492,7 +2492,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                 distroseries=None, name=None,
                                 description=None, branches=(),
                                 build_daily=False, daily_build_archive=None,
-                                is_stale=None, recipe=None):
+                                is_stale=None, recipe=None,
+                                date_created=None):
         """Make a `SourcePackageRecipe`."""
         if registrant is None:
             registrant = self.makePerson()
@@ -2514,7 +2515,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             assert branches == ()
         source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
             registrant, owner, name, recipe, description, [distroseries],
-            daily_build_archive, build_daily)
+            daily_build_archive, build_daily, date_created)
         if is_stale is not None:
             removeSecurityProxy(source_package_recipe).is_stale = is_stale
         IStore(source_package_recipe).flush()
