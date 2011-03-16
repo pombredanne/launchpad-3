@@ -321,6 +321,24 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     "Unmute bug mail from this bug and subscribe me to it",
                     update_term.title)
 
+    def test_unmute_unmutes(self):
+        # Using the "Unmute bug mail" option when the user has a muted
+        # subscription will remove the muted subscription.
+        with person_logged_in(self.person):
+            self.bug.mute(self.person, self.person)
+
+        with feature_flags():
+            with person_logged_in(self.person):
+                form_data = {
+                    'field.subscription': self.person.name,
+                    'field.actions.continue': 'Continue',
+                    }
+                subscribe_view = create_initialized_view(
+                    self.bug.default_bugtask, form=form_data,
+                    name='+subscribe')
+                self.assertFalse(self.bug.isMuted(self.person))
+                self.assertFalse(self.bug.isSubscribed(self.person))
+
 
 class BugPortletSubcribersIdsTests(TestCaseWithFactory):
 

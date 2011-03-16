@@ -373,6 +373,8 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         if (subscription_person == self._update_subscription_term.value and
             self.user_is_subscribed):
             self._handleUpdateSubscription(level=bug_notification_level)
+        elif self.user_is_muted and subscription_person == self.user:
+            self._handleUnsubscribeCurrentUser()
         elif (not self.user_is_subscribed and
             (subscription_person == self.user)):
             self._handleSubscribe(bug_notification_level)
