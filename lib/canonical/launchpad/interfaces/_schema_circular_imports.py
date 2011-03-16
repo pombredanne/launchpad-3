@@ -444,6 +444,10 @@ patch_reference_property(
 patch_reference_property(
     IStructuralSubscriptionTarget, 'parent_subscription_target',
     IStructuralSubscriptionTarget)
+patch_entry_return_type(
+    IStructuralSubscriptionTarget, 'addBugSubscriptionFilter',
+    IBugSubscriptionFilter)
+    
 
 # ISourcePackageRelease
 patch_reference_property(
