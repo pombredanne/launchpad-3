@@ -10,6 +10,25 @@
   i18n:domain="malone"
 >
 
+  <metal:block fill-slot="head_epilogue">
+    <script type="text/javascript"
+            tal:condition="devmode"
+            tal:content="string:var yui_base='${yui}';"></script>
+    <script type="text/javascript"
+            tal:condition="devmode"
+            tal:define="lp_js string:${icingroot}/build"
+            tal:attributes="src string:${lp_js}/bugs/filebug-dupefinder.js"></script>
+
+    <script type="text/javascript" tal:condition="view/user_is_muted">
+        LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.bugsubscription',
+            function(Y) {
+            Y.on(
+              'domready',
+              Y.lp.bugs.bugsubscription.set_up_bug_notification_level_field);
+        });
+    </script>
+  </metal:block>
+
 <body>
   <div metal:fill-slot="main">
 
