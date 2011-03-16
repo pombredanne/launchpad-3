@@ -326,8 +326,12 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
 
         with feature_flags():
             with person_logged_in(self.person):
+                level = BugNotificationLevel.METADATA
                 form_data = {
                     'field.subscription': self.person.name,
+                    # Although this isn't used we must pass it for the
+                    # sake of form validation.
+                    'field.bug_notification_level': level.title,
                     'field.actions.continue': 'Continue',
                     }
                 subscribe_view = create_initialized_view(
@@ -358,6 +362,18 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                 self.assertTrue(self.bug.isSubscribed(self.person))
                 self.assertEqual(
                     level, muted_subscription.bug_notification_level)
+
+    def test_bug_notification_level_field_has_widget_class(self):
+        # The bug_notification_level widget has a widget_class property
+        # that can be used to manipulate it with JavaScript.
+        with person_logged_in(self.person):
+            with feature_flags():
+                subscribe_view = create_initialized_view(
+                    self.bug.default_bugtask, name='+subscribe')
+            widget_class = (
+                subscribe_view.widgets['bug_notification_level'].widget_class)
+            self.assertEqual(
+                'bug-notification-level-field', widget_class)
 
 
 class BugPortletSubcribersIdsTests(TestCaseWithFactory):

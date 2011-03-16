@@ -290,6 +290,8 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         """See `LaunchpadFormView`."""
         super(BugSubscriptionSubscribeSelfView, self).setUpWidgets()
         if self._use_advanced_features:
+            self.widgets['bug_notification_level'].widget_class = (
+                'bug-notification-level-field')
             if self._subscriber_count_for_current_user == 0:
                 # We hide the subscription widget if the user isn't
                 # subscribed, since we know who the subscriber is and we
@@ -366,7 +368,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
             bug_notification_level = None
 
         if (subscription_person == self._update_subscription_term.value and
-            self.user_is_subscribed or self.user_is_muted):
+            (self.user_is_subscribed or self.user_is_muted)):
             self._handleUpdateSubscription(level=bug_notification_level)
         elif self.user_is_muted and subscription_person == self.user:
             self._handleUnsubscribeCurrentUser()
