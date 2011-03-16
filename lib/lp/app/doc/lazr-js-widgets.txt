@@ -219,7 +219,8 @@ good idea as some spammers can create PPAs and link to other sites in the
 descriptions.  since the barrier to create a PPA is relatively low, we
 restrict the linkability of some fields.  The constructor provides a
 "linkify_text" parameter that defaults to True.  Set this to False to avoid
-the linkification of text.  See the IArchive['description'] editor for an example.
+the linkification of text.  See the IArchive['description'] editor for an
+example.
 
 
 InlineEditPickerWidget
@@ -350,9 +351,9 @@ using the popup chooser.
 
     >>> from lp.app.browser.lazrjs import EnumChoiceWidget
 
-As with the other widgets, this one requires a context object and a Choice type
-field.  The rendering of the widget hooks up to the lazr ChoiceSource with the
-standard patch plugin.
+As with the other widgets, this one requires a context object and a Choice
+type field.  The rendering of the widget hooks up to the lazr ChoiceSource
+with the standard patch plugin.
 
 One of the different things about this widget is the styles that are added.
 Many enums have specific colour styles.  Generally these are the names of
