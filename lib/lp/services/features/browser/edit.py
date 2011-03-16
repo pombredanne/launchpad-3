@@ -25,6 +25,7 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.services.features.changelog import ChangeLog
+from lp.services.features.rulesource import DuplicatePriorityError
 
 
 class IFeatureControlForm(Interface):
@@ -113,5 +114,5 @@ class FeatureControlView(LaunchpadFormView):
             # Unfortunately if the field is '', zope leaves it out of data.
             self.request.features.rule_source.parseRules(
                 data.get('feature_rules') or '')
-        except (IndexError, TypeError, ValueError), e:
+        except (IndexError, TypeError, ValueError, DuplicatePriorityError), e:
             self.setFieldError('feature_rules', 'Invalid rule syntax: %s' % e)

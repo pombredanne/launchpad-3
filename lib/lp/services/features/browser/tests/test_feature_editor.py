@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from textwrap import dedent
 
 from testtools.matchers import Equals
 from zope.component import getUtility
@@ -205,3 +206,19 @@ class TestFeatureControlPage(BrowserTestCase):
         # The action is not available to unauthorized users.
         view = FeatureControlView(None, None)
         self.assertFalse(view.change_action.available())
+
+    def test_error_for_duplicate_priority(self):
+        """Duplicate priority values for a flag result in a nice error."""
+        browser = self.getUserBrowserAsAdmin()
+        browser.open(self.getFeatureRulesEditURL())
+        textarea = browser.getControl(name="field.feature_rules")
+        textarea.value = dedent("""\
+            key foo 10 foo
+            key bar 10 bar
+            """)
+        browser.getControl(name="field.comment").value = 'comment'
+        browser.getControl(name="field.actions.change").click()
+        self.assertThat(
+            browser.contents,
+            Contains(
+                'Invalid rule syntax: duplicate priority for flag "key": 10'))
