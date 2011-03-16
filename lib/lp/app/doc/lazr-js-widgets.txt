@@ -443,21 +443,15 @@ on the current value of the field on the object:
     ...     selected_items=recipe.distroseries)
     >>> print widget()
     <span id="edit-distroseries">
-    <BLANKLINE>
       <dt>
         Recipe distro series
-    <BLANKLINE>
-    <BLANKLINE>
       </dt>
-    <BLANKLINE>
       <span class="yui3-activator-data-box">
         <dl id='edit-distroseries-items'>
     ...
       </span>
       <div class="yui3-activator-message-box yui3-activator-hidden" />
     </span>
-    <BLANKLINE>
-    <BLANKLINE>
 
 If the user has edit rights, an edit icon is rendered and some javascript is
 rendered to hook up the widget.
