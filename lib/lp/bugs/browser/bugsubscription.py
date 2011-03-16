@@ -227,9 +227,10 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
             'Update my current subscription')
 
     @cachedproperty
-    def _unmute_subscription_term(self):
+    def _unmute_and_update_subscription_term(self):
         return SimpleTerm(
-            'unmute', 'unmute', "Unmute bug mail from this bug")
+            'unmute-and-update', 'unmute-and-update',
+            "Unmute bug mail from this bug and subscribe me to it")
 
     @cachedproperty
     def _unsubscribe_current_user_term(self):
@@ -245,10 +246,13 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         self_subscribed = False
         for person in self._subscribers_for_current_user:
             if person.id == self.user.id:
-                if (self._use_advanced_features and
-                    self.user_is_subscribed_directly):
-                    subscription_terms.append(
-                        self._update_subscription_term)
+                if self._use_advanced_features:
+                    if self.user_is_subscribed_directly:
+                        subscription_terms.append(
+                            self._update_subscription_term)
+                    if self.user_is_muted:
+                        subscription_terms.append(
+                            self._unmute_and_update_subscription_term)
                 subscription_terms.insert(
                     0, self._unsubscribe_current_user_term)
                 self_subscribed = True
