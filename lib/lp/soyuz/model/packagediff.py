@@ -8,7 +8,6 @@ __all__ = [
     ]
 
 import gzip
-import itertools
 import os
 import shutil
 import subprocess
@@ -27,13 +26,6 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
-from canonical.launchpad.database.librarian import (
-    LibraryFileAlias,
-    LibraryFileContent,
-    )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -41,7 +33,6 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from canonical.librarian.utils import copy_and_close
-from lp.services.database.bulk import load
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.packagediff import (
     IPackageDiff,
@@ -280,11 +271,8 @@ class PackageDiffSet:
         result.order_by(PackageDiff.id)
         return result.config(limit=limit)
 
-    def getDiffsToReleases(self, sprs, preload_for_display=False):
+    def getDiffsToReleases(self, sprs):
         """See `IPackageDiffSet`."""
-        from lp.registry.model.distribution import Distribution
-        from lp.soyuz.model.archive import Archive
-        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
         if len(sprs) == 0:
             return EmptyResultSet()
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -293,18 +281,4 @@ class PackageDiffSet:
             PackageDiff, PackageDiff.to_sourceID.is_in(spr_ids))
         result.order_by(PackageDiff.to_sourceID,
                         Desc(PackageDiff.date_requested))
-
-        def preload_hook(rows):
-            lfas = load(LibraryFileAlias, (pd.diff_contentID for pd in rows))
-            lfcs = load(LibraryFileContent, (lfa.contentID for lfa in lfas))
-            sprs = load(
-                SourcePackageRelease,
-                itertools.chain.from_iterable(
-                    (pd.from_sourceID, pd.to_sourceID) for pd in rows))
-            archives = load(Archive, (spr.upload_archiveID for spr in sprs))
-            distros = load(Distribution, (a.distributionID for a in archives))
-
-        if preload_for_display:
-            return DecoratedResultSet(result, pre_iter_hook=preload_hook)
-        else:
-            return result
+        return result

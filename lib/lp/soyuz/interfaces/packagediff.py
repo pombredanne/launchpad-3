@@ -64,7 +64,7 @@ class IPackageDiff(Interface):
         title=_('Status'),
         description=_('The status of this package diff request.'),
         vocabulary='PackageDiffStatus',
-        required=False, default=PackageDiffStatus.PENDING,
+        required=False, default=PackageDiffStatus.PENDING
         )
 
     title = Attribute("The Package diff title.")
@@ -95,12 +95,10 @@ class IPackageDiffSet(Interface):
         :return a `SelectResult` ordered by id respecting the given limit.
         """
 
-    def getDiffsToReleases(self, sprs, preload_for_display=False):
+    def getDiffsToReleases(self, sprs):
         """Return all diffs that targetting a set of source package releases.
 
         :param sprs: a sequence of `SourcePackageRelease` objects.
-        :param preload_for_display: True if all the attributes needed for
-            link rendering should be preloaded.
 
         :return a `ResultSet` ordered by `SourcePackageRelease` ID and
         then diff request date in descending order.  If sprs is empty,
