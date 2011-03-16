@@ -30,7 +30,6 @@ __all__ = [
     'IDistroSeriesBugTask',
     'IFrontPageBugTaskSearch',
     'INominationsReviewTableBatchNavigator',
-    'INullBugTask',
     'IPersonBugTaskSearch',
     'IProductSeriesBugTask',
     'IRemoveQuestionFromBugTaskForm',
@@ -841,16 +840,6 @@ IBugTask['related_tasks'].value_type.schema = IBugTask
 # We are forced to define this now to avoid circular import problems.
 IBugWatch['bugtasks'].value_type.schema = IBugTask
 
-
-class INullBugTask(IBugTask):
-    """A marker interface for an IBugTask that doesn't exist in a context.
-
-    An INullBugTask is useful when wanting to view a bug in a context
-    where that bug hasn't yet been reported. This might happen, for
-    example, when searching to see if a bug you want to report has
-    already been filed and finding matching reports that don't yet
-    have tasks reported in your context.
-    """
 
 UPSTREAM_STATUS_VOCABULARY = SimpleVocabulary(
     [SimpleTerm(
