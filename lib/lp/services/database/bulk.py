@@ -69,7 +69,9 @@ def load(object_type, primary_keys, store=None):
             "Compound primary keys are not supported: %s." %
             object_type.__name__)
     primary_key_column = primary_key[0]
-    condition = primary_key_column.is_in(primary_keys)
+    # Turn the primary keys into a set to eliminate duplicates,
+    # shortening the query.
+    condition = primary_key_column.is_in(set(primary_keys))
     if store is None:
         store = IStore(object_type)
     query = store.find(object_type, condition)
