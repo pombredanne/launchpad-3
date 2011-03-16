@@ -854,6 +854,10 @@ BugMessage""" % sqlvalues(self.id))
                 BugNotificationLevel.NOTHING)
             return subscription
 
+    def unmute(self, person, unmuted_by):
+        """See `IBug`."""
+        self.unsubscribe(person, unmuted_by)
+
     @property
     def subscriptions(self):
         """The set of `BugSubscriptions` for this bug."""

@@ -489,8 +489,11 @@ class IBug(IPrivacy, IHasLinkedBranches):
             with a BugNotificationLevel of NOTHING.
         """
 
-    def mute(person):
+    def mute(person, muted_by):
         """Add a muted subscription for `person`."""
+
+    def unmute(person, unmuted_by):
+        """Remove a muted subscription for `person`."""
 
     def getDirectSubscriptions():
         """A sequence of IBugSubscriptions directly linked to this bug."""

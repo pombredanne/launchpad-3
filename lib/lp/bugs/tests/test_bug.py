@@ -65,3 +65,12 @@ class TestBugSubscriptionMethods(TestCaseWithFactory):
             self.assertEqual(
                 BugNotificationLevel.NOTHING,
                 subscription.bug_notification_level)
+
+    def test_unmute_unmutes_user(self):
+        # Bug.unmute() will remove a muted subscription for the user
+        # passed to it.
+        with person_logged_in(self.person):
+            self.bug.mute(self.person, self.person)
+            self.assertTrue(self.bug.isMuted(self.person))
+            self.bug.unmute(self.person, self.person)
+            self.assertFalse(self.bug.isMuted(self.person))
