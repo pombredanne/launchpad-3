@@ -179,6 +179,9 @@ from lp.registry.interfaces.distributionmirror import (
     MirrorContent,
     MirrorSpeed,
     )
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
@@ -1672,8 +1675,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             prerequisite_target = target.distribution
         if ISourcePackage.providedBy(target):
             # We can't have a series task without a distribution task.
-            prerequisite_target = target.distribution.getSourcePackage(
-                target.sourcepackagename)
+            prerequisite_target = target.distribution_sourcepackage
+            if publish:
+                self.makeSourcePackagePublishingHistory(
+                    distroseries=target.distroseries,
+                    sourcepackagename=target.sourcepackagename)
+        if IDistributionSourcePackage.providedBy(target):
             if publish:
                 self.makeSourcePackagePublishingHistory(
                     distroseries=target.distribution.currentseries,
