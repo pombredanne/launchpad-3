@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-from storm.locals import Store
 from testtools.matchers import Equals
 
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -44,8 +43,6 @@ class TestFilterBugTasksByContext(TestCaseWithFactory):
     def test_two_product_tasks_case_no_context(self):
         widget = self.factory.makeProduct()
         bug = self.factory.makeBug(product=widget)
-        # Make sure the bug and the first task is flushed first.
-        Store.of(bug).flush()
         cogs = self.factory.makeProduct()
         self.factory.makeBugTask(bug=bug, target=cogs)
         tasks = list(bug.bugtasks)
@@ -96,5 +93,39 @@ class TestFilterBugTasksByContext(TestCaseWithFactory):
         tasks = list(bug.bugtasks)
         with StormStatementRecorder() as recorder:
             filtered = filter_bugtasks_by_context(series, tasks)
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
+        self.assertThat(filtered, Equals([task]))
+
+    def test_distro_context(self):
+        bug = self.factory.makeBug()
+        mint = self.factory.makeDistribution()
+        task = self.factory.makeBugTask(bug=bug, target=mint)
+        tasks = list(bug.bugtasks)
+        with StormStatementRecorder() as recorder:
+            filtered = filter_bugtasks_by_context(mint, tasks)
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
+        self.assertThat(filtered, Equals([task]))
+
+    def test_distro_context_with_series_task(self):
+        bug = self.factory.makeBug()
+        mint = self.factory.makeDistribution()
+        task = self.factory.makeBugTask(bug=bug, target=mint)
+        devel = self.factory.makeDistroSeries(mint)
+        self.factory.makeBugTask(bug=bug, target=devel)
+        tasks = list(bug.bugtasks)
+        with StormStatementRecorder() as recorder:
+            filtered = filter_bugtasks_by_context(mint, tasks)
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
+        self.assertThat(filtered, Equals([task]))
+
+    def test_distroseries_context_with_series_task(self):
+        bug = self.factory.makeBug()
+        mint = self.factory.makeDistribution()
+        self.factory.makeBugTask(bug=bug, target=mint)
+        devel = self.factory.makeDistroSeries(mint)
+        task = self.factory.makeBugTask(bug=bug, target=devel)
+        tasks = list(bug.bugtasks)
+        with StormStatementRecorder() as recorder:
+            filtered = filter_bugtasks_by_context(devel, tasks)
         self.assertThat(recorder, HasQueryCount(Equals(0)))
         self.assertThat(filtered, Equals([task]))

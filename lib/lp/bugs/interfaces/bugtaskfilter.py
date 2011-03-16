@@ -11,11 +11,53 @@ __all__ = [
 from collections import defaultdict, namedtuple
 from operator import attrgetter
 
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 
 
 OrderedBugTask = namedtuple('OrderedBugTask', 'rank id task')
+
+
+class DistributionWeightCalculator:
+    """Give higher weighing to tasks for the matching distribution."""
+
+    def __init__(self, distribution):
+        self.distributionID = distribution.id
+
+    def __call__(self, bugtask):
+        """Full weight is given to tasks for this distribution.
+
+        Given that there must be a distribution task for a series of that
+        distribution to have a task, we give no more weighting to a
+        distroseries task than any other.
+        """
+        if bugtask.distributionID == self.distributionID:
+            if bugtask.distroseriesID is None:
+                return OrderedBugTask(1, bugtask.id, bugtask)
+        return OrderedBugTask(2, bugtask.id, bugtask)
+
+
+class DistroSeriesWeightCalculator:
+    """Try for the series first, the distro second, everything else third."""
+
+    def __init__(self, distro_series):
+        self.seriesID = distro_series.id
+        self.distributionID = distro_series.distributionID
+
+    def __call__(self, bugtask):
+        """Full weight is given to tasks for this distro series.
+
+        If the series isn't found, the distribution task is better than
+        others.
+        """
+        if bugtask.distroseriesID == self.seriesID:
+            return OrderedBugTask(1, bugtask.id, bugtask)
+        elif bugtask.distributionID == self.distributionID:
+            return OrderedBugTask(2, bugtask.id, bugtask)
+        else:
+            return OrderedBugTask(3, bugtask.id, bugtask)
 
 
 class ProductWeightCalculator:
@@ -38,7 +80,7 @@ class ProductWeightCalculator:
 
 
 class ProductSeriesWeightCalculator:
-    """Try for the series first, the product second, everything else thrid."""
+    """Try for the series first, the product second, everything else third."""
 
     def __init__(self, product_series):
         self.seriesID = product_series.id
@@ -65,10 +107,19 @@ class SimpleWeightCalculator:
 
 
 def get_weight_calculator(context):
+    """Create the appropriate weight calculator for the context.
+
+    I did consider using adapters, but since this method is only called from
+    this module, there didn't seem like any point.
+    """
     if IProduct.providedBy(context):
         return ProductWeightCalculator(context)
     elif IProductSeries.providedBy(context):
         return ProductSeriesWeightCalculator(context)
+    elif IDistribution.providedBy(context):
+        return DistributionWeightCalculator(context)
+    elif IDistroSeries.providedBy(context):
+        return DistroSeriesWeightCalculator(context)
     else:
         return SimpleWeightCalculator()
 
