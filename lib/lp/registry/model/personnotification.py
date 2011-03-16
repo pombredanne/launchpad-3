@@ -49,6 +49,21 @@ class PersonNotification(SQLBase):
         """See `IPersonNotification`."""
         assert self.person.preferredemail is not None, (
             "Can't send a notification to a person without an email.")
+        # XXX sinzui 2011-03-15: since a user can be deactivated after a
+        # message is queued, this will oops. Maybe the message should
+        # be dropped.
+        # This needs to build a list of team admin/owners with email addrs.
+
+#        to_addr = []
+#        team_or_person = person
+#        while to_addr == []:
+#            if team_or_person.is_team:
+#                to_addr = team_or_person.getTeamAdminsEmailAddresses()
+#                team_or_person = team_or_person.teamowner
+#            else:
+#                email = get_contact_email_addresses(team_or_person)
+#                to_addr = [format_address(team_or_person.displayname, email)]
+
         from_addr = config.canonical.bounce_address
         to_addr = format_address(
             self.person.displayname, self.person.preferredemail.email)

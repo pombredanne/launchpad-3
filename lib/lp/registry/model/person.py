@@ -4108,16 +4108,20 @@ class PersonSet:
                 """ % sqlvalues(to_person.accountID, from_person.accountID))
 
         # Inform the user of the merge changes.
-        if not to_person.isTeam():
+        if to_person.isTeam():
+            mail_text = get_email_template(
+                'team-merged.txt', app='registry')
+            subject = 'Launchpad teams merged'
+        else:
             mail_text = get_email_template(
                 'person-merged.txt', app='registry')
-            mail_text = mail_text % {
-                'dupename': from_person.name,
-                'person': to_person.name,
-                }
             subject = 'Launchpad accounts merged'
-            getUtility(IPersonNotificationSet).addNotification(
-                to_person, subject, mail_text)
+        mail_text = mail_text % {
+            'dupename': from_person.name,
+            'person': to_person.name,
+            }
+        getUtility(IPersonNotificationSet).addNotification(
+            to_person, subject, mail_text)
 
     def getValidPersons(self, persons):
         """See `IPersonSet.`"""

@@ -441,6 +441,23 @@ active members of the team so that we can perform the merge.
     >>> list(IPollSubset(landscape).getAll())
     []
 
+An email is sent to the admins of the team confirming the teams were merged.
+
+    >>> notifications = notification_set.getNotificationsToSend()
+    >>> notifications.count()
+    2
+    >>> notification = notifications[-1]
+    >>> print notification.person.name
+    name12
+    >>> print notification.subject
+    Launchpad teams merged
+    >>> print notification.body
+    The Launchpad team named 'test-team-merged' was merged into the team
+    named 'landscape-developers'. You can review the changes at:
+
+        https://launchpad.net/~landscape-developers ...
+
+
 A person with a PPA can't be merged.
 
     >>> person_with_ppa = factory.makePerson()
