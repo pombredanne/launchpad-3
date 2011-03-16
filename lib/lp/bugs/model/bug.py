@@ -168,7 +168,6 @@ from lp.bugs.model.bugtask import (
     BugTask,
     bugtask_sort_key,
     get_bug_privacy_filter,
-    NullBugTask,
     )
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (
@@ -1449,16 +1448,6 @@ BugMessage""" % sqlvalues(self.id))
             list(PersonSet().getPrecachedPersonsFromIDs(owners,
                 need_validity=True))
         return DecoratedResultSet(result, pre_iter_hook=eager_load_owners)
-
-    def getNullBugTask(self, product=None, productseries=None,
-                    sourcepackagename=None, distribution=None,
-                    distroseries=None):
-        """See `IBug`."""
-        return NullBugTask(bug=self, product=product,
-                           productseries=productseries,
-                           sourcepackagename=sourcepackagename,
-                           distribution=distribution,
-                           distroseries=distroseries)
 
     def addNomination(self, owner, target):
         """See `IBug`."""

@@ -727,11 +727,6 @@ class IBug(IPrivacy, IHasLinkedBranches):
             returned rows. The step parameter in each slice is ignored.
         """
 
-    def getNullBugTask(product=None, productseries=None,
-                    sourcepackagename=None, distribution=None,
-                    distroseries=None):
-        """Create an INullBugTask and return it for the given parameters."""
-
     @operation_parameters(
         target=Reference(schema=Interface, title=_('Target')))
     @call_with(owner=REQUEST_USER)
