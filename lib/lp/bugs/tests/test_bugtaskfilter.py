@@ -140,3 +140,13 @@ class TestFilterBugTasksByContext(TestCaseWithFactory):
             filtered = filter_bugtasks_by_context(devel, tasks)
         self.assertThat(recorder, HasQueryCount(Equals(0)))
         self.assertThat(filtered, Equals([task]))
+
+    def test_sourcepackage_context_with_sourcepackage_task(self):
+        bug = self.factory.makeBug()
+        sp = self.factory.makeSourcePackage()
+        task = self.factory.makeBugTask(bug=bug, target=sp)
+        tasks = list(bug.bugtasks)
+        with StormStatementRecorder() as recorder:
+            filtered = filter_bugtasks_by_context(sp, tasks)
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
+        self.assertThat(filtered, Equals([task]))

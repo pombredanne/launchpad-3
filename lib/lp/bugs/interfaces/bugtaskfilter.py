@@ -15,6 +15,7 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 
 
 OrderedBugTask = namedtuple('OrderedBugTask', 'rank id task')
@@ -97,6 +98,38 @@ class ProductSeriesWeightCalculator:
             return OrderedBugTask(3, bugtask.id, bugtask)
 
 
+class SourcePackageWeightCalculator:
+    """This is the most complicated weight calculator.
+
+    We look for the source package task, followed by the distro source
+    package, then the distroseries task, and lastly the distro task.
+    """
+
+    def __init__(self, source_package):
+        self.sourcepackagenameID = source_package.sourcepackagename.id
+        self.seriesID = source_package.distroseries.id
+        self.distributionID = source_package.distroseries.distributionID
+
+    def __call__(self, bugtask):
+        """Full weight is given to tasks for this product series.
+
+        If the series isn't found, the product task is better than others.
+        """
+        if bugtask.sourcepackagenameID == self.sourcepackagenameID:
+            if bugtask.distroseriesID == self.seriesID:
+                return OrderedBugTask(1, bugtask.id, bugtask)
+            elif bugtask.distributionID == self.distributionID:
+                return OrderedBugTask(2, bugtask.id, bugtask)
+        # should not grab tasks for other packages...
+        elif bugtask.distroseriesID == self.seriesID:
+            return OrderedBugTask(3, bugtask.id, bugtask)
+        elif bugtask.distributionID == self.distributionID:
+            return OrderedBugTask(4, bugtask.id, bugtask)
+        # Catch the default case, and where there is a task for the same
+        # sourcepackage on a different distro.
+        return OrderedBugTask(5, bugtask.id, bugtask)
+
+
 class SimpleWeightCalculator:
     """All tasks have the same weighting."""
 
@@ -118,6 +151,8 @@ def get_weight_calculator(context):
         return DistributionWeightCalculator(context)
     elif IDistroSeries.providedBy(context):
         return DistroSeriesWeightCalculator(context)
+    elif ISourcePackage.providedBy(context):
+        return SourcePackageWeightCalculator(context)
     else:
         return SimpleWeightCalculator()
 

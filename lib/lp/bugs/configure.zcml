@@ -195,6 +195,7 @@
                     milestoneID
                     productID
                     productseriesID
+                    sourcepackagenameID
                     task_age
                     bug_subscribers
                     is_complete
