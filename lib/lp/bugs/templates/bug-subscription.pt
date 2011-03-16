@@ -20,11 +20,11 @@
             tal:attributes="src string:${lp_js}/bugs/filebug-dupefinder.js"></script>
 
     <script type="text/javascript" tal:condition="view/user_is_muted">
-        LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.bugsubscription',
+        LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.bug_subscription',
             function(Y) {
             Y.on(
               'domready',
-              Y.lp.bugs.bugsubscription.set_up_bug_notification_level_field);
+              Y.lp.bugs.bug_subscription.set_up_bug_notification_level_field);
         });
     </script>
   </metal:block>
