@@ -129,3 +129,14 @@ class TestFilterBugTasksByContext(TestCaseWithFactory):
             filtered = filter_bugtasks_by_context(devel, tasks)
         self.assertThat(recorder, HasQueryCount(Equals(0)))
         self.assertThat(filtered, Equals([task]))
+
+    def test_distroseries_context_with_no_series_task(self):
+        bug = self.factory.makeBug()
+        mint = self.factory.makeDistribution()
+        task = self.factory.makeBugTask(bug=bug, target=mint)
+        devel = self.factory.makeDistroSeries(mint)
+        tasks = list(bug.bugtasks)
+        with StormStatementRecorder() as recorder:
+            filtered = filter_bugtasks_by_context(devel, tasks)
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
+        self.assertThat(filtered, Equals([task]))

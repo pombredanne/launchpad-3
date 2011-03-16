@@ -467,9 +467,10 @@ class IBugTask(IHasDateCreated, IHasBug):
     sourcepackagename = Choice(
         title=_("Package"), required=False,
         vocabulary='SourcePackageName')
+    sourcepackagenameID = Attribute('The sourcepackagename ID')
     distribution = Choice(
         title=_("Distribution"), required=False, vocabulary='Distribution')
-    distributionID = Attribute('The distributionID ID')
+    distributionID = Attribute('The distribution ID')
     distroseries = Choice(
         title=_("Series"), required=False,
         vocabulary='DistroSeries')

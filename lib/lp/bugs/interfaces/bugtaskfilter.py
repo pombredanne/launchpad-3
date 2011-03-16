@@ -34,8 +34,7 @@ class DistributionWeightCalculator:
         distroseries task than any other.
         """
         if bugtask.distributionID == self.distributionID:
-            if bugtask.distroseriesID is None:
-                return OrderedBugTask(1, bugtask.id, bugtask)
+            return OrderedBugTask(1, bugtask.id, bugtask)
         return OrderedBugTask(2, bugtask.id, bugtask)
 
 
@@ -74,8 +73,7 @@ class ProductWeightCalculator:
         any other.
         """
         if bugtask.productID == self.productID:
-            if bugtask.productseriesID is None:
-                return OrderedBugTask(1, bugtask.id, bugtask)
+            return OrderedBugTask(1, bugtask.id, bugtask)
         return OrderedBugTask(2, bugtask.id, bugtask)
 
 
