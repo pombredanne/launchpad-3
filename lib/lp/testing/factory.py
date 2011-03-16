@@ -1571,7 +1571,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 private=False, date_closed=None, title=None,
                 date_created=None, description=None, comment=None,
                 status=None, distribution=None, milestone=None, series=None,
-                tags=None):
+                tags=None, sourcepackagename=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -1591,7 +1591,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             parameter, or the series.distribution must match the distribution
             parameter, or the those parameters must be None.
         :param tags: If set, the tags to be added with the bug.
-
+        :param distribution: If set, the sourcepackagename is used as the
+            default bug target.
         At least one of the parameters distribution and product must be
         None, otherwise, an assertion error will be raised.
         """
@@ -1613,12 +1614,17 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             title = self.getUniqueString()
         if comment is None:
             comment = self.getUniqueString()
+        if sourcepackagename is not None:
+            self.makeSourcePackagePublishingHistory(
+                distroseries=distribution.currentseries,
+                sourcepackagename=sourcepackagename)
         create_bug_params = CreateBugParams(
             owner, title, comment=comment, private=private,
             datecreated=date_created, description=description,
             status=status, tags=tags)
         create_bug_params.setBugTarget(
-            product=product, distribution=distribution)
+            product=product, distribution=distribution,
+            sourcepackagename=sourcepackagename)
         bug = getUtility(IBugSet).createBug(create_bug_params)
         if bug_watch_url is not None:
             # fromText() creates a bug watch associated with the bug.
@@ -1635,7 +1641,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         return bug
 
-    def makeBugTask(self, bug=None, target=None, owner=None):
+    def makeBugTask(self, bug=None, target=None, owner=None, publish=True):
         """Create and return a bug task.
 
         If the bug is already targeted to the given target, the existing
@@ -1657,17 +1663,25 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if owner is None:
             owner = self.makePerson()
 
+        prerequisite_target = None
         if IProductSeries.providedBy(target):
             # We can't have a series task without a product task.
-            self.makeBugTask(bug, target.product)
+            prerequisite_target = target.product
         if IDistroSeries.providedBy(target):
             # We can't have a series task without a distribution task.
-            self.makeBugTask(bug, target.distribution)
+            prerequisite_target = target.distribution
         if ISourcePackage.providedBy(target):
-            distribution_package = target.distribution.getSourcePackage(
-                target.sourcepackagename)
             # We can't have a series task without a distribution task.
-            self.makeBugTask(bug, distribution_package)
+            prerequisite_target = target.distribution.getSourcePackage(
+                target.sourcepackagename)
+            if publish:
+                self.makeSourcePackagePublishingHistory(
+                    distroseries=target.distribution.currentseries,
+                    sourcepackagename=target.sourcepackagename)
+        if prerequisite_target is not None:
+            prerequisite = bug.getBugTask(prerequisite_target)
+            if prerequisite is None:
+                self.makeBugTask(bug, prerequisite_target)
 
         return removeSecurityProxy(bug).addTask(owner, target)
 
@@ -3803,7 +3817,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         return getUtility(ITemporaryStorageManager).fetch(new_uuid)
 
-    def makeLaunchpadService(self, person=None, version=None):
+    def makeLaunchpadService(self, person=None, version="devel"):
         if person is None:
             person = self.makePerson()
         from canonical.testing import BaseLayer
