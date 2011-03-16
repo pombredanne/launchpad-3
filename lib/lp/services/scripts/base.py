@@ -304,10 +304,6 @@ class LaunchpadScript:
     @log_unhandled_exception_and_exit
     def run(self, use_web_security=False, isolation=None):
         """Actually run the script, executing zcml and initZopeless."""
-        if getFeatureFlag("script_disabled"):
-            self.logger.info("Script disabled by feature flag.  Not running.")
-            return
-
         if isolation is None:
             isolation = ISOLATION_LEVEL_DEFAULT
         self._init_zca(use_web_security=use_web_security)

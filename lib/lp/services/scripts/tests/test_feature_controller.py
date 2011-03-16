@@ -59,10 +59,3 @@ class TestScriptFeatureController(TestCase):
         FakeScript(name="mongo").run()
         self.assertEqual(
             previous_controller, get_relevant_feature_controller())
-
-    def test_feature_flag_disables_script(self):
-        script = FakeScript(name="modo")
-        script.main = FakeMethod()
-        self.useFixture(FeatureFixture({'script_disabled': 'true'}))
-        script.run()
-        self.assertEqual(0, script.main.call_count)
