@@ -196,7 +196,7 @@ class SourcePackageTranslationSharingDetailsView(
             self.has_upstream_branch and
             self.is_upstream_translations_enabled and
             self.is_upstream_synchronization_enabled)
-    
+
     @property
     def is_merge_job_running(self):
         """Is a merge job running for this source package?"""

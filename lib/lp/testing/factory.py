@@ -1079,7 +1079,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         else:
             make_sourcepackagename = (
                 sourcepackagename is None or
-                isinstance(sourcepackagename, str)) 
+                isinstance(sourcepackagename, str))
             if make_sourcepackagename:
                 sourcepackagename = self.makeSourcePackageName(
                     sourcepackagename)

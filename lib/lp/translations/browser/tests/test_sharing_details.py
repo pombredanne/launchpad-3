@@ -455,7 +455,7 @@ class TestTranslationSharingDetailsViewNotifications(TestCaseWithFactory,
     no_templates_message = (
         "No upstream templates have been found yet. Please follow "
         "the import process by going to the Translation Import Queue "
-        "of the upstream project series.") 
+        "of the upstream project series.")
 
     def test_message_no_templates(self):
         # When sharing is fully configured but no upstream templates are
@@ -504,4 +504,3 @@ class TestTranslationSharingDetailsViewNotifications(TestCaseWithFactory,
         view = self._makeInitializedView(sourcepackage)
         self.assertNotIn(
             self.job_running_message, self._getNotifications(view))
-
