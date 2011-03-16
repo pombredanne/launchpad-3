@@ -64,7 +64,7 @@ class IPackageDiff(Interface):
         title=_('Status'),
         description=_('The status of this package diff request.'),
         vocabulary='PackageDiffStatus',
-        required=False, default=PackageDiffStatus.PENDING
+        required=False, default=PackageDiffStatus.PENDING,
         )
 
     title = Attribute("The Package diff title.")
