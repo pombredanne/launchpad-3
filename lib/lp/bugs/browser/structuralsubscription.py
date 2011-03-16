@@ -391,13 +391,12 @@ def expose_user_subscription_status_to_js(context, request, user):
 
 
 def person_is_team_admin(person, team):
-    if answer is None:
-        answer = False
-        admins = team.adminmembers
-        for admin in admins:
-            if person.inTeam(admin):
-                answer = True
-                break
+    answer = False
+    admins = team.adminmembers
+    for admin in admins:
+        if person.inTeam(admin):
+            answer = True
+            break
     return answer
 
 
