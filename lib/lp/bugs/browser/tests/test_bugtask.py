@@ -550,7 +550,7 @@ class TestBugTaskEditView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_retartget_already_exists_error(self):
+    def test_retarget_already_exists_error(self):
         user = self.factory.makePerson()
         login_person(user)
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -576,7 +576,7 @@ class TestBugTaskEditView(TestCaseWithFactory):
             'ubuntu_rabbit.sourcepackagename': 'mouse',
             }
         view = create_initialized_view(
-            bug_task_2, name='+editstatus-page', form=form, principal=user)
+            bug_task_2, name='+editstatus', form=form, principal=user)
         self.assertEqual(1, len(view.errors))
         self.assertEqual(
             'This bug has already been reported on mouse (ubuntu).',
