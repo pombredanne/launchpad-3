@@ -1132,14 +1132,8 @@ BugMessage""" % sqlvalues(self.id))
             distribution = target.distribution
             source_package_name = target.sourcepackagename
         if ISourcePackage.providedBy(target):
-            if target.distroseries is not None:
-                distro_series = target.distroseries
-                source_package_name = target.sourcepackagename
-            elif target.distribution is not None:
-                distribution = target.distribution
-                source_package_name = target.sourcepackagename
-            else:
-                source_package_name = target.sourcepackagename
+            distro_series = target.distroseries
+            source_package_name = target.sourcepackagename
 
         new_task = getUtility(IBugTaskSet).createTask(
             self, owner=owner, product=product,
