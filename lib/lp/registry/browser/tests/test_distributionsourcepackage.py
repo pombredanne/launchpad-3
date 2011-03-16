@@ -46,7 +46,7 @@ class TestDistributionSourcePackageChangelogView(TestCaseWithFactory):
         dsp = archive.distribution.getSourcePackage(
             spph.sourcepackagerelease.sourcepackagename)
         changelog_browses_under_limit = BrowsesWithQueryLimit(
-            29, self.factory.makePerson(), '+changelog')
+            32, self.factory.makePerson(), '+changelog')
         self.assertThat(dsp, changelog_browses_under_limit)
         with celebrity_logged_in('admin'):
             for i in range(5):
