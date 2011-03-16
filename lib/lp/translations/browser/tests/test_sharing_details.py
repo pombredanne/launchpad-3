@@ -25,9 +25,7 @@ from lp.translations.browser.sourcepackage import (
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
-from lp.translations.tests.test_translationpackagingjob import (
-    make_translation_merge_job,
-    )
+from lp.translations.model.translationpackagingjob import TranslationMergeJob
 
 
 class ConfigureUpstreamProjectMixin:
@@ -46,6 +44,13 @@ class ConfigureUpstreamProjectMixin:
             productseries.product.translations_usage = translations_usage
             productseries.translations_autoimport_mode = (
                 translation_import_mode)
+
+    def endMergeJob(self, sourcepackage):
+        """End the merge job that was automatically created."""
+        for job in TranslationMergeJob.iterReady():
+            if job.sourcepackage == sourcepackage:
+                job.start()
+                job.complete()
 
 
 class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
@@ -264,6 +269,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             translations_usage=ServiceUsage.LAUNCHPAD,
             translation_import_mode=
                 TranslationsBranchImportMode.IMPORT_TRANSLATIONS)
+        self.endMergeJob(self.sourcepackage)
         expected = [
             {
                 'name': 'shared-template',
@@ -381,6 +387,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
     def test_potlist_sharing(self):
         # With sharing configured, templates on both sides are listed.
         sourcepackage, productseries = self._makeFullyConfiguredSharing()
+        self.endMergeJob(sourcepackage)
         template_name = 'foo-template'
         self.factory.makePOTemplate(
             name=template_name, sourcepackage=sourcepackage)
@@ -410,11 +417,9 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             foo-template  only in upstream  0  \d+ second(s)? ago""",
             extract_text(tbody))
 
-    def test_potlist_job_running(self):
+    def test_potlist_linking(self):
         # When a merge job is running, the state is "linking".
-        mergejob = make_translation_merge_job(self.factory)
-        sourcepackage = mergejob.sourcepackage
-        productseries = mergejob.productseries
+        sourcepackage, productseries = self._makeFullyConfiguredSharing()
         self.factory.makePackagingLink(
             sourcepackage=sourcepackage, productseries=productseries)
         browser = self._getSharingDetailsViewBrowser(sourcepackage)
@@ -425,15 +430,18 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             generic-string\d+  linking""",
             extract_text(tbody))
 
+    no_templates_message = (
+        "No upstream templates have been found yet. Please follow "
+        "the import process by going to the Translation Import Queue "
+        "of the upstream project series.") 
+
     def test_message_no_templates(self):
         # When sharing is fully configured but no upstream templates are
         # found, a message is displayed.
         sourcepackage = self._makeFullyConfiguredSharing()[0]
         browser = self._getSharingDetailsViewBrowser(sourcepackage)
-        self.assertEqual(
-            ["No upstream templates have been found yet. Please follow "
-             "the import process by going to the Translation Import Queue "
-             "of the upstream project series."],
+        self.assertIn(
+            self.no_templates_message,
             get_feedback_messages(browser.contents))
 
     def test_no_message_with_templates(self):
@@ -442,7 +450,9 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         sourcepackage, productseries = self._makeFullyConfiguredSharing()
         self.factory.makePOTemplate(productseries=productseries)
         browser = self._getSharingDetailsViewBrowser(sourcepackage)
-        self.assertEqual([], get_feedback_messages(browser.contents))
+        self.assertNotIn(
+            self.no_templates_message,
+            get_feedback_messages(browser.contents))
 
     def test_no_message_with_incomplate_sharing(self):
         # When sharing is not fully configured and templates are found, no
@@ -452,19 +462,27 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         sourcepackage = packaging.sourcepackage
         self.factory.makePOTemplate(productseries=productseries)
         browser = self._getSharingDetailsViewBrowser(sourcepackage)
-        self.assertEqual([], get_feedback_messages(browser.contents))
+        self.assertNotIn(
+            self.no_templates_message,
+            get_feedback_messages(browser.contents))
+
+    job_running_message = (
+        "Translations are currently being linked by a background "
+        "job. When that job has finished, translations will be "
+        "shared with the upstream project.")
 
     def test_message_job_running(self):
-        # When a merge job is running.
-        mergejob = make_translation_merge_job(self.factory)
-        sourcepackage = mergejob.sourcepackage
-        productseries = mergejob.productseries
-        self.factory.makePackagingLink(
-            sourcepackage=sourcepackage, productseries=productseries)
+        # When a merge job is running, a message is displayed.
+        sourcepackage, productseries = self._makeFullyConfiguredSharing()
         browser = self._getSharingDetailsViewBrowser(sourcepackage)
-        self.assertEqual(
-            ["Translations are currently being linked by a background "
-             "job. When that job has finished, translations will be "
-             "shared with the upstream project."],
-            get_feedback_messages(browser.contents))
+        self.assertIn(
+            self.job_running_message, get_feedback_messages(browser.contents))
+
+    def test_no_message_job_not_running(self):
+        # Without a merge job running, no such message is displayed.
+        sourcepackage = self._makeFullyConfiguredSharing()[0]
+        self.endMergeJob(sourcepackage)
+        browser = self._getSharingDetailsViewBrowser(sourcepackage)
+        self.assertNotIn(
+            self.job_running_message, get_feedback_messages(browser.contents))
 
