@@ -28,7 +28,7 @@ class TestDistributionPublisherConfigView(TestCaseWithFactory):
     def setUp(self):
         # Create a test distribution.
         super(TestDistributionPublisherConfigView, self).setUp()
-        self.distro = self.factory.makeDistribution()
+        self.distro = self.factory.makeDistribution(no_pubconf=True)
         login(LAUNCHPAD_ADMIN)
 
         self.ROOT_DIR = u"rootdir/test"
