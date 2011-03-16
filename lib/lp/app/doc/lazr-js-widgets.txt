@@ -399,3 +399,101 @@ Changing the edit link
 
 The edit link can be changed in exactly the same way as for the
 TextLineEditorWidget above.
+
+
+InlineMultiCheckboxWidget
+-------------------
+
+This widget is used to edit fields which are Lists or Sets. It displays the
+current items in the collection when the page is rendered and provides the
+ability to edit the selected items via a popup overlay. The popup has a set of
+checkboxes for selecting one or more items from a vocabulary. The vocabulary
+defaults to that associated with the field being edited but can be user
+defined.
+
+    >>> from lp.app.browser.lazrjs import InlineMultiCheckboxWidget
+
+The bare minimum that you need to provide the widget is the object that you
+are editing, and the exported field that is being edited, and the label to
+display for the set of checkboxes.
+
+The surrounding tag for the label and set of checkboxes are both customisable,
+and a prefix may be given.  The prefix is rendered as part of the widget, but
+isn't updated when the value changes.
+
+Other customisable parameters include the popup header text (defaults to the
+field title suffixed by ":"), the string to render when the field contains no
+selected items (defaults to "None"), and a CSS style to add to each checkbox
+node (defaults to '').
+
+If the user does not have edit rights, the widget just renders the text based
+on the current value of the field on the object:
+
+    >>> login(ANONYMOUS)
+    >>> from lp.code.interfaces.sourcepackagerecipe import (
+    ...     ISourcePackageRecipe,
+    ...     )
+    >>> distroseries = ISourcePackageRecipe['distroseries']
+    >>> recipe = factory.makeSourcePackageRecipe(
+    ...     owner=eric, name=u'cake_recipe', description=u'Yummy.')
+    >>> widget = InlineMultiCheckboxWidget(
+    ...     recipe, distroseries, 'Recipe distro series',
+    ...     header='Select distroseries:', vocabulary='BuildableDistroSeries',
+    ...     label_tag='dt', items_tag='dl',
+    ...     selected_items=recipe.distroseries)
+    >>> print widget()
+    <span id="edit-distroseries">
+    <BLANKLINE>
+      <dt>
+        Recipe distro series
+    <BLANKLINE>
+    <BLANKLINE>
+      </dt>
+    <BLANKLINE>
+      <span class="yui3-activator-data-box">
+        <dl id='edit-distroseries-items'>
+    ...
+      </span>
+      <div class="yui3-activator-message-box yui3-activator-hidden" />
+    </span>
+    <BLANKLINE>
+    <BLANKLINE>
+
+If the user has edit rights, an edit icon is rendered and some javascript is
+rendered to hook up the widget.
+
+    >>> login_person(eric)
+    >>> print widget()
+    <span id="edit-distroseries">
+    <BLANKLINE>
+      <dt>
+        Recipe distro series
+    <BLANKLINE>
+          <button class="lazr-btn yui3-activator-act yui3-activator-hidden"
+                  id="edit-distroseries-btn">
+            Edit
+          </button>
+    <BLANKLINE>
+        <noscript>
+          <a class="sprite edit"
+             href="http://code.launchpad.dev/~eric/+recipe/cake_recipe/+edit"
+             title=""></a>
+        </noscript>
+      </dt>
+    <BLANKLINE>
+      <span class="yui3-activator-data-box">
+        <dl id='edit-distroseries-items'>
+    ...
+      <div class="yui3-activator-message-box yui3-activator-hidden" />
+      </span>
+      <script>
+      LPS.use('lp.app.multicheckbox', function(Y) {
+      ...
+      </script>
+
+
+Changing the edit link
+**********************
+
+The edit link can be changed in exactly the same way as for the
+TextLineEditorWidget above.
