@@ -168,26 +168,6 @@ class ISourcePackageRecipeView(Interface):
         """Perform a build into the daily build archive."""
 
 
-class ISourcePackageRecipeEdit(Interface):
-    """ISourcePackageRecipe methods that require launchpad.Edit permission."""
-
-    @mutator_for(ISourcePackageRecipeView['recipe_text'])
-    @operation_for_version("devel")
-    @operation_parameters(
-        recipe_text=copy_field(
-            ISourcePackageRecipeView['recipe_text']))
-    @export_write_operation()
-    def setRecipeText(recipe_text):
-        """Set the text of the recipe."""
-
-    def destroySelf():
-        """Remove this SourcePackageRecipe from the database.
-
-        This requires deleting any rows with non-nullable foreign key
-        references to this object.
-        """
-
-
 class ISourcePackageRecipeEditableAttributes(IHasOwner):
     """ISourcePackageRecipe attributes that can be edited.
 
@@ -232,12 +212,33 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
 
     is_stale = Bool(title=_('Recipe is stale.'))
 
-    @mutator_for(distroseries)
-    @operation_parameters(distroseries=copy_field(distroseries))
+
+class ISourcePackageRecipeEdit(Interface):
+    """ISourcePackageRecipe methods that require launchpad.Edit permission."""
+
+    @mutator_for(ISourcePackageRecipeView['recipe_text'])
+    @operation_for_version("devel")
+    @operation_parameters(
+        recipe_text=copy_field(
+            ISourcePackageRecipeView['recipe_text']))
+    @export_write_operation()
+    def setRecipeText(recipe_text):
+        """Set the text of the recipe."""
+
+    @mutator_for(ISourcePackageRecipeEditableAttributes['distroseries'])
+    @operation_parameters(distroseries=copy_field(
+        ISourcePackageRecipeEditableAttributes['distroseries']))
     @export_write_operation()
     @operation_for_version("devel")
     def updateSeries(distroseries):
         """Replace this recipe's distro series."""
+
+    def destroySelf():
+        """Remove this SourcePackageRecipe from the database.
+
+        This requires deleting any rows with non-nullable foreign key
+        references to this object.
+        """
 
 
 class ISourcePackageRecipe(ISourcePackageRecipeData,

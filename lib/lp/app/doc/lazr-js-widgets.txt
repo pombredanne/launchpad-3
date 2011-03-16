@@ -465,22 +465,18 @@ rendered to hook up the widget.
     >>> login_person(eric)
     >>> print widget()
     <span id="edit-distroseries">
-    <BLANKLINE>
       <dt>
         Recipe distro series
-    <BLANKLINE>
           <button class="lazr-btn yui3-activator-act yui3-activator-hidden"
                   id="edit-distroseries-btn">
             Edit
           </button>
-    <BLANKLINE>
         <noscript>
           <a class="sprite edit"
              href="http://code.launchpad.dev/~eric/+recipe/cake_recipe/+edit"
              title=""></a>
         </noscript>
       </dt>
-    <BLANKLINE>
       <span class="yui3-activator-data-box">
         <dl id='edit-distroseries-items'>
     ...
