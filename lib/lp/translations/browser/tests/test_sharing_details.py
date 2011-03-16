@@ -25,6 +25,9 @@ from lp.translations.browser.sourcepackage import (
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
+from lp.translations.tests.test_translationpackagingjob import (
+    make_translation_merge_job,
+    )
 
 
 class ConfigureUpstreamProjectMixin:
@@ -407,6 +410,21 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             foo-template  only in upstream  0  \d+ second(s)? ago""",
             extract_text(tbody))
 
+    def test_potlist_job_running(self):
+        # When a merge job is running, the state is "linking".
+        mergejob = make_translation_merge_job(self.factory)
+        sourcepackage = mergejob.sourcepackage
+        productseries = mergejob.productseries
+        self.factory.makePackagingLink(
+            sourcepackage=sourcepackage, productseries=productseries)
+        browser = self._getSharingDetailsViewBrowser(sourcepackage)
+        tbody = find_tag_by_id(
+            browser.contents, 'template-table').find('tbody')
+        self.assertIsNot(None, tbody)
+        self.assertTextMatchesExpressionIgnoreWhitespace("""
+            generic-string\d+  linking""",
+            extract_text(tbody))
+
     def test_message_no_templates(self):
         # When sharing is fully configured but no upstream templates are
         # found, a message is displayed.
@@ -435,3 +453,18 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         self.factory.makePOTemplate(productseries=productseries)
         browser = self._getSharingDetailsViewBrowser(sourcepackage)
         self.assertEqual([], get_feedback_messages(browser.contents))
+
+    def test_message_job_running(self):
+        # When a merge job is running.
+        mergejob = make_translation_merge_job(self.factory)
+        sourcepackage = mergejob.sourcepackage
+        productseries = mergejob.productseries
+        self.factory.makePackagingLink(
+            sourcepackage=sourcepackage, productseries=productseries)
+        browser = self._getSharingDetailsViewBrowser(sourcepackage)
+        self.assertEqual(
+            ["Translations are currently being linked by a background "
+             "job. When that job has finished, translations will be "
+             "shared with the upstream project."],
+            get_feedback_messages(browser.contents))
+

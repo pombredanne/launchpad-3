@@ -212,7 +212,7 @@ class SourcePackageTranslationSharingDetailsView(
                 'upstream_template': None,
                 'status': 'only in Ubuntu',
                 }
-        if self.is_configuration_complete:
+        if self.is_packaging_configured:
             upstream_templates = (
                 self.context.productseries.getCurrentTranslationTemplates())
             for template in upstream_templates:
