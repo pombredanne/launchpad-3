@@ -150,3 +150,47 @@ class TestFilterBugTasksByContext(TestCaseWithFactory):
             filtered = filter_bugtasks_by_context(sp, tasks)
         self.assertThat(recorder, HasQueryCount(Equals(0)))
         self.assertThat(filtered, Equals([task]))
+
+    def test_sourcepackage_context_with_distrosourcepackage_task(self):
+        bug = self.factory.makeBug()
+        sp = self.factory.makeSourcePackage()
+        dsp = sp.distribution_sourcepackage
+        task = self.factory.makeBugTask(bug=bug, target=dsp)
+        tasks = list(bug.bugtasks)
+        with StormStatementRecorder() as recorder:
+            filtered = filter_bugtasks_by_context(sp, tasks)
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
+        self.assertThat(filtered, Equals([task]))
+
+    def test_sourcepackage_context_series_task(self):
+        bug = self.factory.makeBug()
+        sp = self.factory.makeSourcePackage()
+        task = self.factory.makeBugTask(bug=bug, target=sp.distroseries)
+        tasks = list(bug.bugtasks)
+        with StormStatementRecorder() as recorder:
+            filtered = filter_bugtasks_by_context(sp, tasks)
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
+        self.assertThat(filtered, Equals([task]))
+
+    def test_sourcepackage_context_distro_task(self):
+        bug = self.factory.makeBug()
+        sp = self.factory.makeSourcePackage()
+        task = self.factory.makeBugTask(bug=bug, target=sp.distribution)
+        tasks = list(bug.bugtasks)
+        with StormStatementRecorder() as recorder:
+            filtered = filter_bugtasks_by_context(sp, tasks)
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
+        self.assertThat(filtered, Equals([task]))
+
+    def test_sourcepackage_context_distro_task_with_other_distro_package(self):
+        bug = self.factory.makeBug()
+        sp = self.factory.makeSourcePackage()
+        task = self.factory.makeBugTask(bug=bug, target=sp.distribution)
+        other_sp = self.factory.makeSourcePackage(
+            sourcepackagename=sp.sourcepackagename)
+        self.factory.makeBugTask(bug=bug, target=other_sp)
+        tasks = list(bug.bugtasks)
+        with StormStatementRecorder() as recorder:
+            filtered = filter_bugtasks_by_context(sp, tasks)
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
+        self.assertThat(filtered, Equals([task]))

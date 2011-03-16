@@ -111,16 +111,15 @@ class SourcePackageWeightCalculator:
         self.distributionID = source_package.distroseries.distributionID
 
     def __call__(self, bugtask):
-        """Full weight is given to tasks for this product series.
+        """Full weight is given to tasks for this source package.
 
-        If the series isn't found, the product task is better than others.
+        Failing that we try for the distro source package.
         """
         if bugtask.sourcepackagenameID == self.sourcepackagenameID:
             if bugtask.distroseriesID == self.seriesID:
                 return OrderedBugTask(1, bugtask.id, bugtask)
             elif bugtask.distributionID == self.distributionID:
                 return OrderedBugTask(2, bugtask.id, bugtask)
-        # should not grab tasks for other packages...
         elif bugtask.distroseriesID == self.seriesID:
             return OrderedBugTask(3, bugtask.id, bugtask)
         elif bugtask.distributionID == self.distributionID:
