@@ -679,7 +679,15 @@ class Specification(SQLBase, BugLinkTargetMixin):
         """See `ISpecification`."""
         params = BugTaskSearchParams(user=user, linked_blueprints=self.id)
         tasks = getUtility(IBugTaskSet).search(params)
-        return filter_bugtasks_by_context(self, tasks)
+        if self.distroseries is not None:
+            context = self.distroseries
+        elif self.distribution is not None:
+            context = self.distribution
+        elif self.productseries is not None:
+            context = self.productseries
+        else:
+            context = self.product
+        return filter_bugtasks_by_context(context, tasks)
 
     def __repr__(self):
         return '<Specification %s %r for %r>' % (

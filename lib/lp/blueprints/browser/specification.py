@@ -557,8 +557,7 @@ class SpecificationSimpleView(LaunchpadView):
 
     @cachedproperty
     def bug_links(self):
-        return [bug_link for bug_link in self.context.bug_links
-                if check_permission('launchpad.View', bug_link.bug)]
+        return self.context.getLinkedBugTasks(self.user)
 
 
 class SpecificationView(SpecificationSimpleView):

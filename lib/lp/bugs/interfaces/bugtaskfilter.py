@@ -161,7 +161,8 @@ def filter_bugtasks_by_context(context, bugtasks):
 
     The context is used to return the most relevent bugtask for that context.
 
-    An initial constraint is to not require any database queries from this method.
+    An initial constraint is to not require any database queries from this
+    method.
 
     Current contexts that impact selection:
       IProduct

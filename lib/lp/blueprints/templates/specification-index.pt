@@ -208,11 +208,18 @@
           <div id="bug_links">
             <h3>Related bugs</h3>
 
-            <ul tal:condition="view/bug_links">
-              <li tal:repeat="link view/bug_links">
-                <tal:link replace="structure link/bug/fmt:link" />
-              </li>
-            </ul>
+            <table tal:condition="view/bug_links">
+              <tr tal:repeat="bugtask view/bug_links">
+                <td>
+                  <tal:link replace="structure bugtask/fmt:link" />
+                </td>
+                <td>
+                  <span tal:content="bugtask/status/title"
+                        tal:attributes="class string:status${bugtask/status/name}"
+                        >Triaged</span>
+                </td>
+              </tr>
+            </table>
 
             <ul class="horizontal">
               <li tal:define="link context_menu/linkbug"

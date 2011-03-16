@@ -40,6 +40,7 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     BugTaskSearchParams,
     )
+from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.bugs.model.bugbranch import BugBranch
 from lp.bugs.model.bugtask import BugTask
 from lp.code.interfaces.branch import user_has_special_branch_access
@@ -53,10 +54,7 @@ from lp.code.interfaces.seriessourcepackagebranch import (
 from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
-from lp.code.model.branch import (
-    Branch,
-    filter_one_task_per_bug,
-    )
+from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.branchsubscription import BranchSubscription
 from lp.code.model.codereviewcomment import CodeReviewComment
@@ -323,7 +321,7 @@ class GenericBranchCollection:
             # Now filter those down to one bugtask per branch
             for branch, tasks in bugtasks_for_branch.iteritems():
                 linked_bugtasks[branch.id].extend(
-                    filter_one_task_per_bug(branch, tasks))
+                    filter_bugtasks_by_context(branch.target.context, tasks))
 
         return [make_rev_info(
                 rev, merge_proposal_revs, linked_bugtasks)
