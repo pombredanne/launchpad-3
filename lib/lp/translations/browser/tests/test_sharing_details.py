@@ -15,6 +15,7 @@ from lp.app.enums import ServiceUsage
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     BrowserTestCase,
+    EventRecorder,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -44,9 +45,14 @@ class ConfigureScenarioMixin:
             productseries.translations_autoimport_mode = (
                 translation_import_mode)
 
-    def makeFullyConfiguredSharing(self):
+    def makeFullyConfiguredSharing(self, suppress_merge_job=True):
         """Setup a fully configured sharing scenario."""
-        packaging = self.factory.makePackagingLink(in_ubuntu=True)
+        if suppress_merge_job:
+            # Intercept the job creation request.
+            with EventRecorder():
+                packaging = self.factory.makePackagingLink(in_ubuntu=True)
+        else:
+            packaging = self.factory.makePackagingLink(in_ubuntu=True)
         productseries = packaging.productseries
         sourcepackage = packaging.sourcepackage
         self.configureUpstreamProject(
@@ -100,8 +106,10 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         A packaging link is always set; the remaining configuration is
         done only if explicitly specified.
         """
-        self.sourcepackage.setPackaging(
-            self.productseries, self.productseries.owner)
+        # Suppress merge job creation.
+        with EventRecorder():
+            self.sourcepackage.setPackaging(
+                self.productseries, self.productseries.owner)
         self.configureUpstreamProject(
             self.productseries, set_upstream_branch, translations_usage,
             translation_import_mode)
@@ -281,7 +289,6 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             translations_usage=ServiceUsage.LAUNCHPAD,
             translation_import_mode=
                 TranslationsBranchImportMode.IMPORT_TRANSLATIONS)
-        self.endMergeJob(self.sourcepackage)
         expected = [
             {
                 'name': 'shared-template',
@@ -386,7 +393,6 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
     def test_potlist_sharing(self):
         # With sharing configured, templates on both sides are listed.
         sourcepackage, productseries = self.makeFullyConfiguredSharing()
-        self.endMergeJob(sourcepackage)
         template_name = 'foo-template'
         self.factory.makePOTemplate(
             name=template_name, sourcepackage=sourcepackage)
@@ -418,15 +424,19 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
 
     def test_potlist_linking(self):
         # When a merge job is running, the state is "linking".
-        sourcepackage, productseries = self.makeFullyConfiguredSharing()
-        self.factory.makePackagingLink(
-            sourcepackage=sourcepackage, productseries=productseries)
+        sourcepackage, productseries = self.makeFullyConfiguredSharing(
+            suppress_merge_job=False)
+        template_name = 'foo-template'
+        self.factory.makePOTemplate(
+            name=template_name, sourcepackage=sourcepackage)
+        self.factory.makePOTemplate(
+            name=template_name, productseries=productseries)
         browser = self._getSharingDetailsViewBrowser(sourcepackage)
         tbody = find_tag_by_id(
             browser.contents, 'template-table').find('tbody')
         self.assertIsNot(None, tbody)
         self.assertTextMatchesExpressionIgnoreWhitespace("""
-            generic-string\d+  linking""",
+            foo-template  linking""",
             extract_text(tbody))
 
 
@@ -492,14 +502,16 @@ class TestTranslationSharingDetailsViewNotifications(TestCaseWithFactory,
 
     def test_message_job_running(self):
         # When a merge job is running, a message is displayed.
-        sourcepackage = self.makeFullyConfiguredSharing()[0]
+        sourcepackage = self.makeFullyConfiguredSharing(
+            suppress_merge_job=False)[0]
         view = self._makeInitializedView(sourcepackage)
         self.assertIn(
             self.job_running_message, self._getNotifications(view))
 
     def test_no_message_job_not_running(self):
         # Without a merge job running, no such message is displayed.
-        sourcepackage = self.makeFullyConfiguredSharing()[0]
+        sourcepackage = self.makeFullyConfiguredSharing(
+            suppress_merge_job=False)[0]
         self.endMergeJob(sourcepackage)
         view = self._makeInitializedView(sourcepackage)
         self.assertNotIn(
