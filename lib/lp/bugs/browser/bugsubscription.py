@@ -227,6 +227,19 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
             'Update my current subscription')
 
     @cachedproperty
+    def _unmute_subscription_term(self):
+        return SimpleTerm(
+            'unmute', 'unmute', "Unmute bug mail from this bug")
+
+    @cachedproperty
+    def _unsubscribe_current_user_term(self):
+        if self._use_advanced_features and self.user_is_muted:
+            label = "Unmute bug mail from this bug"
+        else:
+            label = 'Unsubscribe me from this bug'
+        return SimpleTerm(self.user, self.user.name, label)
+
+    @cachedproperty
     def _subscription_field(self):
         subscription_terms = []
         self_subscribed = False
@@ -234,11 +247,10 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
             if person.id == self.user.id:
                 if (self._use_advanced_features and
                     self.user_is_subscribed_directly):
-                    subscription_terms.append(self._update_subscription_term)
+                    subscription_terms.append(
+                        self._update_subscription_term)
                 subscription_terms.insert(
-                    0, SimpleTerm(
-                        person, person.name,
-                        'Unsubscribe me from this bug'))
+                    0, self._unsubscribe_current_user_term)
                 self_subscribed = True
             else:
                 subscription_terms.append(
@@ -298,14 +310,22 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
                 self.widgets['bug_notification_level'].visible = False
 
     @cachedproperty
+    def user_is_muted(self):
+        return self.context.bug.isMuted(self.user)
+
+    @cachedproperty
     def user_is_subscribed_directly(self):
         """Is the user subscribed directly to this bug?"""
-        return self.context.bug.isSubscribed(self.user)
+        return (
+            self.context.bug.isSubscribed(self.user) and not
+            self.user_is_muted)
 
     @cachedproperty
     def user_is_subscribed_to_dupes(self):
         """Is the user subscribed to dupes of this bug?"""
-        return self.context.bug.isSubscribedToDupes(self.user)
+        return (
+            self.context.bug.isSubscribedToDupes(self.user) and not
+            self.user_is_muted)
 
     @property
     def user_is_subscribed(self):
