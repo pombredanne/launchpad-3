@@ -516,6 +516,9 @@ class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
         for subscription in direct_subscriptions:
             if not check_permission('launchpad.View', subscription.person):
                 continue
+            if (subscription.bug_notification_level ==
+                BugNotificationLevel.NOTHING):
+                continue
             if subscription.person == self.user:
                 can_unsubscribe = [subscription] + can_unsubscribe
             elif subscription.canBeUnsubscribedByUser(self.user):

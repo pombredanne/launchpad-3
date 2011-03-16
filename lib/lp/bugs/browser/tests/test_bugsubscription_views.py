@@ -315,3 +315,31 @@ class BugSubscriptionsListViewTestCase(TestCaseWithFactory):
             harness = LaunchpadFormHarness(
                 self.bug.default_bugtask, BugSubscriptionListView)
             # The view class instance is harness.view.
+
+
+class BugPortletSubscribersContentsTestCase(TestCaseWithFactory):
+    """Tests for the BugPortletSubscribersContents view."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(BugPortletSubscribersContentsTestCase, self).setUp()
+        self.bug = self.factory.makeBug()
+        self.subscriber = self.factory.makePerson()
+
+    def test_sorted_direct_subscriptions_doesnt_show_mutes(self):
+        # BugPortletSubscribersContents.sorted_direct_subscriptions does
+        # not return muted subscriptions.
+        with person_logged_in(self.subscriber):
+            subscription = self.bug.subscribe(
+                self.subscriber, self.subscriber,
+                level=BugNotificationLevel.NOTHING)
+            view = create_initialized_view(
+                self.bug, name="+bug-portlet-subscribers-content")
+            # Loop over the results of sorted_direct_subscriptions to
+            # extract the subscriptions from their
+            # SubscriptionAttrDecorator intances.
+            sorted_subscriptions = [
+                decorator.subscription for decorator in
+                view.sorted_direct_subscriptions]
+            self.assertFalse(subscription in sorted_subscriptions)

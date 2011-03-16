@@ -27,6 +27,13 @@
              more about syncing from the parent series</a>).
       </p>
 
+      <tal:distroseries_localdiff_search_form
+        tal:condition="view/has_differences">
+        <metal:package_filter_form
+          use-macro="context/@@+macros/distroseries-localdiff-search-form" />
+      </tal:distroseries_localdiff_search_form>
+
+
       <div metal:use-macro="context/@@launchpad_form/form">
 
       <div tal:condition="differences/batch" metal:fill-slot="widgets">
