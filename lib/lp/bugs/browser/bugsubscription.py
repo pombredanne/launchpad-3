@@ -222,15 +222,12 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
 
     @cachedproperty
     def _update_subscription_term(self):
+        if self.user_is_muted:
+            label = "Unmute bug mail from this bug and subscribe me to it"
+        else:
+            label = "Update my current subscription"
         return SimpleTerm(
-            'update-subscription', 'update-subscription',
-            'Update my current subscription')
-
-    @cachedproperty
-    def _unmute_and_update_subscription_term(self):
-        return SimpleTerm(
-            'unmute-and-update', 'unmute-and-update',
-            "Unmute bug mail from this bug and subscribe me to it")
+            'update-subscription', 'update-subscription', label)
 
     @cachedproperty
     def _unsubscribe_current_user_term(self):
@@ -246,13 +243,11 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         self_subscribed = False
         for person in self._subscribers_for_current_user:
             if person.id == self.user.id:
-                if self._use_advanced_features:
-                    if self.user_is_subscribed_directly:
+                if (self._use_advanced_features and
+                    (self.user_is_subscribed_directly or
+                    self.user_is_muted)):
                         subscription_terms.append(
                             self._update_subscription_term)
-                    if self.user_is_muted:
-                        subscription_terms.append(
-                            self._unmute_and_update_subscription_term)
                 subscription_terms.insert(
                     0, self._unsubscribe_current_user_term)
                 self_subscribed = True
@@ -371,7 +366,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
             bug_notification_level = None
 
         if (subscription_person == self._update_subscription_term.value and
-            self.user_is_subscribed):
+            self.user_is_subscribed or self.user_is_muted):
             self._handleUpdateSubscription(level=bug_notification_level)
         elif self.user_is_muted and subscription_person == self.user:
             self._handleUnsubscribeCurrentUser()

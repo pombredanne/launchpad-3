@@ -312,11 +312,8 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     self.bug.default_bugtask, name='+subscribe')
                 subscription_widget = (
                     subscribe_view.widgets['subscription'])
-                self.assertIn(
-                    'unmute-and-update',
-                    subscription_widget.vocabulary.by_token)
                 update_term = subscription_widget.vocabulary.getTermByToken(
-                    'unmute-and-update')
+                    'update-subscription')
                 self.assertEqual(
                     "Unmute bug mail from this bug and subscribe me to it",
                     update_term.title)
@@ -338,6 +335,29 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     name='+subscribe')
                 self.assertFalse(self.bug.isMuted(self.person))
                 self.assertFalse(self.bug.isSubscribed(self.person))
+
+    def test_update_when_muted_updates(self):
+        # Using the "Unmute and subscribe me" option when the user has a
+        # muted subscription will update the existing subscription to a
+        # new BugNotificationLevel.
+        with person_logged_in(self.person):
+            muted_subscription = self.bug.mute(self.person, self.person)
+
+        with feature_flags():
+            with person_logged_in(self.person):
+                level = BugNotificationLevel.COMMENTS
+                form_data = {
+                    'field.subscription': 'update-subscription',
+                    'field.bug_notification_level': level.title,
+                    'field.actions.continue': 'Continue',
+                    }
+                subscribe_view = create_initialized_view(
+                    self.bug.default_bugtask, form=form_data,
+                    name='+subscribe')
+                self.assertFalse(self.bug.isMuted(self.person))
+                self.assertTrue(self.bug.isSubscribed(self.person))
+                self.assertEqual(
+                    level, muted_subscription.bug_notification_level)
 
 
 class BugPortletSubcribersIdsTests(TestCaseWithFactory):
