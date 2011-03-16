@@ -19,6 +19,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.app.errors import NotFoundError
+from lp.bugs.externalbugtracker.base import BugWatchUpdateError
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.scripts.checkwatches.base import (
@@ -90,11 +91,14 @@ class BugWatchUpdater(WorkingBase):
                     self.linkLaunchpadBug()
             except Exception, ex:
                 error_message = str(ex)
-                oops_id = self.error(
-                    "Failure updating bug %r on %s (local bug: %s)." %
-                        (self.remote_bug, self.external_bugtracker.baseurl,
-                        self.local_bug),
-                    self.oops_properties)
+                log_message = (
+                    "Failure updating bug %r on %s (local bug: %s)" %
+                    (self.remote_bug, self.external_bugtracker.baseurl,
+                    self.local_bug))
+                if isinstance(ex, BugWatchUpdateError):
+                    self.logger.info('%s: %s' % (log_message, ex))
+                else:
+                    oops_id = self.error(log_message, self.oops_properties)
             else:
                 error_status = None
 
