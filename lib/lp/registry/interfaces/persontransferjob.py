@@ -95,6 +95,9 @@ class IPersonMergeJob(IPersonTransferJob):
         vocabulary='ValidPersonOrTeam',
         required=True)
 
+    def getErrorRecipients(self):
+        """See `BaseRunnableJob`."""
+
 
 class IPersonMergeJobSource(IJobSource):
     """An interface for acquiring IMembershipNotificationJobs."""

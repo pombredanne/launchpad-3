@@ -61,6 +61,7 @@ from lp.registry.model.person import Person
 from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
+from lp.services.mail.sendmail import format_address_for_person
 
 
 class PersonTransferJob(StormBase):
@@ -372,6 +373,13 @@ class PersonMergeJob(PersonTransferJobDerived):
     def log_name(self):
         return self.__class__.__name__
 
+    def getErrorRecipients(self):
+        """See `IPersonMergeJob`."""
+        if self.to_person.is_team:
+            return self.to_person.getTeamAdminsEmailAddresses()
+        else:
+            return [format_address_for_person(self.to_person)]
+
     def run(self):
         """Perform the merge."""
         from_person_name = self.from_person.name
@@ -381,7 +389,6 @@ class PersonMergeJob(PersonTransferJobDerived):
         log.debug(
             "%s is about to merge ~%s into ~%s", self.log_name,
             from_person_name, to_person_name)
-
         getUtility(IPersonSet).merge(
             from_person=self.from_person, to_person=self.to_person)
 
