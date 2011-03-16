@@ -689,13 +689,14 @@ And for a specific distribution series.
 
 Also for a specific distribution source package.
 
-    >>> linux_source = ubuntu.getSourcePackage('linux-source-2.6.15')
+    >>> tubuntu = factory.makeDistribution(name='tubuntu')
+    >>> linux_source = tubuntu.getSourcePackage('linux-source-2.6.15')
     >>> linux_task = firefox_bug.addTask(
     ...     owner=foobar, target=linux_source)
     >>> notify(ObjectCreatedEvent(linux_task))
 
     >>> print linux_task.bugtargetname
-    linux-source-2.6.15 (Ubuntu)
+    linux-source-2.6.15 (Tubuntu)
 
 And for a distro series source package.
 

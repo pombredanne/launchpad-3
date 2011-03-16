@@ -4,8 +4,6 @@
 __metaclass__ = type
 
 from datetime import datetime
-from doctest import DocTestSuite
-import unittest
 
 from pytz import UTC
 from storm.store import Store
@@ -19,15 +17,10 @@ from canonical.launchpad.ftests import (
     login_person,
     )
 from canonical.launchpad.testing.pages import find_tag_by_id
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite,
-    setUp,
-    tearDown,
-    )
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
-from lp.bugs.browser import bugtask
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.browser.bugtask import (
     BugTaskEditView,
     BugTasksAndNominationsView,
@@ -35,6 +28,7 @@ from lp.bugs.browser.bugtask import (
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.services.propertycache import get_property_cache
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -51,7 +45,7 @@ from lp.testing.views import create_initialized_view
 
 class TestBugTaskView(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def invalidate_caches(self, obj):
         store = Store.of(obj)
@@ -119,7 +113,7 @@ class TestBugTaskView(TestCaseWithFactory):
 
 class TestBugTasksAndNominationsView(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestBugTasksAndNominationsView, self).setUp()
@@ -314,13 +308,113 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
             "This bug affects 2 people",
             self.view.anon_affected_statement)
 
+    def test_getTargetLinkTitle_product(self):
+        # The target link title is always none for products.
+        target = self.factory.makeProduct()
+        bug_task = self.factory.makeBugTask(bug=self.bug, target=target)
+        self.view.initialize()
+        self.assertEqual(None, self.view.getTargetLinkTitle(bug_task.target))
+
+    def test_getTargetLinkTitle_productseries(self):
+        # The target link title is always none for productseries.
+        target = self.factory.makeProductSeries()
+        bug_task = self.factory.makeBugTask(bug=self.bug, target=target)
+        self.view.initialize()
+        self.assertEqual(None, self.view.getTargetLinkTitle(bug_task.target))
+
+    def test_getTargetLinkTitle_distribution(self):
+        # The target link title is always none for distributions.
+        target = self.factory.makeDistribution()
+        bug_task = self.factory.makeBugTask(bug=self.bug, target=target)
+        self.view.initialize()
+        self.assertEqual(None, self.view.getTargetLinkTitle(bug_task.target))
+
+    def test_getTargetLinkTitle_distroseries(self):
+        # The target link title is always none for distroseries.
+        target = self.factory.makeDistroSeries()
+        bug_task = self.factory.makeBugTask(bug=self.bug, target=target)
+        self.view.initialize()
+        self.assertEqual(None, self.view.getTargetLinkTitle(bug_task.target))
+
+    def test_getTargetLinkTitle_unpublished_distributionsourcepackage(self):
+        # The target link title states that the package is not published
+        # in the current release.
+        distribution = self.factory.makeDistribution(name='boy')
+        spn = self.factory.makeSourcePackageName('badger')
+        component = getUtility(IComponentSet)['universe']
+        maintainer = self.factory.makePerson(name="jim")
+        creator = self.factory.makePerson(name="tim")
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distribution.currentseries, version='2.0',
+            component=component, sourcepackagename=spn,
+            date_uploaded=datetime(2008, 7, 18, 10, 20, 30, tzinfo=UTC),
+            maintainer=maintainer, creator=creator)
+        target = distribution.getSourcePackage('badger')
+        bug_task = self.factory.makeBugTask(
+            bug=self.bug, target=target, publish=False)
+        self.view.initialize()
+        self.assertEqual({}, self.view.target_releases)
+        self.assertEqual(
+            'No current release for this source package in Boy',
+            self.view.getTargetLinkTitle(bug_task.target))
+
+    def test_getTargetLinkTitle_published_distributionsourcepackage(self):
+        # The target link title states the information about the current
+        # package in the distro.
+        distribution = self.factory.makeDistribution(name='koi')
+        distroseries = self.factory.makeDistroSeries(
+            distribution=distribution)
+        spn = self.factory.makeSourcePackageName('finch')
+        component = getUtility(IComponentSet)['universe']
+        maintainer = self.factory.makePerson(name="jim")
+        creator = self.factory.makePerson(name="tim")
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, version='2.0',
+            component=component, sourcepackagename=spn,
+            date_uploaded=datetime(2008, 7, 18, 10, 20, 30, tzinfo=UTC),
+            maintainer=maintainer, creator=creator)
+        target = distribution.getSourcePackage('finch')
+        bug_task = self.factory.makeBugTask(
+            bug=self.bug, target=target, publish=False)
+        self.view.initialize()
+        self.assertTrue(
+            target in self.view.target_releases.keys())
+        self.assertEqual(
+            'Latest release: 2.0, uploaded to universe on '
+            '2008-07-18 10:20:30+00:00 by Tim (tim), maintained by Jim (jim)',
+            self.view.getTargetLinkTitle(bug_task.target))
+
+    def test_getTargetLinkTitle_published_sourcepackage(self):
+        # The target link title states the information about the current
+        # package in the distro.
+        distroseries = self.factory.makeDistroSeries()
+        spn = self.factory.makeSourcePackageName('bunny')
+        component = getUtility(IComponentSet)['universe']
+        maintainer = self.factory.makePerson(name="jim")
+        creator = self.factory.makePerson(name="tim")
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, version='2.0',
+            component=component, sourcepackagename=spn,
+            date_uploaded=datetime(2008, 7, 18, 10, 20, 30, tzinfo=UTC),
+            maintainer=maintainer, creator=creator)
+        target = distroseries.getSourcePackage('bunny')
+        bug_task = self.factory.makeBugTask(
+            bug=self.bug, target=target, publish=False)
+        self.view.initialize()
+        self.assertTrue(
+            target in self.view.target_releases.keys())
+        self.assertEqual(
+            'Latest release: 2.0, uploaded to universe on '
+            '2008-07-18 10:20:30+00:00 by Tim (tim), maintained by Jim (jim)',
+            self.view.getTargetLinkTitle(bug_task.target))
+
 
 class TestBugTaskEditViewStatusField(TestCaseWithFactory):
     """We show only those options as possible value in the status
     field that the user can select.
     """
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestBugTaskEditViewStatusField, self).setUp()
@@ -407,7 +501,7 @@ class TestBugTaskEditViewStatusField(TestCaseWithFactory):
 
 class TestBugTaskEditViewAssigneeField(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestBugTaskEditViewAssigneeField, self).setUp()
@@ -451,10 +545,48 @@ class TestBugTaskEditViewAssigneeField(TestCaseWithFactory):
             view.form_fields['assignee'].field.vocabularyName)
 
 
+class TestBugTaskEditView(TestCaseWithFactory):
+    """Test the bugs overview page for Project Groups."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_retartget_already_exists_error(self):
+        user = self.factory.makePerson()
+        login_person(user)
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        dsp_1 = self.factory.makeDistributionSourcePackage(
+            distribution=ubuntu, sourcepackagename='mouse')
+        ignore = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=ubuntu.currentseries,
+            sourcepackagename=dsp_1.sourcepackagename)
+        bug_task_1 = self.factory.makeBugTask(target=dsp_1)
+        dsp_2 = self.factory.makeDistributionSourcePackage(
+            distribution=ubuntu, sourcepackagename='rabbit')
+        ignore = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=ubuntu.currentseries,
+            sourcepackagename=dsp_2.sourcepackagename)
+        bug_task_2 = self.factory.makeBugTask(
+            bug=bug_task_1.bug, target=dsp_2)
+        form = {
+            'ubuntu_rabbit.actions.save': 'Save Changes',
+            'ubuntu_rabbit.status': 'In Progress',
+            'ubuntu_rabbit.importance': 'High',
+            'ubuntu_rabbit.assignee.option':
+                'ubuntu_rabbit.assignee.assign_to_nobody',
+            'ubuntu_rabbit.sourcepackagename': 'mouse',
+            }
+        view = create_initialized_view(
+            bug_task_2, name='+editstatus-page', form=form, principal=user)
+        self.assertEqual(1, len(view.errors))
+        self.assertEqual(
+            'This bug has already been reported on mouse (ubuntu).',
+            view.errors[0])
+
+
 class TestProjectGroupBugs(TestCaseWithFactory):
     """Test the bugs overview page for Project Groups."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestProjectGroupBugs, self).setUp()
@@ -548,16 +680,3 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         contents = view.render()
         help_link = find_tag_by_id(contents, 'getting-started-help')
         self.assertIs(None, help_link)
-
-
-def test_suite():
-    suite = unittest.TestLoader().loadTestsFromName(__name__)
-    suite.addTest(DocTestSuite(bugtask))
-    suite.addTest(LayeredDocFileSuite(
-        'bugtask-target-link-titles.txt', setUp=setUp, tearDown=tearDown,
-        layer=LaunchpadFunctionalLayer))
-    return suite
-
-
-if __name__ == '__main__':
-    unittest.TextTestRunner().run(test_suite())

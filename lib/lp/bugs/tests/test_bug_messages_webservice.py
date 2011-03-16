@@ -47,8 +47,7 @@ class TestSetCommentVisibility(TestCaseWithFactory):
         else:
             lp = launchpadlib_for("test")
 
-        bug_entry = lp.load(
-            'http://api.launchpad.dev/1.0/bugs/%s/' % self.bug.id)
+        bug_entry = lp.load('/bugs/%s/' % self.bug.id)
         return bug_entry
 
     def _set_visibility(self, bug):
