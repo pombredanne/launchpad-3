@@ -2229,7 +2229,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_distro.bug_supervisor = bug_supervisor
         if no_pubconf is False:
             self.makePublisherConfig(
-                distro, publish_root_dir, publish_base_url, publish_copy_base_url)
+                distro, publish_root_dir, publish_base_url,
+                publish_copy_base_url)
         return distro
 
     def makeDistroRelease(self, distribution=None, version=None,
