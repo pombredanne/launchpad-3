@@ -5,6 +5,7 @@
 
 __all__ = [
     'HANDLERS',
+    'ScopesForScript',
     'ScopesFromRequest',
     'undocumented_scopes',
     ]
@@ -142,18 +143,51 @@ class ServerScope(BaseScope):
         return False
 
 
+class ScriptScope(BaseScope):
+    """Matches the name of the currently running script.
+
+    For example, the scope script:embroider is active in a script called
+    "embroider."
+    """
+
+    pattern = r'script:'
+
+    def __init__(self, script_name):
+        super(ScriptScope, self).__init__(None)
+        self.script_scope = self.pattern + script_name
+
+    def lookup(self, scope_name):
+        """Match the running script as a scope."""
+        return scope_name == self.script_scope
+
+
+# Handlers for the scopes that may occur in the webapp.
+WEBAPP_SCOPE_HANDLERS = [DefaultScope, PageScope, TeamScope, ServerScope]
+
+
+# Handlers for the scopes that may occur in scripts.
+SCRIPT_SCOPE_HANDLERS = [DefaultScope, ScriptScope]
+
+
 # These are the handlers for all of the allowable scopes.  Any new scope will
 # need a scope handler and that scope handler has to be added to this list.
 # See BaseScope for hints as to what a scope handler should look like.
-HANDLERS = [DefaultScope, PageScope, TeamScope, ServerScope]
+HANDLERS = set(WEBAPP_SCOPE_HANDLERS + SCRIPT_SCOPE_HANDLERS)
 
 
-class ScopesFromRequest():
-    """Identify feature scopes based on request state."""
+class MultiScopeHandler():
+    """A scope handler that combines multiple `BaseScope`s."""
 
-    def __init__(self, request):
+    def __init__(self, request, scopes):
         self.request = request
-        self.handlers = [f(request) for f in HANDLERS]
+        self.handlers = scopes
+
+    def _findMatchingHandlers(self, scope_name):
+        """Find any handlers that match `scope_name`."""
+        return [
+            handler
+            for handler in self.handlers
+                if handler.compiled_pattern.match(scope_name)]
 
     def lookup(self, scope_name):
         """Determine if scope_name applies to this request.
@@ -163,15 +197,29 @@ class ScopesFromRequest():
         the current request or the handlers are exhuasted, in which case the
         scope name is not a match.
         """
-        found_a_handler = False
-        for handler in self.handlers:
-            if handler.compiled_pattern.match(scope_name):
-                found_a_handler = True
-                if handler.lookup(scope_name):
-                    return True
+        matching_handlers = self._findMatchingHandlers(scope_name)
+        for handler in matching_handlers:
+            if handler.lookup(scope_name):
+                return True
 
-        # If we didn't find at least one matching handler, then the requested
-        # scope is unknown and we want to record the scope for the +flag-info page to display.
-        if not found_a_handler:
+        # If we didn't find at least one matching handler, then the
+        # requested scope is unknown and we want to record the scope for
+        # the +flag-info page to display.
+        if len(matching_handlers) == 0:
             undocumented_scopes.add(scope_name)
 
+
+class ScopesFromRequest(MultiScopeHandler):
+    """Identify feature scopes based on request state."""
+
+    def __init__(self, request):
+        super(ScopesFromRequest, self).__init__(
+            request, [f(request) for f in WEBAPP_SCOPE_HANDLERS])
+
+
+class ScopesForScript(MultiScopeHandler):
+    """Identify feature scopes for a given script."""
+
+    def __init__(self, script_name):
+        super(ScopesForScript, self).__init__(
+            None, [DefaultScope(None), ScriptScope(script_name)])

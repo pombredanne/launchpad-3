@@ -173,7 +173,8 @@ import threading
 __all__ = [
     'get_relevant_feature_controller',
     'getFeatureFlag',
-    'per_thread',
+    'install_feature_controller',
+    'make_script_feature_controller',
     ]
 
 
@@ -185,8 +186,13 @@ when starting a web request.
 """
 
 
+def install_feature_controller(controller):
+    """Install a `FeatureController` on this thread."""
+    per_thread.features = controller
+
+
 def get_relevant_feature_controller():
-    """Get a FeatureController for this thread."""
+    """Get a `FeatureController` for this thread."""
 
     # The noncommittal name "relevant" is because this function may change to
     # look things up from the current request or some other mechanism in
@@ -202,3 +208,16 @@ def getFeatureFlag(flag):
     if features is None:
         return None
     return features.getFlag(flag)
+
+
+def make_script_feature_controller(script_name):
+    """Create and install a `FeatureController` for the named script."""
+    # Avoid circular import.
+    from lp.services.features.flags import FeatureController
+    from lp.services.features.rulesource import StormFeatureRuleSource
+    from lp.services.features.scopes import ScopesForScript
+
+    install_feature_controller(
+        FeatureController(
+            ScopesForScript(script_name).lookup,
+            StormFeatureRuleSource()))

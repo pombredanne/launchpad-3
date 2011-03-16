@@ -1,18 +1,19 @@
 = Librarian Access =
 
 The librarian is a file storage service for launchpad. Conceptually similar to
-other file storage API's like S3, it is used to store binary or large content -
-bug attachments, package builds, images and so on.
+other file storage API's like S3, it is used to store binary or large
+content - bug attachments, package builds, images and so on.
 
 Content in the librarian can be exposed at different urls. To expose some
-content use a LibraryFileAlias. Private content is supported as well - for that
-tokens are added to permit access for a limited time by a client - each time a
-client attempts to dereference a private LibraryFileAlias a token is emitted.
+content use a LibraryFileAlias. Private content is supported as well - for
+that tokens are added to permit access for a limited time by a client - each
+time a client attempts to dereference a private LibraryFileAlias a token is
+emitted.
 
 = Deployment notes =
 
-(These may seem a bit out of place - they are, but they need to be written down
-somewhere, and the deployment choices inform the implementation choices).
+(These may seem a bit out of place - they are, but they need to be written
+down somewhere, and the deployment choices inform the implementation choices).
 
 The basics are simple: The librarian talks to clients. However restricted file
 access makes things a little more complex. As the librarian itself doesn't do
@@ -23,13 +24,14 @@ in incoming requests from clients.
 
 == setUp ==
 
-   >>> from canonical.database.sqlbase import session_store
-   >>> from canonical.launchpad.database.librarian import TimeLimitedToken
+    >>> from canonical.database.sqlbase import session_store
+    >>> from canonical.launchpad.database.librarian import TimeLimitedToken
 
 == High Level ==
 
     >>> from StringIO import StringIO
-    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+    >>> from canonical.launchpad.interfaces.librarian import (
+    ...     ILibraryFileAliasSet)
     >>> data = 'This is some data'
 
 We can create LibraryFileAliases using the ILibraryFileAliasSet utility.
@@ -460,7 +462,8 @@ from the file don't match the declared size.
 
 Filenames with spaces in them work.
 
-    >>> aid = client.addFile('hot dog', len(data), StringIO(data), 'text/plain')
+    >>> aid = client.addFile(
+    ...     'hot dog', len(data), StringIO(data), 'text/plain')
     >>> transaction.commit()
     >>> f = client.getFileByAlias(aid)
     >>> f.read()
@@ -507,8 +510,8 @@ A librarian file has a default view that should redirect to the download URL.
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> req = LaunchpadTestRequest()
     >>> alias = lfas.create(
-    ...     'text2.txt', len(data), StringIO(data), 'text/plain', NEVER_EXPIRES
-    ...     )
+    ...     'text2.txt', len(data), StringIO(data), 'text/plain',
+    ...     NEVER_EXPIRES)
     >>> transaction.commit()
     >>> lfa_view = getMultiAdapter((alias,req), name='+index')
     >>> lfa_view.initialize()
@@ -557,7 +560,7 @@ Commit the just-created files.
 
 Clear out existing tokens.
 
-   >>> _ = session_store().find(TimeLimitedToken).remove()
+    >>> _ = session_store().find(TimeLimitedToken).remove()
 
 == RedirectPerhapsWithTokenLibraryFileAliasView ==
 
@@ -566,8 +569,8 @@ migrated over to the token based approach. For now the code for the two things
 is interleaved: zope's registration system is too static to permit doing it
 cleanly with separate classes.
 
-To enable the behaviour we want to test while its controlled by a feature flag,
-we must enable a feature flag for it:
+To enable the behaviour we want to test while its controlled by a feature
+flag, we must enable a feature flag for it:
 
     >>> from lp.services.features.model import FeatureFlag, getFeatureStore
     >>> ignore = getFeatureStore().add(FeatureFlag(
@@ -589,11 +592,11 @@ traversals.
 
 XXX bug=631884 we have to establish the flags object manually for testing.
 
-    >>> from lp.services.features import per_thread
+    >>> from lp.services.features import install_feature_controller
     >>> from lp.services.features.flags import FeatureController
     >>> from lp.services.features.webapp import ScopesFromRequest
-    >>> per_thread.features = FeatureController(
-    ...     ScopesFromRequest(empty_request).lookup)
+    >>> install_feature_controller(FeatureController(
+    ...     ScopesFromRequest(empty_request).lookup))
 
     >>> restricted_view = RedirectPerhapsWithTokenLibraryFileAliasView(
     ...     restricted_file, empty_request)
@@ -616,7 +619,7 @@ be issued.
     >>> view.target.endswith(session_store().find(TimeLimitedToken,
     ...     path=private_path).any().token)
     True
-    
+
 The domain for the target starts with the id of the LibraryFileAlias.
 
     >>> view.target.startswith('https://i%d.restricted.' % restricted_file.id)
@@ -657,12 +660,12 @@ proxy code is removed, we must remove the feature to test the old behaviour.
     ...     FeatureFlag.flag==u'publicrestrictedlibrarian').remove()
     >>> transaction.commit()
 
-Because the flags code aggressively caches, we have to do a small dance to 
+Because the flags code aggressively caches, we have to do a small dance to
 convince it a new request has started too.
 
     >>> empty_request = LaunchpadTestRequest()
-    >>> per_thread.features = FeatureController(
-    ...     ScopesFromRequest(empty_request).lookup)
+    >>> install_feature_controller(FeatureController(
+    ...     ScopesFromRequest(empty_request).lookup))
 
 == StreamOrRedirectLibraryFileAliasView ==
 

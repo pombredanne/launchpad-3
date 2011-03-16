@@ -464,7 +464,7 @@ class LaunchpadBrowserPublication(
             'RootObject:OpStats', 'RootObject:+opstats',
             'RootObject:+haproxy'):
             request.features = NullFeatureController()
-            features.per_thread.features = request.features
+            features.set_feature_controller(request.features)
 
         # Calculate the hard timeout: needed because featureflags can be used
         # to control the hard timeout, and they trigger DB access, but our

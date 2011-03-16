@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -29,7 +29,7 @@ from lp.services.features.model import (
     )
 from lp.services.features import (
     getFeatureFlag,
-    per_thread,
+    install_feature_controller,
     )
 from lp.testing import (
     TestCaseWithFactory,
@@ -78,11 +78,8 @@ def set_derived_series_ui_feature_flag(test_case):
     # features.
     def in_scope(value):
         return True
-    per_thread.features = FeatureController(in_scope)
-
-    def reset_per_thread_features():
-        per_thread.features = None
-    test_case.addCleanup(reset_per_thread_features)
+    install_feature_controller(FeatureController(in_scope))
+    test_case.addCleanup(install_feature_controller, None)
 
 
 class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
