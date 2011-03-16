@@ -95,10 +95,12 @@ class IPackageDiffSet(Interface):
         :return a `SelectResult` ordered by id respecting the given limit.
         """
 
-    def getDiffsToReleases(self, sprs):
+    def getDiffsToReleases(self, sprs, want_files=False):
         """Return all diffs that targetting a set of source package releases.
 
         :param sprs: a sequence of `SourcePackageRelease` objects.
+        :param want_files: True if the `LibraryFileAlias` and
+            `LibraryFileContent` objects should be preloaded
 
         :return a `ResultSet` ordered by `SourcePackageRelease` ID and
         then diff request date in descending order.  If sprs is empty,

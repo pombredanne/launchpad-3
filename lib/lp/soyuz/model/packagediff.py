@@ -26,6 +26,13 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -33,6 +40,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from canonical.librarian.utils import copy_and_close
+from lp.services.database.bulk import load
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.packagediff import (
     IPackageDiff,
@@ -271,7 +279,7 @@ class PackageDiffSet:
         result.order_by(PackageDiff.id)
         return result.config(limit=limit)
 
-    def getDiffsToReleases(self, sprs):
+    def getDiffsToReleases(self, sprs, want_files=False):
         """See `IPackageDiffSet`."""
         if len(sprs) == 0:
             return EmptyResultSet()
@@ -281,4 +289,12 @@ class PackageDiffSet:
             PackageDiff, PackageDiff.to_sourceID.is_in(spr_ids))
         result.order_by(PackageDiff.to_sourceID,
                         Desc(PackageDiff.date_requested))
-        return result
+
+        def preload_files(rows):
+            lfas = load(LibraryFileAlias, (pd.diff_contentID for pd in rows))
+            lfcs = load(LibraryFileContent, (lfa.contentID for lfa in lfas))
+
+        if want_files:
+            return DecoratedResultSet(result, pre_iter_hook=preload_files)
+        else:
+            return result
