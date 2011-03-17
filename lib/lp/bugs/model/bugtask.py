@@ -1654,7 +1654,7 @@ class BugTaskSet:
                 in status.query_values) + ')'
         elif zope_isinstance(status, not_equals):
             return '(NOT %s)' % self._buildStatusClause(status.value)
-        elif zope_isinstance(status, DBItem):
+        elif zope_isinstance(status, BaseItem):
             with_response = (
                 status == BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE)
             without_response = (
@@ -2097,7 +2097,7 @@ class BugTaskSet:
         if hw_clause is not None:
             extra_clauses.append(hw_clause)
 
-        if zope_isinstance(params.linked_branches, Item):
+        if zope_isinstance(params.linked_branches, BaseItem):
             if params.linked_branches == BugBranchSearch.BUGS_WITH_BRANCHES:
                 extra_clauses.append(
                     """EXISTS (
