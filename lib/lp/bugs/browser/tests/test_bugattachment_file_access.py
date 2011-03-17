@@ -33,7 +33,7 @@ from canonical.testing.layers import (
     AppServerLayer,
     LaunchpadFunctionalLayer,
     )
-from lazr.restfulclient.errors import Unauthorized as RestfulUnauthorized
+from lazr.restfulclient.errors import NotFound as RestfulNotFound
 from lp.bugs.browser.bugattachment import BugAttachmentFileNavigation
 import lp.services.features
 from lp.services.features.flags import NullFeatureController
@@ -226,9 +226,9 @@ class TestWebserviceAccessToBugAttachmentFiles(TestCaseWithFactory):
         self.assertEqual(['token'], params.keys())
 
         # If a user which cannot access the private bug itself tries to
-        # to access the attachment, an Unauthorized error is raised.
+        # to access the attachment, an NotFound error is raised.
         other_launchpad = launchpadlib_for(
             'test_unauthenticated', other_user, version='devel')
         self.assertRaises(
-            RestfulUnauthorized, other_launchpad._browser.get,
+            RestfulNotFound, other_launchpad._browser.get,
             ws_bugattachment.data._wadl_resource._url)

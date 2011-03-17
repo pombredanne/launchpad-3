@@ -30,7 +30,6 @@ __all__ = [
     'IDistroSeriesBugTask',
     'IFrontPageBugTaskSearch',
     'INominationsReviewTableBatchNavigator',
-    'INullBugTask',
     'IPersonBugTaskSearch',
     'IProductSeriesBugTask',
     'IRemoveQuestionFromBugTaskForm',
@@ -46,6 +45,8 @@ __all__ = [
     'UserCannotEditBugTaskStatus',
     'valid_remote_bug_url',
     ]
+
+import httplib
 
 from lazr.enum import (
     DBEnumeratedType,
@@ -402,6 +403,7 @@ DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY = [
 
 class ConjoinedBugTaskEditError(Exception):
     """An error raised when trying to modify a conjoined bugtask."""
+    webservice_error(httplib.BAD_REQUEST)
 
 
 class UserCannotEditBugTaskStatus(Unauthorized):
@@ -410,7 +412,7 @@ class UserCannotEditBugTaskStatus(Unauthorized):
     Raised when a user tries to transition to a new status who doesn't
     have the necessary permissions.
     """
-    webservice_error(401) # HTTP Error: 'Unauthorised'
+    webservice_error(httplib.UNAUTHORIZED)
 
 
 class UserCannotEditBugTaskImportance(Unauthorized):
@@ -419,7 +421,7 @@ class UserCannotEditBugTaskImportance(Unauthorized):
     Raised when a user tries to transition to a new importance who
     doesn't have the necessary permissions.
     """
-    webservice_error(401) # HTTP Error: 'Unauthorised'
+    webservice_error(httplib.UNAUTHORIZED)
 
 
 class UserCannotEditBugTaskMilestone(Unauthorized):
@@ -428,7 +430,7 @@ class UserCannotEditBugTaskMilestone(Unauthorized):
     Raised when a user tries to transition to a milestone who doesn't have
     the necessary permissions.
     """
-    webservice_error(401) # HTTP Error: 'Unauthorised'
+    webservice_error(httplib.UNAUTHORIZED)
 
 
 class UserCannotEditBugTaskAssignee(Unauthorized):
@@ -437,18 +439,18 @@ class UserCannotEditBugTaskAssignee(Unauthorized):
     Raised when a user with insufficient prilieges tries to set
     the assignee of a bug task.
     """
-    webservice_error(401) # HTTP Error: 'Unauthorised'
+    webservice_error(httplib.UNAUTHORIZED)
 
 
 class IllegalTarget(Exception):
     """Exception raised when trying to set an illegal bug task target."""
-    webservice_error(400) #Bad request.
+    webservice_error(httplib.BAD_REQUEST)
 
 
 class IllegalRelatedBugTasksParams(Exception):
     """Exception raised when trying to overwrite all relevant parameters
     in a search for related bug tasks"""
-    webservice_error(400) #Bad request.
+    webservice_error(httplib.BAD_REQUEST)
 
 
 class IBugTask(IHasDateCreated, IHasBug):
@@ -838,16 +840,6 @@ IBugTask['related_tasks'].value_type.schema = IBugTask
 # We are forced to define this now to avoid circular import problems.
 IBugWatch['bugtasks'].value_type.schema = IBugTask
 
-
-class INullBugTask(IBugTask):
-    """A marker interface for an IBugTask that doesn't exist in a context.
-
-    An INullBugTask is useful when wanting to view a bug in a context
-    where that bug hasn't yet been reported. This might happen, for
-    example, when searching to see if a bug you want to report has
-    already been filed and finding matching reports that don't yet
-    have tasks reported in your context.
-    """
 
 UPSTREAM_STATUS_VOCABULARY = SimpleVocabulary(
     [SimpleTerm(

@@ -94,6 +94,8 @@ class TestBugCanBeNominatedForDistroSeries(
         # to a series of that distribution.
         sp_bug = self.factory.makeBug()
         spn = self.factory.makeSourcePackageName()
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=self.series, sourcepackagename=spn)
 
         self.assertFalse(sp_bug.canBeNominatedFor(self.series))
         sp_bug.addTask(
