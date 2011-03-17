@@ -11,11 +11,11 @@ __all__ = [
 
 from debian.changelog import Changelog
 from lazr.enum import DBItem
+from sqlobject import StringCol
 from storm.expr import Desc
 from storm.locals import (
     And,
     Int,
-    RawStr,
     Reference,
     Storm,
     )
@@ -87,10 +87,10 @@ class DistroSeriesDifference(Storm):
                     enum=DistroSeriesDifferenceStatus)
     difference_type = DBEnum(name='difference_type', allow_none=False,
                              enum=DistroSeriesDifferenceType)
-    source_version = RawStr(name='source_version', allow_none=True)
-    parent_source_version = RawStr(name='parent_source_version',
-                                    allow_none=True)
-    base_version = RawStr(name='base_version', allow_none=True)
+    source_version = StringCol(dbName='source_version', notNull=False)
+    parent_source_version = StringCol(dbName='parent_source_version',
+                                      notNull=False)
+    base_version = StringCol(dbName='base_version', notNull=False)
 
     @staticmethod
     def new(derived_series, source_package_name):
