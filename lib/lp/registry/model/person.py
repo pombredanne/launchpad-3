@@ -1547,43 +1547,6 @@ class Person(
         tm.dateexpires += timedelta(days=team.defaultrenewalperiod)
         tm.sendSelfRenewalNotification()
 
-    def deactivateAllMembers(self, comment, reviewer):
-        """Deactivate all members of this team.
-
-        This method circuments the TeamMembership.setStatus() method
-        to improve performance; therefore, it does not send out any
-        status change noticiations to the team admins.
-
-        :param comment: Explanation of the change.
-        :param reviewer: Person who made the change.
-        """
-        assert self.is_team, "This method is only available for teams."
-        now = datetime.now(pytz.timezone('UTC'))
-        store = Store.of(self)
-        cur = cursor()
-        all_members = list(self.activemembers)
-        cur.execute("""
-            UPDATE TeamMembership
-            SET status=%(status)s,
-                last_changed_by=%(last_changed_by)s,
-                last_change_comment=%(comment)s,
-                date_last_changed=%(date_last_changed)s
-            WHERE
-                TeamMembership.team = %(team)s
-                AND TeamMembership.status IN %(original_statuses)s
-            """,
-            dict(
-                status=TeamMembershipStatus.DEACTIVATED,
-                last_changed_by=reviewer.id,
-                comment=comment,
-                date_last_changed=now,
-                team=self.id,
-                original_statuses=ACTIVE_STATES))
-        from lp.registry.model.teammembership import _cleanTeamParticipation
-        for member in all_members:
-            # store.invalidate() is called for each iteration.
-            _cleanTeamParticipation(member, self)
-
     def setMembershipData(self, person, status, reviewer, expires=None,
                           comment=None):
         """See `IPerson`."""
