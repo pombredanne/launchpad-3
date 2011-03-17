@@ -68,9 +68,7 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.errors import NotFoundError
 from lp.app.widgets.itemswidgets import (
-    CheckBoxMatrixWidget,
     LabeledMultiCheckBoxWidget,
-    LaunchpadBooleanRadioWidget,
     LaunchpadDropdownWidget,
     )
 from lp.blueprints.browser.specificationtarget import (
@@ -531,26 +529,6 @@ class IDistroSeriesInitializeForm(Interface):
             "want to derive from."),
         required=True)
 
-    all_architectures = Bool(
-        title=_('Architectures to initialize'),
-        default=True,
-        required=True)
-
-    architectures = List(
-        title=_("The list of architectures to copy to "
-                "the derived distroseries."),
-        value_type=TextLine(),
-        required=True)
-
-    rebuild = Bool(
-        title=_('Copy options'),
-        description=_(
-            "Choose whether to rebuild all the sources "
-            "copied from the parent, or to copy their "
-            "binaries."),
-        default=False,
-        required=True)
-
 
 class DistroSeriesInitializeView(LaunchpadFormView):
     """A view to initialize an `IDistroSeries`."""
@@ -561,34 +539,9 @@ class DistroSeriesInitializeView(LaunchpadFormView):
         ]
 
     custom_widget('derived_from_series', LaunchpadDropdownWidget)
-    custom_widget(
-        'all_architectures', LaunchpadBooleanRadioWidget,
-        true_label='Use all architectures in parent series',
-        false_label='Specify architectures below')
-    custom_widget('architectures', CheckBoxMatrixWidget, column_count=5)
-    custom_widget(
-        'all_packagesets', LaunchpadBooleanRadioWidget,
-        true_label='Copy all packagesets in parent series',
-        false_label='Specify packagesets below')
-    custom_widget('packagesets', CheckBoxMatrixWidget, column_count=5)
-    custom_widget(
-        'rebuild', LaunchpadBooleanRadioWidget,
-        true_label='Copy source and rebuild',
-        false_label='Copy source and binaries')
 
     label = 'Initialize series'
     page_title = label
-
-    @action(_('Commence initialization'), name='initialize')
-    def initialize_series(self, action, data):
-        """Initialize the Distribution Series."""
-        parent = data["derived_from_series"]
-        parent.deriveDistroSeries(
-            name=self.context.name,
-            distribution=self.context.distribution,
-            architectures=data["architectures"],
-            packagesets=data["packagesets"],
-            rebuild=data["rebuild"])
 
     @property
     def next_url(self):
