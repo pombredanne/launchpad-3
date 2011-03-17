@@ -246,10 +246,7 @@ from lp.registry.interfaces.ssh import (
     SSHKeyCompromisedError,
     SSHKeyType,
     )
-from lp.registry.interfaces.teammembership import (
-    ACTIVE_STATES,
-    TeamMembershipStatus,
-    )
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.interfaces.wikiname import (
     IWikiName,
     IWikiNameSet,
