@@ -2213,8 +2213,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return library_file_alias
 
     def makeDistribution(self, name=None, displayname=None, owner=None,
-                         registrant=None, members=None, title=None, 
-                         aliases=None, bug_supervisor=None):
+                         registrant=None, members=None, title=None,
+                         aliases=None, bug_supervisor=None,
+                         publish_root_dir=None, publish_base_url=None,
+                         publish_copy_base_url=None, no_pubconf=False):
         """Make a new distribution."""
         if name is None:
             name = self.getUniqueString(prefix="distribution")
@@ -2239,6 +2241,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if bug_supervisor is not None:
             naked_distro = removeSecurityProxy(distro)
             naked_distro.bug_supervisor = bug_supervisor
+        if not no_pubconf:
+            self.makePublisherConfig(
+                distro, publish_root_dir, publish_base_url,
+                publish_copy_base_url)
         return distro
 
     def makeDistroRelease(self, distribution=None, version=None,

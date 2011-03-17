@@ -68,8 +68,6 @@ class TestPublisherConfig(TestCaseWithFactory):
 
     def test_getByDistribution(self):
         # Test that IPublisherConfigSet.getByDistribution works.
-        pubconf = self.factory.makePublisherConfig(
-            distribution=self.distribution)
         pubconf = getUtility(IPublisherConfigSet).getByDistribution(
             self.distribution)
         self.assertEqual(self.distribution.name, pubconf.distribution.name)
@@ -81,8 +79,8 @@ class TestPublisherConfigSecurity(TestCaseWithFactory):
 
     def test_only_admin(self):
         # Only admins can see and change the config.
-        distro = self.factory.makeDistribution()
-        config = self.factory.makePublisherConfig(distro, root_dir=u"foo")
+        distro = self.factory.makeDistribution(publish_root_dir=u"foo")
+        config = getUtility(IPublisherConfigSet).getByDistribution(distro)
 
         login(ANONYMOUS)
         self.assertRaises(Unauthorized, getattr, config, "root_dir")

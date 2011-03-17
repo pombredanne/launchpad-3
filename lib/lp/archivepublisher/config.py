@@ -8,7 +8,10 @@
 
 import os
 
+from zope.component import getUtility
+
 from canonical.config import config
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.soyuz.enums import ArchivePurpose
 
 
@@ -24,9 +27,11 @@ def getPubConfig(archive):
     """
     pubconf = Config()
     ppa_config = config.personalpackagearchive
+    db_pubconf = getUtility(
+        IPublisherConfigSet).getByDistribution(archive.distribution)
 
     pubconf.temproot = os.path.join(
-        config.archivepublisher.root, '%s-temp' % archive.distribution.name)
+        db_pubconf.root_dir, '%s-temp' % archive.distribution.name)
 
     if archive.is_ppa:
         if archive.private:
@@ -40,7 +45,7 @@ def getPubConfig(archive):
             pubconf.distroroot, archive.owner.name, archive.name,
             archive.distribution.name)
     elif archive.is_main:
-        pubconf.distroroot = config.archivepublisher.root
+        pubconf.distroroot = db_pubconf.root_dir
         pubconf.archiveroot = os.path.join(
             pubconf.distroroot, archive.distribution.name)
         if archive.purpose == ArchivePurpose.PARTNER:
@@ -48,7 +53,7 @@ def getPubConfig(archive):
         elif archive.purpose == ArchivePurpose.DEBUG:
             pubconf.archiveroot += '-debug'
     elif archive.is_copy:
-        pubconf.distroroot = config.archivepublisher.root
+        pubconf.distroroot = db_pubconf.root_dir
         pubconf.archiveroot = os.path.join(
             pubconf.distroroot,
             archive.distribution.name + '-' + archive.name,

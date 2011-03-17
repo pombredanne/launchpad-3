@@ -1284,21 +1284,23 @@ Passing an invalid name will cause an empty result set.
     None
 
 IArchive.archive_url will return a URL for the archive that the builder can
-use to retrieve files from it.
+use to retrieve files from it.  Internal paths and urls supplied via the
+PunlisherConfig require us to log in as an admin:
 
+    >>> login('admin@canonical.com')
     >>> print partner_archive.archive_url
-    http://ftpmaster.internal/ubuntutest-partner
+    http://archive.launchpad.dev/ubuntutest-partner
 
     >>> print sandbox_archive.archive_url
     http://ppa.launchpad.dev/name16/ppa/ubuntu
 
     >>> print getUtility(IArchiveSet).getByDistroPurpose(
     ...     ubuntutest, ArchivePurpose.PRIMARY).archive_url
-    http://ftpmaster.internal/ubuntutest
+    http://archive.launchpad.dev/ubuntutest
 
     >>> print getUtility(IArchiveSet).getByDistroPurpose(
     ...     ubuntu, ArchivePurpose.DEBUG).archive_url
-    http://ftpmaster.internal/ubuntu-debug
+    http://archive.launchpad.dev/ubuntu-debug
 
 COPY archives use a URL format of <distro-name>-<archive-name>:
 
@@ -1310,6 +1312,7 @@ COPY archives use a URL format of <distro-name>-<archive-name>:
 If the archive is private, the url may be different as private PPAs
 are published to a secure location.
 
+    >>> login("celso.providelo@canonical.com")
     >>> print cprov_archive.archive_url
     http://ppa.launchpad.dev/cprov/ppa/ubuntu
 
