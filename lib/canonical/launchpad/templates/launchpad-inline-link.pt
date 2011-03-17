@@ -2,7 +2,8 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   condition="context/enabled">
   <tal:link-linked
-    condition="context/linked"><a
+    condition="python: context.linked and not context.hidden"><a
+      style="line-height: 20px"
       href="" class="" title=""
       tal:condition="context/icon"
       tal:attributes="
@@ -13,7 +14,6 @@
       tal:content="structure context/escapedtext"
     /><a
       tal:condition="not: context/icon"
-      style="line-height: 20px;"
       href="" class="" title=""
       tal:attributes="
         class string:menu-link-${context/name};
@@ -22,6 +22,28 @@
         "
       tal:content="structure context/escapedtext"
     /></tal:link-linked>
+  <tal:link-linked-hidden
+    condition="python: context.linked and context.hidden"><a
+      href="" class="" title=""
+      style="line-height: 20px;display: none"
+      tal:condition="context/icon"
+      tal:attributes="
+        class string:menu-link-${context/name} ${view/sprite_class} ${context/icon};
+        href context/url;
+        title context/summary;
+        "
+      tal:content="structure context/escapedtext"
+    /><a
+      tal:condition="not: context/icon"
+      style="display: none"
+      href="" class="" title=""
+      tal:attributes="
+        class string:menu-link-${context/name};
+        href context/url;
+        title context/summary;
+        "
+      tal:content="structure context/escapedtext"
+    /></tal:link-linked-hidden>
   <tal:link-not-linked
     condition="not: context/linked"><span
       tal:condition="context/icon"
