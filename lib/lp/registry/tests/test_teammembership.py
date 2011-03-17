@@ -448,6 +448,52 @@ class TestTeamParticipationMesh(TeamParticipationTestCase):
             previous_count-3,
             self.getTeamParticipationCount())
 
+    def testRemoveTeam3Members_setMembershipData(self):
+        # Removing all the members of team2 will not remove memberships
+        # to super teams from other paths.
+        non_member = self.factory.makePerson()
+        self.team3.addMember(non_member, self.foo_bar, force_team_add=True)
+        previous_count = self.getTeamParticipationCount()
+        for member in self.team3.activemembers:
+            self.team3.setMembershipData(
+                member, TeamMembershipStatus.DEACTIVATED, self.foo_bar)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team2', 'team3', 'team4', 'team5'],
+            self.team1)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team3', 'team4', 'team5'], self.team2)
+        self.assertParticipantsEquals(
+            [], self.team3)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team5'], self.team4)
+        self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team2', 'team3', 'team4', 'team5'],
+            self.team6)
+        self.assertEqual(previous_count - 8, self.getTeamParticipationCount())
+
+    def testRemoveTeam3Members_deactivateAllMembers(self):
+        # Removing all the members of team2 will not remove memberships
+        # to super teams from other paths.
+        non_member = self.factory.makePerson()
+        self.team3.addMember(non_member, self.foo_bar, force_team_add=True)
+        previous_count = self.getTeamParticipationCount()
+        self.team3.deactivateAllMembers('gone', self.foo_bar)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team2', 'team3', 'team4', 'team5'],
+            self.team1)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team3', 'team4', 'team5'], self.team2)
+        self.assertParticipantsEquals(
+            [], self.team3)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team5'], self.team4)
+        self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team2', 'team3', 'team4', 'team5'],
+            self.team6)
+        self.assertEqual(previous_count - 8, self.getTeamParticipationCount())
+
     def testRemoveTeam5FromTeam4(self):
         previous_count = self.getTeamParticipationCount()
         self.team4.setMembershipData(
