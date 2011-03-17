@@ -259,7 +259,7 @@ class TestTranslationSplitJob(TestCaseWithFactory):
 
     def test_deletePackaging_makes_job(self):
         """Creating a Packaging should make a TranslationMergeJob."""
-        packaging = self.factory.makePackaging()
+        packaging = self.factory.makePackagingLink()
         finder = JobFinder(
             packaging.productseries, packaging.sourcepackage,
             TranslationSplitJob)
