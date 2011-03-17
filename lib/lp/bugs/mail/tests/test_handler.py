@@ -42,7 +42,7 @@ class TestMaloneHandler(TestCaseWithFactory):
     """Test that the Malone/bugs handler works."""
 
     # LaunchpadFunctionalLayer has the LaunchpadSecurityPolicy that we
-    # need, but we need to be able to switch DB users.S o we have to use
+    # need, but we need to be able to switch DB users. So we have to use
     # LaunchpadZopelessLayer and set security up manually.
     layer = LaunchpadZopelessLayer
 
