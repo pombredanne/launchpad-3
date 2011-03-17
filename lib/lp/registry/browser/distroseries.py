@@ -24,7 +24,6 @@ from zope.formlib import form
 from zope.interface import Interface
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import (
-    Bool,
     Choice,
     List,
     TextLine,
@@ -69,6 +68,7 @@ from lp.app.errors import NotFoundError
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadDropdownWidget,
+    LaunchpadRadioWidget,
     )
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
@@ -532,6 +532,23 @@ class DistroSeriesPackagesView(LaunchpadView):
         return navigator
 
 
+# A simple vocabulary for package filtering on the source package
+# differences page
+NON_BLACKLISTED = 'non-blacklisted'
+BLACKLISTED = 'blacklisted'
+HIGHER_VERSION_THAN_PARENT = 'higher-than-parent'
+
+DEFAULT_PACKAGE_TYPE = NON_BLACKLISTED
+
+PACKAGE_TYPE_VOCABULARY = SimpleVocabulary((
+    SimpleTerm(NON_BLACKLISTED, NON_BLACKLISTED, 'Non blacklisted packages'),
+    SimpleTerm(BLACKLISTED, BLACKLISTED, 'Blacklisted packages'),
+    SimpleTerm(
+        HIGHER_VERSION_THAN_PARENT,
+        HIGHER_VERSION_THAN_PARENT,
+        'Blacklisted packages with a higher version than in the parent')))
+
+
 class DistroSeriesNeedsPackagesView(LaunchpadView):
     """A View to show series package to upstream package relationships."""
 
@@ -551,9 +568,10 @@ class IDifferencesFormSchema(Interface):
     name_filter = TextLine(
         title=_("Package name contains"), required=False)
 
-    include_blacklisted_filter = Bool(
-        title=_("include blacklisted packages"),
-        required=False, default=False)
+    package_type = Choice(
+        vocabulary=PACKAGE_TYPE_VOCABULARY,
+        default=DEFAULT_PACKAGE_TYPE,
+        required=True)
 
     selected_differences = List(
         title=_('Selected differences'),
@@ -565,8 +583,9 @@ class IDifferencesFormSchema(Interface):
 class DistroSeriesLocalDifferences(LaunchpadFormView):
     """Present differences between a derived series and its parent."""
     schema = IDifferencesFormSchema
-    field_names = ['selected_differences']
+    field_names = ['selected_differences', 'package_type']
     custom_widget('selected_differences', LabeledMultiCheckBoxWidget)
+    custom_widget('package_type', LaunchpadRadioWidget)
 
     page_title = 'Local package differences'
 
@@ -582,6 +601,7 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
                 self.context.parent_series.displayname,
                 self.context.displayname,
                 ))
+
         super(DistroSeriesLocalDifferences, self).initialize()
 
     @property
@@ -662,33 +682,41 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
             return None
 
     @property
-    def specified_include_blacklisted_filter(self):
-        """If specified, return the 'blacklisted' filter from the GET form
+    def specified_package_type(self):
+        """If specified, return the package type filter from the GET form
         data.
         """
-        include_blacklisted_filter = self.request.query_string_params.get(
-            'field.include_blacklisted_filter')
-
-        if include_blacklisted_filter and include_blacklisted_filter[0]:
-            return include_blacklisted_filter[0]
+        package_type = self.request.query_string_params.get(
+            'field.package_type')
+        if package_type and package_type[0]:
+            return package_type[0]
         else:
-            return None
+            return DEFAULT_PACKAGE_TYPE
 
     @cachedproperty
     def cached_differences(self):
         """Return a batch navigator of filtered results."""
-        if self.specified_include_blacklisted_filter:
-            status=(
-                DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
-                DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
-        else:
+        if self.specified_package_type == NON_BLACKLISTED:
             status=(
                 DistroSeriesDifferenceStatus.NEEDS_ATTENTION,)
+            child_version_higher = False
+        elif self.specified_package_type == BLACKLISTED:
+            status=(
+                DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
+            child_version_higher = False
+        elif self.specified_package_type == HIGHER_VERSION_THAN_PARENT:
+            status=(
+                DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
+            child_version_higher = True
+        else:
+            raise AssertionError('specified_package_type unknown')
+
         differences = getUtility(
             IDistroSeriesDifferenceSource).getForDistroSeries(
                 self.context,
                 source_package_name_filter=self.specified_name_filter,
-                status=status)
+                status=status,
+                child_version_higher=child_version_higher)
         return BatchNavigator(differences, self.request)
 
     @cachedproperty

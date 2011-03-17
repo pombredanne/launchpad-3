@@ -6,6 +6,15 @@
   metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad">
   <body>
+
+    <metal:block fill-slot="head_epilogue">
+      <style type="text/css">
+        .distroseries-localdiff-search-filter input[type="radio"] {
+          margin-left: 0;
+        }
+      </style>
+    </metal:block>
+
     <tal:heading metal:fill-slot="heading">
       <h1 tal:content="view/label">Package differences between ...</h1>
     </tal:heading>
