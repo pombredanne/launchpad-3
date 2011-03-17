@@ -478,7 +478,9 @@ class TestTeamParticipationMesh(TeamParticipationTestCase):
         non_member = self.factory.makePerson()
         self.team3.addMember(non_member, self.foo_bar, force_team_add=True)
         previous_count = self.getTeamParticipationCount()
-        self.team3.deactivateAllMembers('gone', self.foo_bar)
+        membershipset = getUtility(ITeamMembershipSet)
+        membershipset.deactivateActiveMemberships(
+            self.team3, 'gone', self.foo_bar)
         self.assertParticipantsEquals(
             ['name16', 'no-priv', 'team2', 'team3', 'team4', 'team5'],
             self.team1)
