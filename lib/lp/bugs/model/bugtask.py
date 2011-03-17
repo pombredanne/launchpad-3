@@ -3109,7 +3109,7 @@ class BugTaskSet:
 
         return counts
 
-    def getBugTaskTargetMilestones(self, bugtasks, eager=False):
+    def getBugTaskTargetMilestones(self, bugtasks):
         from lp.registry.model.milestone import Milestone
         store = Store.of(bugtasks[0])
         distro_ids = set()
@@ -3139,17 +3139,15 @@ class BugTaskSet:
                 Milestone.productID.is_in(product_ids),
                 Milestone.productseriesID.is_in(product_series_ids)))
 
-
-        if eager:
-            # Pull in all the related pillars
-            list(store.find(
-                Distribution, Distribution.id.is_in(distro_ids)))
-            list(store.find(
-                DistroSeries, DistroSeries.id.is_in(distro_series_ids)))
-            list(store.find(
-                Product, Product.id.is_in(product_ids)))
-            list(store.find(
-                ProductSeries, ProductSeries.id.is_in(product_series_ids)))
+        # Pull in all the related pillars
+        list(store.find(
+            Distribution, Distribution.id.is_in(distro_ids)))
+        list(store.find(
+            DistroSeries, DistroSeries.id.is_in(distro_series_ids)))
+        list(store.find(
+            Product, Product.id.is_in(product_ids)))
+        list(store.find(
+            ProductSeries, ProductSeries.id.is_in(product_series_ids)))
             
         return milestones
 
