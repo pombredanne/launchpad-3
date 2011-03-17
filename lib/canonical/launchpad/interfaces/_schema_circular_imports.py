@@ -58,6 +58,10 @@ from lp.bugs.interfaces.bugtracker import (
     IBugTrackerComponentGroup,
     )
 from lp.bugs.interfaces.bugwatch import IBugWatch
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscription,
+    IStructuralSubscriptionTarget,
+    )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
@@ -100,10 +104,6 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.bugs.interfaces.structuralsubscription import (
-    IStructuralSubscription,
-    IStructuralSubscriptionTarget,
-    )
 from lp.services.comments.interfaces.conversation import IComment
 from lp.soyuz.enums import (
     PackagePublishingStatus,
@@ -389,6 +389,8 @@ patch_entry_return_type(
     IDistroSeries, 'getDistroArchSeries', IDistroArchSeries)
 patch_reference_property(
     IDistroSeries, 'main_archive', IArchive)
+patch_collection_property(
+    IDistroSeries, 'architectures', IDistroArchSeries)
 patch_reference_property(
     IDistroSeries, 'distribution', IDistribution)
 patch_choice_parameter_type(
