@@ -1312,6 +1312,31 @@ class CustomizableFormatter(ObjectFormatterAPI):
                 values[key] = cgi.escape(value)
         return self._link_summary_template % values
 
+    def _title_values(self):
+        """Return a dict of values to use for template substitution.
+
+        These values should not be escaped, as this will be performed later.
+        For this reason, only string values should be supplied.
+        """
+        raise NotImplementedError(self._title_values)
+
+    def _make_title(self):
+        """Create a title from _title_template and _title_values().
+
+        This title is for use in fmt:link, which is meant to be used in
+        contexts like lists of items.
+        """
+        title_template = getattr(self, '_title_template', None)
+        if title_template is None:
+            return None
+        values = {}
+        for key, value in self._title_values().iteritems():
+            if value is None:
+                values[key] = ''
+            else:
+                values[key] = cgi.escape(value)
+        return title_template % values
+
     def sprite_css(self):
         """Retrieve the icon for the _context, if any.
 
@@ -1334,12 +1359,18 @@ class CustomizableFormatter(ObjectFormatterAPI):
             css = ' class="' + sprite + '"'
 
         summary = self._make_link_summary()
+        title = self._make_title()
+        if title is None:
+            title = ''
+        else:
+            title = ' title="%s"' % title
+
         if check_permission(self._link_permission, self._context):
             url = self.url(view_name, rootsite)
         else:
             url = ''
         if url:
-            return '<a href="%s"%s>%s</a>' % (url, css, summary)
+            return '<a href="%s"%s%s>%s</a>' % (url, css, title, summary)
         else:
             return summary
 
@@ -1562,6 +1593,12 @@ class BugFormatterAPI(CustomizableFormatter):
 
 class BugTaskFormatterAPI(CustomizableFormatter):
     """Adapter for IBugTask objects to a formatted string."""
+
+    _title_template = '%(importance)s - %(status)s'
+
+    def _title_values(self):
+        return {'importance': self._context.importance.title,
+                'status': self._context.status.title}
 
     def _make_link_summary(self):
         return BugFormatterAPI(self._context.bug)._make_link_summary()
