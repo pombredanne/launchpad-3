@@ -215,7 +215,7 @@
 
         <require
             permission="launchpad.Moderate"
-            set_attributes="version name status nominatedarchindep                                                                                                 changeslist datereleased"/>
+            set_attributes="version name status nominatedarchindep changeslist datereleased"/>
 
         <!-- IStructuralSubscriptionTarget -->
 
