@@ -12,15 +12,13 @@ from zope.component import getUtility
 from storm.store import Store
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp.publisher import canonical_url
-from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
+from lp.testing import WindmillTestCase
 from lp.testing.windmill.constants import (
     FOR_ELEMENT,
     PAGE_LOAD,
     )
-from lp.testing.windmill.lpuser import login_person
+from lp.code.model.sourcepackagerecipe import SourcePackageRecipe
 from lp.code.windmill.testing import CodeWindmillLayer
-from lp.testing import WindmillTestCase
 
 
 class TestRecipeEdit(WindmillTestCase):
@@ -29,22 +27,16 @@ class TestRecipeEdit(WindmillTestCase):
     layer = CodeWindmillLayer
     suite_name = "Request recipe build"
 
-    def setUp(self):
-        super(TestRecipeEdit, self).setUp()
-        self.chef = self.factory.makePerson(
-            displayname='Master Chef', name='chef', password='test',
-            email="chef@example.com")
-        self.user = self.chef
-        self.recipe = self.factory.makeSourcePackageRecipe(
-            owner=self.chef, name=u'cake_recipe')
-        transaction.commit()
-        login_person(self.chef, "chef@example.com", "test", self.client)
-
     def test_inline_distroseries_edit(self):
         """Test that inline editing of distroseries works."""
 
-        client = self.client
-        client.open(url=canonical_url(self.recipe))
+        chef = self.factory.makePerson(
+            displayname='Master Chef', name='chef', password='test',
+            email="chef@example.com")
+        recipe = self.factory.makeSourcePackageRecipe(owner=chef)
+        transaction.commit()
+
+        client, start_url = self.getClientFor(recipe, user=chef)
         client.waits.forElement(
             id=u'edit-distroseries-items', timeout=PAGE_LOAD)
 
@@ -69,10 +61,10 @@ class TestRecipeEdit(WindmillTestCase):
         # Check that the new data was saved.
         transaction.commit()
         hoary = getUtility(ILaunchpadCelebrities).ubuntu['hoary']
-        store = Store.of(self.recipe)
+        store = Store.of(recipe)
         saved_recipe = store.find(
             SourcePackageRecipe,
-            SourcePackageRecipe.name==u'cake_recipe').one()
+            SourcePackageRecipe.name==recipe.name).one()
         self.assertEqual(len(list(saved_recipe.distroseries)), 2)
         distroseries=sorted(
             saved_recipe.distroseries, key=lambda ds: ds.displayname)
