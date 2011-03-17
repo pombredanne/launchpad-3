@@ -2227,7 +2227,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if bug_supervisor is not None:
             naked_distro = removeSecurityProxy(distro)
             naked_distro.bug_supervisor = bug_supervisor
-        if no_pubconf is False:
+        if not no_pubconf:
             self.makePublisherConfig(
                 distro, publish_root_dir, publish_base_url,
                 publish_copy_base_url)
