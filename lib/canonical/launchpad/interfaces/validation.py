@@ -29,20 +29,22 @@ import urllib
 from zope.app.form.interfaces import WidgetsError
 from zope.component import getUtility
 
+from lazr.restful.error import expose
+
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.interfaces.emailaddress import (
     IEmailAddress,
     IEmailAddressSet,
     )
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.cve import valid_cve
-from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.validators.url import valid_absolute_url
+from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.menu import structured
 from lp.app.errors import NotFoundError
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.cve import valid_cve
+from lp.app.validators.email import valid_email
+from lp.app.validators.url import valid_absolute_url
 
 
 def can_be_nominated_for_series(series):
@@ -324,8 +326,8 @@ def validate_distrotask(bug, distribution, sourcepackagename=None):
         pass
 
 
-def valid_upstreamtask(bug, product):
-    """Check if a product bugtask already exists for a given bug.
+def valid_upstreamtask(bug, bug_target):
+    """Check if a bugtask already exists for a given bug/target.
 
     If it exists, WidgetsError will be raised.
     """
@@ -334,13 +336,13 @@ def valid_upstreamtask(bug, product):
     errors = []
     user = getUtility(ILaunchBag).user
     params = BugTaskSearchParams(user, bug=bug)
-    if not product.searchTasks(params).is_empty():
+    if not bug_target.searchTasks(params).is_empty():
         errors.append(LaunchpadValidationError(_(
-            'A fix for this bug has already been requested for ${product}',
-            mapping={'product': product.displayname})))
+                    'A fix for this bug has already been requested for ${target}',
+                    mapping={'target': bug_target.displayname})))
 
-    if errors:
-        raise WidgetsError(errors)
+    if len(errors) > 0:
+        raise expose(WidgetsError(errors), 400)
 
 
 def valid_password(password):

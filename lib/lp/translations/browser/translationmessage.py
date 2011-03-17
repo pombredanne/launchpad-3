@@ -1302,8 +1302,14 @@ class CurrentTranslationMessageView(LaunchpadView):
 
             # Get a list of translations which are _used_ as translations
             # for this same message in a different translation template.
+            used_languages = [language]
+            if self.sec_lang is not None:
+                used_languages.append(self.sec_lang)
+            translations = potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                suggested_languages=[language], used_languages=used_languages)
+            alt_external = translations[self.sec_lang].used
             externally_used = self._setOnePOFile(sorted(
-                potmsgset.getExternallyUsedTranslationMessages(language),
+                translations[language].used,
                 key=operator.attrgetter("date_created"),
                 reverse=True))
 
@@ -1311,7 +1317,7 @@ class CurrentTranslationMessageView(LaunchpadView):
             # translations for this same message in a different translation
             # template, but are not used.
             externally_suggested = self._setOnePOFile(sorted(
-                potmsgset.getExternallySuggestedTranslationMessages(language),
+                translations[language].suggested,
                 key=operator.attrgetter("date_created"),
                 reverse=True))
         else:
@@ -1332,8 +1338,10 @@ class CurrentTranslationMessageView(LaunchpadView):
                 self.pofile.potemplate.translation_side)
             if alt_current is not None:
                 alt_submissions.append(alt_current)
-            alt_external = list(
-                potmsgset.getExternallyUsedTranslationMessages(self.sec_lang))
+            if not self.form_is_writeable:
+                alt_external = list(
+                    potmsgset.getExternallyUsedTranslationMessages(
+                        self.sec_lang))
             alt_submissions.extend(alt_external)
             for suggestion in alt_submissions:
                 suggestion.setPOFile(alt_pofile)

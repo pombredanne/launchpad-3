@@ -796,13 +796,15 @@ class BaseBinaryUploadFile(PackageUploadFile):
         spphs = distroseries.getPublishedSources(
             self.source_name, version=self.source_version,
             include_pending=True, archive=self.policy.archive)
-
-        if spphs.count() == 0:
+        # Workaround storm bug in EmptyResultSet.
+        spphs = list(spphs[:1])
+        try:
+            return spphs[0].sourcepackagerelease
+        except IndexError:
             raise UploadError(
                 "Unable to find source package %s/%s in %s" % (
                 self.source_name, self.source_version, distroseries.name))
 
-        return spphs[0].sourcepackagerelease
 
     def verifySourcePackageRelease(self, sourcepackagerelease):
         """Check if the given ISourcePackageRelease matches the context."""

@@ -24,6 +24,7 @@ from textwrap import dedent
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
+    export_read_operation,
     export_write_operation,
     exported,
     mutator_for,
@@ -46,13 +47,12 @@ from zope.schema import (
     Choice,
     Datetime,
     Int,
-    Object,
     Text,
     TextLine,
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.validators.name import name_validator
+from lp.app.validators.name import name_validator
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -77,14 +77,16 @@ MINIMAL_RECIPE_TEXT = dedent(u'''\
 class ISourcePackageRecipeData(Interface):
     """A recipe as database data, not text."""
 
-    base_branch = Object(
-        schema=IBranch, title=_("Base branch"), description=_(
-            "The base branch to use when building the recipe."))
+    base_branch = exported(
+        Reference(
+            IBranch, title=_("The base branch used by this recipe."),
+            required=True, readonly=True))
 
-    deb_version_template = TextLine(
-        title=_('deb-version template'),
-        description = _(
-            'The template that will be used to generate a deb version.'),)
+    deb_version_template = exported(
+        TextLine(
+            title=_('deb-version template'), readonly=True,
+            description = _(
+                'The template that will be used to generate a deb version.')))
 
     def getReferencedBranches():
         """An iterator of the branches referenced by this recipe."""
@@ -165,6 +167,19 @@ class ISourcePackageRecipeView(Interface):
     def performDailyBuild():
         """Perform a build into the daily build archive."""
 
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getPendingBuildInfo():
+        """Find distroseries and archive data for pending builds.
+
+        Return a list of dict(
+        distroseries:distroseries.displayname
+        archive:archive.token)
+        The archive token is the same as that defined by the archive vocab:
+        archive.owner.name/archive.name
+        This information is used to construct the request builds popup form.
+        """
+
 
 class ISourcePackageRecipeEdit(Interface):
     """ISourcePackageRecipe methods that require launchpad.Edit permission."""
@@ -210,7 +225,8 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
         readonly=False)
     build_daily = exported(Bool(
         title=_("Built daily"),
-        description=_("Automatically build each day, if the source has changed.")))
+        description=_(
+            "Automatically build each day, if the source has changed.")))
 
     name = exported(TextLine(
             title=_("Name"), required=True,
@@ -220,7 +236,7 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
                 "be unique for the given owner.")))
 
     description = exported(Description(
-        title=_('Description'), required=True,
+        title=_('Description'), required=False,
         description=_('A short description of the recipe.')))
 
     date_last_modified = exported(
@@ -238,9 +254,6 @@ class ISourcePackageRecipe(ISourcePackageRecipeData,
     debianized source tree.
     """
     export_as_webservice_entry()
-    base_branch = Reference(
-        IBranch, title=_("The base branch used by this recipe."),
-        required=True, readonly=True)
 
 
 class ISourcePackageRecipeSource(Interface):

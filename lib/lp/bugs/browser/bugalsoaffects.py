@@ -39,8 +39,6 @@ from canonical.launchpad.interfaces.validation import (
     valid_upstreamtask,
     validate_new_distrotask,
     )
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
@@ -50,6 +48,8 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.enums import ServiceUsage
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.email import email_validator
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.app.widgets.popup import SearchForUpstreamPopupWidget
 from lp.app.widgets.textwidgets import StrippedTextWidget
@@ -393,7 +393,6 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
                          cgi.escape(target.displayname),
                          confirm_button))))
             return None
-
         # Create the task.
         return super(DistroBugTaskCreationStep, self).main_action(data)
 

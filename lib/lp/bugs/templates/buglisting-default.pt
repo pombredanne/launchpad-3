@@ -48,11 +48,6 @@
         </tal:has_products>
       </tal:is_project_group>
 
-        <h1
-          tal:condition="view/shouldShowAdvancedForm"
-          tal:content="view/getAdvancedSearchPageHeading"
-        >Bugs in Fooix: Advanced search</h1>
-
         <tal:do_not_show_advanced_form
           condition="not: view/shouldShowAdvancedForm">
           <div tal:define="batch_navigator view/search">

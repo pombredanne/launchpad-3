@@ -107,8 +107,7 @@ demonstrate this.
     DEBUG Enabled by DEFAULT section
     INFO Resetting 5 bug watches for bug tracker 'savannah'
     INFO Updating 5 watches on bug tracker 'savannah'
-    WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
-    (OOPS-...)
+    INFO 'Unsupported Bugtracker' error updating http://savannah.gnu.org/: SAVANE
     INFO 0 watches left to check on bug tracker 'savannah'
     INFO Time for this run...
 

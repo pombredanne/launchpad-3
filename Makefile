@@ -16,10 +16,22 @@ HERE:=$(shell pwd)
 
 LPCONFIG?=development
 
-JSFLAGS=
 ICING=lib/canonical/launchpad/icing
 LP_BUILT_JS_ROOT=${ICING}/build
 LAZR_BUILT_JS_ROOT=lazr-js/build
+
+ifeq ($(LPCONFIG), development)
+JS_BUILD := raw
+else
+JS_BUILD := min
+endif
+
+JS_YUI := $(shell utilities/yui-deps.py $(JS_BUILD:raw=))
+JS_LAZR := $(LAZR_BUILT_JS_ROOT)/lazr.js
+JS_OTHER := $(wildcard lib/canonical/launchpad/javascript/*/*.js)
+JS_LP := $(shell find lib/lp/*/javascript ! -path '*/tests/*' -name '*.js')
+JS_ALL := $(JS_YUI) $(JS_LAZR) $(JS_OTHER) $(JS_LP)
+JS_OUT := $(LP_BUILT_JS_ROOT)/launchpad.js
 
 MINS_TO_SHUTDOWN=15
 
@@ -76,14 +88,6 @@ doc:
 	$(MAKE) -C doc/ html
 
 # Run by PQM.
-check_merge: $(BUILDOUT_BIN)
-	[ `PYTHONPATH= bzr status -S database/schema/ | \
-		grep -v "\(^P\|pending\|security.cfg\|Makefile\|unautovacuumable\|_pythonpath.py\)" | wc -l` -eq 0 ]
-	${PY} lib/lp/tests/test_no_conflict_marker.py
-
-check_db_merge: $(PY)
-	${PY} lib/lp/tests/test_no_conflict_marker.py
-
 check_config: build
 	bin/test -m canonical.config.tests -vvt test_config
 
@@ -125,6 +129,9 @@ lint: ${PY}
 lint-verbose: ${PY}
 	@bash ./bin/lint.sh -v
 
+logs:
+	mkdir logs
+
 xxxreport: $(PY)
 	${PY} -t ./utilities/xxxreport.py -f csv -o xxx-report.csv ./
 
@@ -134,7 +141,7 @@ check-configs: $(PY)
 pagetests: build
 	env PYTHONPATH=$(PYTHONPATH) bin/test test_pages
 
-inplace: build
+inplace: build logs clean_logs
 	mkdir -p $(CODEHOSTING_ROOT)/mirrors
 	mkdir -p $(CODEHOSTING_ROOT)/config
 	mkdir -p /var/tmp/bzrsync
@@ -160,18 +167,21 @@ sprite_image:
 # launchpad.js roll-up files.  They fiddle with built-in functions!
 # See Bug 482340.
 jsbuild_lazr: bin/jsbuild
-	${SHHH} bin/jsbuild $(JSFLAGS) -b $(LAZR_BUILT_JS_ROOT) -x testing/ \
-	-c $(LAZR_BUILT_JS_ROOT)/yui
-
-jsbuild: jsbuild_lazr bin/jsbuild bin/jssize $(BUILDOUT_BIN)
 	${SHHH} bin/jsbuild \
-		$(JSFLAGS) \
-		-n launchpad \
-		-s lib/canonical/launchpad/javascript \
-		-b $(LP_BUILT_JS_ROOT) \
-		$(shell $(HERE)/utilities/yui-deps.py) \
-		$(shell $(PY) $(HERE)/utilities/lp-deps.py) \
-		lib/canonical/launchpad/icing/lazr/build/lazr.js
+	    --builddir $(LAZR_BUILT_JS_ROOT) \
+	    --exclude testing/ --filetype $(JS_BUILD) \
+	    --copy-yui-to $(LAZR_BUILT_JS_ROOT)/yui
+
+$(JS_YUI) $(JS_LAZR): jsbuild_lazr
+
+$(JS_OUT): $(JS_ALL)
+ifeq ($(JS_BUILD), min)
+	cat $^ | $(PY) -m jsmin > $@
+else
+	cat $^ > $@
+endif
+
+jsbuild: $(JS_OUT)
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
@@ -260,17 +270,17 @@ merge-proposal-jobs:
 	$(PY) cronscripts/merge-proposal-jobs.py -v
 
 run: check_schema inplace stop
-	$(RM) logs/thread*.request
 	bin/run -r librarian,google-webservice,memcached -i $(LPCONFIG)
 
-start-gdb: check_schema inplace stop support_files
-	$(RM) logs/thread*.request
+run.gdb:
+	echo 'run' > run.gdb
+
+start-gdb: check_schema inplace stop support_files run.gdb
 	nohup gdb -x run.gdb --args bin/run -i $(LPCONFIG) \
 		-r librarian,google-webservice
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
 run_all: check_schema inplace stop
-	$(RM) logs/thread*.request
 	bin/run -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached \
 	    -i $(LPCONFIG)
 
@@ -284,7 +294,6 @@ stop_codebrowse:
 	$(PY) scripts/stop-loggerhead.py
 
 run_codehosting: check_schema inplace stop
-	$(RM) logs/thread*.request
 	bin/run -r librarian,sftp,forker,codebrowse -i $(LPCONFIG)
 
 start_librarian: compile
@@ -349,7 +358,7 @@ rebuildfti:
 	$(PY) database/schema/fti.py -d launchpad_dev --force
 
 clean_js:
-	$(RM) $(LP_BUILT_JS_ROOT)/launchpad.js
+	$(RM) $(JS_OUT)
 	$(RM) -r $(LAZR_BUILT_JS_ROOT)
 
 clean_buildout:
@@ -360,7 +369,10 @@ clean_buildout:
 	$(RM) -r build
 	$(RM) _pythonpath.py
 
-clean: clean_js clean_buildout
+clean_logs:
+	$(RM) logs/thread*.request
+
+clean: clean_js clean_buildout clean_logs
 	$(MAKE) -C sourcecode/pygettextpo clean
 	# XXX gary 2009-11-16 bug 483782
 	# The pygettextpo Makefile should have this next line in it for its make
@@ -374,9 +386,8 @@ clean: clean_js clean_buildout
 	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' -o \
 	    -name '*.pt.py' \) \
 	    -print0 | xargs -r0 $(RM)
-	$(RM) logs/thread*.request
 	$(RM) -r lib/mailman
-	$(RM) -rf lib/canonical/launchpad/icing/build/*
+	$(RM) -rf $(LP_BUILT_JS_ROOT)/*
 	$(RM) -rf $(CODEHOSTING_ROOT)
 	$(RM) -rf $(APIDOC_DIR)
 	$(RM) -rf $(APIDOC_DIR).tmp
@@ -398,7 +409,6 @@ clean: clean_js clean_buildout
 	# /var/tmp/launchpad_mailqueue is created read-only on ec2test
 	# instances.
 	if [ -w /var/tmp/launchpad_mailqueue ]; then $(RM) -rf /var/tmp/launchpad_mailqueue; fi
-	$(RM) -f lp.sfood lp-clustered.sfood lp-clustered.dot lp-clustered.svg
 
 
 realclean: clean
@@ -453,33 +463,6 @@ ID: compile
 	# idutils ID file
 	bin/tags -i
 
-lp.sfood:
-	# Generate import dependency graph
-	sfood -i -u -I lib/sqlobject -I lib/schoolbell -I lib/devscripts \
-	-I lib/contrib -I lib/canonical/not-used lib/canonical \
-	lib/lp 2>/dev/null | grep -v contrib/ \
-	| grep -v sqlobject | grep -v BeautifulSoup | grep -v psycopg \
-	| grep -v schoolbell > lp.sfood.tmp
-	mv lp.sfood.tmp lp.sfood
-
-
-lp-clustered.sfood: lp.sfood lp-sfood-packages
-	# Cluster the import dependency graph
-	sfood-cluster -f lp-sfood-packages < lp.sfood > lp-clustered.sfood.tmp
-	mv lp-clustered.sfood.tmp lp-clustered.sfood
-
-
-lp-clustered.dot: lp-clustered.sfood
-	# Build the visual graph
-	sfood-graph -p < lp-clustered.sfood > lp-clustered.dot.tmp
-	mv lp-clustered.dot.tmp lp-clustered.dot
-
-
-lp-clustered.svg: lp-clustered.dot
-	# Render to svg
-	dot -Tsvg < lp-clustered.dot > lp-clustered.svg.tmp
-	mv lp-clustered.svg.tmp lp-clustered.svg
-
 PYDOCTOR = pydoctor
 PYDOCTOR_OPTIONS =
 
@@ -491,8 +474,8 @@ pydoctor:
 
 .PHONY: apidoc buildout_bin check doc tags TAGS zcmldocs realclean clean debug \
 	stop start run ftest_build ftest_inplace test_build test_inplace \
-	pagetests check check_merge schema default launchpad.pot \
-	check_merge_ui pull scan sync_branches reload-apache hosted_branches \
-	check_db_merge check_mailman check_config jsbuild jsbuild_lazr \
-	clean_js clean_buildout buildonce_eggs build_eggs sprite_css \
-	sprite_image css_combine compile check_schema pydoctor
+	pagetests check schema default launchpad.pot pull_branches \
+	scan_branches sync_branches reload-apache hosted_branches \
+	check_mailman check_config jsbuild jsbuild_lazr clean_js \
+	clean_buildout buildonce_eggs build_eggs sprite_css sprite_image \
+	css_combine compile check_schema pydoctor clean_logs \

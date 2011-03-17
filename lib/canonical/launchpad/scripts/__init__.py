@@ -71,7 +71,7 @@ def execute_zcml_for_scripts(use_web_security=False):
         scriptzcmlfilename = 'script.zcml'
 
     scriptzcmlfilename = os.path.abspath(
-        os.path.join(config.root, scriptzcmlfilename))
+        os.path.join(config.root, 'zcml', scriptzcmlfilename))
 
     from zope.configuration import xmlconfig
 

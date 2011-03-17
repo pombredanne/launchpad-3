@@ -144,7 +144,6 @@ from canonical.launchpad.searchbuilder import (
     any,
     NULL,
     )
-from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
     canonical_url,
     enabled_with_permission,
@@ -185,6 +184,7 @@ from lp.app.errors import (
     UnexpectedFormData,
     )
 from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.app.widgets.project import ProjectScopeWidget
 from lp.bugs.browser.bug import (
@@ -236,7 +236,6 @@ from lp.bugs.interfaces.bugtask import (
     IDistroSeriesBugTask,
     IFrontPageBugTaskSearch,
     INominationsReviewTableBatchNavigator,
-    INullBugTask,
     IPersonBugTaskSearch,
     IProductSeriesBugTask,
     IRemoveQuestionFromBugTaskForm,
@@ -490,18 +489,20 @@ class BugTargetTraversalMixin:
         """Return the IBugTask for this name in this context.
 
         If the bug has been reported, but not in this specific context, a
-        NullBugTask will be returned.
+        redirect to the default context will be returned.
 
-        Raises NotFoundError if no bug with the given name is found.
-
-        If the context type does provide IProduct, IDistribution,
-        IDistroSeries, ISourcePackage or IDistributionSourcePackage
-        a TypeError is raised.
+        Returns None if no bug with the given name is found, or the
+        bug is not accessible to the current user.
         """
         context = self.context
 
         # Raises NotFoundError if no bug is found
         bug = getUtility(IBugSet).getByNameOrID(name)
+
+        # Get out now if the user cannot view the bug. Continuing may
+        # reveal information about its context
+        if not check_permission('launchpad.View', bug):
+            return None
 
         # Loop through this bug's tasks to try and find the appropriate task
         # for this context. We always want to return a task, whether or not
@@ -509,63 +510,19 @@ class BugTargetTraversalMixin:
         # anonymous user is presented with a login screen at the correct URL,
         # rather than making it look as though this task was "not found",
         # because it was filtered out by privacy-aware code.
-        for bugtask in list(bug.bugtasks):
+        for bugtask in bug.bugtasks:
             if bugtask.target == context:
                 # Security proxy this object on the way out.
                 return getUtility(IBugTaskSet).get(bugtask.id)
 
-        # If we've come this far, it means that no actual task exists in this
-        # context, so we'll return a null bug task. This makes it possible to,
-        # for example, return a bug page for a context in which the bug hasn't
-        # yet been reported.
-        if IProduct.providedBy(context):
-            null_bugtask = bug.getNullBugTask(product=context)
-        elif IProductSeries.providedBy(context):
-            null_bugtask = bug.getNullBugTask(productseries=context)
-        elif IDistribution.providedBy(context):
-            null_bugtask = bug.getNullBugTask(distribution=context)
-        elif IDistributionSourcePackage.providedBy(context):
-            null_bugtask = bug.getNullBugTask(
-                distribution=context.distribution,
-                sourcepackagename=context.sourcepackagename)
-        elif IDistroSeries.providedBy(context):
-            null_bugtask = bug.getNullBugTask(distroseries=context)
-        elif ISourcePackage.providedBy(context):
-            null_bugtask = bug.getNullBugTask(
-                distroseries=context.distroseries,
-                sourcepackagename=context.sourcepackagename)
-        else:
-            raise TypeError(
-                "Unknown context type for bug task: %s" % repr(context))
-
-        return null_bugtask
+        # If we've come this far, there's no task for the requested
+        # context. Redirect to one that exists.
+        return self.redirectSubTree(canonical_url(bug.default_bugtask))
 
 
 class BugTaskNavigation(Navigation):
     """Navigation for the `IBugTask`."""
     usedfor = IBugTask
-
-    def traverse(self, name):
-        """Traverse the `IBugTask`."""
-        # Are we traversing to the view or edit status page of the
-        # bugtask? If so, and the task actually exists, return the
-        # appropriate page. If the task doesn't yet exist (i.e. it's a
-        # NullBugTask), then return a 404. In other words, the URL:
-        #
-        #   /products/foo/+bug/1/+viewstatus
-        #
-        # will return the +viewstatus page if bug 1 has actually been
-        # reported in "foo". If bug 1 has not yet been reported in "foo",
-        # a 404 will be returned.
-        if name not in ("+viewstatus", "+editstatus"):
-            # You're going in the wrong direction.
-            return None
-        if INullBugTask.providedBy(self.context):
-            # The bug has not been reported in this context.
-            return None
-        # Yes! The bug has been reported in this context.
-        return getMultiAdapter((self.context, self.request),
-            name=(name + "-page"))
 
     @stepthrough('attachments')
     def traverse_attachments(self, name):
@@ -650,16 +607,13 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             self.context = getUtility(ILaunchBag).bugtask
         else:
             self.context = context
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            [self.context.bug.ownerID], need_validity=True))
 
     @property
     def page_title(self):
-        bugtask = self.context
-        if INullBugTask.providedBy(bugtask):
-            heading = 'Bug #%s is not in %s' % (
-                bugtask.bug.id, bugtask.bugtargetdisplayname)
-        else:
-            heading = 'Bug #%s in %s' % (
-                bugtask.bug.id, bugtask.bugtargetdisplayname)
+        heading = 'Bug #%s in %s' % (
+            self.context.bug.id, self.context.bugtargetdisplayname)
         return smartquote('%s: "%s"') % (heading, self.context.bug.title)
 
     @property
@@ -695,12 +649,6 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
 
         # See render() for how this flag is used.
         self._redirecting_to_bug_list = False
-
-        # If the bug is not reported in this context, redirect
-        # to the default bug task.
-        if not self.isReportedInContext():
-            self.request.response.redirect(
-                canonical_url(self.context.bug.default_bugtask))
 
         self.bug_title_edit_widget = TextLineEditorWidget(
             bug, IBug['title'], "Edit this summary", 'h1',
@@ -738,69 +686,6 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             'This bug has been nominated to be fixed in %s.' %
                 series.bugtargetdisplayname)
         self.request.response.redirect(canonical_url(self.context))
-
-    def reportBugInContext(self):
-        """Report the bug affects the current context."""
-        fake_task = self.context
-        if self.request.form.get("reportbug"):
-            if self.isReportedInContext():
-                self.notices.append(
-                    "The bug is already reported in this context.")
-                return
-            # The user has requested that the bug be reported in this
-            # context.
-            if IUpstreamBugTask.providedBy(fake_task):
-                # Create a real upstream task in this context.
-                real_task = fake_task.bug.addTask(
-                    getUtility(ILaunchBag).user, fake_task.product)
-            elif IDistroBugTask.providedBy(fake_task):
-                # Create a real distro bug task in this context.
-                real_task = fake_task.bug.addTask(
-                    getUtility(ILaunchBag).user, fake_task.target)
-            elif IDistroSeriesBugTask.providedBy(fake_task):
-                self._nominateBug(fake_task.distroseries)
-                return
-            elif IProductSeriesBugTask.providedBy(fake_task):
-                self._nominateBug(fake_task.productseries)
-                return
-            else:
-                raise TypeError(
-                    "Unknown bug task type: %s" % repr(fake_task))
-
-            self.context = real_task
-
-            # Add an appropriate feedback message
-            self.notices.append("Thank you for your bug report.")
-
-    def isReportedInContext(self):
-        """Is the bug reported in this context? Returns True or False.
-
-        It considers a nominated bug to be reported.
-
-        This is particularly useful for views that may render a
-        NullBugTask.
-        """
-        if self.context.id is not None:
-            # Fast path for real bugtasks: they have a DB id.
-            return True
-        params = BugTaskSearchParams(user=self.user, bug=self.context.bug)
-        matching_bugtasks = self.context.target.searchTasks(params)
-        if self.context.productseries is not None:
-            nomination_target = self.context.productseries
-        elif self.context.distroseries is not None:
-            nomination_target = self.context.distroseries
-        else:
-            nomination_target = None
-        if nomination_target is not None:
-            try:
-                nomination = self.context.bug.getNominationFor(
-                    nomination_target)
-            except NotFoundError:
-                nomination = None
-        else:
-            nomination = None
-
-        return nomination is not None or matching_bugtasks.count() > 0
 
     def isSeriesTargetableContext(self):
         """Is the context something that supports Series targeting?
@@ -1232,10 +1117,10 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
     custom_widget('assignee', BugTaskAssigneeWidget)
 
     def initialize(self):
-        super(BugTaskEditView, self).initialize()
         # Initialize user_is_subscribed, if it hasn't already been set.
         if self.user_is_subscribed is None:
             self.user_is_subscribed = self.context.bug.isSubscribed(self.user)
+        super(BugTaskEditView, self).initialize()
 
     page_title = 'Edit status'
 
@@ -1742,17 +1627,12 @@ class BugTaskListingView(LaunchpadView):
         The assignee is included.
         """
         bugtask = self.context
-
-        if INullBugTask.providedBy(bugtask):
-            return u"Not reported in %s" % bugtask.bugtargetname
-
         assignee = bugtask.assignee
         status = bugtask.status
         status_title = status.title.capitalize()
 
         if not assignee:
             return status_title + ' (unassigned)'
-
         assignee_html = PersonFormatterAPI(assignee).link('+assignedbugs')
 
         if status in (BugTaskStatus.INVALID,
@@ -2721,10 +2601,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         """Return data used to render the milestone checkboxes."""
         return self.getWidgetValues("Milestone")
 
-    def getAdvancedSearchPageHeading(self):
-        """The header for the advanced search page."""
-        return "Bugs in %s: Advanced search" % self.context.displayname
-
     def getSimpleSearchURL(self):
         """Return a URL that can be used as an href to the simple search."""
         return canonical_url(self.context) + "/+bugs"
@@ -3122,14 +2998,25 @@ class CachedMilestoneSourceFactory:
 
     def __init__(self):
         self.vocabularies = {}
+        self.contexts = set()
 
     def __call__(self, context):
+        assert context in self.contexts, ("context %r not added to "
+            "self.contexts (%r)." % (context, self.contexts))
+        self._load()
         target = MilestoneVocabulary.getMilestoneTarget(context)
-        milestone_vocabulary = self.vocabularies.get(target)
-        if milestone_vocabulary is None:
-            milestone_vocabulary = MilestoneVocabulary(context)
+        return self.vocabularies[target]
+
+    def _load(self):
+        """Load all the vocabularies, once only."""
+        if self.vocabularies:
+            return
+        targets = set(
+            map(MilestoneVocabulary.getMilestoneTarget, self.contexts))
+        # TODO: instantiate for all targets at once.
+        for target in targets:
+            milestone_vocabulary = MilestoneVocabulary(target)
             self.vocabularies[target] = milestone_vocabulary
-        return milestone_vocabulary
 
 
 class BugTasksAndNominationsView(LaunchpadView):
@@ -3166,6 +3053,13 @@ class BugTasksAndNominationsView(LaunchpadView):
         distro_series_set = getUtility(IDistroSeriesSet)
         self.target_releases.update(
             distro_series_set.getCurrentSourceReleases(distro_series_packages))
+        ids = set()
+        for release_person_ids in map(attrgetter('creatorID', 'maintainerID'),
+            self.target_releases.values()):
+            ids.update(release_person_ids)
+        ids.discard(None)
+        if ids:
+            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(ids))
 
     def getTargetLinkTitle(self, target):
         """Return text to put as the title for the link to the target."""
@@ -3196,6 +3090,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         The view's is_conjoined_slave and is_converted_to_question
         attributes are set, as well as the edit view.
         """
+        self.cached_milestone_source.contexts.add(context)
         view = getMultiAdapter(
             (context, self.request),
             name='+bugtasks-and-nominations-table-row')
@@ -3203,6 +3098,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         view.is_conjoined_slave = is_conjoined_slave
         if IBugTask.providedBy(context):
             view.target_link_title = self.getTargetLinkTitle(context.target)
+        view.milestone_source = self.cached_milestone_source
 
         view.edit_view = getMultiAdapter(
             (context, self.request), name='+edit-form')
@@ -3246,6 +3142,13 @@ class BugTasksAndNominationsView(LaunchpadView):
         # nominations here, so we can pass it to getNominations() later
         # on.
         nominations = list(bug.getNominations())
+        # Eager load validity for all the persons we know of that will be
+        # displayed.
+        ids = set(map(attrgetter('ownerID'), nominations))
+        ids.discard(None)
+        if ids:
+            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                ids, need_validity=True))
 
         # Build a cache we can pass on to getConjoinedMaster(), so that
         # it doesn't have to iterate over all the bug tasks in each loop
@@ -3270,16 +3173,6 @@ class BugTasksAndNominationsView(LaunchpadView):
                     nomination, is_converted_to_question, False)
                 for nomination in target_nominations
                 if nomination.status != BugNominationStatus.APPROVED)
-
-        # Fill the ValidPersonOrTeamCache cache (using getValidPersons()),
-        # so that checking person.is_valid_person, when rendering the
-        # link, won't issue a DB query.
-        assignees = set(
-            bugtask.assignee for bugtask in all_bugtasks
-            if bugtask.assignee is not None)
-        reporters = set(
-            bugtask.owner for bugtask in all_bugtasks)
-        getUtility(IPersonSet).getValidPersons(assignees.union(reporters))
 
         return bugtask_and_nomination_views
 
@@ -3376,6 +3269,10 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
     is_converted_to_question = None
     target_link_title = None
     many_bugtasks = False
+
+    def __init__(self, context, request):
+        super(BugTaskTableRowView, self).__init__(context, request)
+        self.milestone_source = MilestoneVocabulary
 
     def canSeeTaskDetails(self):
         """Whether someone can see a task's status details.
@@ -3503,7 +3400,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
     @cachedproperty
     def _visible_milestones(self):
         """The visible milestones for this context."""
-        return MilestoneVocabulary(self.context).visible_milestones
+        return self.milestone_source(self.context).visible_milestones
 
     @property
     def milestone_widget_items(self):
@@ -3817,7 +3714,13 @@ class BugActivityItem:
     @property
     def change_summary(self):
         """Return a formatted summary of the change."""
-        return self.attribute
+        if self.target is not None:
+            # This is a bug task.  We want the attribute, as filtered out.
+            return self.attribute
+        else:
+            # Otherwise, the attribute is more normalized than what we want.
+            # Use "whatchanged," which sometimes is more descriptive.
+            return self.whatchanged
 
     @property
     def _formatted_tags_change(self):
@@ -3861,30 +3764,31 @@ class BugActivityItem:
             'old_value': self.oldvalue,
             'new_value': self.newvalue,
             }
-        if self.attribute == 'summary':
+        attribute = self.attribute
+        if attribute == 'title':
             # We display summary changes as a unified diff, replacing
             # \ns with <br />s so that the lines are separated properly.
             diff = cgi.escape(
                 get_unified_diff(self.oldvalue, self.newvalue, 72), True)
             return diff.replace("\n", "<br />")
 
-        elif self.attribute == 'description':
+        elif attribute == 'description':
             # Description changes can be quite long, so we just return
             # 'updated' rather than returning the whole new description
             # or a diff.
             return 'updated'
 
-        elif self.attribute == 'tags':
+        elif attribute == 'tags':
             # We special-case tags because we can work out what's been
             # added and what's been removed.
             return self._formatted_tags_change.replace('\n', '<br />')
 
-        elif self.attribute == 'assignee':
+        elif attribute == 'assignee':
             for key in return_dict:
                 if return_dict[key] is None:
                     return_dict[key] = 'nobody'
 
-        elif self.attribute == 'milestone':
+        elif attribute == 'milestone':
             for key in return_dict:
                 if return_dict[key] is None:
                     return_dict[key] = 'none'

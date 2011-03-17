@@ -24,10 +24,7 @@ __all__ = [
 import cgi
 from cStringIO import StringIO
 from datetime import datetime
-from operator import (
-    attrgetter,
-    itemgetter,
-    )
+from operator import itemgetter
 import urllib
 
 from lazr.restful.interface import copy_field
@@ -64,7 +61,6 @@ from canonical.launchpad.browser.feeds import (
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.searchbuilder import any
-from canonical.launchpad.validators.name import valid_name_pattern
 from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,
@@ -94,6 +90,7 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
     )
+from lp.app.validators.name import valid_name_pattern
 from lp.app.widgets.product import (
     GhostCheckBoxWidget,
     GhostWidget,
@@ -129,6 +126,9 @@ from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 from lp.bugs.model.bugtask import BugTask
+from lp.bugs.model.structuralsubscription import (
+    get_all_structural_subscriptions_for_target,
+    )
 from lp.bugs.utilities.filebugdataparser import FileBugData
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
 from lp.registry.browser.product import ProductConfigureBase
@@ -1560,3 +1560,18 @@ class BugsPatchesView(LaunchpadView):
     def proxiedUrlForLibraryFile(self, patch):
         """Return the proxied download URL for a Librarian file."""
         return ProxiedLibraryFileAlias(patch.libraryfile, patch).http_url
+
+
+class TargetSubscriptionView(LaunchpadView):
+    """A view to show all a person's structural subscriptions to a target."""
+
+    @property
+    def label(self):
+        return "Your subscriptions to %s" % (self.context.displayname,)
+
+    page_title = label
+
+    @property
+    def structural_subscriptions(self):
+        return get_all_structural_subscriptions_for_target(
+            self.context, self.user)

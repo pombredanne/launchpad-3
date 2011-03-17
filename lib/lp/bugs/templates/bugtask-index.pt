@@ -72,7 +72,6 @@
       <div id="tags-autocomplete">
        <div id="tags-autocomplete-content"></div>
       </div>
-      <tal:block condition="view/reportBugInContext" />
 
       <p class="informational message"
          tal:condition="view/notices"
@@ -120,7 +119,7 @@
         <tal:widget replace="structure view/bug_description_html"/>
 
         <div style="margin:-20px 0 20px 5px" class="clearfix">
-          <span tal:condition="view/wasDescriptionModified" class="discreet"
+          <span tal:condition="view/wasDescriptionModified"
           >See <a href="comments/0">original description</a></span>
         </div>
 

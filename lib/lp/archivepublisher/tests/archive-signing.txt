@@ -65,7 +65,7 @@ why it's skipped in the getPPAsPendingSigningKey() results.
 'No Privileges' PPA will be considered for signing_key creation when
 we copy an arbitrary source into it.
 
-    >>> a_source = cprov.archive.getPublishedSources()[0]
+    >>> a_source = cprov.archive.getPublishedSources().first()
     >>> copied_sources = a_source.copyTo(
     ...     a_source.distroseries, a_source.pocket, no_priv.archive)
 
