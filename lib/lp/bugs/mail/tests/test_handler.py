@@ -9,11 +9,16 @@ import email
 import time
 
 import transaction
+from zope.security.management import (
+    getSecurityPolicy,
+    setSecurityPolicy,
+    )
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import import_secret_test_key
 from canonical.launchpad.mail.commands import BugEmailCommand
+from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -32,7 +37,19 @@ from lp.testing.mail_helpers import pop_notifications
 class TestMaloneHandler(TestCaseWithFactory):
     """Test that the Malone/bugs handler works."""
 
+    # LaunchpadFunctionalLayer has the LaunchpadSecurityPolicy that we
+    # need, but we need to be able to switch DB users.S o we have to use
+    # LaunchpadZopelessLayer and set security up manually.
     layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestMaloneHandler, self).setUp()
+        self._old_policy = getSecurityPolicy()
+        setSecurityPolicy(LaunchpadSecurityPolicy)
+
+    def tearDown(self):
+        super(TestMaloneHandler, self).tearDown()
+        setSecurityPolicy(self._old_policy)
 
     def test_getCommandsEmpty(self):
         """getCommands returns an empty list for messages with no command."""
