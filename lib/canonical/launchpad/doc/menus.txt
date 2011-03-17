@@ -363,8 +363,8 @@ A menu item can be marked as hidden even though it is enabled.
 
     >>> link = Link('z', 'text', 'summary', icon='icon', hidden=True)
     >>> print ILink(link).render() #doctest: +NORMALIZE_WHITESPACE
-    <a class="menu-link-None sprite icon" title="summary"
-       style="line-height: 20px;display: none">text</a>
+    <a class="menu-link-None sprite icon invisible-link" title="summary"
+       style="line-height: 20px;">text</a>
 
 
 == How do we tell which link from a facetmenu is the selected one? ==
