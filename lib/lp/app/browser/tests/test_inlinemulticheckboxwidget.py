@@ -32,70 +32,51 @@ class TestInlineMultiCheckboxWidget(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def getWidget(self, **kwargs):
+    def _getWidget(self, **kwargs):
 
         class ITest(Interface):
             test_field = List(
                 Choice(vocabulary='BuildableDistroSeries'))
         return InlineMultiCheckboxWidget(
-                    None, ITest['test_field'], "Label", **kwargs)
+            None, ITest['test_field'], "Label", edit_url='fake', **kwargs)
 
-    def test_items_for_field_vocabulary(self):
-        widget = self.getWidget(attribute_type="reference")
+    def _makeExpectedItems(self, vocab, selected=list(), value_fn=None):
+        if value_fn is None:
+            value_fn = lambda item: item.value.name
         expected_items = []
-        vocab = getVocabularyRegistry().get(None, 'BuildableDistroSeries')
         style = 'font-weight: normal;'
         for item in vocab:
-            save_value = canonical_url(item.value, force_local_path=True)
             new_item = {
                 'name': item.title,
                 'token': item.token,
                 'style': style,
-                'checked': False,
-                'value': save_value}
+                'checked': (item.value in selected),
+                'value': value_fn(item)}
             expected_items.append(new_item)
+        return expected_items
+
+    def test_items_for_field_vocabulary(self):
+        widget = self._getWidget(attribute_type="reference")
+        vocab = getVocabularyRegistry().get(None, 'BuildableDistroSeries')
+        value_fn = lambda item: canonical_url(
+            item.value, force_local_path=True)
+        expected_items = self._makeExpectedItems(vocab, value_fn=value_fn)
         self.assertEqual(simplejson.dumps(expected_items), widget.json_items)
 
     def test_items_for_custom_vocabulary(self):
-        widget = self.getWidget(vocabulary=Alphabet)
-        expected_items = []
-        style = 'font-weight: normal;'
-        for item in Alphabet:
-            new_item = {
-                'name': item.title,
-                'token': item.token,
-                'style': style,
-                'checked': False,
-                'value': item.value.name}
-            expected_items.append(new_item)
+        widget = self._getWidget(vocabulary=Alphabet)
+        expected_items = self._makeExpectedItems(Alphabet)
         self.assertEqual(simplejson.dumps(expected_items), widget.json_items)
 
     def test_items_for_custom_vocabulary_name(self):
-        widget = self.getWidget(vocabulary="CountryName")
-        expected_items = []
-        style = 'font-weight: normal;'
+        widget = self._getWidget(vocabulary="CountryName")
         vocab = getVocabularyRegistry().get(None, "CountryName")
-        for item in vocab:
-            new_item = {
-                'name': item.title,
-                'token': item.token,
-                'style': style,
-                'checked': False,
-                'value': item.value.name}
-            expected_items.append(new_item)
+        expected_items = self._makeExpectedItems(vocab)
         self.assertEqual(simplejson.dumps(expected_items), widget.json_items)
 
     def test_selected_items_checked(self):
-        widget = self.getWidget(
+        widget = self._getWidget(
             vocabulary=Alphabet, selected_items=[Alphabet.A])
-        expected_items = []
-        style = 'font-weight: normal;'
-        for item in Alphabet:
-            new_item = {
-                'name': item.title,
-                'token': item.token,
-                'style': style,
-                'checked': item.value == Alphabet.A,
-                'value': item.value.name}
-            expected_items.append(new_item)
+        expected_items = self._makeExpectedItems(
+            Alphabet, selected=[Alphabet.A])
         self.assertEqual(simplejson.dumps(expected_items), widget.json_items)

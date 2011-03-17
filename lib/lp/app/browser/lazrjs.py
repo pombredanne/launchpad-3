@@ -360,7 +360,7 @@ class InlineMultiCheckboxWidget(WidgetBase):
         self.label_close_tag = "</%s>" % label_tag
         self.items = selected_items
         self.items_open_tag = ("<%s id='%s'>" %
-                                (items_tag, self.content_box_id+"-items"))
+            (items_tag, self.content_box_id+"-items"))
         self.items_close_tag = "</%s>" % items_tag
         self.linkify_items = linkify_items
 
@@ -399,7 +399,7 @@ class InlineMultiCheckboxWidget(WidgetBase):
         self.json_attribute_type = simplejson.dumps(attribute_type)
         self.json_items = simplejson.dumps(items)
         self.json_description = simplejson.dumps(
-                                    self.exported_field.description)
+            self.exported_field.description)
 
     @property
     def config(self):
