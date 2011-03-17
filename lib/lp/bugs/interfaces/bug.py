@@ -489,9 +489,17 @@ class IBug(IPrivacy, IHasLinkedBranches):
             with a BugNotificationLevel of NOTHING.
         """
 
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=False))
+    @call_with(muted_by=REQUEST_USER)
+    @export_write_operation()
     def mute(person, muted_by):
         """Add a muted subscription for `person`."""
 
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=False))
+    @call_with(unmuted_by=REQUEST_USER)
+    @export_write_operation()
     def unmute(person, unmuted_by):
         """Remove a muted subscription for `person`."""
 
