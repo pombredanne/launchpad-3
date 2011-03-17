@@ -141,7 +141,7 @@ need to log in here because the event object is security proxied.
     >>> login("foo.bar@canonical.com")
 
     >>> bug.addTask(owner=params.owner, target=jukebox)
-    <BugTask at ...>
+    <BugTask ...>
 
     >>> from zope.event import notify
     >>> notify(event)

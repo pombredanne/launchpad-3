@@ -1290,6 +1290,9 @@ class BugTask(SQLBase, BugTaskMixin):
                 user == celebs.bug_watch_updater or
                 user == celebs.bug_importer)
 
+    def __repr__(self):
+        return "<BugTask for bug %s on %r>" % (self.bugID, self.target)
+
 
 def search_value_to_where_condition(search_value):
     """Convert a search value to a WHERE condition.

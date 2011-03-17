@@ -1152,7 +1152,7 @@ targetnamecache updated.
     ...     distribution=ubuntu,
     ...     sourcepackagename=(
     ...         sourcepackagenameset.queryByName('mozilla-firefox')))
-    <BugTask at ...>
+    <BugTask ...>
 
     >>> new_bug.addNomination(mark, ubuntu.currentseries).approve(mark)
 
@@ -1168,7 +1168,7 @@ The first task has been created and successfully nominated to Hoary.
     ...     distribution=ubuntu,
     ...     sourcepackagename=(
     ...         sourcepackagenameset.queryByName('alsa-utils')))
-    <BugTask at ...>
+    <BugTask ...>
 
 The second task has been created and has also been successfully
 nominated to Hoary.
