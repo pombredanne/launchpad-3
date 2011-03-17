@@ -5,12 +5,25 @@
     xmlns:i18n="http://xml.zope.org/namespaces/i18n"
     metal:use-macro="view/macro:page/main_only"
     i18n:domain="launchpad">
+  <metal:head-epilogue fill-slot="head_epilogue">
+    <style type="text/css">
+      .yui3-js-enabled .javascript-disabled { display: none; }
+    </style>
+  </metal:head-epilogue>
   <body>
     <div metal:fill-slot="main">
       <div class="top-portlet">
         This page allows you to initialize a distribution series.
       </div>
-      <div metal:use-macro="context/@@launchpad_form/form" />
+      <p class="error message javascript-disabled">
+        Javascript is required to use this page. Please enable
+        Javascript in your browser and reload this page. Alternatively,
+        please use the <code>deriveDistroSeries</code> API call via the
+        web service.
+      </p>
+      <div class="unseen" id="init-series-form-container">
+        <metal:form use-macro="context/@@launchpad_form/form" />
+      </div>
       <script type="text/javascript">
         LPS.use('lp.registry.distroseries.initseries', function(Y) {
           Y.on('domready', Y.lp.registry.distroseries.initseries.setup);
