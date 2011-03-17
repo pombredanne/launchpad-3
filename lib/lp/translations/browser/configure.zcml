@@ -589,13 +589,6 @@
         layer="lp.translations.publisher.TranslationsLayer"/>
     <browser:page
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-        name="+sharing"
-        class="lp.translations.browser.hastranslationimports.HasTranslationImportsView"
-        permission="zope.Public"
-        template="../templates/translation_sharing_config.pt"
-        layer="lp.translations.publisher.TranslationsLayer"/>
-    <browser:page
-        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         name="+export"
         layer="lp.translations.publisher.TranslationsLayer"
         permission="launchpad.ExpensiveRequest"

@@ -7,6 +7,17 @@
   i18n:domain="launchpad"
 >
   <body>
+    <metal:block fill-slot="head_epilogue">
+      <script type="text/javascript">
+        LPS.use('test', 'console',
+          'lp.translations.sourcepackage_sharing_details', function(Y) {
+          Y.on('domready', function() {
+              Y.lp.translations.sourcepackage_sharing_details.prepare(
+                LP.cache['context']);
+          });
+        });
+      </script>
+    </metal:block>
     <div metal:fill-slot="heading">
       <h1>Translation sharing details</h1>
     </div>
@@ -34,20 +45,24 @@
               <a tal:replace="structure context/menu:overview/edit_packaging/fmt:icon" />
               <a tal:replace="structure context/menu:overview/remove_packaging/fmt:icon" />
             </li>
-            <li tal:attributes="class view/no_item_class"
-                tal:condition="not:view/has_upstream_branch">
+            <ul id="branch">
+            <li tal:attributes="class view/branch_incomplete_class">
               No source branch exists for the upstream series.
+              <span class="pickbranch">
               <a tal:condition="view/is_packaging_configured"
-                 tal:replace="structure context/productseries/menu:overview/set_branch/fmt:icon" />
+                tal:replace="structure context/productseries/menu:overview/set_branch/fmt:icon" />
+              </span>
             </li>
-            <li class="sprite yes"
-                tal:condition="view/has_upstream_branch">
-              Upstream source branch is
-              <a tal:replace="structure context/productseries/branch/fmt:link">
-                lp:gimp</a>.
+            <li tal:attributes="class view/branch_complete_class">
+            Upstream source branch is
+              <span class="link"><a tal:replace="structure view/branch_link">
+                  lp:gimp</a></span>.
+              <span class="pickbranch2">
               <a tal:condition="view/is_packaging_configured"
-                 tal:replace="structure context/productseries/menu:overview/set_branch/fmt:icon" />
-            </li>
+                tal:replace="structure context/productseries/menu:overview/set_branch/fmt:icon" />
+              </span>
+                </li>
+            </ul>
             <li tal:attributes="class view/no_item_class"
                 tal:condition="not:view/is_upstream_translations_enabled">
               Translations are not enabled on the upstream series.

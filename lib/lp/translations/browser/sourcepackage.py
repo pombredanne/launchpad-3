@@ -11,6 +11,8 @@ __all__ = [
     'SourcePackageTranslationSharingStatus',
     ]
 
+import cgi
+
 from zope.publisher.interfaces import NotFound
 
 from canonical.launchpad.webapp import (
@@ -22,6 +24,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.app.browser.tales import BranchFormatterAPI
 from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.features import getFeatureFlag
@@ -142,6 +145,34 @@ class SourcePackageTranslationSharingDetailsView(
                     view_name="+imports"))))
 
     @property
+    def branch_link(self):
+        if self.has_upstream_branch:
+            # Normally should use BranchFormatterAPI(branch).link(None), but
+            # on this page, that information is redundant.
+            title = cgi.escape(self.upstream_branch.unique_name)
+            url = canonical_url(self.upstream_branch)
+        else:
+            title = ''
+            url = '#'
+        return '<a class="sprite branch" href="%s">%s</a>' % (url, title)
+
+    @property
+    def branch_incomplete_class(self):
+        classes = ['incomplete', 'sprite', 'no']
+        if self.has_upstream_branch:
+            classes.append('unseen')
+        if not self.is_packaging_configured:
+            classes.append("lowlight")
+        return ' '.join(classes)
+
+    @property
+    def branch_complete_class(self):
+        classes = ['complete', 'sprite', 'yes']
+        if not self.has_upstream_branch:
+            classes.append('unseen')
+        return ' '.join(classes)
+
+    @property
     def is_packaging_configured(self):
         """Is a packaging link defined for this branch?"""
         return self.context.direct_packaging is not None
@@ -156,11 +187,15 @@ class SourcePackageTranslationSharingDetailsView(
             return css_class + " lowlight"
 
     @property
+    def upstream_branch(self):
+        if not self.is_packaging_configured:
+            return None
+        return self.context.direct_packaging.productseries.branch
+
+    @property
     def has_upstream_branch(self):
         """Does the upstream series have a source code branch?"""
-        if not self.is_packaging_configured:
-            return False
-        return self.context.direct_packaging.productseries.branch is not None
+        return self.upstream_branch is not None
 
     @property
     def is_upstream_translations_enabled(self):
