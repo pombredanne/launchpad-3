@@ -132,11 +132,8 @@ class TestMaloneHandler(TestCaseWithFactory):
         transaction.commit()
         LaunchpadZopelessLayer.switchDbUser(user)
 
-    def test_new_bug_big_body(self):
-        # If a bug email is sent with an excessively large body, we email the
-        # user back and ask that they use attachments instead.
-        big_body_text = 'This is really big.' * 10000
-        mail = self.factory.makeSignedMessage(body=big_body_text)
+    def getFailureForMessage(self, to, body=None):
+        mail = self.factory.makeSignedMessage(body=body)
         self.switchDbUser(config.processmail.dbuser)
         # Rejection email goes to the preferred email of the current user.
         # The current user is extracted from the current interaction, which is
@@ -144,16 +141,21 @@ class TestMaloneHandler(TestCaseWithFactory):
         # real GPG signed emails, which we are faking here.
         login(mail['from'])
         handler = MaloneHandler()
-        self.assertTrue(handler.process(mail,
-            'new@bugs.launchpad.dev', None))
+        self.assertTrue(handler.process(mail, to, None))
         notification = pop_notifications()[0]
         self.assertEqual('Submit Request Failure', notification['subject'])
         # The returned message is a multipart message, the first part is
         # the message, and the second is the original message.
         message, original = notification.get_payload()
-        self.assertIn(
-            "The description is too long.",
-            message.get_payload(decode=True))
+        return message.get_payload(decode=True)
+
+    def test_new_bug_big_body(self):
+        # If a bug email is sent with an excessively large body, we email the
+        # user back and ask that they use attachments instead.
+        big_body_text = 'This is really big.' * 10000
+        message = self.getFailureForMessage(
+            'new@bugs.launchpad.dev', big_body_text)
+        self.assertIn("The description is too long.", message)
 
 
 class FakeSignature:
