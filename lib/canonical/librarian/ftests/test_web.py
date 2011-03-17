@@ -159,8 +159,10 @@ class LibrarianWebTestCase(unittest.TestCase):
         old_url = uri_path_replace(url, str(aid), '42/%d' % aid)
         self.assertEqual(urlopen(old_url).read(), 'sample')
 
-        # If the content id is not an integer, a 404 is raised
+        # If the content and alias IDs are not integers, a 404 is raised
         old_url = uri_path_replace(url, str(aid), 'foo/%d' % aid)
+        self.require404(old_url)
+        old_url = uri_path_replace(url, str(aid), '%d/foo' % aid)
         self.require404(old_url)
 
     def test_404(self):
