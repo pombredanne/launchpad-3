@@ -4,6 +4,7 @@
 """Returns rules defining which features are active"""
 
 __all__ = [
+    'DuplicatePriorityError',
     'FeatureRuleSource',
     'NullFeatureRuleSource',
     'StormFeatureRuleSource',
@@ -12,7 +13,10 @@ __all__ = [
 __metaclass__ = type
 
 import re
-from collections import namedtuple
+from collections import (
+    defaultdict,
+    namedtuple,
+    )
 
 from storm.locals import Desc
 
@@ -25,6 +29,17 @@ from lp.services.features.model import (
 
 # A convenient mapping for a feature flag rule in the database.
 Rule = namedtuple("Rule", "flag scope priority value")
+
+
+class DuplicatePriorityError(Exception):
+
+    def __init__(self, flag, priority):
+        self.flag = flag
+        self.priority = priority
+
+    def __str__(self):
+        return 'duplicate priority for flag "%s": %d' % (
+            self.flag, self.priority)
 
 
 class FeatureRuleSource(object):
@@ -78,11 +93,17 @@ class FeatureRuleSource(object):
         errors immediately.
         """
         r = []
+        seen_priorities = defaultdict(set)
         for line in text_form.splitlines():
             if line.strip() == '':
                 continue
             flag, scope, priority_str, value = re.split('[ \t]+', line, 3)
-            r.append((flag, scope, int(priority_str), unicode(value)))
+            priority = int(priority_str)
+            r.append((flag, scope, priority, unicode(value)))
+            if priority in seen_priorities[flag]:
+                raise DuplicatePriorityError(flag, priority)
+            seen_priorities[flag].add(priority)
+
         return r
 
 
@@ -103,7 +124,7 @@ class StormFeatureRuleSource(FeatureRuleSource):
             # have no rules).
             adapter.get_request_remaining_seconds()
         except adapter.RequestExpired:
-            return 
+            return
         store = getFeatureStore()
         rs = (store
                 .find(FeatureFlag)
