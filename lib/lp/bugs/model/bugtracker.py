@@ -155,7 +155,7 @@ def make_bugtracker_name(uri):
     else:
         base_name = base_uri.host
 
-    return 'auto-%s' % base_name
+    return 'auto-%s' % sanitize_name(base_name)
 
 
 def make_bugtracker_title(uri):

@@ -11,8 +11,12 @@ A bug can be nominated for a distribution release.
     >>> dsp = factory.makeDistributionSourcePackage(distribution=poseidon)
     >>> series = factory.makeDistroSeries(distribution=poseidon,
     ...     name='aqua')
+    >>> ignore = factory.makeSourcePackagePublishingHistory(
+    ...     distroseries=series, sourcepackagename=dsp.sourcepackagename)
     >>> series = factory.makeDistroSeries(distribution=poseidon,
     ...     name='hydro')
+    >>> ignore = factory.makeSourcePackagePublishingHistory(
+    ...     distroseries=series, sourcepackagename=dsp.sourcepackagename)
     >>> bug_task = factory.makeBugTask(target=dsp)
     >>> nominater_browser = setupBrowser(
     ...     auth='Basic %s:g00dpassword' %

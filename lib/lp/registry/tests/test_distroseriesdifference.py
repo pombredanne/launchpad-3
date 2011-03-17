@@ -474,7 +474,8 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertIs(None, ds_diff.base_source_pub)
 
     def test_base_source_pub(self):
-        # The publishing in the derived series with base_version is returned.
+        # The publication in the parent series with the base version is
+        # returned.
         derived_changelog = self.factory.makeChangelog(
             versions=['1.0', '1.2'])
         parent_changelog = self.factory.makeChangelog(
@@ -493,7 +494,8 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         base_pub = ds_diff.base_source_pub
         self.assertEqual('1.0', base_pub.source_package_version)
-        self.assertEqual(ds_diff.derived_series, base_pub.distroseries)
+        self.assertEqual(
+            ds_diff.derived_series.parent_series, base_pub.distroseries)
 
     def test_base_source_pub_not_published(self):
         # If the base version isn't published, the base version is
@@ -514,6 +516,37 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             })
         self.assertEqual('1.0', ds_diff.base_version)
         self.assertIs(None, ds_diff.base_source_pub)
+
+    def test_base_source_pub_only_in_child(self):
+        # If the base version is only published in the child distroseries,
+        # the base source publication is still located and returned.
+        derived_changelog = self.factory.makeChangelog(
+            versions=['1.0', '1.2'])
+        parent_changelog = self.factory.makeChangelog(
+            versions=['1.0', '1.3'])
+        transaction.commit() # Yay, librarian.
+
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            versions={
+                'derived': '1.2',
+                'parent': '1.3',
+            },
+            changelogs={
+                'derived': derived_changelog,
+                'parent': parent_changelog,
+            })
+
+        # Passing in a base version to makeDistroSeriesDifference() creates
+        # it in both distroseries, which we don't want, so we need to do it
+        # ourselves.
+        spr = self.factory.makeSourcePackageRelease(
+            sourcepackagename=ds_diff.source_package_name, version='1.0')
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=ds_diff.derived_series, sourcepackagerelease=spr,
+            status=PackagePublishingStatus.SUPERSEDED)
+        self.assertEqual('1.0', ds_diff.base_version)
+        self.assertEqual(
+            ds_diff.derived_series, ds_diff.base_source_pub.distroseries)
 
     def test_requestPackageDiffs(self):
         # IPackageDiffs are created for the corresponding versions.
