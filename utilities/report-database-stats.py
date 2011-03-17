@@ -15,6 +15,7 @@ from textwrap import dedent
 from canonical.database.sqlbase import connect, sqlvalues
 from canonical.launchpad.scripts import db_options
 from lp.scripts.helpers import LPOptionParser
+from lp.services.database.namedrow import named_fetchall
 
 
 class Table:
@@ -152,6 +153,48 @@ def get_cpu_stats(cur, options):
     return cpu_stats
 
 
+def get_bloat_stats(cur, options, kind):
+    # Return information on bloated tables and indexes, as of the end of
+    # the requested time period.
+    params = {
+        'where': get_where_clause(options),
+        'bloat': options.bloat,
+        'min_bloat': options.min_bloat,
+        'kind': kind,
+        }
+    query = dedent("""
+        SELECT * FROM (
+            SELECT
+                namespace,
+                name,
+                sub_namespace,
+                sub_name,
+                last_value(table_len) OVER t AS table_len,
+                pg_size_pretty(last_value(table_len) OVER t) AS table_size,
+                pg_size_pretty(last_value(dead_tuple_len + free_space) OVER t)
+                    AS bloat_size,
+                first_value(dead_tuple_percent + free_percent) OVER t
+                    AS start_bloat_percent,
+                last_value(dead_tuple_percent + free_percent) OVER t
+                    AS end_bloat_percent
+            FROM DatabaseDiskUtilization
+            WHERE
+                %(where)s
+                AND kind = %%(kind)s
+            WINDOW t AS (
+                PARTITION BY sort ORDER BY date_created
+                ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING)
+            ) AS whatever
+        WHERE
+            table_len >= %(min_bloat)s
+            AND end_bloat_percent >= %(bloat)s
+        ORDER BY bloat_size DESC
+        """ % params)
+    cur.execute(query, params)
+    bloat_stats = named_fetchall(cur)
+    return bloat_stats
+
+
 def main():
     parser = LPOptionParser()
     db_options(parser)
@@ -174,6 +217,14 @@ def main():
         "-n", "--limit", dest="limit", type=int,
         default=15, metavar="NUM",
         help="Display the top NUM items in each category.")
+    parser.add_option(
+        "-b", "--bloat", dest="bloat", type=float,
+        default=40, metavar="BLOAT",
+        help="Display tables and indexes bloated by more than BLOAT%.")
+    parser.add_option(
+        "--min-bloat", dest="min_bloat", type=int,
+        default=10000000, metavar="BLOAT",
+        help="Don't report tables bloated less than BLOAT bytes.")
     parser.set_defaults(dbuser="database_stats_report")
     options, args = parser.parse_args()
 
@@ -221,6 +272,30 @@ def main():
     print
     for cpu, username in sorted(user_cpu, reverse=True)[:options.limit]:
         print "%40s || %10.2f%% CPU" % (username, float(cpu) / 10)
+
+    print "== Most Bloated Tables =="
+    print
+    for bloated_table in get_bloat_stats(cur, options, 'r'):
+        print "%s.%s %s%% (%s of %s +%s%%)" % (
+            bloated_table.namespace,
+            bloated_table.name,
+            bloated_table.end_bloat_percent,
+            bloated_table.bloat_size,
+            bloated_table.table_size,
+            bloated_table.end_bloat_percent
+                - bloated_table.start_bloat_percent)
+
+    print "== Most Bloated Indexes =="
+    print
+    for bloated_index in get_bloat_stats(cur, options, 'i'):
+        print "%s.%s %s%% (%s of %s +%s%%)" % (
+            bloated_index.sub_namespace,
+            bloated_index.sub_name,
+            bloated_index.end_bloat_percent,
+            bloated_index.bloat_size,
+            bloated_index.table_size,
+            bloated_index.end_bloat_percent
+                - bloated_index.start_bloat_percent)
 
 
 if __name__ == '__main__':

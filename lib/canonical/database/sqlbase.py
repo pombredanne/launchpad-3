@@ -185,7 +185,8 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         """
         from canonical.launchpad.interfaces.lpstorm import IMasterStore
         # Make it simple to write dumb-invalidators - initialised
-        # _cached_properties to a valid list rather than just-in-time creation.
+        # _cached_properties to a valid list rather than just-in-time
+        # creation.
         self._cached_properties = []
         store = IMasterStore(self.__class__)
 
@@ -643,7 +644,7 @@ def quote_identifier(identifier):
     >>> print quoteIdentifier('\\"')
     "\"""
     '''
-    return '"%s"' % identifier.replace('"','""')
+    return '"%s"' % identifier.replace('"', '""')
 
 
 quoteIdentifier = quote_identifier # Backwards compatibility for now.
@@ -743,6 +744,7 @@ def flush_database_caches():
 
 def block_implicit_flushes(func):
     """A decorator that blocks implicit flushes on the main store."""
+
     def block_implicit_flushes_decorator(*args, **kwargs):
         from canonical.launchpad.webapp.interfaces import DisallowedStore
         try:
@@ -759,6 +761,7 @@ def block_implicit_flushes(func):
 
 def reset_store(func):
     """Function decorator that resets the main store."""
+
     def reset_store_decorator(*args, **kwargs):
         try:
             return func(*args, **kwargs)
@@ -851,6 +854,10 @@ class cursor:
     @property
     def rowcount(self):
         return self._result._raw_cursor.rowcount
+
+    @property
+    def description(self):
+        return self._result._raw_cursor.description
 
     def fetchone(self):
         assert self._result is not None, "No results to fetch"
