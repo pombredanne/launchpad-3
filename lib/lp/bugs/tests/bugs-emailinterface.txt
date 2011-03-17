@@ -193,6 +193,21 @@ package:
 
 It's possible to file a bug on more than product/package at once:
 
+    # Make sane data to play this test.
+    >>> from canonical.config import config
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+    >>> evolution_dsp = debian.getSourcePackage('evolution')
+    >>> ignore = factory.makeSourcePackagePublishingHistory(
+    ...     distroseries=debian.currentseries,
+    ...     sourcepackagename=evolution_dsp.sourcepackagename)
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
+
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: new@bugs.canonical.com
     ... Date: Fri Jun 17 10:20:23 BST 2005
@@ -216,7 +231,6 @@ It's possible to file a bug on more than product/package at once:
     firefox
     evolution (Debian)
     mozilla-firefox (Debian)
-
 
 If the subject is folded (i.e spans more than one line), it will be
 unfolded before the bug subject is assigned.
@@ -1235,7 +1249,6 @@ Targeting an existing nomination won't create another nomination.
 If Sample Person would be the Ubuntu driver, he'll be able to target
 bugs directly to series.
 
-    >>> from canonical.config import config
     >>> from lp.testing.dbuser import lp_dbuser
     >>> from lp.registry.interfaces.distribution import IDistributionSet
 

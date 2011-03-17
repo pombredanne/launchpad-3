@@ -637,25 +637,11 @@
             class="lp.bugs.browser.bugalsoaffects.BugAlsoAffectsDistroMetaView"
             permission="launchpad.AnyPerson"/>
         <browser:page
-            name="+editstatus-page"
-            for="lp.bugs.interfaces.bugtask.IUpstreamBugTask"
-            class="lp.bugs.browser.bugtask.BugTaskEditView"
-            permission="launchpad.Edit"
-            template="../templates/bugtask-edit.pt">
-                </browser:page>
-        <browser:page
             name="+edit-form"
             for="lp.bugs.interfaces.bugtask.IUpstreamBugTask"
             class="lp.bugs.browser.bugtask.BugTaskEditView"
             permission="launchpad.Edit"
             template="../templates/bugtask-edit-form.pt">
-                </browser:page>
-        <browser:page
-            name="+editstatus-page"
-            for="lp.bugs.interfaces.bugtask.IProductSeriesBugTask"
-            class="lp.bugs.browser.bugtask.BugTaskEditView"
-            permission="launchpad.Edit"
-            template="../templates/bugtask-edit.pt">
                 </browser:page>
         <browser:page
             name="+edit-form"
@@ -665,7 +651,13 @@
             template="../templates/bugtask-edit-form.pt">
                 </browser:page>
         <browser:page
-            name="+viewstatus-page"
+            name="+editstatus"
+            for="lp.bugs.interfaces.bugtask.IBugTask"
+            class="lp.bugs.browser.bugtask.BugTaskEditView"
+            permission="launchpad.Edit"
+            template="../templates/bugtask-edit.pt"/>
+        <browser:page
+            name="+viewstatus"
             for="lp.bugs.interfaces.bugtask.IBugTask"
             class="lp.bugs.browser.bugtask.BugTaskStatusView"
             permission="launchpad.View"
@@ -680,13 +672,6 @@
             for="lp.bugs.interfaces.bugtask.IDistroBugTask"
             name="+index"/>
         <browser:page
-            name="+editstatus-page"
-            for="lp.bugs.interfaces.bugtask.IDistroBugTask"
-            class="lp.bugs.browser.bugtask.BugTaskEditView"
-            permission="launchpad.Edit"
-            template="../templates/bugtask-edit.pt">
-                </browser:page>
-        <browser:page
             name="+edit-form"
             for="lp.bugs.interfaces.bugtask.IDistroBugTask"
             class="lp.bugs.browser.bugtask.BugTaskEditView"
@@ -696,13 +681,6 @@
         <browser:defaultView
             for="lp.bugs.interfaces.bugtask.IDistroSeriesBugTask"
             name="+index"/>
-        <browser:page
-            name="+editstatus-page"
-            for="lp.bugs.interfaces.bugtask.IDistroSeriesBugTask"
-            class="lp.bugs.browser.bugtask.BugTaskEditView"
-            permission="launchpad.Edit"
-            template="../templates/bugtask-edit.pt">
-                </browser:page>
         <browser:page
             name="+edit-form"
             for="lp.bugs.interfaces.bugtask.IDistroSeriesBugTask"
@@ -1200,6 +1178,12 @@
             permission="zope.Public"
             class="lp.bugs.browser.structuralsubscription.StructuralSubscribersPortletView"
             template="../templates/structural-subscription-target-portlet-subscribers.pt"/>
+        <browser:page
+            for="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTarget"
+            name="+subscriptions"
+            class="lp.bugs.browser.bugtarget.TargetSubscriptionView"
+            permission="launchpad.AnyPerson"
+            template="../templates/bugtarget-subscription-list.pt"/>
     </facet>
 
     <browser:url

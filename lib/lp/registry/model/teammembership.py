@@ -139,7 +139,8 @@ class TeamMembership(SQLBase):
                         'team_url': canonical_url(team),
                         'dateexpires': self.dateexpires.strftime('%Y-%m-%d')}
         subject = '%s extended their membership' % member.name
-        template = get_email_template('membership-member-renewed.txt')
+        template = get_email_template(
+            'membership-member-renewed.txt', app='registry')
         admins_addrs = self.team.getTeamAdminsEmailAddresses()
         for address in admins_addrs:
             recipient = getUtility(IPersonSet).getByEmail(address)
@@ -168,7 +169,7 @@ class TeamMembership(SQLBase):
         else:
             template_name = 'membership-auto-renewed-personal.txt'
             member_addrs = get_contact_email_addresses(member)
-        template = get_email_template(template_name)
+        template = get_email_template(template_name, app='registry')
         for address in member_addrs:
             recipient = getUtility(IPersonSet).getByEmail(address)
             replacements['recipient_name'] = recipient.displayname
@@ -179,7 +180,7 @@ class TeamMembership(SQLBase):
         template_name = 'membership-auto-renewed-bulk.txt'
         admins_addrs = self.team.getTeamAdminsEmailAddresses()
         admins_addrs = set(admins_addrs).difference(member_addrs)
-        template = get_email_template(template_name)
+        template = get_email_template(template_name, app='registry')
         for address in admins_addrs:
             recipient = getUtility(IPersonSet).getByEmail(address)
             replacements['recipient_name'] = recipient.displayname
@@ -303,7 +304,7 @@ class TeamMembership(SQLBase):
             'expiration_date': self.dateexpires.strftime('%Y-%m-%d'),
             'approximate_duration': formatter.approximateduration()}
 
-        msg = get_email_template(templatename) % replacements
+        msg = get_email_template(templatename, app='registry') % replacements
         from_addr = format_address(
             team.displayname, config.canonical.noreply_from_address)
         simple_sendmail(from_addr, to_addrs, subject, msg)

@@ -33,7 +33,6 @@ from lp.bugs.externalbugtracker.base import (
     UnknownRemoteStatusError,
     UnparsableBugData,
     )
-from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 from lp.bugs.externalbugtracker.xmlrpc import UrlLib2Transport
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
@@ -45,6 +44,7 @@ from lp.bugs.interfaces.externalbugtracker import (
     ISupportsCommentPushing,
     UNKNOWN_REMOTE_IMPORTANCE,
     )
+from lp.services.database.isolation import ensure_no_transaction
 
 # Symbolic constants used for the Trac LP plugin.
 LP_PLUGIN_BUG_IDS_ONLY = 0

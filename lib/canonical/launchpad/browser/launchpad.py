@@ -639,7 +639,7 @@ class LaunchpadRootNavigation(Navigation):
                     raise NotFound(self.context, name)
                 # Only admins are permitted to see suspended users.
                 if person.account_status == AccountStatus.SUSPENDED:
-                    if not check_permission('launchpad.Admin', person):
+                    if not check_permission('launchpad.Moderate', person):
                         raise GoneError(
                             'User is suspended: %s' % name)
                 return person
@@ -707,7 +707,7 @@ class LaunchpadRootNavigation(Navigation):
             except NotFoundError:
                 raise NotFound(self.context, bug_number)
             if not check_permission("launchpad.View", bug):
-                raise Unauthorized("Bug %s is private" % bug_number)
+                return None
             # Empty the traversal stack, since we're redirecting.
             self.request.setTraversalStack([])
             # And perform a temporary redirect.

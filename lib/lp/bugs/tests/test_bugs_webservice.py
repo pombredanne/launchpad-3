@@ -9,7 +9,10 @@ import re
 
 from BeautifulSoup import BeautifulSoup
 from lazr.lifecycle.interfaces import IDoNotSnapshot
-from lazr.restfulclient.errors import HTTPError
+from lazr.restfulclient.errors import (
+    BadRequest,
+    HTTPError,
+    )
 from simplejson import dumps
 from storm.store import Store
 from testtools.matchers import (
@@ -32,15 +35,16 @@ from canonical.testing.layers import (
 from lp.bugs.browser.bugtask import get_comments_for_bugtask
 from lp.bugs.interfaces.bug import IBug
 from lp.testing import (
+    api_url,
     launchpadlib_for,
     TestCaseWithFactory,
     )
+from lp.testing._webservice import QueryCollector
 from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import (
     ADMIN_EMAIL,
     USER_EMAIL,
     )
-from lp.testing._webservice import QueryCollector
 
 
 class TestBugConstraints(TestCaseWithFactory):
@@ -263,21 +267,21 @@ class TestBugMessages(TestCaseWithFactory):
         self.message2 = self.factory.makeMessage(parent=self.message1)
         # Only link message2 to the bug.
         self.bug.linkMessage(self.message2)
-        self.webservice = LaunchpadWebServiceCaller(
-            'launchpad-library', 'salgado-change-anything')
+        self.webservice = launchpadlib_for('launchpad-library', 'salgado')
 
     def test_messages(self):
         # When one of the messages on a bug is linked to a parent that
-        # isn't linked to the bug, the webservice should still return
-        # the correct collection link for the bug's messages.
-        response = self.webservice.get('/bugs/%d/messages' % self.bug.id)
-        self.failUnlessEqual(response.status, 200)
+        # isn't linked to the bug, the webservice should still include
+        # that message in the bug's associated messages.
+        bug = self.webservice.load(api_url(self.bug))
+        messages = bug.messages
+        latest_message = [message for message in messages][-1]
+        self.failUnlessEqual(self.message2.subject, latest_message.subject)
+
         # The parent_link for the latest message should be None
         # because the parent is not a member of this bug's messages
         # collection itself.
-        latest_message = response.jsonBody()['entries'][-1]
-        self.failUnlessEqual(self.message2.subject, latest_message['subject'])
-        self.failUnlessEqual(None, latest_message['parent_link'])
+        self.failUnlessEqual(None, latest_message.parent)
 
 
 class TestPostBugWithLargeCollections(TestCaseWithFactory):
@@ -310,19 +314,55 @@ class TestPostBugWithLargeCollections(TestCaseWithFactory):
     def test_many_subscribers(self):
         # Many subscriptions do not cause an OOPS for IBug POSTs.
         bug = self.factory.makeBug()
-        webservice = LaunchpadWebServiceCaller(
-            'launchpad-library', 'salgado-change-anything')
+
         real_hard_limit_for_snapshot = snapshot.HARD_LIMIT_FOR_SNAPSHOT
         snapshot.HARD_LIMIT_FOR_SNAPSHOT = 3
+
+        webservice = launchpadlib_for('test', 'salgado')
         try:
             login(ADMIN_EMAIL)
             for count in range(snapshot.HARD_LIMIT_FOR_SNAPSHOT + 1):
                 person = self.factory.makePerson()
                 bug.subscribe(person, person)
             logout()
-            response = webservice.named_post(
-                '/bugs/%d' % bug.id, 'subscribe',
-                person='http://api.launchpad.dev/beta/~name12')
-            self.failUnlessEqual(200, response.status)
+            lp_bug = webservice.load(api_url(bug))
+
+            # Adding one more subscriber through the web service
+            # doesn't cause an OOPS.
+            person_to_subscribe = webservice.load('/~name12')
+            lp_bug.subscribe(person=person_to_subscribe)
         finally:
             snapshot.HARD_LIMIT_FOR_SNAPSHOT = real_hard_limit_for_snapshot
+
+
+class TestErrorHandling(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_add_duplicate_bugtask_for_project_gives_bad_request(self):
+        bug = self.factory.makeBug()
+        product = self.factory.makeProduct()
+        bugtask = self.factory.makeBugTask(bug=bug, target=product)
+
+        launchpad = launchpadlib_for('test', bug.owner)
+        lp_bug = launchpad.load(api_url(bug))
+        exception = self.assertRaises(
+            BadRequest, lp_bug.addTask, target=api_url(product))
+
+    def test_edit_conjoined_bugtask_gives_bad_request_error(self):
+        # Create a product bugtask conjoined with the task on its
+        # development focus.
+        product = self.factory.makeProduct()
+        slave_bugtask = self.factory.makeBugTask(target=product)
+        master_bugtask = self.factory.makeBugTask(
+            bug=slave_bugtask.bug, target=product.development_focus)
+        self.assertNotEquals(None, slave_bugtask.conjoined_master)
+
+        # Try to edit the slave bugtask through the web service.
+        launchpad = launchpadlib_for('test', slave_bugtask.bug.owner)
+        lp_task = launchpad.load(api_url(slave_bugtask))
+        lp_task.status = 'Invalid'
+        exception = self.assertRaises(BadRequest, lp_task.lp_save)
+        self.assertTrue(
+            ("This task cannot be edited directly, it should be edited "
+             "through its conjoined_master.") in str(exception))

@@ -19,6 +19,7 @@ from storm.expr import (
     Desc,
     Join,
     LeftJoin,
+    SQL,
     )
 from storm.locals import (
     Int,
@@ -57,6 +58,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterObject,
     ISlaveStore,
+    IStore,
     )
 from canonical.launchpad.mail import (
     format_address,
@@ -1101,6 +1103,8 @@ class BinaryPackageBuildSet:
         if (sourcepackagerelease_ids is None or
             len(sourcepackagerelease_ids) == 0):
             return []
+        # Circular.
+        from lp.soyuz.model.archive import Archive
 
         query = """
             source_package_release IN %s AND
@@ -1113,9 +1117,13 @@ class BinaryPackageBuildSet:
         if buildstate is not None:
             query += "AND buildfarmjob.status = %s" % sqlvalues(buildstate)
 
-        return BinaryPackageBuild.select(
-            query, orderBy=["-buildfarmjob.date_created", "id"],
-            clauseTables=["Archive", "PackageBuild", "BuildFarmJob"])
+        resultset = IStore(BinaryPackageBuild).using(
+            BinaryPackageBuild, PackageBuild, BuildFarmJob, Archive).find(
+            (BinaryPackageBuild, PackageBuild, BuildFarmJob),
+            SQL(query))
+        resultset.order_by(
+            Desc(BuildFarmJob.date_created), BinaryPackageBuild.id)
+        return DecoratedResultSet(resultset, operator.itemgetter(0))
 
     def getStatusSummaryForBuilds(self, builds):
         """See `IBinaryPackageBuildSet`."""

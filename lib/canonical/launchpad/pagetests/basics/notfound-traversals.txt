@@ -288,8 +288,8 @@ If a requested bug attachment is not associated with the bug already
 traversed we will get a 404. For paths using the old attachments/<id>
 form, a 404 will be issued immediately; no redirect will be sent.
 
->>> check_not_found("/firefox/+bug/2/attachments/1")
->>> check_not_found("/firefox/+bug/2/+attachment/1")
+>>> check_not_found("/tomcat/+bug/2/attachments/1")
+>>> check_not_found("/tomcat/+bug/2/+attachment/1")
 >>> check_not_found("/bugs/2/attachments/1")
 >>> check_not_found("/bugs/2/+attachment/1")
 
