@@ -158,12 +158,15 @@ class Bugzilla(ExternalBugTracker):
 
         See `IExternalBugTracker`.
         """
+        # checkwatches isn't set up to handle errors here, so we supress
+        # known connection issues. They'll be handled and logged later on when
+        # further requests are attempted.
         try:
             if self._remoteSystemHasPluginAPI():
                 return BugzillaLPPlugin(self.baseurl)
             elif self._remoteSystemHasBugzillaAPI():
                 return BugzillaAPI(self.baseurl)
-        except (ProtocolError, URLError, BadStatusLine):
+        except (xmlrpclib.ProtocolError, URLError, BadStatusLine):
             pass
         return self
 
