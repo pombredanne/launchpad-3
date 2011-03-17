@@ -7,9 +7,12 @@ SET client_min_messages=ERROR;
 -- and base_version types to debversion.
 
 -- Change types.
-ALTER TABLE DistroSeriesDifference ALTER COLUMN source_version TYPE debversion;
-ALTER TABLE DistroSeriesDifference ALTER COLUMN parent_source_version TYPE debversion;
-ALTER TABLE DistroSeriesDifference ALTER COLUMN base_version TYPE debversion;
+ALTER TABLE DistroSeriesDifference 
+    ALTER COLUMN source_version TYPE debversion;
+ALTER TABLE DistroSeriesDifference 
+    ALTER COLUMN parent_source_version TYPE debversion;
+ALTER TABLE DistroSeriesDifference 
+    ALTER COLUMN base_version TYPE debversion;
 
 -- Create indexes.
 CREATE INDEX SourcePackageRelease__source_version__idx
