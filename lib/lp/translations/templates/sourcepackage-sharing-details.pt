@@ -9,8 +9,7 @@
   <body>
     <metal:block fill-slot="head_epilogue">
       <script type="text/javascript">
-        LPS.use('test', 'console',
-          'lp.translations.sourcepackage_sharing_details', function(Y) {
+        LPS.use('lp.translations.sourcepackage_sharing_details', function(Y) {
           Y.on('domready', function() {
               Y.lp.translations.sourcepackage_sharing_details.prepare(
                 LP.cache['context']);
