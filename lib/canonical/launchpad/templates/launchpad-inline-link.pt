@@ -2,8 +2,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   condition="context/enabled">
   <tal:link-linked
-    condition="python: context.linked and not context.hidden"><a
-      style="line-height: 20px"
+      condition="python: context.linked and not context.hidden"><a
       href="" class="" title=""
       tal:condition="context/icon"
       tal:attributes="
@@ -14,6 +13,7 @@
       tal:content="structure context/escapedtext"
     /><a
       tal:condition="not: context/icon"
+      style="line-height: 20px;"
       href="" class="" title=""
       tal:attributes="
         class string:menu-link-${context/name};
