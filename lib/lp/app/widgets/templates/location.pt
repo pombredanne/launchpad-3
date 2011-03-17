@@ -1,0 +1,12 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+  <tal:latitude replace="structure view/latitude_widget/hidden" />
+  <tal:longitude replace="structure view/longitude_widget/hidden" />
+  <div>
+      <tal:time-zone replace="structure view/time_zone_widget" />
+  </div>
+  <div class="formHelp"
+     tal:content="view/time_zone_widget/hint" />
+</tal:root>

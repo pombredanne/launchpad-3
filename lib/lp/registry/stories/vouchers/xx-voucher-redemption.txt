@@ -178,8 +178,8 @@ Attempt to redeem a valid voucher and see the error message.
 The OOPS report shows the error was logged even though the OOPS was
 not shown to the user.
 
-    >>> from zope.error.interfaces import IErrorReportingUtility
     >>> from zope.component import getUtility
+    >>> from zope.error.interfaces import IErrorReportingUtility
     >>> from sys import stdout
     >>> error_utility = getUtility(IErrorReportingUtility)
     >>> report = error_utility.getLastOopsReport()

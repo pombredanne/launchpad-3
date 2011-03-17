@@ -30,58 +30,6 @@ No other versions are available.
     HTTP/1.1 404 Not Found
     ...
 
-No beta team redirection
-========================
-
-Members of the beta team aren't redirected to the beta site on API call.
-
-(Enable beta redirection for demonstration purpose)
-
-    >>> from canonical.config import config
-    >>> beta_data = """
-    ...     [launchpad]
-    ...     beta_testers_redirection_host = beta.launchpad.dev
-    ...     """
-    >>> config.push('beta_data', beta_data)
-
-    >>> from lp.testing import ANONYMOUS, login, logout
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
-    >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> login(ANONYMOUS)
-    >>> beta_admin = getUtility(IPersonSet).getByEmail(
-    ...     'beta-admin@launchpad.net')
-    >>> beta_user = webservice_for_person(beta_admin)
-    >>> logout()
-
-A request to the web site is redirected:
-
-    >>> print http('GET /~launchpad-beta-owner HTTP/1.1\n'
-    ... 'Host: launchpad.dev\n'
-    ... 'Authorization: Basic %s\n' %
-    ...     "beta-admin@launchpad.net:test".encode('base64'))
-    HTTP/1.1 303 See Other
-    ...
-    Location: http://beta.launchpad.dev/~launchpad-beta-owner
-    ...
-
-But not a request to the web service:
-
-    >>> print beta_user.get("/~launchpad-beta-owner")
-    HTTP/1.1 200 Ok
-    ...
-
-    >>> ignored = config.pop('beta_data')
-
-Resources not exposed on the web service
-========================================
-
-Soyuz build set (exposed on the web at /builders) are not available on the
-web service:
-
-    >>> print webservice.get("/builders")
-    HTTP/1.1 404 Not Found
-    ...
 
 Anonymous requests
 ==================
@@ -102,7 +50,7 @@ consumer keys.
 
     >>> from canonical.launchpad.testing.pages import (
     ...     LaunchpadWebServiceCaller)
-    >>> from canonical.launchpad.interfaces import IOAuthConsumerSet
+    >>> from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 
     >>> caller = LaunchpadWebServiceCaller('new-consumer', 'access-key')
     >>> response = caller.get(root)
@@ -110,7 +58,6 @@ consumer keys.
     401 Unauthorized
     >>> print response.body
     Unknown consumer (new-consumer).
-    ...
 
 But with anonymous access there is no registration step. The first
 time Launchpad sees a consumer key might be during an
@@ -118,6 +65,7 @@ anonymous request, and it can't reject that request just because it
 doesn't recognize the client.
 
     >>> login(ANONYMOUS)
+    >>> from zope.component import getUtility
     >>> consumer_set = getUtility(IOAuthConsumerSet)
     >>> print consumer_set.getByKey('another-new-consumer')
     None
@@ -142,7 +90,6 @@ Anonymous requests can't access certain data.
     401 Unauthorized
     >>> print response.body
     You need to be logged in to view this URL.
-    ...
 
 Anonymous requests can't change the dataset.
 
@@ -154,7 +101,6 @@ Anonymous requests can't change the dataset.
     401 Unauthorized
     >>> print response.body
     (<Person at...>, 'displayname', 'launchpad.Edit')
-    ...
 
 A completely unsigned web service request is treated as an anonymous
 request, with the OAuth consumer name being equal to the User-Agent.
@@ -207,7 +153,7 @@ isn't logged in as any particular user:
     >>> print response.getOutput()
     HTTP/1.1 401 Unauthorized
     ...
-    Unauthorized: You need to be logged in to view this URL.
+    You need to be logged in to view this URL.
 
 An empty or missing user agent results in an error.
 
@@ -215,13 +161,13 @@ An empty or missing user agent results in an error.
     >>> print response.getOutput()
     HTTP/1.1 401 Unauthorized
     ...
-    Unauthorized: Anonymous requests must provide a User-Agent.
+    Anonymous requests must provide a User-Agent.
 
     >>> response = request_with_user_agent(None)
     >>> print response.getOutput()
     HTTP/1.1 401 Unauthorized
     ...
-    Unauthorized: Anonymous requests must provide a User-Agent.
+    Anonymous requests must provide a User-Agent.
 
 API Requests to other hosts
 ===========================
@@ -276,7 +222,7 @@ anonymous request.
     ...     headers={'Authorization': sample_auth})
     HTTP/1.1 401 Unauthorized
     ...
-    Unauthorized: Anonymous requests must provide a User-Agent.
+    Anonymous requests must provide a User-Agent.
 
 
 The 'Vary' Header

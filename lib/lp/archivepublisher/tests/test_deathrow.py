@@ -12,12 +12,11 @@ import tempfile
 
 from zope.component import getUtility
 
-from canonical.testing import LaunchpadZopelessLayer
-from canonical.launchpad.scripts.logger import BufferLogger
-
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archivepublisher.deathrow import DeathRow
 from lp.archivepublisher.diskpool import DiskPool
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCase

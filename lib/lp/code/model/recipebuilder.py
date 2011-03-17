@@ -12,19 +12,22 @@ import traceback
 
 from zope.component import adapts
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior)
 from lp.buildmaster.interfaces.builder import CannotBuild
-from lp.buildmaster.model.buildfarmjobbehavior import (
-    BuildFarmJobBehaviorBase)
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    IBuildFarmJobBehavior,
+    )
+from lp.buildmaster.model.buildfarmjobbehavior import BuildFarmJobBehaviorBase
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuildJob)
+    ISourcePackageRecipeBuildJob,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.archivedependencies import (
-    get_primary_current_component, get_sources_list_for_building)
+    get_primary_current_component,
+    get_sources_list_for_building,
+    )
 
 
 class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
@@ -62,8 +65,19 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         if self.build.pocket != PackagePublishingPocket.RELEASE:
             suite += "-%s" % (self.build.pocket.name.lower())
         args['suite'] = suite
-        args["author_name"] = self.build.requester.displayname
-        args["author_email"] = self.build.requester.preferredemail.email
+        args['arch_tag'] = distroarchseries.architecturetag
+        requester = self.build.requester
+        if requester.preferredemail is None:
+            # Use a constant, known, name and email.
+            args["author_name"] = 'Launchpad Package Builder'
+            args["author_email"] = config.canonical.noreply_from_address
+        else:
+            args["author_name"] = requester.displayname
+            # We have to remove the security proxy here b/c there's not a
+            # logged in entity, and anonymous email lookups aren't allowed.
+            # Don't keep the naked requester around though.
+            args["author_email"] = removeSecurityProxy(
+                requester).preferredemail.email
         args["recipe_text"] = str(self.build.recipe.builder_recipe)
         args['archive_purpose'] = self.build.archive.purpose.name
         args["ogrecomponent"] = get_primary_current_component(
@@ -108,38 +122,44 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
             raise CannotBuild("Unable to find distroarchseries for %s in %s" %
                 (self._builder.processor.name,
                 self.build.distroseries.displayname))
-
+        args = self._extraBuildArgs(distroarchseries, logger)
         chroot = distroarchseries.getChroot()
         if chroot is None:
             raise CannotBuild("Unable to find a chroot for %s" %
                               distroarchseries.displayname)
-        self._builder.slave.cacheFile(logger, chroot)
+        logger.info(
+            "Sending chroot file for recipe build to %s" % self._builder.name)
+        d = self._builder.slave.cacheFile(logger, chroot)
 
-        # Generate a string which can be used to cross-check when obtaining
-        # results so we know we are referring to the right database object in
-        # subsequent runs.
-        buildid = "%s-%s" % (self.build.id, build_queue_id)
-        cookie = self.buildfarmjob.generateSlaveBuildCookie()
-        chroot_sha1 = chroot.content.sha1
-        logger.debug(
-            "Initiating build %s on %s" % (buildid, self._builder.url))
+        def got_cache_file(ignored):
+            # Generate a string which can be used to cross-check when obtaining
+            # results so we know we are referring to the right database object in
+            # subsequent runs.
+            buildid = "%s-%s" % (self.build.id, build_queue_id)
+            cookie = self.buildfarmjob.generateSlaveBuildCookie()
+            chroot_sha1 = chroot.content.sha1
+            logger.info(
+                "Initiating build %s on %s" % (buildid, self._builder.url))
 
-        args = self._extraBuildArgs(distroarchseries, logger)
-        status, info = self._builder.slave.build(
-            cookie, "sourcepackagerecipe", chroot_sha1, {}, args)
-        message = """%s (%s):
-        ***** RESULT *****
-        %s
-        %s: %s
-        ******************
-        """ % (
-            self._builder.name,
-            self._builder.url,
-            args,
-            status,
-            info,
-            )
-        logger.info(message)
+            return self._builder.slave.build(
+                cookie, "sourcepackagerecipe", chroot_sha1, {}, args)
+
+        def log_build_result((status, info)):
+            message = """%s (%s):
+            ***** RESULT *****
+            %s
+            %s: %s
+            ******************
+            """ % (
+                self._builder.name,
+                self._builder.url,
+                args,
+                status,
+                info,
+                )
+            logger.info(message)
+
+        return d.addCallback(got_cache_file).addCallback(log_build_result)
 
     def verifyBuildRequest(self, logger):
         """Assert some pre-build checks.

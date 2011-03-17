@@ -6,94 +6,159 @@
 __metaclass__ = type
 __all__ = [
     'BugComment',
-    'BugCommentView',
-    'BugCommentBoxView',
     'BugCommentBoxExpandedReplyView',
-    'BugCommentXHTMLRepresentation',
+    'BugCommentBoxView',
     'BugCommentBreadcrumb',
+    'BugCommentView',
+    'BugCommentXHTMLRepresentation',
     'build_comments_from_chunks',
-    'should_display_remote_comments',
+    'group_comments_with_activity',
     ]
 
-from datetime import datetime, timedelta
-from pytz import utc
-
-from zope.component import adapts, getMultiAdapter, getUtility
-from zope.interface import implements, Interface
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from itertools import (
+    chain,
+    groupby,
+    )
+from operator import itemgetter
 
 from lazr.restful.interfaces import IWebServiceClientRequest
-
-from lp.bugs.interfaces.bugmessage import (
-    IBugComment, IBugMessageSet)
-from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.webapp import canonical_url, LaunchpadView
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from pytz import utc
+from zope.component import (
+    adapts,
+    getMultiAdapter,
+    getUtility,
+    )
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
 from canonical.config import config
+from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
+from canonical.launchpad.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.bugs.interfaces.bugmessage import (
+    IBugComment,
+    IBugMessageSet,
+    )
 
 
-def should_display_remote_comments(user):
-    """Return whether remote comments should be displayed for the user."""
-    # comment_syncing_team can be either None or '' to indicate unset.
-    if config.malone.comment_syncing_team:
-        comment_syncing_team = getUtility(IPersonSet).getByName(
-            config.malone.comment_syncing_team)
-        assert comment_syncing_team is not None, (
-            "comment_syncing_team was set to %s, which doesn't exist." % (
-                config.malone.comment_syncing_team))
-    else:
-        comment_syncing_team = None
-
-    if comment_syncing_team is None:
-        return True
-    else:
-        return user is not None and user.inTeam(comment_syncing_team)
+COMMENT_ACTIVITY_GROUPING_WINDOW = timedelta(minutes=5)
 
 
-def build_comments_from_chunks(chunks, bugtask, truncate=False):
-    """Build BugComments from MessageChunks."""
-    display_if_from_bugwatch = should_display_remote_comments(
-        getUtility(ILaunchBag).user)
-
+def build_comments_from_chunks(bugtask, truncate=False, slice_info=None):
+    """Build BugComments from MessageChunks.
+    
+    :param truncate: Perform truncation of large messages.
+    :param slice_info: If not None, an iterable of slices to retrieve.
+    """
+    chunks = bugtask.bug.getMessagesForView(slice_info=slice_info)
+    # This would be better as part of indexed_messages eager loading.
     comments = {}
-    index = 0
-    for chunk in chunks:
-        message_id = chunk.message.id
-        bug_comment = comments.get(message_id)
+    for bugmessage, message, chunk in chunks:
+        bug_comment = comments.get(message.id)
         if bug_comment is None:
-            bug_comment = BugComment(
-                index, chunk.message, bugtask, display_if_from_bugwatch)
-            comments[message_id] = bug_comment
-            index += 1
+            bug_comment = BugComment(bugmessage.index, message, bugtask,
+                visible=bugmessage.visible)
+            comments[message.id] = bug_comment
+            # This code path is currently only used from BugTask view which
+            # have already loaded all the bug watches. If we start lazy loading
+            # those, or not needing them we will need to batch lookup watches
+            # here.
+            if bugmessage.bugwatchID is not None:
+                bug_comment.bugwatch = bugmessage.bugwatch
+                bug_comment.synchronized = (
+                    bugmessage.remote_comment_id is not None)
         bug_comment.chunks.append(chunk)
 
-    # Set up the bug watch for all the imported comments. We do it
-    # outside the for loop to avoid issuing one db query per comment.
-    imported_bug_messages = getUtility(IBugMessageSet).getImportedBugMessages(
-        bugtask.bug)
-    for bug_message in imported_bug_messages:
-        message_id = bug_message.message.id
-        comments[message_id].bugwatch = bug_message.bugwatch
-        comments[message_id].synchronized = (
-            bug_message.remote_comment_id is not None)
-
-    for bug_message in bugtask.bug.bug_messages:
-        comment = comments.get(bug_message.messageID, None)
-        # XXX intellectronica 2009-04-22, bug=365092: Currently, there are
-        # some bug messages for which no chunks exist in the DB, so we need to
-        # make sure that we skip them, since the corresponding message wont
-        # have been added to the comments dictionary in the section above.
-        if comment is not None:
-            comment.visible = bug_message.visible
-
     for comment in comments.values():
-        # Once we have all the chunks related to a comment set up,
+        # Once we have all the chunks related to a comment populated,
         # we get the text set up for display.
         comment.setupText(truncate=truncate)
     return comments
+
+
+def group_comments_with_activity(comments, activities):
+    """Group comments and activity together for human consumption.
+
+    Generates a stream of comment instances (with the activity grouped within)
+    or `list`s of grouped activities.
+
+    :param comments: An iterable of `BugComment` instances, which should be
+        sorted by index already.
+    :param activities: An iterable of `BugActivity` instances.
+    """
+    window = COMMENT_ACTIVITY_GROUPING_WINDOW
+
+    comment_kind = "comment"
+    if comments:
+        max_index = comments[-1].index + 1
+    else:
+        max_index = 0
+    comments = (
+        (comment.datecreated, comment.index, comment.owner, comment_kind, comment)
+        for comment in comments)
+    activity_kind = "activity"
+    activity = (
+        (activity.datechanged, max_index, activity.person, activity_kind, activity)
+        for activity in activities)
+    # when an action and a comment happen at the same time, the action comes
+    # second, when two events are tied the comment index is used to
+    # disambiguate.
+    events = sorted(chain(comments, activity), key=itemgetter(0, 1, 2))
+
+    def gen_event_windows(events):
+        """Generate event windows.
+
+        Yields `(window_index, kind, event)` tuples, where `window_index` is
+        an integer, and is incremented each time the windowing conditions are
+        triggered.
+
+        :param events: An iterable of `(date, ignored, actor, kind, event)`
+            tuples in order.
+        """
+        window_comment, window_actor = None, None
+        window_index, window_end = 0, None
+        for date, _, actor, kind, event in events:
+            window_ended = (
+                # A window may contain only one comment.
+                (window_comment is not None and kind is comment_kind) or
+                # All events must have happened within a given timeframe.
+                (window_end is None or date >= window_end) or
+                # All events within the window must belong to the same actor.
+                (window_actor is None or actor != window_actor))
+            if window_ended:
+                window_comment, window_actor = None, actor
+                window_index, window_end = window_index + 1, date + window
+            if kind is comment_kind:
+                window_comment = event
+            yield window_index, kind, event
+
+    event_windows = gen_event_windows(events)
+    event_windows_grouper = groupby(event_windows, itemgetter(0))
+    for window_index, window_group in event_windows_grouper:
+        window_group = [
+            (kind, event) for (index, kind, event) in window_group]
+        for kind, event in window_group:
+            if kind is comment_kind:
+                window_comment = event
+                window_comment.activity.extend(
+                    event for (kind, event) in window_group
+                    if kind is activity_kind)
+                yield window_comment
+                # There's only one comment per window.
+                break
+        else:
+            yield [event for (kind, event) in window_group]
 
 
 class BugComment:
@@ -109,8 +174,7 @@ class BugComment:
     """
     implements(IBugComment)
 
-    def __init__(self, index, message, bugtask, display_if_from_bugwatch,
-                 activity=None):
+    def __init__(self, index, message, bugtask, activity=None, visible=True):
         self.index = index
         self.bugtask = bugtask
         self.bugwatch = None
@@ -120,7 +184,6 @@ class BugComment:
         self.datecreated = message.datecreated
         self.owner = message.owner
         self.rfc822msgid = message.rfc822msgid
-        self.display_if_from_bugwatch = display_if_from_bugwatch
 
         self.chunks = []
         self.bugattachments = []
@@ -132,14 +195,7 @@ class BugComment:
         self.activity = activity
 
         self.synchronized = False
-
-    @property
-    def can_be_shown(self):
-        """Return whether or not the BugComment can be shown."""
-        if self.bugwatch and not self.display_if_from_bugwatch:
-            return False
-        else:
-            return True
+        self.visible = visible
 
     @property
     def show_for_admin(self):
@@ -227,10 +283,17 @@ class BugComment:
         obfuscated for unauthenticated users.
         """
         now = datetime.now(tz=utc)
-        # The major factor in how long we can cache a bug comment is
-        # the timestamp. The rendering of the timestamp changes every
-        # minute for the first hour because we say '7 minutes ago'.
-        if self.datecreated > now - timedelta(hours=1):
+
+        # The major factor in how long we can cache a bug comment is the
+        # timestamp. For up to 5 minutes comments and activity can be grouped
+        # together as related, so do not cache.
+        if self.datecreated > now - COMMENT_ACTIVITY_GROUPING_WINDOW:
+            # Don't return 0 because that indicates no time limit.
+            return -1
+
+        # The rendering of the timestamp changes every minute for the first
+        # hour because we say '7 minutes ago'.
+        elif self.datecreated > now - timedelta(hours=1):
             return 60
 
         # Don't cache for long if we are waiting for synchronization.

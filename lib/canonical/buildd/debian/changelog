@@ -1,3 +1,80 @@
+launchpad-buildd (74) hardy-cat; urgency=low
+
+  [ Aaron Bentley]
+  * Memory-limit recipe builds. LP#676657
+
+  [ LaMont Jones]
+  * mount a tmpfs on /dev/shm in build chroots.  LP#671441
+
+  [Michael Bienia]
+  * Update regexes used for DEPWAIT.  LP#615286
+
+ -- LaMont Jones <lamont@canonical.com>  Tue, 23 Nov 2010 06:17:57 -0700
+
+launchpad-buildd (73) hardy-cat; urgency=low
+
+  * Revert to revision 70
+
+ -- LaMont Jones <lamont@canonical.com>  Thu, 28 Oct 2010 12:53:45 -0600
+
+launchpad-buildd (72) hardy-cat; urgency=low
+
+  * break out readyservice.py from tachandler.py. LP#663828
+
+ -- LaMont Jones <lamont@canonical.com>  Wed, 20 Oct 2010 13:03:23 -0600
+
+launchpad-buildd (71) hardy-cat; urgency=low
+
+  * Detect ppa hosts for build recipes.  LP#662664
+  * Better recipe builds. LP#599100, 627119, 479705
+
+ -- LaMont Jones <lamont@canonical.com>  Tue, 19 Oct 2010 13:48:33 -0600
+
+launchpad-buildd (70) hardy-cat; urgency=low
+
+  [ LaMont Jones ]
+  * Restore the rest of version 68.
+
+  [ James Westby ]
+  * buildrecipe: Specify BZR_EMAIL via sudo so that the called command
+    sees the environment variable.
+  * buildrecipe: call sudo -i -u instead of sudo -iu so that it works with
+    older versions of sudo.
+  * buildrecipe: flush stdout before calling another command so that
+    the build log has the output correctly interleaved.
+
+  [ William Grant ]
+  * correct arch_tag arguments.
+
+ -- LaMont Jones <lamont@canonical.com>  Fri, 20 Aug 2010 13:27:55 -0600
+
+launchpad-buildd (69) hardy-cat; urgency=low
+
+  * REVERT all of version 68 except for BZR_EMAIL LP#617072
+    (Not reflected in bzr.)
+
+ -- LaMont Jones <lamont@canonical.com>  Tue, 17 Aug 2010 10:40:03 -0600
+
+launchpad-buildd (68) hardy-cat; urgency=low
+
+  [ William Grant ]
+  * Take an 'arch_tag' argument, so the master can override the slave
+    architecture.
+
+  [ Jelmer Vernooij ]
+
+  * Explicitly use source format 1.0.
+  * Add LSB information to init script.
+  * Use debhelper >= 5 (available in dapper, not yet deprecated in
+    maverick).
+  * Fix spelling in description.
+  * Install example buildd configuration.
+
+  [ Paul Hummer ]
+  * Provide BZR_EMAIL for bzr 2.2 in the buildds LP#617072
+
+ -- LaMont Jones <lamont@canonical.com>  Mon, 16 Aug 2010 13:25:09 -0600
+
 launchpad-buildd (67) hardy-cat; urgency=low
 
   * Force aptitude installation for recipe builds on maverick

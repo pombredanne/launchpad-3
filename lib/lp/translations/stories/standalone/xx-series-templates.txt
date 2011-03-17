@@ -85,16 +85,14 @@ appropriate page.
     >>> utc_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/+templates')
     >>> utc_browser.getLink(
-    ...     url='ubuntu/hoary/+source/evolution/'
-    ...         '+pots/evolution-2.2/+edit').click()
+    ...     url='+source/evolution/+pots/evolution-2.2/+edit').click()
     >>> print utc_browser.url
     http://.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+edit
 
     >>> utc_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/+templates')
     >>> utc_browser.getLink(
-    ...     url='/ubuntu/hoary/+source/evolution/'
-    ...         '+pots/evolution-2.2/+admin').click()
+    ...     url='+source/evolution/+pots/evolution-2.2/+admin').click()
     >>> print utc_browser.url
     http://.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+admin
 
@@ -104,16 +102,14 @@ appropriate page.
     >>> utc_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/+templates')
     >>> utc_browser.getLink(
-    ...     url='ubuntu/hoary/+source/evolution/'
-    ...         '+pots/disabled-template/+edit').click()
+    ...     url='+source/evolution/+pots/disabled-template/+edit').click()
     >>> print utc_browser.url
     http://.../ubuntu/hoary/+source/evolution/+pots/disabled-template/+edit
 
     >>> utc_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/+templates')
     >>> utc_browser.getLink(
-    ...     url='/ubuntu/hoary/+source/evolution/'
-    ...         '+pots/disabled-template/+admin').click()
+    ...     url='+source/evolution/+pots/disabled-template/+admin').click()
     >>> print utc_browser.url
     http://.../ubuntu/hoary/+source/evolution/+pots/disabled-template/+admin
 

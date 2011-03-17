@@ -41,11 +41,19 @@ __all__ = [
 import logging
 import traceback
 
-from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket, pocketsuffix)
-from lp.soyuz.interfaces.archive import ArchivePurpose, ALLOW_RELEASE_BUILDS
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lazr.uri import URI
+
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket,
+    pocketsuffix,
+    )
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.archive import (
+    ALLOW_RELEASE_BUILDS,
+    )
 
 
 component_dependencies = {
@@ -114,12 +122,10 @@ def get_primary_current_component(archive, distroseries, sourcepackagename):
         name=sourcepackagename,
         distroseries=distroseries, exact_match=True)
 
-    # XXX cprov 20080923 bug=246200: This count should be replaced
-    # by bool() (__non_zero__) when storm implementation gets fixed.
-    if ancestries.count() > 0:
+    try:
         return ancestries[0].component.name
-
-    return 'universe'
+    except IndexError:
+        return 'universe'
 
 
 def expand_dependencies(archive, distro_series, pocket, component,

@@ -3,6 +3,7 @@
 
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 
+
 def test_suite():
     return LayeredDocFileSuite('test_imports.txt')
 

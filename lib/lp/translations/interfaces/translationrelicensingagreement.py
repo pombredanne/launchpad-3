@@ -1,12 +1,23 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
 from zope.interface import Interface
-from zope.schema import Bool, Choice, Datetime, Int, Object, Text
-from lazr.enum import EnumeratedType, Item
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    Object,
+    Text,
+    )
 
 from canonical.launchpad import _
 from lp.registry.interfaces.person import IPerson
+
 
 __metaclass__ = type
 __all__ = [

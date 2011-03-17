@@ -16,13 +16,18 @@ import _pythonpath
 from zope.component import getUtility
 from BeautifulSoup import BeautifulSoup
 
-from canonical.lp import initZopeless
-from canonical.lp.dbschema import (
-    SpecificationStatus, SpecificationGoalStatus, SpecificationDelivery,
-    SpecificationPriority)
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.interfaces import (
-    IPersonSet, IProductSet, ISpecificationSet)
+from canonical.lp import initZopeless
+from lp.blueprints.enums import (
+    SpecificationStatus,
+    SpecificationGoalStatus,
+    SpecificationDelivery,
+    SpecificationPriority,
+    )
+from lp.blueprints.interfaces.specification import ISpecificationSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
+
 
 WIKI_BASE = 'http://wiki.zope.org/zope3/'
 PROPOSAL_LISTS = ['Zope3Proposals', 'OldProposals', 'DraftProposals']

@@ -71,7 +71,7 @@ can be constructed from a SourcePackageName and a distroseries.
     >>> firefox_warty_package = SourcePackage(sourcepackagename=firefox,
     ...     distroseries=ubuntu_warty)
     >>> firefox_warty_package
-    <SourcePackage ubuntu/warty/mozilla-firefox>
+    <SourcePackage ...'Ubuntu'...'warty'...'mozilla-firefox'...>
 
 An instance is commonly retrieved from a distroseries.
 
@@ -128,8 +128,8 @@ upload, even though it gets changed in the publishing record.
     PUBLISHED main
 
     >>> from canonical.database.sqlbase import flush_database_caches
-    >>> from canonical.launchpad.database import Component
-    >>> from canonical.launchpad.database import (
+    >>> from lp.soyuz.model.component import Component
+    >>> from lp.soyuz.model.publishing import (
     ...     SourcePackagePublishingHistory)
     >>> from canonical.launchpad.ftests import syncUpdate
 
@@ -150,7 +150,7 @@ upload, even though it gets changed in the publishing record.
 Only PUBLISHED records are considered when looking the latest published
 component. If there are no PUBLISHED records, None is returned.
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+    >>> from lp.soyuz.enums import PackagePublishingStatus
 
     >>> latest_publishing.status = PackagePublishingStatus.SUPERSEDED
     >>> syncUpdate(latest_publishing)
@@ -321,7 +321,7 @@ to a product series, the source package does have a product series.
 
     >>> user = factory.makePerson()
     >>> a52dec_series = factory.makeProductSeries(name='ratty')
-    >>> PackagingUtil().createPackaging(
+    >>> packaging = PackagingUtil().createPackaging(
     ...     productseries=a52dec_series,
     ...     sourcepackagename=a52dec,
     ...     distroseries=hoary,
@@ -543,7 +543,7 @@ Interface implementation
 SourcePackage implements IHasTranslationImports interface:
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from lp.translations.interfaces.translationimportqueue import (
+    >>> from lp.translations.interfaces.hastranslationimports import (
     ...     IHasTranslationImports)
     >>> IHasTranslationImports.providedBy(warty_firefox)
     True

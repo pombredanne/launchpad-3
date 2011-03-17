@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0231,E0702,W0108
@@ -7,43 +7,71 @@
 
 __metaclass__ = type
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from httplib import HTTPMessage
 import os
-import re
 import random
+import re
+from StringIO import StringIO
 import time
+from urllib2 import (
+    BaseHandler,
+    Request,
+    )
 import urlparse
 import xmlrpclib
-
-from StringIO import StringIO
-from datetime import datetime, timedelta
-from httplib import HTTPMessage
-from urllib2 import BaseHandler, Request
 
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.database.sqlbase import commit, ZopelessTransactionManager
-from lp.bugs.externalbugtracker import (
-    BATCH_SIZE_UNLIMITED, BugNotFound, BugTrackerConnectError, Bugzilla,
-    DebBugs, ExternalBugTracker, Mantis, RequestTracker, Roundup, SourceForge,
-    Trac)
-from lp.bugs.externalbugtracker.trac import (
-    FAULT_TICKET_NOT_FOUND, LP_PLUGIN_BUG_IDS_ONLY, LP_PLUGIN_FULL,
-    LP_PLUGIN_METADATA_AND_COMMENTS, LP_PLUGIN_METADATA_ONLY)
-from lp.bugs.externalbugtracker.xmlrpc import (
-    UrlLib2Transport)
-from canonical.launchpad.ftests import login, logout
-from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
-from lp.bugs.interfaces.externalbugtracker import (
-    UNKNOWN_REMOTE_IMPORTANCE, UNKNOWN_REMOTE_STATUS)
-from canonical.launchpad.database import BugTracker
-from lp.bugs.interfaces.bugtracker import IBugTrackerSet
-from lp.registry.interfaces.person import IPersonSet
+from canonical.database.sqlbase import (
+    commit,
+    ZopelessTransactionManager,
+    )
+from canonical.launchpad.ftests import (
+    login,
+    logout,
+    )
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from lp.bugs.scripts import debbugs
 from canonical.launchpad.testing.systemdocs import ordered_dict_as_string
-from canonical.launchpad.xmlrpc import ExternalBugTrackerTokenAPI
 from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.bugs.externalbugtracker import (
+    BATCH_SIZE_UNLIMITED,
+    BugNotFound,
+    BugTrackerConnectError,
+    Bugzilla,
+    DebBugs,
+    ExternalBugTracker,
+    Mantis,
+    RequestTracker,
+    Roundup,
+    SourceForge,
+    Trac,
+    )
+from lp.bugs.externalbugtracker.trac import (
+    FAULT_TICKET_NOT_FOUND,
+    LP_PLUGIN_BUG_IDS_ONLY,
+    LP_PLUGIN_FULL,
+    LP_PLUGIN_METADATA_AND_COMMENTS,
+    LP_PLUGIN_METADATA_ONLY,
+    )
+from lp.bugs.externalbugtracker.xmlrpc import UrlLib2Transport
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
+from lp.bugs.interfaces.bugtracker import IBugTrackerSet
+from lp.bugs.interfaces.externalbugtracker import (
+    UNKNOWN_REMOTE_IMPORTANCE,
+    UNKNOWN_REMOTE_STATUS,
+    )
+from lp.bugs.model.bugtracker import BugTracker
+from lp.bugs.scripts import debbugs
+from lp.bugs.xmlrpc.bug import ExternalBugTrackerTokenAPI
+from lp.registry.interfaces.person import IPersonSet
 
 
 def new_bugtracker(bugtracker_type, base_url='http://bugs.some.where'):
@@ -60,13 +88,13 @@ def new_bugtracker(bugtracker_type, base_url='http://bugs.some.where'):
     owner = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
     bugtracker_set = getUtility(IBugTrackerSet)
     index = 1
-    name = '%s-checkwatches' % (bugtracker_type.name.lower(),)
+    name = '%s-checkwatches' % (bugtracker_type.name.lower())
     while bugtracker_set.getByName("%s-%d" % (name, index)) is not None:
         index += 1
     name += '-%d' % index
     BugTracker(
         name=name,
-        title='%s *TESTING*' % (bugtracker_type.title,),
+        title='%s *TESTING*' % (bugtracker_type.title),
         bugtrackertype=bugtracker_type,
         baseurl=base_url,
         summary='-', contactdetails='-',
@@ -130,10 +158,11 @@ def convert_python_status(status, resolution):
         'rejected': 8,
         'remind': 9,
         'wontfix': 10,
-        'worksforme': 11
-    }
+        'worksforme': 11,
+        }
 
     return "%s:%s" % (status_map[status], resolution_map[resolution])
+
 
 def set_bugwatch_error_type(bug_watch, error_type):
     """Set the last_error_type field of a bug watch to a given error type."""
@@ -244,9 +273,10 @@ class TestBugzilla(Bugzilla):
         return self
 
     def _getBugsToTest(self):
-        """Return a dict with bugs in the form bug_id: (status, resolution)"""
-        return {3224: ('RESOLVED', 'FIXED'),
-                328430: ('UNCONFIRMED', '')}
+        """Return a dict with bugs in the form
+           bug_id: (status, resolution, priority, severity)"""
+        return {3224: ('RESOLVED', 'FIXED', 'MINOR', 'URGENT'),
+                328430: ('UNCONFIRMED', '', 'MEDIUM', 'NORMAL')}
 
     def _readBugItemFile(self):
         """Reads in the file for an individual bug item.
@@ -270,7 +300,7 @@ class TestBugzilla(Bugzilla):
         else:
             raise AssertionError('Unknown page: %s' % page)
 
-    def _postPage(self, page, form):
+    def _postPage(self, page, form, repost_on_redirect=False):
         """POST to the specified page.
 
         :form: is a dict of form variables being POSTed.
@@ -288,17 +318,20 @@ class TestBugzilla(Bugzilla):
                 if bug_id not in self.bugzilla_bugs:
                     #Unknown bugs aren't included in the resulting xml.
                     continue
-                bug_status, bug_resolution = self.bugzilla_bugs[int(bug_id)]
+                bug_status, bug_resolution, bug_priority, bug_severity = \
+                            self.bugzilla_bugs[int(bug_id)]
                 bug_item = self._readBugItemFile() % {
                     'bug_id': bug_id,
                     'status': bug_status,
                     'resolution': bug_resolution,
+                    'priority': bug_priority,
+                    'severity': bug_severity,
                     }
                 bug_li_items.append(bug_item)
             return buglist_xml % {
                 'bug_li_items': '\n'.join(bug_li_items),
-                'page': page
-            }
+                'page': page,
+                }
         else:
             raise AssertionError('Unknown page: %s' % page)
 
@@ -312,8 +345,8 @@ class TestWeirdBugzilla(TestBugzilla):
     bug_item_file = 'weird_non_ascii_bug_li_item.xml'
 
     def _getBugsToTest(self):
-        return {2000: ('ASSIGNED', ''),
-                123543: ('RESOLVED', 'FIXED')}
+        return {2000: ('ASSIGNED', '', 'HIGH', 'BLOCKER'),
+                123543: ('RESOLVED', 'FIXED', 'HIGH', 'BLOCKER')}
 
 
 class TestBrokenBugzilla(TestBugzilla):
@@ -321,8 +354,8 @@ class TestBrokenBugzilla(TestBugzilla):
     bug_item_file = 'broken_bug_li_item.xml'
 
     def _getBugsToTest(self):
-        return {42: ('ASSIGNED', ''),
-                2000: ('RESOLVED', 'FIXED')}
+        return {42: ('ASSIGNED', '', 'HIGH', 'BLOCKER'),
+                2000: ('RESOLVED', 'FIXED', 'LOW', 'BLOCKER')}
 
 
 class TestIssuezilla(TestBugzilla):
@@ -335,8 +368,8 @@ class TestIssuezilla(TestBugzilla):
     bug_id_form_element = 'id'
 
     def _getBugsToTest(self):
-        return {2000: ('RESOLVED', 'FIXED'),
-                123543: ('ASSIGNED', '')}
+        return {2000: ('RESOLVED', 'FIXED', 'LOW', 'BLOCKER'),
+                123543: ('ASSIGNED', '', 'HIGH', 'BLOCKER')}
 
 
 class TestOldBugzilla(TestBugzilla):
@@ -349,12 +382,13 @@ class TestOldBugzilla(TestBugzilla):
     bug_id_form_element = 'id'
 
     def _getBugsToTest(self):
-        return {42: ('RESOLVED', 'FIXED'),
-                123543: ('ASSIGNED', '')}
+        return {42: ('RESOLVED', 'FIXED', 'LOW', 'BLOCKER'),
+                123543: ('ASSIGNED', '', 'HIGH', 'BLOCKER')}
 
 
 class FakeHTTPConnection:
     """A fake HTTP connection."""
+
     def putheader(self, header, value):
         print "%s: %s" % (header, value)
 
@@ -452,7 +486,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
             'time',
             'set_link',
             ],
-        'Test': ['login_required']
+        'Test': ['login_required'],
         }
 
     # Methods that require authentication.
@@ -1043,6 +1077,28 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
         return [{'changes': changes}]
 
 
+class NoAliasTestBugzillaAPIXMLRPCTransport(TestBugzillaAPIXMLRPCTransport):
+    """A TestBugzillaAPIXMLRPCTransport that has no bug aliases."""
+
+    bugs = {
+        1: {'assigned_to': 'test@canonical.com',
+            'component': 'GPPSystems',
+            'creation_time': datetime(2008, 6, 10, 16, 19, 53),
+            'id': 1,
+            'internals': {},
+            'is_open': True,
+            'last_change_time': datetime(2008, 6, 10, 16, 19, 53),
+            'priority': 'P1',
+            'product': 'Marvin',
+            'resolution': 'FIXED',
+            'see_also': [],
+            'severity': 'normal',
+            'status': 'RESOLVED',
+            'summary': "That bloody robot still exists.",
+            },
+        }
+
+
 class TestMantis(Mantis):
     """Mantis ExternalSystem for use in tests.
 
@@ -1054,7 +1110,7 @@ class TestMantis(Mantis):
 
     def _getPage(self, page):
         if self.trace_calls:
-            print "CALLED _getPage(%r)" % (page,)
+            print "CALLED _getPage(%r)" % (page)
         if page == "csv_export.php":
             return read_test_file('mantis_example_bug_export.csv')
         elif page.startswith('view.php?id='):
@@ -1063,18 +1119,10 @@ class TestMantis(Mantis):
         else:
             return ''
 
-    def _postPage(self, page, form):
+    def _postPage(self, page, form, repost_on_redirect=False):
         if self.trace_calls:
-            print "CALLED _postPage(%r, ...)" % (page,)
+            print "CALLED _postPage(%r, ...)" % (page)
         return ''
-
-    def cleanCache(self):
-        """Clean the csv_data cache."""
-        # Remove the self._csv_data_cached_value if it exists.
-        try:
-            del self._csv_data_cached_value
-        except AttributeError:
-            pass
 
 
 class TestTrac(Trac):
@@ -1101,11 +1149,11 @@ class TestTrac(Trac):
         """See `Trac`."""
         return self.supports_single_exports
 
-    def urlopen(self, url):
+    def urlopen(self, url, data=None):
         file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
 
         if self.trace_calls:
-            print "CALLED urlopen(%r)" % (url,)
+            print "CALLED urlopen(%r)" % (url)
 
         if self.csv_export_file is not None:
             csv_export_file = self.csv_export_file
@@ -1137,7 +1185,8 @@ class MockTracRemoteBug:
         return {
             'id': self.id,
             'status': self.status,
-            'resolution': self.resolution,}
+            'resolution': self.resolution,
+            }
 
 
 class TestInternalXMLRPCTransport:
@@ -1440,9 +1489,9 @@ class TestRoundup(Roundup):
     batch_size = None
     trace_calls = False
 
-    def urlopen(self, url):
+    def urlopen(self, url, data=None):
         if self.trace_calls:
-            print "CALLED urlopen(%r)" % (url,)
+            print "CALLED urlopen(%r)" % (url)
 
         file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
 
@@ -1494,7 +1543,7 @@ class TestSourceForge(SourceForge):
 
     def _getPage(self, page):
         if self.trace_calls:
-            print "CALLED _getPage(%r)" % (page,)
+            print "CALLED _getPage(%r)" % (page)
 
         page_re = re.compile('support/tracker.php\?aid=([0-9]+)')
         bug_id = page_re.match(page).groups()[0]
@@ -1577,23 +1626,25 @@ class TestDebBugs(DebBugs):
         return bug
 
 
-class Urlib2TransportTestInfo:
+class UrlLib2TransportTestInfo:
     """A url info object for use in the test, returning
     a hard-coded cookie header.
     """
     cookies = 'foo=bar'
+
     def getheaders(self, header):
         """Return the hard-coded cookie header."""
         if header.lower() in ('cookie', 'set-cookie', 'set-cookie2'):
             return [self.cookies]
 
 
-class Urlib2TransportTestHandler(BaseHandler):
+class UrlLib2TransportTestHandler(BaseHandler):
     """A test urllib2 handler returning a hard-coded response."""
 
     def __init__(self):
         self.redirect_url = None
         self.raise_error = None
+        self.response = None
         self.accessed_urls = []
 
     def setRedirect(self, new_url):
@@ -1604,6 +1655,9 @@ class Urlib2TransportTestHandler(BaseHandler):
         """Raise `error` when `url` is accessed."""
         self.raise_error = error
         self.raise_url = url
+
+    def setResponse(self, response):
+        self.response = response
 
     def default_open(self, req):
         """Catch all requests and return a hard-coded response.
@@ -1625,24 +1679,47 @@ class Urlib2TransportTestHandler(BaseHandler):
             headers['location'] = self.redirect_url
             response = StringIO()
             response.info = lambda: headers
-            response.geturl = lambda: req.get_full_url()
+            response.geturl = req.get_full_url
             response.code = 302
             response.msg = 'Moved'
             self.redirect_url = None
             response = self.parent.error(
                 'http', req, response, 302, 'Moved', headers)
-        else:
-            xmlrpc_response = xmlrpclib.dumps(
-                (req.get_full_url(),), methodresponse=True)
-            response = StringIO(xmlrpc_response)
-            info = Urlib2TransportTestInfo()
+        elif self.response is not None:
+            response = StringIO(self.response)
+            info = UrlLib2TransportTestInfo()
             response.info = lambda: info
             response.code = 200
-            response.geturl = lambda: req.get_full_url()
+            response.geturl = req.get_full_url
+            response.msg = ''
+            self.response = None
+        else:
+            xmlrpc_response = xmlrpclib.dumps(
+                (req.get_full_url(), ), methodresponse=True)
+            response = StringIO(xmlrpc_response)
+            info = UrlLib2TransportTestInfo()
+            response.info = lambda: info
+            response.code = 200
+            response.geturl = req.get_full_url
             response.msg = ''
 
         return response
 
-def patch_transport_opener(transport):
-    """Patch the transport's opener to use a test handler."""
-    transport.opener.add_handler(Urlib2TransportTestHandler())
+
+def ensure_response_parser_is_expat(transport):
+    """Ensure the transport always selects the Expat-based response parser.
+
+    The response parser is chosen by xmlrpclib at runtime from a number of
+    choices, but the main Launchpad production environment selects Expat at
+    present.
+
+    Developer's machines could have other packages, `python-reportlab-accel`
+    (which provides the `sgmlop` module) for example, that cause different
+    response parsers to be chosen.
+    """
+    def getparser():
+        target = xmlrpclib.Unmarshaller(
+            use_datetime=transport._use_datetime)
+        parser = xmlrpclib.ExpatParser(target)
+        return parser, target
+    transport.getparser = getparser

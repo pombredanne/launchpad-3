@@ -10,7 +10,9 @@ __all__ = [
 
 
 from lp.answers.interfaces.questioncollection import (
-    IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
+    IQuestionCollection,
+    QUESTION_STATUS_DEFAULT_SEARCH,
+    )
 
 
 class IQuestionsPerson(IQuestionCollection):

@@ -7,15 +7,53 @@ __metaclass__ = type
 
 from unittest import TestLoader
 
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectDeletedEvent,
+    )
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.packaging import IPackagingUtil, PackagingType
+from lp.registry.interfaces.packaging import (
+    IPackagingUtil,
+    PackagingType,
+    )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.testing import login, TestCaseWithFactory
+from lp.registry.model.packaging import (
+    Packaging,
+    )
+from lp.testing import (
+    EventRecorder,
+    login,
+    TestCaseWithFactory,
+    )
 
-from canonical.testing import DatabaseFunctionalLayer
+
+class TestPackaging(TestCaseWithFactory):
+    """Test Packaging object."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_init_notifies(self):
+        """Creating a Packaging should generate an event."""
+        with EventRecorder() as recorder:
+            packaging = Packaging()
+        (event,) = recorder.events
+        self.assertIsInstance(event, ObjectCreatedEvent)
+        self.assertIs(packaging, event.object)
+
+    def test_destroySelf_notifies(self):
+        """destroySelf creates a notification."""
+        packaging_util = getUtility(IPackagingUtil)
+        packaging = self.factory.makePackaging()
+        with EventRecorder() as recorder:
+            removeSecurityProxy(packaging).destroySelf()
+        (event,) = recorder.events
+        self.assertIsInstance(event, ObjectDeletedEvent)
+        self.assertIs(removeSecurityProxy(packaging), event.object)
 
 
 class PackagingUtilMixin:
@@ -157,6 +195,18 @@ class TestDeletePackaging(TestCaseWithFactory):
                 "distroseries=ubuntu/hoary")
         else:
             self.fail("AssertionError was not raised.")
+
+    def test_deletePackaging_notifies(self):
+        """Deleting a Packaging creates a notification."""
+        packaging_util = getUtility(IPackagingUtil)
+        packaging = self.factory.makePackaging()
+        with EventRecorder() as recorder:
+            packaging_util.deletePackaging(
+                packaging.productseries, packaging.sourcepackagename,
+                packaging.distroseries)
+        (event,) = recorder.events
+        self.assertIsInstance(event, ObjectDeletedEvent)
+        self.assertIs(removeSecurityProxy(packaging), event.object)
 
 
 def test_suite():

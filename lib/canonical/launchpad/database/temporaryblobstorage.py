@@ -12,27 +12,33 @@ __all__ = [
 
 
 from cStringIO import StringIO
-from datetime import timedelta, datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
+import uuid
 
 from pytz import utc
-from sqlobject import StringCol, ForeignKey, SQLObjectNotFound
+from sqlobject import (
+    ForeignKey,
+    SQLObjectNotFound,
+    StringCol,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
-import uuid
 from canonical.config import config
-from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.interfaces import (
+from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.database.librarian import LibraryFileAlias
+from canonical.launchpad.interfaces.temporaryblobstorage import (
+    BlobTooLarge,
     ITemporaryBlobStorage,
     ITemporaryStorageManager,
-    ILibraryFileAliasSet,
-    BlobTooLarge,
     )
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.database.librarian import LibraryFileAlias
-
 from lp.services.job.interfaces.job import JobStatus
 
 
@@ -145,10 +151,4 @@ class TemporaryStorageManager:
 
     def default_temporary_blob_storage_list(self):
         """See `ITemporaryStorageManager`."""
-        # Return the 50 most recent blobs.
-        store = IStore(TemporaryBlobStorage)
-        return store.find(
-            TemporaryBlobStorage,
-            TemporaryBlobStorage.file_alias == LibraryFileAlias.id,
-            LibraryFileAlias.expires > datetime.utcnow().replace(tzinfo=utc)
-            ).order_by(TemporaryBlobStorage.date_created)
+        return []

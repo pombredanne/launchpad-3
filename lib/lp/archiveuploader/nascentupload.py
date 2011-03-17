@@ -18,23 +18,31 @@ Documentation on general design
 
 __metaclass__ = type
 
-import apt_pkg
 import os
 
+import apt_pkg
 from zope.component import getUtility
 
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from lp.app.errors import NotFoundError
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
-    UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
-    BaseBinaryUploadFile, DdebBinaryUploadFile, DebBinaryUploadFile)
+    BaseBinaryUploadFile,
+    CustomUploadFile,
+    DdebBinaryUploadFile,
+    DebBinaryUploadFile,
+    SourceUploadFile,
+    UploadError,
+    UploadWarning,
+    )
 from lp.archiveuploader.utils import determine_source_file_type
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from lp.soyuz.interfaces.archive import ArchivePurpose, MAIN_ARCHIVE_PURPOSES
-from canonical.launchpad.interfaces import (
-    IBinaryPackageNameSet, IDistributionSet, ILibraryFileAliasSet,
-    ISourcePackageNameSet, NotFoundError, QueueInconsistentStateError)
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
+from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 
 
 PARTNER_COMPONENT_NAME = 'partner'
@@ -85,24 +93,35 @@ class NascentUpload:
     # Defined if we successfully do_accept() and storeObjectsInDatabase()
     queue_root = None
 
-    def __init__(self, changesfile_path, policy, logger):
-        """Setup a ChangesFile based on given changesfile path.
+    def __init__(self, changesfile, policy, logger):
+        """Setup a NascentUpload for the given ChangesFile.
 
-        May raise FatalUploadError due to unrecoverable problems building
-        the ChangesFile object.
-        Also store given and initialized Upload Policy, as 'policy'
+        :param changesfile: the ChangesFile object to be uploaded.
+        :param policy: the upload policy to be used.
+        :param logger: the logger to be used.
         """
-        self.changesfile_path = changesfile_path
         self.policy = policy
         self.logger = logger
 
         self.rejections = []
         self.warnings = []
-
         self.librarian = getUtility(ILibraryFileAliasSet)
+
+        self.changes = changesfile
+
+    @classmethod
+    def from_changesfile_path(cls, changesfile_path, policy, logger):
+        """Create a NascentUpload from the given changesfile path.
+
+        May raise FatalUploadError due to unrecoverable problems building
+        the ChangesFile object.
+
+        :param changesfile_path: path to the changesfile to be uploaded.
+        :param policy: the upload policy to be used.
+        :param logger: the logger to be used.
+        """
         try:
-            self.changes = ChangesFile(
-                changesfile_path, self.policy, self.logger)
+            changesfile = ChangesFile(changesfile_path, policy, logger)
         except UploadError, e:
             # We can't run reject() because unfortunately we don't have
             # the address of the uploader to notify -- we broke in that
@@ -111,8 +130,9 @@ class NascentUpload:
             # rejection to the archive admins. For now, this will end
             # up in the script log.
             raise FatalUploadError(str(e))
+        return cls(changesfile, policy, logger)
 
-    def process(self):
+    def process(self, build=None):
         """Process this upload, checking it against policy, loading it into
         the database if it seems okay.
 
@@ -120,10 +140,11 @@ class NascentUpload:
         UploadError will be raised and sent up to the caller. If this happens
         the caller should call the reject method and process a rejection.
         """
+        policy = self.policy
         self.logger.debug("Beginning processing.")
 
         try:
-            self.policy.setDistroSeriesAndPocket(self.changes.suite_name)
+            policy.setDistroSeriesAndPocket(self.changes.suite_name)
         except NotFoundError:
             self.reject(
                 "Unable to find distroseries: %s" % self.changes.suite_name)
@@ -147,6 +168,7 @@ class NascentUpload:
             self._check_sourceful_consistency()
         if self.binaryful:
             self._check_binaryful_consistency()
+            self.run_and_collect_errors(self._matchDDEBs)
 
         self.run_and_collect_errors(self.changes.verify)
 
@@ -154,68 +176,15 @@ class NascentUpload:
         for uploaded_file in self.changes.files:
             self.run_and_collect_errors(uploaded_file.verify)
 
-        unmatched_ddebs = {}
-        for uploaded_file in self.changes.files:
-            if isinstance(uploaded_file, DdebBinaryUploadFile):
-                ddeb_key = (uploaded_file.package, uploaded_file.version,
-                            uploaded_file.architecture)
-                if ddeb_key in unmatched_ddebs:
-                    self.reject("Duplicated debug packages: %s %s (%s)" %
-                        ddeb_key)
-                else:
-                    unmatched_ddebs[ddeb_key] = uploaded_file
-
-        for uploaded_file in self.changes.files:
-            # We need exactly a DEB, not a DDEB.
-            if (isinstance(uploaded_file, DebBinaryUploadFile) and
-                not isinstance(uploaded_file, DdebBinaryUploadFile)):
-                try:
-                    matching_ddeb = unmatched_ddebs.pop(
-                        (uploaded_file.package + '-dbgsym',
-                         uploaded_file.version,
-                         uploaded_file.architecture))
-                except KeyError:
-                    continue
-                uploaded_file.ddeb_file = matching_ddeb
-                matching_ddeb.deb_file = uploaded_file
-
-        if len(unmatched_ddebs) > 0:
-            self.reject("Orphaned debug packages: %s" % ', '.join('%s %s (%s)' % d
-                for d in unmatched_ddebs))
-
         if (len(self.changes.files) == 1 and
             isinstance(self.changes.files[0], CustomUploadFile)):
             self.logger.debug("Single Custom Upload detected.")
         else:
-            if self.sourceful and not self.policy.can_upload_source:
-                self.reject("Upload is sourceful, but policy refuses "
-                            "sourceful uploads.")
+            policy.validateUploadType(self)
 
-            elif self.binaryful and not self.policy.can_upload_binaries:
-                messages = [
-                    "Upload rejected because it contains binary packages.",
-                    "Ensure you are using `debuild -S`, or an equivalent",
-                    "command, to generate only the source package before",
-                    "re-uploading."
-                    ]
-                if self.is_ppa:
-                    messages.append(
-                    "See https://help.launchpad.net/Packaging/PPA for more "
-                    "information.")
-                self.reject(" ".join(messages))
-
-            elif (self.sourceful and self.binaryful and
-                  not self.policy.can_upload_mixed):
-                self.reject("Upload is source/binary but policy refuses "
-                            "mixed uploads.")
-
-            elif self.sourceful and not self.changes.dsc:
+            if self.sourceful and not self.changes.dsc:
                 self.reject(
                     "Unable to find the DSC file in the source upload.")
-
-            else:
-                # Upload content are consistent with the current policy.
-                pass
 
             # Apply the overrides from the database. This needs to be done
             # before doing component verifications because the component
@@ -226,10 +195,10 @@ class NascentUpload:
         self.overrideArchive()
 
         # Check upload rights for the signer of the upload.
-        self.verify_acl()
+        self.verify_acl(build)
 
         # Perform policy checks.
-        self.policy.checkUpload(self)
+        policy.checkUpload(self)
 
         # That's all folks.
         self.logger.debug("Finished checking upload.")
@@ -240,7 +209,7 @@ class NascentUpload:
     @property
     def filename(self):
         """Return the changesfile name."""
-        return os.path.basename(self.changesfile_path)
+        return os.path.basename(self.changesfile.filepath)
 
     @property
     def is_new(self):
@@ -253,7 +222,6 @@ class NascentUpload:
     #
     # Overall consistency checks
     #
-
     def _check_overall_consistency(self):
         """Heuristics checks on upload contents and declared architecture.
 
@@ -328,7 +296,8 @@ class NascentUpload:
         """Heuristic checks on a sourceful upload.
 
         Raises AssertionError when called for a non-sourceful upload.
-        Ensures a sourceful upload has exactly one DSC.
+        Ensures a sourceful upload has exactly one DSC. All further source
+        checks are performed later by the DSC.
         """
         assert self.sourceful, (
             "Source consistency check called for a non-source upload")
@@ -368,10 +337,49 @@ class NascentUpload:
         if len(considered_archs) > max:
             self.reject("Upload has more architetures than it is supported.")
 
+    def _matchDDEBs(self):
+        """Check and link DEBs and DDEBs in the upload.
+
+        Matches each DDEB to its corresponding DEB, adding links in both
+        directions. Unmatched or duplicated DDEBs result in upload errors.
+
+        This method is an error generator, i.e, it returns an iterator over
+        all exceptions that are generated while processing all mentioned
+        files.
+        """
+        unmatched_ddebs = {}
+        for uploaded_file in self.changes.files:
+            if isinstance(uploaded_file, DdebBinaryUploadFile):
+                ddeb_key = (uploaded_file.package, uploaded_file.version,
+                            uploaded_file.architecture)
+                if ddeb_key in unmatched_ddebs:
+                    yield UploadError(
+                        "Duplicated debug packages: %s %s (%s)" % ddeb_key)
+                else:
+                    unmatched_ddebs[ddeb_key] = uploaded_file
+
+        for uploaded_file in self.changes.files:
+            # We need exactly a DEB, not a DDEB.
+            if (isinstance(uploaded_file, DebBinaryUploadFile) and
+                not isinstance(uploaded_file, DdebBinaryUploadFile)):
+                try:
+                    matching_ddeb = unmatched_ddebs.pop(
+                        (uploaded_file.package + '-dbgsym',
+                         uploaded_file.version,
+                         uploaded_file.architecture))
+                except KeyError:
+                    continue
+                uploaded_file.ddeb_file = matching_ddeb
+                matching_ddeb.deb_file = uploaded_file
+
+        if len(unmatched_ddebs) > 0:
+            yield UploadError(
+                "Orphaned debug packages: %s" % ', '.join(
+                    '%s %s (%s)' % d for d in unmatched_ddebs))
+
     #
     # Helpers for warnings and rejections
     #
-
     def run_and_check_error(self, callable):
         """Run the given callable and process errors and warnings.
 
@@ -425,7 +433,7 @@ class NascentUpload:
         if not self.policy.distroseries:
             # Greasy hack until above bug is fixed.
             return False
-        return self.policy.archive.purpose == ArchivePurpose.PPA
+        return self.policy.archive.is_ppa
 
     def getComponents(self):
         """Return a set of components present in the uploaded files."""
@@ -470,8 +478,7 @@ class NascentUpload:
     #
     # Signature and ACL stuff
     #
-
-    def verify_acl(self):
+    def verify_acl(self, build=None):
         """Check the signer's upload rights.
 
         The signer must have permission to upload to either the component
@@ -486,10 +493,13 @@ class NascentUpload:
         if self.binaryful:
             return
 
-        # Set up some convenient shortcut variables.
-
-        uploader = self.policy.getUploader(self.changes)
-        archive = self.policy.archive
+        # The build can have an explicit uploader, which may be different
+        # from the changes file signer. (i.e in case of daily source package
+        # builds)
+        if build is not None:
+            uploader = build.getUploader(self.changes)
+        else:
+            uploader = self.changes.signer
 
         # If we have no signer, there's no ACL we can apply.
         if uploader is None:
@@ -499,8 +509,8 @@ class NascentUpload:
         source_name = getUtility(
             ISourcePackageNameSet).queryByName(self.changes.dsc.package)
 
-        rejection_reason = archive.checkUpload(
-            uploader, self.policy.distroseries, source_name, 
+        rejection_reason = self.policy.archive.checkUpload(
+            uploader, self.policy.distroseries, source_name,
             self.changes.dsc.component, self.policy.pocket, not self.is_new)
 
         if rejection_reason is not None:
@@ -509,7 +519,6 @@ class NascentUpload:
     #
     # Handling checking of versions and overrides
     #
-
     def getSourceAncestry(self, uploaded_file):
         """Return the last published source (ancestry) for a given file.
 
@@ -554,11 +563,13 @@ class NascentUpload:
                 archive = self.policy.archive
             else:
                 archive = None
-            candidates = self.policy.distroseries.getPublishedReleases(
+            candidates = self.policy.distroseries.getPublishedSources(
                 source_name, include_pending=True, pocket=pocket,
                 archive=archive)
-            if candidates:
+            try:
                 return candidates[0]
+            except IndexError:
+                pass
 
         return None
 
@@ -581,6 +592,9 @@ class NascentUpload:
         else:
             ancestry_name = uploaded_file.package
 
+        # Avoid cyclic import.
+        from lp.soyuz.interfaces.binarypackagename import (
+            IBinaryPackageNameSet)
         binary_name = getUtility(
             IBinaryPackageNameSet).queryByName(ancestry_name)
 
@@ -738,8 +752,8 @@ class NascentUpload:
             return
 
         component_override_map = {
-            'contrib' : 'multiverse',
-            'non-free' : 'multiverse',
+            'contrib': 'multiverse',
+            'non-free': 'multiverse',
             }
 
         # Apply the component override and default to universe.
@@ -813,8 +827,7 @@ class NascentUpload:
     #
     # Actually processing accepted or rejected uploads -- and mailing people
     #
-
-    def do_accept(self, notify=True):
+    def do_accept(self, notify=True, build=None):
         """Accept the upload into the queue.
 
         This *MAY* in extreme cases cause a database error and thus
@@ -824,13 +837,14 @@ class NascentUpload:
         constraint.
 
         :param notify: True to send an email, False to not send one.
+        :param build: The build associated with this upload.
         """
         if self.is_rejected:
             self.reject("Alas, someone called do_accept when we're rejected")
             self.do_reject(notify)
             return False
         try:
-            self.storeObjectsInDatabase()
+            self.storeObjectsInDatabase(build=build)
 
             # Send the email.
             # There is also a small corner case here where the DB transaction
@@ -849,22 +863,26 @@ class NascentUpload:
 
         except (SystemExit, KeyboardInterrupt):
             raise
+        except QueueInconsistentStateError, e:
+            # A QueueInconsistentStateError is expected if the rejection
+            # is a routine rejection due to a bad package upload.
+            # Log at info level so LaunchpadCronScript doesn't generate an
+            # OOPS.
+            func = self.logger.info
+            return self._reject_with_logging(e, notify, func)
         except Exception, e:
             # Any exception which occurs while processing an accept will
             # cause a rejection to occur. The exception is logged in the
             # reject message rather than being swallowed up.
-            self.reject("%s" % e)
-            # Let's log tracebacks for uncaught exceptions ...
-            self.logger.error(
-                'Exception while accepting:\n %s' % e, exc_info=True)
-            self.do_reject(notify)
-            return False
-        else:
-            self.cleanUp()
+            func = self.logger.error
+            return self._reject_with_logging(e, notify, func)
 
-    def cleanUp(self):
-        if self.changes.dsc is not None:
-            self.changes.dsc.cleanUp()
+    def _reject_with_logging(self, error, notify, log_func):
+        """Helper to reject an upload and log it using the logger function."""
+        self.reject("%s" % error)
+        log_func('Exception while accepting:\n %s' % error, exc_info=True)
+        self.do_reject(notify)
+        return False
 
     def do_reject(self, notify=True):
         """Reject the current upload given the reason provided."""
@@ -884,6 +902,8 @@ class NascentUpload:
         if not self.queue_root:
             self.queue_root = self._createQueueEntry()
 
+        # Avoid cyclic imports.
+        from lp.soyuz.interfaces.queue import QueueInconsistentStateError
         try:
             self.queue_root.setRejected()
         except QueueInconsistentStateError:
@@ -895,7 +915,6 @@ class NascentUpload:
         self.queue_root.notify(summary_text=self.rejection_message,
             changes_file_object=changes_file_object, logger=self.logger)
         changes_file_object.close()
-        self.cleanUp()
 
     def _createQueueEntry(self):
         """Return a PackageUpload object."""
@@ -920,8 +939,7 @@ class NascentUpload:
     #
     # Inserting stuff in the database
     #
-
-    def storeObjectsInDatabase(self):
+    def storeObjectsInDatabase(self, build=None):
         """Insert this nascent upload into the database."""
 
         # Queue entries are created in the NEW state by default; at the
@@ -937,7 +955,8 @@ class NascentUpload:
         sourcepackagerelease = None
         if self.sourceful:
             assert self.changes.dsc, "Sourceful upload lacks DSC."
-            build = self.changes.dsc.findBuild()
+            if build is not None:
+                self.changes.dsc.checkBuild(build)
             sourcepackagerelease = self.changes.dsc.storeInDatabase(build)
             package_upload_source = self.queue_root.addSource(
                 sourcepackagerelease)
@@ -970,8 +989,6 @@ class NascentUpload:
                     # so late in the game is that in the
                     # mixed-upload case we only have a
                     # sourcepackagerelease to verify here!
-                    assert self.policy.can_upload_mixed, (
-                        "Current policy does not allow mixed uploads.")
                     assert sourcepackagerelease, (
                         "No sourcepackagerelease was found.")
                     binary_package_file.verifySourcePackageRelease(
@@ -980,11 +997,21 @@ class NascentUpload:
                     sourcepackagerelease = (
                         binary_package_file.findSourcePackageRelease())
 
-                build = binary_package_file.findBuild(sourcepackagerelease)
-                assert self.queue_root.pocket == build.pocket, (
+                # Find the build for this particular binary package file.
+                if build is None:
+                    bpf_build = binary_package_file.findBuild(
+                        sourcepackagerelease)
+                else:
+                    bpf_build = build
+                if bpf_build.source_package_release != sourcepackagerelease:
+                    raise AssertionError(
+                        "Attempt to upload binaries specifying build %s, "
+                        "where they don't fit." % bpf_build.id)
+                binary_package_file.checkBuild(bpf_build)
+                assert self.queue_root.pocket == bpf_build.pocket, (
                     "Binary was not build for the claimed pocket.")
-                binary_package_file.storeInDatabase(build)
-                processed_builds.append(build)
+                binary_package_file.storeInDatabase(bpf_build)
+                processed_builds.append(bpf_build)
 
             # Store the related builds after verifying they were built
             # from the same source.
@@ -1043,8 +1070,7 @@ class NascentUpload:
             # See if there is an archive to override with.
             distribution = self.policy.distroseries.distribution
             archive = distribution.getArchiveByComponent(
-                PARTNER_COMPONENT_NAME
-                )
+                PARTNER_COMPONENT_NAME)
 
             # Check for data problems:
             if not archive:

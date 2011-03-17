@@ -9,30 +9,40 @@ __all__ = [
     'BugJobDerived',
     ]
 
+from lazr.delegates import delegates
 import simplejson
-
 from sqlobject import SQLObjectNotFound
-from storm.base import Storm
 from storm.expr import And
-from storm.locals import Int, Reference, Unicode
-
+from storm.locals import (
+    Int,
+    Reference,
+    Unicode,
+    )
 from zope.component import getUtility
-from zope.interface import classProvides, implements
-from zope.security.proxy import removeSecurityProxy
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
-
-from lazr.delegates import delegates
-
-from lp.bugs.interfaces.bugjob import BugJobType, IBugJob, IBugJobSource
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
+from lp.bugs.interfaces.bugjob import (
+    BugJobType,
+    IBugJob,
+    IBugJobSource,
+    )
 from lp.bugs.model.bug import Bug
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
+from lp.services.database.stormbase import StormBase
 
 
-class BugJob(Storm):
+class BugJob(StormBase):
     """Base class for jobs related to Bugs."""
 
     implements(IBugJob)
@@ -128,7 +138,7 @@ class BugJobDerived(BaseRunnableJob):
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
-        vars =  BaseRunnableJob.getOopsVars(self)
+        vars = BaseRunnableJob.getOopsVars(self)
         vars.extend([
             ('bug_id', self.context.bug.id),
             ('bug_job_id', self.context.id),

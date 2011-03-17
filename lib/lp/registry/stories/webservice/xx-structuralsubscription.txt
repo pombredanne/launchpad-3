@@ -22,7 +22,7 @@ getSubscriptions named operation. There are none just yet.
     >>> subscriptions = webservice.named_get(
     ...     '/fooix', 'getSubscriptions').jsonBody()
     >>> pprint_collection(subscriptions)
-    start: None
+    start: 0
     total_size: 0
     ---
 
@@ -46,6 +46,7 @@ Now Eric subscribes to Fooix's bug notifications.
     start: 0
     total_size: 1
     ---
+    bug_filters_collection_link: u'.../fooix/+subscription/eric/bug_filters'
     date_created: u'...'
     date_last_updated: u'...'
     resource_type_link: u'http://.../#structural_subscription'
@@ -60,6 +61,7 @@ He can examine his subscription directly.
     >>> pprint_entry(eric_webservice.named_get(
     ...     '/fooix', 'getSubscription',
     ...     person=webservice.getAbsoluteUrl('/~eric')).jsonBody())
+    bug_filters_collection_link: u'.../fooix/+subscription/eric/bug_filters'
     date_created: u'...'
     date_last_updated: u'...'
     resource_type_link: u'http://.../#structural_subscription'
@@ -94,8 +96,7 @@ tries this.
     ...     subscriber=webservice.getAbsoluteUrl('/~pythons'))
     HTTP/1.1 401 Unauthorized
     ...
-    UserCannotSubscribePerson: eric does not have permission to subscribe pythons.
-    <BLANKLINE>
+    eric does not have permission to subscribe pythons.
 
 Oops, Eric isn't a team admin. Eric gets Michael to try, since he is an
 admin by virtue of his ownership.
@@ -117,6 +118,7 @@ admin by virtue of his ownership.
     start: 0
     total_size: 1
     ---
+    bug_filters_collection_link: u'.../fooix/+subscription/pythons/bug_filters'
     date_created: u'...'
     date_last_updated: u'...'
     resource_type_link: u'http://.../#structural_subscription'
@@ -133,8 +135,7 @@ Eric can't unsubscribe the team either.
     ...     subscriber=webservice.getAbsoluteUrl('/~pythons'))
     HTTP/1.1 401 Unauthorized
     ...
-    UserCannotSubscribePerson: eric does not have permission to unsubscribe pythons.
-    <BLANKLINE>
+    eric does not have permission to unsubscribe pythons.
 
 Michael can, though.
 
@@ -146,6 +147,6 @@ Michael can, though.
     >>> subscriptions = webservice.named_get(
     ...     '/fooix', 'getSubscriptions').jsonBody()
     >>> pprint_collection(subscriptions)
-    start: None
+    start: 0
     total_size: 0
     ---

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -12,61 +12,89 @@ __all__ = [
     ]
 
 from operator import attrgetter
-from zope.interface import classProvides, implements
-from zope.component import getUtility
 
-from sqlobject.sqlbuilder import SQLConstant
-from storm.locals import And, Desc, In, Select, SQL, Store
+from storm.locals import (
+    And,
+    Desc,
+    Select,
+    Store,
+    )
+from zope.component import getUtility
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import flush_database_updates, sqlvalues
+from canonical.database.sqlbase import (
+    flush_database_updates,
+    sqlvalues,
+    )
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.lazr.utils import smartquote
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.code.model.branch import Branch
-from lp.code.model.hasbranches import (
-    HasBranchesMixin, HasCodeImportsMixin, HasMergeProposalsMixin)
+from lp.answers.interfaces.questioncollection import (
+    QUESTION_STATUS_DEFAULT_SEARCH,
+    )
+from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.answers.model.question import (
+    QuestionTargetMixin,
+    QuestionTargetSearch,
+    )
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.model.bug import get_bug_tags_open_count
-from lp.bugs.model.bugtarget import BugTargetBase, HasBugHeatMixin
+from lp.bugs.model.bugtarget import (
+    BugTargetBase,
+    HasBugHeatMixin,
+    )
 from lp.bugs.model.bugtask import BugTask
-from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
-from lp.soyuz.model.binarypackagebuild import (
-    BinaryPackageBuild, BinaryPackageBuildSet)
-from lp.soyuz.model.distributionsourcepackagerelease import (
-    DistributionSourcePackageRelease)
-from lp.soyuz.model.distroseriessourcepackagerelease import (
-    DistroSeriesSourcePackageRelease)
-from lp.registry.model.packaging import Packaging
-from lp.translations.model.potemplate import (
-    HasTranslationTemplatesMixin,
-    POTemplate,
-    TranslationTemplatesCollection)
-from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory)
-from lp.answers.model.question import (
-    QuestionTargetMixin, QuestionTargetSearch)
-from lp.code.model.seriessourcepackagebranch import (
-    SeriesSourcePackageBranch)
-from lp.soyuz.model.sourcepackagerelease import (
-    SourcePackageRelease)
-from lp.translations.model.translationimportqueue import (
-    HasTranslationImportsMixin)
-from canonical.launchpad.helpers import shortlist
-from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from lp.registry.interfaces.packaging import PackagingType
-from lp.registry.interfaces.distribution import NoPartnerArchive
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
-from lp.answers.interfaces.questioncollection import (
-    QUESTION_STATUS_DEFAULT_SEARCH)
-from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.seriessourcepackagebranch import (
-    IMakeOfficialBranchLinks)
+    IMakeOfficialBranchLinks,
+    )
+from lp.code.model.branch import Branch
+from lp.code.model.hasbranches import (
+    HasBranchesMixin,
+    HasCodeImportsMixin,
+    HasMergeProposalsMixin,
+    )
+from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
+from lp.registry.interfaces.distribution import NoPartnerArchive
+from lp.registry.interfaces.packaging import PackagingType
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import (
-    ISourcePackage, ISourcePackageFactory)
+    ISourcePackage,
+    ISourcePackageFactory,
+    )
+from lp.registry.model.packaging import Packaging
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    PackageUploadCustomFormat,
+    )
+from lp.soyuz.interfaces.archive import (
+    IArchiveSet,
+    )
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.soyuz.model.binarypackagebuild import (
+    BinaryPackageBuild,
+    BinaryPackageBuildSet,
+    )
+from lp.soyuz.model.distributionsourcepackagerelease import (
+    DistributionSourcePackageRelease,
+    )
+from lp.soyuz.model.distroseriessourcepackagerelease import (
+    DistroSeriesSourcePackageRelease,
+    )
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.translations.model.hastranslationimports import (
+    HasTranslationImportsMixin,
+    )
+from lp.translations.model.hastranslationtemplates import (
+    HasTranslationTemplatesMixin,
+    )
+from lp.translations.model.potemplate import TranslationTemplatesCollection
 
 
 class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
@@ -184,7 +212,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         return cls(sourcepackagename, distroseries)
 
     def __repr__(self):
-        return '<%s %s>' % (self.__class__.__name__, self.path)
+        return '<%s %r %r %r>' % (self.__class__.__name__,
+            self.distribution, self.distroseries, self.sourcepackagename)
 
     def _get_ubuntu(self):
         # XXX: kiko 2006-03-20: Ideally, it would be possible to just do
@@ -307,6 +336,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         name_summaries = [
             '%s: %s' % (binary.name, binary.summary)
             for binary in current.sample_binary_packages]
+        if name_summaries == []:
+            return None
         return '\n'.join(name_summaries)
 
     @property
@@ -322,9 +353,8 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     @property
     def releases(self):
         """See `ISourcePackage`."""
-        order_const = "debversion_sort_key(SourcePackageRelease.version)"
         packages = self._getPublishingHistory(
-            order_by=[SQLConstant(order_const),
+            order_by=["SourcePackageRelease.version",
                       "SourcePackagePublishingHistory.datepublished"])
 
         return [DistributionSourcePackageRelease(
@@ -346,13 +376,13 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                     SourcePackageRelease.id,
                 SourcePackageRelease.sourcepackagename ==
                     self.sourcepackagename,
-                In(SourcePackagePublishingHistory.archiveID,
+                SourcePackagePublishingHistory.archiveID.is_in(
                     self.distribution.all_distro_archive_ids)))
 
         return IStore(SourcePackageRelease).find(
             SourcePackageRelease,
-            In(SourcePackageRelease.id, subselect)).order_by(Desc(
-                SQL("debversion_sort_key(SourcePackageRelease.version)")))
+            SourcePackageRelease.id.is_in(subselect)).order_by(Desc(
+                SourcePackageRelease.version))
 
     @property
     def name(self):
@@ -443,9 +473,18 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """See `IBugTarget`."""
         return self.distribution.bug_reported_acknowledgement
 
+    @property
+    def enable_bugfiling_duplicate_search(self):
+        """See `IBugTarget`."""
+        return (
+            self.distribution_sourcepackage.enable_bugfiling_duplicate_search)
+
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this source package."""
         search_params.setSourcePackage(self)
+
+    def _getOfficialTagClause(self):
+        return self.distroseries._getOfficialTagClause()
 
     @property
     def official_bug_tags(self):
@@ -488,22 +527,29 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             'BugTask.distroseries = %s AND BugTask.sourcepackagename = %s' %
                 sqlvalues(self.distroseries, self.sourcepackagename))
 
-    def setPackaging(self, productseries, user):
+    def setPackaging(self, productseries, owner):
+        """See `ISourcePackage`."""
         target = self.direct_packaging
         if target is not None:
             # we should update the current packaging
             target.productseries = productseries
-            target.owner = user
+            target.owner = owner
             target.datecreated = UTC_NOW
         else:
             # ok, we need to create a new one
             Packaging(
                 distroseries=self.distroseries,
                 sourcepackagename=self.sourcepackagename,
-                productseries=productseries, owner=user,
+                productseries=productseries, owner=owner,
                 packaging=PackagingType.PRIME)
         # and make sure this change is immediately available
         flush_database_updates()
+
+    def deletePackaging(self):
+        """See `ISourcePackage`."""
+        if self.direct_packaging is None:
+            return
+        self.direct_packaging.destroySelf()
 
     def __hash__(self):
         """See `ISourcePackage`."""
@@ -563,11 +609,15 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             % sqlvalues(BuildStatus.FULLYBUILT))
 
         # Ordering according status
-        # * NEEDSBUILD & BUILDING by -lastscore
+        # * NEEDSBUILD, BUILDING & UPLOADING by -lastscore
         # * SUPERSEDED by -datecreated
         # * FULLYBUILT & FAILURES by -datebuilt
         # It should present the builds in a more natural order.
-        if build_state in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
+        if build_state in [
+            BuildStatus.NEEDSBUILD,
+            BuildStatus.BUILDING,
+            BuildStatus.UPLOADING,
+            ]:
             orderBy = ["-BuildQueue.lastscore"]
             clauseTables.append('BuildPackageJob')
             condition_clauses.append(

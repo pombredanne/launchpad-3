@@ -48,7 +48,7 @@ The search_text parameter will return questions matching the query using the
 regular full text algorithm.
 
     # Because not everyone uses a real editor <wink>
-    >>> from canonical.encoding import ascii_smash
+    >>> from lp.services.encoding import ascii_smash
     >>> for question in question_set.searchQuestions(search_text='firefox'):
     ...     print ascii_smash(question.title), question.target.displayname
     Problemas de Impressao no Firefox                Mozilla Firefox
@@ -164,6 +164,23 @@ questions are written in launchpad.
 Active projects
 ===============
 
+Set Up
+------
+
+The test assume some database values have been set for usage enums, so first
+we'll set those up.
+
+    >>> import transaction
+    >>> from lp.app.enums import ServiceUsage
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> login('admin@canonical.com')
+    >>> firefox.answers_usage = ServiceUsage.LAUNCHPAD
+    >>> ubuntu.answers_usage = ServiceUsage.LAUNCHPAD
+    >>> transaction.commit()    
+
 This method can be used to retrieve the projects that are the most actively
 using the Answer Tracker in the last 60 days.  By active, we mean that the
 project is registered as officially using Answers and had some questions asked
@@ -177,10 +194,8 @@ Initially, no projects are returned.
 
 Then some recent questions are created on a number of projects.
 
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.answers.testing import QuestionFactory
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> landscape = getUtility(IProductSet).getByName('landscape')
@@ -208,14 +223,14 @@ The method returns only projects which officially use the Answer Tracker.  The
 order of the returned projects is based on the number of questions asked
 during the period.
 
-    >>> ubuntu.official_answers
-    True
-    >>> firefox.official_answers
-    True
-    >>> landscape.official_answers
-    False
-    >>> launchpad.official_answers
-    True
+    >>> print ubuntu.answers_usage.name
+    LAUNCHPAD
+    >>> print firefox.answers_usage.name
+    LAUNCHPAD
+    >>> print landscape.answers_usage.name
+    UNKNOWN
+    >>> print launchpad.answers_usage.name
+    LAUNCHPAD
 
     # Launchpad is not returned because the question was not asked in
     # the last 60 days.
@@ -223,6 +238,7 @@ during the period.
     ...     print project.displayname
     Ubuntu
     Mozilla Firefox
+
 
 The method accepts an optional limit parameter limiting the number of
 project returned:

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -14,21 +14,23 @@ import textwrap
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.librarian.interfaces import ILibrarianClient
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+    TranslationFileFormat,
+    )
 from lp.translations.interfaces.translationimporter import (
     ITranslationFormatImporter,
     TranslationFormatInvalidInputError,
-    TranslationFormatSyntaxError)
+    TranslationFormatSyntaxError,
+    )
 from lp.translations.interfaces.translations import TranslationConstants
+from lp.translations.utilities.mozilla_dtd_parser import DtdFile
+from lp.translations.utilities.mozilla_zip import MozillaZipTraversal
 from lp.translations.utilities.translation_common_format import (
     TranslationFileData,
-    TranslationMessageData)
-from lp.translations.utilities.mozilla_dtd_parser import DtdFile
-from lp.translations.utilities.mozilla_zip import (
-    MozillaZipTraversal)
+    TranslationMessageData,
+    )
 from lp.translations.utilities.xpi_header import XpiHeader
-from canonical.librarian.interfaces import ILibrarianClient
 
 
 def add_source_comment(message, comment):
@@ -378,7 +380,7 @@ class MozillaXpiImporter:
         self.productseries = None
         self.distroseries = None
         self.sourcepackagename = None
-        self.is_published = False
+        self.by_maintainer = False
         self._translation_file = None
 
     def getFormat(self, file_contents):
@@ -404,7 +406,7 @@ class MozillaXpiImporter:
         self.distroseries = translation_import_queue_entry.distroseries
         self.sourcepackagename = (
             translation_import_queue_entry.sourcepackagename)
-        self.is_published = translation_import_queue_entry.is_published
+        self.by_maintainer = translation_import_queue_entry.by_maintainer
 
         librarian_client = getUtility(ILibrarianClient)
         content = librarian_client.getFileByAlias(

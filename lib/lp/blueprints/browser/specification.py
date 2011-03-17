@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Specification views."""
@@ -40,45 +40,154 @@ __all__ = [
 
 from operator import attrgetter
 import os
-from subprocess import Popen, PIPE
+from subprocess import (
+    PIPE,
+    Popen,
+    )
 
+from lazr.restful.interface import use_template
+from lazr.restful.interfaces import (
+    IFieldHTMLRenderer,
+    IWebServiceClientRequest,
+    )
+from zope.app.form.browser import (
+    TextAreaWidget,
+    TextWidget,
+    )
+from zope.app.form.browser.itemswidgets import DropdownWidget
+from zope import component
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
-from zope.app.form.browser import TextAreaWidget, TextWidget
-from zope.app.form.browser.itemswidgets import DropdownWidget
 from zope.formlib import form
 from zope.formlib.form import Fields
-from zope.interface import Interface
-from zope.schema import Choice
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.interface import (
+    implementer,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
-
+from canonical.launchpad.browser.launchpad import AppFrontPageSearchView
+from canonical.launchpad.webapp import (
+    canonical_url,
+    LaunchpadView,
+    Navigation,
+    stepthrough,
+    stepto,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.menu import (
+    ContextMenu,
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    safe_action,
+    )
+from lp.app.browser.lazrjs import (
+    BooleanChoiceWidget,
+    EnumChoiceWidget,
+    InlineEditPickerWidget,
+    TextAreaEditorWidget,
+    TextLineEditorWidget,
+    )
+from lp.app.browser.tales import (
+    DateTimeFormatterAPI,
+    format_link,
+    )
+from lp.blueprints.browser.specificationtarget import HasSpecificationsView
+from lp.blueprints.enums import (
+    NewSpecificationDefinitionStatus,
+    SpecificationDefinitionStatus,
+    SpecificationImplementationStatus,
+    )
+from lp.blueprints.interfaces.specification import (
+    ISpecification,
+    ISpecificationSet,
+    )
+from lp.blueprints.errors import TargetAlreadyHasSpecification
+from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
+from lp.blueprints.interfaces.sprintspecification import ISprintSpecification
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
-from lp.blueprints.interfaces.specification import (
-    INewSpecification, INewSpecificationSeriesGoal, INewSpecificationSprint,
-    INewSpecificationTarget, INewSpecificationProjectTarget, ISpecification,
-    ISpecificationSet, SpecificationDefinitionStatus)
-from lp.blueprints.interfaces.specificationbranch import (
-    ISpecificationBranch)
-from lp.blueprints.interfaces.sprintspecification import (
-    ISprintSpecification)
+from lp.services.propertycache import cachedproperty
 
-from lp.blueprints.browser.specificationtarget import (
-    HasSpecificationsView)
 
-from canonical.launchpad.webapp import (
-    LaunchpadView, LaunchpadEditFormView, LaunchpadFormView,
-    Navigation, action, canonical_url,
-    safe_action, stepthrough, stepto, custom_widget)
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.menu import (
-    ContextMenu, enabled_with_permission, Link, NavigationMenu)
-from canonical.launchpad.browser.launchpad import AppFrontPageSearchView
+class INewSpecification(Interface):
+    """A schema for a new specification."""
+
+    use_template(ISpecification, include=[
+        'name',
+        'title',
+        'specurl',
+        'summary',
+        'assignee',
+        'drafter',
+        'approver',
+        ])
+
+    definition_status = Choice(
+        title=_('Definition Status'),
+        vocabulary=NewSpecificationDefinitionStatus,
+        default=NewSpecificationDefinitionStatus.NEW,
+        description=_(
+            "The current status of the process to define the "
+            "feature and get approval for the implementation plan."))
+
+
+class INewSpecificationProjectTarget(Interface):
+    """A mixin schema for a new specification.
+
+    Requires the user to specify a product from a given project.
+    """
+    target = Choice(
+        title=_("For"),
+        description=_("The project for which this proposal is being made."),
+        required=True, vocabulary='ProjectProducts')
+
+
+class INewSpecificationSeriesGoal(Interface):
+    """A mixin schema for a new specification.
+
+    Allows the user to propose the specification as a series goal.
+    """
+    goal = Bool(title=_('Propose for series goal'),
+                description=_("Check this to indicate that you wish to "
+                              "propose this blueprint as a series goal."),
+                required=True, default=False)
+
+
+class INewSpecificationSprint(Interface):
+    """A mixin schema for a new specification.
+
+    Allows the user to propose the specification for discussion at a sprint.
+    """
+    sprint = Choice(title=_("Propose for sprint"),
+                    description=_("The sprint to which agenda this "
+                                  "blueprint is being suggested."),
+                    required=False, vocabulary='FutureSprint')
+
+
+class INewSpecificationTarget(Interface):
+    """A mixin schema for a new specification.
+
+    Requires the user to specify a distribution or a product as a target.
+    """
+    use_template(ISpecification, include=['target'])
 
 
 class NewSpecificationView(LaunchpadFormView):
@@ -106,7 +215,7 @@ class NewSpecificationView(LaunchpadFormView):
         # Propose the specification as a series goal, if specified.
         series = data.get('series')
         if series is not None:
-            propose_goal_with_automatic_approval(spec, series, self.user)
+            spec.proposeGoal(series, self.user)
         # Propose the specification as a sprint topic, if specified.
         sprint = data.get('sprint')
         if sprint is not None:
@@ -424,8 +533,6 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
 class SpecificationSimpleView(LaunchpadView):
     """Used to render portlets and listing items that need browser code."""
 
-    __used_for__ = ISpecification
-
     @cachedproperty
     def feedbackrequests(self):
         if self.user is None:
@@ -456,8 +563,6 @@ class SpecificationSimpleView(LaunchpadView):
 
 class SpecificationView(SpecificationSimpleView):
     """Used to render the main view of a specification."""
-
-    __used_for__ = ISpecification
 
     @property
     def label(self):
@@ -498,6 +603,83 @@ class SpecificationView(SpecificationSimpleView):
             msg %= len(self.feedbackrequests)
             self.notices.append(msg)
 
+    @property
+    def approver_widget(self):
+        return InlineEditPickerWidget(
+            self.context, ISpecification['approver'],
+            format_link(self.context.approver),
+            header='Change approver', edit_view='+people',
+            step_title='Select a new approver')
+
+    @property
+    def drafter_widget(self):
+        return InlineEditPickerWidget(
+            self.context, ISpecification['drafter'],
+            format_link(self.context.drafter),
+            header='Change drafter', edit_view='+people',
+            step_title='Select a new drafter')
+
+    @property
+    def assignee_widget(self):
+        return InlineEditPickerWidget(
+            self.context, ISpecification['assignee'],
+            format_link(self.context.assignee),
+            header='Change assignee', edit_view='+people',
+            step_title='Select a new assignee')
+
+    @property
+    def definition_status_widget(self):
+        return EnumChoiceWidget(
+            self.context, ISpecification['definition_status'],
+            header='Change definition status to', edit_view='+status',
+            edit_title='Change definition status',
+            css_class_prefix='specstatus')
+
+    @property
+    def implementation_status_widget(self):
+        return EnumChoiceWidget(
+            self.context, ISpecification['implementation_status'],
+            header='Change implementation status to', edit_view='+status',
+            edit_title='Change implementation status',
+            css_class_prefix='specdelivery')
+
+    @property
+    def priority_widget(self):
+        return EnumChoiceWidget(
+            self.context, ISpecification['priority'],
+            header='Change priority to', edit_view='+priority',
+            edit_title='Change priority',
+            css_class_prefix='specpriority')
+
+    @property
+    def title_widget(self):
+        field = ISpecification['title']
+        title = "Edit the blueprint title"
+        return TextLineEditorWidget(self.context, field, title, 'h1')
+
+    @property
+    def summary_widget(self):
+        """The summary as a widget."""
+        return TextAreaEditorWidget(
+            self.context, ISpecification['summary'], title="")
+
+    @property
+    def whiteboard_widget(self):
+        """The description as a widget."""
+        return TextAreaEditorWidget(
+            self.context, ISpecification['whiteboard'], title="Whiteboard",
+            edit_view='+whiteboard', edit_title='Edit whiteboard',
+            hide_empty=False)
+
+    @property
+    def direction_widget(self):
+        return BooleanChoiceWidget(
+            self.context, ISpecification['direction_approved'],
+            tag='span',
+            false_text='Needs approval',
+            true_text='Approved',
+            header='Change approval of basic direction')
+
 
 class SpecificationSubscriptionView(SpecificationView):
 
@@ -508,24 +690,50 @@ class SpecificationSubscriptionView(SpecificationView):
         return "Subscribe to blueprint"
 
 
+class SpecificationEditSchema(ISpecification):
+    """Provide overrides for the implementaion and definition status."""
+
+    definition_status = Choice(
+        title=_('Definition Status'), required=True,
+        vocabulary=SpecificationDefinitionStatus,
+        default=SpecificationDefinitionStatus.NEW,
+        description=_(
+            "The current status of the process to define the "
+            "feature and get approval for the implementation plan."))
+
+    implementation_status = Choice(
+        title=_("Implementation Status"), required=True,
+        default=SpecificationImplementationStatus.UNKNOWN,
+        vocabulary=SpecificationImplementationStatus,
+        description=_(
+            "The state of progress being made on the actual "
+            "implementation or delivery of this feature."))
+
+
 class SpecificationEditView(LaunchpadEditFormView):
 
-    schema = ISpecification
+    schema = SpecificationEditSchema
     field_names = ['name', 'title', 'specurl', 'summary', 'whiteboard']
     label = 'Edit specification'
     custom_widget('summary', TextAreaWidget, height=5)
     custom_widget('whiteboard', TextAreaWidget, height=10)
     custom_widget('specurl', TextWidget, width=60)
 
+    @property
+    def adapters(self):
+        """See `LaunchpadFormView`"""
+        return {SpecificationEditSchema: self.context}
+
     @action(_('Change'), name='change')
     def change_action(self, action, data):
+        old_status = self.context.lifecycle_status
         self.updateContextFromData(data)
         # We need to ensure that resolution is recorded if the spec is now
         # resolved.
-        newstate = self.context.updateLifecycleStatus(self.user)
-        if newstate is not None:
+        new_status = self.context.lifecycle_status
+        if new_status != old_status:
             self.request.response.addNotification(
-                'blueprint is now considered "%s".' % newstate.title)
+                'Blueprint is now considered "%s".' % new_status.title)
         self.next_url = canonical_url(self.context)
 
 
@@ -583,8 +791,7 @@ class SpecificationGoalProposeView(LaunchpadEditFormView):
     @action('Continue', name='continue')
     def continue_action(self, action, data):
         self.context.whiteboard = data['whiteboard']
-        propose_goal_with_automatic_approval(
-            self.context, data['distroseries'], self.user)
+        self.context.proposeGoal(data['distroseries'], self.user)
         self.next_url = canonical_url(self.context)
 
     @property
@@ -599,23 +806,12 @@ class SpecificationProductSeriesGoalProposeView(SpecificationGoalProposeView):
     @action('Continue', name='continue')
     def continue_action(self, action, data):
         self.context.whiteboard = data['whiteboard']
-        propose_goal_with_automatic_approval(
-            self.context, data['productseries'], self.user)
+        self.context.proposeGoal(data['productseries'], self.user)
         self.next_url = canonical_url(self.context)
 
     @property
     def cancel_url(self):
         return canonical_url(self.context)
-
-
-def propose_goal_with_automatic_approval(specification, series, user):
-    """Proposes the given specification as a goal for the given series. If
-    the given user has permission, the proposal is approved automatically.
-    """
-    specification.proposeGoal(series, user)
-    # If the proposer has permission, approve the goal automatically.
-    if series is not None and check_permission('launchpad.Driver', series):
-        specification.acceptBy(user)
 
 
 class SpecificationGoalDecideView(LaunchpadFormView):
@@ -668,29 +864,17 @@ class SpecificationRetargetingView(LaunchpadFormView):
                 self.request.form.get("field.target"))
             return
 
-        if target.getSpecification(self.context.name) is not None:
+        try:
+            self.context.validateMove(target)
+        except TargetAlreadyHasSpecification:
             self.setFieldError('target',
                 'There is already a blueprint with this name for %s. '
                 'Please change the name of this blueprint and try again.' %
                 target.displayname)
-            return
 
     @action(_('Retarget Blueprint'), name='retarget')
-    def register_action(self, action, data):
-        # we need to ensure that there is not already a spec with this name
-        # for this new target
-        target = data['target']
-        if target.getSpecification(self.context.name) is not None:
-            return '%s already has a blueprint called %s' % (
-                target.displayname, self.context.name)
-        product = distribution = None
-        if IProduct.providedBy(target):
-            product = target
-        elif IDistribution.providedBy(target):
-            distribution = target
-        else:
-            raise AssertionError('Unknown target.')
-        self.context.retarget(product=product, distribution=distribution)
+    def retarget_action(self, action, data):
+        self.context.retarget(data['target'])
         self._nextURL = canonical_url(self.context)
 
     @property
@@ -718,7 +902,7 @@ class SupersededByWidget(DropdownWidget):
 class SpecificationSupersedingView(LaunchpadFormView):
     schema = ISpecification
     field_names = ['superseded_by']
-    label = _('Mark specification superseded')
+    label = _('Mark blueprint superseded')
     custom_widget('superseded_by', SupersededByWidget)
 
     @property
@@ -745,7 +929,7 @@ class SpecificationSupersedingView(LaunchpadFormView):
                 description=_(
                     "The blueprint which supersedes this one. Note "
                     "that selecting a blueprint here and pressing "
-                    "Continue will change the specification status "
+                    "Continue will change the blueprint status "
                     "to Superseded.")),
             render_context=self.render_context)
 
@@ -755,6 +939,8 @@ class SpecificationSupersedingView(LaunchpadFormView):
         SUPERSEDED = SpecificationDefinitionStatus.SUPERSEDED
         NEW = SpecificationDefinitionStatus.NEW
         self.context.superseded_by = data['superseded_by']
+        # XXX: salgado, 2010-11-24, bug=680880: This logic should be in model
+        # code.
         if data['superseded_by'] is not None:
             # set the state to superseded
             self.context.definition_status = SUPERSEDED
@@ -767,7 +953,7 @@ class SpecificationSupersedingView(LaunchpadFormView):
         newstate = self.context.updateLifecycleStatus(self.user)
         if newstate is not None:
             self.request.response.addNotification(
-                'Specification is now considered "%s".' % newstate.title)
+                'Blueprint is now considered "%s".' % newstate.title)
         self.next_url = canonical_url(self.context)
 
     @property
@@ -1238,3 +1424,34 @@ class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
         if search_text is not None:
             url += '?searchtext=' + search_text
         self.next_url = url
+
+
+@component.adapter(ISpecification, Interface, IWebServiceClientRequest)
+@implementer(IFieldHTMLRenderer)
+def starter_xhtml_representation(context, field, request):
+    """Render the starter as XHTML to populate the page using AJAX."""
+    def render(value=None):
+        # The value is a webservice link to the object, we want field value.
+        starter = context.starter
+        if starter is None:
+            return ''
+        date_formatter = DateTimeFormatterAPI(context.date_started)
+        return "%s %s" % (
+            format_link(starter), date_formatter.displaydate())
+    return render
+
+
+@component.adapter(ISpecification, Interface, IWebServiceClientRequest)
+@implementer(IFieldHTMLRenderer)
+def completer_xhtml_representation(context, field, request):
+    """Render the completer as XHTML to populate the page using AJAX."""
+    def render(value=None):
+        # The value is a webservice link to the object, we want field value.
+        completer = context.completer
+        if completer is None:
+            return ''
+        date_formatter = DateTimeFormatterAPI(context.date_completed)
+        return "%s %s" % (
+            format_link(completer), date_formatter.displaydate())
+    return render
+

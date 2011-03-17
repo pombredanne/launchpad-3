@@ -1,69 +1,12 @@
 = Comments Imported From a Bug Watch =
 
-We now support importing comments from remote bug trackers. Currently
-this is only available for the DebBugs bug tracker, but it will become
-more widely implemented in the near future.
+Comments can be imported from remote bugtrackers.
 
 These comments can be displayed like any other comments on a bug. Bug
-#15 has a bug watch against a debbugs bug. If we look at the bug page we
-won't see any comments listed, since by default they're hidden from
-view.
+#15 has a bug watch against a debbugs bug.
 
     >>> user_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(user_browser.contents)
-
-The page is not linked to, so we have to browse directly to it.
-
-    >>> user_browser.open('http://launchpad.dev/bugs/15/+watch/11/+comments')
-    >>> user_browser.url
-    'http://launchpad.dev/bugs/15/+watch/11/+comments'
-
-The ordinary user can't see these comments:
-
-    >>> print_comments(user_browser.contents)
-
-But members of the Launchpad Beta Testers team can see them. The comments
-that have been imported are displayed on the page in the same way as bug
-comments are displayed on bugs pages. We'll make Mark Shuttleworth a
-member of Launchpad Beta Testers in order to demonstrate this.
-
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, IPersonSet)
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> login('foo.bar@canonical.com')
-    >>> mark = getUtility(IPersonSet).getByName('mark')
-    >>> launchpad_beta_testers = getUtility(
-    ...     ILaunchpadCelebrities).launchpad_beta_testers
-    >>> mark.inTeam(launchpad_beta_testers)
-    False
-
-    >>> logout()
-
-As we can see, mark cannot see the comments yet:
-
-    >>> mark_browser = setupBrowser(auth="Basic mark@example.com:test")
-    >>> mark_browser.open(
-    ...     'http://launchpad.dev/bugs/15/+watch/11/+comments')
-    >>> print_comments(mark_browser.contents)
-
-After joining the launchpad developers team, mark can now see the
-comments.
-
-    >>> login('foo.bar@canonical.com')
-    >>> mark = getUtility(IPersonSet).getByName('mark')
-    >>> foo_bar = getUtility(IPersonSet).getByName('name16')
-    >>> launchpad_beta_testers = getUtility(
-    ...     ILaunchpadCelebrities).launchpad_beta_testers
-    >>> ignored = launchpad_beta_testers.addMember(mark, reviewer=foo_bar)
-    >>> mark.inTeam(launchpad_beta_testers)
-    True
-
-    >>> logout()
-
-    >>> mark_browser.open(
-    ...     'http://launchpad.dev/bugs/15/+watch/11/+comments')
-    >>> print_comments(mark_browser.contents)
     <p>Package: gnome-volume...manager...
     ----------------------------------------
     <p>reassign 308994 pmount...
@@ -79,58 +22,27 @@ comments.
     will...
     ----------------------------------------
 
-The comments are also visible on their own pages to members of the
-Launchpad Beta Testers team such as mark:
+The comments imported for a watch can be seen on that watch's +comments
+page. This page isn't linked to, so we need to browse to it directly.
 
-    >>> mark_browser.open(
-    ...     'http://bugs.launchpad.dev/redfish/+bug/15/comments/1')
-    >>> print_comments(mark_browser.contents)
-    <p>Package: gnome-volume-<wbr></wbr>manager<br />
-    Version: 1.2.0-1<br />
-    Severity: important</p>
-    <p>When gnome-volume-<wbr></wbr>manager automounts a dvd+rw
-    containing an fs in my dvd<br />
-    burner on my system, the volume is unreadable, since it gets
-    pmounted<br /> rw, and blocks get changed. unmounting the volume
-    reports a dirty<br /> dvd+rw. the same volume is readable if mounted
-    by hand with the<br /> read-only flag.</p> <p>I've filed a bug
-    upstream for this, which is here:</p> <p><a rel="nofollow"
-    href="http://bugzilla.gnome.org/show_bug.cgi?id=304070">...</a></p>
-    <p>but wanted it in the debian bug database for user and maintainer
-    reference.</p>...
+    >>> user_browser.open('http://launchpad.dev/bugs/15/+watch/11/+comments')
+    >>> user_browser.url
+    'http://launchpad.dev/bugs/15/+watch/11/+comments'
 
-The title bar of the comments will contain the comment number (which
-is also a permalink to the comment itself within Launchpad), a to the
-profile of the author of the comment, and a link to the to the remote
-bug from which the comment was imported.
+The ordinary user can't see these comments:
 
-    >>> header = first_tag_by_class(mark_browser.contents,
-    ...     'boardCommentDetails')
-    >>> for link in header.findAll('a'):
-    ...     print "%s: %s" % (extract_text(link), link.get('href'))
-    Debian Bug tracker #308994: http://bugs.debian.org/...?bug=308994
-    josh: http://launchpad.dev/~jbuhl-nospam
-    gnome-volume-manager...: /redfish/+bug/15/comments/1
-    #1: /redfish/+bug/15/comments/1
-
-If mark leaves the Launchpad Beta Testers team the comment will no longer
-be visible to him:
-
-    >>> login('foo.bar@canonical.com')
-    >>> mark = getUtility(IPersonSet).getByName('mark')
-    >>> mark.leave(launchpad_beta_testers)
-    >>> mark.inTeam(launchpad_beta_testers)
-    False
-
-    >>> logout()
-
-    >>> mark_browser.open(
-    ...     'http://bugs.launchpad.dev/redfish/+bug/15/comments/1')
-    >>> print_comments(mark_browser.contents)
-
-Anonymous users can't see the comment either.
-
-    >>> anon_browser.open(
-    ...     'http://bugs.launchpad.dev/redfish/+bug/15/comments/1')
-    >>> print_comments(anon_browser.contents)
-
+    >>> print_comments(user_browser.contents)
+    <p>Package: gnome-volume...manager...
+    ----------------------------------------
+    <p>reassign 308994 pmount...
+    ----------------------------------------
+    <p>reassign 308994 gnome-volume-...
+    ----------------------------------------
+    <p>reassign 308994 pmount...
+    ----------------------------------------
+    <p>Hi!...Usually CD-ROMs are handled in /etc/fstab, so this might
+    not even be a...pmount bug...
+    ----------------------------------------
+    <p>I'll be happy to add the info you request to the bug report if it
+    will...
+    ----------------------------------------

@@ -47,7 +47,7 @@ so that the application can proceed.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import IOAuthConsumerSet
+    >>> from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
     >>> login('salgado@ubuntu.com')
     >>> print getUtility(IOAuthConsumerSet).getByKey('joe-feed-reader')
     None

@@ -9,15 +9,34 @@ __metaclass__ = type
 __all__ = [
     'TestP3APackages',
     'TestPPAPackages',
-    'test_suite',
     ]
 
-from zope.security.interfaces import Unauthorized
+from zope.component import getUtility
 
-from canonical.testing import LaunchpadFunctionalLayer
+from testtools.matchers import (
+    Equals,
+    LessThan,
+    MatchesAny,
+    )
+from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
+
+from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
+from canonical.launchpad.testing.pages import get_feedback_messages
+from canonical.launchpad.webapp import canonical_url
+from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.launchpad.utilities.celebrities import ILaunchpadCelebrities
 from lp.soyuz.browser.archive import ArchiveNavigationMenu
-from lp.testing import login, login_person, TestCaseWithFactory
+from lp.testing import (
+    login,
+    login_person,
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.matchers import HasQueryCount
+from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
+from lp.testing._webservice import QueryCollector
 
 
 class TestP3APackages(TestCaseWithFactory):
@@ -54,6 +73,17 @@ class TestP3APackages(TestCaseWithFactory):
             Unauthorized, create_initialized_view, self.private_ppa,
             "+packages")
 
+    def test_packages_authorized_for_commercial_admin_with_subscription(self):
+        # A commercial admin should always be able to see +packages even
+        # if they have a subscription.
+        login('admin@canonical.com')
+        admins = getUtility(ILaunchpadCelebrities).commercial_admin
+        admins.addMember(self.joe, admins)
+        login_person(self.joe)
+        view = create_initialized_view(self.private_ppa, "+packages")
+        menu = ArchiveNavigationMenu(view)
+        self.assertTrue(menu.packages().enabled)
+
     def test_packages_authorized(self):
         """A person with launchpad.{Append,Edit} will be able to do so"""
         login_person(self.private_ppa.owner)
@@ -82,15 +112,153 @@ class TestP3APackages(TestCaseWithFactory):
 
 
 class TestPPAPackages(TestCaseWithFactory):
+
     layer = LaunchpadFunctionalLayer
 
-    def setUp(self):
-        super(TestPPAPackages, self).setUp()
-        self.joe = self.factory.makePerson(name='joe')
-        self.ppa = self.factory.makeArchive()
+    def getPackagesView(self, query_string=None):
+        ppa = self.factory.makeArchive()
+        return create_initialized_view(
+            ppa, "+packages", query_string=query_string)
 
-    def test_ppa_packages(self):
-        login_person(self.joe)
-        view = create_initialized_view(self.ppa, "+index")
+    def assertNotifications(self, ppa, notification, person=None):
+        # Assert that while requesting a 'ppa' page as 'person', the
+        # 'notification' appears.
+        if person is not None:
+            login_person(ppa.owner)
+            principal = LaunchpadPrincipal(
+                ppa.owner.account.id, ppa.owner.displayname,
+                ppa.owner.displayname, ppa.owner)
+        else:
+            principal = None
+        page = create_initialized_view(
+            ppa, "+packages", principal=principal).render()
+        notifications = get_feedback_messages(page)
+        self.assertIn(notification, notifications)
+
+    def test_warning_for_disabled_publishing(self):
+        # Ensure that a notification is shown when archive.publish
+        # is False.
+        ppa = self.factory.makeArchive()
+        removeSecurityProxy(ppa).publish = False
+        self.assertNotifications(
+            ppa,
+            "Publishing has been disabled for this archive. (re-enable "
+            "publishing)",
+            person=ppa.owner)
+
+    def test_warning_for_disabled_publishing_with_private_ppa(self):
+        # Ensure that a notification is shown when archive.publish
+        # is False warning that builds won't get dispatched.
+        ppa = self.factory.makeArchive(private=True)
+        removeSecurityProxy(ppa).publish = False
+        self.assertNotifications(
+            ppa,
+            "Publishing has been disabled for this archive. (re-enable "
+            "publishing) Since this archive is private, no builds are being "
+            "dispatched.",
+            person=ppa.owner)
+
+    def test_warning_for_disabled_publishing_with_anonymous_user(self):
+        # The warning notification doesn't mention the Change details
+        # page.
+        ppa = self.factory.makeArchive()
+        removeSecurityProxy(ppa).publish = False
+        self.assertNotifications(
+            ppa, 'Publishing has been disabled for this archive.')
+
+    def test_ppa_packages_menu_is_enabled(self):
+        joe = self.factory.makePerson()
+        ppa = self.factory.makeArchive()
+        login_person(joe)
+        view = create_initialized_view(ppa, "+index")
         menu = ArchiveNavigationMenu(view)
         self.assertTrue(menu.packages().enabled)
+
+    def test_specified_name_filter_works(self):
+        view = self.getPackagesView('field.name_filter=blah')
+        self.assertEquals('blah', view.specified_name_filter)
+
+    def test_specified_name_filter_returns_none_on_omission(self):
+        view = self.getPackagesView()
+        self.assertIs(None, view.specified_name_filter)
+
+    def test_specified_name_filter_returns_none_on_empty_filter(self):
+        view = self.getPackagesView('field.name_filter=')
+        self.assertIs(None, view.specified_name_filter)
+
+    def test_source_query_counts(self):
+        query_baseline = 47
+        # Assess the baseline.
+        collector = QueryCollector()
+        collector.register()
+        self.addCleanup(collector.unregister)
+        ppa = self.factory.makeArchive()
+        viewer = self.factory.makePerson(password="test")
+        browser = self.getUserBrowser(user=viewer)
+        with person_logged_in(viewer):
+            # The baseline has one package, because otherwise the
+            # short-circuit prevents the packages iteration happening at
+            # all and we're not actually measuring scaling
+            # appropriately.
+            self.factory.makeSourcePackagePublishingHistory(archive=ppa)
+            url = canonical_url(ppa) + "/+packages"
+        browser.open(url)
+        self.assertThat(collector, HasQueryCount(LessThan(query_baseline)))
+        expected_count = collector.count
+        # We scale with 1 query per distro series because of
+        # getCurrentSourceReleases.
+        expected_count += 1
+        # We need a fuzz of one because if the test is the first to run a
+        # credentials lookup is done as well (and accrued to the collector).
+        expected_count += 1
+        # Use all new objects - avoids caching issues invalidating the
+        # gathered metrics.
+        login(ADMIN_EMAIL)
+        ppa = self.factory.makeArchive()
+        viewer = self.factory.makePerson(password="test")
+        browser = self.getUserBrowser(user=viewer)
+        with person_logged_in(viewer):
+            for i in range(2):
+                pkg = self.factory.makeSourcePackagePublishingHistory(
+                    archive=ppa)
+                self.factory.makeSourcePackagePublishingHistory(archive=ppa,
+                    distroseries=pkg.distroseries)
+            url = canonical_url(ppa) + "/+packages"
+        browser.open(url)
+        self.assertThat(collector, HasQueryCount(LessThan(expected_count)))
+
+    def test_binary_query_counts(self):
+        query_baseline = 43
+        # Assess the baseline.
+        collector = QueryCollector()
+        collector.register()
+        self.addCleanup(collector.unregister)
+        ppa = self.factory.makeArchive()
+        viewer = self.factory.makePerson(password="test")
+        browser = self.getUserBrowser(user=viewer)
+        with person_logged_in(viewer):
+            # The baseline has one package, because otherwise the
+            # short-circuit prevents the packages iteration happening at
+            # all and we're not actually measuring scaling
+            # appropriately.
+            pkg = self.factory.makeBinaryPackagePublishingHistory(
+                archive=ppa)
+            url = canonical_url(ppa) + "/+packages"
+        browser.open(url)
+        self.assertThat(collector, HasQueryCount(
+            MatchesAny(LessThan(query_baseline), Equals(query_baseline))))
+        expected_count = collector.count
+        # Use all new objects - avoids caching issues invalidating the
+        # gathered metrics.
+        login(ADMIN_EMAIL)
+        ppa = self.factory.makeArchive()
+        viewer = self.factory.makePerson(password="test")
+        browser = self.getUserBrowser(user=viewer)
+        with person_logged_in(viewer):
+            for i in range(3):
+                pkg = self.factory.makeBinaryPackagePublishingHistory(
+                    archive=ppa, distroarchseries=pkg.distroarchseries)
+            url = canonical_url(ppa) + "/+packages"
+        browser.open(url)
+        self.assertThat(collector, HasQueryCount(
+            MatchesAny(Equals(expected_count), LessThan(expected_count))))

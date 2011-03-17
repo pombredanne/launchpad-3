@@ -11,10 +11,13 @@ __all__ = [
     'ITeamInvitationEvent',
     ]
 
-from zope.component.interfaces import IObjectEvent
-from zope.interface import Interface, Attribute
-
 from lazr.lifecycle.interfaces import IObjectCreatedEvent
+from zope.component.interfaces import IObjectEvent
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+
 
 class IJoinTeamEvent(Interface):
     """A person/team joined (or tried to join) a team."""

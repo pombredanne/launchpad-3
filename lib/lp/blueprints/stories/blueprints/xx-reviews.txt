@@ -1,0 +1,150 @@
+
+Specification Reviews
+=====================
+
+Now, we'll ask someone to review the spec. Let's ask Carlos! We'll pass
+him a message.
+
+First, we load the review request page.
+
+    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser.open(
+    ...     'http://blueprints.launchpad.dev/firefox/+spec/canvas')
+    >>> browser.getLink('Request feedback').click()
+    >>> browser.url
+    'http://blueprints.launchpad.dev/firefox/+spec/canvas/+requestfeedback'
+
+This page contains a cancellation link back to the blueprint page, in case you
+change your mind.
+
+    >>> print browser.getLink('Cancel').url
+    http://blueprints.launchpad.dev/firefox/+spec/canvas
+
+Now we try to POST to the form behind it. We expect to be redirected to the
+spec home page.
+
+    >>> browser.getControl(name="field.reviewer").value = "mark"
+    >>> browser.getControl(
+    ...     name="field.queuemsg").value = "specification, review thyself"
+    >>> browser.getControl("Add").click()
+    >>> print browser.url
+    http://blueprints.launchpad.dev/firefox/+spec/canvas
+
+If we try to request feedback to the same person to the same specification,
+we'll get a nice error message
+
+    >>> browser.open(
+    ...     'http://blueprints.launchpad.dev/firefox/+spec/canvas/'
+    ...     '+requestfeedback')
+    >>> browser.getControl(name="field.reviewer").value = "mark"
+    >>> browser.getControl(
+    ...     name="field.queuemsg").value = "specification, review thyself"
+    >>> browser.getControl("Add").click()
+    >>> print browser.url
+    http://blueprints.launchpad.dev/firefox/+spec/canvas/+requestfeedback
+
+    >>> for error in get_feedback_messages(browser.contents):
+    ...     print error
+    There is 1 error.
+    You've already requested feedback from Mark Shuttleworth
+
+I can't request feedback from myself.
+
+    >>> browser.getControl(name="field.reviewer").value = "name12"
+    >>> browser.getControl(
+    ...     name="field.queuemsg").value = "test spec request"
+    >>> browser.getControl("Add").click()
+    >>> print browser.url
+    http://blueprints.launchpad.dev/firefox/+spec/canvas/+requestfeedback
+    >>> for error in get_feedback_messages(browser.contents):
+    ...     print error
+    There is 1 error.
+    You can't request feedback from yourself
+
+We will see that review request message on the spec page.
+
+    >>> browser.open('http://blueprints.launchpad.dev/firefox/+spec/canvas')
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'feedback-requests'))
+    Feedback requests
+    Sample Person requested feedback from Mark Shuttleworth:
+        specification, review thyself
+    ...
+
+We will do another 2 feedback requests for mark with different logged in
+users, first with Carlos.
+
+    >>> carlos_browser = setupBrowser(auth='Basic carlos@canonical.com:test')
+    >>> carlos_browser.open(
+    ...     'http://blueprints.launchpad.dev/firefox/+spec/canvas/'
+    ...     '+requestfeedback')
+    >>> carlos_browser.getControl(name="field.reviewer").value = "mark"
+    >>> carlos_browser.getControl(
+    ...     name="field.queuemsg").value = (
+    ...     "do we really want to maintain compatibility with windows?")
+    >>> carlos_browser.getControl("Add").click()
+
+And then with Foo Bar
+
+    >>> admin_browser.open(
+    ...     'http://blueprints.launchpad.dev/firefox/+spec/canvas/'
+    ...     '+requestfeedback')
+    >>> admin_browser.getControl(name="field.reviewer").value = "mark"
+    >>> admin_browser.getControl(
+    ...     name="field.queuemsg").value = (
+    ...     "please check my grammer and speling")
+    >>> admin_browser.getControl("Add").click()
+
+Now, let's go and clear a review request. Mark has been asked to review spec
+"canvas". Let's view the page, and tell it that we have completed the review.
+First, on the spec home page we see an alert reminding us that we have been
+asked to review this page in particular.
+
+    >>> mark_browser = setupBrowser(auth='Basic mark@example.com:test')
+    >>> mark_browser.open(
+    ...     'http://blueprints.launchpad.dev/firefox/+spec/canvas/')
+    >>> for message in get_feedback_messages(mark_browser.contents):
+    ...     print message
+    You have 3 feedback request(s)...
+
+We also see our name in the "feedback requests" portlet.
+
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'feedback-requests'))
+    Feedback requests
+    ...
+    Mark Shuttleworth:
+    ...
+
+And we see the "Give Feedback" menu item.
+
+    >>> give_feedback = mark_browser.getLink("Give feedback")
+
+Let's load the "+givefeedback" page, to tell the system that our work is
+complete. Note that the form posts back to the main spec home page.
+
+    >>> give_feedback.click()
+    >>> print mark_browser.url
+    http://blueprints.launchpad.dev/firefox/+spec/canvas/+givefeedback
+
+Now we POST this page back to itself. First, we clear a single item.
+
+    >>> mark_browser.getControl("Carlos Perelló Marín").selected = True
+    >>> mark_browser.getControl("Save changes").click()
+    >>> print mark_browser.url
+    http://blueprints.launchpad.dev/firefox/+spec/canvas/+givefeedback
+
+    >>> for message in get_feedback_messages(mark_browser.contents):
+    ...     print extract_text(message)
+    Cleared requests from: Carlos ...
+
+And now, the remaining two. This time we expect to be redirected.
+
+    >>> mark_browser.getControl("Sample Person").selected = True
+    >>> mark_browser.getControl("Foo Bar").selected = True
+    >>> mark_browser.getControl("Save changes").click()
+
+    >>> print mark_browser.url
+    http://blueprints.launchpad.dev/firefox/+spec/canvas
+
+

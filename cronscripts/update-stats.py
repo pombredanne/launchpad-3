@@ -11,17 +11,18 @@ import _pythonpath
 
 from zope.component import getUtility
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
-from lp.services.scripts.base import LaunchpadCronScript
-from canonical.launchpad.interfaces import (
-    IDistributionSet, ILaunchpadStatisticSet, IPersonSet
+from canonical.launchpad.interfaces.launchpadstatistic import (
+    ILaunchpadStatisticSet,
     )
+from lp.services.scripts.base import LaunchpadCronScript
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import IPersonSet
 from canonical.config import config
 
 
 class StatUpdater(LaunchpadCronScript):
-    def main(self):
-        self.txn.set_isolation_level(ISOLATION_LEVEL_READ_COMMITTED)
 
+    def main(self):
         self.logger.debug('Starting the stats update')
 
         # Note that we do not issue commits here in the script; content
@@ -40,7 +41,5 @@ class StatUpdater(LaunchpadCronScript):
 
 
 if __name__ == '__main__':
-    script = StatUpdater('launchpad-stats',
-                         dbuser=config.statistician.dbuser)
-    script.lock_and_run()
-
+    script = StatUpdater('launchpad-stats', dbuser=config.statistician.dbuser)
+    script.lock_and_run(isolation=ISOLATION_LEVEL_READ_COMMITTED)

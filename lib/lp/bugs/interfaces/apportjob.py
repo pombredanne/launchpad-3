@@ -11,15 +11,28 @@ __all__ = [
     'IProcessApportBlobJobSource',
     ]
 
-from zope.interface import Attribute, Interface
-from zope.schema import Int, Object
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Int,
+    Object,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.temporaryblobstorage import (
-    ITemporaryBlobStorage)
-
-from lazr.enum import DBEnumeratedType, DBItem
-from lp.services.job.interfaces.job import IJob, IJobSource, IRunnableJob
+    ITemporaryBlobStorage,
+    )
+from lp.services.job.interfaces.job import (
+    IJob,
+    IJobSource,
+    IRunnableJob,
+    )
 
 
 class ApportJobType(DBEnumeratedType):

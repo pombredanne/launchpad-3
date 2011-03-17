@@ -23,8 +23,11 @@ import unittest
 
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
-from canonical.testing import DatabaseFunctionalLayer
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
+from canonical.testing.layers import DatabaseFunctionalLayer
 
 
 def build_doctest_suite(base_dir, tests_path, special_tests={},

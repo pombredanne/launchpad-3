@@ -1,10 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import unittest
-
-from canonical.testing import LaunchpadZopelessLayer
-
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.scripts import listteammembers
 from lp.testing import TestCaseWithFactory
 
@@ -107,7 +104,3 @@ class ListTeamMembersTestCase(TestCaseWithFactory):
         self.assertRaises(
             listteammembers.NoSuchTeamError, listteammembers.process_team,
             'nosuchteam-matey')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

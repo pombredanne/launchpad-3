@@ -10,12 +10,10 @@
   <body>
 
     <tal:registering metal:fill-slot="registering">
-      <p>
         created
         <span tal:content="context/date_created/fmt:displaydate"
               tal:attributes="title context/date_created/fmt:datetime"
           >on 2005-01-01</span>
-      </p>
     </tal:registering>
 
     <div metal:fill-slot="main">

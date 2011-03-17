@@ -38,39 +38,30 @@ submission and doesn't ignore it.
   >>> user_browser.getControl(
   ...     name='msgset_150_es_translation_1_radiobutton').value = [
   ...         'msgset_150_es_translation_1_new']
-  >>> user_browser.getControl(name='msgset_150_es_translation_1_new').value = (
+  >>> user_browser.getControl(
+  ...     name='msgset_150_es_translation_1_new').value = (
   ...     u'Found %s invalid files')
   >>> user_browser.getControl(name='submit_translations').click()
 
-We got an error, that means the url should be the same.
-We are still in the same URL, because the system detected an error.
+Because of the error, we're still in on the same page.
 
   >>> print user_browser.url
-  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=20
+  http://.../hoary/+source/evo.../+pots/evo...-2.2/es/+translate?start=20
 
 And we can see the error.
 
   >>> for tag in find_tags_by_class(user_browser.contents, 'error'):
-  ...     print tag
-  <div class="error message">There is an error in a translation you provided.
-    Please correct it before continuing.</div>
-  <tr class="error translation">
-    <th colspan="3">
-      <strong>Error in Translation:</strong>
-    </th>
-    <td>
-    </td><td>
-      <div>
-        format specifications in 'msgid' and 'msgstr[0]' for argument 1 are
-        not the sameformat specifications in 'msgid' and 'msgstr[1]' for
-        argument 1 are not the same
-      </div>
-    </td>
-  </tr>
+  ...     print extract_text(tag)
+  There is an error in a translation you provided.
+  Please correct it before continuing.
+  Error in Translation:
+  format specifications in 'msgid...' and 'msgstr[0]' for argument 1 are
+  not the sameformat specifications in 'msgid...' and 'msgstr[1]' for
+  argument 1 are not the same
 
 The translation form got an error with the translations we wanted to store,
-and thus we still have that text as part of translations input, otherwise, they
-will be empty waiting for new suggestions/translations.
+and thus we still have that text as part of translations input, otherwise,
+they will be empty waiting for new suggestions/translations.
 
   >>> user_browser.getControl(name='msgset_150_es_translation_0_new').value
   'Found %s invalid file'

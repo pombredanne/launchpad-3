@@ -50,8 +50,8 @@ that the form works from any page.
     >>> print content.form['action']
     http://answers.launchpad.dev/firefox/+faqs
 
-The portlet provides a link to create a faq when the user that has moderate
-permission such as the project owner.
+The portlet provides a link to create a FAQ when the user that has append
+permission, such as the project owner.
 
     >>> print content.find('a', {'class': 'menu-link-create_faq sprite add'})
     <a href=".../firefox/+createfaq" class="...">Create a new FAQ</a>

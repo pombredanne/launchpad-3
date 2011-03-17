@@ -7,19 +7,22 @@ __metaclass__ = type
 __all__ = []
 
 import transaction
-
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.windmill.testing.constants import (
-    FOR_ELEMENT, PAGE_LOAD, SLEEP)
-from canonical.launchpad.windmill.testing import lpuser
-from canonical.launchpad.windmill.testing.lpuser import login_person
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
-from lp.translations.windmill.testing import TranslationsWindmillLayer
+from lp.app.enums import ServiceUsage
 from lp.testing import WindmillTestCase
+from lp.testing.windmill import lpuser
+from lp.testing.windmill.constants import (
+    FOR_ELEMENT,
+    PAGE_LOAD,
+    SLEEP,
+    )
+from lp.testing.windmill.lpuser import login_person
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue,
+    )
+from lp.translations.windmill.testing import TranslationsWindmillLayer
 
 
 class ImportQueueEntryTest(WindmillTestCase):
@@ -38,9 +41,8 @@ class ImportQueueEntryTest(WindmillTestCase):
             'field.potemplate',
             'field.potemplate_name',
             'field.language',
-            'field.variant',
-            ]
-    }
+            ],
+        }
     SELECT_FIELDS = [
         'field.potemplate',
         'field.language',
@@ -53,8 +55,7 @@ class ImportQueueEntryTest(WindmillTestCase):
             input_tag = 'input'
         return (
             u"//tr[contains(@class,'unseen')]"
-            u"//%s[@id='%s']" % (input_tag, field_id)
-                )
+            u"//%s[@id='%s']" % (input_tag, field_id))
 
     def _assertAllFieldsVisible(self, client, fields):
         """Assert that all given fields are visible.
@@ -77,7 +78,7 @@ class ImportQueueEntryTest(WindmillTestCase):
     def test_import_queue_entry(self):
         """Tests that import queue entry fields behave correctly."""
         client = self.client
-        start_url = 'http://translations.launchpad.dev:8085/+imports/1'
+        start_url = '%s/+imports/1' % TranslationsWindmillLayer.base_url
         user = lpuser.TRANSLATIONS_ADMIN
         # Go to import queue page logged in as translations admin.
         user.ensure_login(client)
@@ -234,7 +235,7 @@ class ImportQueueEntryTest(WindmillTestCase):
 
 IMPORT_STATUS = u"//tr[@id='%d']//span[contains(@class,'status-choice')]"
 IMPORT_STATUS_1 = IMPORT_STATUS % 1
-OPEN_CHOICELIST = u"//div[contains(@class, 'yui-ichoicelist-content')]"
+OPEN_CHOICELIST = u"//div[contains(@class, 'yui3-ichoicelist-content')]"
 
 
 class ImportQueueStatusTest(WindmillTestCase):
@@ -277,8 +278,9 @@ class ImportQueueStatusTest(WindmillTestCase):
             name="hubert", displayname="Hubert Hunt", password="test",
             email="hubert@example.com")
         # Create a project and an import entry with it.
-        product = self.factory.makeProduct(owner=hubert)
-        removeSecurityProxy(product).official_rosetta = True
+        product = self.factory.makeProduct(
+            owner=hubert,
+            translations_usage=ServiceUsage.LAUNCHPAD)
         productseries = product.getSeries('trunk')
         queue = getUtility(ITranslationImportQueue)
         potemplate = self.factory.makePOTemplate(productseries=productseries)
@@ -291,7 +293,7 @@ class ImportQueueStatusTest(WindmillTestCase):
         # Go to import queue page logged in as a normal user.
         client.open(url=queue_url)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
-        login_person(hubert, "test", client)
+        login_person(hubert, "hubert@example.com", "test", client)
 
         # There should be no status picker for entry 1.
         client.waits.forElement(xpath=import_status, timeout=FOR_ELEMENT)

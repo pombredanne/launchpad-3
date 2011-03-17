@@ -1,10 +1,11 @@
-= VPOExport and VPOExportSet =
+VPOExport and VPOExportSet
+=========================
 
 The VPOExport and VPOExportSet classes retrieve and format data for
 exports in a more efficient way than fetching the entire objects.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.translations.interfaces.vpoexport import IVPOExportSet
 
     >>> vpoexportset = getUtility(IVPOExportSet)
@@ -45,7 +46,7 @@ current POFiles in a given distro series.
     pmount    pmount cs
     pmount    pmount de
     pmount    pmount es
-    pmount    pmount es
+    pmount    pmount es@test
     pmount    pmount fr
     pmount    pmount hr
     pmount    pmount it_IT
@@ -59,10 +60,19 @@ current POFiles in a given distro series.
 The getTranslationRows method lists all translations found in the
 pofile.
 
-    >>> potemplate = factory.makePOTemplate()
+    >>> package = factory.makeSourcePackage()
+    >>> potemplate = factory.makePOTemplate(
+    ...     distroseries=package.distroseries,
+    ...     sourcepackagename=package.sourcepackagename)
     >>> pofile = factory.makePOFile('eo', potemplate=potemplate)
-    >>> factory.makeTranslation(pofile, 1, "english1", "esperanto1", True)
-    >>> factory.makeTranslation(pofile, 2, "english2", "esperanto2", False)
+    >>> tm = factory.makeCurrentTranslationMessage(
+    ...     pofile=pofile, current_other=True, translations=["esperanto1"],
+    ...     potmsgset=factory.makePOTMsgSet(
+    ...         potemplate=potemplate, sequence=1, singular="english1"))
+    >>> tm = factory.makeCurrentTranslationMessage(
+    ...     pofile=pofile, current_other=False, translations=["esperanto2"],
+    ...     potmsgset=factory.makePOTMsgSet(
+    ...         potemplate=potemplate, sequence=2, singular="english2"))
 
     >>> def describe_poexport_row(row):
     ...     return "%s %s %s" % (
@@ -88,7 +98,8 @@ all current messages that have not been imported.
     2 english2 esperanto2
 
 
-== VPOExport and translation divergence ==
+VPOExport and translation divergence
+------------------------------------
 
 A particular product has two series, trunk and stable, each with the
 same template.  The templates thus share messages.
@@ -105,8 +116,8 @@ between the two templates.
 
     >>> potmsgset1 = factory.makePOTMsgSet(trunk_template, '1', sequence=1)
     >>> potmsgset2 = factory.makePOTMsgSet(trunk_template, '2', sequence=2)
-    >>> potmsgset1.setSequence(stable_template, 1)
-    >>> potmsgset2.setSequence(stable_template, 2)
+    >>> item = potmsgset1.setSequence(stable_template, 1)
+    >>> item = potmsgset2.setSequence(stable_template, 2)
 
 The templates are translated to Dutch.
 
@@ -116,12 +127,12 @@ diverged for stable.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> trunk_pofile = factory.makePOFile('nl', potemplate=trunk_template)
     >>> stable_pofile = factory.makePOFile('nl', potemplate=stable_template)
-    >>> message1 = factory.makeTranslationMessage(
+    >>> message1 = factory.makeDivergedTranslationMessage(
     ...     pofile=removeSecurityProxy(trunk_pofile), potmsgset=potmsgset1,
-    ...     translations=['een'], force_diverged=True)
-    >>> message2 = factory.makeTranslationMessage(
+    ...     translations=['een'])
+    >>> message2 = factory.makeDivergedTranslationMessage(
     ...     pofile=removeSecurityProxy(stable_pofile), potmsgset=potmsgset2,
-    ...     translations=['twee'], force_diverged=True)
+    ...     translations=['twee'])
 
 When we export trunk, only the trunk message shows up.
 

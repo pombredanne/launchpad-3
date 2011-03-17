@@ -189,7 +189,7 @@ Reflects the available distribution series.  Results are ordered by
 `name`
 
     >>> distroseries_vocabulary = get_naked_vocab(
-    ...     None,"DistroSeries")
+    ...     None, "DistroSeries")
     >>> for term in distroseries_vocabulary:
     ...     print "%30s %s" % (term.token, term.title)
             ubuntu/breezy-autotest Ubuntu: Breezy Badger Autotest
@@ -320,7 +320,7 @@ through direct or indirect participations.
 
     >>> sample_person = person_set.getByName('name12')
     >>> [membership.team.name
-    ...  for membership in sample_person.myactivememberships]
+    ...  for membership in sample_person.team_memberships]
     [u'hwdb-team', u'landscape-developers', u'launchpad-users', u'name20']
     >>> [team.name for team in sample_person.teams_participated_in]
     [u'hwdb-team', u'landscape-developers', u'launchpad-users', u'name18',
@@ -541,47 +541,6 @@ The list of selectable projects. The results are ordered by displayname.
     >>> [p.title for p in project_vocabulary.search('mozilla')]
     []
     >>> moz_project.active = True
-    >>> flush_database_updates()
-
-
-=== ProductVocabulary ===
-
-The list of selectable products. Results are ordered by displayname.
-
-    >>> product_vocabulary = get_naked_vocab(None, "Product")
-    >>> product_vocabulary.displayname
-    'Select a project'
-
-    >>> list(product_vocabulary.search(None))
-    []
-    >>> gnome_products = product_vocabulary.search("gnome")
-    >>> l = [product_term.title for product_term in gnome_products]
-    >>> l[:2]
-    [u'The Evolution Groupware Application', u'The GNOME Terminal Emulator']
-    >>> l[2:]
-    [u'The Gnome Panel Applets', u'Gnome Baker']
-    >>> arch = product_vocabulary.getTermByToken("arch-mirrors")
-    >>> arch.title
-    u'Arch archive mirrors'
-
-The ProductVocabulary does not list inactive products.
-
-    >>> arch.value in product_vocabulary
-    True
-
-    >>> arch_product = product_set['arch-mirrors']
-    >>> arch_product in product_vocabulary
-    True
-
-    >>> [t.title for t in product_vocabulary.search('arch and archive')]
-    [u'Arch archive mirrors']
-    >>> arch_product.active = False
-    >>> flush_database_updates()
-    >>> arch_product in product_vocabulary
-    False
-    >>> [t.title for t in product_vocabulary.search('arch and archive')]
-    []
-    >>> arch_product.active = True
     >>> flush_database_updates()
 
 
@@ -1052,103 +1011,11 @@ You can also search for an email address and get the teams with a match.
     [(u'Ubuntu Team', u'Mark Shuttleworth')]
 
 
-=== ValidTeamMember ===
-
-With the exception of all teams that have this team as a member and the
-team itself, all valid persons and teams are valid members.
-
-    >>> login('foo.bar@canonical.com')
-    >>> team = person_set.getByName('ubuntu-team')
-    >>> team2 = person_set.getByName('guadamen')
-    >>> person = person_set.getByName('name16')
-
-ValidTeamMember needs a context:
-
-    >>> vocab = get_naked_vocab(None, "ValidTeamMember")
-    Traceback (most recent call last):
-    ...
-    AssertionError: ...
-
-ValidTeamMember's context must implement ITeam:
-
-    >>> vocab = get_naked_vocab(person, "ValidTeamMember")
-    Traceback (most recent call last):
-    ...
-    AssertionError: ...
-
-'name16' is a valid member for 'ubuntu-team':
-
-    >>> vocab = get_naked_vocab(team, "ValidTeamMember")
-    >>> vocab.displayname
-    'Select a Person or Team'
-
-    >>> person in vocab
-    True
-    >>> [person.name for person in vocab.search('foo.bar')]
-    [u'name16']
-
-'ubuntu-team' is not a valid member for itself:
-
-    >>> team in vocab
-    False
-    >>> [person.name for person in vocab.search('ubuntu-team')]
-    [u'name18', u'ubuntu-security']
-
-'ubuntu-team' is a member of 'guadamen', so 'guadamen' can't be a member
-of 'ubuntu-team'.
-
-    >>> team2 in vocab
-    False
-    >>> [person.name for person in vocab.search('guadamen')]
-    []
-
-
-=== ValidTeamOwner ===
-
-With the exception of the team itself and all teams owned by that team,
-all valid persons and teams are valid owners for the team in context.
-
-ValidTeamOwner needs a context.
-
-    >>> vocab = get_naked_vocab(None, "ValidTeamOwner")
-    Traceback (most recent call last):
-    ...
-    AssertionError: ...
-
-ValidTeamOwner's context must provide IPerson or IPersonSet.
-
-    >>> get_naked_vocab(team, "ValidTeamOwner")
-    <...ValidTeamOwnerVocabulary...
-    >>> get_naked_vocab(person_set, "ValidTeamOwner")
-    <...ValidTeamOwnerVocabulary...
-    >>> get_naked_vocab(firefox, "ValidTeamOwner")
-    Traceback (most recent call last):
-    ...
-    AssertionError: ...
-
-'ubuntu-team' is not a valid owner for itself.
-
-    >>> vocab = get_naked_vocab(team, "ValidTeamOwner")
-    >>> vocab.displayname
-    'Select a Person or Team'
-
-    >>> team in vocab
-    False
-    >>> [person.name for person in vocab.search('ubuntu-team')]
-    [u'name18', u'ubuntu-security']
-
-'name16' is a valid owner for 'ubuntu-team'.
-
-    >>> person in vocab
-    True
-    >>> [person.name for person in vocab.search('foo.bar')]
-    [u'name16']
-
-
 === ValidPerson ===
 
 All 'valid' persons who are not a team.
 
+    >>> login('foo.bar@canonical.com')
     >>> vocab = get_naked_vocab(None, "ValidPerson")
     >>> vocab.displayname
     'Select a Person'
@@ -1389,7 +1256,7 @@ change bzr's so we will get more interesting results.
     Mega Money Maker
 
 If the user is a member of Registry Experts, and therefore has
-launchpad.ProjectReview permission on IProductSet, then all commercial
+launchpad.Moderate permission on IProductSet, then all commercial
 projects are returned.
 
     >>> login('foo.bar@canonical.com')
@@ -1402,7 +1269,7 @@ projects are returned.
     >>> logout()
 
     >>> login_person(registry_member)
-    >>> check_permission('launchpad.ProjectReview', product_set)
+    >>> check_permission('launchpad.Moderate', product_set)
     True
 
     >>> comm_proj_vocab = get_naked_vocab(registry_member,

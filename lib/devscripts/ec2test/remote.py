@@ -1,20 +1,32 @@
 #!/usr/bin/env python
-# Run tests in a daemon.
-#
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from __future__ import with_statement
+"""Run tests in a daemon.
+
+ * `EC2Runner` handles the daemonization and instance shutdown.
+
+ * `Request` knows everything about the test request we're handling (e.g.
+   "test merging foo-bar-bug-12345 into db-devel").
+
+ * `LaunchpadTester` knows how to actually run the tests and gather the
+   results. It uses `SummaryResult` to do so.
+
+ * `WebTestLogger` knows how to display the results to the user, and is given
+   the responsibility of handling the results that `LaunchpadTester` gathers.
+"""
 
 __metatype__ = type
 
 import datetime
 from email import MIMEMultipart, MIMEText
 from email.mime.application import MIMEApplication
+import errno
 import gzip
 import optparse
 import os
 import pickle
+from StringIO import StringIO
 import subprocess
 import sys
 import tempfile
@@ -22,123 +34,201 @@ import textwrap
 import time
 import traceback
 import unittest
-
 from xml.sax.saxutils import escape
 
 import bzrlib.branch
 import bzrlib.config
-import bzrlib.email_message
+from bzrlib.email_message import EmailMessage
 import bzrlib.errors
-import bzrlib.smtp_connection
+from bzrlib.smtp_connection import SMTPConnection
 import bzrlib.workingtree
-
+import simplejson
 import subunit
+from testtools import MultiTestResult
+
+# We need to be able to unpickle objects from bzr-pqm, so make sure we
+# can import it.
+bzrlib.plugin.load_plugins()
+
+
+class NonZeroExitCode(Exception):
+    """Raised when the child process exits with a non-zero exit code."""
+
+    def __init__(self, retcode):
+        super(NonZeroExitCode, self).__init__(
+            'Test process died with exit code %r, but no tests failed.'
+            % (retcode,))
 
 
 class SummaryResult(unittest.TestResult):
     """Test result object used to generate the summary."""
 
-    double_line = '=' * 70 + '\n'
-    single_line = '-' * 70 + '\n'
+    double_line = '=' * 70
+    single_line = '-' * 70
 
     def __init__(self, output_stream):
         super(SummaryResult, self).__init__()
         self.stream = output_stream
 
-    def printError(self, flavor, test, error):
-        """Print an error to the output stream."""
-        self.stream.write(self.double_line)
-        self.stream.write('%s: %s\n' % (flavor, test))
-        self.stream.write(self.single_line)
-        self.stream.write('%s\n' % (error,))
-        self.stream.flush()
+    def _formatError(self, flavor, test, error):
+        return '\n'.join(
+            [self.double_line,
+             '%s: %s' % (flavor, test),
+             self.single_line,
+             error,
+             ''])
 
     def addError(self, test, error):
         super(SummaryResult, self).addError(test, error)
-        self.printError('ERROR', test, self._exc_info_to_string(error, test))
+        self.stream.write(
+            self._formatError(
+                'ERROR', test, self._exc_info_to_string(error, test)))
 
     def addFailure(self, test, error):
         super(SummaryResult, self).addFailure(test, error)
-        self.printError(
-            'FAILURE', test, self._exc_info_to_string(error, test))
+        self.stream.write(
+            self._formatError(
+                'FAILURE', test, self._exc_info_to_string(error, test)))
+
+    def stopTest(self, test):
+        super(SummaryResult, self).stopTest(test)
+        # At the very least, we should be sure that a test's output has been
+        # completely displayed once it has stopped.
+        self.stream.flush()
 
 
-class FlagFallStream:
-    """Wrapper around a stream that only starts forwarding after a flagfall.
+class FailureUpdateResult(unittest.TestResult):
+
+    def __init__(self, logger):
+        super(FailureUpdateResult, self).__init__()
+        self._logger = logger
+
+    def addError(self, *args, **kwargs):
+        super(FailureUpdateResult, self).addError(*args, **kwargs)
+        self._logger.got_failure()
+
+    def addFailure(self, *args, **kwargs):
+        super(FailureUpdateResult, self).addFailure(*args, **kwargs)
+        self._logger.got_failure()
+
+
+class EC2Runner:
+    """Runs generic code in an EC2 instance.
+
+    Handles daemonization, instance shutdown, and email in the case of
+    catastrophic failure.
     """
 
-    def __init__(self, stream, flag):
-        """Construct a `FlagFallStream` that wraps 'stream'.
+    # XXX: JonathanLange 2010-08-17: EC2Runner needs tests.
 
-        :param stream: A stream, a file-like object.
-        :param flag: A string that needs to be written to this stream before
-            we start forwarding the output.
+    # The number of seconds we give this script to clean itself up, and for
+    # 'ec2 test --postmortem' to grab control if needed.  If we don't give
+    # --postmortem enough time to log in via SSH and take control, then this
+    # server will begin to shutdown on its own.
+    #
+    # (FWIW, "grab control" means sending SIGTERM to this script's process id,
+    # thus preventing fail-safe shutdown.)
+    SHUTDOWN_DELAY = 60
+
+    def __init__(self, daemonize, pid_filename, shutdown_when_done,
+                 smtp_connection=None, emails=None):
+        """Make an EC2Runner.
+
+        :param daemonize: Whether or not we will daemonize.
+        :param pid_filename: The filename to store the pid in.
+        :param shutdown_when_done: Whether or not to shut down when the tests
+            are done.
+        :param smtp_connection: The `SMTPConnection` to use to send email.
+        :param emails: The email address(es) to send catastrophic failure
+            messages to. If not provided, the error disappears into the ether.
         """
-        self._stream = stream
-        self._flag = flag
-        self._flag_fallen = False
+        self._should_daemonize = daemonize
+        self._pid_filename = pid_filename
+        self._shutdown_when_done = shutdown_when_done
+        if smtp_connection is None:
+            config = bzrlib.config.GlobalConfig()
+            smtp_connection = SMTPConnection(config)
+        self._smtp_connection = smtp_connection
+        self._emails = emails
+        self._daemonized = False
 
-    def write(self, bytes):
-        if self._flag_fallen:
-            self._stream.write(bytes)
-        else:
-            index = bytes.find(self._flag)
-            if index == -1:
-                return
-            else:
-                self._stream.write(bytes[index:])
-                self._flag_fallen = True
-
-    def flush(self):
-        self._stream.flush()
-
-
-class BaseTestRunner:
-
-    def __init__(self, email=None, pqm_message=None, public_branch=None,
-                 public_branch_revno=None, test_options=None):
-        self.email = email
-        self.pqm_message = pqm_message
-        self.public_branch = public_branch
-        self.public_branch_revno = public_branch_revno
-        self.test_options = test_options
-
-        # Configure paths.
-        self.lp_dir = os.path.join(os.path.sep, 'var', 'launchpad')
-        self.tmp_dir = os.path.join(self.lp_dir, 'tmp')
-        self.test_dir = os.path.join(self.lp_dir, 'test')
-        self.sourcecode_dir = os.path.join(self.test_dir, 'sourcecode')
-
-        # Set up logging.
-        self.logger = WebTestLogger(
-            self.test_dir,
-            self.public_branch,
-            self.public_branch_revno,
-            self.sourcecode_dir
-        )
-
-        # Daemonization options.
-        self.pid_filename = os.path.join(self.lp_dir, 'ec2test-remote.pid')
-        self.daemonized = False
-
-    def daemonize(self):
+    def _daemonize(self):
         """Turn the testrunner into a forked daemon process."""
         # This also writes our pidfile to disk to a specific location.  The
         # ec2test.py --postmortem command will look there to find our PID,
         # in order to control this process.
-        daemonize(self.pid_filename)
-        self.daemonized = True
+        daemonize(self._pid_filename)
+        self._daemonized = True
 
-    def remove_pidfile(self):
-        if os.path.exists(self.pid_filename):
-            os.remove(self.pid_filename)
+    def _shutdown_instance(self):
+        """Shut down this EC2 instance."""
+        # Make sure our process is daemonized, and has therefore disconnected
+        # the controlling terminal.  This also disconnects the ec2test.py SSH
+        # connection, thus signalling ec2test.py that it may now try to take
+        # control of the server.
+        if not self._daemonized:
+            # We only want to do this if we haven't already been daemonized.
+            # Nesting daemons is bad.
+            self._daemonize()
 
-    def ignore_line(self, line):
-        """Return True if the line should be excluded from the summary log.
+        time.sleep(self.SHUTDOWN_DELAY)
 
-        Defaults to False.
+        # We'll only get here if --postmortem didn't kill us.  This is our
+        # fail-safe shutdown, in case the user got disconnected or suffered
+        # some other mishap that would prevent them from shutting down this
+        # server on their own.
+        subprocess.call(['sudo', 'shutdown', '-P', 'now'])
+
+    def run(self, name, function, *args, **kwargs):
+        try:
+            if self._should_daemonize:
+                print 'Starting %s daemon...' % (name,)
+                self._daemonize()
+
+            return function(*args, **kwargs)
+        except:
+            config = bzrlib.config.GlobalConfig()
+            # Handle exceptions thrown by the test() or daemonize() methods.
+            if self._emails:
+                msg = EmailMessage(
+                    from_address=config.username(),
+                    to_address=self._emails,
+                    subject='%s FAILED' % (name,),
+                    body=traceback.format_exc())
+                self._smtp_connection.send_email(msg)
+            raise
+        finally:
+            # When everything is over, if we've been ask to shut down, then
+            # make sure we're daemonized, then shutdown.  Otherwise, if we're
+            # daemonized, just clean up the pidfile.
+            if self._shutdown_when_done:
+                self._shutdown_instance()
+            elif self._daemonized:
+                # It would be nice to clean up after ourselves, since we won't
+                # be shutting down.
+                remove_pidfile(self._pid_filename)
+            else:
+                # We're not a daemon, and we're not shutting down.  The user
+                # most likely started this script manually, from a shell
+                # running on the instance itself.
+                pass
+
+
+class LaunchpadTester:
+    """Runs Launchpad tests and gathers their results in a useful way."""
+
+    def __init__(self, logger, test_directory, test_options=()):
+        """Construct a TestOnMergeRunner.
+
+        :param logger: The WebTestLogger to log to.
+        :param test_directory: The directory to run the tests in. We expect
+            this directory to have a fully-functional checkout of Launchpad
+            and its dependent branches.
+        :param test_options: A sequence of options to pass to the test runner.
         """
-        return False
+        self._logger = logger
+        self._test_directory = test_directory
+        self._test_options = ' '.join(test_options)
 
     def build_test_command(self):
         """Return the command that will execute the test suite.
@@ -148,7 +238,24 @@ class BaseTestRunner:
 
         Subclasses must provide their own implementation of this method.
         """
-        raise NotImplementedError
+        command = ['make', 'check']
+        if self._test_options:
+            command.append('TESTOPTS="%s"' % self._test_options)
+        return command
+
+    def _spawn_test_process(self):
+        """Actually run the tests.
+
+        :return: A `subprocess.Popen` object for the test run.
+        """
+        call = self.build_test_command()
+        self._logger.write_line("Running %s" % (call,))
+        # bufsize=0 means do not buffer any of the output. We want to
+        # display the test output as soon as it is generated.
+        return subprocess.Popen(
+            call, bufsize=0,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            cwd=self._test_directory)
 
     def test(self):
         """Run the tests, log the results.
@@ -157,170 +264,417 @@ class BaseTestRunner:
         have completed.  If necessary, submits the branch to PQM, and mails
         the user the test results.
         """
-        # We need to open the log files here because earlier calls to
-        # os.fork() may have tried to close them.
-        self.logger.prepare()
-
-        out_file     = self.logger.out_file
-        summary_file = self.logger.summary_file
-        config       = bzrlib.config.GlobalConfig()
-
-        call = self.build_test_command()
-
+        self._logger.prepare()
         try:
-            popen = subprocess.Popen(
-                call, bufsize=-1,
-                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                cwd=self.test_dir)
-
-            self._gather_test_output(popen.stdout, summary_file, out_file)
-
-            # Grab the testrunner exit status.
-            result = popen.wait()
-
-            if self.pqm_message is not None:
-                subject = self.pqm_message.get('Subject')
-                if result:
-                    # failure
-                    summary_file.write(
-                        '\n\n**NOT** submitted to PQM:\n%s\n' % (subject,))
-                else:
-                    # success
-                    conn = bzrlib.smtp_connection.SMTPConnection(config)
-                    conn.send_email(self.pqm_message)
-                    summary_file.write(
-                        '\n\nSUBMITTED TO PQM:\n%s\n' % (subject,))
-
-            summary_file.write(
-                '\n(See the attached file for the complete log)\n')
+            popen = self._spawn_test_process()
+            result = self._gather_test_output(popen.stdout, self._logger)
+            retcode = popen.wait()
+            # The process could have an error not indicated by an actual test
+            # result nor by a raised exception
+            if result.wasSuccessful() and retcode:
+                raise NonZeroExitCode(retcode)
         except:
-            summary_file.write('\n\nERROR IN TESTRUNNER\n\n')
-            traceback.print_exc(file=summary_file)
-            result = 1
-            raise
-        finally:
-            # It probably isn't safe to close the log files ourselves,
-            # since someone else might try to write to them later.
-            try:
-                if self.email is not None:
-                    self.send_email(
-                        result, self.logger.summary_filename,
-                        self.logger.out_filename, config)
-            finally:
-                summary_file.close()
-                # we do this at the end because this is a trigger to
-                # ec2test.py back at home that it is OK to kill the process
-                # and take control itself, if it wants to.
-                self.logger.close_logs()
+            self._logger.error_in_testrunner(sys.exc_info())
+        else:
+            self._logger.got_result(result)
 
-    def send_email(self, result, summary_filename, out_filename, config):
-        """Send an email summarizing the test results.
+    def _gather_test_output(self, input_stream, logger):
+        """Write the testrunner output to the logs."""
+        summary_stream = logger.get_summary_stream()
+        summary_result = SummaryResult(summary_stream)
+        result = MultiTestResult(
+            summary_result,
+            FailureUpdateResult(logger))
+        subunit_server = subunit.TestProtocolServer(result, summary_stream)
+        for line in input_stream:
+            subunit_server.lineReceived(line)
+            logger.got_line(line)
+            summary_stream.flush()
+        return summary_result
 
-        :param result: True for pass, False for failure.
-        :param summary_filename: The path to the file where the summary
-            information lives. This will be the body of the email.
-        :param out_filename: The path to the file where the full output
-            lives. This will be zipped and attached.
-        :param config: A Bazaar configuration object with SMTP details.
+
+# XXX: Publish a JSON file that includes the relevant details from this
+# request.
+class Request:
+    """A request to have a branch tested and maybe landed."""
+
+    def __init__(self, branch_url, revno, local_branch_path, sourcecode_path,
+                 emails=None, pqm_message=None, smtp_connection=None):
+        """Construct a `Request`.
+
+        :param branch_url: The public URL to the Launchpad branch we are
+            testing.
+        :param revno: The revision number of the branch we are testing.
+        :param local_branch_path: A local path to the Launchpad branch we are
+            testing.  This must be a branch of Launchpad with a working tree.
+        :param sourcecode_path: A local path to the sourcecode dependencies
+            directory (normally '$local_branch_path/sourcecode'). This must
+            contain up-to-date copies of all of Launchpad's sourcecode
+            dependencies.
+        :param emails: A list of emails to send the results to. If not
+            provided, no emails are sent.
+        :param pqm_message: The message to submit to PQM. If not provided, we
+            don't submit to PQM.
+        :param smtp_connection: The `SMTPConnection` to use to send email.
+        """
+        self._branch_url = branch_url
+        self._revno = revno
+        self._local_branch_path = local_branch_path
+        self._sourcecode_path = sourcecode_path
+        self._emails = emails
+        self._pqm_message = pqm_message
+        # Used for figuring out how to send emails.
+        self._bzr_config = bzrlib.config.GlobalConfig()
+        if smtp_connection is None:
+            smtp_connection = SMTPConnection(self._bzr_config)
+        self._smtp_connection = smtp_connection
+
+    def _send_email(self, message):
+        """Actually send 'message'."""
+        self._smtp_connection.send_email(message)
+
+    def _format_test_list(self, header, tests):
+        if not tests:
+            return []
+        tests = ['  ' + test.id() for test, error in tests]
+        return [header, '-' * len(header)] + tests + ['']
+
+    def format_result(self, result, start_time, end_time):
+        duration = end_time - start_time
+        output = [
+            'Tests started at approximately %s' % start_time,
+            ]
+        source = self.get_source_details()
+        if source:
+            output.append('Source: %s r%s' % source)
+        target = self.get_target_details()
+        if target:
+            output.append('Target: %s r%s' % target)
+        output.extend([
+            '',
+            '%s tests run in %s, %s failures, %s errors' % (
+                result.testsRun, duration, len(result.failures),
+                len(result.errors)),
+            '',
+            ])
+
+        bad_tests = (
+            self._format_test_list('Failing tests', result.failures) +
+            self._format_test_list('Tests with errors', result.errors))
+        output.extend(bad_tests)
+
+        if bad_tests:
+            full_error_stream = StringIO()
+            copy_result = SummaryResult(full_error_stream)
+            for test, error in result.failures:
+                full_error_stream.write(
+                    copy_result._formatError('FAILURE', test, error))
+            for test, error in result.errors:
+                full_error_stream.write(
+                    copy_result._formatError('ERROR', test, error))
+            output.append(full_error_stream.getvalue())
+
+        subject = self._get_pqm_subject()
+        if subject:
+            if result.wasSuccessful():
+                output.append('SUBMITTED TO PQM:')
+            else:
+                output.append('**NOT** submitted to PQM:')
+            output.extend([subject, ''])
+        output.extend(['(See the attached file for the complete log)', ''])
+        return '\n'.join(output)
+
+    def get_target_details(self):
+        """Return (branch_url, revno) for trunk."""
+        branch = bzrlib.branch.Branch.open(self._local_branch_path)
+        return branch.get_parent().encode('utf-8'), branch.revno()
+
+    def get_source_details(self):
+        """Return (branch_url, revno) for the branch we're merging in.
+
+        If we're not merging in a branch, but instead just testing a trunk,
+        then return None.
+        """
+        tree = bzrlib.workingtree.WorkingTree.open(self._local_branch_path)
+        parent_ids = tree.get_parent_ids()
+        if len(parent_ids) < 2:
+            return None
+        return self._branch_url.encode('utf-8'), self._revno
+
+    def _last_segment(self, url):
+        """Return the last segment of a URL."""
+        return url.strip('/').split('/')[-1]
+
+    def get_nick(self):
+        """Get the nick of the branch we are testing."""
+        details = self.get_source_details()
+        if not details:
+            details = self.get_target_details()
+        url, revno = details
+        return self._last_segment(url)
+
+    def get_revno(self):
+        """Get the revno of the branch we are testing."""
+        if self._revno is not None:
+            return self._revno
+        return bzrlib.branch.Branch.open(self._local_branch_path).revno()
+
+    def get_merge_description(self):
+        """Get a description of the merge request.
+
+        If we're merging a branch, return '$SOURCE_NICK => $TARGET_NICK', if
+        we're just running tests for a trunk branch without merging return
+        '$TRUNK_NICK'.
+        """
+        source = self.get_source_details()
+        if not source:
+            return '%s r%s' % (self.get_nick(), self.get_revno())
+        target = self.get_target_details()
+        return '%s => %s' % (
+            self._last_segment(source[0]), self._last_segment(target[0]))
+
+    def get_summary_commit(self):
+        """Get a message summarizing the change from the commit log.
+
+        Returns the last commit message of the merged branch, or None.
+        """
+        # XXX: JonathanLange 2010-08-17: I don't actually know why we are
+        # using this commit message as a summary message. It's used in the
+        # test logs and the EC2 hosted web page.
+        branch = bzrlib.branch.Branch.open(self._local_branch_path)
+        tree = bzrlib.workingtree.WorkingTree.open(self._local_branch_path)
+        parent_ids = tree.get_parent_ids()
+        if len(parent_ids) == 1:
+            return None
+        summary = (
+            branch.repository.get_revision(parent_ids[1]).get_summary())
+        return summary.encode('utf-8')
+
+    def _build_report_email(self, successful, body_text, full_log_gz):
+        """Build a MIME email summarizing the test results.
+
+        :param successful: True for pass, False for failure.
+        :param body_text: The body of the email to send to the requesters.
+        :param full_log_gz: A gzip of the full log.
         """
         message = MIMEMultipart.MIMEMultipart()
-        message['To'] = ', '.join(self.email)
-        message['From'] = config.username()
-        subject = 'Test results: %s' % (result and 'FAILURE' or 'SUCCESS')
+        message['To'] = ', '.join(self._emails)
+        message['From'] = self._bzr_config.username()
+        if successful:
+            status = 'SUCCESS'
+        else:
+            status = 'FAILURE'
+        subject = 'Test results: %s: %s' % (
+            self.get_merge_description(), status)
         message['Subject'] = subject
 
         # Make the body.
-        with open(summary_filename, 'r') as summary_fd:
-            summary = summary_fd.read()
-        body = MIMEText.MIMEText(summary, 'plain', 'utf8')
+        body = MIMEText.MIMEText(body_text, 'plain', 'utf8')
         body['Content-Disposition'] = 'inline'
         message.attach(body)
 
-        # gzip up the full log.
-        fd, path = tempfile.mkstemp()
-        os.close(fd)
-        gz = gzip.open(path, 'wb')
-        full_log = open(out_filename, 'rb')
-        gz.writelines(full_log)
-        gz.close()
-
         # Attach the gzipped log.
-        zipped_log = MIMEApplication(open(path, 'rb').read(), 'x-gzip')
+        zipped_log = MIMEApplication(full_log_gz, 'x-gzip')
         zipped_log.add_header(
             'Content-Disposition', 'attachment',
-            filename='%s.log.gz' % self.get_nick())
+            filename='%s-r%s.subunit.gz' % (
+                self.get_nick(), self.get_revno()))
         message.attach(zipped_log)
+        return message
 
-        bzrlib.smtp_connection.SMTPConnection(config).send_email(message)
+    def send_report_email(self, successful, body_text, full_log_gz):
+        """Send an email summarizing the test results.
 
-    def get_nick(self):
-        """Return the nick name of the branch that we are testing."""
-        return self.public_branch.strip('/').split('/')[-1]
+        :param successful: True for pass, False for failure.
+        :param body_text: The body of the email to send to the requesters.
+        :param full_log_gz: A gzip of the full log.
+        """
+        message = self._build_report_email(successful, body_text, full_log_gz)
+        self._send_email(message)
 
-    def _gather_test_output(self, input_stream, summary_file, out_file):
-        """Write the testrunner output to the logs."""
-        # Only write to stdout if we are running as the foreground process.
-        echo_to_stdout = not self.daemonized
-        result = SummaryResult(summary_file)
-        subunit_server = subunit.TestProtocolServer(result, summary_file)
-        for line in input_stream:
-            subunit_server.lineReceived(line)
-            out_file.write(line)
-            out_file.flush()
-            if echo_to_stdout:
-                sys.stdout.write(line)
-                sys.stdout.flush()
+    def iter_dependency_branches(self):
+        """Iterate through the Bazaar branches we depend on."""
+        for name in sorted(os.listdir(self._sourcecode_path)):
+            path = os.path.join(self._sourcecode_path, name)
+            if os.path.isdir(path):
+                try:
+                    branch = bzrlib.branch.Branch.open(path)
+                except bzrlib.errors.NotBranchError:
+                    continue
+                yield name, branch.get_parent(), branch.revno()
 
+    def _get_pqm_subject(self):
+        if not self._pqm_message:
+            return
+        return self._pqm_message.get('Subject')
 
-class TestOnMergeRunner(BaseTestRunner):
-    """Executes the Launchpad test_on_merge.py test suite."""
+    def submit_to_pqm(self, successful):
+        """Submit this request to PQM, if successful & configured to do so."""
+        subject = self._get_pqm_subject()
+        if subject and successful:
+            self._send_email(self._pqm_message)
+        return subject
 
-    def build_test_command(self):
-        """See BaseTestRunner.build_test_command()."""
-        command = ['make', 'check', 'TESTOPTS=' + self.test_options]
-        return command
+    @property
+    def wants_email(self):
+        """Do the requesters want emails sent to them?"""
+        return bool(self._emails)
 
 
 class WebTestLogger:
-    """Logs test output to disk and a simple web page."""
+    """Logs test output to disk and a simple web page.
 
-    def __init__(self, test_dir, public_branch, public_branch_revno,
-                 sourcecode_dir):
-        """ Class initialiser """
-        self.test_dir = test_dir
-        self.public_branch = public_branch
-        self.public_branch_revno = public_branch_revno
-        self.sourcecode_dir = sourcecode_dir
+    :ivar successful: Whether the logger has received only successful input up
+        until now.
+    """
 
-        self.www_dir = os.path.join(os.path.sep, 'var', 'www')
-        self.out_filename = os.path.join(self.www_dir, 'current_test.log')
-        self.summary_filename = os.path.join(self.www_dir, 'summary.log')
-        self.index_filename = os.path.join(self.www_dir, 'index.html')
+    def __init__(self, full_log_filename, summary_filename, index_filename,
+                 request, echo_to_stdout):
+        """Construct a WebTestLogger.
 
-        # We will set up the preliminary bits of the web-accessible log
-        # files. "out" holds all stdout and stderr; "summary" holds filtered
-        # output; and "index" holds an index page.
-        self.out_file = None
-        self.summary_file = None
-        self.index_file = None
+        Because this writes an HTML file with links to the summary and full
+        logs, you should construct this object with
+        `WebTestLogger.make_in_directory`, which guarantees that the files
+        are available in the correct locations.
 
-    def open_logs(self):
-        """Open all of our log files for writing."""
-        self.out_file = open(self.out_filename, 'w')
-        self.summary_file = open(self.summary_filename, 'w')
-        self.index_file = open(self.index_filename, 'w')
+        :param full_log_filename: Path to a file that will have the full
+            log output written to it. The file will be overwritten.
+        :param summary_file: Path to a file that will have a human-readable
+            summary written to it. The file will be overwritten.
+        :param index_file: Path to a file that will have an HTML page
+            written to it. The file will be overwritten.
+        :param request: A `Request` object representing the thing that's being
+            tested.
+        :param echo_to_stdout: Whether or not we should echo output to stdout.
+        """
+        self._full_log_filename = full_log_filename
+        self._summary_filename = summary_filename
+        self._index_filename = index_filename
+        self._info_json = os.path.join(
+            os.path.dirname(index_filename), 'info.json')
+        self._request = request
+        self._echo_to_stdout = echo_to_stdout
+        # Actually set by prepare(), but setting to a dummy value to make
+        # testing easier.
+        self._start_time = datetime.datetime.utcnow()
+        self.successful = True
 
-    def flush_logs(self):
-        """Flush all of our log file buffers."""
-        self.out_file.flush()
-        self.summary_file.flush()
-        self.index_file.flush()
+    @classmethod
+    def make_in_directory(cls, www_dir, request, echo_to_stdout):
+        """Make a logger that logs to specific files in `www_dir`.
 
-    def close_logs(self):
-        """Closes all of the open log file handles."""
-        self.out_file.close()
-        self.summary_file.close()
-        self.index_file.close()
+        :param www_dir: The directory in which to log the files:
+            current_test.log, summary.log and index.html. These files
+            will be overwritten.
+        :param request: A `Request` object representing the thing that's being
+            tested.
+        :param echo_to_stdout: Whether or not we should echo output to stdout.
+        """
+        files = [
+            os.path.join(www_dir, 'current_test.log'),
+            os.path.join(www_dir, 'summary.log'),
+            os.path.join(www_dir, 'index.html')]
+        files.extend([request, echo_to_stdout])
+        return cls(*files)
+
+    def error_in_testrunner(self, exc_info):
+        """Called when there is a catastrophic error in the test runner."""
+        exc_type, exc_value, exc_tb = exc_info
+        # XXX: JonathanLange 2010-08-17: This should probably log to the full
+        # log as well.
+        summary = self.get_summary_stream()
+        summary.write('\n\nERROR IN TESTRUNNER\n\n')
+        traceback.print_exception(exc_type, exc_value, exc_tb, file=summary)
+        summary.flush()
+        if self._request.wants_email:
+            self._write_to_filename(
+                self._summary_filename,
+                '\n(See the attached file for the complete log)\n')
+            summary = self.get_summary_contents()
+            full_log_gz = gzip_data(self.get_full_log_contents())
+            self._request.send_report_email(False, summary, full_log_gz)
+
+    def get_index_contents(self):
+        """Return the contents of the index.html page."""
+        return self._get_contents(self._index_filename)
+
+    def get_full_log_contents(self):
+        """Return the contents of the complete log."""
+        return self._get_contents(self._full_log_filename)
+
+    def get_summary_contents(self):
+        """Return the contents of the summary log."""
+        return self._get_contents(self._summary_filename)
+
+    def get_summary_stream(self):
+        """Return a stream that, when written to, writes to the summary."""
+        return open(self._summary_filename, 'a')
+
+    def got_line(self, line):
+        """Called when we get a line of output from our child processes."""
+        self._write_to_filename(self._full_log_filename, line)
+        if self._echo_to_stdout:
+            sys.stdout.write(line)
+            sys.stdout.flush()
+
+    def _get_contents(self, filename):
+        """Get the full contents of 'filename'."""
+        try:
+            return open(filename, 'r').read()
+        except IOError, e:
+            if e.errno == errno.ENOENT:
+                return ''
+
+    def got_failure(self):
+        """Called when we receive word that a test has failed."""
+        self.successful = False
+        self._dump_json()
+
+    def got_result(self, result):
+        """The tests are done and the results are known."""
+        self._end_time = datetime.datetime.utcnow()
+        successful = result.wasSuccessful()
+        self._handle_pqm_submission(successful)
+        if self._request.wants_email:
+            email_text = self._request.format_result(
+                result, self._start_time, self._end_time)
+            full_log_gz = gzip_data(self.get_full_log_contents())
+            self._request.send_report_email(successful, email_text, full_log_gz)
+
+    def _handle_pqm_submission(self, successful):
+        subject = self._request.submit_to_pqm(successful)
+        if not subject:
+            return
+        self.write_line('')
+        self.write_line('')
+        if successful:
+            self.write_line('SUBMITTED TO PQM:')
+        else:
+            self.write_line('**NOT** submitted to PQM:')
+        self.write_line(subject)
+
+    def _write_to_filename(self, filename, msg):
+        fd = open(filename, 'a')
+        fd.write(msg)
+        fd.flush()
+        fd.close()
+
+    def _write(self, msg):
+        """Write to the summary and full log file."""
+        self._write_to_filename(self._full_log_filename, msg)
+        self._write_to_filename(self._summary_filename, msg)
+
+    def write_line(self, msg):
+        """Write to the summary and full log file with a newline."""
+        self._write(msg + '\n')
+
+    def _dump_json(self):
+        fd = open(self._info_json, 'w')
+        simplejson.dump(
+            {'description': self._request.get_merge_description(),
+             'failed-yet': not self.successful,
+             }, fd)
+        fd.close()
 
     def prepare(self):
         """Prepares the log files on disk.
@@ -328,20 +682,23 @@ class WebTestLogger:
         Writes three log files: the raw output log, the filtered "summary"
         log file, and a HTML index page summarizing the test run paramters.
         """
-        self.open_logs()
+        self._dump_json()
+        # XXX: JonathanLange 2010-07-18: Mostly untested.
+        log = self.write_line
 
-        out_file     = self.out_file
-        summary_file = self.summary_file
-        index_file   = self.index_file
+        # Clear the existing index file.
+        index = open(self._index_filename, 'w')
+        index.truncate(0)
+        index.close()
 
-        def write(msg):
-            msg += '\n'
-            summary_file.write(msg)
-            out_file.write(msg)
+        def add_to_html(html):
+            return self._write_to_filename(
+                self._index_filename, textwrap.dedent(html))
+
+        self._start_time = datetime.datetime.utcnow()
         msg = 'Tests started at approximately %(now)s UTC' % {
-            'now': datetime.datetime.utcnow().strftime(
-                '%a, %d %b %Y %H:%M:%S')}
-        index_file.write(textwrap.dedent('''\
+            'now': self._start_time.strftime('%a, %d %b %Y %H:%M:%S')}
+        add_to_html('''\
             <html>
               <head>
                 <title>Testing</title>
@@ -353,86 +710,76 @@ class WebTestLogger:
                   <li><a href="summary.log">Summary results</a></li>
                   <li><a href="current_test.log">Full results</a></li>
                 </ul>
-            ''' % (msg,)))
-        write(msg)
+            ''' % (msg,))
+        log(msg)
 
-        index_file.write(textwrap.dedent('''\
+        add_to_html('''\
             <h2>Branches Tested</h2>
-            '''))
+            ''')
 
         # Describe the trunk branch.
-        branch = bzrlib.branch.Branch.open_containing(self.test_dir)[0]
-        msg = '%(trunk)s, revision %(trunk_revno)d\n' % {
-            'trunk': branch.get_parent().encode('utf-8'),
-            'trunk_revno': branch.revno()}
-        index_file.write(textwrap.dedent('''\
+        trunk, trunk_revno = self._request.get_target_details()
+        msg = '%s, revision %d\n' % (trunk, trunk_revno)
+        add_to_html('''\
             <p><strong>%s</strong></p>
-            ''' % (escape(msg),)))
-        write(msg)
-        tree = bzrlib.workingtree.WorkingTree.open(self.test_dir)
-        parent_ids = tree.get_parent_ids()
+            ''' % (escape(msg),))
+        log(msg)
 
-        # Describe the merged branch.
-        if len(parent_ids) == 1:
-            index_file.write('<p>(no merged branch)</p>\n')
-            write('(no merged branch)')
+        branch_details = self._request.get_source_details()
+        if not branch_details:
+            add_to_html('<p>(no merged branch)</p>\n')
+            log('(no merged branch)')
         else:
-            summary = (
-                branch.repository.get_revision(parent_ids[1]).get_summary())
-            data = {'name': self.public_branch.encode('utf-8'),
-                    'revno': self.public_branch_revno,
-                    'commit': summary.encode('utf-8')}
+            branch_name, branch_revno = branch_details
+            data = {'name': branch_name,
+                    'revno': branch_revno,
+                    'commit': self._request.get_summary_commit()}
             msg = ('%(name)s, revision %(revno)d '
                    '(commit message: %(commit)s)\n' % data)
-            index_file.write(textwrap.dedent('''\
+            add_to_html('''\
                <p>Merged with<br />%(msg)s</p>
-               ''' % {'msg': escape(msg)}))
-            write("Merged with")
-            write(msg)
+               ''' % {'msg': escape(msg)})
+            log("Merged with")
+            log(msg)
 
-        index_file.write('<dl>\n')
-        write('\nDEPENDENCY BRANCHES USED\n')
-        for name in os.listdir(self.sourcecode_dir):
-            path = os.path.join(self.sourcecode_dir, name)
-            if os.path.isdir(path):
-                try:
-                    branch = bzrlib.branch.Branch.open_containing(path)[0]
-                except bzrlib.errors.NotBranchError:
-                    continue
-                data = {'name': name,
-                        'branch': branch.get_parent(),
-                        'revno': branch.revno()}
-                write(
-                    '- %(name)s\n    %(branch)s\n    %(revno)d\n' % data)
-                escaped_data = {'name': escape(name),
-                                'branch': escape(branch.get_parent()),
-                                'revno': branch.revno()}
-                index_file.write(textwrap.dedent('''\
-                    <dt>%(name)s</dt>
-                      <dd>%(branch)s</dd>
-                      <dd>%(revno)s</dd>
-                    ''' % escaped_data))
-        index_file.write(textwrap.dedent('''\
+        add_to_html('<dl>\n')
+        log('\nDEPENDENCY BRANCHES USED\n')
+        for name, branch, revno in self._request.iter_dependency_branches():
+            data = {'name': name, 'branch': branch, 'revno': revno}
+            log(
+                '- %(name)s\n    %(branch)s\n    %(revno)d\n' % data)
+            escaped_data = {'name': escape(name),
+                            'branch': escape(branch),
+                            'revno': revno}
+            add_to_html('''\
+                <dt>%(name)s</dt>
+                  <dd>%(branch)s</dd>
+                  <dd>%(revno)s</dd>
+                ''' % escaped_data)
+        add_to_html('''\
                 </dl>
               </body>
-            </html>'''))
-        write('\n\nTEST RESULTS FOLLOW\n\n')
-        self.flush_logs()
+            </html>''')
+        log('\n\nTEST RESULTS FOLLOW\n\n')
 
 
 def daemonize(pid_filename):
     # this seems like the sort of thing that ought to be in the
     # standard library :-/
     pid = os.fork()
-    if (pid == 0): # child 1
+    if (pid == 0): # Child 1
         os.setsid()
         pid = os.fork()
-        if (pid == 0): # child 2
+        if (pid == 0): # Child 2, the daemon.
             pass # lookie, we're ready to do work in the daemon
         else:
             os._exit(0)
-    else:
-        # give the pidfile a chance to be written before we exit.
+    else: # Parent
+        # Make sure the pidfile is written before we exit, so that people
+        # who've chosen to daemonize can quickly rectify their mistake.  Since
+        # the daemon might terminate itself very, very quickly, we cannot poll
+        # for the existence of the pidfile. Instead, we just sleep for a
+        # reasonable amount of time.
         time.sleep(1)
         os._exit(0)
 
@@ -454,6 +801,38 @@ def daemonize(pid_filename):
     os.dup2(0, 2)
 
 
+def gunzip_data(data):
+    """Decompress 'data'.
+
+    :param data: The gzip data to decompress.
+    :return: The decompressed data.
+    """
+    fd, path = tempfile.mkstemp()
+    os.write(fd, data)
+    os.close(fd)
+    try:
+        return gzip.open(path, 'r').read()
+    finally:
+        os.unlink(path)
+
+
+def gzip_data(data):
+    """Compress 'data'.
+
+    :param data: The data to compress.
+    :return: The gzip-compressed data.
+    """
+    fd, path = tempfile.mkstemp()
+    os.close(fd)
+    gz = gzip.open(path, 'wb')
+    gz.writelines(data)
+    gz.close()
+    try:
+        return open(path).read()
+    finally:
+        os.unlink(path)
+
+
 def write_pidfile(pid_filename):
     """Write a pidfile for the current process."""
     pid_file = open(pid_filename, "w")
@@ -461,7 +840,14 @@ def write_pidfile(pid_filename):
     pid_file.close()
 
 
-if __name__ == '__main__':
+def remove_pidfile(pid_filename):
+    if os.path.exists(pid_filename):
+        os.remove(pid_filename)
+
+
+def parse_options(argv):
+    """Make an `optparse.OptionParser` for running the tests remotely.
+    """
     parser = optparse.OptionParser(
         usage="%prog [options] [-- test options]",
         description=("Build and run tests for an instance."))
@@ -494,7 +880,11 @@ if __name__ == '__main__':
         type="int", default=None,
         help=('The revision number of the public branch being tested.'))
 
-    options, args = parser.parse_args()
+    return parser.parse_args(argv)
+
+
+def main(argv):
+    options, args = parse_options(argv)
 
     if options.debug:
         import pdb; pdb.set_trace()
@@ -504,65 +894,31 @@ if __name__ == '__main__':
     else:
         pqm_message = None
 
-    runner = TestOnMergeRunner(
-       options.email,
-       pqm_message,
-       options.public_branch,
-       options.public_branch_revno,
-       ' '.join(args))
+    # Locations for Launchpad. These are actually defined by the configuration
+    # of the EC2 image that we use.
+    LAUNCHPAD_DIR = '/var/launchpad'
+    TEST_DIR = os.path.join(LAUNCHPAD_DIR, 'test')
+    SOURCECODE_DIR = os.path.join(TEST_DIR, 'sourcecode')
 
-    try:
-        try:
-            if options.daemon:
-                print 'Starting testrunner daemon...'
-                runner.daemonize()
+    pid_filename = os.path.join(LAUNCHPAD_DIR, 'ec2test-remote.pid')
 
-            runner.test()
-        except:
-            config = bzrlib.config.GlobalConfig()
-            # Handle exceptions thrown by the test() or daemonize() methods.
-            if options.email:
-                bzrlib.email_message.EmailMessage.send(
-                    config, config.username(),
-                    options.email,
-                    'Test Runner FAILED', traceback.format_exc())
-            raise
-    finally:
+    smtp_connection = SMTPConnection(bzrlib.config.GlobalConfig())
 
-        # When everything is over, if we've been ask to shut down, then
-        # make sure we're daemonized, then shutdown.  Otherwise, if we're
-        # daemonized, just clean up the pidfile.
-        if options.shutdown:
-            # Make sure our process is daemonized, and has therefore
-            # disconnected the controlling terminal.  This also disconnects
-            # the ec2test.py SSH connection, thus signalling ec2test.py
-            # that it may now try to take control of the server.
-            if not runner.daemonized:
-                # We only want to do this if we haven't already been
-                # daemonized.  Nesting daemons is bad.
-                runner.daemonize()
+    request = Request(
+        options.public_branch, options.public_branch_revno, TEST_DIR,
+        SOURCECODE_DIR, options.email, pqm_message, smtp_connection)
+    # Only write to stdout if we are running as the foreground process.
+    echo_to_stdout = not options.daemon
+    logger = WebTestLogger.make_in_directory(
+        '/var/www', request, echo_to_stdout)
 
-            # Give the script 60 seconds to clean itself up, and 60 seconds
-            # for the ec2test.py --postmortem option to grab control if
-            # needed.  If we don't give --postmortem enough time to log
-            # in via SSH and take control, then this server will begin to
-            # shutdown on it's own.
-            #
-            # (FWIW, "grab control" means sending SIGTERM to this script's
-            # process id, thus preventing fail-safe shutdown.)
-            time.sleep(60)
+    runner = EC2Runner(
+        options.daemon, pid_filename, options.shutdown,
+        smtp_connection, options.email)
 
-            # We'll only get here if --postmortem didn't kill us.  This is
-            # our fail-safe shutdown, in case the user got disconnected
-            # or suffered some other mishap that would prevent them from
-            # shutting down this server on their own.
-            subprocess.call(['sudo', 'shutdown', '-P', 'now'])
-        elif runner.daemonized:
-            # It would be nice to clean up after ourselves, since we won't
-            # be shutting down.
-            runner.remove_pidfile()
-        else:
-            # We're not a daemon, and we're not shutting down.  The user most
-            # likely started this script manually, from a shell running on the
-            # instance itself.
-            pass
+    tester = LaunchpadTester(logger, TEST_DIR, test_options=args[1:])
+    runner.run("Test runner", tester.test)
+
+
+if __name__ == '__main__':
+    main(sys.argv)

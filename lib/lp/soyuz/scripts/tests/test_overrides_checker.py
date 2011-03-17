@@ -6,8 +6,12 @@
 __metaclass__ = type
 
 from unittest import TestCase
+
 from lp.soyuz.scripts.ftpmaster import (
-    PubBinaryDetails, PubSourceChecker, PubBinaryContent)
+    PubBinaryContent,
+    PubBinaryDetails,
+    PubSourceChecker,
+    )
 
 
 class TestPubBinaryDetails(TestCase):

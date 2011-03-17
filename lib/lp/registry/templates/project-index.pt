@@ -72,11 +72,11 @@
         <tal:details replace="structure context/@@+details" />
 
         <tal:faqs content="structure context/@@+portlet-listfaqs"
-          condition="context/@@+get-involved/official_answers" />
+          condition="context/@@+get-involved/answers_usage/enumvalue:LAUNCHPAD" />
 
         <tal:has-many-project condition="view/has_many_projects">
           <tal:questions content="structure context/@@+portlet-latestquestions"
-            condition="context/@@+get-involved/official_answers" />
+            condition="context/@@+get-involved/answers_usage/enumvalue:LAUNCHPAD" />
         </tal:has-many-project>
 
         <tal:bugs content="structure context/@@+portlet-latestbugs"
@@ -84,7 +84,7 @@
 
         <tal:has-many-project condition="view/has_many_projects">
           <tal:specs content="structure context/@@+portlet-latestspecs"
-            condition="context/@@+get-involved/official_blueprints" />
+            condition="context/@@+get-involved/blueprints_usage/enumvalue:LAUNCHPAD" />
         </tal:has-many-project>
 
         <tal:contributors content="structure context/@@+portlet-top-contributors"/>
@@ -119,10 +119,10 @@
 
         <tal:has-few-project condition="not: view/has_many_projects">
           <tal:questions content="structure context/@@+portlet-latestquestions"
-            condition="context/@@+get-involved/official_answers" />
+            condition="context/@@+get-involved/answers_usage/enumvalue:LAUNCHPAD" />
 
           <tal:specs content="structure context/@@+portlet-latestspecs"
-            condition="context/@@+get-involved/official_blueprints" />
+            condition="context/@@+get-involved/blueprints_usage/enumvalue:LAUNCHPAD" />
 
           <tal:sprints content="structure context/@@+portlet-coming-sprints" />
         </tal:has-few-project>

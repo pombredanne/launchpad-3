@@ -20,7 +20,11 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Choice, Int, TextLine
+from zope.schema import (
+    Choice,
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 

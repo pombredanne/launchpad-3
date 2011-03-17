@@ -8,8 +8,11 @@ __all__ = []
 
 import unittest
 
+from canonical.launchpad.testing.browser import (
+    setUp,
+    tearDown,
+    )
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
-from canonical.launchpad.testing.browser import setUp, tearDown
 from canonical.testing.layers import AppServerLayer
 
 

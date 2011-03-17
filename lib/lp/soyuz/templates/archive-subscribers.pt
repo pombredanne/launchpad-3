@@ -10,11 +10,6 @@
   <metal:block fill-slot="head_epilogue">
     <metal:yui-dependencies
       use-macro="context/@@launchpad_widget_macros/yui2calendar-dependencies" />
-
-    <tal:devmode condition="devmode">
-        <script type="text/javascript"
-                tal:attributes="src string:${lp_js}/soyuz/archivesubscribers_index.js"></script>
-    </tal:devmode>
   </metal:block>
 
   <div metal:fill-slot="main">
@@ -98,8 +93,8 @@
         </form>
       </div><!-- class="portlet" -->
       <script type="text/javascript" id="setup-archivesubscribers-index">
-          LPS.use('soyuz.archivesubscribers_index', function(Y) {
-              Y.soyuz.setup_archivesubscribers_index();
+          LPS.use('lp.soyuz.archivesubscribers_index', function(Y) {
+              Y.lp.soyuz.archivesubscribers_index.setup_archivesubscribers_index();
           });
       </script>
     </div>

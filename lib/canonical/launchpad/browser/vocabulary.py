@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views which export vocabularies as JSON for widgets."""
@@ -14,30 +14,33 @@ __all__ = [
     'sourcepackagename_to_vocabularyjson',
     ]
 
+from lazr.restful.interfaces import IWebServiceClientRequest
 import simplejson
-
-from zope.app.schema.vocabulary import IVocabularyFactory
-from zope.component import getUtility
-from zope.interface import implementer
-from zope.component import adapter
-from zope.component.interfaces import ComponentLookupError
-from zope.interface import Attribute, implements, Interface
 from zope.app.form.interfaces import MissingInputError
+from zope.app.schema.vocabulary import IVocabularyFactory
+from zope.component import (
+    adapter,
+    getUtility,
+    )
+from zope.component.interfaces import ComponentLookupError
+from zope.interface import (
+    Attribute,
+    implementer,
+    implements,
+    Interface,
+    )
 from zope.security.interfaces import Unauthorized
 
-from lazr.restful.interfaces import IWebServiceClientRequest
-
+from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interfaces import NoCanonicalUrl
+from canonical.launchpad.webapp.publisher import canonical_url
+from lp.app.browser.tales import ObjectImageDisplayAPI
+from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
+from lp.app.errors import UnexpectedFormData
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.sourcepackagename import getSourcePackageDescriptions
-
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import (
-    NoCanonicalUrl, UnexpectedFormData)
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI
-from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 
 # XXX: EdwinGrubbs 2009-07-27 bug=405476
 # This limits the output to one line of text, since the sprite class
@@ -78,6 +81,7 @@ def default_pickerentry_adapter(obj):
         extra.css = 'sprite bullet'
     return extra
 
+
 @implementer(IPickerEntry)
 @adapter(IPerson)
 def person_to_pickerentry(person):
@@ -90,6 +94,7 @@ def person_to_pickerentry(person):
             extra.description = '<email address hidden>'
     return extra
 
+
 @implementer(IPickerEntry)
 @adapter(IBranch)
 def branch_to_pickerentry(branch):
@@ -97,6 +102,7 @@ def branch_to_pickerentry(branch):
     extra = default_pickerentry_adapter(branch)
     extra.description = branch.bzr_identity
     return extra
+
 
 @implementer(IPickerEntry)
 @adapter(ISourcePackageName)
@@ -138,13 +144,14 @@ class HugeVocabularyJSONView:
 
         vocabulary = factory(self.context)
 
-        if not IHugeVocabulary.providedBy(vocabulary):
-            raise UnexpectedFormData(
-                'Non-huge vocabulary %r' % name)
+        if IHugeVocabulary.providedBy(vocabulary):
+            matches = vocabulary.searchForTerms(search_text)
+            total_size = matches.count()
+        else:
+            matches = list(vocabulary)
+            total_size = len(matches)
 
-        matches = vocabulary.searchForTerms(search_text)
         batch_navigator = BatchNavigator(matches, self.request)
-        total_size = matches.count()
 
         result = []
         for term in batch_navigator.currentBatch():

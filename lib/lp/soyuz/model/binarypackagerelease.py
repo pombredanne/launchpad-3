@@ -7,26 +7,49 @@ __metaclass__ = type
 __all__ = [
     'BinaryPackageRelease',
     'BinaryPackageReleaseDownloadCount',
-    'BinaryPackageReleaseSet',
     ]
 
 
+import simplejson
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    StringCol,
+    )
+from storm.locals import (
+    Date,
+    Int,
+    Reference,
+    Store,
+    Storm,
+    )
 from zope.interface import implements
 
-from sqlobject import StringCol, ForeignKey, IntCol, SQLMultipleJoin, BoolCol
-from storm.locals import Date, Int, Reference, Storm
-
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues, quote_like
-
-from lp.soyuz.interfaces.binarypackagerelease import (
-    BinaryPackageFileType, BinaryPackageFormat, IBinaryPackageRelease,
-    IBinaryPackageReleaseDownloadCount, IBinaryPackageReleaseSet)
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPriority, PackagePublishingStatus)
-from canonical.database.enumcol import EnumCol
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-
+from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import (
+    quote,
+    quote_like,
+    SQLBase,
+    sqlvalues,
+    )
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
+from lp.soyuz.enums import (
+    BinaryPackageFileType,
+    BinaryPackageFormat,
+    PackagePublishingPriority,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.binarypackagerelease import (
+    IBinaryPackageRelease,
+    IBinaryPackageReleaseDownloadCount,
+    )
 from lp.soyuz.model.files import BinaryPackageFile
 
 
@@ -61,12 +84,26 @@ class BinaryPackageRelease(SQLBase):
     installedsize = IntCol(dbName='installedsize')
     architecturespecific = BoolCol(dbName='architecturespecific',
                                    notNull=True)
+    homepage = StringCol(dbName='homepage')
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     debug_package = ForeignKey(dbName='debug_package',
                               foreignKey='BinaryPackageRelease')
 
-    files = SQLMultipleJoin('BinaryPackageFile',
-        joinColumn='binarypackagerelease', orderBy="libraryfile")
+    _user_defined_fields = StringCol(dbName='user_defined_fields')
+
+    def __init__(self, *args, **kwargs):
+        if 'user_defined_fields' in kwargs:
+            kwargs['_user_defined_fields'] = simplejson.dumps(
+                kwargs['user_defined_fields'])
+            del kwargs['user_defined_fields']
+        super(BinaryPackageRelease, self).__init__(*args, **kwargs)
+
+    @property
+    def user_defined_fields(self):
+        """See `IBinaryPackageRelease`."""
+        if self._user_defined_fields is None:
+            return []
+        return simplejson.loads(self._user_defined_fields)
 
     @property
     def title(self):
@@ -101,6 +138,11 @@ class BinaryPackageRelease(SQLBase):
             self.binarypackagename)
         return distroarchseries_binary_package.currentrelease is None
 
+    @cachedproperty
+    def files(self):
+        return list(
+            Store.of(self).find(BinaryPackageFile, binarypackagerelease=self))
+
     def addFile(self, file):
         """See `IBinaryPackageRelease`."""
         determined_filetype = None
@@ -116,6 +158,7 @@ class BinaryPackageRelease(SQLBase):
             raise AssertionError(
                 'Unsupported file type: %s' % file.filename)
 
+        del get_property_cache(self).files
         return BinaryPackageFile(binarypackagerelease=self,
                                  filetype=determined_filetype,
                                  libraryfile=file)
@@ -128,84 +171,6 @@ class BinaryPackageRelease(SQLBase):
             self.section = section
         if priority is not None:
             self.priority = priority
-
-
-class BinaryPackageReleaseSet:
-    """A Set of BinaryPackageReleases."""
-    implements(IBinaryPackageReleaseSet)
-
-    def findByNameInDistroSeries(self, distroseries, pattern, archtag=None,
-                                  fti=False):
-        """Returns a set of binarypackagereleases that matchs pattern inside a
-        distroseries.
-        """
-        pattern = pattern.replace('%', '%%')
-        query, clauseTables = self._buildBaseQuery(distroseries)
-        queries = [query]
-
-        match_query = ("BinaryPackageName.name LIKE lower('%%' || %s || '%%')"
-                       % (quote_like(pattern)))
-        if fti:
-            match_query = ("(%s OR BinaryPackageRelease.fti @@ ftq(%s))"
-                           % (match_query, quote(pattern)))
-        queries.append(match_query)
-
-        if archtag:
-            queries.append('DistroArchSeries.architecturetag=%s'
-                           % sqlvalues(archtag))
-
-        query = " AND ".join(queries)
-
-        return BinaryPackageRelease.select(query, clauseTables=clauseTables,
-                                           orderBy='BinaryPackageName.name')
-
-    def getByNameInDistroSeries(self, distroseries, name=None,
-                                 version=None, archtag=None, orderBy=None):
-        """Get a BinaryPackageRelease in a DistroSeries by its name."""
-        query, clauseTables = self._buildBaseQuery(distroseries)
-        queries = [query]
-
-        if name:
-            queries.append('BinaryPackageName.name = %s'% sqlvalues(name))
-
-        # Look for a specific binarypackage version or if version == None
-        # return the current one
-        if version:
-            queries.append('BinaryPackageRelease.version = %s'
-                         % sqlvalues(version))
-        else:
-            status_published = PackagePublishingStatus.PUBLISHED
-            queries.append('BinaryPackagePublishingHistory.status = %s'
-                         % sqlvalues(status_published))
-
-        if archtag:
-            queries.append('DistroArchSeries.architecturetag = %s'
-                         % sqlvalues(archtag))
-
-        query = " AND ".join(queries)
-        return BinaryPackageRelease.select(query, distinct=True,
-                                           clauseTables=clauseTables,
-                                           orderBy=orderBy)
-
-    def _buildBaseQuery(self, distroseries):
-        query = """
-        BinaryPackagePublishingHistory.binarypackagerelease =
-           BinaryPackageRelease.id AND
-        BinaryPackagePublishingHistory.distroarchseries =
-           DistroArchSeries.id AND
-        BinaryPackagePublishingHistory.archive IN %s AND
-        DistroArchSeries.distroseries = %s AND
-        BinaryPackageRelease.binarypackagename =
-           BinaryPackageName.id AND
-        BinaryPackagePublishingHistory.dateremoved is NULL
-        """ % sqlvalues([archive.id for archive in
-                         distroseries.distribution.all_distro_archives],
-                        distroseries)
-
-        clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchSeries',
-                        'BinaryPackageRelease', 'BinaryPackageName']
-
-        return query, clauseTables
 
 
 class BinaryPackageReleaseDownloadCount(Storm):

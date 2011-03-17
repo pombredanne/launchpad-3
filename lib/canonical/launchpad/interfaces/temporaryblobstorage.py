@@ -13,16 +13,28 @@ __all__ = [
     'BlobTooLarge',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Datetime, Text, Bytes
-from canonical.launchpad import _
-
 from lazr.restful.declarations import (
-    collection_default_content, exported,
-    export_as_webservice_collection, export_as_webservice_entry,
-    export_read_operation, operation_parameters, rename_parameters_as,
-    REQUEST_USER)
+    collection_default_content,
+    export_as_webservice_collection,
+    export_as_webservice_entry,
+    export_read_operation,
+    exported,
+    operation_parameters,
+    rename_parameters_as,
+    REQUEST_USER,
+    )
 from lazr.restful.interface import copy_field
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bytes,
+    Datetime,
+    Text,
+    )
+
+from canonical.launchpad import _
 
 
 class BlobTooLarge(Exception):
@@ -79,8 +91,4 @@ class ITemporaryStorageManager(Interface):
 
     @collection_default_content()
     def default_temporary_blob_storage_list():
-        """Return the default list of `ITemporaryBlobStorage` objects.
-
-        :returns: All the the `ITemporaryBlobStorage` blobs whose file
-                  aliases have not expired.
-        """
+        """Return an empty set - only exists to keep lazr.restful happy."""

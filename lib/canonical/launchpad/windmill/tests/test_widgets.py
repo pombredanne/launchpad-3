@@ -3,13 +3,15 @@
 
 """Tests for the Windmill test doubles themselves."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
-from canonical.launchpad.windmill.testing.widgets import OnPageWidget
+from mocker import (
+    KWARGS,
+    Mocker,
+    )
+
 from lp.testing import TestCase
-from mocker import Mocker, KWARGS
+from lp.testing.windmill.widgets import OnPageWidget
 
 
 class TestOnPageWidget(TestCase):

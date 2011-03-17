@@ -3,8 +3,7 @@
 First create a copy archive for us to see:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.testing.factory import (
     ...     remove_security_proxy_and_shout_at_engineer)
@@ -200,8 +199,9 @@ it and the 'disabled' styling is gone.
     Copy archive disabled-security-rebuild for No Privileges Person : Ubuntu
 
     >>> main_content = find_main_content(nopriv_browser.contents)
-    >>> print main_content.h1
-    <h1 id="displayname">...</h1>
+    >>> print main_content.h1['class']
+    Traceback (most recent call last):
+    KeyError: 'class'
 
     >>> print first_tag_by_class(nopriv_browser.contents, 'warning message')
     None

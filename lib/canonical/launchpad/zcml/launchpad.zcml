@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -39,7 +39,7 @@
 
   <!-- Gone -->
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.GoneError"
+      for="lp.app.errors.GoneError"
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-gone.pt"
@@ -66,7 +66,7 @@
 
   <!-- UnexpectedFormData -->
   <browser:page
-      for="canonical.launchpad.interfaces.UnexpectedFormData"
+      for="lp.app.errors.UnexpectedFormData"
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-unexpectedformdata.pt"
@@ -111,20 +111,11 @@
 
   <!-- TranslationUnavailable -->
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.TranslationUnavailable"
+      for="lp.app.errors.TranslationUnavailable"
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-translationunavailable.pt"
       class="canonical.launchpad.webapp.error.TranslationUnavailableView"
-      />
-
-  <!-- LibrarianFailure -->
-  <browser:page
-      for="canonical.librarian.interfaces.LibrarianFailure"
-      name="index.html"
-      permission="zope.Public"
-      template="../templates/launchpad-librarianfailure.pt"
-      class="canonical.launchpad.webapp.error.SystemErrorView"
       />
 
   <!-- ReadOnlyModeViolation -->
@@ -164,7 +155,7 @@
 
   <utility
       factory="canonical.launchpad.utilities.LaunchpadCelebrities"
-      provides="canonical.launchpad.interfaces.ILaunchpadCelebrities">
+      provides="canonical.launchpad.interfaces.launchpad.ILaunchpadCelebrities">
   </utility>
 
   <browser:page
@@ -270,13 +261,6 @@
 
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
-      name="+token-authorized"
-      class="canonical.launchpad.browser.OAuthTokenAuthorizedView"
-      template="../templates/token-authorized.pt"
-      permission="launchpad.AnyPerson" />
-
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       name="+access-token"
       class="canonical.launchpad.browser.OAuthAccessTokenView"
       permission="zope.Public" />
@@ -320,7 +304,7 @@
        the view class, only Launchpad developers have access to the
        page -->
   <browser:page
-      for="canonical.launchpad.interfaces.ILaunchpadRoot"
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
       name="+soft-timeout"
       class="canonical.launchpad.browser.launchpad.SoftTimeoutView"
       attribute="__call__"
@@ -332,11 +316,11 @@
 <class
     class="canonical.launchpad.utilities.personroles.PersonRoles">
     <allow
-        interface="canonical.launchpad.interfaces.IPersonRoles"/>
+        interface="canonical.launchpad.interfaces.launchpad.IPersonRoles"/>
 </class>
 <adapter
     for="lp.registry.interfaces.person.IPerson"
-    provides="canonical.launchpad.interfaces.IPersonRoles"
+    provides="canonical.launchpad.interfaces.launchpad.IPersonRoles"
     factory="canonical.launchpad.utilities.personroles.PersonRoles" />
 
 
@@ -360,13 +344,13 @@ and if we want to restrict access to the LAN then we need to block
 these URLs in Apache.
 -->
 <browser:page
-    for="canonical.launchpad.interfaces.ILaunchpadRoot"
+    for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
     name="+opstats"
     permission="zope.Public"
     class="canonical.launchpad.webapp.opstats.OpStats"
     />
 <xmlrpc:view
-    for="canonical.launchpad.interfaces.ILaunchpadRoot"
+    for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
     class="canonical.launchpad.webapp.opstats.OpStats"
     methods="opstats"
     permission="zope.Public"
@@ -375,15 +359,15 @@ these URLs in Apache.
 
 <!-- self-test xmlrpc api -->
 <xmlrpc:view
-  for="canonical.launchpad.interfaces.ILaunchpadRoot"
-  interface="canonical.launchpad.xmlrpc.ISelfTest"
-  class="canonical.launchpad.xmlrpc.SelfTest"
+  for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+  interface="canonical.launchpad.xmlrpc.application.ISelfTest"
+  class="canonical.launchpad.xmlrpc.application.SelfTest"
   permission="zope.Public"
   />
 <xmlrpc:view
-  for="canonical.launchpad.interfaces.IRosettaApplication"
-  interface="canonical.launchpad.xmlrpc.IRosettaSelfTest"
-  class="canonical.launchpad.xmlrpc.RosettaSelfTest"
+  for="canonical.launchpad.interfaces.launchpad.IRosettaApplication"
+  interface="canonical.launchpad.xmlrpc.application.IRosettaSelfTest"
+  class="canonical.launchpad.xmlrpc.application.RosettaSelfTest"
   permission="zope.Public"
   />
 
@@ -410,7 +394,7 @@ these URLs in Apache.
 </class>
 
 <class class="canonical.launchpad.mailnotification.NotificationRecipientSet">
-  <allow interface="canonical.launchpad.interfaces.INotificationRecipientSet" />
+  <allow interface="canonical.launchpad.interfaces.launchpad.INotificationRecipientSet" />
 </class>
 
 </configure>

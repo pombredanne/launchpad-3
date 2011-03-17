@@ -10,9 +10,9 @@ of the page. Any page can use these layout options by including
 in the root element of the page template. The base layout template uses the
 YUI grid classes for positioning.
 
-    >>> from z3c.ptcompat import ViewPageTemplateFile
     >>> from canonical.launchpad.webapp.publisher import LaunchpadView
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from z3c.ptcompat import ViewPageTemplateFile
 
     >>> user = factory.makePerson(name='waffles')
     >>> request = LaunchpadTestRequest(
@@ -125,19 +125,22 @@ or breadcrumbs; the template must provide its own h1 element.
 Page Diagnostics
 ----------------
 
-The page includes a comment after the document with diagnostic information.
+The page includes a comment after the body with diagnostic information.
 
-    >>> print html[html.index('</html>') + 7:]
+    >>> print html[html.index('</body>') + 7:]
+    ...
     <!--
       Facet name: overview
       Page type: locationless
       Has global search: False
       Has application tabs: False
       Has side portlets: False
-      At least ... queries issued in ... seconds
+      At least ... queries... issued in ... seconds
+      Features: {...}
+      in scopes {...}
       r...
     -->
-
+    ...
 
 Page Headings
 -------------
@@ -169,9 +172,9 @@ Page Footers
     Read the guide https://help.launchpad.net/
     Canonical&nbsp;Ltd. http://canonical.com/
     Terms of use http://launchpad.dev/legal
-    Contact Launchpad Support https://help.launchpad.net/Feedback
+    Contact Launchpad Support /feedback
     System status http://identi.ca/launchpadstatus
-    None http://www.surveymonkey.com/s/launchpadsummer2010
+    get the code https://code.launchpad.net/~launchpad-pqm/launchpad/stable/
 
 
 Page registering
@@ -218,7 +221,7 @@ private, the 'private' class is added to the body's class attribute.
     >>> view = LocationlessView(team, request)
     >>> body = find_tag_by_id(view.render(), 'document')
     >>> print body['class']
-    tab-overview locationless private yui-skin-sam
+    tab-overview locationless private yui3-skin-sam
 
 When the context is public, the 'public' class is in the class attribute.
 
@@ -227,7 +230,7 @@ When the context is public, the 'public' class is in the class attribute.
     >>> view = LocationlessView(team, request)
     >>> body = find_tag_by_id(view.render(), 'document')
     >>> print body['class']
-    tab-overview locationless public yui-skin-sam
+    tab-overview locationless public yui3-skin-sam
 
 
 Notifications

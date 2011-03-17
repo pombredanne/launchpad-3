@@ -11,42 +11,26 @@ __all__ = [
     'IPackageDiff',
     'IPackageDiffSet',
     'PackageDiffAlreadyRequested',
-    'PackageDiffStatus',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Choice, Datetime, Object
-from lazr.enum import DBEnumeratedType, DBItem
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Object,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 
+from lp.soyuz.enums import PackageDiffStatus
+
 
 class PackageDiffAlreadyRequested(Exception):
     """Raised on attempts to request an already recorded diff request. """
-
-
-class PackageDiffStatus(DBEnumeratedType):
-    """The status of a PackageDiff request."""
-
-
-    PENDING = DBItem(0, """
-        Pending
-
-        This diff request is pending processing.
-        """)
-
-    COMPLETED = DBItem(1, """
-        Completed
-
-        This diff request was successfully completed.
-        """)
-
-    FAILED = DBItem(2, """
-        Failed
-
-        This diff request has failed.
-        """)
 
 
 class IPackageDiff(Interface):
@@ -80,7 +64,7 @@ class IPackageDiff(Interface):
         title=_('Status'),
         description=_('The status of this package diff request.'),
         vocabulary='PackageDiffStatus',
-        required=False, default=PackageDiffStatus.PENDING
+        required=False, default=PackageDiffStatus.PENDING,
         )
 
     title = Attribute("The Package diff title.")
@@ -111,10 +95,12 @@ class IPackageDiffSet(Interface):
         :return a `SelectResult` ordered by id respecting the given limit.
         """
 
-    def getDiffsToReleases(self, sprs):
+    def getDiffsToReleases(self, sprs, preload_for_display=False):
         """Return all diffs that targetting a set of source package releases.
 
         :param sprs: a sequence of `SourcePackageRelease` objects.
+        :param preload_for_display: True if all the attributes needed for
+            link rendering should be preloaded.
 
         :return a `ResultSet` ordered by `SourcePackageRelease` ID and
         then diff request date in descending order.  If sprs is empty,

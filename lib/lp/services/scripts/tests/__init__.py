@@ -8,7 +8,9 @@ __all__ = [
 
 
 import os
+
 import canonical
+
 
 LP_TREE = os.path.dirname(
     os.path.dirname(os.path.dirname(canonical.__file__)))
@@ -28,7 +30,6 @@ KNOWN_BROKEN = [
     'scripts/clean-sourceforge-project-entries.py',
     'scripts/import-zope-specs.py',
     'scripts/rosetta/gettext_check_messages.py',
-    'scripts/rosetta/remove-obsolete-translations.py',
     # sqlobject.DatbaseIndex ?
     'scripts/linkreport.py',
     # Python executable without '.py' extension.
@@ -36,7 +37,6 @@ KNOWN_BROKEN = [
     'scripts/queue',
     # Bad script, no help.
     'scripts/librarian-report.py',
-    'scripts/rosetta/message-sharing-populate-test.py',
     'scripts/get-stacked-on-branches.py',
     'scripts/start-loggerhead.py',
     'scripts/stop-loggerhead.py',

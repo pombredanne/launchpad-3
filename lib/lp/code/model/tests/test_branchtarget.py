@@ -10,24 +10,33 @@ import unittest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.code.model.branchtarget import (
-    check_default_stacked_on,
-    PackageBranchTarget, PersonBranchTarget, ProductBranchTarget)
-from lp.code.enums import BranchType, RevisionControlSystems
-from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.code.interfaces.codeimport import ICodeImport
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from canonical.testing import DatabaseFunctionalLayer
-from lp.testing import run_with_login, TestCaseWithFactory
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.code.enums import (
+    BranchType,
+    RevisionControlSystems,
+    )
+from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.codeimport import ICodeImport
+from lp.code.model.branchtarget import (
+    check_default_stacked_on,
+    PackageBranchTarget,
+    PersonBranchTarget,
+    ProductBranchTarget,
+    )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.testing import (
+    run_with_login,
+    TestCaseWithFactory,
+    )
 
 
 class BaseBranchTargetTests:
 
-    def test_provides_IPrimaryContext(self):
-        self.assertProvides(self.target, IPrimaryContext)
+    def test_provides_IBranchTarget(self):
+        self.assertProvides(self.target, IBranchTarget)
 
     def test_context(self):
         # IBranchTarget.context is the original object.
@@ -44,7 +53,7 @@ class BaseBranchTargetTests:
         # branches related to the branch target.
         self.assertEqual(self.target.collection.getBranches().count(), 0)
         branch = self.makeBranchForTarget()
-        branches = self.target.collection.getBranches()
+        branches = self.target.collection.getBranches(eager_load=False)
         self.assertEqual([branch], list(branches))
 
     def test_retargetBranch_packageBranch(self):
@@ -92,6 +101,21 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
     def test_adapter(self):
         target = IBranchTarget(self.original)
         self.assertIsInstance(target, PackageBranchTarget)
+
+    def test_distrosourcepackage_adapter(self):
+        # Adapting a distrosourcepackage will make a branch target with the
+        # current series of the distro as the distroseries.
+        distro = self.original.distribution
+        distro_sourcepackage = distro.getSourcePackage(
+            self.original.sourcepackagename)
+        target = IBranchTarget(distro_sourcepackage)
+        self.assertIsInstance(target, PackageBranchTarget)
+        self.assertEqual(
+            [distro, distro.currentseries],
+            target.components[:2])
+        self.assertEqual(
+            self.original.sourcepackagename,
+            target.components[2].sourcepackagename)
 
     def test_components(self):
         target = IBranchTarget(self.original)
@@ -196,6 +220,30 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         self.assertEqual(owner, code_import.registrant)
         self.assertEqual(owner, code_import.branch.owner)
         self.assertEqual(self.target, code_import.branch.target)
+
+    def test_related_branches(self):
+        (branch, related_series_branch_info,
+            related_package_branches) = (
+                self.factory.makeRelatedBranchesForSourcePackage(
+                sourcepackage=self.original))
+        self.assertEqual(
+            related_series_branch_info,
+            self.target.getRelatedSeriesBranchInfo(branch))
+        self.assertEqual(
+            related_package_branches,
+            self.target.getRelatedPackageBranchInfo(branch))
+
+    def test_related_branches_with_private_branch(self):
+        (branch, related_series_branch_info,
+            related_package_branches) = (
+                self.factory.makeRelatedBranchesForSourcePackage(
+                sourcepackage=self.original, with_private_branches=True))
+        self.assertEqual(
+            related_series_branch_info,
+            self.target.getRelatedSeriesBranchInfo(branch))
+        self.assertEqual(
+            related_package_branches,
+            self.target.getRelatedPackageBranchInfo(branch))
 
 
 class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
@@ -320,6 +368,14 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         target = IBranchTarget(self.original)
         self.assertIsInstance(target, ProductBranchTarget)
 
+    def test_productseries_adapter(self):
+        # Adapting a product series will make a product branch target.
+        product = self.factory.makeProduct()
+        series = self.factory.makeProductSeries(product)
+        target = IBranchTarget(series)
+        self.assertIsInstance(target, ProductBranchTarget)
+        self.assertEqual([product], target.components)
+
     def test_components(self):
         target = IBranchTarget(self.original)
         self.assertEqual([self.original], list(target.components))
@@ -419,6 +475,42 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         self.assertEqual(owner, code_import.registrant)
         self.assertEqual(owner, code_import.branch.owner)
         self.assertEqual(self.target, code_import.branch.target)
+
+    def test_related_branches(self):
+        (branch, related_series_branch_info,
+            related_package_branches) = (
+                self.factory.makeRelatedBranchesForProduct(
+                product=self.original))
+        self.assertEqual(
+            related_series_branch_info,
+            self.target.getRelatedSeriesBranchInfo(branch))
+        self.assertEqual(
+            related_package_branches,
+            self.target.getRelatedPackageBranchInfo(branch))
+
+    def test_related_branches_with_private_branch(self):
+        (branch, related_series_branch_info,
+            related_package_branches) = (
+                self.factory.makeRelatedBranchesForProduct(
+                product=self.original, with_private_branches=True))
+        self.assertEqual(
+            related_series_branch_info,
+            self.target.getRelatedSeriesBranchInfo(branch))
+        self.assertEqual(
+            related_package_branches,
+            self.target.getRelatedPackageBranchInfo(branch))
+
+    def test_related_branches_with_limit(self):
+        (branch, related_series_branch_info,
+            related_package_branches) = (
+                self.factory.makeRelatedBranchesForProduct(
+                product=self.original))
+        self.assertEqual(
+            related_series_branch_info[:2],
+            self.target.getRelatedSeriesBranchInfo(branch, 2))
+        self.assertEqual(
+            related_package_branches[:2],
+            self.target.getRelatedPackageBranchInfo(branch, 2))
 
 
 class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):

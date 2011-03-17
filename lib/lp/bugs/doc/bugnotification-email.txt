@@ -19,10 +19,8 @@ To avoid having one gargantuan super function that formats any kind of
 object it gets passed, the formatting logic has been cut into two
 pieces: get_bug_changes and generate_bug_add_email.
 
-    >>> from lp.bugs.adapters.bugchange import (
-    ...     get_bug_changes)
-    >>> from canonical.launchpad.mailnotification import (
-    ...     generate_bug_add_email)
+    >>> from lp.bugs.adapters.bugchange import get_bug_changes
+    >>> from lp.bugs.mail.newbug import generate_bug_add_email
 
 Let's demonstrate what the bugmails will look like, by going through
 the various events that can happen that would cause a notification to
@@ -30,9 +28,13 @@ be sent. We'll start by importing some things we'll need for the
 examples that follow:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugDelta, IBugSet, IEmailAddressSet, IPersonSet)
+    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
     >>> from lp.bugs.adapters.bugdelta import BugDelta
+    >>> from lp.bugs.interfaces.bug import (
+    ...     IBugDelta,
+    ...     IBugSet,
+    ...     )
+    >>> from lp.registry.interfaces.person import IPersonSet
 
 = Filing a bug =
 
@@ -282,10 +284,13 @@ text representations of the changes when a bug task is edited.
 
 We use a BugTaskDelta to represent changes to a BugTask.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskStatus, IBugTaskDelta, IBugTaskSet)
-    >>> from lp.bugs.model.bugtask import BugTaskDelta
     >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     BugTaskStatus,
+    ...     IBugTaskDelta,
+    ...     IBugTaskSet,
+    ...     )
+    >>> from lp.bugs.model.bugtask import BugTaskDelta
     >>> example_bug_task = factory.makeBugTask()
     >>> example_delta = BugTaskDelta(example_bug_task)
     >>> verifyObject(IBugTaskDelta, example_delta)
@@ -343,18 +348,9 @@ edited:
 
 Adding an attachment will generate a notification that looks as follows:
 
-    >>> class MockLibraryFile:
-    ...     def __init__(self, url):
-    ...         self.http_url = url
-    >>> class MockAttachment:
-    ...     def __init__(self, title, libraryfile, is_patch=False):
-    ...         self.title = title
-    ...         self.libraryfile = libraryfile
-    ...         self.is_patch = is_patch
-    >>> attachment = MockAttachment(
-    ...     title="A screenshot of the problem",
-    ...     libraryfile=MockLibraryFile('http://foo.com/screenshot.png'))
-
+    >>> attachment = factory.makeBugAttachment(
+    ...     description="A screenshot of the problem",
+    ...     filename='screenshot.png')
     >>> bug_delta = BugDelta(
     ...     bug=edited_bug,
     ...     bugurl="http://www.example.com/bugs/2",
@@ -365,7 +361,7 @@ Adding an attachment will generate a notification that looks as follows:
     ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Attachment added: "A screenshot of the problem"
-       http://foo.com/screenshot.png
+       http://bugs.launchpad.dev/bugs/.../+attachment/1/+files/screenshot.png
     -----------------------------
 
 Removing an attachment generates a notification, too.
@@ -380,16 +376,15 @@ Removing an attachment generates a notification, too.
     ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Attachment removed: "A screenshot of the problem"
-       http://foo.com/screenshot.png
+       http://bugs.launchpad.dev/bugs/.../+attachment/1/+files/screenshot.png
     -----------------------------
 
 Adding an attachment and marking it as a patch generates a different
 notification.
 
-    >>> attachment = MockAttachment(
-    ...     title="A new icon for the application",
-    ...     libraryfile=MockLibraryFile('http://foo.com/new-icon.png'),
-    ...     is_patch=True)
+    >>> attachment = factory.makeBugAttachment(
+    ...     description="A new icon for the application",
+    ...     filename='new-icon.png', is_patch=True)
     >>> bug_delta = BugDelta(
     ...     bug=edited_bug,
     ...     bugurl="http://www.example.com/bugs/2",
@@ -400,7 +395,7 @@ notification.
     ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Patch added: "A new icon for the application"
-       http://foo.com/new-icon.png
+       http://bugs.launchpad.dev/bugs/.../+attachment/2/+files/new-icon.png
     -----------------------------
 
 Removing a patch also generates a different notification.
@@ -415,7 +410,7 @@ Removing a patch also generates a different notification.
     ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
     ** Patch removed: "A new icon for the application"
-       http://foo.com/new-icon.png
+       http://bugs.launchpad.dev/bugs/.../+attachment/2/+files/new-icon.png
     -----------------------------
 
 
@@ -468,7 +463,7 @@ The Launchpad Janitor celebrity isn't a real user, and shouldn't be
 sending mail. Notifications from the janitor are sent with the address
 of the bug itself.
 
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
     >>> lp_janitor = getUtility(ILaunchpadCelebrities).janitor
     >>> get_bugmail_from_address(lp_janitor, bug_four)
     'Launchpad Bug Tracker <4@bugs.launchpad.net>'
@@ -489,8 +484,7 @@ email address.
 mailnotification.py contains a class, BugNotificationBuilder, which is
 used to construct bug notification emails.
 
-    >>> from canonical.launchpad.mailnotification import (
-    ...     BugNotificationBuilder)
+    >>> from lp.bugs.mail.bugnotificationbuilder import BugNotificationBuilder
 
 When instantiatiated it derives a list of common unchanging headers
 from the bug so that they are not calculated for every recipient.

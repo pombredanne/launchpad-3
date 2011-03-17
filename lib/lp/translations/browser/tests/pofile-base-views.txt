@@ -4,8 +4,8 @@ POFileBaseView
 POFileBaseView provides different basic information about a POFile and a list
 of its content as TranslatableMessage objects.
 
-    >>> from lp.translations.browser.pofile import POFileBaseView
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.translations.browser.pofile import POFileBaseView
 
     >>> potemplate = factory.makePOTemplate()
     >>> pofile = factory.makePOFile('eo', potemplate)
@@ -37,8 +37,6 @@ The view also provides more detailed information about what the user can do.
 
 The view has information about the languages plural forms:
 
-    >>> print view.has_plural_form_information
-    True
     >>> print view.number_of_plural_forms
     2
     >>> print view.plural_expression
@@ -54,7 +52,7 @@ So let's make a contribution.
 
     >>> contributor = factory.makePerson(displayname="Contri Butor")
     >>> potmsgset = factory.makePOTMsgSet(potemplate, sequence=1)
-    >>> translation = factory.makeTranslationMessage(pofile, potmsgset,
+    >>> translation = factory.makeCurrentTranslationMessage(pofile, potmsgset,
     ...     translator=contributor, reviewer=contributor,
     ...     translations=['A translation made by a contributor.'])
     >>> view = POFileBaseView(pofile, LaunchpadTestRequest())

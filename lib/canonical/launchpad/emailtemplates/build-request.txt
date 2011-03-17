@@ -4,4 +4,5 @@
  * Distroseries: %(distroseries)s
  * Duration: %(duration)s
  * Build Log: %(log_url)s
+ * Upload Log: %(upload_log_url)s
  * Builder: %(builder_url)s

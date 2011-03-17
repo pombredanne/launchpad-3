@@ -22,6 +22,7 @@ import logging
 import os
 import time
 
+
 try:
     import xml.etree.cElementTree as ET
 except ImportError:
@@ -407,7 +408,9 @@ class BugImporter:
         if date is None:
             raise BugXMLSyntaxError('No date for comment %r' % title)
         text = get_value(commentnode, 'text')
-        if text is None or text == '':
+        # If there is no comment text and no attachment, use a place-holder
+        if ((text is None or text == '') and
+            get_element(commentnode, 'attachment') is None):
             text = '<empty comment>'
         return getUtility(IMessageSet).fromText(title, text, sender, date)
 
@@ -466,7 +469,7 @@ class BugImporter:
                 self.logger.info(
                     'Marking bug %d as duplicate of bug %d',
                     other_bug.id, bug.id)
-                other_bug.duplicateof = bug
+                other_bug.markAsDuplicate(bug)
             del self.pending_duplicates[bug_id]
         # Process this bug as a duplicate
         if duplicateof is not None:
@@ -478,7 +481,7 @@ class BugImporter:
                 self.logger.info(
                     'Marking bug %d as duplicate of bug %d',
                     bug.id, other_bug.id)
-                bug.duplicateof = other_bug
+                bug.markAsDuplicate(other_bug)
             else:
                 self.pending_duplicates.setdefault(
                     duplicateof, []).append(bug.id)

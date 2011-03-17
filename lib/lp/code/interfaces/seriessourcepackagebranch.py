@@ -13,8 +13,15 @@ __all__ = [
     ]
 
 
-from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Int
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    )
 
 from canonical.launchpad import _
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -38,6 +45,7 @@ class ISeriesSourcePackageBranch(Interface):
     sourcepackagename = Choice(
         title=_("Package"), required=True, vocabulary='SourcePackageName')
 
+    branchID = Attribute('The ID of the branch.')
     branch = Choice(
         title=_("Branch"), vocabulary="Branch", required=True, readonly=True)
 
@@ -55,6 +63,13 @@ class IFindOfficialBranchLinks(Interface):
         """Get the links to source packages from a branch.
 
         :param branch: An `IBranch`.
+        :return: An `IResultSet` of `ISeriesSourcePackageBranch` objects.
+        """
+
+    def findForBranches(branches):
+        """Get the links to source packages from a branch.
+
+        :param branches: A an iterable of `IBranch`.
         :return: An `IResultSet` of `ISeriesSourcePackageBranch` objects.
         """
 

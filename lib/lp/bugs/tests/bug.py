@@ -3,32 +3,42 @@
 
 """Helper functions for bug-related doctests and pagetests."""
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from operator import attrgetter
 import re
 import textwrap
 
-from datetime import datetime, timedelta
-from operator import attrgetter
-from pytz import UTC
-
 from BeautifulSoup import BeautifulSoup
-
+from pytz import UTC
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.ftests import sync
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import (
-    extract_text, find_tag_by_id, find_main_content, find_tags_by_class,
-    print_table)
-from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
-from lp.bugs.interfaces.bugtask import BugTaskStatus, IBugTaskSet
+    extract_text,
+    find_main_content,
+    find_tag_by_id,
+    find_tags_by_class,
+    print_table,
+    )
+from lp.bugs.interfaces.bug import (
+    CreateBugParams,
+    IBugSet,
+    )
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    IBugTaskSet,
+    )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.registry.interfaces.distribution import IDistributionSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageNameSet)
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 
 
 def print_direct_subscribers(bug_page):
@@ -196,7 +206,8 @@ def create_old_bug(
     params = CreateBugParams(
         owner=no_priv, title=title, comment='Something is broken.')
     bug = target.createBug(params)
-    bug.duplicateof = duplicateof
+    if duplicateof is not None:
+        bug.markAsDuplicate(duplicateof)
     sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     if with_message is True:
         bug.newMessage(

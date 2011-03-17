@@ -5,23 +5,31 @@
 
 __metaclass__ = type
 
+from zope.security.management import (
+    endInteraction,
+    newInteraction,
+    queryInteraction,
+    restoreInteraction,
+    )
+
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from zope.security.management import (
-    endInteraction, newInteraction, queryInteraction, restoreInteraction)
+
 
 class LaunchpadFormHarness:
 
     def __init__(self, context, view_class, form_values=None,
-                 request_class=LaunchpadTestRequest):
+                 request_class=LaunchpadTestRequest, request_environ=None):
         self.context = context
         self.view_class = view_class
         self.request_class = request_class
+        self.request_environ = request_environ
         self._render(form_values)
 
     def _render(self, form_values=None, method='GET'):
         self.request = self.request_class(
-            method=method, form=form_values, PATH_INFO='/')
+            method=method, form=form_values, PATH_INFO='/',
+            environ=self.request_environ)
         if queryInteraction() is not None:
             self.request.setPrincipal(get_current_principal())
         # Setup a new interaction using self.request, create the view,

@@ -5,35 +5,15 @@
       launchpad. Rules for just an application or a page do not belong
       in this file.
    2. Do not use IDs because they discourage reuse.
-   3. This style sheet depends on YUI-Font;
-      Only use these font percentages.
-      Pixels  Percent
-      10      77
-      11      85
-      12      93
-      13      100
-      14      108
-      15      116
-      16      123.1
-      17      131
-      18      138.5
-      19      146.5
-      20      153.9
-      21      161.6
-      22      167
-      23      174
-      24      182
-      25      189
-      26      197
-   4. Use these colors when defing using application colors.
-      * Launchpad-Gold: #F8C300
-      * Answers: #3840BE
-      * Blueprints: #3594BB
-      * Bugs: #9F2B33
-      * Code: #D18B39
-      * Translations: #BB3A84
-      * Registry: default (i.e. black)
-   5. Add rules to the appropriate section.
+   3. Only use these font-sizes for text people read. Users use the zoom to
+      scale fonts, and rendering is optimized for this behavior.
+      10px -- smallest text
+      12px -- body
+      14px -- navigation
+      16px -- h3
+      22px -- h2
+      30px -- h1
+   4. Add rules to the appropriate section.
       * Page layout
       * Block
       * Inline
@@ -105,6 +85,9 @@
     border-top: 1px solid #EBEBEB;
     padding: 1em 0;
     }
+.portlet > h2:first-child {
+    margin-top: 0;
+    }
 .top-portlet {
     padding: 0 0 0.5em 0;
     margin: 0 0 1em;
@@ -139,10 +122,11 @@
     width: auto !important;
     min-width: 340px;
     }
-
-html, body {
-    font-family: "dejavu sans", "bitstream vera sans", verdana, sans-serif;
-    font-size: 93%;
+body {
+    font-family: 'UbuntuBeta Regular', Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
+    font-size: 12px;
+    line-height: 18px; /* The same as the sprite height. */
+    color: #333;
     }
 body.private {
     /* It must be obvious to the user that the context is private */
@@ -152,23 +136,30 @@ body.private {
     /* stops floats dropping in IE 5.5/6 */
     word-wrap: break-word;
     }
+
 h1, h2, h3, h4, h5, h6 {
     background: none;
     clear: left;
     }
 h1 {
     clear: none;
-    padding-top: 6px; /* An offset from the logo. */
-    font-size: 197%;
+    font-size: 30px;
+    line-height: 34px;
     }
 h2 {
-    margin-bottom: 0.3em;
-    margin-top: 0.3em;
-    font-size: 123.1%;
-    color: #5a5a5a;
+    margin-top: 16px;
+    margin-bottom: 8px;
+    font-size: 22px;
+    line-height: 26px;
     }
 h3 {
-    font-size: 108%;
+    margin-top: 16px;
+    margin-bottom: 8px;
+    font-size: 16px;
+    line-height: 20px;
+    }
+.yui-u > div > h3:first-child {
+    margin-top: 0;
     }
 p {
     width: auto;
@@ -185,7 +176,7 @@ table.wide {
     width: 60em;
     }
 pre, code, samp, tt, .console {
-    font-size: 116%;
+    font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
     margin-bottom: 0.8em;
     }
 pre.wrap {
@@ -220,15 +211,37 @@ div.three.column.left, div.three.column.right {
 hr {
     display: none;
     }
-
+div.profiling_info {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border: 3px solid red;
+    background-color: white;
+    text-align: left;
+    padding: 1em;
+    }
+div.profiling_info h1 {
+    color: red;
+    }
+div.profiling_info h2 {
+    border-bottom: 3px solid gray;
+    }
+div.profiling_info h3 {
+    border-bottom: 1px solid gray;
+    }
+div.profiling_info p {
+    color: black;
+    }
+div.hide_reveal_profiling {
+    text-decoration: underline;
+    color: #093;
+    font-size: 10px;
+    }
 
 /* =========================
    Universal presentation
    Inline elements.
 */
-a {
-    outline: none;
-    }
 :link, :visited {
     /* Links are blue, brighter when clicked, and greyer once visited. */
     color: #03a;
@@ -256,6 +269,12 @@ a.help:hover, a.help:hover {
 a.help.icon, a.sprite.maybe.help {
     border: none;
 }
+a.invalid-link {
+    disabled: True;
+    color: #909090;
+    text-decoration: none;
+    cursor: default;
+    }
 img, a img {
     /* No border on images that are links. */
     border: none;
@@ -269,10 +288,6 @@ em {
     }
 strong {
     font-weight: bold;
-    }
-strong em {
-    font-style: normal;
-    color: #353535;
     }
 .title {
     font-weight: bold;
@@ -301,9 +316,6 @@ dt dfn {
     }
 dd {
     margin-bottom: .8em;
-    }
-dl.faq dt {
-    font-weight: bold;
     }
 dl.faq dd {
     margin: 1em 0 2em 4em;
@@ -367,9 +379,6 @@ ul.buttons li {
     display: inline;
     margin: 0 0 0 0;
     }
-ul.cross-reference {
-    font-size: 123.1%;
-    }
 .bulleted {
     margin-bottom: 0.5em;
     }
@@ -394,13 +403,17 @@ ol.subordinate {
     width: 48%;
     float: left;
     display: inline;
-    margin: 0 0.25em 0.75em 0;
+    margin: 0 0.25em 0 0;
+    }
+.two-column-list dl:first-child dt,
+.two-column-list dl:first-child + dl dt {
+    margin-top: 0;
     }
 .three-column-list dl {
     width: 31%;
     float: left;
     display: inline;
-    margin: 0 0.25em 0.75em 0;
+    margin: 0 0.25em 0 0;
     }
 .two-column-list li {
     width: 48%;
@@ -431,8 +444,6 @@ ol.subordinate {
     }
 .portlet dd {
     margin-bottom: 0.5em;
-    font-size: 85%;
-    color: #484848;
     }
 .portlet dl strong {
     color: #000;
@@ -503,7 +514,7 @@ th, td {
     vertical-align: baseline;
     }
 thead th, tr.thead th {
-    text-align: center;
+    text-align: left;
     vertical-align: bottom;
     }
 th.icon, td.icon {
@@ -601,7 +612,6 @@ th.descending {
 table.listing {
     margin: 0;
     width: 100%;
-    font-size: 93%;
     }
 table.listing, table.listing tbody, table.listing td.end-of-section {
     border-bottom: 1px solid #d2d2d2;
@@ -629,9 +639,6 @@ table.listing table tfoot td, table.listing table td {
 table.listing tfoot td {
     border: 1px solid #d2d2d2;
     }
-table.listing tr.note {
-    font-size: 77%;
-    }
 table.listing th, table.listing td {
     padding: 0.25em;
     }
@@ -640,14 +647,13 @@ table.listing table th, table.listing table td {
     padding: 0;
     }
 table.listing thead th, table.listing tr.thead th {
-    font-size: 108%;
     white-space: nowrap;
     }
 table.listing td {
     border: 1px #d2d2d2;
     border-style: dotted none none none;
     }
-table.listing tr.note td {
+table.listing .note td {
     border-style: none;
     }
 table.listing img {
@@ -663,7 +669,6 @@ table.listing table.simple td {
     padding: 0.25em;
     }
 table.listing .section-heading {
-    font-size: 108%;
     border: none;
     padding-top: 1.5em;
     }
@@ -674,7 +679,6 @@ table.listing table.summary th, table.listing table.summary td {
     padding: 0 0.5em 0.5em 0;
     }
 table.summary th {
-    color: #555;
     font-weight: normal;
     }
 table.summary caption {
@@ -685,6 +689,13 @@ table.summary ul, table.summary ul li {
     list-style-position: inside;
     margin: 0;
     padding: 0;
+    }
+div.centered {
+    text-align: center;
+    }
+div.centered table {
+    margin: 0 auto;
+    text-align: left;
     }
 .batch-navigation-links .next {
     /* Next links have icons: */
@@ -716,7 +727,16 @@ table.summary ul, table.summary ul li {
     text-align: left;
     vertical-align: top;
     }
-
+.results {
+    background-color: #f4f4f4;
+    padding: 2px 10px 5px 10px;
+    -webkit-border-bottom-right-radius: 4px;
+    -webkit-border-bottom-left-radius: 4px;
+    -moz-border-radius-bottomright: 4px;
+    -moz-border-radius-bottomleft: 4px;
+    border-bottom-right-radius: 4px;
+    border-bottom-left-radius: 4px;
+    }
 
 /* =========================
    Universal presentation
@@ -778,6 +798,7 @@ button {
     margin-left: 2.6em;
     }
 .formHelp {
+    max-width: 45em;
     margin: 0.2em 0 0.5em 0.2em;
     color: #777;
     }
@@ -864,7 +885,6 @@ table.form td td {
 .long legend {
     color: #666;
     font-weight: bold;
-    font-size: 123.1%;
     }
 fieldset.collapsible {
     /* Collapsible sections
@@ -898,38 +918,49 @@ img.collapseIcon {
     margin-bottom: 0;
     }
 h1 .edit {
-    font-size: 50%;
+    font-size: 12px;
     position: relative;
     top: -3px;
     margin-left: 0.5em;
     }
-.yui-ieditor {
+.yui3-ieditor {
     padding-right: 288px;
     }
-.lazr-multiline-edit .yui-ieditor {
+h1 .yui3-ieditor-errors {
+    font-size: 12px;
+    }
+.lazr-multiline-edit .yui3-ieditor {
     padding-right: 0;
     }
 .lazr-multiline-edit textarea {
     max-width: inherit;
     }
-.lazr-multiline-edit .yui-ieditor-input {
-    padding-right: 5px !important;
+.lazr-multiline-edit .clearfix h3 {
+    /* Undo the damage done by lazr. */
+    font-family: 'UbuntuBeta Regular', Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
+    line-height: 12px;
     }
 .widget-hd.js-action {
     /* The js-action class is also used for non-links, for example, with
        expand/collapse sections. */
     color: #093;
-    cursor:pointer;
+    cursor: pointer;
     }
 .widget-hd.js-action:hover {
     text-decoration: underline;
     }
+
+.yui3-ichoicesource-content .value:hover {
+    text-decoration: underline;
+    cursor: pointer;
+    }
+
 .error.message, .warning.message, .informational.message {
     border: solid #666;
     border-width: 1px 2px 2px 1px;
     color: black;
-    margin: 0 auto 10px auto;
-    padding: 0 10px 10px 20px;
+    margin: 1em auto 1em auto;
+    padding: 0 1em 1em 2em;
     width: 30em;
     }
 .error.message::before, .warning.message::before,
@@ -960,6 +991,9 @@ h1 .edit {
 .informational.message::before {
     content: url(/@@/info-large);
     }
+.informational p.last {
+    margin-bottom: 0;
+    }
 .debugging {
     /* Debugging messages are white on grey, alerts have an info icon. */
     background: #666;
@@ -988,7 +1022,6 @@ table.form .error {
     background: #d4e8ff url('/+icing/blue-fade-to-grey');
     border: solid #666;
     border-width: 1px 2px 2px 1px;
-    color: black;
     padding: 5px 5px 5px 5px;
     width:44em;
     }
@@ -1025,7 +1058,6 @@ table.form .error {
     }
 .important-notice a {
     font-weight: bold;
-    color: black;
     text-decoration: underline;
     }
 
@@ -1035,7 +1067,6 @@ table.form .error {
    These appear to be 3.0 specific.
 */
 div.see-all {
-    font-size: 123.1%; /* Same as a h2 */
     text-align:right;
     }
 span.nolink {
@@ -1047,7 +1078,7 @@ span.see-all {
 .see-all a {
     padding-left: 8px;
     background: inherit;
-    font-size: 72%;
+    font-size: 12px;
     text-decoration: underline;
     }
 .unseen {
@@ -1071,25 +1102,17 @@ span.see-all {
     margin: 0 5px 0 0;
     }
 .registered {
-    font-size: 85%;
     color: #666;
     }
 .description {
     clear: both;
-    font-size: 100%;
-    }
-.application-summary {
-    font-size: 123.1%;
     }
 .search-results {
     margin-top: 1em;
     }
-p.search-results {
-    font-size: 116%;
-    }
 .top-portlet .summary {
     margin: 0 0 1em 0;
-    font-size: 138.5%;
+    font-size: 16px; /* Same as h3, this appears under a h1. */
     }
 .main-portlet {
     margin: 1em 0 1em 0;
@@ -1123,6 +1146,12 @@ p.search-results {
     top: .5em;
     right: 1.5em;
     }
+#rendertime {
+    float: left;
+    margin: 0.2em 1.2em 0 0;
+    color: #666;
+    font-size: 10px;
+    }
 div.watermark-apps-portlet {
     clear: both;
     margin-bottom: .5em;
@@ -1137,19 +1166,19 @@ div.watermark-apps-portlet img {
     margin: 0 1.5em 0 0;
     }
 div.watermark-apps-portlet h1, div.watermark-apps-portlet h2 {
-    padding-top: 0.1em;
-    margin-bottom: 0.8em;
+    margin-top: 0px;
+    margin-bottom: 6px;
     color: #000000;
     font-weight: bold;
+    font-size: 30px;
+    line-height: 34px;
     clear: none;
-    }
-div.watermark-apps-portlet h1 {
-    margin-bottom: 0.2em;
-    padding-top: 0;
     }
 div.watermark-apps-portlet span img {
     float: none;
     margin: 0;
+    font-weight: bold;
+    clear: none;
     }
 .watermark-apps-portlet li {
     display:inline;
@@ -1192,16 +1221,15 @@ div.watermark-apps-portlet span img {
     }
 .registering {
     /* Registered slot */
-    margin: 0 0 0.2em 0;
-    font-style: italic;
-    font-size: 77%;
+    margin: .5em 0 1em 0;
+    font-size: 10px;
     color: #666;
     }
 .breadcrumbs {
     margin-left: 0;
     list-style-type: none;
     clear: both;
-    font-size: 77%;
+    font-size: 10px;
     }
 .breadcrumbs li {
     display:inline;
@@ -1234,7 +1262,7 @@ div.watermark-apps-portlet span img {
     }
 #logincontrol input[type='submit'] {
     /* The button lacks the right margin that buttons usually have: */
-    font-size: 77%;
+    font-size: 10px;
     margin-right: 0;
     }
 
@@ -1245,7 +1273,6 @@ div.watermark-apps-portlet span img {
 */
 .side {
     padding: 0.5em;
-    color: #484848;
     }
 .side .portlet {
     width: 90%;
@@ -1256,11 +1283,13 @@ div.watermark-apps-portlet span img {
     -khtml-border-radius: 5px;
     border-radius: 5px;
     padding: 0.5em;
-    color: #484848;
     background: #fbfbfb;
     }
+.side h2 {
+    font-size: 16px; /* BAD: the markup should be h3? */
+    line-height: 20px;
+    }
 .side ul {
-    color: #484848;
     background: #fbfbfb;
     }
 #privacy.private {
@@ -1284,7 +1313,6 @@ div.watermark-apps-portlet span img {
     padding: 6%;
     padding-right: 40px;
     color: #fff;
-    font-size: 93%;
     }
 .downloads .version {
     -moz-border-radius: 5px 5px 0 0;
@@ -1309,7 +1337,6 @@ div.watermark-apps-portlet span img {
 .involvement li {
     border-top: 1px solid #d0d0d0;
     padding: 0;
-    font-size: 108%;
     font-weight: bold;
     }
 .involvement a {
@@ -1329,25 +1356,8 @@ div.watermark-apps-portlet span img {
     padding-top: 0.3em;
     padding-bottom: 0.3em;
     }
-.involvement a.bugs {
-    color: #b9413e;
-    background: url(/@@/bugs-arrow-right.png) right center no-repeat;
-    }
-.involvement a.answers {
-    color: #5265b2;
+.involvement a.bugs, .involvement a.answers, .involvement a.translations, .involvement a.code, .involvement a.blueprints {
     background: url(/@@/answers-arrow-right.png) right center no-repeat;
-    }
-.involvement a.translations {
-    color: #c5458e;
-    background: url(/@@/translations-arrow-right.png) right center no-repeat;
-    }
-.involvement a.code {
-    color: #d39f57;
-    background: url(/@@/code-arrow-right.png) right center no-repeat;
-    }
-.involvement a.blueprints {
-    color: #5ba4c6;
-    background: url(/@@/blueprints-arrow-right.png) right center no-repeat;
     }
 .involvement a:hover {
     text-decoration: none;
@@ -1367,7 +1377,6 @@ div.watermark-apps-portlet span img {
     border-bottom: 1px solid #d0d0d0;
     }
 .announcement .registered {
-    font-size: 93%;
     margin-top: -2px;
     }
 
@@ -1428,14 +1437,21 @@ span.help {
    Universal presentation
    Colors and fonts
 */
-pre .highlighted {
-    border: none;
-    padding: 0em;
-    margin: 0em;
+
+.exception {
+    color: #cc0000;
     }
-.answers-stat {
-    color: #3840BE;
+.highlight {
+    background: #ddd;
+    border: 1px solid #ddd;
     }
+.lowlight {
+  opacity: .5;
+  filter: alpha(opacity=50);
+  -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
+}
+
+
 .questionstatusOPEN {
     color: #000;
     }
@@ -1458,75 +1474,67 @@ pre .highlighted {
     }
 
 
-.blueprints-stat {
-    color: #3594BB;
-    }
-.specstatusAPPROVED {
+.specstatusAPPROVED, .specstatusAPPROVED a {
     color: green;
     }
-.specstatusPENDINGAPPROVAL,
-.specstatusPENDINGREVIEW {
+.specstatusPENDINGAPPROVAL, .specstatusPENDINGAPPROVAL a,
+.specstatusPENDINGREVIEW, .specstatusPENDINGREVIEW a {
     color: #f09;
     }
-.specstatusDRAFT,
-.specstatusDISCUSSION {
+.specstatusDRAFT, .specstatusDRAFT a,
+.specstatusDISCUSSION, .specstatusDISCUSSION a {
     color: #930;
     }
-.specstatusNEW {
+.specstatusNEW, .specstatusNEW a {
     color: red;
     }
-.specstatusSUPERSEDED,
-.specstatusOBSOLETE,
-.specpriorityNOTFORUS,
-.specpriorityUNDEFINED {
+.specstatusSUPERSEDED, .specstatusSUPERSEDED a,
+.specstatusOBSOLETE, .specstatusOBSOLETE a,
+.specpriorityNOTFORUS, .specpriorityNOTFORUS a,
+.specpriorityUNDEFINED, .specpriorityUNDEFINED a {
     color: gray;
     }
-.specpriorityLOW {
+.specpriorityLOW, .specpriorityLOW a {
     color: black;
     }
-.specpriorityMEDIUM {
+.specpriorityMEDIUM, .specpriorityMEDIUM a {
     color: #f60;
     }
-.specpriorityHIGH,
-.specpriorityESSENTIAL {
+.specpriorityHIGH, .specpriorityHIGH a,
+.specpriorityESSENTIAL, .specpriorityESSENTIAL a {
     color: red;
     }
-.specdeliveryUNKNOWN,
-.specdeliveryNOTSTARTED {
+.specdeliveryUNKNOWN, .specdeliveryUNKNOWN a,
+.specdeliveryNOTSTARTED, .specdeliveryNOTSTARTED a {
     color: gray;
     }
-.specdeliveryDEFERRED,
-.specdeliveryNEEDSINFRASTUCTURE,
-.specdeliveryBLOCKED {
+.specdeliveryDEFERRED, .specdeliveryDEFERRED a,
+.specdeliveryNEEDSINFRASTUCTURE, .specdeliveryNEEDSINFRASTUCTURE a,
+.specdeliveryBLOCKED, .specdeliveryBLOCKED a {
     color: red;
     }
-.specdeliverySTARTED {
+.specdeliverySTARTED, .specdeliverySTARTED a,
+.specdeliveryGOOD, .specdeliveryGOOD a {
     color: blue;
     }
-.specdeliverySLOW {
+.specdeliverySLOW, .specdeliverySLOW a {
     color: red;
     }
-.specdeliveryGOOD {
-    color: blue;
-    }
-.specdeliveryBETA {
+.specdeliveryBETA, .specdeliveryBETA a {
     color: #f60;
     }
-.specdeliveryNEEDSREVIEW {
+.specdeliveryNEEDSREVIEW, .specdeliveryNEEDSREVIEW a {
     color: purple;
     }
-.specdeliveryAWAITINGDEPLOYMENT {
+.specdeliveryAWAITINGDEPLOYMENT, .specdeliveryAWAITINGDEPLOYMENT a {
     color: red;
     }
-.specdeliveryIMPLEMENTED,
-.specdeliveryINFORMATIONAL {
+.specdeliveryIMPLEMENTED, .specdeliveryIMPLEMENTED a,
+.specdeliveryINFORMATIONAL, .specdeliveryINFORMATIONAL a {
     color: green;
     }
 
 
-.bugs-stat {
-    color: #9F2B33;
-    }
 .bug-activity {
     color: #555;
     }
@@ -1582,9 +1590,6 @@ a.unofficial-tag {
     }
 
 
-.code-stat {
-    color: #D18B39;
-    }
 .vcsimportSUCCESS {
     /* inherited text color */
     }
@@ -1611,7 +1616,7 @@ a.unofficial-tag {
     }
 .branchstatusMERGED, .branchstatusMERGED a,
 .branchstatusABANDONED, .branchstatusABANDONED a {
-    color: #gray;
+    color: gray;
     }
 .branchstatusNEW, .branchstatusNEW a {
     color: black;
@@ -1665,9 +1670,6 @@ a.unofficial-tag {
     }
 
 
-.translations-stat {
-    color: #BB3A84;
-    }
 .translationimportstatusAPPROVED,
 .translationimportstatusAPPROVED a {
     color: #050;
@@ -1698,9 +1700,7 @@ a.unofficial-tag {
     }
 
 
-.registry-stat {
-    /* default */
-    }
+
 .distromirrorstatusUP,
 .distromirrorstatusONEHOURBEHIND,
 .distromirrorstatusTWOHOURSBEHIND,
@@ -1739,25 +1739,28 @@ a.unofficial-tag {
 .launchpad-gold {
     color: #F8C300;
     }
+
+.discreet, .lesser, .duplicate-details {
+    font-size: 10px;
+    }
 pre.changelog, table.diff,
 .bug-comment, .bug-activity, .codereviewcomment {
-    font-size: 116%;
-    font-family: monospace;
+    font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
     }
 .cloud-size-smallest {
-    font-size: 77%;
+    font-size: 10px;
     }
 .cloud-size-small {
-    font-size: 85%;
+    font-size: 12px;
     }
 .cloud-size-medium {
-    font-size: 131%;
+    font-size: 14px;
     }
 .cloud-size-large {
-    font-size: 167%;
+    font-size: 16px;
     }
 .cloud-size-largest {
-    font-size: 197%;
+    font-size: 18px;
     }
 .cloud-dark {
     color: #00f;
@@ -1769,17 +1772,33 @@ pre.changelog, table.diff,
     color: #b8b8ff;
     }
 
+/* Inline description editing.
+ * Override the lazr-js style for all uses.
+ */
+div#edit-description,
+div#edit-commit_message {
+    font-family: 'UbuntuBeta Mono', 'Ubuntu Mono', monospace;
+    margin: 1em 0;
+    }
+
+.yui3-ieditor-multiline .yui3-ieditor-input {
+    top: 0;
+    }
+
 
 /* =========================
    Universal presentation
    Sprites
 */
 .sprite {
-    padding: 2px 0 5px 18px;
+    padding: 0px 0 0px 18px;
     line-height: 18px;
     }
 .sprite-after {
     padding: 2px 18px 0 0;
+    }
+h1 a.sprite, h2 a.sprite, h3 a.sprite {
+    font-size: 12px;
     }
 .icon-only {
     border: 0;
@@ -1820,6 +1839,12 @@ body.tab-bugs #portlet-subscribers .sprite {
       setting the display in this way breaks the icons.
     */
     display: inline;
+    }
+body.tab-bugs #duplicate-actions .sprite {
+    /* Override sprite style for edit icon on "Mark as duplicate"
+       to make the text not appear on a second line.
+    */
+    display:inline;
     }
 .yui-picker-results li.sprite {
     /* XXX: EdwinGrubbs 2009-07-27 bug=405476
@@ -2001,10 +2026,6 @@ body.tab-bugs #portlet-subscribers .sprite {
     background-image: url(/@@/person-inactive-badge.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
-.mentoring {
-    background-image: url(/@@/mentoring.png); /* sprite-ref: icon-sprites */
-    background-repeat: no-repeat;
-    }
 .undecided {
     background-image: url(/@@/maybe.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
@@ -2141,7 +2162,10 @@ body.tab-bugs #portlet-subscribers .sprite {
     background-image: url(/@@/ppa-icon-inactive.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
-
+.source-package-recipe {
+    background-image: url(/@@/source-package-recipe.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+    }
 .bug-status-expand {
     background-image: url(/@@/bug-status-expand.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
@@ -2263,10 +2287,6 @@ body.tab-bugs #portlet-subscribers .sprite {
     background-image: url(/@@/launchpad-large.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
-.large-mentoring {
-    background-image: url(/@@/mentoring-large.png); /* sprite-ref: icon-sprites */
-    background-repeat: no-repeat;
-    }
 .large-proposal {
     background-image: url(/@@/merge-proposal-large.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
@@ -2354,17 +2374,13 @@ tr.bug-branch-summary td.first {
 /* =====
    Soyuz
 */
-ul.latest-ppa-updates .duration, ul.latest-ppa-updates .build-details {
-    /* For the Latest updates portlet
-      at https://launchpad.dev/~cprov/+archive/ppa */
-    font-size: 75%;
-    }
+
 ul.latest-ppa-updates li {
     padding: 3px;
     background-repeat: no-repeat;
     background-position:right center;
     }
-table#packages_list tr.superseded {
+table#packages_list tr.superseded, tr.blacklisted {
     background-color: #eee;
     }
 ul.latest-ppa-updates li:nth-child(odd) {

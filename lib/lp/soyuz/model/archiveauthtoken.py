@@ -9,21 +9,30 @@ __all__ = [
     'ArchiveAuthToken',
     ]
 
-import pytz
-
 from lazr.uri import URI
-
-from storm.locals import DateTime, Int, Reference, Storm, Unicode
+import pytz
+from storm.locals import (
+    DateTime,
+    Int,
+    Reference,
+    Storm,
+    Unicode,
+    )
 from storm.store import Store
-
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
-from lp.soyuz.interfaces.archiveauthtoken import (
-    IArchiveAuthToken, IArchiveAuthTokenSet)
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.soyuz.interfaces.archiveauthtoken import (
+    IArchiveAuthToken,
+    IArchiveAuthTokenSet,
+    )
+
 
 class ArchiveAuthToken(Storm):
     """See `IArchiveAuthToken`."""

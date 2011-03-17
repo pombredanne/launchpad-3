@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for distributions."""
@@ -17,7 +17,6 @@ __all__ = [
     'DistributionDisabledMirrorsView',
     'DistributionEditView',
     'DistributionFacets',
-    'DistributionLanguagePackAdminView',
     'DistributionNavigation',
     'DistributionPPASearchView',
     'DistributionPackageSearchView',
@@ -34,94 +33,85 @@ __all__ = [
     'DistributionSpecificationsMenu',
     'DistributionUnofficialMirrorsView',
     'DistributionView',
-    'UsesLaunchpadMixin',
     ]
 
+from collections import defaultdict
 import datetime
 
-from zope.lifecycleevent import ObjectCreatedEvent
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
+from zope.lifecycleevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
 
-from canonical.cachedproperty import cachedproperty
-from lp.blueprints.browser.specificationtarget import (
-    HasSpecificationsMenuMixin)
-from lp.registry.browser.announcement import HasAnnouncementsView
-from lp.registry.browser.menu import (
-    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
-from lp.registry.browser.pillar import PillarBugsMenu
-from lp.bugs.browser.bugtask import BugTargetTraversalMixin
-from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
-from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet)
-from canonical.launchpad.components.request_country import (
-    ipaddress_from_request, request_country)
-from lp.answers.browser.questiontarget import (
-    QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet, ArchivePurpose)
-from lp.registry.interfaces.distribution import (
-    IDerivativeDistribution, IDistribution, IDistributionMirrorMenuMarker,
-    IDistributionSet)
-from lp.registry.interfaces.distributionmirror import (
-    IDistributionMirrorSet, MirrorContent, MirrorSpeed)
-from lp.registry.interfaces.series import SeriesStatus
-from lp.registry.interfaces.product import IProduct
-from lp.soyuz.interfaces.publishedpackage import (
-    IPublishedPackageSet)
-from lp.registry.browser.structuralsubscription import (
-    StructuralSubscriptionTargetTraversalMixin)
-from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, GetitemNavigation,
-    LaunchpadFormView, LaunchpadView, Link, Navigation, redirection,
-    StandardLaunchpadFacets, stepthrough, stepto)
-from canonical.launchpad.webapp.interfaces import (
-    ILaunchBag, NotFoundError)
+    DecoratedResultSet,
+    )
 from canonical.launchpad.helpers import english_list
-from canonical.launchpad.webapp import NavigationMenu
+from canonical.launchpad.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    redirection,
+    StandardLaunchpadFacets,
+    stepthrough,
+    )
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.widgets.image import ImageChangeWidget
-
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
+from lp.answers.browser.questiontarget import (
+    QuestionTargetFacetMixin,
+    QuestionTargetTraversalMixin,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
+from lp.app.errors import NotFoundError
+from lp.app.widgets.image import ImageChangeWidget
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin,
+    )
+from lp.bugs.browser.bugtask import BugTargetTraversalMixin
+from lp.bugs.browser.structuralsubscription import (
+    StructuralSubscriptionTargetTraversalMixin,
+    )
 from lp.registry.browser import RegistryEditFormView
-
-
-class UsesLaunchpadMixin:
-    """This mixin is used for the overview page of products and distros."""
-
-    @property
-    def uses_launchpad_for(self):
-        """Return a string of LP apps (comma-separated) this distro uses."""
-        uses = []
-        href_template = """<a href="%s">%s</a>"""
-        if self.context.official_answers:
-            url = canonical_url(self.context, rootsite='answers')
-            uses.append(href_template % (url, 'Answers'))
-        if self.context.official_blueprints:
-            url = canonical_url(self.context, rootsite='blueprints')
-            uses.append(href_template % (url, 'Blueprints'))
-        if self.context.official_malone:
-            url = canonical_url(self.context, rootsite='bugs')
-            uses.append(href_template % (url, 'Bug Tracking'))
-        if IProduct.providedBy(self.context):
-            if self.context.official_codehosting:
-                url = canonical_url(self.context, rootsite='code')
-                uses.append(href_template % (url, 'Branches'))
-        if self.context.official_rosetta:
-            url = canonical_url(self.context, rootsite='translations')
-            uses.append(href_template % (url, 'Translations'))
-
-        if len(uses) == 0:
-            text = None
-        else:
-            text = english_list(uses)
-
-        return text
+from lp.registry.browser.announcement import HasAnnouncementsView
+from lp.registry.browser.menu import (
+    IRegistryCollectionNavigationMenu,
+    RegistryCollectionActionMenuBase,
+    )
+from lp.registry.browser.pillar import PillarBugsMenu
+from lp.registry.interfaces.distribution import (
+    IDerivativeDistribution,
+    IDistribution,
+    IDistributionMirrorMenuMarker,
+    IDistributionSet,
+    )
+from lp.registry.interfaces.distributionmirror import (
+    IDistributionMirrorSet,
+    MirrorContent,
+    MirrorSpeed,
+    )
+from lp.registry.interfaces.series import SeriesStatus
+from lp.services.geoip.helpers import (
+    ipaddress_from_request,
+    request_country,
+    )
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.browser.packagesearch import PackageSearchViewBase
+from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.interfaces.archive import IArchiveSet
 
 
 class DistributionNavigation(
@@ -133,10 +123,6 @@ class DistributionNavigation(
     @redirection('+source', status=301)
     def redirect_source(self):
         return canonical_url(self.context)
-
-    @stepto('+packages')
-    def packages(self):
-        return getUtility(IPublishedPackageSet)
 
     @stepthrough('+mirror')
     def traverse_mirrors(self, name):
@@ -179,8 +165,14 @@ class DistributionFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
 
     usedfor = IDistribution
 
-    enable_only = ['overview', 'branches', 'bugs', 'answers',
-                   'specifications', 'translations']
+    enable_only = [
+        'overview',
+        'branches',
+        'bugs',
+        'answers',
+        'specifications',
+        'translations',
+        ]
 
     def specifications(self):
         text = 'Blueprints'
@@ -293,13 +285,32 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
 
     usedfor = IDistribution
     facet = 'overview'
-    links = ['edit', 'branding', 'driver', 'search', 'members',
-             'mirror_admin', 'reassign', 'addseries', 'series', 'milestones',
-             'top_contributors',
-             'builds', 'cdimage_mirrors', 'archive_mirrors',
-             'pending_review_mirrors', 'disabled_mirrors',
-             'unofficial_mirrors', 'newmirror', 'announce', 'announcements',
-             'ppas',]
+    links = [
+        'edit',
+        'branding',
+        'driver',
+        'search',
+        'members',
+        'mirror_admin',
+        'reassign',
+        'addseries',
+        'series',
+        'milestones',
+        'top_contributors',
+        'builds',
+        'cdimage_mirrors',
+        'archive_mirrors',
+        'pending_review_mirrors',
+        'disabled_mirrors',
+        'unofficial_mirrors',
+        'newmirror',
+        'announce',
+        'announcements',
+        'ppas',
+        'configure_answers',
+        'configure_blueprints',
+        'configure_translations',
+        ]
 
     @enabled_with_permission('launchpad.Edit')
     def branding(self):
@@ -404,6 +415,24 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
         text = 'Personal Package Archives'
         return Link('+ppas', text, icon='info')
 
+    @enabled_with_permission('launchpad.Edit')
+    def configure_answers(self):
+        text = 'Configure support tracker'
+        summary = 'Allow users to ask questions on this project'
+        return Link('+edit', text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def configure_blueprints(self):
+        text = 'Configure blueprints'
+        summary = 'Enable tracking of feature planning.'
+        return Link('+edit', text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.TranslationsAdmin')
+    def configure_translations(self):
+        text = 'Configure translations'
+        summary = 'Allow users to provide translations for this project.'
+        return Link('+configure-translations', text, summary, icon='edit')
+
 
 class DerivativeDistributionOverviewMenu(DistributionOverviewMenu):
 
@@ -454,18 +483,7 @@ class DistributionPackageSearchView(PackageSearchViewBase):
         """See `AbstractPackageSearchView`."""
 
         if self.search_by_binary_name:
-            non_exact_matches = self.context.searchBinaryPackages(self.text)
-
-            # XXX Michael Nelson 20090605 bug=217644
-            # We are only using a decorated resultset here to conveniently
-            # get around the storm bug whereby count returns the count
-            # of non-distinct results, even though this result set
-            # is configured for distinct results.
-            def dummy_func(result):
-                return result
-            non_exact_matches = DecoratedResultSet(
-                non_exact_matches, dummy_func)
-
+            return self.context.searchBinaryPackages(self.text)
         else:
             non_exact_matches = self.context.searchSourcePackageCaches(
                 self.text)
@@ -535,7 +553,6 @@ class DistributionPackageSearchView(PackageSearchViewBase):
             name for name in name_list if match_text in name]
 
         if len(matching_names) > 5:
-            more_than_five = True
             matching_names = matching_names[:5]
             matching_names.append('...')
 
@@ -573,7 +590,8 @@ class DistributionPackageSearchView(PackageSearchViewBase):
 
         return self.has_exact_matches
 
-class DistributionView(HasAnnouncementsView, FeedsMixin, UsesLaunchpadMixin):
+
+class DistributionView(HasAnnouncementsView, FeedsMixin):
     """Default Distribution view class."""
 
     def linkedMilestonesForSeries(self, series):
@@ -696,7 +714,9 @@ class DistributionSetActionNavigationMenu(RegistryCollectionActionMenuBase):
     """Action menu for `DistributionSetView`."""
 
     usedfor = IDistributionSet
-    links = ['register_team', 'register_project', 'create_account']
+    links = [
+        'register_team', 'register_project', 'register_distribution',
+        'create_account']
 
 
 class DistributionSetView(LaunchpadView):
@@ -715,10 +735,19 @@ class DistributionAddView(LaunchpadFormView):
 
     schema = IDistribution
     label = "Register a new distribution"
-    field_names = ["name", "displayname", "title", "summary", "description",
-                   "domainname", "members",
-                   "official_malone", "official_blueprints",
-                   "official_rosetta", "official_answers"]
+    field_names = [
+        "name",
+        "displayname",
+        "title",
+        "summary",
+        "description",
+        "domainname",
+        "members",
+        "official_malone",
+        "blueprints_usage",
+        "official_rosetta",
+        "answers_usage",
+        ]
 
     @property
     def page_title(self):
@@ -749,12 +778,23 @@ class DistributionAddView(LaunchpadFormView):
 class DistributionEditView(RegistryEditFormView):
 
     schema = IDistribution
-    field_names = ['displayname', 'title', 'summary', 'description',
-                   'bug_reporting_guidelines', 'bug_reported_acknowledgement',
-                   'icon', 'logo', 'mugshot',
-                   'official_malone', 'enable_bug_expiration',
-                   'official_blueprints', 'official_rosetta',
-                   'official_answers', 'translation_focus', ]
+    field_names = [
+        'displayname',
+        'title',
+        'summary',
+        'description',
+        'bug_reporting_guidelines',
+        'bug_reported_acknowledgement',
+        'icon',
+        'logo',
+        'mugshot',
+        'official_malone',
+        'enable_bug_expiration',
+        'blueprints_usage',
+        'official_rosetta',
+        'answers_usage',
+        'translation_focus',
+        ]
 
     custom_widget('icon', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
     custom_widget('logo', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
@@ -792,13 +832,14 @@ class DistributionSeriesView(LaunchpadView):
         return all_series
 
     def getCssClass(self, series):
-        """The highlighted, unhighlighted, or dimmed CSS class."""
+        """The highlight, lowlight, or normal CSS class."""
         if series.status == SeriesStatus.DEVELOPMENT:
-            return 'highlighted'
+            return 'highlight'
         elif series.status == SeriesStatus.OBSOLETE:
-            return 'dimmed'
+            return 'lowlight'
         else:
-            return 'unhighlighted'
+            # This is normal presentation.
+            return ''
 
 
 class DistributionChangeMirrorAdminView(RegistryEditFormView):
@@ -923,10 +964,10 @@ class DistributionMirrorsView(LaunchpadView):
 
         This list is ordered by country name.
         """
-        mirrors_by_country = {}
+        mirrors_by_country = defaultdict(list)
         for mirror in self.mirrors:
-            mirrors = mirrors_by_country.setdefault(mirror.country.name, [])
-            mirrors.append(mirror)
+            mirrors_by_country[mirror.country.name].append(mirror)
+
         return [dict(country=country,
                      mirrors=mirrors,
                      number=len(mirrors),
@@ -942,7 +983,11 @@ class DistributionArchiveMirrorsView(DistributionMirrorsView):
 
     @cachedproperty
     def mirrors(self):
-        return self.context.archive_mirrors
+        return self.context.archive_mirrors_by_country
+
+    @cachedproperty
+    def mirror_count(self):
+        return len(self.mirrors)
 
 
 class DistributionSeriesMirrorsView(DistributionMirrorsView):
@@ -954,7 +999,11 @@ class DistributionSeriesMirrorsView(DistributionMirrorsView):
 
     @cachedproperty
     def mirrors(self):
-        return self.context.cdimage_mirrors
+        return self.context.cdimage_mirrors_by_country
+
+    @cachedproperty
+    def mirror_count(self):
+        return len(self.mirrors)
 
 
 class DistributionMirrorsRSSBaseView(LaunchpadView):

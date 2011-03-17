@@ -3,40 +3,61 @@
 
 """Unit tests for BranchView."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from textwrap import dedent
-import unittest
 
 import pytz
 import simplejson
-
-
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-
+from canonical.launchpad.helpers import truncate_text
+from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from canonical.launchpad.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    setupBrowser,
+    )
 from lp.app.interfaces.headings import IRootContext
 from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus, UNRESOLVED_BUGTASK_STATUSES)
+    BugTaskStatus,
+    UNRESOLVED_BUGTASK_STATUSES,
+    )
 from lp.code.browser.branch import (
-    BranchAddView, BranchMirrorStatusView, BranchReviewerEditView,
-    BranchSparkView, BranchView)
+    BranchAddView,
+    BranchMirrorStatusView,
+    BranchReviewerEditView,
+    BranchSparkView,
+    BranchView,
+    )
 from lp.code.browser.branchlisting import PersonOwnedBranchesView
+from lp.code.bzr import ControlFormat
+from lp.code.enums import (
+    BranchLifecycleStatus,
+    BranchType,
+    )
 from lp.code.interfaces.branchtarget import IBranchTarget
-from canonical.launchpad.helpers import truncate_text
-from lp.code.enums import BranchLifecycleStatus, BranchType
 from lp.testing import (
-    login, login_person, logout, person_logged_in, ANONYMOUS,
-    TestCaseWithFactory)
+    BrowserTestCase,
+    login,
+    login_person,
+    logout,
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.matchers import BrowsesWithQueryLimit
 from lp.testing.views import create_initialized_view
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
 
 class TestBranchMirrorHidden(TestCaseWithFactory):
@@ -62,9 +83,20 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
             branch_type=BranchType.MIRRORED,
             url="http://example.com/good/mirror")
         view = BranchView(branch, LaunchpadTestRequest())
+        view.initialize()
         self.assertTrue(view.user is None)
         self.assertEqual(
             "http://example.com/good/mirror", view.mirror_location)
+
+    def testLocationlessRemoteBranch(self):
+        # A branch from a normal location is fine.
+        branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.REMOTE,
+            url=None)
+        view = BranchView(branch, LaunchpadTestRequest())
+        view.initialize()
+        self.assertTrue(view.user is None)
+        self.assertIs(None, view.mirror_location)
 
     def testHiddenBranchAsAnonymous(self):
         # A branch location with a defined private host is hidden from
@@ -73,6 +105,7 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
             branch_type=BranchType.MIRRORED,
             url="http://private.example.com/bzr-mysql/mysql-5.0")
         view = BranchView(branch, LaunchpadTestRequest())
+        view.initialize()
         self.assertTrue(view.user is None)
         self.assertEqual(
             "<private server>", view.mirror_location)
@@ -90,6 +123,7 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
         logout()
         login('eric@example.com')
         view = BranchView(branch, LaunchpadTestRequest())
+        view.initialize()
         self.assertEqual(view.user, owner)
         self.assertEqual(
             "http://private.example.com/bzr-mysql/mysql-5.0",
@@ -110,12 +144,13 @@ class TestBranchMirrorHidden(TestCaseWithFactory):
         logout()
         login('other@example.com')
         view = BranchView(branch, LaunchpadTestRequest())
+        view.initialize()
         self.assertEqual(view.user, other)
         self.assertEqual(
             "<private server>", view.mirror_location)
 
 
-class TestBranchView(TestCaseWithFactory):
+class TestBranchView(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
 
@@ -144,7 +179,7 @@ class TestBranchView(TestCaseWithFactory):
             len(branch.mirror_status_message)
             <= branch_view.MAXIMUM_STATUS_MESSAGE_LENGTH,
             "branch.mirror_status_message longer than expected: %r"
-            % (branch.mirror_status_message,))
+            % (branch.mirror_status_message, ))
         self.assertEqual(
             branch.mirror_status_message, branch_view.mirror_status_message)
         self.assertEqual(
@@ -155,7 +190,7 @@ class TestBranchView(TestCaseWithFactory):
         """Registering a mirrored branch requests a mirror."""
         arbitrary_person = self.factory.makePerson()
         arbitrary_product = self.factory.makeProduct()
-        login(arbitrary_person.preferredemail.email)
+        login_person(arbitrary_person)
         try:
             add_view = BranchAddView(arbitrary_person, self.request)
             add_view.initialize()
@@ -169,7 +204,7 @@ class TestBranchView(TestCaseWithFactory):
                 'whiteboard': '',
                 'owner': arbitrary_person,
                 'author': arbitrary_person,
-                'product': arbitrary_product
+                'product': arbitrary_product,
                 }
             add_view.add_action.success(data)
             # Make sure that next_mirror_time is a datetime, not an sqlbuilder
@@ -231,6 +266,30 @@ class TestBranchView(TestCaseWithFactory):
         view.initialize()
         self.assertEqual(list(view.translations_sources()), [trunk])
 
+    def test_is_empty_directory(self):
+        # Branches are considered empty until they get a control format.
+        branch = self.factory.makeBranch()
+        view = BranchView(branch, self.request)
+        view.initialize()
+        self.assertTrue(view.is_empty_directory)
+        with person_logged_in(branch.owner):
+            # Make it look as though the branch has been pushed.
+            branch.branchChanged(
+                None, None, ControlFormat.BZR_METADIR_1, None, None)
+        self.assertFalse(view.is_empty_directory)
+
+    def test_empty_directories_use_existing(self):
+        # Push example should include --use-existing for empty directories.
+        branch = self.factory.makeBranch(owner=self.user)
+        text = self.getMainText(branch)
+        self.assertIn('push\n--use-existing', text)
+        with person_logged_in(self.user):
+            # Make it look as though the branch has been pushed.
+            branch.branchChanged(
+                None, None, ControlFormat.BZR_METADIR_1, None, None)
+        text = self.getMainText(branch)
+        self.assertNotIn('push\n--use-existing', text)
+
     def test_user_can_upload(self):
         # A user can upload if they have edit permissions.
         branch = self.factory.makeAnyBranch()
@@ -264,32 +323,32 @@ class TestBranchView(TestCaseWithFactory):
             bug = self.factory.makeBug(status=status)
             branch.linkBug(bug, branch.owner)
 
-    def test_linked_bugs(self):
+    def test_linked_bugtasks(self):
         # The linked bugs for a non series branch shows all linked bugs.
         branch = self.factory.makeAnyBranch()
         with person_logged_in(branch.owner):
             self._addBugLinks(branch)
         view = create_initialized_view(branch, '+index')
-        self.assertEqual(len(BugTaskStatus), len(view.linked_bugs))
+        self.assertEqual(len(BugTaskStatus), len(view.linked_bugtasks))
         self.assertFalse(view.context.is_series_branch)
 
-    def test_linked_bugs_privacy(self):
+    def test_linked_bugtasks_privacy(self):
         # If a linked bug is private, it is not in the linked bugs if the user
-        # can't see it.
+        # can't see any of the tasks.
         branch = self.factory.makeAnyBranch()
         reporter = self.factory.makePerson()
         bug = self.factory.makeBug(private=True, owner=reporter)
         with person_logged_in(reporter):
             branch.linkBug(bug, reporter)
             view = create_initialized_view(branch, '+index')
-            # Comparing bug ids as the linked bugs are decorated bugs.
-            self.assertEqual([bug.id], [bug.id for bug in view.linked_bugs])
+            self.assertEqual([bug.id],
+                [task.bug.id for task in view.linked_bugtasks])
         with person_logged_in(branch.owner):
             view = create_initialized_view(branch, '+index')
-            self.assertEqual([], view.linked_bugs)
+            self.assertEqual([], view.linked_bugtasks)
 
-    def test_linked_bugs_series_branch(self):
-        # The linked bugs for a series branch shows only unresolved bugs.
+    def test_linked_bugtasks_series_branch(self):
+        # The linked bugtasks for a series branch shows only unresolved bugs.
         product = self.factory.makeProduct()
         branch = self.factory.makeProductBranch(product=product)
         with person_logged_in(product.owner):
@@ -297,9 +356,195 @@ class TestBranchView(TestCaseWithFactory):
         with person_logged_in(branch.owner):
             self._addBugLinks(branch)
         view = create_initialized_view(branch, '+index')
-        for bug in view.linked_bugs:
+        for bugtask in view.linked_bugtasks:
             self.assertTrue(
-                bug.bugtask.status in UNRESOLVED_BUGTASK_STATUSES)
+                bugtask.status in UNRESOLVED_BUGTASK_STATUSES)
+
+    def test_linked_bugs_nonseries_branch_query_scaling(self):
+        # As we add linked bugs, the query count for a branch index page stays
+        # constant.
+        branch = self.factory.makeAnyBranch()
+        browses_under_limit = BrowsesWithQueryLimit(54, branch.owner)
+        # Start with some bugs, otherwise we might see a spurious increase
+        # depending on optimisations in eager loaders.
+        with person_logged_in(branch.owner):
+            self._addBugLinks(branch)
+            self.assertThat(branch, browses_under_limit)
+        with person_logged_in(branch.owner):
+            # Add plenty of bugs.
+            for _ in range(5):
+                self._addBugLinks(branch)
+            self.assertThat(branch, browses_under_limit)
+
+    def test_linked_bugs_series_branch_query_scaling(self):
+        # As we add linked bugs, the query count for a branch index page stays
+        # constant.
+        product = self.factory.makeProduct()
+        branch = self.factory.makeProductBranch(product=product)
+        browses_under_limit = BrowsesWithQueryLimit(54, branch.owner)
+        with person_logged_in(product.owner):
+            product.development_focus.branch = branch
+        # Start with some bugs, otherwise we might see a spurious increase
+        # depending on optimisations in eager loaders.
+        with person_logged_in(branch.owner):
+            self._addBugLinks(branch)
+            self.assertThat(branch, browses_under_limit)
+        with person_logged_in(branch.owner):
+            # Add plenty of bugs.
+            for _ in range(5):
+                self._addBugLinks(branch)
+            self.assertThat(branch, browses_under_limit)
+
+    def _add_revisions(self, branch, nr_revisions=1):
+        revisions = []
+        for seq in range(1, nr_revisions+1):
+            revision = self.factory.makeRevision(
+                author="Eric the Viking <eric@vikings-r-us.example.com>",
+                log_body=(
+                    "Testing the email address in revisions\n"
+                    "email Bob (bob@example.com) for details."))
+
+            branch_revision = branch.createBranchRevision(seq, revision)
+            branch.updateScannedDetails(revision, seq)
+            revisions.append(branch_revision)
+        return revisions
+
+    def test_recent_revisions(self):
+        # There is a heading for the recent revisions.
+        branch = self.factory.makeAnyBranch()
+        with person_logged_in(branch.owner):
+            self._add_revisions(branch)
+        browser = self.getUserBrowser(canonical_url(branch))
+        tag = find_tag_by_id(browser.contents, 'recent-revisions')
+        text = extract_text(tag)
+        expected_text = """
+            Recent revisions
+            .*
+            1. By Eric the Viking &lt;eric@vikings-r-us.example.com&gt;
+            .*
+            Testing the email address in revisions\n
+            email Bob \(bob@example.com\) for details.
+            """
+
+        self.assertTextMatchesExpressionIgnoreWhitespace(expected_text, text)
+
+    def test_recent_revisions_email_hidden_with_no_login(self):
+        # If the user is not logged in, the email addresses are hidden in both
+        # the revision author and the commit message.
+        branch = self.factory.makeAnyBranch()
+        with person_logged_in(branch.owner):
+            self._add_revisions(branch)
+            branch_url = canonical_url(branch)
+        browser = setupBrowser()
+        logout()
+        browser.open(branch_url)
+        tag = find_tag_by_id(browser.contents, 'recent-revisions')
+        text = extract_text(tag)
+        expected_text = """
+            Recent revisions
+            .*
+            1. By Eric the Viking &lt;email address hidden&gt;
+            .*
+            Testing the email address in revisions\n
+            email Bob \(&lt;email address hidden&gt;\) for details.
+            """
+        self.assertTextMatchesExpressionIgnoreWhitespace(expected_text, text)
+
+    def test_recent_revisions_with_merge_proposals(self):
+        # Revisions which result from merging in a branch with a merge
+        # proposal show the merge proposal details.
+
+        branch = self.factory.makeAnyBranch()
+        with person_logged_in(branch.owner):
+            revisions = self._add_revisions(branch, 2)
+            mp = self.factory.makeBranchMergeProposal(
+                target_branch=branch, registrant=branch.owner)
+            mp.markAsMerged(merged_revno=revisions[0].sequence)
+
+            # These values are extracted here and used below.
+            mp_url = canonical_url(mp, rootsite='code', force_local_path=True)
+            branch_display_name = mp.source_branch.displayname
+
+        browser = self.getUserBrowser(canonical_url(branch))
+
+        revision_content = find_tag_by_id(
+            browser.contents, 'recent-revisions')
+
+        text = extract_text(revision_content)
+        expected_text = """
+            Recent revisions
+            .*
+            2. By Eric the Viking &lt;eric@vikings-r-us.example.com&gt;
+            .*
+            Testing the email address in revisions\n
+            email Bob \(bob@example.com\) for details.\n
+            1. By Eric the Viking &lt;eric@vikings-r-us.example.com&gt;
+            .*
+            Testing the email address in revisions\n
+            email Bob \(bob@example.com\) for details.
+            Merged branch %s
+            """ % branch_display_name
+
+        self.assertTextMatchesExpressionIgnoreWhitespace(expected_text, text)
+
+        links = revision_content.findAll('a')
+        self.assertEqual(mp_url, links[2]['href'])
+
+    def test_recent_revisions_with_merge_proposals_and_bug_links(self):
+        # Revisions which result from merging in a branch with a merge
+        # proposal show the merge proposal details. If the source branch of
+        # the merge proposal has linked bugs, these should also be shown.
+
+        branch = self.factory.makeAnyBranch()
+        with person_logged_in(branch.owner):
+            revisions = self._add_revisions(branch, 2)
+            mp = self.factory.makeBranchMergeProposal(
+                target_branch=branch, registrant=branch.owner)
+            mp.markAsMerged(merged_revno=revisions[0].sequence)
+
+            # record linked bug info for use below
+            linked_bug_urls = []
+            linked_bug_text = []
+            for x in range(0, 2):
+                bug = self.factory.makeBug()
+                mp.source_branch.linkBug(bug, branch.owner)
+                linked_bug_urls.append(
+                    canonical_url(bug.default_bugtask, rootsite='bugs'))
+                bug_text = "Bug #%s: %s" % (bug.id, bug.title)
+                linked_bug_text.append(bug_text)
+
+            # These values are extracted here and used below.
+            linked_bug_rendered_text = "\n".join(linked_bug_text)
+            mp_url = canonical_url(mp, force_local_path=True)
+            branch_display_name = mp.source_branch.displayname
+
+        browser = self.getUserBrowser(canonical_url(branch))
+
+        revision_content = find_tag_by_id(
+            browser.contents, 'recent-revisions')
+
+        text = extract_text(revision_content)
+        expected_text = """
+            Recent revisions
+            .*
+            2. By Eric the Viking &lt;eric@vikings-r-us.example.com&gt;
+            .*
+            Testing the email address in revisions\n
+            email Bob \(bob@example.com\) for details.\n
+            1. By Eric the Viking &lt;eric@vikings-r-us.example.com&gt;
+            .*
+            Testing the email address in revisions\n
+            email Bob \(bob@example.com\) for details.
+            Merged branch %s
+            %s
+            """ % (branch_display_name, linked_bug_rendered_text)
+
+        self.assertTextMatchesExpressionIgnoreWhitespace(expected_text, text)
+
+        links = revision_content.findAll('a')
+        self.assertEqual(mp_url, links[2]['href'])
+        self.assertEqual(linked_bug_urls[0], links[3]['href'])
+        self.assertEqual(linked_bug_urls[1], links[4]['href'])
 
 
 class TestBranchAddView(TestCaseWithFactory):
@@ -431,6 +676,16 @@ class TestBranchSparkView(TestCaseWithFactory):
         json = simplejson.loads(view.render())
         self.assertEqual(0, json['count'])
         self.assertEqual('empty branch', json['last_commit'])
+
+    def test_content_type(self):
+        # The response has the correct (JSON) content type...
+        branch = self.factory.makeAnyBranch()
+        request = LaunchpadTestRequest()
+        view = BranchSparkView(branch, request)
+        view.render()
+        self.assertEqual(
+            request.response.getHeader('content-type'),
+            'application/json')
 
     def test_old_commits(self):
         # A branch with a commit older than the COMMIT_DAYS will create a list
@@ -589,7 +844,3 @@ class TestBranchRootContext(TestCaseWithFactory):
         branch = self.factory.makeProductBranch()
         root_context = IRootContext(branch)
         self.assertEqual(branch.product, root_context)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

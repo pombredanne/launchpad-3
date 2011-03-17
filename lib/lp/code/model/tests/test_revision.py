@@ -5,34 +5,50 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import time
-from unittest import TestCase, TestLoader
+from unittest import (
+    TestCase,
+    TestLoader,
+    )
 
 import psycopg2
 import pytz
 from storm.store import Store
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
-from canonical.launchpad.ftests import login, logout
-from canonical.launchpad.interfaces.lpstorm import IMasterObject
+from canonical.launchpad.ftests import (
+    login,
+    logout,
+    )
 from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.scripts.garbo import RevisionAuthorEmailLinker
+from canonical.launchpad.interfaces.lpstorm import IMasterObject
+from lp.scripts.garbo import RevisionAuthorEmailLinker
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.testing import DatabaseFunctionalLayer
-
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import BranchLifecycleStatus
-from lp.code.interfaces.revision import IRevisionSet
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.model.revision import RevisionCache, RevisionSet
+from lp.code.interfaces.revision import IRevisionSet
+from lp.code.model.revision import (
+    RevisionCache,
+    RevisionSet,
+    )
 from lp.registry.model.karma import Karma
-from lp.testing import TestCaseWithFactory, time_counter
+from lp.services.log.logger import DevNullLogger
+from lp.testing import (
+    TestCaseWithFactory,
+    time_counter,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
-from lp.testing.logger import MockLogger
 
 
 class TestRevisionCreationDate(TestCaseWithFactory):
@@ -179,9 +195,9 @@ class TestRevisionKarma(TestCaseWithFactory):
         self.assertEqual(
             [], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
         # The person registers with Launchpad.
-        author = self.factory.makePerson(email=email)
+        self.factory.makePerson(email=email)
         # Garbo runs the RevisionAuthorEmailLinker job.
-        RevisionAuthorEmailLinker(log=MockLogger()).run()
+        RevisionAuthorEmailLinker(log=DevNullLogger()).run()
         # Now the kama needs allocating.
         self.assertEqual(
             [rev], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
@@ -429,7 +445,7 @@ class RevisionTestMixin:
         rev2 = self._makeRevision(
             revision_date=(now - timedelta(days=2)))
         self._addRevisionsToBranch(self._makeBranch(), rev1, rev2)
-        self.assertEqual([rev2],  self._getRevisions(day_limit))
+        self.assertEqual([rev2], self._getRevisions(day_limit))
 
 
 class TestGetPublicRevisionsForPerson(GetPublicRevisionsTestCase,

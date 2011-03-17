@@ -13,31 +13,48 @@ __all__ = [
     'IBinaryPackageBuild',
     'IBuildRescoreForm',
     'IBinaryPackageBuildSet',
+    'UnparsableDependencies',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Int, Text
-from lazr.enum import EnumeratedType, Item
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    export_write_operation,
+    exported,
+    operation_parameters,
+    webservice_error,
+    )
+from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Int,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.interfaces.packagebuild import (
-    IPackageBuild)
+from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.soyuz.interfaces.processor import IProcessor
-from lp.soyuz.interfaces.publishing import (
-    ISourcePackagePublishingHistory)
-from lp.soyuz.interfaces.sourcepackagerelease import (
-    ISourcePackageRelease)
-from lazr.restful.fields import Reference
-from lazr.restful.declarations import (
-    export_as_webservice_entry, exported, export_write_operation,
-    operation_parameters, webservice_error)
+from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
+from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
 class CannotBeRescored(Exception):
     """Raised when rescoring a build that cannot be rescored."""
     webservice_error(400) # Bad request.
     _message_prefix = "Cannot rescore build"
+
+
+class UnparsableDependencies(Exception):
+    """Raised when parsing invalid dependencies on a binary package."""
 
 
 class IBinaryPackageBuildView(IPackageBuild):
@@ -107,10 +124,23 @@ class IBinaryPackageBuildView(IPackageBuild):
         "was originally uploaded with the results of this build. It's "
         "'None' if it is build imported by Gina.")
 
+    changesfile_url = exported(
+        TextLine(
+            title=_("Changes File URL"), required=False,
+            description=_("The URL for the changes file for this build. "
+                          "Will be None if the build was imported by Gina.")))
+
     package_upload = Attribute(
         "The `PackageUpload` record corresponding to the original upload "
         "of the binaries resulted from this build. It's 'None' if it is "
         "a build imported by Gina.")
+
+    api_score = exported(
+        Int(
+            title=_("Score of the related job (if any)"),
+            readonly=True,
+            ),
+        exported_as="score")
 
     def updateDependencies():
         """Update the build-dependencies line within the targeted context."""
@@ -125,10 +155,11 @@ class IBinaryPackageBuildView(IPackageBuild):
 
     def createBinaryPackageRelease(
         binarypackagename, version, summary, description, binpackageformat,
-        component, section, priority, shlibdeps, depends, recommends,
-        suggests, conflicts, replaces, provides, pre_depends, enhances,
-        breaks, essential, installedsize, architecturespecific,
-        debug_package):
+        component, section, priority, installedsize, architecturespecific,
+        shlibdeps=None, depends=None, recommends=None, suggests=None,
+        conflicts=None, replaces=None, provides=None, pre_depends=None,
+        enhances=None, breaks=None, essential=False, debug_package=None,
+        user_defined_fields=None, homepage=None):
         """Create and return a `BinaryPackageRelease`.
 
         The binarypackagerelease will be attached to this specific build.
@@ -158,6 +189,23 @@ class IBinaryPackageBuildView(IPackageBuild):
 
         :param filename: the filename to look up.
         :return: the corresponding `IBinaryPackageFile` if it was found.
+        """
+
+    def getBinaryPackageNamesForDisplay():
+        """Retrieve the build's binary package names for display purposes.
+
+        :return: a result set of
+            (`IBinaryPackageRelease`, `IBinaryPackageName`) ordered by name
+            and `IBinaryPackageRelease.id`.
+        """
+
+    def getBinaryFilesForDisplay():
+        """Retrieve the build's `IBinaryPackageFile`s for display purposes.
+
+        Also prefetches other related objects needed for display.
+
+        :return: a result set of (`IBinaryPackageRelease`,
+            `IBinaryPackageFile`, `ILibraryFileAlias`, `ILibraryFileContent`).
         """
 
 
@@ -284,13 +332,15 @@ class IBinaryPackageBuildSet(Interface):
         :return: a `ResultSet` representing the requested builds.
         """
 
-    def getBuildsByArchIds(arch_ids, status=None, name=None, pocket=None):
+    def getBuildsByArchIds(distribution, arch_ids, status=None, name=None,
+                           pocket=None):
         """Retrieve Build Records for a given arch_ids list.
 
         Optionally, for a given status and/or pocket, if ommited return all
         records. If name is passed return only the builds which the
         sourcepackagename matches (SQL LIKE).
         """
+
     def retryDepWaiting(distroarchseries):
         """Re-process all MANUALDEPWAIT builds for a given IDistroArchSeries.
 
@@ -302,6 +352,8 @@ class IBinaryPackageBuildSet(Interface):
     def getBuildsBySourcePackageRelease(sourcepackagerelease_ids,
                                         buildstate=None):
         """Return all builds related with the given list of source releases.
+
+        Eager loads the PackageBuild and BuildFarmJob records for the builds.
 
         :param sourcepackagerelease_ids: list of `ISourcePackageRelease`s;
         :param buildstate: option build state filter.

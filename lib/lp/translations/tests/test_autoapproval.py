@@ -8,35 +8,48 @@ Documentation-style tests go in there, ones that go systematically
 through the possibilities should go here.
 """
 
-from __future__ import with_statement
-
 from contextlib import contextmanager
-from datetime import datetime, timedelta
-from pytz import UTC
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
+from pytz import UTC
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
-
+from canonical.launchpad.webapp.testing import verifyObject
+from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.sourcepackagename import (
     SourcePackageName,
-    SourcePackageNameSet)
+    SourcePackageNameSet,
+    )
+from lp.services.worlddata.model.language import (
+    Language,
+    LanguageSet,
+    )
+from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
-from lp.services.worlddata.model.language import Language, LanguageSet
-from lp.translations.model.customlanguagecode import CustomLanguageCode
-from lp.translations.model.pofile import POFile
-from lp.translations.model.potemplate import POTemplateSet, POTemplateSubset
-from lp.translations.model.translationimportqueue import (
-    TranslationImportQueue, TranslationImportQueueEntry)
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.customlanguagecode import ICustomLanguageCode
 from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus, translation_import_queue_entry_age)
-from lp.testing import TestCaseWithFactory
-from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import LaunchpadZopelessLayer
+    ITranslationImportQueue,
+    translation_import_queue_entry_age,
+    )
+from lp.translations.model.customlanguagecode import CustomLanguageCode
+from lp.translations.model.pofile import POFile
+from lp.translations.model.potemplate import (
+    POTemplateSet,
+    POTemplateSubset,
+    )
+from lp.translations.model.translationimportqueue import (
+    TranslationImportQueue,
+    TranslationImportQueueEntry,
+    )
 
 
 class GardenerDbUserMixin(object):
@@ -158,7 +171,7 @@ class TestGuessPOFileCustomLanguageCode(TestCaseWithFactory,
     def setUp(self):
         super(TestGuessPOFileCustomLanguageCode, self).setUp()
         self.product = self.factory.makeProduct()
-        self.series = self.factory.makeSeries(product=self.product)
+        self.series = self.factory.makeProductSeries(product=self.product)
         self.queue = TranslationImportQueue()
         self.template = POTemplateSubset(productseries=self.series).new(
             'test', 'test', 'test.pot', self.product.owner)
@@ -297,7 +310,8 @@ class TestTemplateGuess(TestCaseWithFactory, GardenerDbUserMixin):
     def _setUpProduct(self):
         """Set up a `Product` with release series and two templates."""
         self.product = self.factory.makeProduct()
-        self.productseries = self.factory.makeSeries(product=self.product)
+        self.productseries = self.factory.makeProductSeries(
+            product=self.product)
         product_subset = POTemplateSubset(productseries=self.productseries)
         self.producttemplate1 = product_subset.new(
             'test1', 'test1', 'test.pot', self.product.owner)
@@ -523,6 +537,36 @@ class TestTemplateGuess(TestCaseWithFactory, GardenerDbUserMixin):
 
         self.assertEqual(entry1.potemplate, None)
 
+    def test_getGuessedPOFile_ignores_obsolete_POFiles(self):
+        pofile = self.factory.makePOFile()
+        template = pofile.potemplate
+        template.iscurrent = False
+        queue = getUtility(ITranslationImportQueue)
+        entry = queue.addOrUpdateEntry(
+            pofile.path, 'contents', False, self.factory.makePerson(),
+            productseries=template.productseries)
+
+        self.assertEqual(None, entry.getGuessedPOFile())
+
+    def test_getGuessedPOFile_survives_clashing_obsolete_POFile_path(self):
+        series = self.factory.makeProductSeries()
+        current_template = self.factory.makePOTemplate(productseries=series)
+        current_template.iscurrent = True
+        current_pofile = self.factory.makePOFile(
+            'nl', potemplate=current_template)
+        obsolete_template = self.factory.makePOTemplate(productseries=series)
+        obsolete_template.iscurrent = False
+        obsolete_pofile = self.factory.makePOFile(
+            'nl', potemplate=obsolete_template)
+        obsolete_pofile.path = current_pofile.path
+
+        queue = getUtility(ITranslationImportQueue)
+        entry = queue.addOrUpdateEntry(
+            current_pofile.path, 'contents', False, self.factory.makePerson(),
+            productseries=series)
+
+        self.assertEqual(current_pofile, entry.getGuessedPOFile())
+
     def test_pathless_template_match(self):
         # If an uploaded template has no directory component in its
         # path, and no matching template is found in the database, the
@@ -586,6 +630,37 @@ class TestTemplateGuess(TestCaseWithFactory, GardenerDbUserMixin):
             productseries=template.productseries)
 
         self.assertEqual(template, entry.guessed_potemplate)
+
+    def test_avoid_clash_with_existing_entry(self):
+        # When trying to approve a template upload that didn't have its
+        # potemplate field set during upload or an earlier approval run,
+        # the approver will fill out the field if it can.  But if by
+        # then there's already another entry from the same person and
+        # for the same target that does have the field set, then filling
+        # out the field would make the two entries clash.
+        queue = TranslationImportQueue()
+        template = self.factory.makePOTemplate()
+        old_entry = queue.addOrUpdateEntry(
+            template.path, '# Content here', False, template.owner,
+            productseries=template.productseries)
+        new_entry = queue.addOrUpdateEntry(
+            template.path, '# Content here', False, template.owner,
+            productseries=template.productseries, potemplate=template)
+
+        # Before approval, the two entries differ in that the new one
+        # has a potemplate.
+        self.assertNotEqual(old_entry, new_entry)
+        self.assertEqual(RosettaImportStatus.NEEDS_REVIEW, old_entry.status)
+        self.assertIs(None, old_entry.potemplate)
+        self.assertEqual(template, new_entry.potemplate)
+        IMasterStore(old_entry).flush()
+
+        # The approver deals with the problem by skipping the entry.
+        queue._attemptToApprove(old_entry)
+
+        # So nothing changes.
+        self.assertIs(None, old_entry.potemplate)
+        self.assertEqual(template, new_entry.potemplate)
 
 
 class TestKdePOFileGuess(TestCaseWithFactory, GardenerDbUserMixin):
@@ -670,8 +745,8 @@ class TestGetPOFileFromLanguage(TestCaseWithFactory, GardenerDbUserMixin):
         # _get_pofile_from_language will find an enabled template, and
         # return either an existing POFile for the given language, or a
         # newly created one.
-        product = self.factory.makeProduct()
-        product.official_rosetta = True
+        product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         trunk = product.getSeries('trunk')
         template = self.factory.makePOTemplate(
             productseries=trunk, translation_domain='domain')
@@ -688,8 +763,8 @@ class TestGetPOFileFromLanguage(TestCaseWithFactory, GardenerDbUserMixin):
         # _get_pofile_from_language will not consider a disabled
         # template as an auto-approval target, and so will not return a
         # POFile for it.
-        product = self.factory.makeProduct()
-        product.official_rosetta = True
+        product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         trunk = product.getSeries('trunk')
         template = self.factory.makePOTemplate(
             productseries=trunk, translation_domain='domain')
@@ -706,13 +781,13 @@ class TestGetPOFileFromLanguage(TestCaseWithFactory, GardenerDbUserMixin):
         # When the template has translation credits, a new dummy translation
         # is created in the new POFile. Since this is running with gardener
         # privileges, we need to check that this works, too.
-        product = self.factory.makeProduct()
-        product.official_rosetta = True
+        product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         trunk = product.getSeries('trunk')
         template = self.factory.makePOTemplate(
             productseries=trunk, translation_domain='domain')
         template.iscurrent = True
-        self.factory.makePOTMsgSet(template, "translator-credits", sequence=1)
+        self.factory.makePOTMsgSet(template, "translator-credits")
 
         entry = self.queue.addOrUpdateEntry(
             'nl.po', '# ...', False, template.owner, productseries=trunk)
@@ -734,8 +809,8 @@ class TestCleanup(TestCaseWithFactory, GardenerDbUserMixin):
 
     def _makeProductEntry(self, path='foo.pot', status=None):
         """Simulate upload for a product."""
-        product = self.factory.makeProduct()
-        product.official_rosetta = True
+        product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
         trunk = product.getSeries('trunk')
         entry = self.queue.addOrUpdateEntry(
             path, '# contents', False, product.owner, productseries=trunk)
@@ -980,7 +1055,7 @@ class TestAutoApprovalNewPOFile(TestCaseWithFactory, GardenerDbUserMixin):
         trunk = self.product.getSeries('trunk')
         template = self._makeTemplate(trunk)
         credits = self.factory.makePOTMsgSet(
-            template, singular='translation-credits', sequence=1)
+            template, singular='translation-credits')
 
         entry = self._makeQueueEntry(trunk)
 
@@ -988,7 +1063,8 @@ class TestAutoApprovalNewPOFile(TestCaseWithFactory, GardenerDbUserMixin):
 
         entry.getGuessedPOFile()
 
-        credits.getCurrentTranslationMessage(template, self.language)
+        credits.getCurrentTranslation(
+            template, self.language, template.translation_side)
         self.assertNotEqual(None, credits)
 
 

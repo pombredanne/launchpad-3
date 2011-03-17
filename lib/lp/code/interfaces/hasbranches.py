@@ -14,17 +14,29 @@ __all__ = [
     ]
 
 
+from lazr.restful.declarations import (
+    call_with,
+    export_factory_operation,
+    export_read_operation,
+    operation_parameters,
+    operation_returns_collection_of,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import Reference
 from zope.interface import Interface
-from zope.schema import Choice, Datetime, List, TextLine
+from zope.schema import (
+    Choice,
+    Datetime,
+    List,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from lp.code.enums import (
-    BranchLifecycleStatus, BranchMergeProposalStatus, RevisionControlSystems)
-
-from lazr.restful.declarations import (
-    REQUEST_USER, call_with, export_factory_operation, export_read_operation,
-    operation_parameters, operation_returns_collection_of)
-from lazr.restful.fields import Reference
+    BranchLifecycleStatus,
+    BranchMergeProposalStatus,
+    RevisionControlSystems,
+    )
 
 
 class IHasBranches(Interface):
@@ -48,13 +60,15 @@ class IHasBranches(Interface):
     @operation_returns_collection_of(Interface) # Really IBranch.
     @export_read_operation()
     def getBranches(status=None, visible_by_user=None,
-                    modified_since=None):
+                    modified_since=None, eager_load=False):
         """Returns all branches with the given lifecycle status.
 
         :param status: A list of statuses to filter with.
         :param visible_by_user: Normally the user who is asking.
         :param modified_since: If set, filters the branches being returned
             to those that have been modified since the specified date/time.
+        :param eager_load: If True load related objects for the whole
+            collection.
         :returns: A list of `IBranch`.
         """
 

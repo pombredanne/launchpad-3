@@ -49,36 +49,15 @@ order to extract any useful information about the wiki page.
     -----------------------------------------------------------------...
     ...
 
-So, we'll have to extract the specification URL from the message. To do
-this, we use get_spec_url_from_moin_mail():
-
-    >>> from canonical.launchpad.mail.specexploder import (
-    ...     get_spec_url_from_moin_mail)
-    >>> get_spec_url_from_moin_mail(moin_change.get_payload(decode=True))
-    'https://wiki.ubuntu.com/MediaIntegrityCheck'
-
-Even though it's name get_spec_url_from_moin_mail(), it doesn't really
-care if it's a moin notification or not, it simply extracts the first
-URL from the body.
-
-    >>> get_spec_url_from_moin_mail(
-    ...     'https://wiki.ubuntu.com/MediaIntegrityCheck')
-    'https://wiki.ubuntu.com/MediaIntegrityCheck'
-
-If no URL is found, None is returned.
-
-    >>> get_spec_url_from_moin_mail('foo bar') is None
-    True
-
 
 The Mail Handler
 ----------------
 
 The mail handler that handles mail on notifications@specs.launchpad.net
-is SpecificationHandler.
+is BlueprintHandler.
 
     >>> from canonical.config import config
-    >>> from canonical.launchpad.mail.handlers import mail_handlers
+    >>> from lp.services.mail.handlers import mail_handlers
     >>> handler = mail_handlers.get(config.launchpad.specs_domain)
     >>> handler is not None
     True
@@ -200,7 +179,7 @@ simply emit a warning and drop the email.
     >>> handler.process(
     ...     sent_msg, 'notifications@specs.launchpad.net',
     ...     filealias=FakeFileAlias(), log=log)
-    WARNING:...:Got back a notification we sent: http://librarian/foo.txt
+    WARNING...:Got back a notification we sent: http://librarian/foo.txt
     True
 
     >>> log._log.setLevel(OLD_LOG_LEVEL)
@@ -222,7 +201,7 @@ Launchpad:
     >>> handler.process(
     ...     sent_msg, 'notifications@specs.launchpad.net',
     ...     filealias=FakeFileAlias(), log=log)
-    WARNING:...:We received an email from Launchpad: http://librarian/foo.txt
+    WARNING...:We received an email from Launchpad: http://librarian/foo.txt
     True
 
     >>> log._log.setLevel(OLD_LOG_LEVEL)
@@ -264,12 +243,12 @@ webmaster@ubuntu.com doesn't belong to any Person in Launchpad:
     True
 
     >>> moin_change = read_test_message('moin-change.txt')
-    >>> moin_change['To'] += ", notifications@%s" % (
+    >>> moin_change['X-Launchpad-Original-To'] = "notifications@%s" % (
     ...     config.launchpad.specs_domain)
     >>> moin_change['Sender'] = 'webmaster@ubuntu.com'
 
+    >>> from lp.services.mail.incoming import handleMail
     >>> from lp.services.mail.sendmail import sendmail
-    >>> from canonical.launchpad.mail.incoming import handleMail
     >>> sendmail(moin_change, bulk=False)
     '...'
 

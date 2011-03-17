@@ -1,16 +1,15 @@
-# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0401,C0301,F0401
 
-
-from __future__ import with_statement
-
+from __future__ import absolute_import
 
 __metaclass__ = type
 __all__ = [
     'ANONYMOUS',
     'anonymous_logged_in',
+    'api_url',
     'build_yui_unittest_suite',
     'BrowserTestCase',
     'capture_events',
@@ -30,10 +29,12 @@ __all__ = [
     'normalize_whitespace',
     'oauth_access_token_for',
     'person_logged_in',
+    'quote_jquery_expression'
     'record_statements',
     'run_with_login',
     'run_with_storm_debug',
     'run_script',
+    'StormStatementRecorder',
     'TestCase',
     'TestCaseWithFactory',
     'test_tales',
@@ -50,48 +51,86 @@ __all__ = [
     ]
 
 from contextlib import contextmanager
-from cStringIO import StringIO
-from datetime import datetime, timedelta
-from inspect import getargspec, getmembers, getmro, isclass, ismethod
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from inspect import (
+    getargspec,
+    getmro,
+    isclass,
+    ismethod,
+    )
+import logging
 import os
 from pprint import pformat
 import re
 import shutil
 import subprocess
-import subunit
 import sys
 import tempfile
 import time
 import unittest
 
-from bzrlib.bzrdir import BzrDir, format_registry
+from bzrlib import trace
+from bzrlib.bzrdir import (
+    BzrDir,
+    format_registry,
+    )
 from bzrlib.transport import get_transport
-
+import fixtures
 import pytz
 from storm.expr import Variable
 from storm.store import Store
-from storm.tracer import install_tracer, remove_tracer_type
-
+from storm.tracer import (
+    install_tracer,
+    remove_tracer_type,
+    )
+import subunit
 import testtools
+from testtools.content import Content
+from testtools.content_type import UTF8_TEXT
 import transaction
-
 from windmill.authoring import WindmillTestClient
-
-from zope.component import adapter, getUtility
+from zope.component import (
+    adapter,
+    getUtility,
+    )
 import zope.event
-from zope.interface.verify import verifyClass, verifyObject
+from zope.interface.verify import verifyClass
 from zope.security.proxy import (
-    isinstance as zope_isinstance, removeSecurityProxy)
+    isinstance as zope_isinstance,
+    removeSecurityProxy,
+    )
 from zope.testing.testrunner.runner import TestResult as ZopeTestResult
 
-from canonical.launchpad.webapp import canonical_url, errorlog
-from canonical.launchpad.webapp.servers import WebServiceTestRequest
 from canonical.config import config
+from canonical.launchpad.webapp import (
+    canonical_url,
+    errorlog,
+    )
+from canonical.launchpad.webapp.adapter import (
+    set_permit_timeout_from_features,
+    )
 from canonical.launchpad.webapp.errorlog import ErrorReportEvent
 from canonical.launchpad.webapp.interaction import ANONYMOUS
-from canonical.launchpad.windmill.testing import constants
-from lp.codehosting.vfs import branch_id_to_path, get_rw_server
+from canonical.launchpad.webapp.servers import (
+    LaunchpadTestRequest,
+    WebServiceTestRequest,
+    )
+from lp.codehosting.vfs import (
+    branch_id_to_path,
+    get_rw_server,
+    )
 from lp.registry.interfaces.packaging import IPackagingUtil
+from lp.services import features
+from lp.services.features.flags import FeatureController
+from lp.services.features.model import (
+    FeatureFlag,
+    getFeatureStore,
+    )
+from lp.services.features.webapp import ScopesFromRequest
+from lp.services.osutils import override_environ
 # Import the login helper functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
@@ -114,14 +153,18 @@ from lp.testing._login import (
 # XXX: JonathanLange 2010-01-01: Why?!
 from lp.testing._tales import test_tales
 from lp.testing._webservice import (
-    launchpadlib_credentials_for, launchpadlib_for, oauth_access_token_for)
+    api_url,
+    launchpadlib_credentials_for,
+    launchpadlib_for,
+    oauth_access_token_for,
+    )
 from lp.testing.fixture import ZopeEventHandlerFixture
-
-# zope.exception demands more of frame objects than twisted.python.failure
-# provides in its fake frames.  This is enough to make it work with them
-# as of 2009-09-16.  See https://bugs.edge.launchpad.net/bugs/425113.
-from twisted.python.failure import _Frame
-_Frame.f_locals = property(lambda self: {})
+from lp.testing.karma import KarmaRecorder
+from lp.testing.matchers import Provides
+from lp.testing.windmill import (
+    constants,
+    lpuser,
+    )
 
 
 class FakeTime:
@@ -192,10 +235,53 @@ class FakeTime:
 
 
 class StormStatementRecorder:
-    """A storm tracer to count queries."""
+    """A storm tracer to count queries.
+
+    This exposes the count and queries as
+    lp.testing._webservice.QueryCollector does permitting its use with the
+    HasQueryCount matcher.
+
+    It also meets the context manager protocol, so you can gather queries
+    easily:
+    with StormStatementRecorder() as recorder:
+        do somestuff
+    self.assertThat(recorder, HasQueryCount(LessThan(42)))
+
+    Note that due to the storm API used, only one of these recorders may be in
+    place at a time: all will be removed when the first one is removed (by
+    calling __exit__ or leaving the scope of a with statement).
+    """
 
     def __init__(self):
         self.statements = []
+
+    @property
+    def count(self):
+        return len(self.statements)
+
+    @property
+    def queries(self):
+        """The statements executed as per get_request_statements."""
+        # Perhaps we could just consolidate this code with the request tracer
+        # code and not need a custom tracer at all - if we provided a context
+        # factory to the tracer, which in the production tracers would
+        # use the adapter magic, and in test created ones would log to a list.
+        # We would need to be able to remove just one tracer though, which I
+        # haven't looked into yet. RBC 20100831
+        result = []
+        for statement in self.statements:
+            result.append((0, 0, 'unknown', statement))
+        return result
+
+    def __enter__(self):
+        """Context manager protocol - return this object as the context."""
+        install_tracer(self)
+        return self
+
+    def __exit__(self, _ignored, _ignored2, _ignored3):
+        """Content manager protocol - do not swallow exceptions."""
+        remove_tracer_type(StormStatementRecorder)
+        return False
 
     def connection_raw_execute(self, ignored, raw_cursor, statement, params):
         """Increment the counter.  We don't care about the args."""
@@ -216,12 +302,8 @@ def record_statements(function, *args, **kwargs):
     :return: a tuple containing the return value of the function,
         and a list of sql statements.
     """
-    recorder = StormStatementRecorder()
-    try:
-        install_tracer(recorder)
+    with StormStatementRecorder() as recorder:
         ret = function(*args, **kwargs)
-    finally:
-        remove_tracer_type(StormStatementRecorder)
     return (ret, recorder.statements)
 
 
@@ -235,7 +317,7 @@ def run_with_storm_debug(function, *args, **kwargs):
         debug(False)
 
 
-class TestCase(testtools.TestCase):
+class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
     """Provide Launchpad-specific test facilities."""
 
     def becomeDbUser(self, dbuser):
@@ -249,18 +331,6 @@ class TestCase(testtools.TestCase):
         assert self.layer, "becomeDbUser requires a layer."
         transaction.commit()
         self.layer.switchDbUser(dbuser)
-
-    def installFixture(self, fixture):
-        """Install 'fixture', an object that has a `setUp` and `tearDown`.
-
-        `installFixture` will run 'fixture.setUp' and schedule
-        'fixture.tearDown' to be run during the test's tear down (using
-        `addCleanup`).
-
-        :param fixture: Any object that has a `setUp` and `tearDown` method.
-        """
-        fixture.setUp()
-        self.addCleanup(fixture.tearDown)
 
     def __str__(self):
         """The string representation of a test is its id.
@@ -284,15 +354,20 @@ class TestCase(testtools.TestCase):
         """Create a temporary directory, and return its path."""
         return self.useContext(temp_dir())
 
+    def installKarmaRecorder(self, *args, **kwargs):
+        """Set up and return a `KarmaRecorder`.
+
+        Registers the karma recorder immediately, and ensures that it is
+        unregistered after the test.
+        """
+        recorder = KarmaRecorder(*args, **kwargs)
+        recorder.register_listener()
+        self.addCleanup(recorder.unregister_listener)
+        return recorder
+
     def assertProvides(self, obj, interface):
         """Assert 'obj' correctly provides 'interface'."""
-        self.assertTrue(
-            interface.providedBy(obj),
-            "%r does not provide %r." % (obj, interface))
-        self.assertTrue(
-            verifyObject(interface, obj),
-            "%r claims to provide %r but does not do so correctly."
-            % (obj, interface))
+        self.assertThat(obj, Provides(interface))
 
     def assertClassImplements(self, cls, interface):
         """Assert 'cls' may correctly implement 'interface'."""
@@ -300,27 +375,27 @@ class TestCase(testtools.TestCase):
             verifyClass(interface, cls),
             "%r does not correctly implement %r." % (cls, interface))
 
-    def assertNotifies(self, event_type, callable_obj, *args, **kwargs):
+    def assertNotifies(self, event_types, callable_obj, *args, **kwargs):
         """Assert that a callable performs a given notification.
 
-        :param event_type: The type of event that notification is expected
-            for.
+        :param event_type: One or more event types that notification is
+            expected for.
         :param callable_obj: The callable to call.
         :param *args: The arguments to pass to the callable.
         :param **kwargs: The keyword arguments to pass to the callable.
         :return: (result, event), where result was the return value of the
             callable, and event is the event emitted by the callable.
         """
-        result, events = capture_events(callable_obj, *args, **kwargs)
-        if len(events) == 0:
+        if not isinstance(event_types, (list, tuple)):
+            event_types = [event_types]
+        with EventRecorder() as recorder:
+            result = callable_obj(*args, **kwargs)
+        if len(recorder.events) == 0:
             raise AssertionError('No notification was performed.')
-        elif len(events) > 1:
-            raise AssertionError('Too many (%d) notifications performed.'
-                % len(events))
-        elif not isinstance(events[0], event_type):
-            raise AssertionError('Wrong event type: %r (expected %r).' %
-                (events[0], event_type))
-        return result, events[0]
+        self.assertEqual(len(event_types), len(recorder.events))
+        for event, expected_type in zip(recorder.events, event_types):
+            self.assertIsInstance(event, expected_type)
+        return result, recorder.events
 
     def assertNoNotification(self, callable_obj, *args, **kwargs):
         """Assert that no notifications are generated by the callable.
@@ -329,12 +404,16 @@ class TestCase(testtools.TestCase):
         :param *args: The arguments to pass to the callable.
         :param **kwargs: The keyword arguments to pass to the callable.
         """
-        result, events = capture_events(callable_obj, *args, **kwargs)
-        if len(events) == 1:
-            raise AssertionError('An event was generated: %r.' % events[0])
-        elif len(events) > 1:
-            raise AssertionError('Events were generated: %s.' %
-                                 ', '.join([repr(event) for event in events]))
+        with EventRecorder() as recorder:
+            result = callable_obj(*args, **kwargs)
+        if len(recorder.events) == 1:
+            raise AssertionError(
+                'An event was generated: %r.' % recorder.events[0])
+        elif len(recorder.events) > 1:
+            event_list = ', '.join(
+                [repr(event) for event in recorder.events])
+            raise AssertionError(
+                'Events were generated: %s.' % event_list)
         return result
 
     def assertNoNewOops(self, old_oops):
@@ -370,14 +449,16 @@ class TestCase(testtools.TestCase):
                 "Expected %s to be %s, but it was %s."
                 % (attribute_name, date, getattr(sql_object, attribute_name)))
 
-    def assertEqual(self, a, b, message=''):
-        """Assert that 'a' equals 'b'."""
-        if a == b:
-            return
-        if message:
-            message += '\n'
-        self.fail("%snot equal:\na = %s\nb = %s\n"
-                  % (message, pformat(a), pformat(b)))
+    def assertTextMatchesExpressionIgnoreWhitespace(self,
+                                                    regular_expression_txt,
+                                                    text):
+
+        def normalise_whitespace(text):
+            return ' '.join(text.split())
+        pattern = re.compile(
+            normalise_whitespace(regular_expression_txt), re.S)
+        self.assertIsNot(
+            None, pattern.search(normalise_whitespace(text)), text)
 
     def assertIsInstance(self, instance, assert_class):
         """Assert that an instance is an instance of assert_class.
@@ -429,21 +510,33 @@ class TestCase(testtools.TestCase):
 
     def attachOopses(self):
         if len(self.oopses) > 0:
-            content_type = testtools.content_type.ContentType(
-                "text", "plain", {"charset": "utf8"})
             for (i, oops) in enumerate(self.oopses):
-                content = testtools.content.Content(
-                    content_type, oops.get_chunks)
+                content = Content(UTF8_TEXT, oops.get_chunks)
                 self.addDetail("oops-%d" % i, content)
 
+    def attachLibrarianLog(self, fixture):
+        """Include the logChunks from fixture in the test details."""
+        # Evaluate the log when called, not later, to permit the librarian to
+        # be shutdown before the detail is rendered.
+        chunks = fixture.getLogChunks()
+        content = Content(UTF8_TEXT, lambda: chunks)
+        self.addDetail('librarian-log', content)
+
     def setUp(self):
-        testtools.TestCase.setUp(self)
+        super(TestCase, self).setUp()
+        # Circular imports.
         from lp.testing.factory import ObjectFactory
+        from canonical.testing.layers import LibrarianLayer
         self.factory = ObjectFactory()
         # Record the oopses generated during the test run.
         self.oopses = []
-        self.installFixture(ZopeEventHandlerFixture(self._recordOops))
+        self.useFixture(ZopeEventHandlerFixture(self._recordOops))
         self.addCleanup(self.attachOopses)
+        if LibrarianLayer.librarian_fixture is not None:
+            self.addCleanup(
+                self.attachLibrarianLog,
+                LibrarianLayer.librarian_fixture)
+        set_permit_timeout_from_features(False)
 
     @adapter(ErrorReportEvent)
     def _recordOops(self, event):
@@ -488,13 +581,20 @@ class TestCase(testtools.TestCase):
 class TestCaseWithFactory(TestCase):
 
     def setUp(self, user=ANONYMOUS):
-        TestCase.setUp(self)
+        super(TestCaseWithFactory, self).setUp()
         login(user)
         self.addCleanup(logout)
         from lp.testing.factory import LaunchpadObjectFactory
         self.factory = LaunchpadObjectFactory()
         self.direct_database_server = False
         self._use_bzr_branch_called = False
+        # XXX: JonathanLange 2010-12-24 bug=694140: Because of Launchpad's
+        # messing with global log state (see
+        # canonical.launchpad.scripts.logger), trace._bzr_logger does not
+        # necessarily equal logging.getLogger('bzr'), so we have to explicitly
+        # make it so in order to avoid "No handlers for "bzr" logger'
+        # messages.
+        trace._bzr_logger = logging.getLogger('bzr')
 
     def getUserBrowser(self, url=None, user=None, password='test'):
         """Return a Browser logged in as a fresh user, maybe opened at `url`.
@@ -504,15 +604,11 @@ class TestCaseWithFactory(TestCase):
             because it's stored as a hash.)
         """
         # Do the import here to avoid issues with import cycles.
-        from canonical.launchpad.testing.pages import setupBrowser
+        from canonical.launchpad.testing.pages import setupBrowserForUser
         login(ANONYMOUS)
         if user is None:
             user = self.factory.makePerson(password=password)
-        naked_user = removeSecurityProxy(user)
-        email = naked_user.preferredemail.email
-        logout()
-        browser = setupBrowser(
-            auth="Basic %s:%s" % (str(email), password))
+        browser = setupBrowserForUser(user, password)
         if url is not None:
             browser.open(url)
         return browser
@@ -564,7 +660,8 @@ class TestCaseWithFactory(TestCase):
         bzr_branch = self.createBranchAtURL(db_branch.getInternalBzrUrl())
         if parent:
             bzr_branch.pull(parent)
-            removeSecurityProxy(db_branch).last_scanned_id = bzr_branch.last_revision()
+            naked_branch = removeSecurityProxy(db_branch)
+            naked_branch.last_scanned_id = bzr_branch.last_revision()
         return bzr_branch
 
     @staticmethod
@@ -582,18 +679,11 @@ class TestCaseWithFactory(TestCase):
         return os.path.join(base, branch_id_to_path(branch.id))
 
     def useTempBzrHome(self):
-        # XXX: Extract the temporary environment blatting into a generic
-        # helper function.
         self.useTempDir()
         # Avoid leaking local user configuration into tests.
-        old_bzr_home = os.environ.get('BZR_HOME')
-        def restore_bzr_home():
-            if old_bzr_home is None:
-                del os.environ['BZR_HOME']
-            else:
-                os.environ['BZR_HOME'] = old_bzr_home
-        os.environ['BZR_HOME'] = os.getcwd()
-        self.addCleanup(restore_bzr_home)
+        self.useContext(override_environ(
+            BZR_HOME=os.getcwd(), BZR_EMAIL=None, EMAIL=None,
+            ))
 
     def useBzrBranches(self, direct_database=False):
         """Prepare for using bzr branches.
@@ -627,32 +717,44 @@ class BrowserTestCase(TestCaseWithFactory):
     This testcase provides an API similar to page tests, and can be used for
     cases when one wants a unit test and not a frakking pagetest.
     """
+
     def setUp(self):
         """Provide useful defaults."""
         super(BrowserTestCase, self).setUp()
         self.user = self.factory.makePerson(password='test')
 
-    def assertTextMatchesExpressionIgnoreWhitespace(self,
-                                                    regular_expression_txt,
-                                                    text):
-        def normalise_whitespace(text):
-            return ' '.join(text.split())
-        pattern = re.compile(
-            normalise_whitespace(regular_expression_txt), re.S)
-        self.assertIsNot(
-            None, pattern.search(normalise_whitespace(text)), text)
-
-    def getViewBrowser(self, context, view_name=None):
+    def getViewBrowser(self, context, view_name=None, no_login=False,
+                       rootsite=None, user=None):
+        if user is None:
+            user = self.user
+        # Make sure that there is a user interaction in order to generate the
+        # canonical url for the context object.
         login(ANONYMOUS)
-        url = canonical_url(context, view_name=view_name)
-        return self.getUserBrowser(url, self.user)
+        url = canonical_url(context, view_name=view_name, rootsite=rootsite)
+        logout()
+        if no_login:
+            from canonical.launchpad.testing.pages import setupBrowser
+            browser = setupBrowser()
+            browser.open(url)
+            return browser
+        else:
+            return self.getUserBrowser(url, user)
 
-    def getMainText(self, context, view_name=None):
+    def getMainContent(self, context, view_name=None, rootsite=None,
+                       no_login=False, user=None):
+        """Beautiful soup of the main content area of context's page."""
+        from canonical.launchpad.testing.pages import find_main_content
+        browser = self.getViewBrowser(
+            context, view_name, rootsite=rootsite, no_login=no_login,
+            user=user)
+        return find_main_content(browser.contents)
+
+    def getMainText(self, context, view_name=None, rootsite=None,
+                    no_login=False, user=None):
         """Return the main text of a context's page."""
-        from canonical.launchpad.testing.pages import (
-            extract_text, find_main_content)
-        browser = self.getViewBrowser(context, view_name)
-        return extract_text(find_main_content(browser.contents))
+        from canonical.launchpad.testing.pages import extract_text
+        return extract_text(
+            self.getMainContent(context, view_name, rootsite, no_login, user))
 
 
 class WindmillTestCase(TestCaseWithFactory):
@@ -665,7 +767,7 @@ class WindmillTestCase(TestCaseWithFactory):
     suite_name = ''
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(WindmillTestCase, self).setUp()
         self.client = WindmillTestClient(self.suite_name)
         # Load the front page to make sure we don't get fooled by stale pages
         # left by the previous test. (For some reason, when you create a new
@@ -673,7 +775,62 @@ class WindmillTestCase(TestCaseWithFactory):
         # do anything before you open() something you'd be operating on the
         # page that was last accessed by the previous test, which is the cause
         # of things like https://launchpad.net/bugs/515494)
-        self.client.open(url=u'http://launchpad.dev:8085')
+        self.client.open(url=self.layer.appserver_root_url())
+
+    def getClientFor(self, obj, user=None, password='test', view_name=None):
+        """Return a new client, and the url that it has loaded."""
+        client = WindmillTestClient(self.suite_name)
+        if user is not None:
+            email = removeSecurityProxy(user).preferredemail.email
+            client.open(url=lpuser.get_basic_login_url(email, password))
+            client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        if isinstance(obj, basestring):
+            url = obj
+        else:
+            url = canonical_url(
+                obj, view_name=view_name, force_local_path=True)
+        obj_url = self.layer.base_url + url
+        client.open(url=obj_url)
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        return client, obj_url
+
+
+class WebServiceTestCase(TestCaseWithFactory):
+    """Test case optimized for testing the web service using launchpadlib."""
+
+    @property
+    def layer(self):
+        # XXX wgrant 2011-03-09 bug=505913:
+        # TestTwistedJobRunner.test_timeout fails if this is at the
+        # module level. There is probably some hidden circular import.
+        from canonical.testing.layers import AppServerLayer
+        return AppServerLayer
+
+    def setUp(self):
+        super(WebServiceTestCase, self).setUp()
+        self.ws_version = 'devel'
+        self.service = self.factory.makeLaunchpadService(
+            version=self.ws_version)
+
+    def wsObject(self, obj, user=None):
+        """Return the launchpadlib version of the supplied object.
+
+        :param obj: The object to find the launchpadlib equivalent of.
+        :param user: The user to use for accessing the object over
+            lauchpadlib.  Defaults to an arbitrary logged-in user.
+        """
+        if user is not None:
+            service = self.factory.makeLaunchpadService(
+                user, version=self.ws_version)
+        else:
+            service = self.service
+        return ws_object(service, obj)
+
+
+def quote_jquery_expression(expression):
+    """jquery requires meta chars used in literals escaped with \\"""
+    return re.sub(
+        "([#!$%&()+,./:;?@~|^{}\\[\\]`*\\\'\\\"])", r"\\\\\1", expression)
 
 
 class YUIUnitTestCase(WindmillTestCase):
@@ -682,27 +839,31 @@ class YUIUnitTestCase(WindmillTestCase):
     suite_name = ''
 
     _yui_results = None
-    _view_name = u'http://launchpad.dev:8085/+yui-unittest/'
 
     def initialize(self, test_path):
         self.test_path = test_path
-        self.yui_runner_url = self._view_name + test_path
 
     def setUp(self):
         super(YUIUnitTestCase, self).setUp()
+        #This goes here to prevent circular import issues
+        from canonical.testing.layers import BaseLayer
+        _view_name = u'%s/+yui-unittest/' % BaseLayer.appserver_root_url()
+        yui_runner_url = _view_name + self.test_path
+
         client = self.client
-        client.open(url=self.yui_runner_url)
+        client.open(url=yui_runner_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        client.waits.forElement(id='complete')
+        # This is very fragile for some reason, so we need a long delay here.
+        client.waits.forElement(id='complete', timeout=constants.PAGE_LOAD)
         response = client.commands.getPageText()
         self._yui_results = {}
         # Maybe testing.pages should move to lp to avoid circular imports.
         from canonical.launchpad.testing.pages import find_tags_by_class
         entries = find_tags_by_class(
-            response['result'], 'yui-console-entry-TestRunner')
+            response['result'], 'yui3-console-entry-TestRunner')
         for entry in entries:
             category = entry.find(
-                attrs={'class': 'yui-console-entry-cat'})
+                attrs={'class': 'yui3-console-entry-cat'})
             if category is None:
                 continue
             result = category.string
@@ -760,13 +921,13 @@ class ZopeTestInSubProcess:
         # unlikely that any one approach is going to work for every
         # class. It's better to fail early and draw attention here.
         assert isinstance(result, ZopeTestResult), (
-            "result must be a Zope result object, not %r." % (result,))
+            "result must be a Zope result object, not %r." % (result, ))
         pread, pwrite = os.pipe()
         pid = os.fork()
         if pid == 0:
             # Child.
             os.close(pread)
-            fdwrite = os.fdopen(pwrite, 'w', 1)
+            fdwrite = os.fdopen(pwrite, 'wb', 1)
             # Send results to both the Zope result object (so that
             # layer setup and teardown are done properly, etc.) and to
             # the subunit stream client so that the parent process can
@@ -784,7 +945,7 @@ class ZopeTestInSubProcess:
         else:
             # Parent.
             os.close(pwrite)
-            fdread = os.fdopen(pread, 'rU')
+            fdread = os.fdopen(pread, 'rb')
             # Skip all the Zope-specific result stuff by using a
             # super() of the result. This is because the Zope result
             # object calls testSetUp() and testTearDown() on the
@@ -801,34 +962,47 @@ class ZopeTestInSubProcess:
             os.waitpid(pid, 0)
 
 
-def capture_events(callable_obj, *args, **kwargs):
-    """Capture the events emitted by a callable.
+class EventRecorder:
+    """Intercept and record Zope events.
 
-    :param callable_obj: The callable to call.
-    :param *args: The arguments to pass to the callable.
-    :param **kwargs: The keyword arguments to pass to the callable.
-    :return: (result, events), where result was the return value of the
-        callable, and events are the events emitted by the callable.
+    This prevents the events from propagating to their normal subscribers.
+    The recorded events can be accessed via the 'events' list.
     """
-    events = []
-    def on_notify(event):
-        events.append(event)
-    old_subscribers = zope.event.subscribers[:]
+    def __init__(self):
+        self.events = []
+        self.old_subscribers = None
+
+    def __enter__(self):
+        self.old_subscribers = zope.event.subscribers[:]
+        zope.event.subscribers[:] = [self.events.append]
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        assert zope.event.subscribers == [self.events.append], (
+            'Subscriber list has been changed while running!')
+        zope.event.subscribers[:] = self.old_subscribers
+
+
+@contextmanager
+def feature_flags():
+    """Provide a context in which feature flags work."""
+    empty_request = LaunchpadTestRequest()
+    old_features = getattr(features.per_thread, 'features', None)
+    features.per_thread.features = FeatureController(
+        ScopesFromRequest(empty_request).lookup)
     try:
-        zope.event.subscribers[:] = [on_notify]
-        result = callable_obj(*args, **kwargs)
-        return result, events
+        yield
     finally:
-        zope.event.subscribers[:] = old_subscribers
+        features.per_thread.features = old_features
 
 
-# XXX: This doesn't seem like a generically-useful testing function. Perhaps
-# it should go in a sub-module or something? -- jml
 def get_lsb_information():
     """Returns a dictionary with the LSB host information.
 
     Code stolen form /usr/bin/lsb-release
     """
+    # XXX: This doesn't seem like a generically-useful testing function.
+    # Perhaps it should go in a sub-module or something? -- jml
     distinfo = {}
     if os.path.exists('/etc/lsb-release'):
         for line in open('/etc/lsb-release'):
@@ -898,8 +1072,6 @@ def normalize_whitespace(string):
     return " ".join(string.split())
 
 
-# XXX: This doesn't seem to be a generically useful testing function. Perhaps
-# it should go into a sub-module? -- jml
 def map_branch_contents(branch):
     """Return all files in branch at `branch_url`.
 
@@ -907,6 +1079,8 @@ def map_branch_contents(branch):
     :return: a dict mapping file paths to file contents.  Only regular
         files are included.
     """
+    # XXX: This doesn't seem to be a generically useful testing function.
+    # Perhaps it should go into a sub-module? -- jml
     contents = {}
     tree = branch.basis_tree()
     tree.lock_read()
@@ -922,6 +1096,24 @@ def map_branch_contents(branch):
         tree.unlock()
 
     return contents
+
+
+def set_feature_flag(name, value, scope=u'default', priority=1):
+    """Set a feature flag to the specified value.
+
+    In order to access the flag, use the feature_flags context manager or
+    populate features.per_thread.features some other way.
+    :param name: The name of the flag.
+    :param value: The value of the flag.
+    :param scope: The scope in which the specified value applies.
+    """
+    assert getattr(features.per_thread, 'features', None) is not None
+    flag = FeatureFlag(
+        scope=scope, flag=name, value=value, priority=priority)
+    store = getFeatureStore()
+    store.add(flag)
+    # Make sure that the feature is saved into the db right now.
+    store.flush()
 
 
 def validate_mock_class(mock_class):
@@ -977,7 +1169,13 @@ def validate_mock_class(mock_class):
     assert isclass(mock_class), (
         "validate_mock_class() must be called for a class")
     base_classes = getmro(mock_class)
-    for name, obj in getmembers(mock_class):
+    # Don't use inspect.getmembers() here because it fails on __provides__, a
+    # descriptor added by zope.interface as part of its caching strategy. See
+    # http://comments.gmane.org/gmane.comp.python.zope.interface/241.
+    for name in dir(mock_class):
+        if name == '__provides__':
+            continue
+        obj = getattr(mock_class, name)
         if ismethod(obj):
             for base_class in base_classes[1:]:
                 if name in base_class.__dict__:
@@ -998,11 +1196,8 @@ def ws_object(launchpad, obj):
     :param obj: The object to convert.
     :return: A launchpadlib Entry object.
     """
-    api_request = WebServiceTestRequest()
-    obj_url = canonical_url(obj, request=api_request)
-    return launchpad.load(
-        obj_url.replace('http://api.launchpad.dev/',
-        str(launchpad._root_uri)))
+    api_request = WebServiceTestRequest(SERVER_URL=str(launchpad._root_uri))
+    return launchpad.load(canonical_url(obj, request=api_request))
 
 
 @contextmanager
@@ -1011,6 +1206,29 @@ def temp_dir():
     tempdir = tempfile.mkdtemp()
     yield tempdir
     shutil.rmtree(tempdir)
+
+
+@contextmanager
+def monkey_patch(context, **kwargs):
+    """In the ContextManager scope, monkey-patch values.
+
+    The context may be anything that supports setattr.  Packages,
+    modules, objects, etc.  The kwargs are the name/value pairs for the
+    values to set.
+    """
+    old_values = {}
+    not_set = object()
+    for name, value in kwargs.iteritems():
+        old_values[name] = getattr(context, name, not_set)
+        setattr(context, name, value)
+    try:
+        yield
+    finally:
+        for name, value in old_values.iteritems():
+            if value is not_set:
+                delattr(context, name)
+            else:
+                setattr(context, name, value)
 
 
 def unlink_source_packages(product):

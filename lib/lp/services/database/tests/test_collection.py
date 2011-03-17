@@ -5,15 +5,21 @@
 
 __metaclass__ = type
 
-from storm.locals import Int, Storm
+from storm.locals import (
+    Int,
+    Storm,
+    )
 from zope.component import getUtility
 
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.services.database.collection import Collection
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
-from canonical.testing import ZopelessDatabaseLayer
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
 
 def get_store():

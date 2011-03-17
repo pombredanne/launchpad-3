@@ -8,8 +8,10 @@ the user to make the connection.
 Create a helper to update the distribution source package cache, which
 does not happen automatically.
 
-    >>> from canonical.launchpad.testing.pages import find_tag_by_id
-    >>> from canonical.launchpad.testing.pages import extract_text
+    >>> from canonical.launchpad.testing.pages import (
+    ...     extract_text,
+    ...     find_tag_by_id,
+    ...     )
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
     >>> from lp.registry.interfaces.product import IProductSet
@@ -17,10 +19,10 @@ does not happen automatically.
     ...     ISourcePackageNameSet)
 
     >>> import transaction
-    >>> from canonical.launchpad.scripts import QuietFakeLogger
-    >>> logger = QuietFakeLogger()
-    >>> from canonical.testing.layers import reconnect_stores
+    >>> from lp.services.log.logger import BufferLogger
+    >>> logger = BufferLogger()
     >>> from canonical.config import config
+    >>> from canonical.testing.layers import reconnect_stores
     >>> def updateCache():
     ...     # Switch to the statistician user who is the only user with
     ...     # write permission to the source package cache tables.
@@ -49,7 +51,9 @@ Let's create a test project.
     >>> print view.suggestions
     []
 
-The view does not set focus to its form otherwise it will cause the page to scroll.
+The view does not set focus to its form otherwise it will cause the page to
+scroll.
+
     >>> view.focusedElementScript()
     ''
 
@@ -59,7 +63,7 @@ appropriate message asking to suggest a match.
     >>> content = find_tag_by_id(view.render(), 'portlet-packages')
     >>> print extract_text(content)
     All packages
-    Packages in Ubuntu
+    Packages in Distributions
     Launchpad doesn't know which Ubuntu packages this project
     provides. Links from distribution packages to upstream projects
     let distribution and upstream maintainers share bugs, patches, and
@@ -103,7 +107,7 @@ for the current Ubuntu series will NOT be suggested.
 A source package that does NOT have a publishing history in the PENDING
 or PUBLISHED statuses will NOT be suggested.
 
-    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> spph = factory.makeSourcePackagePublishingHistory(
     ...     sourcepackagename=spn, distroseries=ubuntu.currentseries,
     ...     status=PackagePublishingStatus.DELETED)
@@ -140,7 +144,7 @@ source package.
 
     >>> print extract_text(content)
     All packages
-    Packages in Ubuntu
+    Packages in Distributions
     Launchpad doesn't know which Ubuntu packages this project
     provides. Links from distribution packages to upstream projects
     let distribution and upstream maintainers share bugs, patches, and
@@ -177,20 +181,20 @@ If multiple source packages match they will all be displayed.
     ...     principal=product.owner)
     >>> for dsp in view.suggestions:
     ...     print dsp.name
-    bingo
     ba-bingo
+    bingo
 
     >>> content = find_tag_by_id(view.render(), 'portlet-packages')
     >>> print extract_text(content)
     All packages
-    Packages in Ubuntu
+    Packages in Distributions
     Launchpad doesn't know which Ubuntu packages this project
     provides. Links from distribution packages to upstream projects
     let distribution and upstream maintainers share bugs, patches, and
     translations efficiently.
     Ubuntu Hoary packages:
-    bingo
-    ba-bingo...
+    ba-bingo
+    bingo...
 
 But the limit is 8 packages.
 
@@ -325,19 +329,19 @@ reverses the order so that the latest packages for the current ubuntu
 series are shown first.
 
     >>> spn = factory.makeSourcePackageName(name="a-obsolete-package")
-    >>> packaging_util.createPackaging(
+    >>> packaging = packaging_util.createPackaging(
     ...     product.development_focus, spn, ubuntu.currentseries,
     ...     PackagingType.PRIME, owner=product.owner)
     >>> spn = factory.makeSourcePackageName(name="b-recent-package")
     >>> spph = factory.makeSourcePackagePublishingHistory(
     ...     sourcepackagename=spn, distroseries=ubuntu.currentseries)
-    >>> packaging_util.createPackaging(
+    >>> packaging = packaging_util.createPackaging(
     ...     product.development_focus, spn, ubuntu.currentseries,
     ...     PackagingType.PRIME, owner=product.owner)
     >>> spn = factory.makeSourcePackageName(name="c-current-package")
     >>> spph = factory.makeSourcePackagePublishingHistory(
     ...     sourcepackagename=spn, distroseries=ubuntu.currentseries)
-    >>> packaging_util.createPackaging(
+    >>> packaging = packaging_util.createPackaging(
     ...     product.development_focus, spn, ubuntu.currentseries,
     ...     PackagingType.PRIME, owner=product.owner)
     >>> for package in product.sourcepackages:

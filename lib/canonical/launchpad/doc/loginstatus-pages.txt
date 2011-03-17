@@ -1,6 +1,8 @@
-= Logging in =
+Logging in
+==========
 
-== The LoginStatus browser class ==
+The LoginStatus browser class
+-----------------------------
 
 The LoginStatus class is a view support class that handles the logic for
 showing the "Log in / Register" link that appears on most pages.
@@ -105,35 +107,3 @@ Logging in.
     True
     >>> status.login_shown
     False
-
-
-== Login status area links ==
-
-The login status area has a link to the user's Profile page, regardless
-of the facet that the user is currently viewing.
-
-    >>> from zope.component import getMultiAdapter, getUtility
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-
-    >>> person_set = getUtility(IPersonSet)
-    >>> foobar = person_set.getByEmail('foo.bar@canonical.com')
-
-    >>> request = LaunchpadTestRequest(SERVER_URL="http://launchpad.dev")
-    >>> login('foo.bar@canonical.com', request)
-    >>> view = getMultiAdapter((foobar, request), name='login_status')
-
-    >>> print view()
-    <...
-    ...<a href="/~name16"...>...
-
-The link is for the user's Profile page in the 'overview' facet, even if
-we are viewing the 'bugs' facet.
-
-    >>> request = LaunchpadTestRequest(SERVER_URL="http://bugs.launchpad.dev")
-    >>> login('foo.bar@canonical.com', request)
-    >>> view = getMultiAdapter((foobar, request), name='login_status')
-
-    >>> print view()
-    <...
-    ...<a href="http://launchpad.dev/~name16"...>...

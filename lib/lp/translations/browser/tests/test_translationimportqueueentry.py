@@ -4,20 +4,26 @@
 """Unit tests for translation import queue views."""
 
 from datetime import datetime
+
 from pytz import timezone
-
-from zope.component import getMultiAdapter, getUtility
+from zope.component import (
+    getMultiAdapter,
+    getUtility,
+    )
 from zope.security.proxy import removeSecurityProxy
-
-from canonical.testing import LaunchpadFunctionalLayer
 
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from lp.testing import TestCase, TestCaseWithFactory
+from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.translations.browser.translationimportqueue import escape_js_string
 from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
+    ITranslationImportQueue,
+    )
 from lp.translations.publisher import TranslationsLayer
 
 

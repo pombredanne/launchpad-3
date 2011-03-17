@@ -8,11 +8,9 @@ __metaclass__ = type
 from canonical.config import config
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.testing.layers import FunctionalLayer
-
+from lp.code.publisher import CodeLayer
 from lp.testing import TestCase
 from lp.testing.publication import get_request_and_publication
-
-from lp.code.publisher import CodeLayer
 
 
 class TestRegistration(TestCase):

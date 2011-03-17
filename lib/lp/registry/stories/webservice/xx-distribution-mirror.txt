@@ -32,6 +32,7 @@ mirrors:
     self_link: u'http://.../ubuntu/+mirror/canonical-archive'
     speed: u'100 Mbps'
     status: u'Official'
+    web_link: u'http://launchpad.../ubuntu/+mirror/canonical-archive'
     whiteboard: None
 
 And CD image mirrors:
@@ -60,6 +61,7 @@ And CD image mirrors:
     self_link: u'http://.../ubuntu/+mirror/canonical-releases'
     speed: u'100 Mbps'
     status: u'Official'
+    web_link: u'http://launchpad.../ubuntu/+mirror/canonical-releases'
     whiteboard: None
 
 = Security checks =
@@ -67,9 +69,9 @@ And CD image mirrors:
 People who are not mirror listing admins or the mirrors registrar may not
 change the owner's of mirrors:
 
+    >>> from zope.component import getUtility
     >>> from canonical.launchpad.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
-    >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from simplejson import dumps
     >>> login(ANONYMOUS)
@@ -152,6 +154,7 @@ Mirror listing admins may see all:
     self_link: u'http://.../ubuntu/+mirror/archive-404-mirror'
     speed: u'512 Kbps'
     status: u'Official'
+    web_link: u'http://launchpad.../ubuntu/+mirror/archive-404-mirror'
     whiteboard: None
 
 Now trying to set the owner using Sample Person's webservice is not authorized.
@@ -234,6 +237,7 @@ While others can be set with the appropriate authorization:
     self_link: u'http://.../ubuntu/+mirror/canonical-releases'
     speed: u'100 Mbps'
     status: u'Unofficial'
+    web_link: u'http://launchpad.../ubuntu/+mirror/canonical-releases'
     whiteboard: u'This mirror is too shiny to be true'
 
 = Distribution Mirror Custom Operations =

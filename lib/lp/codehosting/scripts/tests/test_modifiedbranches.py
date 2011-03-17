@@ -11,14 +11,16 @@ import unittest
 
 import pytz
 
-from lp.codehosting.scripts.modifiedbranches import (
-    ModifiedBranchesScript)
-from lp.codehosting.vfs import branch_id_to_path
 from canonical.config import config
-from lp.services.scripts.base import LaunchpadScriptFailure
-from lp.testing import TestCase, TestCaseWithFactory
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import BranchType
+from lp.codehosting.scripts.modifiedbranches import ModifiedBranchesScript
+from lp.codehosting.vfs import branch_id_to_path
+from lp.services.scripts.base import LaunchpadScriptFailure
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 
 
 class TestModifiedBranchesLocations(TestCaseWithFactory):

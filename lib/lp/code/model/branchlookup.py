@@ -8,45 +8,69 @@ __metaclass__ = type
 # then get the IBranchLookup utility.
 __all__ = []
 
-from zope.component import adapts, getUtility, queryMultiAdapter
+from lazr.enum import DBItem
+from lazr.uri import (
+    InvalidURIError,
+    URI,
+    )
+from sqlobject import SQLObjectNotFound
+from storm.expr import Join
+from zope.component import (
+    adapts,
+    getUtility,
+    queryMultiAdapter,
+    )
 from zope.interface import implements
 
-from storm.expr import Join
-from sqlobject import SQLObjectNotFound
-
 from canonical.config import config
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    ISlaveStore,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.app.validators.name import valid_name
+from lp.code.errors import (
+    CannotHaveLinkedBranch,
+    InvalidNamespace,
+    NoLinkedBranch,
+    NoSuchBranch,
+    )
+from lp.code.interfaces.branchlookup import (
+    IBranchLookup,
+    ILinkedBranchTraversable,
+    ILinkedBranchTraverser,
+    )
+from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
+from lp.code.interfaces.linkedbranch import get_linked_to_branch
 from lp.code.model.branch import Branch
+from lp.registry.errors import (
+    NoSuchDistroSeries,
+    NoSuchSourcePackageName,
+    )
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import (
+    IDistroSeries,
+    IDistroSeriesSet,
+    )
+from lp.registry.interfaces.person import NoSuchPerson
+from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.product import (
+    InvalidProductName,
+    IProduct,
+    NoSuchProduct,
+    )
+from lp.registry.interfaces.productseries import NoSuchProductSeries
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import Person
 from lp.registry.model.product import Product
 from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.code.interfaces.branch import NoSuchBranch
-from lp.code.interfaces.branchlookup import (
-    IBranchLookup, ILinkedBranchTraversable, ILinkedBranchTraverser)
-from lp.code.interfaces.branchnamespace import (
-    IBranchNamespaceSet, InvalidNamespace)
-from lp.code.interfaces.linkedbranch import (
-    CannotHaveLinkedBranch, get_linked_branch, NoLinkedBranch)
-from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import (
-    IDistroSeries, IDistroSeriesSet, NoSuchDistroSeries)
-from lp.registry.interfaces.person import NoSuchPerson
-from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.registry.interfaces.product import (
-    InvalidProductName, IProduct, NoSuchProduct)
-from lp.registry.interfaces.productseries import NoSuchProductSeries
-from lp.registry.interfaces.sourcepackagename import (
-    NoSuchSourcePackageName)
 from lp.services.utils import iter_split
-from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.interfaces.lpstorm import IMasterStore, ISlaveStore
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-
-from lazr.enum import DBItem
-from lazr.uri import InvalidURIError, URI
 
 
 def adapt(provided, interface):
@@ -353,25 +377,27 @@ class BranchLookup:
 
     def getByLPPath(self, path):
         """See `IBranchLookup`."""
-        branch = suffix = None
-        if not path.startswith('~'):
-            # If the first element doesn't start with a tilde, then maybe
-            # 'path' is a shorthand notation for a branch.
-            result = getUtility(ILinkedBranchTraverser).traverse(path)
-            branch = self._getLinkedBranch(result)
-        else:
+        if path.startswith('~'):
             namespace_set = getUtility(IBranchNamespaceSet)
             segments = iter(path.lstrip('~').split('/'))
             branch = namespace_set.traverse(segments)
             suffix = '/'.join(segments)
             if not check_permission('launchpad.View', branch):
                 raise NoSuchBranch(path)
-            if suffix == '':
-                suffix = None
+        else:
+            # If the first element doesn't start with a tilde, then maybe
+            # 'path' is a shorthand notation for a branch.
+            object_with_branch_link = getUtility(
+                ILinkedBranchTraverser).traverse(path)
+            branch, bzr_path = self._getLinkedBranchAndPath(
+                object_with_branch_link)
+            suffix = path[len(bzr_path) + 1:]
+        if suffix == '':
+            suffix = None
         return branch, suffix
 
-    def _getLinkedBranch(self, provided):
-        """Get the linked branch for 'provided'.
+    def _getLinkedBranchAndPath(self, provided):
+        """Get the linked branch for 'provided', and the bzr_path.
 
         :raise CannotHaveLinkedBranch: If 'provided' can never have a linked
             branch.
@@ -379,7 +405,7 @@ class BranchLookup:
             doesn't.
         :return: The linked branch, an `IBranch`.
         """
-        branch = get_linked_branch(provided)
-        if not check_permission('launchpad.View', branch):
+        linked = get_linked_to_branch(provided)
+        if not check_permission('launchpad.View', linked.branch):
             raise NoLinkedBranch(provided)
-        return branch
+        return linked.branch, linked.bzr_path

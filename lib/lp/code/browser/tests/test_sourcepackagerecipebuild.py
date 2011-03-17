@@ -7,18 +7,45 @@
 __metaclass__ = type
 
 from mechanize import LinkNotFoundError
+from storm.locals import Store
+from testtools.matchers import StartsWith
 import transaction
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import (
-    extract_text, find_tags_by_class)
+    extract_text,
+    find_main_content,
+    find_tags_by_class,
+    )
 from canonical.launchpad.webapp import canonical_url
-from canonical.testing import DatabaseFunctionalLayer
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.buildmaster.enums import BuildStatus
 from lp.soyuz.model.processor import ProcessorFamily
-from lp.testing import ANONYMOUS, BrowserTestCase, login, logout
+from lp.testing import (
+    ANONYMOUS,
+    BrowserTestCase,
+    login,
+    logout,
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+
+
+class TestCanonicalUrlForRecipeBuild(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_canonical_url(self):
+        owner = self.factory.makePerson(name='ppa-owner')
+        ppa = self.factory.makeArchive(owner=owner, name='ppa')
+        build = self.factory.makeSourcePackageRecipeBuild(archive=ppa)
+        self.assertThat(
+            canonical_url(build),
+            StartsWith(
+                'http://launchpad.dev/~ppa-owner/+archive/ppa/+buildjob/'))
 
 
 class TestSourcePackageRecipeBuild(BrowserTestCase):
@@ -95,6 +122,10 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         self.assertRaises(
             LinkNotFoundError,
             browser.getLink, 'Cancel build')
+
+        self.assertRaises(
+            Unauthorized,
+            self.getUserBrowser, build_url + '/+cancel', user=self.chef)
 
     def test_cancel_build_wrong_state(self):
         """If the build isn't queued, you can't cancel it."""
@@ -176,6 +207,10 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
             LinkNotFoundError,
             browser.getLink, 'Rescore build')
 
+        self.assertRaises(
+            Unauthorized,
+            self.getUserBrowser, build_url + '/+rescore', user=self.chef)
+
     def test_rescore_build_wrong_state(self):
         """If the build isn't queued, you can't rescore it."""
         experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
@@ -189,3 +224,47 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         self.assertRaises(
             LinkNotFoundError,
             browser.getLink, 'Rescore build')
+
+    def test_rescore_build_wrong_state_stale_link(self):
+        """Show sane error if you attempt to rescore a non-queued build.
+
+        This is the case where the user has a stale link that they click on.
+        """
+        build = self.factory.makeSourcePackageRecipeBuild()
+        build.cancelBuild()
+        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
+        index_url = canonical_url(build)
+        browser = self.getViewBrowser(build, '+rescore', user=experts)
+        self.assertEqual(index_url, browser.url)
+        self.assertIn(
+            'Cannot rescore this build because it is not queued.',
+            browser.contents)
+
+    def test_rescore_build_wrong_state_stale_page(self):
+        """Show sane error if you attempt to rescore a non-queued build.
+
+        This is the case where the user is on the rescore page and submits.
+        """
+        build = self.factory.makeSourcePackageRecipeBuild()
+        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
+        index_url = canonical_url(build)
+        browser = self.getViewBrowser(build, '+rescore', user=experts)
+        with person_logged_in(experts):
+            build.cancelBuild()
+        browser.getLink('Rescore build').click()
+        self.assertEqual(index_url, browser.url)
+        self.assertIn(
+            'Cannot rescore this build because it is not queued.',
+            browser.contents)
+
+    def test_builder_history(self):
+        build = self.makeRecipeBuild()
+        Store.of(build).flush()
+        build_url = canonical_url(build)
+        removeSecurityProxy(build).builder = self.factory.makeBuilder()
+        browser = self.getViewBrowser(build.builder, '+history')
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+             'Build history.*~chef/chocolate/cake recipe build',
+             extract_text(find_main_content(browser.contents)))
+        self.assertEqual(build_url,
+                browser.getLink('~chef/chocolate/cake recipe build').url)

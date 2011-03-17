@@ -10,11 +10,11 @@ import unittest
 from zope.component import getUtility
 from zope.publisher.xmlrpc import TestRequest
 
-from canonical.launchpad.interfaces import IPrivateApplication
-from lp.testing import TestCaseWithFactory
+from canonical.launchpad.interfaces.launchpad import IPrivateApplication
 from canonical.launchpad.xmlrpc import faults
 from canonical.launchpad.xmlrpc.authserver import AuthServerAPIView
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing import TestCaseWithFactory
 
 
 class GetUserAndSSHKeysTests(TestCaseWithFactory):

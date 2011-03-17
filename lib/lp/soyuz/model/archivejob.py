@@ -1,30 +1,42 @@
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = object
 
+from lazr.delegates import delegates
 import simplejson
-
 from sqlobject import SQLObjectNotFound
-from storm.base import Storm
 from storm.expr import And
-from storm.locals import Int, Reference, Unicode
-
+from storm.locals import (
+    Int,
+    Reference,
+    Unicode,
+    )
 from zope.component import getUtility
-from zope.interface import classProvides, implements
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
-
-from lazr.delegates import delegates
-
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
+from lp.services.database.stormbase import StormBase
+from lp.soyuz.enums import ArchiveJobType
 from lp.soyuz.interfaces.archivejob import (
-    ArchiveJobType, IArchiveJob, IArchiveJobSource)
+    IArchiveJob,
+    IArchiveJobSource,
+    )
 from lp.soyuz.model.archive import Archive
 
 
-class ArchiveJob(Storm):
+class ArchiveJob(StormBase):
     """Base class for jobs related to Archives."""
 
     implements(IArchiveJob)
@@ -121,7 +133,7 @@ class ArchiveJobDerived(BaseRunnableJob):
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
-        vars =  BaseRunnableJob.getOopsVars(self)
+        vars = BaseRunnableJob.getOopsVars(self)
         vars.extend([
             ('archive_id', self.context.archive.id),
             ('archive_job_id', self.context.id),

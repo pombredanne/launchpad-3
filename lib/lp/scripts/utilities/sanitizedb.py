@@ -5,6 +5,7 @@
 
 import _pythonpath
 
+
 __metaclass__ = type
 __all__ = []
 
@@ -38,7 +39,7 @@ class SanitizeDb(LaunchpadScript):
             "-n", "--dry-run", action="store_true", default=False,
             help="Don't commit changes.")
 
-    def _init_db(self, implicit_begin, isolation):
+    def _init_db(self, isolation):
         if len(self.args) == 0:
             self.parser.error("PostgreSQL connection string required.")
         elif len(self.args) > 1:
@@ -58,7 +59,6 @@ class SanitizeDb(LaunchpadScript):
             dbname=self.pg_connection_string.dbname,
             dbhost=self.pg_connection_string.host,
             dbuser=self.pg_connection_string.user,
-            implicitBegin=implicit_begin,
             isolation=isolation)
 
         self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
@@ -88,11 +88,10 @@ class SanitizeDb(LaunchpadScript):
             'oauthnonce',
             'oauthrequesttoken',
             'openidassociation',
-            'openidauthorization',
             'openidconsumerassociation',
             'openidconsumernonce',
-            'openidnonce',
             'openidrpsummary',
+            'openididentifier',
             'requestedcds',
             'scriptactivity',
             'shipitreport',
@@ -130,7 +129,6 @@ class SanitizeDb(LaunchpadScript):
         self.removeInvalidEmailAddresses()
         self.removePPAArchivePermissions()
         self.scrambleHiddenEmailAddresses()
-        self.scrambleOpenIDIdentifiers()
 
         self.removeDeactivatedPeopleAndAccounts()
 
@@ -381,14 +379,14 @@ class SanitizeDb(LaunchpadScript):
                 EmailAddress.status == EmailAddressStatus.NEW,
                 EmailAddress.status == EmailAddressStatus.OLD,
                 EmailAddress.email.lower().like(
-                    '%@example.com', case_sensitive=True))).remove()
+                    u'%@example.com', case_sensitive=True))).remove()
         self.store.flush()
         self.logger.info(
             "Removed %d invalid, unvalidated and old email addresses.", count)
 
     def removePPAArchivePermissions(self):
         """Remove ArchivePermission records for PPAs."""
-        from lp.soyuz.interfaces.archive import ArchivePurpose
+        from lp.soyuz.enums import ArchivePurpose
         count = self.store.execute("""
             DELETE FROM ArchivePermission
             USING Archive
@@ -418,17 +416,6 @@ class SanitizeDb(LaunchpadScript):
             """).rowcount
         self.logger.info(
             "Replaced %d hidden email addresses with @example.com", count)
-
-    def scrambleOpenIDIdentifiers(self):
-        """Replace OpenIDIdentifiers with random strings"""
-        count = self.store.execute("""
-            UPDATE Account SET
-                openid_identifier =
-                    'rnd' || text(id) || 'x' || text(round(random()*10000)),
-                old_openid_identifier =
-                    'rnd' || text(id) || 'x' || text(round(random()*10000))
-            """).rowcount
-        self.logger.info("Randomized %d openid identifiers.", count)
 
     def removeUnlinkedEmailAddresses(self):
         """Remove EmailAddresses not linked to a Person.

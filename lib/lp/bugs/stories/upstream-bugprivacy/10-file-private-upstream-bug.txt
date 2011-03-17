@@ -31,7 +31,7 @@ Now the reporter and the maintainer are subscribed.
     >>> from zope.component import getUtility
 
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
 
     >>> login("foo.bar@canonical.com")
 
@@ -106,14 +106,14 @@ subscribed instead.
 == Checking basic access to the private bug pages ==
 
 Trying to access the task edit page of a task on a private bug
-redirects the anonymous user to the login page.
+fails, because we pretend that inaccessible private bugs do not exist.
 
     >>> browser = setupBrowser()
     >>> browser.open(
     ...     "http://launchpad.dev/firefox/+bug/%s/+editstatus" % bug_id)
     Traceback (most recent call last):
     ...
-    Unauthorized:...
+    NotFound:...
 
 The no-privs user cannot access bug #10, because it's filed on a private bug on
 which the no-privs is not an explicit subscriber.
@@ -123,7 +123,7 @@ which the no-privs is not an explicit subscriber.
     ...     "http://launchpad.dev/firefox/+bug/%s/+editstatus" % bug_id)
     Traceback (most recent call last):
     ...
-    Unauthorized:...
+    NotFound:...
 
 Sample Person accesses the bug page of a private bug. He is allowed to
 view the page because he is an explicit subscriber on the bug.

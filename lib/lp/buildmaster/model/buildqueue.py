@@ -12,25 +12,50 @@ __all__ = [
     ]
 
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import logging
-import pytz
 
+import pytz
 from sqlobject import (
-    StringCol, ForeignKey, BoolCol, IntCol, IntervalCol, SQLObjectNotFound)
-from zope.component import getSiteManager, getUtility
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    IntervalCol,
+    SQLObjectNotFound,
+    StringCol,
+    )
+from zope.component import (
+    getSiteManager,
+    getUtility,
+    )
 from zope.interface import implements
 
 from canonical.database.constants import DEFAULT
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, NotFoundError)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.app.errors import NotFoundError
+from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, IBuildFarmJob)
+    IBuildFarmJob,
+    )
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior)
-from lp.buildmaster.interfaces.buildqueue import IBuildQueue, IBuildQueueSet
+    IBuildFarmJobBehavior,
+    )
+from lp.buildmaster.interfaces.buildqueue import (
+    IBuildQueue,
+    IBuildQueueSet,
+    )
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 

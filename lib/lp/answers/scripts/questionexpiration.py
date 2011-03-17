@@ -11,9 +11,11 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
-    setupInteraction, endInteraction)
+    endInteraction,
+    setupInteraction,
+    )
+from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from lp.answers.interfaces.questioncollection import IQuestionSet
 
 

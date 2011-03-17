@@ -5,6 +5,7 @@
 
 from zope.interface import Interface
 
+
 __metaclass__ = type
 
 __all__ = ('IRosettaStats', )
@@ -26,7 +27,7 @@ class IRosettaStats(Interface):
         """Return the number of current IPOMessageSets inside this object."""
 
     def currentCount(language=None):
-        """Return the number of msgsets published and matched to a potemplate.
+        """Return the number of current upstream translations.
 
         That's the msgsets for this object that have a complete, non-fuzzy
         translation in its PO file for this language when we last parsed it.

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -6,30 +6,44 @@ __all__ = [
     'LaunchpadCronScript',
     'LaunchpadScript',
     'LaunchpadScriptFailure',
-    'SilentLaunchpadScriptFailure'
+    'SilentLaunchpadScriptFailure',
     ]
 
+from ConfigParser import SafeConfigParser
 from cProfile import Profile
 import datetime
 import logging
 from optparse import OptionParser
-import os
+import os.path
 import sys
+from urllib2 import (
+    HTTPError,
+    URLError,
+    urlopen,
+    )
 
-from contrib.glock import GlobalLock, LockAlreadyAcquired
+from contrib.glock import (
+    GlobalLock,
+    LockAlreadyAcquired,
+    )
 import pytz
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.database.sqlbase import ISOLATION_LEVEL_DEFAULT
 from canonical.launchpad import scripts
-from canonical.launchpad.interfaces import IScriptActivitySet
+from canonical.launchpad.scripts.logger import OopsHandler
+from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.launchpad.webapp.interaction import (
-    ANONYMOUS, setupInteractionByEmail)
+    ANONYMOUS,
+    setupInteractionByEmail,
+    )
 from canonical.lp import initZopeless
+from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 
 
 LOCK_PATH = "/var/lock/"
-UTC = pytz.timezone('UTC')
+UTC = pytz.UTC
 
 
 class LaunchpadScriptFailure(Exception):
@@ -52,10 +66,40 @@ class LaunchpadScriptFailure(Exception):
 
 class SilentLaunchpadScriptFailure(Exception):
     """A LaunchpadScriptFailure that doesn't log an error."""
+
     def __init__(self, exit_status=1):
         Exception.__init__(self, exit_status)
         self.exit_status = exit_status
     exit_status = 1
+
+
+def log_unhandled_exception_and_exit(func):
+    """Decorator that logs unhandled exceptions via the logging module.
+
+    Exceptions are reraised except at the top level. ie. exceptions are
+    only propagated to the outermost decorated method. At the top level,
+    an exception causes the script to terminate.
+
+    Only for methods of `LaunchpadScript` and subclasses. Not thread safe,
+    which is fine as the decorated LaunchpadScript methods are only
+    invoked from the main thread.
+    """
+
+    def log_unhandled_exceptions_func(self, *args, **kw):
+        try:
+            self._log_unhandled_exceptions_level += 1
+            return func(self, *args, **kw)
+        except Exception:
+            if self._log_unhandled_exceptions_level == 1:
+                # self.logger is setup in LaunchpadScript.__init__() so
+                # we can use it.
+                self.logger.exception("Unhandled exception")
+                sys.exit(1)
+            else:
+                raise
+        finally:
+            self._log_unhandled_exceptions_level -= 1
+    return log_unhandled_exceptions_func
 
 
 class LaunchpadScript:
@@ -93,6 +137,9 @@ class LaunchpadScript:
     lockfilepath = None
     loglevel = logging.INFO
 
+    # State for the log_unhandled_exceptions decorator.
+    _log_unhandled_exceptions_level = 0
+
     def __init__(self, name=None, dbuser=None, test_args=None):
         """Construct new LaunchpadScript.
 
@@ -106,22 +153,21 @@ class LaunchpadScript:
         useful in test scripts.
         """
         if name is None:
-            self.name = self.__class__.__name__.lower()
+            self._name = self.__class__.__name__.lower()
         else:
-            self.name = name
+            self._name = name
 
-        self.dbuser = dbuser
-
-        if self.description is None:
-            description = self.__doc__
-        else:
-            description = self.description
+        self._dbuser = dbuser
 
         # The construction of the option parser is a bit roundabout, but
         # at least it's isolated here. First we build the parser, then
         # we add options that our logger object uses, then call our
         # option-parsing hook, and finally pull out and store the
         # supplied options and args.
+        if self.description is None:
+            description = self.__doc__
+        else:
+            description = self.description
         self.parser = OptionParser(usage=self.usage,
                                    description=description)
         scripts.logger_options(self.parser, default=self.loglevel)
@@ -131,14 +177,27 @@ class LaunchpadScript:
                     "profiling stats in FILE."))
         self.add_my_options()
         self.options, self.args = self.parser.parse_args(args=test_args)
-        self.logger = scripts.logger(self.options, name)
 
-        self.lockfilepath = os.path.join(LOCK_PATH, self.lockfilename)
+        # Enable subclasses to easily override these __init__()
+        # arguments using command-line arguments.
+        self.handle_options()
+
+    def handle_options(self):
+        self.logger = scripts.logger(self.options, self.name)
+
+    @property
+    def name(self):
+        """Enable subclasses to override with command-line arguments."""
+        return self._name
+
+    @property
+    def dbuser(self):
+        """Enable subclasses to override with command-line arguments."""
+        return self._dbuser
 
     #
     # Hooks that we expect users to redefine.
     #
-
     def main(self):
         """Define the meat of your script here. Must be defined.
 
@@ -162,7 +221,7 @@ class LaunchpadScript:
     #
     # Convenience or death
     #
-
+    @log_unhandled_exception_and_exit
     def login(self, user):
         """Super-convenience method that avoids the import."""
         setupInteractionByEmail(user)
@@ -172,7 +231,6 @@ class LaunchpadScript:
     # they really want to control the run-and-locking semantics of the
     # script carefully.
     #
-
     @property
     def lockfilename(self):
         """Return lockfilename.
@@ -182,14 +240,19 @@ class LaunchpadScript:
         """
         return "launchpad-%s.lock" % self.name
 
+    @property
+    def lockfilepath(self):
+        return os.path.join(LOCK_PATH, self.lockfilename)
+
     def setup_lock(self):
         """Create lockfile.
 
-        Note that this will create a lockfile even if you don't actually use it.
-        GlobalLock.__del__ is meant to clean it up though.
+        Note that this will create a lockfile even if you don't actually
+        use it. GlobalLock.__del__ is meant to clean it up though.
         """
         self.lock = GlobalLock(self.lockfilepath, logger=self.logger)
 
+    @log_unhandled_exception_and_exit
     def lock_or_die(self, blocking=False):
         """Attempt to lock, and sys.exit(1) if the lock's already taken.
 
@@ -203,6 +266,7 @@ class LaunchpadScript:
             self.logger.debug('Lockfile %s in use' % self.lockfilepath)
             sys.exit(1)
 
+    @log_unhandled_exception_and_exit
     def lock_or_quit(self, blocking=False):
         """Attempt to lock, and sys.exit(0) if the lock's already taken.
 
@@ -217,6 +281,7 @@ class LaunchpadScript:
             self.logger.info('Lockfile %s in use' % self.lockfilepath)
             sys.exit(0)
 
+    @log_unhandled_exception_and_exit
     def unlock(self, skip_delete=False):
         """Release the lock. Do this before going home.
 
@@ -226,11 +291,13 @@ class LaunchpadScript:
         """
         self.lock.release(skip_delete=skip_delete)
 
-    def run(self, use_web_security=False, implicit_begin=True,
-            isolation=ISOLATION_LEVEL_DEFAULT):
+    @log_unhandled_exception_and_exit
+    def run(self, use_web_security=False, isolation=None):
         """Actually run the script, executing zcml and initZopeless."""
+        if isolation is None:
+            isolation = ISOLATION_LEVEL_DEFAULT
         self._init_zca(use_web_security=use_web_security)
-        self._init_db(implicit_begin=implicit_begin, isolation=isolation)
+        self._init_db(isolation=isolation)
 
         date_started = datetime.datetime.now(UTC)
         profiler = None
@@ -256,14 +323,12 @@ class LaunchpadScript:
         """Initialize the ZCA, this can be overriden for testing purpose."""
         scripts.execute_zcml_for_scripts(use_web_security=use_web_security)
 
-    def _init_db(self, implicit_begin, isolation):
+    def _init_db(self, isolation):
         """Initialize the database transaction.
 
         Can be overriden for testing purpose.
         """
-        self.txn = initZopeless(
-            dbuser=self.dbuser, implicitBegin=implicit_begin,
-            isolation=isolation)
+        self.txn = initZopeless(dbuser=self.dbuser, isolation=isolation)
 
     def record_activity(self, date_started, date_completed):
         """Hook to record script activity."""
@@ -271,9 +336,9 @@ class LaunchpadScript:
     #
     # Make things happen
     #
-
+    @log_unhandled_exception_and_exit
     def lock_and_run(self, blocking=False, skip_delete=False,
-                     use_web_security=False, implicit_begin=True,
+                     use_web_security=False,
                      isolation=ISOLATION_LEVEL_DEFAULT):
         """Call lock_or_die(), and then run() the script.
 
@@ -281,8 +346,8 @@ class LaunchpadScript:
         """
         self.lock_or_die(blocking=blocking)
         try:
-            self.run(use_web_security=use_web_security,
-                     implicit_begin=implicit_begin, isolation=isolation)
+            self.run(
+                use_web_security=use_web_security, isolation=isolation)
         finally:
             self.unlock(skip_delete=skip_delete)
 
@@ -290,6 +355,31 @@ class LaunchpadScript:
 class LaunchpadCronScript(LaunchpadScript):
     """Logs successful script runs in the database."""
 
+    def __init__(self, name=None, dbuser=None, test_args=None):
+        super(LaunchpadCronScript, self).__init__(name, dbuser, test_args)
+
+        # self.name is used instead of the name argument, since it may have
+        # have been overridden by command-line parameters or by
+        # overriding the name property.
+        enabled = cronscript_enabled(
+            config.canonical.cron_control_url, self.name, self.logger)
+        if not enabled:
+            sys.exit(0)
+
+        # Configure the IErrorReportingUtility we use with defaults.
+        # Scripts can override this if they want.
+        globalErrorUtility.configure()
+
+        # Scripts do not have a zlog.
+        globalErrorUtility.copy_to_zlog = False
+
+        # WARN and higher log messages should generate OOPS reports.
+        # self.name is used instead of the name argument, since it may have
+        # have been overridden by command-line parameters or by
+        # overriding the name property.
+        logging.getLogger().addHandler(OopsHandler(self.name))
+
+    @log_unhandled_exception_and_exit
     def record_activity(self, date_started, date_completed):
         """Record the successful completion of the script."""
         self.txn.begin()
@@ -299,3 +389,57 @@ class LaunchpadCronScript(LaunchpadScript):
             date_started=date_started,
             date_completed=date_completed)
         self.txn.commit()
+
+
+def cronscript_enabled(control_url, name, log):
+    """Return True if the cronscript is enabled."""
+    try:
+        # Timeout of 5 seconds should be fine on the LAN. We don't want
+        # the default as it is too long for scripts being run every 60
+        # seconds.
+        control_fp = urlopen(control_url, timeout=5)
+    # Yuck. API makes it hard to catch 'does not exist'.
+    except HTTPError, error:
+        if error.code == 404:
+            log.debug("Cronscript control file not found at %s", control_url)
+            return True
+        log.exception("Error loading %s" % control_url)
+        return True
+    except URLError, error:
+        if getattr(error.reason, 'errno', None) == 2:
+            log.debug("Cronscript control file not found at %s", control_url)
+            return True
+        log.exception("Error loading %s" % control_url)
+        return True
+    except Exception:
+        log.exception("Error loading %s" % control_url)
+        return True
+
+    cron_config = SafeConfigParser({'enabled': str(True)})
+
+    # Try reading the config file. If it fails, we log the
+    # traceback and continue on using the defaults.
+    try:
+        cron_config.readfp(control_fp)
+    except:
+        log.exception("Error parsing %s", control_url)
+
+    if cron_config.has_option(name, 'enabled'):
+        section = name
+    else:
+        section = 'DEFAULT'
+
+    try:
+        enabled = cron_config.getboolean(section, 'enabled')
+    except:
+        log.exception(
+            "Failed to load value from %s section of %s",
+            section, control_url)
+        enabled = True
+
+    if enabled:
+        log.debug("Enabled by %s section", section)
+    else:
+        log.info("Disabled by %s section", section)
+
+    return enabled

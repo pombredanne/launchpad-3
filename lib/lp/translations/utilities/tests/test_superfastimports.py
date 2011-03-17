@@ -3,15 +3,15 @@
 
 __metaclass__ = type
 
-import unittest
-
-from canonical.config import config
-from canonical.testing import ZopelessDatabaseLayer
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
-from lp.translations.utilities.translation_import import (
-    ExistingPOFileInDatabase)
 from lp.translations.utilities.translation_common_format import (
-    TranslationMessageData)
+    TranslationMessageData,
+    )
+from lp.translations.utilities.translation_import import (
+    ExistingPOFileInDatabase,
+    )
+
 
 class TestSuperFastImports(TestCaseWithFactory):
     """Test how ExistingPOFileInDatabase cache works."""
@@ -22,7 +22,6 @@ class TestSuperFastImports(TestCaseWithFactory):
         # Set up a single POFile in the database to be cached and
         # examined.
         super(TestSuperFastImports, self).setUp()
-        self.pofile = self.factory.makePOFile('sr')
 
     def getTranslationMessageData(self, translationmessage):
         # Convert a TranslationMessage to TranslationMessageData object,
@@ -33,62 +32,77 @@ class TestSuperFastImports(TestCaseWithFactory):
         message_data.msgid_singular = potmsgset.singular_text
         message_data.msgid_plural = potmsgset.plural_text
         translations = translationmessage.translations
-        for plural in range(len(translations)):
-            message_data.addTranslation(
-                plural, translations[plural])
+        for plural_form, translation in enumerate(translations):
+            message_data.addTranslation(plural_form, translation)
         return message_data
 
-    def test_current_messages(self):
-        # Make sure current, non-imported messages are properly
-        # cached in ExistingPOFileInDatabase.
-        current_message = self.factory.makeTranslationMessage(
-            pofile=self.pofile, is_imported=False)
-        cached_file = ExistingPOFileInDatabase(self.pofile)
+    def _makeUpstreamPOFile(self):
+        """Create a `POFile` for an upstream project."""
+        pofile = self.factory.makePOFile()
+        self.assertIsNot(None, pofile.potemplate.productseries)
+        return pofile
+
+    def _makeUbuntuPOFile(self):
+        """Create a `POFile` for a distribution package."""
+        package = self.factory.makeSourcePackage()
+        potemplate = self.factory.makePOTemplate(
+            distroseries=package.distroseries,
+            sourcepackagename=package.sourcepackagename)
+        return self.factory.makePOFile(potemplate=potemplate)
+
+    def test_caches_current_upstream_message(self):
+        # Current upstream TranslationMessages are properly cached in
+        # ExistingPOFileInDatabase.
+        pofile = self._makeUpstreamPOFile()
+        current_message = self.factory.makeCurrentTranslationMessage(
+            pofile=pofile)
+        cached_file = ExistingPOFileInDatabase(pofile)
         message_data = self.getTranslationMessageData(current_message)
-        self.assertFalse(cached_file.isAlreadyImportedTheSame(message_data))
         self.assertTrue(cached_file.isAlreadyTranslatedTheSame(message_data))
 
-    def test_imported_messages(self):
-        # Make sure current, imported messages are properly
-        # cached in ExistingPOFileInDatabase.
-        imported_message = self.factory.makeTranslationMessage(
-            pofile=self.pofile, is_imported=True)
-        cached_file = ExistingPOFileInDatabase(self.pofile, is_imported=True)
-        message_data = self.getTranslationMessageData(imported_message)
-        self.assertTrue(cached_file.isAlreadyImportedTheSame(message_data))
+    def test_caches_current_ubuntu_message(self):
+        pofile = self._makeUbuntuPOFile()
+        current_message = self.factory.makeCurrentTranslationMessage(
+            pofile=pofile)
+        cached_file = ExistingPOFileInDatabase(pofile)
+        message_data = self.getTranslationMessageData(current_message)
         self.assertTrue(cached_file.isAlreadyTranslatedTheSame(message_data))
 
-    def test_inactive_messages(self):
-        # Make sure non-current messages (i.e. suggestions) are
-        # not cached in ExistingPOFileInDatabase.
-        inactive_message = self.factory.makeTranslationMessage(
-            pofile=self.pofile, suggestion=True)
-        cached_file = ExistingPOFileInDatabase(self.pofile)
+    def test_does_not_cache_inactive_message(self):
+        # Non-current messages (i.e. suggestions) are not cached in
+        # ExistingPOFileInDatabase.
+        pofile = self._makeUpstreamPOFile()
+        inactive_message = self.factory.makeSuggestion(pofile=pofile)
+        cached_file = ExistingPOFileInDatabase(pofile)
         message_data = self.getTranslationMessageData(inactive_message)
-        self.assertFalse(cached_file.isAlreadyImportedTheSame(message_data))
+        self.assertFalse(cached_file.isAlreadyTranslatedTheSame(message_data))
+
+    def test_does_not_cache_upstream_message_for_ubuntu_import(self):
+        pofile = self._makeUbuntuPOFile()
+        upstream_message = self.factory.makeSuggestion(pofile=pofile)
+        upstream_message.is_current_upstream = True
+
+        cached_file = ExistingPOFileInDatabase(pofile)
+        message_data = self.getTranslationMessageData(upstream_message)
+        self.assertFalse(cached_file.isAlreadyTranslatedTheSame(message_data))
+
+    def test_does_not_cache_ubuntu_message_for_upstream_import(self):
+        pofile = self._makeUpstreamPOFile()
+        ubuntu_message = self.factory.makeSuggestion(pofile=pofile)
+        ubuntu_message.is_current_ubuntu = True
+
+        cached_file = ExistingPOFileInDatabase(pofile)
+        message_data = self.getTranslationMessageData(ubuntu_message)
         self.assertFalse(cached_file.isAlreadyTranslatedTheSame(message_data))
 
     def test_query_timeout(self):
         # Test that super-fast-imports doesn't cache anything when it hits
         # a timeout.
-
-        # Override the config option to force a timeout error.
-        new_config = ("""
-            [poimport]
-            statement_timeout: timeout
-            """)
-        config.push('super_fast_timeout', new_config)
+        pofile = self.factory.makePOFile()
 
         # Add a message that would otherwise be cached (see other tests).
-        current_message = self.factory.makeTranslationMessage(
-            pofile=self.pofile, is_imported=False)
+        current_message = self.factory.makeCurrentTranslationMessage(
+            pofile=pofile)
         message_data = self.getTranslationMessageData(current_message)
-        cached_file = ExistingPOFileInDatabase(self.pofile)
+        cached_file = ExistingPOFileInDatabase(pofile, simulate_timeout=True)
         self.assertFalse(cached_file.isAlreadyTranslatedTheSame(message_data))
-
-        # Restore the old configuration.
-        config.pop('super_fast_timeout')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

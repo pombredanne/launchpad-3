@@ -83,7 +83,7 @@ If we mark the bug as critical, the open_critical count will increase.
 
     >>> login('foo.bar@canonical.com')
     >>> from canonical.launchpad.ftests import syncUpdate
-    >>> from canonical.launchpad.interfaces import BugTaskImportance
+    >>> from lp.bugs.interfaces.bugtask import BugTaskImportance
     >>> [ubuntu_firefox_bugtask] = bug.bugtasks
     >>> ubuntu_firefox_bugtask.transitionToImportance(
     ...     BugTaskImportance.CRITICAL, getUtility(ILaunchBag).user)
@@ -117,7 +117,7 @@ decrease.
 
 If we mark the bug as In Progress, the open_inprogress will increase.
 
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> ubuntu_firefox_bugtask.transitionToStatus(
     ...     BugTaskStatus.INPROGRESS, getUtility(ILaunchBag).user)
     >>> syncUpdate(ubuntu_firefox_bugtask)
@@ -169,8 +169,8 @@ Foo Bar still can see all the bugs, though.
 
 Duplicates bugs are omitted from the counts.
 
-    >>> from canonical.launchpad.interfaces import IBugSet
-    >>> bug.duplicateof = getUtility(IBugSet).get(1)
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> bug.markAsDuplicate(getUtility(IBugSet).get(1))
     >>> syncUpdate(bug)
     >>> package_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
     ...     user=foo_bar, packages=packages)

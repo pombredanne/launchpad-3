@@ -15,9 +15,9 @@ can support Unicode contents.
 
 Sample Person has public and secret keys set.
 
-    >>> from canonical.launchpad.ftests import login
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from canonical.launchpad.ftests import login
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
 
     >>> bag = getUtility(ILaunchBag)
 
@@ -28,7 +28,7 @@ Sample Person has public and secret keys set.
     >>> bag.user.name
     u'name12'
 
-    >>> from canonical.launchpad.interfaces import IGPGHandler
+    >>> from canonical.launchpad.interfaces.gpghandler import IGPGHandler
     >>> gpghandler = getUtility(IGPGHandler)
 
 Let's use a unicode content, it can't be directly typed as

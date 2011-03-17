@@ -69,7 +69,7 @@
                     tal:define="distribution package/distribution">
                     <a
                       tal:define="link package/menu:bugs/filebug"
-                      tal:condition="distribution/official_malone"
+                      tal:condition="distribution/bug_tracking_usage/enumvalue:LAUNCHPAD"
                       tal:attributes="href link/url">
                       <img
                         tal:attributes="alt link/text"
@@ -77,7 +77,7 @@
                     </a>
                     <a
                       tal:define="link package/menu:answers/new"
-                      tal:condition="distribution/official_answers"
+                      tal:condition="distribution/answers_usage/enumvalue:LAUNCHPAD"
                       tal:attributes="href link/url">
                     <img
                       tal:attributes="alt link/text"
@@ -137,7 +137,7 @@
                       condition="binary_names"
                       content="string:(Matching binaries: ${binary_names}.)">
                       (Matching binaries: bin-one, bin-two.)
-                    </tal:matching-binaries> 
+                    </tal:matching-binaries>
                   </tal:binary-search-only>
                   </p>
                 </div>

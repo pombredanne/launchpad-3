@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Gina db handlers.
@@ -17,37 +17,58 @@ __all__ = [
     'DistroHandler',
     ]
 
+from cStringIO import StringIO
 import os
 import re
 
-from sqlobject import SQLObjectNotFound, SQLObjectMoreThanOneResultError
-
+from sqlobject import (
+    SQLObjectMoreThanOneResultError,
+    SQLObjectNotFound,
+    )
 from zope.component import getUtility
 
-from canonical.database.sqlbase import quote, sqlvalues
 from canonical.database.constants import UTC_NOW
+from canonical.database.sqlbase import (
+    quote,
+    sqlvalues,
+    )
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.scripts import log
-
 from lp.archivepublisher.diskpool import poolify
 from lp.archiveuploader.tagfiles import parse_tagfile
-from lp.archiveuploader.utils import (determine_binary_file_type,
-    determine_source_file_type)
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
+from lp.archiveuploader.utils import (
+    determine_binary_file_type,
+    determine_source_file_type,
+    )
+from lp.archiveuploader.changesfile import ChangesFile
+from lp.buildmaster.enums import BuildStatus
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonCreationRationale,
+    )
 from lp.registry.interfaces.sourcepackage import SourcePackageType
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.soyuz.enums import (
+    BinaryPackageFormat,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.interfaces.publishing import IPublishingSet
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.files import (
-    BinaryPackageFile, SourcePackageReleaseFile)
+    BinaryPackageFile,
+    SourcePackageReleaseFile,
+    )
 from lp.soyuz.model.processor import Processor
 from lp.soyuz.model.section import Section
 from lp.soyuz.scripts.gina.library import getLibraryAlias
-from lp.soyuz.scripts.gina.packages import (SourcePackageData,
-    urgencymap, prioritymap, get_dsc_path, PoolFileNotFound)
+from lp.soyuz.scripts.gina.packages import (
+    get_dsc_path,
+    PoolFileNotFound,
+    prioritymap,
+    SourcePackageData,
+    )
 
 
 def check_not_in_librarian(files, archive_root, directory):
@@ -140,6 +161,7 @@ class ImporterHandler:
 
     This class is used to handle the import process.
     """
+
     def __init__(self, ztm, distro_name, distroseries_name, dry_run,
                  ktdb, archive_root, keyrings, pocket, component_override):
         self.dry_run = dry_run
@@ -431,6 +453,7 @@ class SourcePackageHandler:
     This class has methods to make the sourcepackagerelease access
     on the launchpad db a little easier.
     """
+
     def __init__(self, KTDB, archive_root, keyrings, pocket,
                  component_override):
         self.distro_handler = DistroHandler()
@@ -502,6 +525,9 @@ class SourcePackageHandler:
         log.debug("Found a source package for %s (%s) in %s" % (sp_name,
             sp_version, sp_component))
         dsc_contents = parse_tagfile(dsc_path, allow_unsigned=True)
+        dsc_contents = dict([
+            (name.lower(), value) for
+            (name, value) in dsc_contents.iteritems()])
 
         # Since the dsc doesn't know, we add in the directory, package
         # component and section
@@ -603,11 +629,7 @@ class SourcePackageHandler:
         to_upload = check_not_in_librarian(src.files, src.archive_root,
                                            src.directory)
 
-        #
-        # DO IT! At this point, we've decided we have everything we need
-        # to create the SPR.
-        #
-
+        # Create the SourcePackageRelease (SPR)
         componentID = self.distro_handler.getComponentByName(src.component).id
         sectionID = self.distro_handler.ensureSection(src.section).id
         maintainer_line = "%s <%s>" % (displayname, emailaddress)
@@ -619,12 +641,12 @@ class SourcePackageHandler:
             sourcepackagename=name.id,
             maintainer=maintainer.id,
             dscsigningkey=key,
-            urgency=urgencymap[src.urgency],
+            urgency=ChangesFile.urgency_map[src.urgency],
             dateuploaded=src.date_uploaded,
             dsc=src.dsc,
             copyright=src.copyright,
             version=src.version,
-            changelog_entry=src.changelog,
+            changelog_entry=src.changelog_entry,
             builddepends=src.build_depends,
             builddependsindep=src.build_depends_indep,
             build_conflicts=src.build_conflicts,
@@ -639,6 +661,15 @@ class SourcePackageHandler:
             upload_archive=distroseries.main_archive)
         log.info('Source Package Release %s (%s) created' %
                  (name.name, src.version))
+
+        # Upload the changelog to the Librarian
+        if src.changelog is not None:
+            changelog_lfa = getUtility(ILibraryFileAliasSet).create(
+                "changelog",
+                len(src.changelog),
+                StringIO(src.changelog),
+                "text/x-debian-source-changelog")
+            spr.changelog = changelog_lfa
 
         # Insert file into the library and create the
         # SourcePackageReleaseFile entry on lp db.
@@ -665,10 +696,6 @@ class SourcePackagePublisher:
 
     def publish(self, sourcepackagerelease, spdata):
         """Create the publishing entry on db if does not exist."""
-        # Avoid circular import.
-        from lp.soyuz.model.publishing import (
-            SourcePackagePublishingHistory)
-
         # Check if the sprelease is already published and if so, just
         # report it.
 
@@ -696,19 +723,15 @@ class SourcePackagePublisher:
                          source_publishinghistory.status.title)
                 return
 
-        # Create the Publishing entry with status PENDING so that we can
-        # republish this later into a Soyuz archive.
-        entry = SourcePackagePublishingHistory(
-            distroseries=self.distroseries.id,
-            sourcepackagerelease=sourcepackagerelease.id,
-            status=PackagePublishingStatus.PENDING,
-            component=component.id,
-            section=section.id,
-            datecreated=UTC_NOW,
-            datepublished=UTC_NOW,
+        # Create the Publishing entry, with status PENDING so that we
+        # can republish this later into a Soyuz archive.
+        entry = getUtility(IPublishingSet).newSourcePublication(
+            distroseries=self.distroseries,
+            sourcepackagerelease=sourcepackagerelease,
+            component=component,
+            section=section,
             pocket=self.pocket,
-            archive=archive
-            )
+            archive=archive)
         log.info('Source package %s (%s) published' % (
             entry.sourcepackagerelease.sourcepackagename.name,
             entry.sourcepackagerelease.version))
@@ -737,6 +760,7 @@ class SourcePackagePublisher:
 
 class BinaryPackageHandler:
     """Handler to deal with binarypackages."""
+
     def __init__(self, sphandler, archive_root, pocket):
         # Create other needed object handlers.
         self.distro_handler = DistroHandler()
@@ -768,14 +792,14 @@ class BinaryPackageHandler:
         # shared between distribution releases, so match on the
         # distribution and the architecture tag of the distroarchseries
         # they were built for
-        query = ("BinaryPackageRelease.binarypackagename=%s AND "
-                 "BinaryPackageRelease.version=%s AND "
-                 "BinaryPackageRelease.build = BinaryPackageBuild.id AND "
-                 "BinaryPackageBuild.distro_arch_series = DistroArchSeries.id AND "
-                 "DistroArchSeries.distroseries = DistroSeries.id AND "
-                 "DistroSeries.distribution = %d" %
-                 (binaryname.id, quote(version),
-                  distroseries.distribution.id))
+        query = (
+            "BinaryPackageRelease.binarypackagename=%s AND "
+            "BinaryPackageRelease.version=%s AND "
+            "BinaryPackageRelease.build = BinaryPackageBuild.id AND "
+            "BinaryPackageBuild.distro_arch_series = DistroArchSeries.id AND "
+            "DistroArchSeries.distroseries = DistroSeries.id AND "
+            "DistroSeries.distribution = %d" %
+            (binaryname.id, quote(version), distroseries.distribution.id))
 
         if architecture != "all":
             query += ("AND DistroArchSeries.architecturetag = %s" %
@@ -853,7 +877,11 @@ class BinaryPackageHandler:
 
         distroarchseries = distroarchinfo['distroarchseries']
         distribution = distroarchseries.distroseries.distribution
-        clauseTables = ["BinaryPackageBuild", "DistroArchSeries", "DistroSeries"]
+        clauseTables = [
+            "BinaryPackageBuild",
+            "DistroArchSeries",
+            "DistroSeries",
+            ]
 
         # XXX kiko 2006-02-03:
         # This method doesn't work for real bin-only NMUs that are
@@ -910,6 +938,7 @@ class BinaryPackageHandler:
 
 class BinaryPackagePublisher:
     """Binarypackage publisher class."""
+
     def __init__(self, distroarchseries, pocket, component_override):
         self.distroarchseries = distroarchseries
         self.pocket = pocket
@@ -970,8 +999,7 @@ class BinaryPackagePublisher:
             supersededby = None,
             datemadepending = None,
             dateremoved = None,
-            archive=archive
-            )
+            archive=archive)
 
         log.info('BinaryPackage %s-%s published into %s.' % (
             binarypackage.binarypackagename.name, binarypackage.version,

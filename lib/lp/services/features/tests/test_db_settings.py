@@ -4,15 +4,14 @@
 """Tests for feature settings coming from the database"""
 
 
-from __future__ import with_statement
 __metaclass__ = type
 
 from canonical.testing import layers
-from lp.testing import TestCase
 from lp.services.features.model import (
-    getFeatureStore,
     FeatureFlag,
+    getFeatureStore,
     )
+from lp.testing import TestCase
 
 
 class TestFeatureModel(TestCase):

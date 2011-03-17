@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for CodeImports."""
@@ -17,6 +17,10 @@ __all__ = [
 
 
 from BeautifulSoup import BeautifulSoup
+from lazr.restful.interface import (
+    copy_field,
+    use_template,
+    )
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
@@ -25,34 +29,56 @@ from zope.formlib import form
 from zope.interface import Interface
 from zope.schema import Choice
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.fields import URIField
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.code.enums import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeImportReviewStatus, CodeReviewNotificationLevel,
-    RevisionControlSystems)
-from lp.code.interfaces.branchnamespace import (
-    get_branch_namespace, IBranchNamespacePolicy)
-from lp.code.interfaces.codeimport import (
-    ICodeImport, ICodeImportSet)
-from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
-from lp.code.interfaces.branch import (
-    BranchExists, IBranch, user_has_special_branch_access)
-from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.registry.interfaces.product import IProduct
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView,
-    Navigation, stepto)
+    canonical_url,
+    LaunchpadView,
+    Navigation,
+    stepto,
+    )
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.menu import structured
-from lazr.restful.interface import copy_field, use_template
-from canonical.widgets import LaunchpadDropdownWidget
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
+from lp.app.errors import NotFoundError
+from lp.app.widgets.itemswidgets import (
+    LaunchpadDropdownWidget,
+    LaunchpadRadioWidget,
+    )
+from lp.app.widgets.textwidgets import (
+    StrippedTextWidget,
+    URIWidget,
+    )
+from lp.code.enums import (
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeImportReviewStatus,
+    CodeReviewNotificationLevel,
+    RevisionControlSystems,
+    )
+from lp.code.errors import BranchExists
+from lp.code.interfaces.branch import (
+    IBranch,
+    user_has_special_branch_access,
+    )
+from lp.code.interfaces.branchnamespace import (
+    get_branch_namespace,
+    IBranchNamespacePolicy,
+    )
+from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.codeimport import (
+    ICodeImport,
+    ICodeImportSet,
+    )
+from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
+from lp.registry.interfaces.product import IProduct
+from lp.services.fields import URIField
+from lp.services.propertycache import cachedproperty
 
 
 class CodeImportSetNavigation(Navigation):
@@ -593,8 +619,6 @@ class CodeImportEditView(CodeImportBaseView):
 
 class CodeImportMachineView(LaunchpadView):
     """The view for the page that shows all the import machines."""
-
-    __used_for__ = ICodeImportSet
 
     label = "Import machines for Launchpad"
 

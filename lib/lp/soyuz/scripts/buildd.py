@@ -8,21 +8,21 @@ __metaclass__ = type
 __all__ = [
     'QueueBuilder',
     'RetryDepwait',
-    'SlaveScanner',
     ]
 
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import NotFoundError
+from lp.app.errors import NotFoundError
 from lp.archivepublisher.debversion import Version
 from lp.archivepublisher.utils import process_in_batches
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.scripts.base import (
-    LaunchpadCronScript, LaunchpadScriptFailure)
+    LaunchpadCronScript,
+    LaunchpadScriptFailure,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
 
@@ -128,7 +128,7 @@ class QueueBuilder(LaunchpadCronScript):
                 % distroseries.name)
             return
 
-        architectures_available = list(distroseries.enabled_architectures)
+        architectures_available = list(distroseries.buildable_architectures)
         if not architectures_available:
             self.logger.debug(
                 "Chroots missing for %s, skipping" % distroseries.name)
@@ -272,34 +272,3 @@ class RetryDepwait(LaunchpadCronScript):
         if not self.options.dryrun:
             self.logger.info('Commiting the transaction.')
             self.txn.commit()
-
-
-class SlaveScanner(LaunchpadCronScript):
-
-    def main(self):
-        if self.args:
-            raise LaunchpadScriptFailure(
-                "Unhandled arguments %s" % repr(self.args))
-
-        builder_set = getUtility(IBuilderSet)
-        builder_set.pollBuilders(self.logger, self.txn)
-
-        self.logger.info("Dispatching Jobs.")
-
-        for builder in builder_set:
-            self.logger.info("Processing: %s" % builder.name)
-            # XXX cprov 2007-11-09: we don't support manual dispatching
-            # yet. Once we support it this clause should be removed.
-            if builder.manual:
-                self.logger.warn('builder is in manual state. Ignored.')
-                continue
-            if not builder.is_available:
-                self.logger.warn('builder is not available. Ignored.')
-                continue
-
-            candidate = builder.findAndStartJob()
-            if candidate is None:
-                continue
-            self.txn.commit()
-
-        self.logger.info("Slave Scan Process Finished.")

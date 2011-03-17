@@ -6,6 +6,7 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:webservice="http://namespaces.canonical.com/webservice"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
     <include package=".browser"/>
@@ -50,6 +51,9 @@
         <require
             permission="launchpad.Edit"
             set_attributes="status"/>
+        <require
+            permission="launchpad.Admin"
+            set_attributes="failure_count"/>
     </class>
     <securedutility
         component="lp.buildmaster.model.buildfarmjob.BuildFarmJob"
@@ -111,5 +115,6 @@
             interface="lp.buildmaster.interfaces.buildqueue.IBuildQueueSet"/>
     </securedutility>
 
+    <webservice:register module="lp.buildmaster.interfaces.webservice" />
 
 </configure>

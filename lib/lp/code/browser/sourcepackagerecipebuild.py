@@ -18,13 +18,24 @@ from zope.schema import Int
 
 from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.webapp import (
-    action, canonical_url, ContextMenu, enabled_with_permission,
-    LaunchpadView, LaunchpadFormView, Link, Navigation)
-
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
+from lp.app.browser.tales import CustomizableFormatter
+from lp.buildmaster.enums import BuildStatus
 from lp.code.interfaces.sourcepackagerecipebuild import (
-    ISourcePackageRecipeBuild)
+    ISourcePackageRecipeBuild,
+    )
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.propertycache import cachedproperty
 
 
 UNEDITABLE_BUILD_STATES = (
@@ -32,6 +43,18 @@ UNEDITABLE_BUILD_STATES = (
     BuildStatus.FAILEDTOBUILD,
     BuildStatus.SUPERSEDED,
     BuildStatus.FAILEDTOUPLOAD,)
+
+
+class SourcePackageRecipeBuildFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for ISourcePackageRecipeBuild objects."""
+
+    _link_summary_template = '%(title)s [%(owner)s/%(archive)s]'
+
+    def _link_summary_values(self):
+        return {'title': self._context.title,
+                'owner': self._context.archive.owner.name,
+                'archive': self._context.archive.name}
+
 
 class SourcePackageRecipeBuildNavigation(Navigation, FileNavigationMixin):
 
@@ -47,7 +70,7 @@ class SourcePackageRecipeBuildContextMenu(ContextMenu):
 
     links = ('cancel', 'rescore')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Admin')
     def cancel(self):
         if self.context.status in UNEDITABLE_BUILD_STATES:
             enabled = False
@@ -55,7 +78,7 @@ class SourcePackageRecipeBuildContextMenu(ContextMenu):
             enabled = True
         return Link('+cancel', 'Cancel build', icon='remove', enabled=enabled)
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Admin')
     def rescore(self):
         if self.context.status in UNEDITABLE_BUILD_STATES:
             enabled = False
@@ -75,6 +98,7 @@ class SourcePackageRecipeBuildView(LaunchpadView):
             return 'No suitable builders'
         return {
             BuildStatus.NEEDSBUILD: 'Pending build',
+            BuildStatus.UPLOADING: 'Build uploading',
             BuildStatus.FULLYBUILT: 'Successful build',
             BuildStatus.MANUALDEPWAIT: (
                 'Could not build because of missing dependencies'),
@@ -85,7 +109,7 @@ class SourcePackageRecipeBuildView(LaunchpadView):
             BuildStatus.FAILEDTOUPLOAD: 'Could not be uploaded correctly',
             }.get(self.context.status, self.context.status.title)
 
-    @property
+    @cachedproperty
     def eta(self):
         """The datetime when the build job is estimated to complete.
 
@@ -104,14 +128,14 @@ class SourcePackageRecipeBuildView(LaunchpadView):
         duration = queue_record.estimated_duration
         return start_time + duration
 
-    @property
+    @cachedproperty
     def date(self):
         """The date when the build completed or is estimated to complete."""
         if self.estimate:
             return self.eta
         return self.context.date_finished
 
-    @property
+    @cachedproperty
     def estimate(self):
         """If true, the date value is an estimate."""
         if self.context.date_finished is not None:
@@ -151,6 +175,13 @@ class SourcePackageRecipeBuildRescoreView(LaunchpadFormView):
             description=u'The score of the recipe.')
 
     page_title = label = "Rescore build"
+
+    def __call__(self):
+        if self.context.buildqueue_record is not None:
+            return super(SourcePackageRecipeBuildRescoreView, self).__call__()
+        self.request.response.addWarningNotification(
+            'Cannot rescore this build because it is not queued.')
+        self.request.response.redirect(canonical_url(self.context))
 
     @property
     def cancel_url(self):

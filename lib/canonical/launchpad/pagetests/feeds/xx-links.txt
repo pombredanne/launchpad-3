@@ -116,8 +116,11 @@ it must have quotes and html escaped.
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> login('foo.bar@canonical.com')
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchBag, IProductSet, License)
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.registry.interfaces.product import (
+    ...     IProductSet,
+    ...     License,
+    ...     )
     >>> user = getUtility(ILaunchBag).user
     >>> getUtility(IProductSet).createProduct(
     ...     user, 'bad-displayname',

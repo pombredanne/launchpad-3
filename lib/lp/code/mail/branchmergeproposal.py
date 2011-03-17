@@ -135,7 +135,7 @@ class BMPMailer(BranchMailer):
                     inline=True, filename='review-diff.txt')
 
     def _generateTemplateParams(self):
-        """For template params that don't change, calcualte just once."""
+        """For template params that don't change, calculate just once."""
         proposal = self.merge_proposal
         params = {
             'proposal_registrant': proposal.registrant.displayname,
@@ -179,10 +179,9 @@ class BMPMailer(BranchMailer):
 
         if (self.preview_diff is not None and self.preview_diff.oversized):
             params['diff_cutoff_warning'] = (
-                "The attached diff has been truncated due to its size.")
+                "The attached diff has been truncated due to its size.\n")
 
         params['reviews'] = self._getRequestedReviews()
-        params['related_bugs'] = self._getRelatedBugs()
         return params
 
     def _formatExtraInformation(self, heading, chunks):
@@ -211,20 +210,22 @@ class BMPMailer(BranchMailer):
         return self._formatExtraInformation(
             'Requested reviews:', requested_reviews)
 
-    def _getRelatedBugs(self):
-        """Return a string describing related bugs, if any.
+    def _getRelatedBugTasks(self, recipient):
+        """Return a string describing related bug tasks, if any.
 
-        Related bugs are provided by `IBranchMergeProposal.related_bugs`
+        Related bugs are provided by
+        `IBranchMergeProposal.getRelatedBugTasks`
         """
         bug_chunks = []
-        for bug in self.merge_proposal.related_bugs:
-            bug_chunks.append('#%d %s' % (bug.id, bug.title))
-            bug_chunks.append(canonical_url(bug))
+        for bugtask in self.merge_proposal.getRelatedBugTasks(recipient):
+            bug_chunks.append('%s' % bugtask.title)
+            bug_chunks.append(canonical_url(bugtask))
         return self._formatExtraInformation('Related bugs:', bug_chunks)
 
-    def _getTemplateParams(self, email):
+    def _getTemplateParams(self, email, recipient):
         """Return a dict of values to use in the body and subject."""
         # Expand the requested reviews.
-        params = BranchMailer._getTemplateParams(self, email)
+        params = BranchMailer._getTemplateParams(self, email, recipient)
+        params['related_bugtasks'] = self._getRelatedBugTasks(recipient)
         params.update(self.template_params)
         return params

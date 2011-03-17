@@ -27,6 +27,26 @@
       If you need a new series created, contact the owner of
       <a tal:content="structure view/product/fmt:link"/>.
     </div>
+
+    <div metal:fill-slot="buttons">
+      <input tal:repeat="action view/actions"
+             tal:replace="structure action/render"
+        />
+      &nbsp;or&nbsp;
+      <tal:comment condition="nothing">
+        This template is for a multistep view, and only the first
+        step provides the register_upstream_url.
+      </tal:comment>
+      <a id="register-upstream-link"
+         tal:condition="view/register_upstream_url | nothing"
+         tal:attributes="href view/register_upstream_url">
+        Register the upstream project
+      </a>
+      <tal:has-cancel-link condition="view/cancel_url">
+        &nbsp;or&nbsp;
+        <a tal:attributes="href view/cancel_url">Cancel</a>
+      </tal:has-cancel-link>
+    </div>
   </div>
 
 </div>

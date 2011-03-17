@@ -12,21 +12,20 @@ __all__ = [
 
 import operator
 
-from zope.component import getUtility
-
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.webapp import (
-    LaunchpadView, Navigation, stepthrough)
+    LaunchpadView,
+    Navigation,
+    )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.archivepublisher.debversion import Version
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.distributionsourcepackagerelease import (
-    IDistributionSourcePackageRelease)
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-
 from canonical.lazr.utils import smartquote
+from lp.archivepublisher.debversion import Version
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.browser.build import BuildNavigationMixin
+from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.distributionsourcepackagerelease import (
+    IDistributionSourcePackageRelease,
+    )
 
 
 class DistributionSourcePackageReleaseBreadcrumb(Breadcrumb):
@@ -37,19 +36,9 @@ class DistributionSourcePackageReleaseBreadcrumb(Breadcrumb):
         return self.context.version
 
 
-class DistributionSourcePackageReleaseNavigation(Navigation):
+class DistributionSourcePackageReleaseNavigation(Navigation,
+                                                 BuildNavigationMixin):
     usedfor = IDistributionSourcePackageRelease
-
-    @stepthrough('+build')
-    def traverse_build(self, name):
-        try:
-            build_id = int(name)
-        except ValueError:
-            return None
-        try:
-            return getUtility(IBinaryPackageBuildSet).getByBuildID(build_id)
-        except NotFoundError:
-            return None
 
 
 class DistributionSourcePackageReleaseView(LaunchpadView):

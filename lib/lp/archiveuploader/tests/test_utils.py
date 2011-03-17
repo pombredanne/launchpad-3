@@ -5,13 +5,20 @@
 
 # arch-tag: 90e6eb79-83a2-47e8-9f8b-3c687079c923
 
-from testtools import TestCase
+import os
 
-from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
 from lp.archiveuploader.tests import datadir
-from lp.archiveuploader.utils import (determine_binary_file_type,
-    determine_source_file_type, re_isadeb, re_issource)
+from lp.archiveuploader.utils import (
+    determine_binary_file_type,
+    determine_source_file_type,
+    DpkgSourceError,
+    extract_dpkg_source,
+    re_isadeb,
+    re_issource,
+    )
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+from lp.soyuz.enums import BinaryPackageFileType
+from lp.testing import TestCase
 
 
 class TestUtilities(TestCase):
@@ -119,17 +126,6 @@ class TestUtilities(TestCase):
                                                       "multiverse")
         self.assertEquals(sect, "libs")
         self.assertEquals(comp, "restricted")
-
-    def testBuildFileListFromChanges(self):
-        """lp.archiveuploader.utils.build_file_list should be capable of
-           reading changes files
-        """
-        from lp.archiveuploader.utils import build_file_list
-        from lp.archiveuploader.tagfiles import parse_tagfile
-
-        ch = parse_tagfile(datadir("good-signed-changes"))
-        fl = build_file_list(ch)
-        self.assertEquals("abiword_2.0.10-1.2_mips.deb" in fl, True)
 
     def testFixMaintainerOkay(self):
         """lp.archiveuploader.utils.fix_maintainer should parse correct values
@@ -241,7 +237,7 @@ class TestFilenameRegularExpressions(TestCase):
         extensions = (
             'dsc', 'tar.gz', 'tar.bz2', 'diff.gz', 'orig.tar.gz',
             'orig.tar.bz2', 'orig-bar.tar.gz', 'orig-bar.tar.bz2',
-            'debian.tar.gz', 'debian.tar.bz2')
+            'orig-foo_bar.tar.gz', 'debian.tar.gz', 'debian.tar.bz2')
         for extension in extensions:
             self.assertEquals(
                 ('foo-bar', '1.0', extension),
@@ -261,3 +257,26 @@ class TestFilenameRegularExpressions(TestCase):
 
         # bzip2 compression for files which must be gzipped is invalid.
         self.assertIs(None, re_issource.match('foo-bar_1.0.diff.bz2'))
+
+
+class DdpkgExtractSourceTests(TestCase):
+    """Tests for dpkg_extract_source."""
+
+    def test_simple(self):
+        # unpack_source unpacks in a temporary directory and returns the
+        # path.
+        temp_dir = self.makeTemporaryDirectory()
+        extract_dpkg_source(
+            datadir(os.path.join('suite', 'bar_1.0-1', 'bar_1.0-1.dsc')),
+            temp_dir)
+        self.assertEquals(["bar-1.0"], os.listdir(temp_dir))
+        self.assertContentEqual(
+            ["THIS_IS_BAR", "debian"],
+            os.listdir(os.path.join(temp_dir, "bar-1.0")))
+
+    def test_nonexistant(self):
+        temp_dir = self.makeTemporaryDirectory()
+        err = self.assertRaises(
+            DpkgSourceError, extract_dpkg_source,
+            "thispathdoesntexist", temp_dir)
+        self.assertEquals(2, err.result)

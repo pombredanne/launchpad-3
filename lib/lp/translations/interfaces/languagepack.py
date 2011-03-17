@@ -13,12 +13,23 @@ __all__ = [
     'LanguagePackType',
     ]
 
-from zope.schema import Choice, Datetime, Int, Object
-from zope.interface import Attribute, Interface
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    Object,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-from lazr.enum import DBEnumeratedType, DBItem
 
 
 class LanguagePackType(DBEnumeratedType):

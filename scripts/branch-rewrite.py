@@ -17,17 +17,18 @@ import _pythonpath
 import os
 import sys
 
-# XXX, MichaelHudson, 2009-07-22, bug=402845: This pointless import avoids a
-# circular import killing us.
-from canonical.launchpad.database import account
-
 from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.config import config
 from lp.codehosting.rewrite import BranchRewriter
+from lp.services.log.loglevels import INFO, WARNING
 from lp.services.scripts.base import LaunchpadScript
 
 
 class BranchRewriteScript(LaunchpadScript):
+
+    # By default, only emit WARNING and above messages to stderr, which
+    # will end up in the Apache error log.
+    loglevel = WARNING
 
     def add_my_options(self):
         """Make the logging go to a file by default.
@@ -43,6 +44,7 @@ class BranchRewriteScript(LaunchpadScript):
         if not os.path.isdir(log_file_directory):
             os.makedirs(log_file_directory)
         self.parser.defaults['log_file'] = log_file_location
+        self.parser.defaults['log_file_level'] = INFO
 
     def main(self):
         rewriter = BranchRewriter(self.logger)

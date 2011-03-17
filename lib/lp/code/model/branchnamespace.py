@@ -12,43 +12,67 @@ __all__ = [
     ]
 
 
+from lazr.lifecycle.event import ObjectCreatedEvent
+from storm.locals import And
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from lazr.lifecycle.event import ObjectCreatedEvent
-from storm.locals import And
-
 from canonical.database.constants import UTC_NOW
-from lp.registry.model.sourcepackage import SourcePackage
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.code.enums import (
-    BranchLifecycleStatus, BranchMergeControlStatus,
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    BranchVisibilityRule, CodeReviewNotificationLevel)
+    BranchLifecycleStatus,
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    BranchVisibilityRule,
+    CodeReviewNotificationLevel,
+    )
+from lp.code.errors import (
+    BranchCreationForbidden,
+    BranchCreatorNotMemberOfOwnerTeam,
+    BranchCreatorNotOwner,
+    BranchExists,
+    InvalidNamespace,
+    NoSuchBranch,
+    )
 from lp.code.interfaces.branch import (
-    BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
-    BranchCreatorNotOwner, BranchExists,
-    IBranch, NoSuchBranch,
-    user_has_special_branch_access)
+    IBranch,
+    user_has_special_branch_access,
+    )
 from lp.code.interfaces.branchnamespace import (
-    IBranchNamespace, IBranchNamespacePolicy, InvalidNamespace)
+    IBranchNamespace,
+    IBranchNamespacePolicy,
+    )
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.model.branch import Branch
+from lp.registry.errors import (
+    NoSuchDistroSeries,
+    NoSuchSourcePackageName,
+    )
 from lp.registry.interfaces.distribution import (
-    IDistributionSet, NoSuchDistribution)
-from lp.registry.interfaces.distroseries import (
-    IDistroSeriesSet, NoSuchDistroSeries)
-from lp.registry.interfaces.person import IPersonSet, NoSuchPerson
+    IDistributionSet,
+    NoSuchDistribution,
+    )
+from lp.registry.interfaces.distroseries import IDistroSeriesSet
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    NoSuchPerson,
+    )
 from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.product import (
-    IProduct, IProductSet, NoSuchProduct)
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageNameSet, NoSuchSourcePackageName)
+    IProduct,
+    IProductSet,
+    NoSuchProduct,
+    )
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.utils import iter_split
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
 class _BaseNamespace:
@@ -59,8 +83,7 @@ class _BaseNamespace:
                      lifecycle_status=BranchLifecycleStatus.DEVELOPMENT,
                      summary=None, whiteboard=None, date_created=None,
                      branch_format=None, repository_format=None,
-                     control_format=None,
-                     merge_control_status=BranchMergeControlStatus.NO_QUEUE):
+                     control_format=None):
         """See `IBranchNamespace`."""
 
         self.validateRegistrant(registrant)
@@ -94,8 +117,7 @@ class _BaseNamespace:
             date_last_modified=date_created, branch_format=branch_format,
             repository_format=repository_format,
             control_format=control_format, distroseries=distroseries,
-            sourcepackagename=sourcepackagename,
-            merge_control_status=merge_control_status)
+            sourcepackagename=sourcepackagename)
 
         # Implicit subscriptions are to enable teams to see private branches
         # as soon as they are created.  The subscriptions can be edited at
@@ -196,7 +218,7 @@ class _BaseNamespace:
             name = "%s-%s" % (prefix, count)
         return name
 
-    def getBranches(self):
+    def getBranches(self, eager_load=False):
         """See `IBranchNamespace`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(Branch, self._getBranchesClause())
@@ -275,7 +297,7 @@ class PersonalNamespace(_BaseNamespace):
     @property
     def name(self):
         """See `IBranchNamespace`."""
-        return '~%s/+junk' % (self.owner.name,)
+        return '~%s/+junk' % self.owner.name
 
     def canBranchesBePrivate(self):
         """See `IBranchNamespace`."""

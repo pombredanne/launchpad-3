@@ -129,7 +129,7 @@
 
         <div class="yui-u">
           <div id="milestone-activities" class="portlet"
-            tal:content="cache:private, view/expire_cache_minutes minute">
+            tal:content="cache:anonymous, view/expire_cache_minutes minute">
             <h2>Activities</h2>
 
             <dl>
@@ -199,16 +199,16 @@
 
     <div id="milestone-specs-bugs" class="portlet full-page-width">
         <h2>
-          <span id="specification-count" style="color: #3594bb;"
+          <span id="specification-count"
             tal:content="structure view/specification_count_text">2</span>
           and
-          <span id="bug-count" style="color: #9f2b33;"
+          <span id="bug-count"
             tal:content="structure view/bugtask_count_text">2</span>
           targeted
         </h2>
 
         <tal:has_specs condition="specs"
-          tal:content="cache:public, view/expire_cache_minutes minute">
+          tal:content="cache:anonymous, view/expire_cache_minutes minute">
           <table class="listing sortable" id="milestone_specs"
             style="margin-bottom: 2em;">
             <thead>
@@ -266,7 +266,7 @@
         </tal:has_specs>
 
         <tal:has_bugtasks condition="bugtasks">
-          <tal:cache content="cache:private, view/expire_cache_minutes minute">
+          <tal:cache content="cache:anonymous, view/expire_cache_minutes minute">
             <tal:milestone-bugtasks
               metal:use-macro="context/@@+milestone-macros/milestone_bugtasks" />
           </tal:cache>

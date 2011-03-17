@@ -59,6 +59,10 @@ class FakeLPMergeProposal:
 
     def __init__(self, root=None):
         self._root = root
+        self.commit_message = None
+
+    def lp_save(self):
+        pass
 
 
 class TestPQMRegexAcceptance(unittest.TestCase):
@@ -67,7 +71,7 @@ class TestPQMRegexAcceptance(unittest.TestCase):
     def setUp(self):
         # PQM regexes; might need update once in a while
         self.devel_open_re = ("(?is)^\s*(:?\[testfix\])?\[(?:"
-            "release-critical=[^\]]+|rs?=[^\]]+)\]\[ui=(?:.+)\]")
+            "release-critical=[^\]]+|rs?=[^\]]+)\]")
         self.dbdevel_normal_re = ("(?is)^\s*(:?\[testfix\])?\[(?:"
             "release-critical|rs?=[^\]]+)\]")
 
@@ -91,7 +95,7 @@ class TestPQMRegexAcceptance(unittest.TestCase):
             raise self.failureException(msg)
 
     def _test_commit_message_match(self, incr, no_qa, testfix):
-        commit_message = self.mp.get_commit_message("Foobaring the sbrubble.",
+        commit_message = self.mp.build_commit_message("Foobaring the sbrubble.",
             testfix, no_qa, incr)
         self.assertRegexpMatches(commit_message, self.devel_open_re)
         self.assertRegexpMatches(commit_message, self.dbdevel_normal_re)
@@ -149,8 +153,8 @@ class TestGetCommitMessage(unittest.TestCase):
         self.mp.get_bugs = FakeMethod([self.fake_bug])
         self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
 
-        self.assertEqual("[r=foo][ui=none][bug=20] Foobaring the sbrubble.",
-            self.mp.get_commit_message("Foobaring the sbrubble.",
+        self.assertEqual("[r=foo][bug=20] Foobaring the sbrubble.",
+            self.mp.build_commit_message("Foobaring the sbrubble.",
                 testfix, no_qa, incr))
 
     def test_commit_no_bugs_no_noqa(self):
@@ -161,7 +165,7 @@ class TestGetCommitMessage(unittest.TestCase):
         self.mp.get_bugs = FakeMethod([])
         self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
 
-        self.assertRaises(MissingBugsError, self.mp.get_commit_message,
+        self.assertRaises(MissingBugsError, self.mp.build_commit_message,
             testfix, no_qa, incr)
 
     def test_commit_no_bugs_with_noqa(self):
@@ -172,8 +176,8 @@ class TestGetCommitMessage(unittest.TestCase):
         self.mp.get_bugs = FakeMethod([])
         self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
 
-        self.assertEqual("[r=foo][ui=none][no-qa] Foobaring the sbrubble.",
-            self.mp.get_commit_message("Foobaring the sbrubble.",
+        self.assertEqual("[r=foo][no-qa] Foobaring the sbrubble.",
+            self.mp.build_commit_message("Foobaring the sbrubble.",
                 testfix, no_qa, incr))
 
     def test_commit_bugs_with_noqa(self):
@@ -185,8 +189,8 @@ class TestGetCommitMessage(unittest.TestCase):
         self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
 
         self.assertEqual(
-            "[r=foo][ui=none][bug=20][no-qa] Foobaring the sbrubble.",
-            self.mp.get_commit_message("Foobaring the sbrubble.",
+            "[r=foo][bug=20][no-qa] Foobaring the sbrubble.",
+            self.mp.build_commit_message("Foobaring the sbrubble.",
                 testfix, no_qa, incr))
 
     def test_commit_bugs_with_incr(self):
@@ -198,8 +202,8 @@ class TestGetCommitMessage(unittest.TestCase):
         self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
 
         self.assertEqual(
-            "[r=foo][ui=none][bug=20][incr] Foobaring the sbrubble.",
-            self.mp.get_commit_message("Foobaring the sbrubble.",
+            "[r=foo][bug=20][incr] Foobaring the sbrubble.",
+            self.mp.build_commit_message("Foobaring the sbrubble.",
                 testfix, no_qa, incr))
 
     def test_commit_no_bugs_with_incr(self):
@@ -211,9 +215,52 @@ class TestGetCommitMessage(unittest.TestCase):
         self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
 
         self.assertEqual(
-            "[r=foo][ui=none][bug=20][incr] Foobaring the sbrubble.",
-            self.mp.get_commit_message("Foobaring the sbrubble.",
+            "[r=foo][bug=20][incr] Foobaring the sbrubble.",
+            self.mp.build_commit_message("Foobaring the sbrubble.",
                 testfix, no_qa, incr))
+
+    def test_commit_with_noqa_and_incr(self):
+        incr = True
+        no_qa = True
+        testfix = False
+
+        self.mp.get_bugs = FakeMethod([self.fake_bug])
+        self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
+
+        self.assertEqual(
+            "[r=foo][bug=20][no-qa][incr] Foobaring the sbrubble.",
+            self.mp.build_commit_message("Foobaring the sbrubble.", 
+                testfix, no_qa, incr))
+
+    def test_commit_with_rollback(self):
+        self.mp.get_bugs = FakeMethod([self.fake_bug])
+        self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
+
+        self.assertEqual(
+            "[r=foo][bug=20][rollback=123] Foobaring the sbrubble.",
+            self.mp.build_commit_message("Foobaring the sbrubble.", 
+                rollback=123))
+
+    def test_takes_into_account_existing_tags_on_commit_text(self):
+        self.mp.get_bugs = FakeMethod([self.fake_bug])
+        self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
+
+        self.assertEqual(
+            "[r=foo][bug=20][rollback=123] Foobaring the sbrubble.",
+            self.mp.build_commit_message(
+                "[r=foo][bug=20][rollback=123] Foobaring the sbrubble.",
+                rollback=123))
+
+
+class TestSetCommitMessage(unittest.TestCase):
+
+    def setUp(self):
+        self.mp = MergeProposal(FakeLPMergeProposal())
+
+    def test_set_commit_message(self):
+        commit_message = "Foobaring the sbrubble."
+        self.mp.set_commit_message(commit_message)
+        self.assertEqual(self.mp._mp.commit_message, commit_message)
 
 
 class TestGetTestfixClause(unittest.TestCase):
@@ -273,6 +320,25 @@ class TestGetQaClause(unittest.TestCase):
         self.assertRaises(MissingBugsIncrementalError,
             get_qa_clause, bugs, no_qa, incr)
 
+    def test_bugs_incr_and_noqa_option_given(self):
+        bug1 = FakeBug(20)
+        no_qa = True
+        incr = True
+        self.assertEqual('[no-qa][incr]',
+            get_qa_clause([bug1], no_qa, incr))
+
+    def test_rollback_given(self):
+        bugs = None
+        self.assertEqual('[rollback=123]',
+            get_qa_clause(bugs, rollback=123))
+
+    def test_rollback_and_noqa_and_incr_given(self):
+        bugs = None
+        no_qa = True
+        incr = True
+        self.assertEqual('[rollback=123]',
+            get_qa_clause(bugs, rollback=123))
+
 
 class TestGetReviewerHandle(unittest.TestCase):
     """Tests for `get_reviewer_handle`."""
@@ -312,15 +378,15 @@ class TestGetReviewerClause(unittest.TestCase):
     def test_one_reviewer_no_type(self):
         # It's very common for a merge proposal to be reviewed by one person
         # with no specified type of review. It such cases the review clause is
-        # '[r=<person>][ui=none]'.
+        # '[r=<person>]'.
         clause = self.get_reviewer_clause({None: [self.makePerson('foo')]})
-        self.assertEqual('[r=foo][ui=none]', clause)
+        self.assertEqual('[r=foo]', clause)
 
     def test_two_reviewers_no_type(self):
         # Branches can have more than one reviewer.
         clause = self.get_reviewer_clause(
             {None: [self.makePerson('foo'), self.makePerson('bar')]})
-        self.assertEqual('[r=bar,foo][ui=none]', clause)
+        self.assertEqual('[r=bar,foo]', clause)
 
     def test_mentat_reviewers(self):
         # A mentat review sometimes is marked like 'ui*'.  Due to the
@@ -338,7 +404,7 @@ class TestGetReviewerClause(unittest.TestCase):
         # reviews, these are treated in the same way as reviewers without any
         # given type.
         clause = self.get_reviewer_clause({'code': [self.makePerson('foo')]})
-        self.assertEqual('[r=foo][ui=none]', clause)
+        self.assertEqual('[r=foo]', clause)
 
     def test_release_critical(self):
         # Reviews that are marked as release-critical are included in a
@@ -346,13 +412,13 @@ class TestGetReviewerClause(unittest.TestCase):
         clause = self.get_reviewer_clause(
             {'code': [self.makePerson('foo')],
              'release-critical': [self.makePerson('bar')]})
-        self.assertEqual('[release-critical=bar][r=foo][ui=none]', clause)
+        self.assertEqual('[release-critical=bar][r=foo]', clause)
 
     def test_db_reviewer_counts(self):
         # There's no special way of annotating database reviews in Launchpad
         # commit messages, so they are included with the code reviews.
         clause = self.get_reviewer_clause({'db': [self.makePerson('foo')]})
-        self.assertEqual('[r=foo][ui=none]', clause)
+        self.assertEqual('[r=foo]', clause)
 
     def test_ui_reviewers(self):
         # If someone has done a UI review, then that appears in the clause

@@ -17,8 +17,15 @@ __all__ = ['IWeaklyAuthenticatedPrincipal',
            'IBugEditEmailCommand',
            'IBugTaskEditEmailCommand']
 
-from zope.interface import Interface, Attribute
-from zope.schema import ASCII, Bool
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    ASCII,
+    Bool,
+    )
+
 from canonical.launchpad import _
 
 

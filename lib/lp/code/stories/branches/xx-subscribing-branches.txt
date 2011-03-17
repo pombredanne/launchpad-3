@@ -36,7 +36,7 @@ Let us subscribe to one of the branches. First, let's make sure we can see the
 link "Subscribe" from a branch's page.
 
     >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/~name12/gnome-terminal/main')
+    >>> browser.open('http://code.launchpad.dev/~name12/gnome-terminal/main')
 
 Initially there should be no subscribers.
 
@@ -149,7 +149,7 @@ You need to be logged in to see the link.
 
 Any logged in user is able to subscribe others to a branch.
 
-    >>> browser.open('http://launchpad.dev/~name12/gnome-terminal/main')
+    >>> browser.open('http://code.launchpad.dev/~name12/gnome-terminal/main')
     >>> browser.getLink('Subscribe someone else').click()
 
 The process of subscribing others is the same as subscribing the

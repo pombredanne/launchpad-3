@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -6,6 +6,7 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:webservice="http://namespaces.canonical.com/webservice"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
     <include
@@ -25,9 +26,9 @@
         <!-- BinaryPackagePublishingHistory -->
 
         <class
-            class="canonical.launchpad.database.BinaryPackagePublishingHistory">
+            class="lp.soyuz.model.publishing.BinaryPackagePublishingHistory">
             <allow
-                interface="canonical.launchpad.interfaces.IArchiveSafePublisher"/>
+                interface="lp.soyuz.interfaces.publishing.IArchiveSafePublisher"/>
             <require
                 permission="launchpad.View"
                 interface="lp.soyuz.interfaces.publishing.IBinaryPackagePublishingHistoryPublic"/>
@@ -36,15 +37,15 @@
                 interface="lp.soyuz.interfaces.publishing.IPublishingEdit"/>
             <require
                 permission="launchpad.Admin"
-                set_schema="canonical.launchpad.interfaces.IBinaryPackagePublishingHistory"/>
+                set_schema="lp.soyuz.interfaces.publishing.IBinaryPackagePublishingHistory"/>
         </class>
 
         <!-- BinaryPackageFilePublishing -->
 
         <class
-            class="canonical.launchpad.database.BinaryPackageFilePublishing">
+            class="lp.soyuz.model.publishing.BinaryPackageFilePublishing">
             <allow
-                interface="canonical.launchpad.interfaces.IBinaryPackageFilePublishing"/>
+                interface="lp.soyuz.interfaces.publishing.IBinaryPackageFilePublishing"/>
 
             <!-- XXX cprov 2006-06-14: missing security adapter -->
 
@@ -69,7 +70,7 @@
 
     <!-- DistroSeriesPackageCache -->
     <class
-        class="canonical.launchpad.database.DistroSeriesPackageCache">
+        class="lp.soyuz.model.distroseriespackagecache.DistroSeriesPackageCache">
         <allow
             interface="lp.soyuz.interfaces.distroseriespackagecache.IDistroSeriesPackageCache"/>
     </class>
@@ -77,31 +78,15 @@
     <!-- BinaryPackageRelease -->
 
     <class
-        class="canonical.launchpad.database.BinaryPackageRelease">
+        class="lp.soyuz.model.binarypackagerelease.BinaryPackageRelease">
         <allow
             interface="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageRelease"/>
     </class>
 
-    <!-- BinaryPackageReleaseSet -->
-
-    <class
-        class="canonical.launchpad.database.BinaryPackageReleaseSet">
-        <allow
-            interface="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageReleaseSet"/>
-        <implements
-            interface="zope.app.container.interfaces.IItemContainer"/>
-    </class>
-    <securedutility
-        class="canonical.launchpad.database.BinaryPackageReleaseSet"
-        provides="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageReleaseSet">
-        <allow
-            interface="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageReleaseSet"/>
-    </securedutility>
-
     <!-- SourcePackageRelease -->
 
     <class
-        class="canonical.launchpad.database.SourcePackageRelease">
+        class="lp.soyuz.model.sourcepackagerelease.SourcePackageRelease">
         <allow
             interface="lp.soyuz.interfaces.sourcepackagerelease.ISourcePackageRelease"/>
     </class>
@@ -111,9 +96,9 @@
         <!-- SourcePackagePublishingHistory -->
 
         <class
-            class="canonical.launchpad.database.SourcePackagePublishingHistory">
+            class="lp.soyuz.model.publishing.SourcePackagePublishingHistory">
             <allow
-                interface="canonical.launchpad.interfaces.IArchiveSafePublisher"/>
+                interface="lp.soyuz.interfaces.publishing.IArchiveSafePublisher"/>
             <require
                 permission="launchpad.View"
                 interface="lp.soyuz.interfaces.publishing.ISourcePackagePublishingHistoryPublic"/>
@@ -122,15 +107,15 @@
                 interface="lp.soyuz.interfaces.publishing.IPublishingEdit"/>
             <require
                 permission="launchpad.Admin"
-                set_schema="canonical.launchpad.interfaces.ISourcePackagePublishingHistory"/>
+                set_schema="lp.soyuz.interfaces.publishing.ISourcePackagePublishingHistory"/>
         </class>
 
         <!-- SourcePackageFilePublishing -->
 
         <class
-            class="canonical.launchpad.database.SourcePackageFilePublishing">
+            class="lp.soyuz.model.publishing.SourcePackageFilePublishing">
             <allow
-                interface="canonical.launchpad.interfaces.ISourcePackageFilePublishing"/>
+                interface="lp.soyuz.interfaces.publishing.ISourcePackageFilePublishing"/>
 
             <!-- XXX cprov 2006-06-14: Missing security adapter. -->
 
@@ -151,12 +136,12 @@
         </securedutility>
     </facet>
     <class
-        class="canonical.launchpad.database.PackageUploadQueue">
+        class="lp.soyuz.model.queue.PackageUploadQueue">
         <implements
             interface="lp.soyuz.interfaces.queue.IPackageUploadQueue"/>
     </class>
     <class
-        class="canonical.launchpad.database.PackageUpload">
+        class="lp.soyuz.model.queue.PackageUpload">
         <implements
             interface="lp.soyuz.interfaces.queue.IPackageUpload"/>
         <allow
@@ -188,7 +173,8 @@
                 displayversion
                 is_delayed_copy
                 isPPA
-                components"/>
+                components
+                isAutoSyncUpload"/>
         <require
             permission="launchpad.Edit"
             attributes="
@@ -212,17 +198,17 @@
             set_attributes="status distroseries pocket changesfile archive"/>
     </class>
     <class
-        class="canonical.launchpad.database.PackageUploadSource">
+        class="lp.soyuz.model.queue.PackageUploadSource">
         <allow
             interface="lp.soyuz.interfaces.queue.IPackageUploadSource"/>
     </class>
     <class
-        class="canonical.launchpad.database.PackageUploadBuild">
+        class="lp.soyuz.model.queue.PackageUploadBuild">
         <allow
             interface="lp.soyuz.interfaces.queue.IPackageUploadBuild"/>
     </class>
     <class
-        class="canonical.launchpad.database.PackageUploadCustom">
+        class="lp.soyuz.model.queue.PackageUploadCustom">
         <allow
             interface="lp.soyuz.interfaces.queue.IPackageUploadCustom"/>
         <require
@@ -232,7 +218,7 @@
     <!-- PackageUploadSet -->
 
     <securedutility
-        class="canonical.launchpad.database.PackageUploadSet"
+        class="lp.soyuz.model.queue.PackageUploadSet"
         provides="lp.soyuz.interfaces.queue.IPackageUploadSet">
         <allow
             interface="lp.soyuz.interfaces.queue.IPackageUploadSet"/>
@@ -243,7 +229,7 @@
         <!-- BinaryPackagename -->
 
         <class
-            class="canonical.launchpad.database.BinaryPackageName">
+            class="lp.soyuz.model.binarypackagename.BinaryPackageName">
             <allow
                 interface="lp.soyuz.interfaces.binarypackagename.IBinaryPackageName"/>
         </class>
@@ -269,13 +255,13 @@
         <!-- BinaryPackageNameSet -->
 
         <securedutility
-            class="canonical.launchpad.database.BinaryPackageNameSet"
+            class="lp.soyuz.model.binarypackagename.BinaryPackageNameSet"
             provides="lp.soyuz.interfaces.binarypackagename.IBinaryPackageNameSet">
             <allow
                 interface="lp.soyuz.interfaces.binarypackagename.IBinaryPackageNameSet"/>
         </securedutility>
         <class
-            class="canonical.launchpad.database.BinaryPackageNameSet">
+            class="lp.soyuz.model.binarypackagename.BinaryPackageNameSet">
             <allow
                 interface="lp.soyuz.interfaces.binarypackagename.IBinaryPackageNameSet"/>
         </class>
@@ -292,7 +278,7 @@
     <!-- DistroSeriesSourcePackageRelease -->
 
     <class
-        class="canonical.launchpad.database.DistroSeriesSourcePackageRelease">
+        class="lp.soyuz.model.distroseriessourcepackagerelease.DistroSeriesSourcePackageRelease">
         <allow
             interface="lp.soyuz.interfaces.distroseriessourcepackagerelease.IDistroSeriesSourcePackageRelease"/>
     </class>
@@ -300,7 +286,7 @@
     <!-- PackageDiff -->
 
     <class
-        class="canonical.launchpad.database.PackageDiff">
+        class="lp.soyuz.model.packagediff.PackageDiff">
         <allow
             interface="lp.soyuz.interfaces.packagediff.IPackageDiff"/>
         <require
@@ -311,12 +297,12 @@
     <!-- PackageDiffSet -->
 
     <class
-        class="canonical.launchpad.database.PackageDiffSet">
+        class="lp.soyuz.model.packagediff.PackageDiffSet">
         <allow
             interface="lp.soyuz.interfaces.packagediff.IPackageDiffSet"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.PackageDiffSet"
+        class="lp.soyuz.model.packagediff.PackageDiffSet"
         provides="lp.soyuz.interfaces.packagediff.IPackageDiffSet">
         <allow
             interface="lp.soyuz.interfaces.packagediff.IPackageDiffSet"/>
@@ -354,12 +340,12 @@
     <!-- DistroArchSeriesBinaryPackageRelease -->
 
     <class
-        class="canonical.launchpad.database.DistroArchSeriesBinaryPackageRelease">
+        class="lp.soyuz.model.distroarchseriesbinarypackagerelease.DistroArchSeriesBinaryPackageRelease">
         <allow
             interface="lp.soyuz.interfaces.distroarchseriesbinarypackagerelease.IDistroArchSeriesBinaryPackageRelease"/>
     </class>
     <class
-        class="canonical.launchpad.database.Processor">
+        class="lp.soyuz.model.processor.Processor">
         <allow
             interface="lp.soyuz.interfaces.processor.IProcessor"/>
         <require
@@ -367,7 +353,7 @@
             set_schema="lp.soyuz.interfaces.processor.IProcessor"/>
     </class>
     <class
-        class="canonical.launchpad.database.ProcessorFamily">
+        class="lp.soyuz.model.processor.ProcessorFamily">
         <allow
             interface="lp.soyuz.interfaces.processor.IProcessorFamily"/>
         <require
@@ -390,7 +376,7 @@
     <!-- Archive -->
 
     <class
-        class="canonical.launchpad.database.Archive">
+        class="lp.soyuz.model.archive.Archive">
         <allow
             interface="lp.soyuz.interfaces.archive.IArchivePublic"/>
         <require
@@ -405,9 +391,9 @@
             set_attributes="description displayname publish status"/>
         <require
             permission="launchpad.Commercial"
-            set_attributes="authorized_size buildd_secret
-                            enabled_restricted_families
-                            commercial external_dependencies private
+            set_attributes="authorized_size build_debug_symbols buildd_secret
+                            commercial enabled_restricted_families
+                            external_dependencies private
                             require_virtualized relative_build_score "/>
         <require
             permission="launchpad.Admin"
@@ -415,7 +401,7 @@
     </class>
     <adapter
         for="lp.soyuz.interfaces.archive.IArchive"
-        provides="canonical.launchpad.interfaces.IPerson"
+        provides="lp.registry.interfaces.person.IPerson"
         factory="lp.registry.browser.person.archive_to_person"/>
     <adapter
         for="lp.soyuz.interfaces.archive.IArchive"
@@ -431,12 +417,12 @@
     <!-- ArchiveSet -->
 
     <class
-        class="canonical.launchpad.database.ArchiveSet">
+        class="lp.soyuz.model.archive.ArchiveSet">
         <allow
             interface="lp.soyuz.interfaces.archive.IArchiveSet"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.ArchiveSet"
+        class="lp.soyuz.model.archive.ArchiveSet"
         provides="lp.soyuz.interfaces.archive.IArchiveSet">
         <allow
             interface="lp.soyuz.interfaces.archive.IArchiveSet"/>
@@ -445,7 +431,7 @@
     <!-- ArchivePermission -->
 
     <class
-        class="canonical.launchpad.database.ArchivePermission">
+        class="lp.soyuz.model.archivepermission.ArchivePermission">
         <allow
             interface="lp.soyuz.interfaces.archivepermission.IArchivePermission"/>
     </class>
@@ -453,12 +439,12 @@
     <!-- ArchivePermissionSet -->
 
     <class
-        class="canonical.launchpad.database.ArchivePermissionSet">
+        class="lp.soyuz.model.archivepermission.ArchivePermissionSet">
         <implements
             interface="lp.soyuz.interfaces.archivepermission.IArchivePermissionSet"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.ArchivePermissionSet"
+        class="lp.soyuz.model.archivepermission.ArchivePermissionSet"
         provides="lp.soyuz.interfaces.archivepermission.IArchivePermissionSet">
         <allow
             attributes="
@@ -510,6 +496,18 @@
             permission="launchpad.Edit"
             set_attributes="log date_finished date_started builder
                             status dependencies upload_log"/>
+
+        <!-- XXX bigjools 2010-07-27 bug=570939
+             Work around the fact that not all BuildFarmJobs are concrete
+             objects.
+
+             This should not be required once the old BuildFarmJob stuff is
+             removed when the Translation Template jobs and Recipe jobs
+             use the new infrastructure -->
+        <require
+            permission="launchpad.Admin"
+            set_attributes="failure_count"/>
+
     </class>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
@@ -535,7 +533,7 @@
     <!-- DistroArchSeriesBinaryPackage -->
 
     <class
-        class="canonical.launchpad.database.DistroArchSeriesBinaryPackage">
+        class="lp.soyuz.model.distroarchseriesbinarypackage.DistroArchSeriesBinaryPackage">
         <allow
             interface="lp.soyuz.interfaces.distroarchseriesbinarypackage.IDistroArchSeriesBinaryPackage"/>
     </class>
@@ -544,34 +542,6 @@
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         factory="canonical.launchpad.webapp.breadcrumb.NameBreadcrumb"
         permission="zope.Public" />
-
-    <!-- PublishedPackage -->
-
-    <class
-        class="canonical.launchpad.database.PublishedPackage">
-        <allow
-            interface="lp.soyuz.interfaces.publishedpackage.IPublishedPackage"/>
-        <require
-            permission="zope.Public"
-            set_schema="lp.soyuz.interfaces.publishedpackage.IPublishedPackage"/>
-    </class>
-
-    <!-- PublishedPackageSet -->
-
-    <class
-        class="canonical.launchpad.database.PublishedPackageSet">
-        <allow
-            interface="lp.soyuz.interfaces.publishedpackage.IPublishedPackageSet"/>
-        <require
-            permission="zope.Public"
-            set_schema="lp.soyuz.interfaces.publishedpackage.IPublishedPackageSet"/>
-    </class>
-    <securedutility
-        provides="lp.soyuz.interfaces.publishedpackage.IPublishedPackageSet"
-        class="canonical.launchpad.database.PublishedPackageSet">
-        <allow
-            interface="lp.soyuz.interfaces.publishedpackage.IPublishedPackageSet"/>
-    </securedutility>
 
     <!-- ArchiveSubscriber -->
 
@@ -620,7 +590,7 @@
     <!-- DistributionSourcePackageRelease -->
 
     <class
-        class="canonical.launchpad.database.DistributionSourcePackageRelease">
+        class="lp.soyuz.model.distributionsourcepackagerelease.DistributionSourcePackageRelease">
         <allow
             interface="lp.soyuz.interfaces.distributionsourcepackagerelease.IDistributionSourcePackageRelease"/>
     </class>
@@ -633,7 +603,7 @@
     <!-- DistroSeriesBinaryPackage -->
 
     <class
-        class="canonical.launchpad.database.DistroSeriesBinaryPackage">
+        class="lp.soyuz.model.distroseriesbinarypackage.DistroSeriesBinaryPackage">
         <allow
             interface="lp.soyuz.interfaces.distroseriesbinarypackage.IDistroSeriesBinaryPackage"/>
     </class>
@@ -649,13 +619,13 @@
         <!-- DistroArchSeries -->
 
         <class
-            class="canonical.launchpad.database.DistroArchSeries">
+            class="lp.soyuz.model.distroarchseries.DistroArchSeries">
             <allow
                 interface="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"/>
             <allow
-                interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
+                interface="lp.soyuz.interfaces.buildrecords.IHasBuildRecords"/>
             <allow
-                interface="canonical.launchpad.interfaces.ICanPublishPackages"/>
+                interface="lp.soyuz.interfaces.publishing.ICanPublishPackages"/>
             <require
                 permission="launchpad.Admin"
                 set_schema="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"/>
@@ -670,12 +640,12 @@
     <!-- DistroArchSeriesSet -->
 
     <class
-        class="canonical.launchpad.database.DistroArchSeriesSet">
+        class="lp.soyuz.model.distroarchseries.DistroArchSeriesSet">
         <allow
             interface="lp.soyuz.interfaces.distroarchseries.IDistroArchSeriesSet"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.DistroArchSeriesSet"
+        class="lp.soyuz.model.distroarchseries.DistroArchSeriesSet"
         provides="lp.soyuz.interfaces.distroarchseries.IDistroArchSeriesSet">
         <allow
             interface="lp.soyuz.interfaces.distroarchseries.IDistroArchSeriesSet"/>
@@ -684,7 +654,7 @@
     <!-- PocketChroot -->
 
     <class
-        class="canonical.launchpad.database.PocketChroot">
+        class="lp.soyuz.model.distroarchseries.PocketChroot">
         <!-- XXX cprov 2006-07-13: it needs security permission tweaks. -->
         <!-- Currently it's only modified/added by a script.        -->
         <!-- We should allow changes only by buildd-admin member. -->
@@ -699,7 +669,7 @@
     <!-- Component -->
 
     <class
-        class="canonical.launchpad.database.Component">
+        class="lp.soyuz.model.component.Component">
         <allow
             interface="lp.soyuz.interfaces.component.IComponent"/>
     </class>
@@ -707,7 +677,7 @@
     <!-- ComponentSelection -->
 
     <class
-        class="canonical.launchpad.database.ComponentSelection">
+        class="lp.soyuz.model.component.ComponentSelection">
         <allow
             interface="lp.soyuz.interfaces.component.IComponentSelection"/>
     </class>
@@ -715,12 +685,12 @@
     <!-- ComponentSet -->
 
     <class
-        class="canonical.launchpad.database.ComponentSet">
+        class="lp.soyuz.model.component.ComponentSet">
         <allow
             interface="lp.soyuz.interfaces.component.IComponentSet"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.ComponentSet"
+        class="lp.soyuz.model.component.ComponentSet"
         provides="lp.soyuz.interfaces.component.IComponentSet">
         <allow
             interface="lp.soyuz.interfaces.component.IComponentSet"/>
@@ -729,7 +699,7 @@
     <!-- Section -->
 
     <class
-        class="canonical.launchpad.database.Section">
+        class="lp.soyuz.model.section.Section">
         <allow
             interface="lp.soyuz.interfaces.section.ISection"/>
     </class>
@@ -737,7 +707,7 @@
     <!-- Section -->
 
     <class
-        class="canonical.launchpad.database.SectionSelection">
+        class="lp.soyuz.model.section.SectionSelection">
         <allow
             interface="lp.soyuz.interfaces.section.ISectionSelection"/>
     </class>
@@ -745,12 +715,12 @@
     <!-- SectionSet -->
 
     <class
-        class="canonical.launchpad.database.SectionSet">
+        class="lp.soyuz.model.section.SectionSet">
         <allow
             interface="lp.soyuz.interfaces.section.ISectionSet"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.SectionSet"
+        class="lp.soyuz.model.section.SectionSet"
         provides="lp.soyuz.interfaces.section.ISectionSet">
         <allow
             interface="lp.soyuz.interfaces.section.ISectionSet"/>
@@ -781,7 +751,7 @@
     <!-- SourcePackageReleaseFile -->
 
     <class
-        class="canonical.launchpad.database.SourcePackageReleaseFile">
+        class="lp.soyuz.model.files.SourcePackageReleaseFile">
         <allow
             interface="lp.soyuz.interfaces.files.ISourcePackageReleaseFile"/>
         <require
@@ -792,7 +762,7 @@
     <!-- BinaryPackageFile -->
 
     <class
-        class="canonical.launchpad.database.BinaryPackageFile">
+        class="lp.soyuz.model.files.BinaryPackageFile">
         <allow
             interface="lp.soyuz.interfaces.files.IBinaryPackageFile"/>
         <require
@@ -800,7 +770,7 @@
             set_schema="lp.soyuz.interfaces.files.IBinaryPackageFile"/>
     </class>
     <securedutility
-        class="canonical.launchpad.database.BinaryPackageFileSet"
+        class="lp.soyuz.model.files.BinaryPackageFileSet"
         provides="lp.soyuz.interfaces.files.IBinaryPackageFileSet">
         <allow
             interface="lp.soyuz.interfaces.files.IBinaryPackageFileSet"/>
@@ -881,5 +851,76 @@
             permission="launchpad.View"
             interface="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageReleaseDownloadCount"/>
     </class>
+
+    <call
+      callable="lp.archiveuploader.uploadpolicy.register_archive_upload_policy_adapters"
+      />
+
+    <!-- Although the policies defined in lp.archiveuploader.tests are only
+         required by tests, they're used when testing scripts manually on
+         dogfood/staging, so they're registered here. -->
+    <call
+      callable="lp.archiveuploader.tests.register_archive_upload_policy_adapters"
+      />
+
+    <!-- BinaryAndSourcePackagename -->
+    <class class="lp.soyuz.model.binaryandsourcepackagename.BinaryAndSourcePackageName">
+        <allow interface="lp.soyuz.interfaces.binarypackagename.IBinaryAndSourcePackageName" />
+    </class>
+
+    <class class="lp.soyuz.model.binaryandsourcepackagename.BinaryAndSourcePackageNameIterator">
+        <allow interface="canonical.launchpad.webapp.vocabulary.ICountableIterator" />
+    </class>
+
+    <securedutility
+      name="BinaryAndSourcePackageName"
+      component="lp.soyuz.model.binaryandsourcepackagename.BinaryAndSourcePackageNameVocabulary"
+      provides="zope.schema.interfaces.IVocabularyFactory"
+      >
+      <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+    </securedutility>
+
+    <class class="lp.soyuz.model.binaryandsourcepackagename.BinaryAndSourcePackageNameVocabulary">
+      <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    </class>
+
+    <!-- DistributionJob -->
+    <class class="lp.soyuz.model.distributionjob.DistributionJob">
+        <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
+    </class>
+
+    <!-- InitialiseDistroSeriesJobSource -->
+    <securedutility
+      component="lp.soyuz.model.initialisedistroseriesjob.InitialiseDistroSeriesJob"
+      provides="lp.soyuz.interfaces.distributionjob.IInitialiseDistroSeriesJobSource">
+        <allow interface="lp.soyuz.interfaces.distributionjob.IInitialiseDistroSeriesJobSource"/>
+    </securedutility>
+    <class class="lp.soyuz.model.initialisedistroseriesjob.InitialiseDistroSeriesJob">
+        <allow interface="lp.soyuz.interfaces.distributionjob.IInitialiseDistroSeriesJob" />
+        <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
+    </class>
+
+    <!-- DistroSeriesDifferenceJobSource -->
+    <class class="lp.soyuz.model.distroseriesdifferencejob.DistroSeriesDifferenceJob">
+        <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
+    </class>
+    <securedutility
+      component="lp.soyuz.model.distroseriesdifferencejob.DistroSeriesDifferenceJob"
+      provides="lp.soyuz.interfaces.distroseriesdifferencejob.IDistroSeriesDifferenceJobSource">
+        <allow interface="lp.soyuz.interfaces.distroseriesdifferencejob.IDistroSeriesDifferenceJobSource"/>
+    </securedutility>
+
+    <!-- SyncPackageJobSource -->
+    <securedutility
+      component="lp.soyuz.model.syncpackagejob.SyncPackageJob"
+      provides="lp.soyuz.interfaces.distributionjob.ISyncPackageJobSource">
+        <allow interface="lp.soyuz.interfaces.distributionjob.ISyncPackageJobSource"/>
+    </securedutility>
+    <class class="lp.soyuz.model.syncpackagejob.SyncPackageJob">
+        <allow interface="lp.soyuz.interfaces.distributionjob.ISyncPackageJob" />
+        <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
+    </class>
+
+   <webservice:register module="lp.soyuz.interfaces.webservice" />
 
 </configure>

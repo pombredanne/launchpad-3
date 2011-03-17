@@ -44,8 +44,7 @@ queue. To do this we prepare an OpenPGP key, and then run the upload handler.
 We need some setup for the upload handler.
 
   >>> from lp.archiveuploader.nascentupload import NascentUpload
-  >>> from lp.archiveuploader.tests import (
-  ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
+  >>> from lp.archiveuploader.tests import datadir, getPolicy
 
 Since we landed correct security adapters for PackageUpload,
 we need to perform further actions logged in as an admins, which have
@@ -54,9 +53,9 @@ launchpad.Edit on the records:
   >>> from canonical.launchpad.ftests import login
   >>> login("foo.bar@canonical.com")
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     IComponentSet, IDistributionSet)
-  >>> from canonical.launchpad.database import ComponentSelection
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
+  >>> from lp.soyuz.interfaces.component import IComponentSet
+  >>> from lp.soyuz.model.component import ComponentSelection
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
   >>> universe = getUtility(IComponentSet)['universe']
@@ -65,13 +64,12 @@ launchpad.Edit on the records:
 Construct an upload.
 
   >>> anything_policy = getPolicy(
-  ...     name='anything', distro='ubuntu', distroseries='hoary')
-  >>> anything_policy.can_upload_binaries = True
-  >>> anything_policy.can_upload_mixed = True
+  ...     name='absolutely-anything', distro='ubuntu', distroseries='hoary')
 
-  >>> ed_upload = NascentUpload(
-  ...     datadir('ed_0.2-20_i386.changes'),
-  ...     anything_policy, mock_logger_quiet)
+  >>> from lp.services.log.logger import DevNullLogger
+  >>> ed_upload = NascentUpload.from_changesfile_path(
+  ...     datadir("ed_0.2-20_i386.changes.source-only-unsigned"),
+  ...     anything_policy, DevNullLogger())
 
   >>> ed_upload.process()
   >>> success = ed_upload.do_accept()
@@ -82,9 +80,8 @@ Now the upload is in the queue, it'll likely be there as NEW because that's
 what we expect the ed upload to produce. Let's find the queue item and
 convert it to an ACCEPTED item.
 
-  >>> from canonical.launchpad.interfaces import (
-  ...      QueueInconsistentStateError)
-  >>> from canonical.launchpad.interfaces import PackageUploadStatus
+  >>> from lp.soyuz.enums import PackageUploadStatus
+  >>> from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 
   >>> new_queue = hoary.getQueueItems(PackageUploadStatus.NEW)
 
@@ -104,20 +101,19 @@ XXX cprov 20051209: need to build a broken upload to test it properly
 
   >>> accepted_queue = hoary.getQueueItems(PackageUploadStatus.ACCEPTED)
 
+  >>> from lp.services.log.logger import FakeLogger
   >>> for item in accepted_queue:
   ...     for source in item.sources:
   ...         print source.sourcepackagerelease.name
-  ...     pub_records = item.realiseUpload(mock_logger)
+  ...     pub_records = item.realiseUpload(FakeLogger())
   ed
-  DEBUG: Publishing source ed/0.2-20 to ubuntu/hoary in the primary archive
-  DEBUG: Publishing build to ubuntu/hoary/i386
-  DEBUG: ... ed/0.2-20 (Arch Specific)
+  DEBUG Publishing source ed/0.2-20 to ubuntu/hoary in the primary archive
 
 
 Confirm we can now find ed published in hoary.
 
-  >>> from canonical.launchpad.database import SourcePackagePublishingHistory
-  >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+  >>> from lp.soyuz.enums import PackagePublishingStatus
+  >>> from lp.soyuz.model.publishing import SourcePackagePublishingHistory
   >>> for release in SourcePackagePublishingHistory.selectBy(
   ...     distroseries=hoary, status=PackagePublishingStatus.PENDING):
   ...     if release.sourcepackagerelease.sourcepackagename.name == "ed":
@@ -127,8 +123,8 @@ Confirm we can now find ed published in hoary.
 
 Check IPackageUploadSet behaviour:
 
-  >>> from canonical.launchpad.interfaces import IPackageUploadSet
   >>> from canonical.launchpad.webapp.testing import verifyObject
+  >>> from lp.soyuz.interfaces.queue import IPackageUploadSet
 
 Grab an utility:
 
@@ -165,8 +161,7 @@ Counter, optionally by status (informally named "queue") and or distroseries:
 
 Retrieve some data from DB to play more with counter.
 
-  >>> from canonical.launchpad.interfaces import IDistributionSet
-  >>> from canonical.launchpad.interfaces import PackageUploadStatus
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> distro = getUtility(IDistributionSet).getByName('ubuntu')
   >>> breezy_autotest = distro['breezy-autotest']
 
@@ -263,9 +258,9 @@ Let's process a new upload:
   >>> insecure_policy = getPolicy(
   ...     name='insecure', distro='ubuntu', distroseries='hoary')
 
-  >>> bar_ok = NascentUpload(
+  >>> bar_ok = NascentUpload.from_changesfile_path(
   ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
-  ...     insecure_policy, mock_logger_quiet)
+  ...     insecure_policy, DevNullLogger())
   >>> bar_ok.process()
   >>> success = bar_ok.do_accept()
   >>> success
@@ -273,8 +268,8 @@ Let's process a new upload:
 
   >>> signed_queue = bar_ok.queue_root
 
-  >>> from canonical.launchpad.interfaces import (
-  ...     IPackageUpload, IGPGKey)
+  >>> from lp.registry.interfaces.gpg import IGPGKey
+  >>> from lp.soyuz.interfaces.queue import IPackageUpload
 
   >>> verifyObject(IPackageUpload, signed_queue)
   True
@@ -514,8 +509,8 @@ don't raise any exception):
 Check forbidden approval of not selected Section:
 
   >>> from zope.security.proxy import removeSecurityProxy
-  >>> from canonical.launchpad.interfaces import (
-  ...     IComponentSet, ISectionSet)
+  >>> from lp.soyuz.interfaces.component import IComponentSet
+  >>> from lp.soyuz.interfaces.section import ISectionSet
 
 Retrieve mozilla-firefox Upload:
 
@@ -862,7 +857,7 @@ Similarly for binaries:
     ...     binary_package.priority.title)
     main/base/Important
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingPriority
+    >>> from lp.soyuz.enums import PackagePublishingPriority
     >>> print item.overrideBinaries(
     ...     new_component=restricted,
     ...     new_section=web,
@@ -905,14 +900,14 @@ PackageUpload records for the supplied distroseries.
 
 Filtering by status:
 
-    >>> from lp.soyuz.interfaces.queue import PackageUploadStatus
     >>> warty.getPackageUploads(
     ...     status=PackageUploadStatus.DONE).count()
     1
 
 Filtering by archive:
 
-    >>> from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> partner_archive = getUtility(IArchiveSet).getByDistroPurpose(
     ...     warty.distribution, ArchivePurpose.PARTNER)
     >>> warty.getPackageUploads(archive=partner_archive).count()
@@ -926,7 +921,7 @@ Filtering by pocket:
 
 Filtering by custom_type.  We need to add some custom uploads to show this.
 
-    >>> from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
+    >>> from lp.soyuz.enums import PackageUploadCustomFormat
     >>> static_xlat = PackageUploadCustomFormat.STATIC_TRANSLATIONS
     >>> def add_static_xlat_upload():
     ...     upload = warty.createQueueEntry(
@@ -1031,8 +1026,8 @@ One email is generated (see nascentupload-announcements.txt)
 
 Clean up the librarian files:
 
-   >>> from canonical.librarian.ftests.harness import cleanupLibrarianFiles
-   >>> cleanupLibrarianFiles()
+  >>> from canonical.testing.layers import LibrarianLayer
+  >>> LibrarianLayer.librarian_fixture.clear()
 
 
 == Delayed copies ==

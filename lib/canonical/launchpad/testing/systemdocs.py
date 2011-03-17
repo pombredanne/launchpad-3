@@ -3,13 +3,10 @@
 
 """Infrastructure for setting up doctests."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 __all__ = [
     'default_optionflags',
     'LayeredDocFileSuite',
-    'SpecialOutputChecker',
     'setUp',
     'setGlobs',
     'stop',
@@ -28,17 +25,25 @@ import transaction
 from zope.component import getUtility
 from zope.testing.loggingsupport import Handler
 
-from canonical.chunkydiff import elided_source
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import reset_logging
 from lp.testing import (
-    ANONYMOUS, launchpadlib_credentials_for, launchpadlib_for, login,
-    login_person, logout, oauth_access_token_for)
+    ANONYMOUS,
+    launchpadlib_credentials_for,
+    launchpadlib_for,
+    login,
+    login_person,
+    logout,
+    oauth_access_token_for,
+    )
 from lp.testing.factory import LaunchpadObjectFactory
-from lp.testing.views import create_view, create_initialized_view
+from lp.testing.views import (
+    create_initialized_view,
+    create_view,
+    )
 
 
 default_optionflags = (doctest.REPORT_NDIFF |
@@ -134,27 +139,6 @@ def LayeredDocFileSuite(*args, **kw):
     return suite
 
 
-class SpecialOutputChecker(doctest.OutputChecker):
-    """An OutputChecker that runs the 'chunkydiff' checker if appropriate."""
-    def output_difference(self, example, got, optionflags):
-        if config.canonical.chunkydiff is False:
-            return doctest.OutputChecker.output_difference(
-                self, example, got, optionflags)
-
-        if optionflags & doctest.ELLIPSIS:
-            normalize_whitespace = optionflags & doctest.NORMALIZE_WHITESPACE
-            newgot = elided_source(example.want, got,
-                                   normalize_whitespace=normalize_whitespace)
-            if newgot == example.want:
-                # There was no difference.  May be an error in
-                # elided_source().  In any case, return the whole thing.
-                newgot = got
-        else:
-            newgot = got
-        return doctest.OutputChecker.output_difference(
-            self, example, newgot, optionflags)
-
-
 def ordered_dict_as_string(dict):
     """Return the contents of a dict as an ordered string.
 
@@ -202,7 +186,6 @@ def setGlobs(test):
     test.globs['verifyObject'] = verifyObject
     test.globs['pretty'] = pprint.PrettyPrinter(width=1).pformat
     test.globs['stop'] = stop
-    test.globs['with_statement'] = with_statement
     test.globs['launchpadlib_for'] = launchpadlib_for
     test.globs['launchpadlib_credentials_for'] = launchpadlib_credentials_for
     test.globs['oauth_access_token_for'] = oauth_access_token_for

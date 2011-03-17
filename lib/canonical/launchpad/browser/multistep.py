@@ -17,7 +17,14 @@ from zope.schema import TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    LaunchpadFormView, LaunchpadView, action, canonical_url, custom_widget)
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
 
 
 class _IStepMachinery(Interface):
@@ -93,6 +100,14 @@ class MultiStepView(LaunchpadView):
         view.total_steps = self.total_steps
         view.is_step = self.getIsStepDict()
         self.step_number += 1
+
+        action_required = None
+        for name in self.request.form.keys():
+            if name.startswith('field.actions.'):
+                action_required = (name, self.request.form[name])
+                break
+
+        action_taken = view.action_taken
         while view.next_step is not None:
             view = view.next_step(self.context, self.request)
             assert isinstance(view, StepView), 'Not a StepView: %s' % view
@@ -102,7 +117,18 @@ class MultiStepView(LaunchpadView):
             view.is_step = self.getIsStepDict()
             self.step_number += 1
             view.injectStepNameInRequest()
+            if view.action_taken is not None:
+                action_taken = view.action_taken
+
         self.view = view
+
+        if action_required is not None and action_taken is None:
+            # This is mostly useful for catching tests that pass
+            # in invalid form data via a dictionary instead of
+            # using a test browser.
+            raise AssertionError(
+                'MultiStepView did not find action for %s=%r'
+                % action_required)
 
     def render(self):
         return self.view.render()

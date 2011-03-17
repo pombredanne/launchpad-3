@@ -15,15 +15,20 @@ from cStringIO import StringIO
 # Z3 doesn't make this available as a utility.
 from zope.app import zapi
 from zope.app.publication.requestpublicationregistry import factoryRegistry
+from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 from zope.interface import providedBy
 from zope.publisher.interfaces.browser import IDefaultSkin
+from zope.security.management import restoreInteraction
 
 from canonical.launchpad.interfaces.launchpad import IOpenLaunchBag
 import canonical.launchpad.layers as layers
 from canonical.launchpad.webapp import urlsplit
+from canonical.launchpad.webapp.interaction import (
+    get_current_principal,
+    setupInteraction,
+    )
 from canonical.launchpad.webapp.servers import ProtocolErrorPublication
-
 
 # Defines an helper function that returns the appropriate
 # IRequest and IPublication.
@@ -103,8 +108,13 @@ def test_traverse(url):
     if layer is not None:
         layers.setAdditionalLayer(request, layer)
 
-    principal = publication.getPrincipal(request)
-    request.setPrincipal(principal)
+    principal = get_current_principal()
+
+    if IUnauthenticatedPrincipal.providedBy(principal):
+        login = None
+    else:
+        login = principal.person
+    setupInteraction(principal, login, request)
 
     getUtility(IOpenLaunchBag).clear()
     app = publication.getApplication(request)
@@ -112,4 +122,7 @@ def test_traverse(url):
     # Since the last traversed object is the view, the second last should be
     # the object that the view is on.
     obj = request.traversed_objects[-2]
+
+    restoreInteraction()
+
     return obj, view, request

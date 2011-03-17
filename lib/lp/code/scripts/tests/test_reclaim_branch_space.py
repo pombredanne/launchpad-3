@@ -9,16 +9,20 @@ import shutil
 import unittest
 
 import transaction
-
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.testing import ZopelessAppServerLayer
-
-from lp.code.model.branchjob import BranchJob, BranchJobType
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from canonical.testing.layers import ZopelessAppServerLayer
+from lp.code.model.branchjob import (
+    BranchJob,
+    BranchJobType,
+    )
 from lp.testing import TestCaseWithFactory
 
 

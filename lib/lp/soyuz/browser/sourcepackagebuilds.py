@@ -9,8 +9,8 @@ __all__ = [
     'SourcePackageBuildsView',
     ]
 
-from lp.soyuz.browser.build import BuildRecordsView
 from canonical.lazr.utils import smartquote
+from lp.soyuz.browser.build import BuildRecordsView
 
 
 class SourcePackageBuildsView(BuildRecordsView):

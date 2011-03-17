@@ -13,48 +13,87 @@ __all__ = [
     ]
 
 from email.Utils import make_msgid
-from storm.expr import And, Desc, Join, LeftJoin, Or, Select
+
+from sqlobject import (
+    ForeignKey,
+    IntCol,
+    SQLMultipleJoin,
+    StringCol,
+    )
+from storm.expr import (
+    And,
+    Desc,
+    Join,
+    LeftJoin,
+    Or,
+    Select,
+    )
 from storm.info import ClassAlias
+from storm.locals import (
+    Int,
+    Reference,
+    )
 from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
-from storm.locals import Int, Reference
-from sqlobject import ForeignKey, IntCol, StringCol, SQLMultipleJoin
-
 from canonical.config import config
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues
-
-from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
+from canonical.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from lp.code.enums import (
+    BranchMergeProposalStatus,
+    CodeReviewVote,
+    )
 from lp.code.errors import (
-    BadBranchMergeProposalSearchContext, BadStateTransition,
-    UserNotBranchReviewer, WrongBranchMergeProposal)
-from lp.code.model.branchrevision import BranchRevision
-from lp.code.model.codereviewcomment import CodeReviewComment
-from lp.code.model.codereviewvote import (
-    CodeReviewVoteReference)
-from lp.code.model.diff import PreviewDiff
+    BadBranchMergeProposalSearchContext,
+    BadStateTransition,
+    UserNotBranchReviewer,
+    WrongBranchMergeProposal,
+    )
 from lp.code.event.branchmergeproposal import (
-    BranchMergeProposalStatusChangeEvent, NewCodeReviewCommentEvent,
-    ReviewerNominatedEvent)
+    BranchMergeProposalNeedsReviewEvent,
+    BranchMergeProposalStatusChangeEvent,
+    NewCodeReviewCommentEvent,
+    ReviewerNominatedEvent,
+    )
 from lp.code.interfaces.branch import IBranchNavigationMenu
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
-    IBranchMergeProposal, IBranchMergeProposalGetter)
+    IBranchMergeProposal,
+    IBranchMergeProposalGetter,
+    )
+from lp.code.interfaces.branchrevision import IBranchRevision
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.mail.branch import RecipientReason
-from lp.registry.model.person import Person
-from lp.registry.interfaces.person import IPerson
+from lp.code.model.branchrevision import BranchRevision
+from lp.code.model.codereviewcomment import CodeReviewComment
+from lp.code.model.codereviewvote import CodeReviewVoteReference
+from lp.code.model.diff import (
+    Diff,
+    IncrementalDiff,
+    PreviewDiff,
+    )
+from lp.registry.interfaces.person import (
+    IPerson,
+    validate_public_person,
+    )
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.person import validate_public_person
-from lp.services.mail.sendmail import validate_message
+from lp.registry.model.person import Person
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
+from lp.services.mail.sendmail import validate_message
 
 
 def is_valid_transition(proposal, from_state, next_state, user=None):
@@ -197,14 +236,15 @@ class BranchMergeProposal(SQLBase):
         storm_validator=validate_public_person, notNull=False,
         default=None)
 
-    @property
-    def related_bugs(self):
-        """Bugs which are linked to the source but not the target.
+    def getRelatedBugTasks(self, user):
+        """Bug tasks which are linked to the source but not the target.
 
-        Implies that these bugs would be fixed, in the target, by the merge.
+        Implies that these would be fixed, in the target, by the merge.
         """
-        return (bug for bug in self.source_branch.linked_bugs
-                if bug not in self.target_branch.linked_bugs)
+        source_tasks = self.source_branch.getLinkedBugTasks(user)
+        target_tasks = self.target_branch.getLinkedBugTasks(user)
+        return [bugtask
+            for bugtask in source_tasks if bugtask not in target_tasks]
 
     @property
     def address(self):
@@ -380,6 +420,11 @@ class BranchMergeProposal(SQLBase):
         # review state.
         if _date_requested is None:
             _date_requested = UTC_NOW
+        # If we are going from work in progress to needs review, then reset
+        # the root message id and trigger a job to send out the email.
+        if self.queue_status == BranchMergeProposalStatus.WORK_IN_PROGRESS:
+            self.root_message_id = None
+            notify(BranchMergeProposalNeedsReviewEvent(self))
         if self.queue_status != BranchMergeProposalStatus.NEEDS_REVIEW:
             self._transitionToState(BranchMergeProposalStatus.NEEDS_REVIEW)
             self.date_review_requested = _date_requested
@@ -505,8 +550,19 @@ class BranchMergeProposal(SQLBase):
             date_merged = UTC_NOW
         self.date_merged = date_merged
 
-    def resubmit(self, registrant):
+    def resubmit(self, registrant, source_branch=None, target_branch=None,
+                 prerequisite_branch=DEFAULT, description=None,
+                 break_link=False):
         """See `IBranchMergeProposal`."""
+        if source_branch is None:
+            source_branch = self.source_branch
+        if target_branch is None:
+            target_branch = self.target_branch
+        # DEFAULT instead of None, because None is a valid value.
+        if prerequisite_branch is DEFAULT:
+            prerequisite_branch = self.prerequisite_branch
+        if description is None:
+            description = self.description
         # You can transition from REJECTED to SUPERSEDED, but
         # not from MERGED or SUPERSEDED.
         self._transitionToState(
@@ -515,15 +571,16 @@ class BranchMergeProposal(SQLBase):
         # a database query to identify if there are any active proposals
         # with the same source and target branches.
         self.syncUpdate()
-        review_requests = set(
-            (vote.reviewer, vote.review_type) for vote in self.votes)
-        proposal = self.source_branch.addLandingTarget(
+        review_requests = list(set(
+            (vote.reviewer, vote.review_type) for vote in self.votes))
+        proposal = source_branch.addLandingTarget(
             registrant=registrant,
-            target_branch=self.target_branch,
-            prerequisite_branch=self.prerequisite_branch,
-            description=self.description,
+            target_branch=target_branch,
+            prerequisite_branch=prerequisite_branch,
+            description=description,
             needs_review=True, review_requests=review_requests)
-        self.superseded_by = proposal
+        if not break_link:
+            self.superseded_by = proposal
         # This sync update is needed to ensure that the transitive
         # properties of supersedes and superseded_by are visible to
         # the old and the new proposal.
@@ -594,14 +651,14 @@ class BranchMergeProposal(SQLBase):
         TargetRevision = ClassAlias(BranchRevision)
         target_join = LeftJoin(
             TargetRevision, And(
-                TargetRevision.revision_id == SourceRevision.revision_id,
-                TargetRevision.branch_id == self.target_branch.id))
+                TargetRevision.branch_id == self.target_branch.id,
+                TargetRevision.revision_id == SourceRevision.revision_id))
         origin = [SourceRevision, target_join]
         result = store.using(*origin).find(
             SourceRevision,
             SourceRevision.branch_id == self.source_branch.id,
             SourceRevision.sequence != None,
-            TargetRevision.id == None)
+            TargetRevision.branch_id == None)
         return result.order_by(Desc(SourceRevision.sequence)).config(limit=10)
 
     def createComment(self, owner, subject, content=None, vote=None,
@@ -744,6 +801,102 @@ class BranchMergeProposal(SQLBase):
         # the storm store.
         Store.of(self).flush()
         return self.preview_diff
+
+    def getIncrementalDiffRanges(self):
+        groups = self.getRevisionsSinceReviewStart()
+        return [
+            (group[0].revision.getLefthandParent(), group[-1].revision)
+            for group in groups]
+
+    def generateIncrementalDiff(self, old_revision, new_revision, diff=None):
+        """Generate an incremental diff for the merge proposal.
+
+        :param old_revision: The `Revision` to generate the diff from.
+        :param new_revision: The `Revision` to generate the diff to.
+        :param diff: If supplied, a pregenerated `Diff`.
+        """
+        if diff is None:
+            source_branch = self.source_branch.getBzrBranch()
+            ignore_branches = [self.target_branch.getBzrBranch()]
+            if self.prerequisite_branch is not None:
+                ignore_branches.append(
+                    self.prerequisite_branch.getBzrBranch())
+            diff = Diff.generateIncrementalDiff(
+                old_revision, new_revision, source_branch, ignore_branches)
+        incremental_diff = IncrementalDiff()
+        incremental_diff.diff = diff
+        incremental_diff.branch_merge_proposal = self
+        incremental_diff.old_revision = old_revision
+        incremental_diff.new_revision = new_revision
+        IMasterStore(IncrementalDiff).add(incremental_diff)
+        return incremental_diff
+
+    def getIncrementalDiffs(self, revision_list):
+        """Return a list of diffs for the specified revisions.
+
+        :param revision_list: A list of tuples of (`Revision`, `Revision`).
+            The first revision in the tuple is the old revision.  The second
+            is the new revision.
+        :return: A list of IncrementalDiffs in the same order as the supplied
+            Revisions.
+        """
+        diffs = Store.of(self).find(IncrementalDiff,
+            IncrementalDiff.branch_merge_proposal_id == self.id)
+        diff_dict = dict(
+            ((diff.old_revision, diff.new_revision), diff)
+            for diff in diffs)
+        return [diff_dict.get(revisions) for revisions in revision_list]
+
+    @property
+    def revision_end_date(self):
+        """The cutoff date for showing revisions.
+
+        If the proposal has been merged, then we stop at the merged date. If
+        it is rejected, we stop at the reviewed date. For superseded
+        proposals, it should ideally use the non-existant date_last_modified,
+        but could use the last comment date.
+        """
+        status = self.queue_status
+        if status == BranchMergeProposalStatus.MERGED:
+            return self.date_merged
+        if status == BranchMergeProposalStatus.REJECTED:
+            return self.date_reviewed
+        # Otherwise return None representing an open end date.
+        return None
+
+    def _getNewerRevisions(self):
+        start_date = self.date_review_requested
+        if start_date is None:
+            start_date = self.date_created
+        return self.source_branch.getMainlineBranchRevisions(
+            start_date, self.revision_end_date, oldest_first=True)
+
+    def getRevisionsSinceReviewStart(self):
+        """Get the grouped revisions since the review started."""
+        entries = [
+            ((comment.date_created, -1), comment) for comment
+            in self.all_comments]
+        revisions = self._getNewerRevisions()
+        entries.extend(
+            ((revision.date_created, branch_revision.sequence),
+                branch_revision)
+            for branch_revision, revision, revision_author in revisions)
+        entries.sort()
+        current_group = []
+        for date, entry in entries:
+            if IBranchRevision.providedBy(entry):
+                current_group.append(entry)
+            else:
+                if current_group != []:
+                    yield current_group
+                    current_group = []
+        if current_group != []:
+            yield current_group
+
+    def getMissingIncrementalDiffs(self):
+        ranges = self.getIncrementalDiffRanges()
+        diffs = self.getIncrementalDiffs(ranges)
+        return [range_ for range_, diff in zip(ranges, diffs) if diff is None]
 
 
 class BranchMergeProposalGetter:

@@ -43,6 +43,9 @@ class FakeSlave:
     def wasCalled(self, name):
         return name in self._was_called
 
+    def getArch(self):
+        return 'i386'
+
     addWaitingFile = FakeMethod()
 
 

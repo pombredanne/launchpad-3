@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -8,50 +8,91 @@
 __metaclass__ = type
 
 __all__ = [
+    'DerivationError',
     'IDistroSeries',
     'IDistroSeriesEditRestricted',
     'IDistroSeriesPublic',
     'IDistroSeriesSet',
-    'NoSuchDistroSeries',
     ]
-
-from zope.component import getUtility
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Datetime, Choice, Object, TextLine
 
 from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
-    LAZR_WEBSERVICE_EXPORTED, export_as_webservice_entry,
-    export_factory_operation, export_read_operation, exported,
-    operation_parameters, operation_returns_collection_of,
-    operation_returns_entry, rename_parameters_as, webservice_error)
-from lazr.restful.fields import Reference, ReferenceChoice
+    call_with,
+    export_as_webservice_entry,
+    export_factory_operation,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    LAZR_WEBSERVICE_EXPORTED,
+    operation_parameters,
+    operation_returns_collection_of,
+    operation_returns_entry,
+    rename_parameters_as,
+    REQUEST_USER,
+    webservice_error,
+    )
+from lazr.restful.fields import (
+    Reference,
+    ReferenceChoice,
+    )
+from lazr.restful.interface import copy_field
+from zope.component import getUtility
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    List,
+    Object,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    ContentNameField, Description, PublicPersonChoice, Title,
-    UniqueField)
 from canonical.launchpad.interfaces.launchpad import IHasAppointedDriver
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.email import email_validator
-from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.validators.version import sane_version
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
-
-from lp.blueprints.interfaces.specificationtarget import (
-    ISpecificationGoal)
+from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.email import email_validator
+from lp.app.validators.name import name_validator
+from lp.app.validators.version import sane_version
+from lp.blueprints.interfaces.specificationtarget import ISpecificationGoal
 from lp.bugs.interfaces.bugtarget import (
-    IBugTarget, IHasBugs, IHasOfficialBugTags)
-from lp.registry.interfaces.milestone import IHasMilestones, IMilestone
+    IBugTarget,
+    IHasBugs,
+    IHasOfficialBugTags,
+    )
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
+from lp.registry.errors import NoSuchDistroSeries
+from lp.registry.interfaces.milestone import (
+    IHasMilestones,
+    IMilestone,
+    )
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
-from lp.registry.interfaces.series import ISeriesMixin, SeriesStatus
+from lp.registry.interfaces.series import (
+    ISeriesMixin,
+    SeriesStatus,
+    )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
+from lp.services.fields import (
+    ContentNameField,
+    Description,
+    PublicPersonChoice,
+    Title,
+    UniqueField,
+    )
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
+from lp.translations.interfaces.hastranslationimports import (
+    IHasTranslationImports,
+    )
+from lp.translations.interfaces.hastranslationtemplates import (
+    IHasTranslationTemplates,
+    )
 from lp.translations.interfaces.languagepack import ILanguagePack
-from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 
 
 class DistroSeriesNameField(ContentNameField):
@@ -127,7 +168,7 @@ class DistroSeriesVersionField(UniqueField):
             Version(version)
         except VersionError, error:
             raise LaunchpadValidationError(
-                "'%s': %s" % (version, error[0]))
+                "'%s': %s" % (version, error))
 
 
 class IDistroSeriesEditRestricted(Interface):
@@ -143,7 +184,8 @@ class IDistroSeriesEditRestricted(Interface):
 class IDistroSeriesPublic(
     ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
     ISpecificationGoal, IHasMilestones, IHasOfficialBugTags,
-    IHasBuildRecords, IHasTranslationTemplates):
+    IHasBuildRecords, IHasTranslationImports, IHasTranslationTemplates,
+    IServiceUsage):
     """Public IDistroSeries properties."""
 
     id = Attribute("The distroseries's unique number.")
@@ -217,7 +259,6 @@ class IDistroSeriesPublic(
             description=_("The mailing list or other e-mail address that "
                           "Launchpad should notify about new uploads."),
             constraint=email_validator))
-    lucilleconfig = Attribute("Lucille Configuration Field")
     sourcecount = Attribute("Source Packages Counter")
     defer_translation_imports = Bool(
         title=_("Defer translation imports"),
@@ -350,10 +391,13 @@ class IDistroSeriesPublic(
     # DistroArchSeries lookup properties/methods.
     architectures = Attribute("All architectures in this series.")
 
+    enabled_architectures = Attribute(
+        "All architectures in this series with the 'enabled' flag set.")
+
     virtualized_architectures = Attribute(
         "All architectures in this series where PPA is supported.")
 
-    enabled_architectures = Attribute(
+    buildable_architectures = Attribute(
         "All architectures in this series with available chroot tarball.")
 
     def __getitem__(archtag):
@@ -503,9 +547,9 @@ class IDistroSeriesPublic(
             and the value is a `IDistroSeriesSourcePackageRelease`.
         """
 
-    def getPublishedReleases(sourcepackage_or_name, pocket=None, version=None,
-                             include_pending=False, exclude_pocket=None,
-                             archive=None):
+    def getPublishedSources(sourcepackage_or_name, pocket=None, version=None,
+                            include_pending=False, exclude_pocket=None,
+                            archive=None):
         """Return the SourcePackagePublishingHistory(s)
 
         Given a ISourcePackageName or name.
@@ -554,12 +598,6 @@ class IDistroSeriesPublic(
         Return a SelectResult of SourcePackagePublishingHistory.
         """
 
-    def publishedBinaryPackages(component=None):
-        """Given an optional component name, return a list of the binary
-        packages that are currently published in this distroseries in the
-        given component, or in any component if no component name was given.
-        """
-
     def getDistroSeriesLanguage(language):
         """Return the DistroSeriesLanguage for this distroseries and the
         given language, or None if there's no DistroSeriesLanguage for this
@@ -578,7 +616,8 @@ class IDistroSeriesPublic(
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
         dsc_binaries, archive, copyright, build_conflicts,
         build_conflicts_indep, dateuploaded=None,
-        source_package_recipe_build=None):
+        source_package_recipe_build=None, user_defined_fields=None,
+        homepage=None):
         """Create an uploads `SourcePackageRelease`.
 
         Set this distroseries set to be the uploadeddistroseries.
@@ -614,6 +653,10 @@ class IDistroSeriesPublic(
          :param archive: IArchive to where the upload was targeted
          :param dateuploaded: optional datetime, if omitted assumed nowUTC
          :param source_package_recipe_build: optional SourcePackageRecipeBuild
+         :param user_defined_fields: optional sequence of key-value pairs with
+                                     user defined fields.
+         :param homepage: optional string with (unchecked) upstream homepage
+                          URL
          :return: the just creates `SourcePackageRelease`
         """
 
@@ -645,8 +688,8 @@ class IDistroSeriesPublic(
         If sourcename is passed, only packages that are built from
         source packages by that name will be returned.
         If archive is passed, restricted the results to the given archive,
-        if it is suppressed the results will be restricted to the distribtion
-        'main_archive'.
+        if it is suppressed the results will be restricted to the
+        distribution 'main_archive'.
         """
 
     def getSourcePackagePublishing(status, pocket, component=None,
@@ -655,8 +698,8 @@ class IDistroSeriesPublic(
 
         According status and pocket.
         If archive is passed, restricted the results to the given archive,
-        if it is suppressed the results will be restricted to the distribtion
-        'main_archive'.
+        if it is suppressed the results will be restricted to the
+        distribution 'main_archive'.
         """
 
     def getBinaryPackageCaches(archive=None):
@@ -724,37 +767,8 @@ class IDistroSeriesPublic(
         """
 
     def newArch(architecturetag, processorfamily, official, owner,
-                supports_virtualized=False):
+                supports_virtualized=False, enabled=True):
         """Create a new port or DistroArchSeries for this DistroSeries."""
-
-    def initialiseFromParent():
-        """Copy in all of the parent distroseries's configuration. This
-        includes all configuration for distroseries and distroarchseries
-        publishing and all publishing records for sources and binaries.
-
-        Preconditions:
-          The distroseries must have been set up with its distroarchseriess
-          as needed. It should have its nominated arch-indep set up along
-          with all other basic requirements for the structure of the
-          distroseries. This distroseries and all its distroarchseriess
-          must have empty publishing sets. Section and component selections
-          must be empty.
-
-        Outcome:
-          The publishing structure will be copied from the parent. All
-          PUBLISHED and PENDING packages in the parent will be created in
-          this distroseries and its distroarchseriess. The lucille config
-          will be copied in, all component and section selections will be
-          duplicated as will any permission-related structures.
-
-        Note:
-          This method will assert all of its preconditions where possible.
-          After this is run, you still need to construct chroots for building,
-          you need to add anything missing wrt. ports etc. This method is
-          only meant to give you a basic copy of a parent series in order
-          to assist you in preparing a new series of a distribution or
-          in the initialisation of a derivative.
-        """
 
     def copyTranslationsFromParent(ztm):
         """Copy any translation done in parent that we lack.
@@ -789,6 +803,70 @@ class IDistroSeriesPublic(
 
         :param format: The SourcePackageFormat to check.
         """
+
+    @operation_parameters(
+        name=copy_field(name, required=True),
+        displayname=copy_field(displayname, required=False),
+        title=copy_field(title, required=False),
+        summary=TextLine(
+            title=_("The summary of the distroseries to derive."),
+            required=False),
+        description=copy_field(description, required=False),
+        version=copy_field(version, required=False),
+        distribution=copy_field(distribution, required=False),
+        architectures=List(
+            title=_("The list of architectures to copy to the derived "
+            "distroseries."), value_type=TextLine(),
+            required=False),
+        packagesets=List(
+            title=_("The list of packagesets to copy to the derived "
+            "distroseries"), value_type=TextLine(),
+            required=False),
+        rebuild=Bool(
+            title=_("If binaries will be copied to the derived "
+            "distroseries."),
+            required=True),
+        )
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    def deriveDistroSeries(user, name, displayname, title, summary,
+                           description, version, distribution,
+                           architectures, packagesets, rebuild):
+        """Derive a distroseries from this one.
+
+        This method performs checks, can create the new distroseries if
+        necessary, and then creates a job to populate the new
+        distroseries.
+
+        :param name: The name of the new distroseries we will create if it
+            doesn't exist, or the name of the distroseries we will look
+            up, and then initialise.
+        :param displayname: The Display Name for the new distroseries.
+            If the distroseries already exists this parameter is ignored.
+        :param title: The Title for the new distroseries. If the
+            distroseries already exists this parameter is ignored.
+        :param summary: The Summary for the new distroseries. If the
+            distroseries already exists this parameter is ignored.
+        :param description: The Description for the new distroseries. If the
+            distroseries already exists this parameter is ignored.
+        :param version: The version for the new distroseries. If the
+            distroseries already exists this parameter is ignored.
+        :param distribution: The distribution the derived series will
+            belong to. If it isn't specified this distroseries'
+            distribution is used.
+        :param architectures: The architectures to copy to the derived
+            series. If not specified, all of the architectures are copied.
+        :param packagesets: The packagesets to copy to the derived series.
+            If not specified, all of the packagesets are copied.
+        :param rebuild: Whether binaries will be copied to the derived
+            series. If it's true, they will not be, and if it's false, they
+            will be.
+        """
+
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getDerivedSeries():
+        """Get all `DistroSeries` derived from this one."""
 
 
 class IDistroSeries(IDistroSeriesEditRestricted, IDistroSeriesPublic,
@@ -843,6 +921,15 @@ class IDistroSeriesSet(Interface):
             `PackagePublishingPocket`.
         """
 
+    def getCurrentSourceReleases(distro_series_source_packagenames):
+        """Lookup many distroseries source package releases.
+
+        :param distro_series_to_source_packagenames: A dictionary with
+            its keys being `IDistroSeries` and its values a list of
+            `ISourcePackageName`.
+        :return: A dict as per `IDistroSeries.getCurrentSourceReleases`
+        """
+
     def search(distribution=None, released=None, orderBy=None):
         """Search the set of distro seriess.
 
@@ -857,10 +944,10 @@ class IDistroSeriesSet(Interface):
         """
 
 
-class NoSuchDistroSeries(NameLookupFailed):
-    """Raised when we try to find a DistroSeries that doesn't exist."""
-    webservice_error(400) #Bad request.
-    _message_prefix = "No such distribution series"
+class DerivationError(Exception):
+    """Raised when there is a problem deriving a distroseries."""
+    webservice_error(400) # Bad Request
+    _message_prefix = "Error deriving distro series"
 
 
 # Monkey patch for circular import avoidance done in

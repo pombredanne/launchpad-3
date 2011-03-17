@@ -14,33 +14,54 @@ __all__ = [
     ]
 
 import os
-from os.path import basename, splitext
+
 from zope.app.form.interfaces import ConversionError
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IContextSourceBinder
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
-from canonical.launchpad.webapp.interfaces import (
-    NotFoundError, UnexpectedFormData)
-from lp.translations.browser.hastranslationimports import (
-    HasTranslationImportsView)
+from canonical.launchpad.webapp import (
+    canonical_url,
+    GetitemNavigation,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
+from lp.app.browser.tales import DateTimeFormatterAPI
+from lp.app.errors import (
+    NotFoundError,
+    UnexpectedFormData,
+    )
+from lp.app.validators.name import valid_name
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueueEntry, IEditTranslationImportQueueEntry,
-    ITranslationImportQueue, RosettaImportStatus,
-    SpecialTranslationImportTargetFilter, TranslationFileType)
+from lp.translations.browser.hastranslationimports import (
+    HasTranslationImportsView,
+    )
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.utilities.template import make_domain, make_name
-
-from canonical.launchpad.webapp import (
-    action, canonical_url, GetitemNavigation, LaunchpadFormView)
-from canonical.launchpad.validators.name import valid_name
+from lp.translations.interfaces.translationimporter import (
+    ITranslationImporter,
+    )
+from lp.translations.interfaces.translationimportqueue import (
+    IEditTranslationImportQueueEntry,
+    ITranslationImportQueue,
+    ITranslationImportQueueEntry,
+    SpecialTranslationImportTargetFilter,
+    TranslationFileType,
+    )
+from lp.translations.utilities.template import (
+    make_domain,
+    make_name,
+    )
 
 
 def replace(string, replacement):
@@ -80,11 +101,12 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             return field_values
         # Fill the know values.
         field_values['path'] = self.context.path
-        (fname, fext) = splitext(self.context.path)
-        if fext.lower() == '.po':
-            file_type = TranslationFileType.PO
-        elif fext.lower() == '.pot':
+
+        importer = getUtility(ITranslationImporter)
+        if importer.isTemplateName(self.context.path):
             file_type = TranslationFileType.POT
+        elif importer.isTranslationName(self.context.path):
+            file_type = TranslationFileType.PO
         else:
             file_type = TranslationFileType.UNSPEC
         field_values['file_type'] = file_type
@@ -114,7 +136,6 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             field_values['potemplate'] = self.context.potemplate
             if self.context.pofile is not None:
                 field_values['language'] = self.context.pofile.language
-                field_values['variant'] = self.context.pofile.variant
             else:
                 # The entries that are translations usually have the language
                 # code
@@ -122,9 +143,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                 language_set = getUtility(ILanguageSet)
                 filename = os.path.basename(self.context.path)
                 guessed_language, file_ext = filename.split(u'.', 1)
-                (language, variant) = (
-                    language_set.getLanguageAndVariantFromString(
-                        guessed_language))
+                language = language_set.getLanguageByCode(guessed_language)
                 if language is not None:
                     field_values['language'] = language
                     # Need to warn the user that we guessed the language
@@ -132,8 +151,6 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                     self.request.response.addWarningNotification(
                         "Review the language selection as we guessed it and"
                         " could not be accurate.")
-                if variant is not None:
-                    field_values['variant'] = variant
 
         return field_values
 
@@ -208,12 +225,12 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         if len(translatable_series) == 0:
             return "Project has no translatable series."
         else:
+            max_series_to_display = self.max_series_to_display
             links = [
                 self._composeProductSeriesLink(series)
-                for series in translatable_series[:self.max_series_to_display]
-                ]
+                for series in translatable_series[:max_series_to_display]]
             links_text = ', '.join(links)
-            if len(translatable_series) > self.max_series_to_display:
+            if len(translatable_series) > max_series_to_display:
                 tail = ", ..."
             else:
                 tail = "."
@@ -252,7 +269,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         self.field_names = ['file_type', 'path', 'sourcepackagename',
                             'potemplate', 'potemplate_name',
                             'name', 'translation_domain', 'languagepack',
-                            'language', 'variant']
+                            'language']
 
         if self.context.productseries is not None:
             # We are handling an entry for a productseries, this field is not
@@ -306,56 +323,59 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                 productseries=self.context.productseries)
         return potemplate_subset
 
-    def _validatePath(self, file_type, path):
-        path_changed = False # Flag for change_action
-        if path == None or path.strip() == "":
-            self.setFieldError('path', 'The file name is missing.')
+    def _findObjectionToFilePath(self, file_type, path):
+        """Return textual objection, if any, to setting this file path."""
+        importer = getUtility(ITranslationImporter)
+        if file_type == TranslationFileType.POT:
+            if not importer.isTemplateName(path):
+                return "This filename is not appropriate for a template."
         else:
-            (fname, fext) = splitext(basename(path))
-            if len(fname) == 0:
-                self.setFieldError('path',
-                                   'The file name is incomplete.')
-            if (file_type == TranslationFileType.POT and
-                    fext.lower() != '.pot' and fext.lower() != '.xpi'):
-                self.setFieldError('path',
-                                   'The file name must end with ".pot".')
-            if (file_type == TranslationFileType.PO and
-                    fext.lower() != '.po' and fext.lower() != '.xpi'):
-                self.setFieldError('path',
-                                   'The file name must end with ".po".')
+            if not importer.isTranslationName(path):
+                return "This filename is not appropriate for a translation."
 
-            if self.context.path != path:
-                # The Rosetta Expert decided to change the path of the file.
-                # Before accepting such change, we should check first whether
-                # there is already another entry with that path in the same
-                # context (sourcepackagename/distroseries or productseries).
-                if file_type == TranslationFileType.POT:
-                    potemplate_set = getUtility(IPOTemplateSet)
-                    existing_file = (
-                        potemplate_set.getPOTemplateByPathAndOrigin(
-                            path, self.context.productseries,
-                            self.context.distroseries,
-                            self.context.sourcepackagename))
-                    already_exists = existing_file is not None
-                else:
-                    pofile_set = getUtility(IPOFileSet)
-                    existing_files = pofile_set.getPOFilesByPathAndOrigin(
-                        path, self.context.productseries,
-                        self.context.distroseries,
-                        self.context.sourcepackagename)
-                    already_exists = not existing_files.is_empty()
+        if path == self.context.path:
+            # No change, so no objections.
+            return None
 
-                if already_exists:
-                    # We already have an IPOFile in this path, let's notify
-                    # the user about that so they choose another path.
-                    self.setFieldError('path',
-                        'There is already a file in the given path.')
-                else:
-                    # There is no other pofile in the given path for this
-                    # context, let's change it as requested by admins.
-                    path_changed = True
+        # The Rosetta Expert decided to change the path of the file.
+        # Before accepting such change, we should check first whether
+        # there is already another entry with that path in the same
+        # context (sourcepackagename/distroseries or productseries).
+        # A duplicate name will confuse the auto-approval
+        # process.
+        if file_type == TranslationFileType.POT:
+            potemplate_set = getUtility(IPOTemplateSet)
+            existing_file = potemplate_set.getPOTemplateByPathAndOrigin(
+                path, self.context.productseries, self.context.distroseries,
+                self.context.sourcepackagename)
+            already_exists = existing_file is not None
+        else:
+            pofile_set = getUtility(IPOFileSet)
+            existing_files = pofile_set.getPOFilesByPathAndOrigin(
+                path, self.context.productseries,
+                self.context.distroseries,
+                self.context.sourcepackagename)
+            already_exists = not existing_files.is_empty()
 
-        return path_changed
+        if already_exists:
+            # We already have an IPOFile in this path, let's notify
+            # the user about that so they choose another path.
+            return "There is already a file in the given path."
+
+        return None
+
+    def _validatePath(self, file_type, path):
+        """Should the entry's path be updated?"""
+        if path is None or path.strip() == "":
+            self.setFieldError('path', "The file name is missing.")
+            return False
+
+        objection = self._findObjectionToFilePath(file_type, path)
+        if objection is None:
+            return True
+        else:
+            self.setFieldError('path', objection)
+            return False
 
     def _validatePOT(self, data):
         name = data.get('name')
@@ -441,8 +461,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
 
         if (self.context.sourcepackagename is not None and
             potemplate.sourcepackagename is not None and
-            self.context.sourcepackagename != potemplate.sourcepackagename
-            ):
+            self.context.sourcepackagename != potemplate.sourcepackagename):
             # We got the template from a different package than the one
             # selected by the user where the import should done, so we
             # note it here.
@@ -466,7 +485,6 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
 
         path = data.get('path')
         language = data.get('language')
-        variant = data.get('variant')
 
         # Use manual potemplate, if given.
         # man_potemplate is set in validate().
@@ -475,11 +493,11 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         else:
             potemplate = data.get('potemplate')
 
-        pofile = potemplate.getPOFileByLang(language.code, variant)
+        pofile = potemplate.getPOFileByLang(language.code)
         if pofile is None:
             # We don't have such IPOFile, we need to create it.
             pofile = potemplate.newPOFile(
-                language.code, variant, self.context.importer)
+                language.code, self.context.importer)
         self.context.pofile = pofile
         if (self.context.sourcepackagename is not None and
             potemplate.sourcepackagename is not None and
@@ -494,10 +512,10 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             self.context.path = path
             # We got a path to store as the new one for the POFile.
             pofile.setPathIfUnique(path)
-        elif self.context.is_published:
-            # This entry comes from upstream, which means that the path we
-            # got is exactly the right one. If it's different from what
-            # pofile has, that would mean that either the entry changed
+        elif self.context.by_maintainer:
+            # This entry was uploaded by the maintainer, which means that the
+            # path we got is exactly the right one. If it's different from
+            # what pofile has, that would mean that either the entry changed
             # its path since previous upload or that we had to guess it
             # and now that we got the right path, we should fix it.
             pofile.setPathIfUnique(self.context.path)
@@ -537,8 +555,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                 "'%s': '%s'" % (
                     escape_js_string(template.name),
                     escape_js_string(template.translation_domain))
-                for template in target.getCurrentTranslationTemplates()
-                ])
+                for template in target.getCurrentTranslationTemplates()])
         return "var template_domains = {%s};" % contents
 
 

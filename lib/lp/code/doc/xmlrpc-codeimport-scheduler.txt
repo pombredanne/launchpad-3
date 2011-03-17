@@ -1,4 +1,5 @@
-= The CodeImportScheduler =
+The CodeImportScheduler
+=======================
 
 The code import scheduler is an XMLRPC service that provides (ids of)
 CodeImportJobs for code import slaves to run.  It is available as the
@@ -6,7 +7,8 @@ codeimportscheduler attribute of our private XMLRPC instance.
 
     >>> from lp.code.interfaces.codeimportscheduler import (
     ...     ICodeImportSchedulerApplication)
-    >>> from canonical.launchpad.interfaces import IPrivateApplication
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     IPrivateApplication)
     >>> from canonical.launchpad.webapp.testing import verifyObject
 
     >>> private_root = getUtility(IPrivateApplication)
@@ -42,7 +44,7 @@ can be found in the tests for ICodeImportJobSet.
 The point of all this is for it to be accessed over XMLRPC.
 
     >>> import xmlrpclib
-    >>> from canonical.functional import XMLRPCTestTransport
+    >>> from lp.testing.xmlrpc import XMLRPCTestTransport
     >>> codeimportscheduler = xmlrpclib.ServerProxy(
     ...     'http://xmlrpc-private.launchpad.dev:8087/codeimportscheduler',
     ...     transport=XMLRPCTestTransport())

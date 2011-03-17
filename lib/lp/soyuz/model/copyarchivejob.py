@@ -1,24 +1,37 @@
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = object
 
 from zope.component import getUtility
-from zope.interface import classProvides, implements
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
-
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.enums import ArchiveJobType
 from lp.soyuz.interfaces.archivejob import (
-    ArchiveJobType, ICopyArchiveJob, ICopyArchiveJobSource)
+    ICopyArchiveJob,
+    ICopyArchiveJobSource,
+    )
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
-from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.model.archivejob import ArchiveJob, ArchiveJobDerived
+from lp.soyuz.model.archivejob import (
+    ArchiveJob,
+    ArchiveJobDerived,
+    )
 
 
 class CopyArchiveJob(ArchiveJobDerived):

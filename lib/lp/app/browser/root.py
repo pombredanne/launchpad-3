@@ -9,45 +9,49 @@ __all__ = [
     ]
 
 
-import feedparser
 import re
-import sys
 import time
 
+import feedparser
+from lazr.batchnavigator.z3batching import batch
 from zope.component import getUtility
-from zope.error.interfaces import IErrorReportingUtility
 from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import getVocabularyRegistry
 
-
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
+from canonical.launchpad.interfaces.launchpad import (
+    ILaunchpadCelebrities,
+    ILaunchpadSearch,
+    )
 from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet)
-from canonical.lazr.timeout import urlfetch
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.interfaces.launchpad import ILaunchpadSearch
-from canonical.launchpad.interfaces.searchservice import (
-    GoogleResponseError, ISearchService)
-from canonical.launchpad.validators.name import sanitize_name
-from canonical.launchpad.webapp import (
-    action, LaunchpadFormView, LaunchpadView, safe_action)
+    ILaunchpadStatisticSet,
+    )
+from lp.services.googlesearch.interfaces import (
+    GoogleResponseError,
+    ISearchService,
+    )
+from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.vhosts import allvhosts
-
-from lazr.batchnavigator.z3batching import batch
-
+from canonical.lazr.timeout import urlfetch
 from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    safe_action,
+    )
+from lp.app.errors import NotFoundError
+from lp.app.validators.name import sanitize_name
 from lp.blueprints.interfaces.specification import ISpecificationSet
-from lp.code.interfaces.branchcollection import IAllBranches
 from lp.bugs.interfaces.bug import IBugSet
+from lp.code.interfaces.branchcollection import IAllBranches
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProductSet
+from lp.services.propertycache import cachedproperty
 
 
 shipit_faq_url = 'http://www.ubuntu.com/getubuntu/shipit-faq'
@@ -483,8 +487,8 @@ class LaunchpadSearchView(LaunchpadFormView):
             page_matches = google_search.search(
                 terms=query_terms, start=start)
         except GoogleResponseError:
-            error_utility = getUtility(IErrorReportingUtility)
-            error_utility.raising(sys.exc_info(), self.request)
+            # There was a connectivity or Google service issue that means
+            # there is no data available at this moment.
             self.has_page_service = False
             return None
         if len(page_matches) == 0:

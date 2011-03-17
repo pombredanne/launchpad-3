@@ -13,12 +13,14 @@ __all__ = [
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-
 from canonical.launchpad.webapp import (
-    Link, Navigation, canonical_url, stepto)
+    canonical_url,
+    Link,
+    Navigation,
+    stepto,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import NavigationMenu
-
 from lp.bugs.browser.bug import MaloneView
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
@@ -65,7 +67,7 @@ class MaloneApplicationNavigation(Navigation):
         # /malone/$bug.id Just Work
         bug = getUtility(IBugSet).getByNameOrID(name)
         if not check_permission("launchpad.View", bug):
-            raise Unauthorized("Bug %s is private" % name)
+            return None
         return bug
 
 

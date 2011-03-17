@@ -3,470 +3,334 @@
 
 """Test Archive features."""
 
-from datetime import date, datetime, timedelta
-import unittest
+from datetime import (
+    date,
+    datetime,
+    timedelta,
+    )
 
-import pytz
 import transaction
-
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import sqlvalues
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
-
-from lp.buildmaster.interfaces.buildbase import BuildStatus
-from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.person import IPersonSet
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.app.errors import NotFoundError
+from lp.buildmaster.enums import BuildStatus
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    TeamSubscriptionPolicy,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.job.interfaces.job import JobStatus
-from lp.soyuz.interfaces.archive import (IArchiveSet, ArchivePurpose,
-    ArchiveStatus, CannotRestrictArchitectures, CannotSwitchPrivacy,
-    InvalidPocketForPartnerArchive, InvalidPocketForPPA)
+from lp.services.propertycache import clear_property_cache
 from lp.services.worlddata.interfaces.country import ICountrySet
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    ArchiveStatus,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.archive import (
+    ArchiveDisabled,
+    CannotRestrictArchitectures,
+    CannotUploadToPocket,
+    CannotUploadToPPA,
+    IArchiveSet,
+    InsufficientUploadRights,
+    InvalidPocketForPartnerArchive,
+    InvalidPocketForPPA,
+    NoRightsForArchive,
+    NoRightsForComponent,
+    VersionRequiresName,
+    )
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
+from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagerelease import (
-    BinaryPackageReleaseDownloadCount)
+    BinaryPackageReleaseDownloadCount,
+    )
+from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import login, login_person, TestCaseWithFactory
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    login_person,
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.sampledata import COMMERCIAL_ADMIN_EMAIL
 
 
 class TestGetPublicationsInArchive(TestCaseWithFactory):
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        """Use `SoyuzTestPublisher` to publish some sources in archives."""
-        super(TestGetPublicationsInArchive, self).setUp()
+    def makeArchivesForOneDistribution(self, count=3):
+        distribution = self.factory.makeDistribution()
+        archives = []
+        for i in range(count):
+            archives.append(
+                self.factory.makeArchive(distribution=distribution))
+        return archives
 
-        self.distribution = getUtility(IDistributionSet)['ubuntutest']
+    def makeArchivesWithPublications(self, count=3):
+        archives = self.makeArchivesForOneDistribution(count=count)
+        sourcepackagename = self.factory.makeSourcePackageName()
+        for archive in archives:
+            self.factory.makeSourcePackagePublishingHistory(
+                sourcepackagename=sourcepackagename, archive=archive,
+                status=PackagePublishingStatus.PUBLISHED,
+                )
+        return archives, sourcepackagename
 
-        # Create two PPAs for gedit.
-        self.archives = {}
-        self.archives['ubuntu-main'] = self.distribution.main_archive
-        self.archives['gedit-nightly'] = self.factory.makeArchive(
-            name="gedit-nightly", distribution=self.distribution)
-        self.archives['gedit-beta'] = self.factory.makeArchive(
-            name="gedit-beta", distribution=self.distribution)
+    def getPublications(self, sourcepackagename, archives, distribution):
+        return getUtility(IArchiveSet).getPublicationsInArchives(
+            sourcepackagename, archives, distribution=distribution)
 
-        self.publisher = SoyuzTestPublisher()
-        self.publisher.prepareBreezyAutotest()
-
-        # Publish gedit in all three archives, but with different
-        # upload dates.
-        self.gedit_nightly_src_hist = self.publisher.getPubSource(
-            sourcename="gedit", archive=self.archives['gedit-nightly'],
-            date_uploaded=datetime(2010, 12, 1, tzinfo=pytz.UTC),
-            status=PackagePublishingStatus.PUBLISHED)
-        self.gedit_beta_src_hist = self.publisher.getPubSource(
-            sourcename="gedit", archive=self.archives['gedit-beta'],
-            date_uploaded=datetime(2010, 11, 30, tzinfo=pytz.UTC),
-            status=PackagePublishingStatus.PUBLISHED)
-        self.gedit_main_src_hist = self.publisher.getPubSource(
-            sourcename="gedit", archive=self.archives['ubuntu-main'],
-            date_uploaded=datetime(2010, 12, 30, tzinfo=pytz.UTC),
-            status=PackagePublishingStatus.PUBLISHED)
-
-        # Save the archive utility for easy access, as well as the gedit
-        # source package name.
-        self.archive_set = getUtility(IArchiveSet)
-        spr = self.gedit_main_src_hist.sourcepackagerelease
-        self.gedit_name = spr.sourcepackagename
-
-    def testReturnsAllPublishedPublications(self):
+    def test_getPublications_returns_all_published_publications(self):
         # Returns all currently published publications for archives
-        results = self.archive_set.getPublicationsInArchives(
-            self.gedit_name, self.archives.values(),
-            distribution=self.distribution)
+        archives, sourcepackagename = self.makeArchivesWithPublications()
+        results = self.getPublications(
+            sourcepackagename, archives, archives[0].distribution)
         num_results = results.count()
-        self.assertEquals(3, num_results, "Expected 3 publications but "
-                                          "got %s" % num_results)
+        self.assertEquals(3, num_results)
 
-    def testEmptyListOfArchives(self):
+    def test_getPublications_empty_list_of_archives(self):
         # Passing an empty list of archives will result in an empty
         # resultset.
-        results = self.archive_set.getPublicationsInArchives(
-            self.gedit_name, [], distribution=self.distribution)
-        self.assertEquals(0, results.count())
+        archives, sourcepackagename = self.makeArchivesWithPublications()
+        results = self.getPublications(
+            sourcepackagename, [], archives[0].distribution)
+        self.assertEquals([], list(results))
 
-    def testReturnsOnlyPublicationsForGivenArchives(self):
+    def assertPublicationsFromArchives(self, publications, archives):
+        self.assertEquals(len(archives), publications.count())
+        for publication, archive in zip(publications, archives):
+            self.assertEquals(archive, publication.archive)
+
+    def test_getPublications_returns_only_for_given_archives(self):
         # Returns only publications for the specified archives
-        results = self.archive_set.getPublicationsInArchives(
-            self.gedit_name, [self.archives['gedit-beta']],
-            distribution=self.distribution)
-        num_results = results.count()
-        self.assertEquals(1, num_results, "Expected 1 publication but "
-                                          "got %s" % num_results)
-        self.assertEquals(self.archives['gedit-beta'],
-                          results[0].archive,
-                          "Expected publication from %s but was instead "
-                          "from %s." % (
-                              self.archives['gedit-beta'].displayname,
-                              results[0].archive.displayname))
+        archives, sourcepackagename = self.makeArchivesWithPublications()
+        results = self.getPublications(
+            sourcepackagename, [archives[0]], archives[0].distribution)
+        self.assertPublicationsFromArchives(results, [archives[0]])
 
-    def testReturnsOnlyPublishedPublications(self):
+    def test_getPublications_returns_only_published_publications(self):
         # Publications that are not published will not be returned.
-        secure_src_hist = self.gedit_beta_src_hist
-        secure_src_hist.status = PackagePublishingStatus.PENDING
+        archive = self.factory.makeArchive()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        self.factory.makeSourcePackagePublishingHistory(
+            archive=archive, sourcepackagename=sourcepackagename,
+            status=PackagePublishingStatus.PENDING)
+        results = self.getPublications(
+            sourcepackagename, [archive], archive.distribution)
+        self.assertEquals([], list(results))
 
-        results = self.archive_set.getPublicationsInArchives(
-            self.gedit_name, [self.archives['gedit-beta']],
-            distribution=self.distribution)
-        num_results = results.count()
-        self.assertEquals(0, num_results, "Expected 0 publication but "
-                                          "got %s" % num_results)
-
-    def testPubsForSpecificDistro(self):
-        # Results can be filtered for specific distributions.
-
-        # Add a publication in the ubuntu distribution
-        ubuntu = getUtility(IDistributionSet)['ubuntu']
-        warty = ubuntu['warty']
-        gedit_main_src_hist = self.publisher.getPubSource(
-            sourcename="gedit",
-            archive=self.archives['ubuntu-main'],
-            distroseries=warty,
-            date_uploaded=datetime(2010, 12, 30, tzinfo=pytz.UTC),
+    def publishSourceInNewArchive(self, sourcepackagename):
+        distribution = self.factory.makeDistribution()
+        distroseries = self.factory.makeDistroSeries(
+            distribution=distribution)
+        archive = self.factory.makeArchive(distribution=distribution)
+        self.factory.makeSourcePackagePublishingHistory(
+            archive=archive, sourcepackagename=sourcepackagename,
+            distroseries=distroseries,
             status=PackagePublishingStatus.PUBLISHED)
+        return archive
 
-        # Only the 3 results for ubuntutest are returned when requested:
-        results = self.archive_set.getPublicationsInArchives(
-            self.gedit_name, self.archives.values(),
-            distribution=self.distribution)
-        num_results = results.count()
-        self.assertEquals(3, num_results, "Expected 3 publications but "
-                                          "got %s" % num_results)
-
-        # Similarly, requesting the ubuntu publications only returns the
-        # one we created:
-        results = self.archive_set.getPublicationsInArchives(
-            self.gedit_name, self.archives.values(),
-            distribution=ubuntu)
-        num_results = results.count()
-        self.assertEquals(1, num_results, "Expected 1 publication but "
-                                          "got %s" % num_results)
+    def test_getPublications_for_specific_distro(self):
+        # Results can be filtered for specific distributions.
+        sourcepackagename = self.factory.makeSourcePackageName()
+        archive = self.publishSourceInNewArchive(sourcepackagename)
+        other_archive = self.publishSourceInNewArchive(sourcepackagename)
+        # We don't get the results for other_distribution
+        results = self.getPublications(
+            sourcepackagename, [archive, other_archive],
+            distribution=archive.distribution)
+        self.assertPublicationsFromArchives(results, [archive])
 
 
 class TestArchiveRepositorySize(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def setUp(self):
-        super(TestArchiveRepositorySize, self).setUp()
-        self.publisher = SoyuzTestPublisher()
-        self.publisher.prepareBreezyAutotest()
-        self.ppa = self.factory.makeArchive(
-            name="testing", distribution=self.publisher.ubuntutest)
-
-    def test_binaries_size_does_not_include_ddebs_for_ppas(self):
-        # DDEBs are not computed in the PPA binaries size because
-        # they are not being published. See bug #399444.
-        self.assertEquals(0, self.ppa.binaries_size)
-        self.publisher.getPubBinaries(
-            filecontent='X', format=BinaryPackageFormat.DDEB,
-            archive=self.ppa)
-        self.assertEquals(0, self.ppa.binaries_size)
-
-    def test_binaries_size_includes_ddebs_for_other_archives(self):
-        # DDEBs size are computed for all archive purposes, except PPAs.
-        previous_size = self.publisher.ubuntutest.main_archive.binaries_size
-        self.publisher.getPubBinaries(
-            filecontent='X', format=BinaryPackageFormat.DDEB)
-        self.assertEquals(
-            previous_size + 1,
-            self.publisher.ubuntutest.main_archive.binaries_size)
+    def test_empty_ppa_has_zero_binaries_size(self):
+        # An empty PPA has no binaries so has zero binaries_size.
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertEquals(0, ppa.binaries_size)
 
     def test_sources_size_on_empty_archive(self):
         # Zero is returned for an archive without sources.
-        self.assertEquals(
-            0, self.ppa.sources_size,
-            'Zero should be returned for an archive without sources.')
+        archive = self.factory.makeArchive()
+        self.assertEquals(0, archive.sources_size)
+
+    def publishSourceFile(self, archive, library_file):
+        """Publish a source package with the given content to the archive.
+
+        :param archive: the IArchive to publish to.
+        :param library_file: a LibraryFileAlias for the content of the
+            source file.
+        """
+        sourcepackagerelease = self.factory.makeSourcePackageRelease()
+        self.factory.makeSourcePackagePublishingHistory(
+            archive=archive, sourcepackagerelease=sourcepackagerelease,
+            status=PackagePublishingStatus.PUBLISHED)
+        self.factory.makeSourcePackageReleaseFile(
+            sourcepackagerelease=sourcepackagerelease,
+            library_file=library_file)
 
     def test_sources_size_does_not_count_duplicated_files(self):
         # If there are multiple copies of the same file name/size
         # only one will be counted.
-        pub_1 = self.publisher.getPubSource(
-            filecontent='22', version='0.5.11~ppa1', archive=self.ppa)
-
-        pub_2 = self.publisher.getPubSource(
-            filecontent='333', version='0.5.11~ppa2', archive=self.ppa)
-
-        self.assertEquals(5, self.ppa.sources_size)
-
-        shared_tarball = self.publisher.addMockFile(
-            filename='foo_0.5.11.tar.gz', filecontent='1')
-
-        # After adding a the shared tarball to the ppa1 version,
-        # the sources_size updates to reflect the change.
-        pub_1.sourcepackagerelease.addFile(shared_tarball)
+        archive = self.factory.makeArchive()
+        library_file = self.factory.makeLibraryFileAlias()
+        self.publishSourceFile(archive, library_file)
         self.assertEquals(
-            6, self.ppa.sources_size,
-            'The sources_size should update after a file is added.')
+            library_file.content.filesize, archive.sources_size)
 
-        # But after adding a copy of the shared tarball to the ppa2 version,
-        # the sources_size is unchanged.
-        shared_tarball_copy = self.publisher.addMockFile(
-            filename='foo_0.5.11.tar.gz', filecontent='1')
-
-        pub_2.sourcepackagerelease.addFile(shared_tarball_copy)
+        self.publishSourceFile(archive, library_file)
         self.assertEquals(
-            6, self.ppa.sources_size,
-            'The sources_size should change after adding a duplicate file.')
+            library_file.content.filesize, archive.sources_size)
 
 
 class TestSeriesWithSources(TestCaseWithFactory):
     """Create some sources in different series."""
 
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        super(TestSeriesWithSources, self).setUp()
-        self.publisher = SoyuzTestPublisher()
-        self.publisher.prepareBreezyAutotest()
-
-        # Create three sources for the two different distroseries.
-        breezy_autotest = self.publisher.distroseries
-        ubuntu_test = breezy_autotest.distribution
-        self.series = [breezy_autotest]
-        self.series.append(self.factory.makeDistroRelease(
-            distribution=ubuntu_test, name="foo-series", version='1.0'))
-
-        self.sources = []
-        gedit_src_hist = self.publisher.getPubSource(
-            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED)
-        self.sources.append(gedit_src_hist)
-
-        firefox_src_hist = self.publisher.getPubSource(
-            sourcename="firefox", status=PackagePublishingStatus.PUBLISHED,
-            distroseries=self.series[1])
-        self.sources.append(firefox_src_hist)
-
-        gtg_src_hist = self.publisher.getPubSource(
-            sourcename="getting-things-gnome",
-            status=PackagePublishingStatus.PUBLISHED,
-            distroseries=self.series[1])
-        self.sources.append(gtg_src_hist)
-
-        # Shortcuts for test readability.
-        self.archive = self.series[0].main_archive
+    layer = DatabaseFunctionalLayer
 
     def test_series_with_sources_returns_all_series(self):
         # Calling series_with_sources returns all series with publishings.
-        series = self.archive.series_with_sources
-        series_names = [s.displayname for s in series]
-
-        self.assertContentEqual(
-            [u'Breezy Badger Autotest', u'Foo-series'],
-            series_names)
+        distribution = self.factory.makeDistribution()
+        archive = self.factory.makeArchive(distribution=distribution)
+        series_with_no_sources = self.factory.makeDistroSeries(
+            distribution=distribution, version="0.5")
+        series_with_sources1 = self.factory.makeDistroSeries(
+            distribution=distribution, version="1")
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=series_with_sources1, archive=archive,
+            status=PackagePublishingStatus.PUBLISHED)
+        series_with_sources2 = self.factory.makeDistroSeries(
+            distribution=distribution, version="2")
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=series_with_sources2, archive=archive,
+            status=PackagePublishingStatus.PENDING)
+        self.assertEqual(
+            [series_with_sources2, series_with_sources1],
+            archive.series_with_sources)
 
     def test_series_with_sources_ignore_non_published_records(self):
         # If all publishings in a series are deleted or superseded
         # the series will not be returned.
-        self.sources[0].status = (
-            PackagePublishingStatus.DELETED)
-
-        series = self.archive.series_with_sources
-        series_names = [s.displayname for s in series]
-
-        self.assertContentEqual([u'Foo-series'], series_names)
+        series = self.factory.makeDistroSeries()
+        archive = self.factory.makeArchive(distribution=series.distribution)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=series, archive=archive,
+            status=PackagePublishingStatus.DELETED)
+        self.assertEqual([], archive.series_with_sources)
 
     def test_series_with_sources_ordered_by_version(self):
         # The returned series are ordered by the distroseries version.
-        series = self.archive.series_with_sources
-        versions = [s.version for s in series]
-
-        # Latest version should be first
-        self.assertEqual(
-            [u'6.6.6', u'1.0'], versions,
-            "The latest version was not first.")
-
-        # Update the version of breezyautotest and ensure that the
-        # latest version is still first.
-        self.series[0].version = u'0.5'
-        series = self.archive.series_with_sources
-        versions = [s.version for s in series]
-        self.assertEqual(
-            [u'1.0', u'0.5'], versions,
-            "The latest version was not first.")
+        distribution = self.factory.makeDistribution()
+        archive = self.factory.makeArchive(distribution=distribution)
+        series1 = self.factory.makeDistroSeries(
+            version="1", distribution=distribution)
+        series2 = self.factory.makeDistroSeries(
+            version="2", distribution=distribution)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=series1, archive=archive,
+            status=PackagePublishingStatus.PUBLISHED)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=series2, archive=archive,
+            status=PackagePublishingStatus.PUBLISHED)
+        self.assertEqual([series2, series1], archive.series_with_sources)
+        # Change the version such that they should order differently
+        removeSecurityProxy(series2).version = "0.5"
+        # ... and check that they do
+        self.assertEqual([series1, series2], archive.series_with_sources)
 
 
 class TestGetSourcePackageReleases(TestCaseWithFactory):
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestGetSourcePackageReleases, self).setUp()
-        self.publisher = SoyuzTestPublisher()
-        self.publisher.prepareBreezyAutotest()
-
-        # Create an archive with some published binaries.
-        self.archive = self.factory.makeArchive()
-        binaries_foo = self.publisher.getPubBinaries(
-            archive=self.archive, binaryname="foo-bin")
-        binaries_bar = self.publisher.getPubBinaries(
-            archive=self.archive, binaryname="bar-bin")
-
-        # Collect the builds for reference.
-        self.builds_foo = [
-            binary.binarypackagerelease.build for binary in binaries_foo]
-        self.builds_bar = [
-            binary.binarypackagerelease.build for binary in binaries_bar]
-
-        # Collect the source package releases for reference.
-        self.sourcepackagereleases = [
-            self.builds_foo[0].source_package_release,
-            self.builds_bar[0].source_package_release,
-            ]
+    def createArchiveWithBuilds(self, statuses):
+        archive = self.factory.makeArchive()
+        sprs = []
+        for status in statuses:
+            sourcepackagerelease = self.factory.makeSourcePackageRelease()
+            self.factory.makeBinaryPackageBuild(
+                source_package_release=sourcepackagerelease,
+                archive=archive, status=status)
+            sprs.append(sourcepackagerelease)
+        unlinked_spr = self.factory.makeSourcePackageRelease()
+        return archive, sprs
 
     def test_getSourcePackageReleases_with_no_params(self):
         # With no params all source package releases are returned.
-        sprs = self.archive.getSourcePackageReleases()
-
-        self.assertContentEqual(self.sourcepackagereleases, sprs)
+        archive, sprs = self.createArchiveWithBuilds(
+            [BuildStatus.NEEDSBUILD, BuildStatus.FULLYBUILT])
+        self.assertContentEqual(
+            sprs, archive.getSourcePackageReleases())
 
     def test_getSourcePackageReleases_with_buildstatus(self):
         # Results are filtered by the specified buildstatus.
-
-        # Set the builds for one of the sprs to needs build.
-        for build in self.builds_foo:
-            removeSecurityProxy(build).status = BuildStatus.NEEDSBUILD
-
-        result = self.archive.getSourcePackageReleases(
-            build_status=BuildStatus.NEEDSBUILD)
-
-        self.failUnlessEqual(1, result.count())
-        self.failUnlessEqual(
-            self.sourcepackagereleases[0], result[0])
+        archive, sprs = self.createArchiveWithBuilds(
+            [BuildStatus.NEEDSBUILD, BuildStatus.FULLYBUILT])
+        self.assertContentEqual(
+            [sprs[0]], archive.getSourcePackageReleases(
+                build_status=BuildStatus.NEEDSBUILD))
 
 
 class TestCorrespondingDebugArchive(TestCaseWithFactory):
 
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        super(TestCorrespondingDebugArchive, self).setUp()
-
-        self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
-
-        # Create a debug archive, as there isn't one in the sample data.
-        self.debug_archive = getUtility(IArchiveSet).new(
-            purpose=ArchivePurpose.DEBUG,
-            distribution=self.ubuntutest,
-            owner=self.ubuntutest.owner)
-
-        # Retrieve sample data archives of each type.
-        self.primary_archive = getUtility(IArchiveSet).getByDistroPurpose(
-            self.ubuntutest, ArchivePurpose.PRIMARY)
-        self.partner_archive = getUtility(IArchiveSet).getByDistroPurpose(
-            self.ubuntutest, ArchivePurpose.PARTNER)
-        self.copy_archive = getUtility(IArchiveSet).getByDistroPurpose(
-            self.ubuntutest, ArchivePurpose.PARTNER)
-        self.ppa = getUtility(IPersonSet).getByName('cprov').archive
+    layer = DatabaseFunctionalLayer
 
     def testPrimaryDebugArchiveIsDebug(self):
-        self.assertEquals(
-            self.primary_archive.debug_archive, self.debug_archive)
+        distribution = self.factory.makeDistribution()
+        primary = self.factory.makeArchive(
+            distribution=distribution, purpose=ArchivePurpose.PRIMARY)
+        debug = self.factory.makeArchive(
+            distribution=distribution, purpose=ArchivePurpose.DEBUG)
+        self.assertEquals(primary.debug_archive, debug)
 
     def testPartnerDebugArchiveIsSelf(self):
-        self.assertEquals(
-            self.partner_archive.debug_archive, self.partner_archive)
+        partner = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
+        self.assertEquals(partner.debug_archive, partner)
 
     def testCopyDebugArchiveIsSelf(self):
-        self.assertEquals(
-            self.copy_archive.debug_archive, self.copy_archive)
+        copy = self.factory.makeArchive(purpose=ArchivePurpose.COPY)
+        self.assertEquals(copy.debug_archive, copy)
 
     def testDebugDebugArchiveIsSelf(self):
-        self.assertEquals(
-            self.debug_archive.debug_archive, self.debug_archive)
+        debug = self.factory.makeArchive(purpose=ArchivePurpose.DEBUG)
+        self.assertEquals(debug.debug_archive, debug)
 
     def testPPADebugArchiveIsSelf(self):
-        self.assertEquals(self.ppa.debug_archive, self.ppa)
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertEquals(ppa.debug_archive, ppa)
 
     def testMissingPrimaryDebugArchiveIsNone(self):
-        # Turn the DEBUG archive into a COPY archive to hide it.
-        removeSecurityProxy(self.debug_archive).purpose = ArchivePurpose.COPY
-
-        self.assertIs(
-            self.primary_archive.debug_archive, None)
+        primary = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        self.assertIs(primary.debug_archive, None)
 
 
 class TestArchiveEnableDisable(TestCaseWithFactory):
     """Test the enable and disable methods of Archive."""
 
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        #XXX: rockstar - 12 Jan 2010 - Bug #506255 - Tidy up these tests!
-        super(TestArchiveEnableDisable, self).setUp()
-
-        self.publisher = SoyuzTestPublisher()
-        self.publisher.prepareBreezyAutotest()
-
-        self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
-        self.archive = getUtility(IArchiveSet).getByDistroPurpose(
-            self.ubuntutest, ArchivePurpose.PRIMARY)
-
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        sample_data = store.find(BinaryPackageBuild)
-        for build in sample_data:
-            build.buildstate = BuildStatus.FULLYBUILT
-        store.flush()
-
-        # We test builds that target a primary archive.
-        self.builds = []
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
-                archive=self.archive).createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="firefox",
-                status=PackagePublishingStatus.PUBLISHED,
-                archive=self.archive).createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="apg", status=PackagePublishingStatus.PUBLISHED,
-                archive=self.archive).createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="vim", status=PackagePublishingStatus.PUBLISHED,
-                archive=self.archive).createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="gcc", status=PackagePublishingStatus.PUBLISHED,
-                archive=self.archive).createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="bison", status=PackagePublishingStatus.PUBLISHED,
-                archive=self.archive).createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="flex", status=PackagePublishingStatus.PUBLISHED,
-                archive=self.archive).createMissingBuilds())
-        self.builds.extend(
-            self.publisher.getPubSource(
-                sourcename="postgres",
-                status=PackagePublishingStatus.PUBLISHED,
-                archive=self.archive).createMissingBuilds())
-        # Set up the builds for test.
-        score = 1000
-        duration = 0
-        for build in self.builds:
-            score += 1
-            duration += 60
-            bq = build.buildqueue_record
-            bq.lastscore = score
-            removeSecurityProxy(bq).estimated_duration = timedelta(
-                seconds=duration)
+    layer = DatabaseFunctionalLayer
 
     def _getBuildJobsByStatus(self, archive, status):
         # Return the count for archive build jobs with the given status.
@@ -493,92 +357,97 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         # status.
         self.assertEqual(self._getBuildJobsByStatus(archive, status), 0)
 
-    def assertHasBuildJobsWithStatus(self, archive, status):
+    def assertHasBuildJobsWithStatus(self, archive, status, count):
         # Check that that there are jobs attached to this archive that have
         # the specified status.
-        self.assertEqual(self._getBuildJobsByStatus(archive, status), 8)
+        self.assertEqual(self._getBuildJobsByStatus(archive, status), count)
 
     def test_enableArchive(self):
         # Enabling an archive should set all the Archive's suspended builds to
         # WAITING.
-
-        # Disable the archive, because it's currently enabled.
-        self.archive.disable()
-        self.assertHasBuildJobsWithStatus(self.archive, JobStatus.SUSPENDED)
-        self.archive.enable()
-        self.assertNoBuildJobsHaveStatus(self.archive, JobStatus.SUSPENDED)
-        self.assertTrue(self.archive.enabled)
+        archive = self.factory.makeArchive(enabled=True)
+        build = self.factory.makeBinaryPackageBuild(
+            archive=archive, status=BuildStatus.NEEDSBUILD)
+        build.queueBuild()
+        # disable the archive, as it is currently enabled
+        removeSecurityProxy(archive).disable()
+        self.assertHasBuildJobsWithStatus(archive, JobStatus.SUSPENDED, 1)
+        removeSecurityProxy(archive).enable()
+        self.assertNoBuildJobsHaveStatus(archive, JobStatus.SUSPENDED)
+        self.assertTrue(archive.enabled)
 
     def test_enableArchiveAlreadyEnabled(self):
         # Enabling an already enabled Archive should raise an AssertionError.
-        self.assertRaises(AssertionError, self.archive.enable)
+        archive = self.factory.makeArchive(enabled=True)
+        self.assertRaises(AssertionError, removeSecurityProxy(archive).enable)
 
     def test_disableArchive(self):
         # Disabling an archive should set all the Archive's pending bulds to
         # SUSPENDED.
-        self.assertHasBuildJobsWithStatus(self.archive, JobStatus.WAITING)
-        self.archive.disable()
-        self.assertNoBuildJobsHaveStatus(self.archive, JobStatus.WAITING)
-        self.assertFalse(self.archive.enabled)
+        archive = self.factory.makeArchive(enabled=True)
+        build = self.factory.makeBinaryPackageBuild(
+            archive=archive, status=BuildStatus.NEEDSBUILD)
+        build.queueBuild()
+        self.assertHasBuildJobsWithStatus(archive, JobStatus.WAITING, 1)
+        removeSecurityProxy(archive).disable()
+        self.assertNoBuildJobsHaveStatus(archive, JobStatus.WAITING)
+        self.assertFalse(archive.enabled)
 
     def test_disableArchiveAlreadyDisabled(self):
         # Disabling an already disabled Archive should raise an
         # AssertionError.
-        self.archive.disable()
-        self.assertRaises(AssertionError, self.archive.disable)
+        archive = self.factory.makeArchive(enabled=False)
+        self.assertRaises(
+            AssertionError, removeSecurityProxy(archive).disable)
 
 
 class TestCollectLatestPublishedSources(TestCaseWithFactory):
     """Ensure that the private helper method works as expected."""
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        """Setup an archive with relevant publications."""
-        super(TestCollectLatestPublishedSources, self).setUp()
-        self.publisher = SoyuzTestPublisher()
-        self.publisher.prepareBreezyAutotest()
-
-        # Create an archive with some published sources. We'll store
-        # a reference to the naked archive so that we can call
-        # the private method which is not defined on the interface.
-        self.archive = self.factory.makeArchive()
-        self.naked_archive = removeSecurityProxy(self.archive)
-
-        self.pub_1 = self.publisher.getPubSource(
-            version='0.5.11~ppa1', archive=self.archive, sourcename="foo",
-            status=PackagePublishingStatus.PUBLISHED)
-
-        self.pub_2 = self.publisher.getPubSource(
-            version='0.5.11~ppa2', archive=self.archive, sourcename="foo",
-            status=PackagePublishingStatus.PUBLISHED)
-
-        self.pub_3 = self.publisher.getPubSource(
-            version='0.9', archive=self.archive, sourcename="bar",
-            status=PackagePublishingStatus.PUBLISHED)
+    def makePublishedSources(self, archive, statuses, versions, names):
+        for status, version, name in zip(statuses, versions, names):
+            self.factory.makeSourcePackagePublishingHistory(
+                sourcepackagename=name, archive=archive,
+                version=version, status=status)
 
     def test_collectLatestPublishedSources_returns_latest(self):
-        pubs = self.naked_archive._collectLatestPublishedSources(
-            self.archive, ["foo"])
+        sourcepackagename = self.factory.makeSourcePackageName(name="foo")
+        other_spn = self.factory.makeSourcePackageName(name="bar")
+        archive = self.factory.makeArchive()
+        self.makePublishedSources(archive,
+            [PackagePublishingStatus.PUBLISHED]*3,
+            ["1.0", "1.1", "2.0"],
+            [sourcepackagename, sourcepackagename, other_spn])
+        pubs = removeSecurityProxy(archive)._collectLatestPublishedSources(
+            archive, ["foo"])
         self.assertEqual(1, len(pubs))
-        self.assertEqual('0.5.11~ppa2', pubs[0].source_package_version)
+        self.assertEqual('1.1', pubs[0].source_package_version)
 
     def test_collectLatestPublishedSources_returns_published_only(self):
         # Set the status of the latest pub to DELETED and ensure that it
         # is not returned.
-        self.pub_2.status = PackagePublishingStatus.DELETED
-
-        pubs = self.naked_archive._collectLatestPublishedSources(
-            self.archive, ["foo"])
+        sourcepackagename = self.factory.makeSourcePackageName(name="foo")
+        other_spn = self.factory.makeSourcePackageName(name="bar")
+        archive = self.factory.makeArchive()
+        self.makePublishedSources(archive,
+            [PackagePublishingStatus.PUBLISHED,
+                PackagePublishingStatus.DELETED,
+                PackagePublishingStatus.PUBLISHED],
+            ["1.0", "1.1", "2.0"],
+            [sourcepackagename, sourcepackagename, other_spn])
+        pubs = removeSecurityProxy(archive)._collectLatestPublishedSources(
+            archive, ["foo"])
         self.assertEqual(1, len(pubs))
-        self.assertEqual('0.5.11~ppa1', pubs[0].source_package_version)
+        self.assertEqual('1.0', pubs[0].source_package_version)
 
 
 class TestArchiveCanUpload(TestCaseWithFactory):
     """Test the various methods that verify whether uploads are allowed to
     happen."""
 
-    layer = LaunchpadZopelessLayer
+    layer = DatabaseFunctionalLayer
 
     def test_checkArchivePermission_by_PPA_owner(self):
         # Uploading to a PPA should be allowed for a user that is the owner
@@ -591,51 +460,369 @@ class TestArchiveCanUpload(TestCaseWithFactory):
 
     def test_checkArchivePermission_distro_archive(self):
         # Regular users can not upload to ubuntu
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY,
-                                           distribution=ubuntu)
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         main = getUtility(IComponentSet)["main"]
         # A regular user doesn't have access
-        somebody = self.factory.makePerson(name="somebody")
+        somebody = self.factory.makePerson()
         self.assertEquals(False,
             archive.checkArchivePermission(somebody, main))
         # An ubuntu core developer does have access
-        kamion = getUtility(IPersonSet).getByName('kamion')
-        self.assertEquals(True, archive.checkArchivePermission(kamion, main))
+        coredev = self.factory.makePerson()
+        with person_logged_in(archive.owner):
+            archive.newComponentUploader(coredev, main.name)
+        self.assertEquals(True, archive.checkArchivePermission(coredev, main))
 
     def test_checkArchivePermission_ppa(self):
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        owner = self.factory.makePerson(name="eigenaar")
+        owner = self.factory.makePerson()
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA,
-                                           distribution=ubuntu,
                                            owner=owner)
-        somebody = self.factory.makePerson(name="somebody")
+        somebody = self.factory.makePerson()
         # The owner has access
         self.assertEquals(True, archive.checkArchivePermission(owner))
         # Somebody unrelated does not
         self.assertEquals(False, archive.checkArchivePermission(somebody))
 
+    def makeArchiveAndActiveDistroSeries(self, purpose=None):
+        if purpose is None:
+            purpose = ArchivePurpose.PRIMARY
+        archive = self.factory.makeArchive(purpose=purpose)
+        distroseries = self.factory.makeDistroSeries(
+            distribution=archive.distribution,
+            status=SeriesStatus.DEVELOPMENT)
+        return archive, distroseries
+
+    def makePersonWithComponentPermission(self, archive):
+        person = self.factory.makePerson()
+        component = self.factory.makeComponent()
+        removeSecurityProxy(archive).newComponentUploader(
+            person, component)
+        return person, component
+
+    def checkUpload(self, archive, person, sourcepackagename,
+                    distroseries=None, component=None,
+                    pocket=None, strict_component=False):
+        if distroseries is None:
+            distroseries = self.factory.makeDistroSeries()
+        if component is None:
+            component = self.factory.makeComponent()
+        if pocket is None:
+            pocket = PackagePublishingPocket.RELEASE
+        return archive.checkUpload(
+            person, distroseries, sourcepackagename, component, pocket,
+            strict_component=strict_component)
+
+    def assertCanUpload(self, archive, person, sourcepackagename,
+                        distroseries=None, component=None,
+                        pocket=None, strict_component=False):
+        """Assert an upload to 'archive' will be accepted."""
+        self.assertIs(
+            None,
+            self.checkUpload(
+                archive, person, sourcepackagename,
+                distroseries=distroseries, component=component,
+                pocket=pocket, strict_component=strict_component))
+
+    def assertCannotUpload(self, reason, archive, person, sourcepackagename,
+                           distroseries=None, component=None, pocket=None,
+                           strict_component=False):
+        """Assert that upload to 'archive' will be rejected.
+
+        :param reason: The expected reason for not being able to upload. A
+            class.
+        """
+        self.assertIsInstance(
+            self.checkUpload(
+                archive, person, sourcepackagename,
+                distroseries=distroseries, component=component,
+                pocket=pocket, strict_component=strict_component),
+            reason)
+
     def test_checkUpload_partner_invalid_pocket(self):
         # Partner archives only have release and proposed pockets
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
-        self.assertIsInstance(archive.checkUpload(self.factory.makePerson(),
-                                self.factory.makeDistroSeries(),
-                                self.factory.makeSourcePackageName(),
-                                self.factory.makeComponent(),
-                                PackagePublishingPocket.UPDATES),
-                                InvalidPocketForPartnerArchive)
+        archive, distroseries = self.makeArchiveAndActiveDistroSeries(
+            purpose=ArchivePurpose.PARTNER)
+        self.assertCannotUpload(
+            InvalidPocketForPartnerArchive, archive,
+            self.factory.makePerson(), self.factory.makeSourcePackageName(),
+            pocket=PackagePublishingPocket.UPDATES,
+            distroseries=distroseries)
 
     def test_checkUpload_ppa_invalid_pocket(self):
         # PPA archives only have release pockets
-        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
-        self.assertIsInstance(archive.checkUpload(self.factory.makePerson(),
-                                self.factory.makeDistroSeries(),
-                                self.factory.makeSourcePackageName(),
-                                self.factory.makeComponent(),
-                                PackagePublishingPocket.PROPOSED),
-                                InvalidPocketForPPA)
+        archive, distroseries = self.makeArchiveAndActiveDistroSeries(
+            purpose=ArchivePurpose.PPA)
+        self.assertCannotUpload(
+            InvalidPocketForPPA, archive,
+            self.factory.makePerson(), self.factory.makeSourcePackageName(),
+            pocket=PackagePublishingPocket.PROPOSED,
+            distroseries=distroseries)
 
-    # XXX: JRV 20100511: IArchive.canUploadSuiteSourcePackage needs tests
+    def test_checkUpload_invalid_pocket_for_series_state(self):
+        archive, distroseries = self.makeArchiveAndActiveDistroSeries(
+            purpose=ArchivePurpose.PRIMARY)
+        self.assertCannotUpload(
+            CannotUploadToPocket, archive,
+            self.factory.makePerson(), self.factory.makeSourcePackageName(),
+            pocket=PackagePublishingPocket.PROPOSED,
+            distroseries=distroseries)
+
+    def test_checkUpload_disabled_archive(self):
+        archive, distroseries = self.makeArchiveAndActiveDistroSeries(
+            purpose=ArchivePurpose.PRIMARY)
+        removeSecurityProxy(archive).disable()
+        self.assertCannotUpload(
+            ArchiveDisabled, archive, self.factory.makePerson(),
+            self.factory.makeSourcePackageName(),
+            distroseries=distroseries)
+
+    def test_checkUpload_ppa_owner(self):
+        person = self.factory.makePerson()
+        archive = self.factory.makeArchive(
+            purpose=ArchivePurpose.PPA, owner=person)
+        self.assertCanUpload(
+            archive, person, self.factory.makeSourcePackageName())
+
+    def test_checkUpload_ppa_with_permission(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        person = self.factory.makePerson()
+        removeSecurityProxy(archive).newComponentUploader(person, "main")
+        # component is ignored
+        self.assertCanUpload(
+            archive, person, self.factory.makeSourcePackageName(),
+            component=self.factory.makeComponent(name="universe"))
+
+    def test_checkUpload_ppa_with_no_permission(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        person = self.factory.makePerson()
+        self.assertCannotUpload(
+            CannotUploadToPPA, archive, person,
+            self.factory.makeSourcePackageName())
+
+    def test_owner_can_upload_to_ppa_no_sourcepackage(self):
+        # The owner can upload to PPAs even if the source package doesn't
+        # exist yet.
+        team = self.factory.makeTeam()
+        archive = self.factory.makeArchive(
+            purpose=ArchivePurpose.PPA, owner=team)
+        person = self.factory.makePerson()
+        removeSecurityProxy(team).addMember(person, team.teamowner)
+        self.assertCanUpload(archive, person, None)
+
+    def test_can_upload_to_ppa_for_old_series(self):
+        # You can upload whatever you want to a PPA, regardless of the upload
+        # policy.
+        person = self.factory.makePerson()
+        archive = self.factory.makeArchive(
+            purpose=ArchivePurpose.PPA, owner=person)
+        spn = self.factory.makeSourcePackageName()
+        distroseries = self.factory.makeDistroSeries(
+            status=SeriesStatus.CURRENT)
+        self.assertCanUpload(
+            archive, person, spn, distroseries=distroseries)
+
+    def test_checkUpload_copy_archive_no_permission(self):
+        archive, distroseries = self.makeArchiveAndActiveDistroSeries(
+            purpose=ArchivePurpose.COPY)
+        sourcepackagename = self.factory.makeSourcePackageName()
+        person = self.factory.makePerson()
+        removeSecurityProxy(archive).newPackageUploader(
+            person, sourcepackagename)
+        self.assertCannotUpload(
+            NoRightsForArchive, archive, person, sourcepackagename,
+            distroseries=distroseries)
+
+    def test_checkUploadToPocket_for_released_distroseries_copy_archive(self):
+        # Uploading to the release pocket in a released COPY archive
+        # should be allowed.  This is mainly so that rebuilds that are
+        # running during the release process don't suddenly cause
+        # exceptions in the buildd-manager.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.COPY)
+        distroseries = self.factory.makeDistroSeries(
+            distribution=archive.distribution,
+            status=SeriesStatus.CURRENT)
+        self.assertIs(
+            None,
+            archive.checkUploadToPocket(
+                distroseries, PackagePublishingPocket.RELEASE))
+
+    def test_checkUpload_package_permission(self):
+        archive, distroseries = self.makeArchiveAndActiveDistroSeries(
+            purpose=ArchivePurpose.PRIMARY)
+        sourcepackagename = self.factory.makeSourcePackageName()
+        person = self.factory.makePerson()
+        removeSecurityProxy(archive).newPackageUploader(
+            person, sourcepackagename)
+        self.assertCanUpload(
+            archive, person, sourcepackagename, distroseries=distroseries)
+
+    def make_person_with_packageset_permission(self, archive, distroseries,
+                                               packages=()):
+        packageset = self.factory.makePackageset(
+            distroseries=distroseries, packages=packages)
+        person = self.factory.makePerson()
+        techboard = getUtility(ILaunchpadCelebrities).ubuntu_techboard
+        with person_logged_in(techboard):
+            archive.newPackagesetUploader(person, packageset)
+        return person, packageset
+
+    def test_checkUpload_packageset_permission(self):
+        archive, distroseries = self.makeArchiveAndActiveDistroSeries(
+            purpose=ArchivePurpose.PRIMARY)
+        sourcepackagename = self.factory.makeSourcePackageName()
+        person, packageset = self.make_person_with_packageset_permission(
+            archive, distroseries, packages=[sourcepackagename])
+        self.assertCanUpload(
+            archive, person, sourcepackagename, distroseries=distroseries)
+
+    def test_checkUpload_packageset_wrong_distroseries(self):
+        # A person with rights to upload to the package set in distro
+        # series K may not upload with these same rights to a different
+        # distro series L.
+        archive, distroseries = self.makeArchiveAndActiveDistroSeries(
+            purpose=ArchivePurpose.PRIMARY)
+        sourcepackagename = self.factory.makeSourcePackageName()
+        person, packageset = self.make_person_with_packageset_permission(
+            archive, distroseries, packages=[sourcepackagename])
+        other_distroseries = self.factory.makeDistroSeries()
+        self.assertCannotUpload(
+            InsufficientUploadRights, archive, person, sourcepackagename,
+            distroseries=other_distroseries)
+
+    def test_checkUpload_component_permission(self):
+        archive, distroseries = self.makeArchiveAndActiveDistroSeries(
+            purpose=ArchivePurpose.PRIMARY)
+        sourcepackagename = self.factory.makeSourcePackageName()
+        person, component = self.makePersonWithComponentPermission(
+            archive)
+        self.assertCanUpload(
+            archive, person, sourcepackagename, distroseries=distroseries,
+            component=component)
+
+    def test_checkUpload_no_permissions(self):
+        archive, distroseries = self.makeArchiveAndActiveDistroSeries(
+            purpose=ArchivePurpose.PRIMARY)
+        sourcepackagename = self.factory.makeSourcePackageName()
+        person = self.factory.makePerson()
+        self.assertCannotUpload(
+            NoRightsForArchive, archive, person, sourcepackagename,
+            distroseries=distroseries)
+
+    def test_checkUpload_insufficient_permissions(self):
+        archive, distroseries = self.makeArchiveAndActiveDistroSeries(
+            purpose=ArchivePurpose.PRIMARY)
+        sourcepackagename = self.factory.makeSourcePackageName()
+        person, packageset = self.make_person_with_packageset_permission(
+            archive, distroseries)
+        self.assertCannotUpload(
+            InsufficientUploadRights, archive, person, sourcepackagename,
+            distroseries=distroseries)
+
+    def test_checkUpload_without_strict_component(self):
+        archive, distroseries = self.makeArchiveAndActiveDistroSeries(
+            purpose=ArchivePurpose.PRIMARY)
+        sourcepackagename = self.factory.makeSourcePackageName()
+        person, component = self.makePersonWithComponentPermission(
+            archive)
+        other_component = self.factory.makeComponent()
+        self.assertCanUpload(
+            archive, person, sourcepackagename, distroseries=distroseries,
+            component=other_component, strict_component=False)
+
+    def test_checkUpload_with_strict_component(self):
+        archive, distroseries = self.makeArchiveAndActiveDistroSeries(
+            purpose=ArchivePurpose.PRIMARY)
+        sourcepackagename = self.factory.makeSourcePackageName()
+        person, component = self.makePersonWithComponentPermission(
+            archive)
+        other_component = self.factory.makeComponent()
+        self.assertCannotUpload(
+            NoRightsForComponent, archive, person, sourcepackagename,
+            distroseries=distroseries, component=other_component,
+            strict_component=True)
+
+    def test_checkUpload_component_rights_no_package(self):
+        # A person allowed to upload to a particular component of an archive
+        # can upload basically whatever they want to that component, even if
+        # the package doesn't exist yet.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        person, component = self.makePersonWithComponentPermission(
+            archive)
+        self.assertCanUpload(archive, person, None, component=component)
+
+    def makePackageToUpload(self, distroseries):
+        sourcepackagename = self.factory.makeSourcePackageName()
+        suitesourcepackage = self.factory.makeSuiteSourcePackage(
+            pocket=PackagePublishingPocket.RELEASE,
+            sourcepackagename=sourcepackagename,
+            distroseries=distroseries)
+        return suitesourcepackage
+
+    def test_canUploadSuiteSourcePackage_invalid_pocket(self):
+        # Test that canUploadSuiteSourcePackage calls checkUpload for
+        # the pocket checks.
+        person = self.factory.makePerson()
+        archive = self.factory.makeArchive(
+            purpose=ArchivePurpose.PPA, owner=person)
+        suitesourcepackage = self.factory.makeSuiteSourcePackage(
+            pocket=PackagePublishingPocket.PROPOSED)
+        self.assertEqual(
+            False,
+            archive.canUploadSuiteSourcePackage(person, suitesourcepackage))
+
+    def test_canUploadSuiteSourcePackage_no_permission(self):
+        # Test that canUploadSuiteSourcePackage calls verifyUpload for
+        # the permission checks.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        suitesourcepackage = self.factory.makeSuiteSourcePackage(
+            pocket=PackagePublishingPocket.RELEASE)
+        person = self.factory.makePerson()
+        self.assertEqual(
+            False,
+            archive.canUploadSuiteSourcePackage(person, suitesourcepackage))
+
+    def test_canUploadSuiteSourcePackage_package_permission(self):
+        # Test that a package permission is enough to upload a new
+        # package.
+        archive, distroseries = self.makeArchiveAndActiveDistroSeries()
+        suitesourcepackage = self.makePackageToUpload(distroseries)
+        person = self.factory.makePerson()
+        removeSecurityProxy(archive).newPackageUploader(
+            person, suitesourcepackage.sourcepackagename)
+        self.assertEqual(
+            True,
+            archive.canUploadSuiteSourcePackage(person, suitesourcepackage))
+
+    def test_canUploadSuiteSourcePackage_component_permission(self):
+        # Test that component upload permission is enough to be
+        # allowed to upload a new package.
+        archive, distroseries = self.makeArchiveAndActiveDistroSeries()
+        suitesourcepackage = self.makePackageToUpload(distroseries)
+        person = self.factory.makePerson()
+        removeSecurityProxy(archive).newComponentUploader(person, "universe")
+        self.assertEqual(
+            True,
+            archive.canUploadSuiteSourcePackage(person, suitesourcepackage))
+
+    def test_canUploadSuiteSourcePackage_strict_component(self):
+        # Test that canUploadSuiteSourcePackage uses strict component
+        # checking.
+        archive, distroseries = self.makeArchiveAndActiveDistroSeries()
+        suitesourcepackage = self.makePackageToUpload(distroseries)
+        main_component = self.factory.makeComponent(name="main")
+        self.factory.makeSourcePackagePublishingHistory(
+            archive=archive, distroseries=distroseries,
+            sourcepackagename=suitesourcepackage.sourcepackagename,
+            status=PackagePublishingStatus.PUBLISHED,
+            pocket=PackagePublishingPocket.RELEASE,
+            component=main_component)
+        person = self.factory.makePerson()
+        removeSecurityProxy(archive).newComponentUploader(person, "universe")
+        # This time the user can't upload as there has been a
+        # publication and they don't have permission for the component
+        # the package is published in.
+        self.assertEqual(
+            False,
+            archive.canUploadSuiteSourcePackage(person, suitesourcepackage))
 
 
 class TestUpdatePackageDownloadCount(TestCaseWithFactory):
@@ -837,52 +1024,6 @@ class TestArchiveTokens(TestCaseWithFactory):
         self.assertEqual(token.archive_url, url)
 
 
-class TestArchivePrivacySwitching(TestCaseWithFactory):
-
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        """Create a public and a private PPA."""
-        super(TestArchivePrivacySwitching, self).setUp()
-        self.public_ppa = self.factory.makeArchive()
-        self.private_ppa = self.factory.makeArchive()
-        self.private_ppa.buildd_secret = 'blah'
-        self.private_ppa.private = True
-
-    def make_ppa_private(self, ppa):
-        """Helper method to privatise a ppa."""
-        ppa.private = True
-        ppa.buildd_secret = "secret"
-
-    def make_ppa_public(self, ppa):
-        """Helper method to make a PPA public (and use for assertRaises)."""
-        ppa.private = False
-        ppa.buildd_secret = ''
-
-    def test_switch_privacy_no_pubs_succeeds(self):
-        # Changing the privacy is fine if there are no publishing
-        # records.
-        self.make_ppa_private(self.public_ppa)
-        self.assertTrue(self.public_ppa.private)
-
-        self.private_ppa.private = False
-        self.assertFalse(self.private_ppa.private)
-
-    def test_switch_privacy_with_pubs_fails(self):
-        # Changing the privacy is not possible when the archive already
-        # has published sources.
-        publisher = SoyuzTestPublisher()
-        publisher.prepareBreezyAutotest()
-        publisher.getPubSource(archive=self.public_ppa)
-        publisher.getPubSource(archive=self.private_ppa)
-
-        self.assertRaises(
-            CannotSwitchPrivacy, self.make_ppa_private, self.public_ppa)
-
-        self.assertRaises(
-            CannotSwitchPrivacy, self.make_ppa_public, self.private_ppa)
-
-
 class TestGetBinaryPackageRelease(TestCaseWithFactory):
     """Ensure that getBinaryPackageRelease works as expected."""
 
@@ -1024,19 +1165,19 @@ class TestGetBinaryPackageReleaseByFileName(TestCaseWithFactory):
             self.archive.getBinaryPackageReleaseByFileName(
                 "this-is-not-real_1.2.3-4_all.deb"))
 
-    def test_returns_none_for_duplicate_file(self):
+    def test_returns_latest_for_duplicate_file(self):
         # In the unlikely case of multiple BPRs in this archive with the same
         # name (hopefully impossible, but it still happens occasionally due
-        # to bugs), None is returned.
+        # to bugs), the latest is returned.
 
         # Publish the same binaries again. Evil.
-        self.publisher.getPubBinaries(
+        new_pubs = self.publisher.getPubBinaries(
             version="1.2.3-4", archive=self.archive, binaryname="foo-bin",
             status=PackagePublishingStatus.PUBLISHED,
             architecturespecific=True)
 
-        self.assertIs(
-            None,
+        self.assertEquals(
+            new_pubs[0].binarypackagerelease,
             self.archive.getBinaryPackageReleaseByFileName(
                 "foo-bin_1.2.3-4_i386.deb"))
 
@@ -1098,9 +1239,40 @@ class TestCommercialArchive(TestCaseWithFactory):
             Unauthorized, self.setCommercial, self.archive, True)
 
         # Commercial admins can change it.
-        login("commercial-member@canonical.com")
+        login(COMMERCIAL_ADMIN_EMAIL)
         self.setCommercial(self.archive, True)
         self.assertTrue(self.archive.commercial)
+
+
+class TestBuildDebugSymbols(TestCaseWithFactory):
+    """Tests relating to the build_debug_symbols flag."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBuildDebugSymbols, self).setUp()
+        self.archive = self.factory.makeArchive()
+
+    def setBuildDebugSymbols(self, archive, build_debug_symbols):
+        """Helper function."""
+        archive.build_debug_symbols = build_debug_symbols
+
+    def test_build_debug_symbols_is_public(self):
+        # Anyone can see the attribute.
+        login(ANONYMOUS)
+        self.assertFalse(self.archive.build_debug_symbols)
+
+    def test_owner_cannot_set_build_debug_symbols(self):
+        # The archive owner cannot set it.
+        login_person(self.archive.owner)
+        self.assertRaises(
+            Unauthorized, self.setBuildDebugSymbols, self.archive, True)
+
+    def test_commercial_admin_can_set_build_debug_symbols(self):
+        # A commercial admin can set it.
+        login(COMMERCIAL_ADMIN_EMAIL)
+        self.setBuildDebugSymbols(self.archive, True)
+        self.assertTrue(self.archive.build_debug_symbols)
 
 
 class TestFindDepCandidates(TestCaseWithFactory):
@@ -1236,3 +1408,320 @@ class TestFindDepCandidates(TestCaseWithFactory):
             component=getUtility(IComponentSet)['universe'])
         self.assertDep('i386', 'foo-main', [main_bins[0]])
         self.assertDep('i386', 'foo-universe', [universe_bins[0]])
+
+
+class TestComponents(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_no_components_for_arbitrary_person(self):
+        # By default, a person cannot upload to any component of an archive.
+        archive = self.factory.makeArchive()
+        person = self.factory.makePerson()
+        self.assertEqual(set(),
+            set(archive.getComponentsForUploader(person)))
+
+    def test_components_for_person_with_permissions(self):
+        # If a person has been explicitly granted upload permissions to a
+        # particular component, then those components are included in
+        # IArchive.getComponentsForUploader.
+        archive = self.factory.makeArchive()
+        component = self.factory.makeComponent()
+        person = self.factory.makePerson()
+        # Only admins or techboard members can add permissions normally. That
+        # restriction isn't relevant to this test.
+        ap_set = removeSecurityProxy(getUtility(IArchivePermissionSet))
+        ap = ap_set.newComponentUploader(archive, person, component)
+        self.assertEqual(set([ap]),
+            set(archive.getComponentsForUploader(person)))
+
+
+class TestvalidatePPA(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_open_teams(self):
+        team = self.factory.makeTeam()
+        self.assertEqual('Open teams cannot have PPAs.',
+            Archive.validatePPA(team, None))
+
+    def test_distribution_name(self):
+        ppa_owner = self.factory.makePerson()
+        self.assertEqual(
+            'A PPA cannot have the same name as its distribution.',
+            Archive.validatePPA(ppa_owner, 'ubuntu'))
+
+    def test_two_ppas(self):
+        ppa = self.factory.makeArchive(name='ppa')
+        self.assertEqual("You already have a PPA named 'ppa'.",
+            Archive.validatePPA(ppa.owner, 'ppa'))
+
+    def test_two_ppas_with_team(self):
+        team = self.factory.makeTeam(
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        ppa = self.factory.makeArchive(owner=team, name='ppa')
+        self.assertEqual("%s already has a PPA named 'ppa'." % (
+            team.displayname), Archive.validatePPA(team, 'ppa'))
+
+    def test_valid_ppa(self):
+        ppa_owner = self.factory.makePerson()
+        self.assertEqual(None, Archive.validatePPA(ppa_owner, None))
+
+
+class TestGetComponentsForSeries(TestCaseWithFactory):
+    """Tests for Archive.getComponentsForSeries."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestGetComponentsForSeries, self).setUp()
+        self.series = self.factory.makeDistroSeries()
+        self.comp1 = self.factory.makeComponent()
+        self.comp2 = self.factory.makeComponent()
+
+    def test_series_components_for_primary_archive(self):
+        # The primary archive uses the series' defined components.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        self.assertEquals(
+            0, len(archive.getComponentsForSeries(self.series)))
+
+        ComponentSelection(distroseries=self.series, component=self.comp1)
+        ComponentSelection(distroseries=self.series, component=self.comp2)
+        clear_property_cache(self.series)
+
+        self.assertEquals(
+            set((self.comp1, self.comp2)),
+            set(archive.getComponentsForSeries(self.series)))
+
+    def test_partner_component_for_partner_archive(self):
+        # The partner archive always uses only the 'partner' component.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
+        ComponentSelection(distroseries=self.series, component=self.comp1)
+        partner_comp = getUtility(IComponentSet)['partner']
+        self.assertEquals(
+            [partner_comp],
+            list(archive.getComponentsForSeries(self.series)))
+
+    def test_component_for_ppas(self):
+        # PPAs only use 'main'.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        ComponentSelection(distroseries=self.series, component=self.comp1)
+        main_comp = getUtility(IComponentSet)['main']
+        self.assertEquals(
+            [main_comp], list(archive.getComponentsForSeries(self.series)))
+
+
+class TestDefaultComponent(TestCaseWithFactory):
+    """Tests for Archive.default_component."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_default_component_for_other_archives(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        self.assertIs(None, archive.default_component)
+
+    def test_default_component_for_partner(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
+        self.assertEquals(
+            getUtility(IComponentSet)['partner'], archive.default_component)
+
+    def test_default_component_for_ppas(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertEquals(
+            getUtility(IComponentSet)['main'], archive.default_component)
+
+
+class TestGetPockets(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getPockets_for_other_archives(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        self.assertEqual(
+            list(PackagePublishingPocket.items), archive.getPockets())
+
+    def test_getPockets_for_PPAs(self):
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertEqual(
+            [PackagePublishingPocket.RELEASE], archive.getPockets())
+
+
+class TestGetFileByName(TestCaseWithFactory):
+    """Tests for Archive.getFileByName."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestGetFileByName, self).setUp()
+        self.archive = self.factory.makeArchive()
+
+    def test_unknown_file_is_not_found(self):
+        # A file with an unsupported extension is not found.
+        self.assertRaises(NotFoundError, self.archive.getFileByName, 'a.bar')
+
+    def test_source_file_is_found(self):
+        # A file from a published source package can be retrieved.
+        pub = self.factory.makeSourcePackagePublishingHistory(
+            archive=self.archive)
+        dsc = self.factory.makeLibraryFileAlias(filename='foo_1.0.dsc')
+        self.assertRaises(
+            NotFoundError, self.archive.getFileByName, dsc.filename)
+        pub.sourcepackagerelease.addFile(dsc)
+        self.assertEquals(dsc, self.archive.getFileByName(dsc.filename))
+
+    def test_nonexistent_source_file_is_not_found(self):
+        # Something that looks like a source file but isn't is not
+        # found.
+        self.assertRaises(
+            NotFoundError, self.archive.getFileByName, 'foo_1.0.dsc')
+
+    def test_binary_file_is_found(self):
+        # A file from a published binary package can be retrieved.
+        pub = self.factory.makeBinaryPackagePublishingHistory(
+            archive=self.archive)
+        deb = self.factory.makeLibraryFileAlias(filename='foo_1.0_all.deb')
+        self.assertRaises(
+            NotFoundError, self.archive.getFileByName, deb.filename)
+        pub.binarypackagerelease.addFile(deb)
+        self.assertEquals(deb, self.archive.getFileByName(deb.filename))
+
+    def test_nonexistent_binary_file_is_not_found(self):
+        # Something that looks like a binary file but isn't is not
+        # found.
+        self.assertRaises(
+            NotFoundError, self.archive.getFileByName, 'foo_1.0_all.deb')
+
+    def test_source_changes_file_is_found(self):
+        # A .changes file from a published source can be retrieved.
+        pub = self.factory.makeSourcePackagePublishingHistory(
+            archive=self.archive)
+        pu = self.factory.makePackageUpload(
+            changes_filename='foo_1.0_source.changes')
+        pu.setDone()
+        self.assertRaises(
+            NotFoundError, self.archive.getFileByName,
+            pu.changesfile.filename)
+        pu.addSource(pub.sourcepackagerelease)
+        self.assertEquals(
+            pu.changesfile,
+            self.archive.getFileByName(pu.changesfile.filename))
+
+    def test_nonexistent_source_changes_file_is_not_found(self):
+        # Something that looks like a source .changes file but isn't is not
+        # found.
+        self.assertRaises(
+            NotFoundError, self.archive.getFileByName,
+            'foo_1.0_source.changes')
+
+    def test_package_diff_is_found(self):
+        # A .diff.gz from a package diff can be retrieved.
+        pub = self.factory.makeSourcePackagePublishingHistory(
+            archive=self.archive)
+        diff = self.factory.makePackageDiff(
+            to_source=pub.sourcepackagerelease,
+            diff_filename='foo_1.0.diff.gz')
+        self.assertEquals(
+            diff.diff_content,
+            self.archive.getFileByName(diff.diff_content.filename))
+
+    def test_expired_files_are_skipped(self):
+        # Expired files are ignored.
+        pub = self.factory.makeSourcePackagePublishingHistory(
+            archive=self.archive)
+        dsc = self.factory.makeLibraryFileAlias(filename='foo_1.0.dsc')
+        pub.sourcepackagerelease.addFile(dsc)
+
+        # The file is initially found without trouble.
+        self.assertEquals(dsc, self.archive.getFileByName(dsc.filename))
+
+        # But after expiry it is not.
+        removeSecurityProxy(dsc).content = None
+        self.assertRaises(
+            NotFoundError, self.archive.getFileByName, dsc.filename)
+
+        # It reappears if we create a new one.
+        new_dsc = self.factory.makeLibraryFileAlias(filename=dsc.filename)
+        pub.sourcepackagerelease.addFile(new_dsc)
+        self.assertEquals(new_dsc, self.archive.getFileByName(dsc.filename))
+
+
+class TestGetPublishedSources(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getPublishedSources_comprehensive(self):
+        # The doctests for getPublishedSources migrated from a doctest for
+        # better testing.
+        cprov = getUtility(IPersonSet).getByName('cprov')
+        cprov_archive = cprov.archive
+        # There are three published sources by default - no args returns all
+        # publications.
+        self.assertEqual(3, cprov_archive.getPublishedSources().count())
+        # Various filters.
+        active_status = [PackagePublishingStatus.PENDING,
+                         PackagePublishingStatus.PUBLISHED]
+        inactive_status = [PackagePublishingStatus.SUPERSEDED,
+                           PackagePublishingStatus.DELETED]
+        warty = cprov_archive.distribution['warty']
+        hoary = cprov_archive.distribution['hoary']
+        breezy_autotest = cprov_archive.distribution['breezy-autotest']
+        all_sources = cprov_archive.getPublishedSources()
+        expected = [('cdrkit - 1.0', 'breezy-autotest'),
+            ('iceweasel - 1.0', 'warty'),
+            ('pmount - 0.1-1', 'warty'),
+            ]
+        found = []
+        for pub in all_sources:
+            title = pub.sourcepackagerelease.title
+            pub_ds = pub.distroseries.name
+            found.append((title, pub_ds))
+        self.assertEqual(expected, found)
+        self.assertEqual(1,
+            cprov_archive.getPublishedSources(name='cd').count())
+        self.assertEqual(1,
+            cprov_archive.getPublishedSources(name='ice').count())
+        self.assertEqual(1, cprov_archive.getPublishedSources(
+            name='iceweasel', exact_match=True).count())
+        self.assertEqual(0, cprov_archive.getPublishedSources(
+            name='ice', exact_match=True).count())
+        self.assertRaises(VersionRequiresName,
+            cprov_archive.getPublishedSources,
+            version='1.0')
+        self.assertEqual(1, cprov_archive.getPublishedSources(
+            name='ice', version='1.0').count())
+        self.assertEqual(0, cprov_archive.getPublishedSources(
+            name='ice', version='666').count())
+        self.assertEqual(3, cprov_archive.getPublishedSources(
+            status=PackagePublishingStatus.PUBLISHED).count())
+        self.assertEqual(3, cprov_archive.getPublishedSources(
+            status=active_status).count())
+        self.assertEqual(0, cprov_archive.getPublishedSources(
+            status=inactive_status).count())
+        self.assertEqual(2, cprov_archive.getPublishedSources(
+            distroseries=warty).count())
+        self.assertEqual(0, cprov_archive.getPublishedSources(
+            distroseries=hoary).count())
+        self.assertEqual(1, cprov_archive.getPublishedSources(
+            distroseries=breezy_autotest).count())
+        self.assertEqual(2, cprov_archive.getPublishedSources(
+            distroseries=warty,
+            pocket=PackagePublishingPocket.RELEASE).count())
+        self.assertEqual(0, cprov_archive.getPublishedSources(
+            distroseries=warty,
+            pocket=PackagePublishingPocket.UPDATES).count())
+        self.assertEqual(1, cprov_archive.getPublishedSources(
+            name='ice', distroseries=warty).count())
+        self.assertEqual(0, cprov_archive.getPublishedSources(
+            name='ice', distroseries=breezy_autotest).count())
+        self.assertEqual(0, cprov_archive.getPublishedSources(
+            created_since_date='2007-07-09 14:00:00').count())
+        mid_2007 = datetime(year=2007, month=7, day=9, hour=14)
+        self.assertEqual(0, cprov_archive.getPublishedSources(
+            created_since_date=mid_2007).count())
+        one_hour_step = timedelta(hours=1)
+        one_hour_earlier = mid_2007 - one_hour_step
+        self.assertEqual(1, cprov_archive.getPublishedSources(
+             created_since_date=one_hour_earlier).count())
+        two_hours_earlier = one_hour_earlier - one_hour_step
+        self.assertEqual(3, cprov_archive.getPublishedSources(
+            created_since_date=two_hours_earlier).count())

@@ -20,7 +20,7 @@ from canonical.database.sqlbase import (
 
 
 __all__ = [
-    'dbname', 'dbhost', 'dbuser', 'isZopeless', 'initZopeless',
+    'get_dbname', 'dbhost', 'dbuser', 'isZopeless', 'initZopeless',
     ]
 
 # SQLObject compatibility - dbname, dbhost and dbuser are DEPRECATED.
@@ -34,14 +34,22 @@ __all__ = [
 # if the host is empty it can be overridden by the standard PostgreSQL
 # environment variables, this feature currently required by Async's
 # office environment.
-dbname = os.environ.get('LP_DBNAME', None)
 dbhost = os.environ.get('LP_DBHOST', None)
 dbuser = os.environ.get('LP_DBUSER', None)
+dbname_override = os.environ.get('LP_DBNAME', None)
 
-if dbname is None:
+
+def get_dbname():
+    """Get the DB Name for scripts: deprecated.
+
+    :return: The dbname for scripts.
+    """
+    if dbname_override is not None:
+        return dbname_override
     match = re.search(r'dbname=(\S*)', dbconfig.main_master)
     assert match is not None, 'Invalid main_master connection string'
-    dbname = match.group(1)
+    return  match.group(1)
+
 
 if dbhost is None:
     match = re.search(r'host=(\S*)', dbconfig.main_master)
@@ -61,8 +69,8 @@ def isZopeless():
 _IGNORED = object()
 
 
-def initZopeless(debug=_IGNORED, dbname=None, dbhost=None, dbuser=None,
-                 implicitBegin=_IGNORED, isolation=ISOLATION_LEVEL_DEFAULT):
+def initZopeless(dbname=None, dbhost=None, dbuser=None,
+                 isolation=ISOLATION_LEVEL_DEFAULT):
     """Initialize the Zopeless environment."""
     if dbuser is None:
         # Nothing calling initZopeless should be connecting as the
@@ -74,7 +82,7 @@ def initZopeless(debug=_IGNORED, dbname=None, dbhost=None, dbuser=None,
         #        )
         pass # Disabled. Bug#3050
     if dbname is None:
-        dbname = globals()['dbname']
+        dbname = get_dbname()
     if dbhost is None:
         dbhost = globals()['dbhost']
     if dbuser is None:

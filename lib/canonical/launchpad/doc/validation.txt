@@ -7,9 +7,10 @@ The validation interface contains different kinds of validation functions.
 The validate_distrotask() function is used to guarantee that distribution
 bugtasks are unique per bug.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IDistributionSet, ISourcePackageNameSet,
-    ...     validate_distrotask)
+    >>> from canonical.launchpad.interfaces.validation import validate_distrotask
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
     >>> bug_two = getUtility(IBugSet).get(2)
     >>> debian = getUtility(IDistributionSet).getByName('debian')
     >>> mozilla_firefox = getUtility(
@@ -31,8 +32,8 @@ But it's legal to have two bugtasks with different sourcepackages.
 If the bug already has a distribution task with no source package, it's
 not possible to add a another one.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     CreateBugParams, IDistributionSet)
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(ILaunchBag).user
@@ -57,8 +58,8 @@ not been published in the target distribution.
 It's not allowed even if the sourcepackage has been published in a
 PPA.
 
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> from lp.soyuz.tests.ppa import publishToPPA
-    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
     >>> publishToPPA(
     ...     person_name='cprov',
     ...     sourcepackage_name='foobar',
@@ -86,7 +87,8 @@ We can't add a task on just the distribution, because it doesn't
 make sense to have tasks open on just the distribution and also packages
 in that distribution on the same bug.
 
-    >>> from canonical.launchpad.interfaces import validate_new_distrotask
+    >>> from canonical.launchpad.interfaces.validation import (
+    ...     validate_new_distrotask)
     >>> validate_new_distrotask(bug_two, debian, None)
     Traceback (most recent call last):
       ...
@@ -109,7 +111,7 @@ LaunchpadValidationError is the standard exception used for custom
 validators upon a validation error. Rendering one is done by getting
 an IWidgetInputErrorView:
 
-    >>> from canonical.launchpad.validators import (
+    >>> from lp.app.validators import (
     ...     LaunchpadValidationError)
     >>> from canonical.launchpad.webapp.servers import (
     ...     LaunchpadTestRequest)

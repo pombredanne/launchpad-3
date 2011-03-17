@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
 # Runs pocketlint on files changed from parent branch.
@@ -12,47 +12,9 @@ utilitiesdir=${buildout:directory/utilities|shell-path}
 [ -z "$utilitiesdir" ] && utilitiesdir=.
 
 
-bzr() {
-    # For pylint to operate properly, PYTHONPATH must point to the ./lib
-    # directory in the launchpad tree. This directory includes a bzrlib. When
-    # this script calls bzr, we want it to use the system bzrlib, not the one
-    # in the launchpad tree.
-    PYTHONPATH='' `which bzr` "$@"
-}
-
-
 if [ -z "$1" ]; then
-    # No command line argument provided, use the default logic.
-    bzr diff > /dev/null
-    diff_status=$?
-    if [ $diff_status -eq 0 ] ; then
-        # No uncommitted changes in the tree.
-        bzr status | grep "^Current thread:" > /dev/null
-        if [ $? -eq 0 ] ; then
-            # This is a loom, lint changes relative to the lower thread.
-            rev_option="-r thread:"
-        else
-            if test "$(bzr pipes | sed -n -e "/^\\*/q;p" | wc -l)" -gt 0; then
-                # This is a pipeline with at least one pipe before the
-                # current, lint changes relative to the previous pipe
-                rev_option="-r ancestor::prev"
-            else
-                # Lint changes relative to the parent.
-                rev=`bzr info | sed \
-                    '/parent branch:/!d; s/ *parent branch: /ancestor:/'`
-                rev_option="-r $rev"
-            fi
-        fi
-    elif [ $diff_status -eq 1 ] ; then
-        # Uncommitted changes in the tree, lint those changes.
-        rev_option=""
-    else
-        # bzr diff failed
-        exit 1
-    fi
-    # Extract filename from status line.  Strip the @ that mark symlinks.
-    files=`bzr st --short $rev_option |
-        sed -e '/^.[MN]/!d; s/.* //' -e 's/@$//'`
+    # No command line argument provided, lint all changed files.
+    files=$($utilitiesdir/find-changed-files.sh)
 else
     # Add newlines so grep filters out pyfiles correctly later.
     files=`echo $* | tr " " "\n"`
@@ -145,7 +107,7 @@ fi
 
 
 # Sample data contains auto generated files with long lines.
-pocketlint_files=`echo "$files" | grep -v "$sample_dir"`
+pocketlint_files=`echo "$files" | env -i grep -v "$sample_dir"`
 if [ -z "$pocketlint_files" ]; then
     exit 0
 fi

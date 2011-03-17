@@ -7,20 +7,28 @@
 
 __metaclass__ = type
 __all__ = [
+    'BRANCH_ALIAS_PREFIX',
     'BRANCH_TRANSPORT',
+    'compose_public_url',
     'CONTROL_TRANSPORT',
     'ICodehostingAPI',
     'ICodehostingApplication',
     'LAUNCHPAD_ANONYMOUS',
     'LAUNCHPAD_SERVICES',
     'READ_ONLY',
+    'SUPPORTED_SCHEMES',
     'WRITABLE',
     ]
 
+import os.path
+import urllib
+
+from lazr.uri import URI
 from zope.interface import Interface
 
+from canonical.config import config
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
-from canonical.launchpad.validators.name import valid_name
+from lp.app.validators.name import valid_name
 
 # When LAUNCHPAD_SERVICES is provided as a login ID to XML-RPC methods, they
 # bypass the normal security checks and give read-only access to all branches.
@@ -44,6 +52,12 @@ WRITABLE = 'w'
 BRANCH_TRANSPORT = 'BRANCH_TRANSPORT'
 # Indicates that a path points to a control directory.
 CONTROL_TRANSPORT = 'CONTROL_TRANSPORT'
+
+# The path prefix for getting at branches via their short name.
+BRANCH_ALIAS_PREFIX = '+branch'
+
+# The scheme types that are supported for codehosting.
+SUPPORTED_SCHEMES = 'bzr+ssh', 'http'
 
 
 class ICodehostingApplication(ILaunchpadApplication):
@@ -166,3 +180,19 @@ class ICodehostingAPI(Interface):
             'path_in_transport' is a path relative to that transport. e.g.
             (BRANCH_TRANSPORT, {'id': 3, 'writable': False}, '.bzr/README').
         """
+
+
+def compose_public_url(scheme, unique_name, suffix=None):
+    # Accept sftp as a legacy protocol.
+    accepted_schemes = set(SUPPORTED_SCHEMES)
+    accepted_schemes.add('sftp')
+    assert scheme in accepted_schemes, "Unknown scheme: %s" % scheme
+    host = URI(config.codehosting.supermirror_root).host
+    if isinstance(unique_name, unicode):
+        unique_name = unique_name.encode('utf-8')
+    # After quoting and encoding, the path should be perfectly
+    # safe as a plain ASCII string, str() just enforces this
+    path = '/' + str(urllib.quote(unique_name, safe='/~+'))
+    if suffix:
+        path = os.path.join(path, suffix)
+    return str(URI(scheme=scheme, host=host, path=path))

@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug attachment views."""
@@ -12,30 +12,45 @@ __all__ = [
     'BugAttachmentURL',
     ]
 
-from cStringIO import StringIO
-
-from zope.interface import implements
-from zope.component import getUtility
+from zope.component import (
+    getMultiAdapter,
+    getUtility,
+    )
 from zope.contenttype import guess_content_type
+from zope.interface import implements
 
-from canonical.launchpad.browser.librarian import FileNavigationMixin
+from canonical.launchpad.browser.librarian import (
+    FileNavigationMixin,
+    ProxiedLibraryFileAlias,
+    SafeStreamOrRedirectLibraryFileAliasView,
+    )
+from canonical.launchpad.interfaces.librarian import (
+    ILibraryFileAliasWithParent,
+    )
 from canonical.launchpad.webapp import (
-    canonical_url, custom_widget, GetitemNavigation, Navigation)
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.bugs.interfaces.bugattachment import (
-    BugAttachmentType, IBugAttachmentEditForm,
-    IBugAttachmentIsPatchConfirmationForm, IBugAttachmentSet)
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.launchpad.webapp.launchpadform import (
-    action, LaunchpadFormView)
+    canonical_url,
+    custom_widget,
+    GetitemNavigation,
+    Navigation,
+    )
+from canonical.launchpad.webapp.interfaces import (
+    ICanonicalUrlData,
+    ILaunchBag,
+    )
 from canonical.launchpad.webapp.menu import structured
-
 from canonical.lazr.utils import smartquote
-
-from canonical.widgets.itemswidgets import LaunchpadBooleanRadioWidget
-
-from lp.bugs.interfaces.bugattachment import IBugAttachment
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
+from lp.app.widgets.itemswidgets import LaunchpadBooleanRadioWidget
+from lp.bugs.interfaces.bugattachment import (
+    BugAttachmentType,
+    IBugAttachment,
+    IBugAttachmentEditForm,
+    IBugAttachmentIsPatchConfirmationForm,
+    IBugAttachmentSet,
+    )
 
 
 class BugAttachmentContentCheck:
@@ -150,28 +165,19 @@ class BugAttachmentEditView(LaunchpadFormView, BugAttachmentContentCheck):
             self.context.title = data['title']
 
         if self.context.libraryfile.mimetype != data['contenttype']:
-            self.updateContentType(data['contenttype'])
+            lfa_with_parent = getMultiAdapter(
+                (self.context.libraryfile, self.context),
+                ILibraryFileAliasWithParent)
+            lfa_with_parent.mimetype = data['contenttype']
 
     @action('Delete Attachment', name='delete')
     def delete_action(self, action, data):
+        libraryfile_url = ProxiedLibraryFileAlias(
+            self.context.libraryfile, self.context).http_url
         self.request.response.addInfoNotification(structured(
             'Attachment "<a href="%(url)s">%(name)s</a>" has been deleted.',
-            url=self.context.libraryfile.http_url, name=self.context.title))
+            url=libraryfile_url, name=self.context.title))
         self.context.removeFromBug(user=self.user)
-
-    def updateContentType(self, new_content_type):
-        """Update the attachment content type."""
-        filealiasset = getUtility(ILibraryFileAliasSet)
-        old_filealias = self.context.libraryfile
-        # Download the file and upload it again with the new content
-        # type.
-        # XXX: Bjorn Tillenius 2005-06-30:
-        # It should be possible to simply create a new filealias
-        # with the same content as the old one.
-        old_content = old_filealias.read()
-        self.context.libraryfile = filealiasset.create(
-            name=old_filealias.filename, size=len(old_content),
-            file=StringIO(old_content), contentType=new_content_type)
 
     @property
     def label(self):
@@ -231,3 +237,5 @@ class BugAttachmentFileNavigation(Navigation, FileNavigationMixin):
     """Traversal to +files/${filename}."""
 
     usedfor = IBugAttachment
+
+    view_class = SafeStreamOrRedirectLibraryFileAliasView

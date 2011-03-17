@@ -12,9 +12,9 @@ of the list.
     >>> bug = factory.makeBug(owner=reporter)
     >>> view = BugPortletSubcribersContents(bug, None)
     >>> bug.subscribe(view.user, view.user)
-    <BugSubscription at ...>
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> bug.subscribe(view.user.teams_participated_in[0], view.user)
-    <BugSubscription at ...>
+    <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> for subscription in view.sorted_direct_subscriptions:
     ...     print '%s   %s' % (
     ...         subscription.person.displayname,

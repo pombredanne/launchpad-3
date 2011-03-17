@@ -5,15 +5,18 @@ __metaclass__ = type
 
 import unittest
 
-from zope.interface import implements
 from zope.i18nmessageid import Message
+from zope.interface import implements
 
 from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from lp.testing import login, TestCase
+from lp.testing import (
+    login,
+    TestCase,
+    )
 from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 
 

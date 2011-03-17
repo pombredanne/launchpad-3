@@ -13,8 +13,10 @@ __all__ = [
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 from lp.testing.views import create_initialized_view
@@ -85,7 +87,7 @@ class TestSourcePackageReleaseView(TestCaseWithFactory):
             'Downloaded from https://upstream.dom/fnord/no/ and')
         expected = (
             'Downloaded from '
-            '<span class="highlighted">https://upstream.dom/fnord/no/</span> '
+            '<span class="highlight">https://upstream.dom/fnord/no/</span> '
             'and')
         view = create_initialized_view(
             self.source_package_release, '+copyright')
@@ -97,7 +99,7 @@ class TestSourcePackageReleaseView(TestCaseWithFactory):
             'See /usr/share/common-licenses/GPL')
         expected = (
             'See '
-            '<span class="highlighted">/usr/share/common-licenses/GPL</span>')
+            '<span class="highlight">/usr/share/common-licenses/GPL</span>')
         view = create_initialized_view(
             self.source_package_release, '+copyright')
         self.assertEqual(expected, view.highlighted_copyright)
@@ -108,8 +110,8 @@ class TestSourcePackageReleaseView(TestCaseWithFactory):
             'See /usr/share/common-licenses/GPL or https://osi.org/mit')
         expected = (
             'See '
-            '<span class="highlighted">/usr/share/common-licenses/GPL</span> '
-             'or <span class="highlighted">https://osi.org/mit</span>')
+            '<span class="highlight">/usr/share/common-licenses/GPL</span> '
+             'or <span class="highlight">https://osi.org/mit</span>')
         view = create_initialized_view(
             self.source_package_release, '+copyright')
         self.assertEqual(expected, view.highlighted_copyright)

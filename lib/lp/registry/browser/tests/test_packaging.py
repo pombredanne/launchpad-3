@@ -9,17 +9,26 @@ from unittest import TestLoader
 
 from zope.component import getUtility
 
+from canonical.launchpad.ftests import (
+    login,
+    logout,
+    )
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.testing.pages import setupBrowser
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    PageTestLayer,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.packaging import IPackagingUtil, PackagingType
+from lp.registry.interfaces.packaging import (
+    IPackagingUtil,
+    PackagingType,
+    )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.testing import TestCaseWithFactory
-from lp.testing.views import create_initialized_view
 from lp.testing.memcache import MemcacheTestCase
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.ftests import login, logout
-from canonical.launchpad.testing.pages import setupBrowser
-from canonical.testing import DatabaseFunctionalLayer, PageTestLayer
+from lp.testing.views import create_initialized_view
 
 
 class TestProductSeriesUbuntuPackagingView(TestCaseWithFactory):

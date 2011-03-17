@@ -14,18 +14,27 @@ __all__ = [
 from datetime import datetime
 
 import pytz
-
-from storm.locals import DateTime, Int, Reference, Storm
-
+from storm.locals import (
+    DateTime,
+    Int,
+    Reference,
+    Storm,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.enumcol import DBEnum
 from canonical.launchpad.webapp.interfaces import (
-     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
 from lp.code.interfaces.seriessourcepackagebranch import (
-    IFindOfficialBranchLinks, IMakeOfficialBranchLinks,
-    ISeriesSourcePackageBranch)
+    IFindOfficialBranchLinks,
+    IMakeOfficialBranchLinks,
+    ISeriesSourcePackageBranch,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 
@@ -92,10 +101,15 @@ class SeriesSourcePackageBranchSet:
 
     def findForBranch(self, branch):
         """See `IFindOfficialBranchLinks`."""
+        return self.findForBranches([branch])
+
+    def findForBranches(self, branches):
+        """See `IFindOfficialBranchLinks`."""
+        branch_ids = set(branch.id for branch in branches)
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(
             SeriesSourcePackageBranch,
-            SeriesSourcePackageBranch.branch == branch.id)
+            SeriesSourcePackageBranch.branchID.is_in(branch_ids))
 
     def findForSourcePackage(self, sourcepackage):
         """See `IFindOfficialBranchLinks`."""

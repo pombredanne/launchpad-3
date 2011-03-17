@@ -1,35 +1,45 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for distroseries."""
 
 __metaclass__ = type
 
-import unittest
-
 import transaction
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import ANONYMOUS, login
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from lp.registry.interfaces.distroseries import (
-    IDistroSeriesSet, NoSuchDistroSeries)
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    )
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.registry.errors import NoSuchDistroSeries
+from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
-    IDistroSeriesSourcePackageRelease)
-from lp.soyuz.interfaces.publishing import (
-    active_publishing_status, PackagePublishingStatus)
+    IDistroSeriesSourcePackageRelease,
+    )
+from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.processor import ProcessorFamilySet
-from lp.testing import TestCase, TestCaseWithFactory
-from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+from lp.testing import (
+    person_logged_in,
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.translations.interfaces.translations import (
-    TranslationsBranchImportMode)
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+    TranslationsBranchImportMode,
+    )
 
 
 class TestDistroSeriesCurrentSourceReleases(TestCase):
@@ -195,6 +205,12 @@ class TestDistroSeries(TestCaseWithFactory):
             distroseries.getDistroArchSeriesByProcessor(
                 processorfamily.processors[0]))
 
+    def test_getDerivedSeries(self):
+        distroseries = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+        self.assertContentEqual(
+            [distroseries], distroseries.parent_series.getDerivedSeries())
+
 
 class TestDistroSeriesPackaging(TestCaseWithFactory):
 
@@ -293,12 +309,11 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         self.linkPackage('hot')
         self.makeSeriesPackage('cold')
         product_series = self.linkPackage('cold')
-        naked_product_series = remove_security_proxy_and_shout_at_engineer(
-            product_series)
-        naked_product_series.product.bugtraker = self.factory.makeBugTracker()
+        with person_logged_in(product_series.product.owner):
+            product_series.product.bugtracker = self.factory.makeBugTracker()
         packagings = self.series.getPrioritizedPackagings()
         names = [packaging.sourcepackagename.name for packaging in packagings]
-        expected = [u'hot', u'cold', u'linked']
+        expected = [u'hot', u'linked', u'cold']
         self.assertEqual(expected, names)
 
     def test_getPrioritizedPackagings_branch(self):
@@ -306,9 +321,8 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         self.linkPackage('translatable')
         self.makeSeriesPackage('withbranch')
         product_series = self.linkPackage('withbranch')
-        naked_product_series = remove_security_proxy_and_shout_at_engineer(
-            product_series)
-        naked_product_series.branch = self.factory.makeBranch()
+        with person_logged_in(product_series.product.owner):
+            product_series.branch = self.factory.makeBranch()
         packagings = self.series.getPrioritizedPackagings()
         names = [packaging.sourcepackagename.name for packaging in packagings]
         expected = [u'translatable', u'linked', u'withbranch']
@@ -320,11 +334,10 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         self.linkPackage('translatable')
         self.makeSeriesPackage('importabletranslatable')
         product_series = self.linkPackage('importabletranslatable')
-        naked_product_series = remove_security_proxy_and_shout_at_engineer(
-            product_series)
-        naked_product_series.branch = self.factory.makeBranch()
-        naked_product_series.translations_autoimport_mode = (
-            TranslationsBranchImportMode.IMPORT_TEMPLATES)
+        with person_logged_in(product_series.product.owner):
+            product_series.branch = self.factory.makeBranch()
+            product_series.translations_autoimport_mode = (
+                TranslationsBranchImportMode.IMPORT_TEMPLATES)
         packagings = self.series.getPrioritizedPackagings()
         names = [packaging.sourcepackagename.name for packaging in packagings]
         expected = [u'translatable', u'linked', u'importabletranslatable']
@@ -357,9 +370,8 @@ class TestDistroSeriesSet(TestCaseWithFactory):
 
         new_distroseries = (
             self.factory.makeDistroRelease(name=u"sampleseries"))
-        naked_new_distroseries = remove_security_proxy_and_shout_at_engineer(
-            new_distroseries)
-        naked_new_distroseries.hide_all_translations = False
+        with person_logged_in(new_distroseries.distribution.owner):
+            new_distroseries.hide_all_translations = False
         transaction.commit()
         translatables = self._get_translatables()
         self.failUnlessEqual(
@@ -381,7 +393,8 @@ class TestDistroSeriesSet(TestCaseWithFactory):
                 translatables,
                 self._ref_translatables(u"sampleseries")))
 
-        naked_new_distroseries.hide_all_translations = True
+        with person_logged_in(new_distroseries.distribution.owner):
+            new_distroseries.hide_all_translations = True
         transaction.commit()
         translatables = self._get_translatables()
         self.failUnlessEqual(
@@ -409,7 +422,3 @@ class TestDistroSeriesSet(TestCaseWithFactory):
             NoSuchDistroSeries,
             getUtility(IDistroSeriesSet).fromSuite,
             distribution, 'doesntexist')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

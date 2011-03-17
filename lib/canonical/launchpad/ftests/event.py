@@ -5,3 +5,5 @@
 
 # pylint: disable-msg=W0611
 from canonical.lazr.testing.event import TestEventListener
+
+

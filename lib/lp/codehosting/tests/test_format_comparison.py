@@ -9,7 +9,6 @@ import unittest
 
 from lp.codehosting.bzrutils import identical_formats
 
-
 # Define a bunch of different fake format classes to pass to identical_formats
 
 class BzrDirFormatA:

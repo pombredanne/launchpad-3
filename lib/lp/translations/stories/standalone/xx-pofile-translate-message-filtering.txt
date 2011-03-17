@@ -1,4 +1,5 @@
-= Message Filters on +translate Page =
+Message Filters on +translate Page
+==================================
 
 While doing translations, there is a functionality that allows the user
 to filter the kind of messages that should be shown.
@@ -11,9 +12,11 @@ messages in the batches of 10 items.
     >>> from canonical.launchpad.testing.pages import extract_url_parameter
 
     # This describes the HTML tag ids we'll be looking for below.
+
     >>> match_translation_id = 'msgset_([0-9]+)_es_translation_0$'
 
     # This function will be used to check the content of the browser.
+
     >>> def print_shown_messages(browser, soup=None):
     ...     """Print the id/value of all shown translations on the page."""
     ...     # Map msgset_ids to HTML tags
@@ -35,10 +38,11 @@ messages in the batches of 10 items.
     ...             msgset_id, translation.renderContents().strip())
 
 
-== Filters ==
+Filters
+-------
 
-No Privileges Person visits the evolution-2.2 package in Ubuntu Hoary
-to review the state of the translation.
+No Privileges Person visits the evolution-2.2 package in Ubuntu Hoary to
+review the state of the translation.
 
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'
@@ -61,7 +65,8 @@ in xx-pofile-translate-alternative-language.txt).
     <... Translating ... using ... as a guide...
 
 
-=== Untranslated ===
+Untranslated
+............
 
 No Privileges Person chooses to see the untranslated messages in the
 evolution-2.2 sourcepackage. He sets the view filter to 'Untranslated'
@@ -142,8 +147,8 @@ that there are 21 untranslated messages.
     >>> print_batch_header(contents)
     10 ... 19  of 21 results
 
-When No Privileges Person returns to the previous page, he can see
-the first 10 untranslated messages. The message is translated is not
+When No Privileges Person returns to the previous page, he can see the
+first 10 untranslated messages. The message is translated is not
 displayed.
 
     >>> user_browser.getLink("Previous").click()
@@ -163,12 +168,14 @@ navigation.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILanguageSet, IPersonSet, IProductSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> from lp.translations.interfaces.translator import ITranslatorSet
 
     # Evolution uses Restricted mode, so a translation without reviewer
     # is closed.  Assign an en_AU reviewer to active the translation.
+
     >>> login('foo.bar@canonical.com')
     >>> evolution = getUtility(IProductSet).getByName('evolution')
     >>> evolution_translation_group = evolution.translationgroup
@@ -216,21 +223,23 @@ accepted.
     <div lang="en-AU"...id="msgset_1_en_AU_suggestion_702_0"...>fnord</div>
 
 
-=== Messages changed in Launchpad ===
+Messages changed in Ubuntu
+..........................
 
-No Privileges Person can see entries which have changed in Launchpad.
+No Privileges Person can see entries which have changed in Ubuntu.
 There is only one message in the batch.
 
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'
     ...     '+source/evolution/+pots/evolution-2.2/es/+translate')
     >>> user_browser.getControl(name='show', index=1).displayValue = [
-    ...     'changed in Launchpad']
+    ...     'changed in Ubuntu']
     >>> user_browser.getControl('Change').click()
     >>> print extract_url_parameter(user_browser.url, 'batch')
     batch=10
+
     >>> print extract_url_parameter(user_browser.url, 'show')
-    show=changed_in_launchpad
+    show=changed_in_ubuntu
 
     >>> contents = find_main_content(user_browser.contents)
     >>> print_batch_header(contents)
@@ -246,14 +255,16 @@ the browser is redirected to the first batch.
     >>> user_browser.getControl('Save & Continue').click()
     >>> print extract_url_parameter(user_browser.url, 'batch')
     batch=10
+
     >>> print extract_url_parameter(user_browser.url, 'show')
-    show=changed_in_launchpad
+    show=changed_in_ubuntu
 
     >>> print_shown_messages(user_browser)
     134: '<samp> </samp>caratas'
 
 
-=== Messages with new suggestions ===
+Messages with new suggestions
+.............................
 
 No Privileges Person chooses to view messages with new suggestions
 submitted after they were last reviewed. There is only one message in
@@ -267,6 +278,7 @@ the batch.
     >>> user_browser.getControl('Change').click()
     >>> print extract_url_parameter(user_browser.url, 'batch')
     batch=10
+
     >>> print extract_url_parameter(user_browser.url, 'show')
     show=new_suggestions
 
@@ -283,8 +295,8 @@ better translation.
     ...     name='msgset_134_es_translation_0_new').value = 'tarjetas'
     >>> user_browser.getControl('Save & Continue').click()
 
-Since this was the only suggestion and No Privileges Person has reviewed it,
-the filter for new suggestions is empty now.
+Since this was the only suggestion and No Privileges Person has reviewed
+it, the filter for new suggestions is empty now.
 
     >>> description = first_tag_by_class(user_browser.contents,
     ...     'documentDescription')
@@ -292,7 +304,8 @@ the filter for new suggestions is empty now.
     There are no messages that match this filtering.
 
 
-== Invalid show option values ==
+Invalid show option values
+--------------------------
 
 There was once a filter option called need_review.  It no longer exists,
 but is quietly accepted.
@@ -308,7 +321,8 @@ The page will actually show the "all" filter.
     ['all items']
 
 
-== Batch parameters when changing filters ==
+Batch parameters when changing filters
+--------------------------------------
 
 When the filter changes, the batch is reset to the start of the set of
 messages, while preserving the batch size. No Privileges Person can see
@@ -330,15 +344,15 @@ message; he is seeing the first batch.
     1 ... 10  of 15 results
 
 
-== Filters and error display ==
+Filters and error display
+-------------------------
 
-When there are errors in translations that No Privileges Person
-submits, he sees a general error message at the top of the page,
-plus individual error messages for the individual problematic
-translations.
+When there are errors in translations that No Privileges Person submits,
+he sees a general error message at the top of the page, plus individual
+error messages for the individual problematic translations.
 
-The error page shows the same messages that the user submitted for:
-it is the same batch, shown with the same filter (see bug 112308).
+The error page shows the same messages that the user submitted for: it
+is the same batch, shown with the same filter (see bug 112308).
 
 No Privileges Person submits a bad translation, one that lacks
 conversion specifications the original message has, and is shown an
@@ -385,7 +399,8 @@ The exact same batch of messages is shown again, but with the error.
     ...
 
 
-== Filters and alternative languages ==
+Filters and alternative languages
+---------------------------------
 
 Handling of http parameters gets a bit more complex when forms are
 posted. Nonetheless users can submit translations while combining

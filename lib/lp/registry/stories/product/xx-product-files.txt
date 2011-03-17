@@ -1,4 +1,6 @@
-= Downloadable Files =
+==================
+Downloadable Files
+==================
 
 Launchpad can show a product's downloadable files, by series, with
 links to each.
@@ -9,15 +11,18 @@ Any user can see that a project with no releases has no downloads.
     >>> content = find_tag_by_id(anon_browser.contents, 'downloads')
     >>> print extract_text(content)
     Downloads
-    APTonCD does not have any download files.
+    APTonCD does not have any download files registered with Launchpad.
 
-Any user can see a project with a release without files has no downlaod files.
+Similarly, if the project does have a release, but that release has no
+files yet, a message is shown to all users that there are no
+downloadable files.
 
     >>> anon_browser.open('http://launchpad.dev/thunderbird')
     >>> content = find_tag_by_id(anon_browser.contents, 'downloads')
     >>> print extract_text(content)
     Downloads
-    Mozilla Thunderbird does not have any download files.
+    Mozilla Thunderbird does not have any download files
+    registered with Launchpad.
 
 Any user can see a projects download files organised by series. For each
 series, the owner sees a heading, summary, table of files, and links to each
@@ -33,7 +38,8 @@ release to add download files.
     >>> anon_browser.getLink('All downloads').click()
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'project-downloads'))
-    0.9.2 (One (secure) Tree Hill) release from the trunk series released 2004-10-15
+    0.9.2 (One (secure) Tree Hill) release from the trunk series
+    released 2004-10-15
     Release information
     Release notes:
     Security fixes
@@ -42,7 +48,8 @@ release to add download files.
     firefox_0.9.2.orig.tar.gz (md5)               -
 
 
-== Deletion is only for the privileged ==
+Deletion is only for the privileged
+===================================
 
 As an anonymous user the files for download should be shown, but not
 the delete options.
@@ -107,7 +114,8 @@ A project owner should not see the delete button when there are no files.
     LookupError: label 'Delete Files'
 
 
-== The download file layout ==
+The download file layout
+========================
 
 When a project has a series with one or more releases, an option to
 add download files for each release in that series is presented.
@@ -156,7 +164,8 @@ the list.
     Add download file to the 1.0 series for release: 1.0.0
 
 
-== Adding new files ==
+Adding new files
+================
 
 In order to add new files, the admin can click on the link release
 link provided under the series name, or navigate to the product
@@ -377,7 +386,8 @@ are listed within series in reverse chronological order, except
     foo.txt
 
 
-== Downloading and deleting files ==
+Downloading and deleting files
+==============================
 
 Download one of the files.
 
@@ -432,7 +442,8 @@ Ensure the file is no longer listed.
     foo.txt
 
 
-== Listing on the ProductRelease page ==
+Listing on the ProductRelease page
+==================================
 
 Download files are shown on the page for the product release.
 Non-administrators do not have the delete option.
@@ -471,7 +482,8 @@ A "Delete Files" button is available.
     [u'1 file has been deleted.']
 
 
-== Scheme redirection ==
+Scheme redirection
+==================
 
 Files may be downloaded over http or https with the URL for the
 librarian file constructed based upon the scheme of the original
@@ -504,7 +516,7 @@ If the original scheme is https the redirect URL should be https too.
     >>> location = redirect_resp.getOutput().split("\n")[3]
     >>> redirect_url = location.split()[1]
     >>> print redirect_url
-    https://localhost:58000/.../foo.txt
+    https://.../foo.txt
 
 However if the original scheme is http then the redirect URL should be
 over http.
@@ -516,7 +528,7 @@ over http.
     >>> location = redirect_resp.getOutput().split("\n")[3]
     >>> redirect_url = location.split()[1]
     >>> print redirect_url
-    http://localhost:58000/.../foo.txt
+    http://.../foo.txt
 
 When 'use_https' is False the result will always be http.
 
@@ -536,7 +548,7 @@ When 'use_https' is False the result will always be http.
     >>> location = redirect_resp.getOutput().split("\n")[3]
     >>> redirect_url = location.split()[1]
     >>> print redirect_url
-    http://localhost:58000/.../foo.txt
+    http://.../foo.txt
 
     >>> redirect_resp = http(dedent("""\
     ...     GET %s HTTP/1.1
@@ -545,7 +557,7 @@ When 'use_https' is False the result will always be http.
     >>> location = redirect_resp.getOutput().split("\n")[3]
     >>> redirect_url = location.split()[1]
     >>> print redirect_url
-    http://localhost:58000/.../foo.txt
+    http://.../foo.txt
 
 Return 'use_https' to its original value to not mess up future tests.
 

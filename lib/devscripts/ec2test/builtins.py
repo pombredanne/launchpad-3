@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The command classes for the 'ec2' utility."""
@@ -6,26 +6,41 @@
 __metaclass__ = type
 __all__ = []
 
+from datetime import datetime
 import os
 import pdb
+import socket
 import subprocess
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.commands import Command
-from bzrlib.errors import BzrCommandError
+from bzrlib.errors import (
+    BzrCommandError,
+    ConnectionError,
+    NoSuchFile,
+    )
 from bzrlib.help import help_commands
-from bzrlib.option import ListOption, Option
-
-import socket
+from bzrlib.option import (
+    ListOption,
+    Option,
+    )
+from bzrlib.transport import get_transport
+from pytz import UTC
+import simplejson
 
 from devscripts import get_launchpad_root
-
+from devscripts.ec2test.account import VALID_AMI_OWNERS
 from devscripts.ec2test.credentials import EC2Credentials
 from devscripts.ec2test.instance import (
-    AVAILABLE_INSTANCE_TYPES, DEFAULT_INSTANCE_TYPE, EC2Instance)
+    AVAILABLE_INSTANCE_TYPES,
+    DEFAULT_INSTANCE_TYPE,
+    EC2Instance,
+    )
 from devscripts.ec2test.session import EC2SessionName
-from devscripts.ec2test.testrunner import EC2TestRunner, TRUNK_BRANCH
-
+from devscripts.ec2test.testrunner import (
+    EC2TestRunner,
+    TRUNK_BRANCH,
+    )
 
 # Options accepted by more than one command.
 
@@ -141,6 +156,12 @@ def filename_type(filename):
     return filename
 
 
+def set_trace_if(enable_debugger=False):
+    """If `enable_debugger` is True, drop into the debugger."""
+    if enable_debugger:
+        pdb.set_trace()
+
+
 class EC2Command(Command):
     """Subclass of `Command` that customizes usage to say 'ec2' not 'bzr'.
 
@@ -186,7 +207,6 @@ def _get_branches_and_test_branch(trunk, branch, test_branch):
             test_branch = '.'
     branches = [data.split('=', 1) for data in branch]
     return branches, test_branch
-
 
 
 DEFAULT_TEST_OPTIONS = '--subunit -vvv'
@@ -267,8 +287,7 @@ class cmd_test(EC2Command):
             pqm_submit_location=None, pqm_email=None, postmortem=False,
             attached=False, debug=False, open_browser=False,
             include_download_cache_changes=False):
-        if debug:
-            pdb.set_trace()
+        set_trace_if(debug)
         if branch is None:
             branch = []
         branches, test_branch = _get_branches_and_test_branch(
@@ -329,6 +348,11 @@ class cmd_land(EC2Command):
             'incremental',
             help="Incremental to other bug fix (tags commit with [incr])."),
         Option(
+            'rollback', type=int,
+            help=(
+                "Rollback given revision number. (tags commit with "
+                "[rollback=revno]).")),
+        Option(
             'commit-text', short_name='s', type=str,
             help=(
                 'A description of the landing, not including reviewer '
@@ -361,8 +385,8 @@ class cmd_land(EC2Command):
     def run(self, merge_proposal=None, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE, postmortem=False,
             debug=False, commit_text=None, dry_run=False, testfix=False,
-            no_qa=False, incremental=False, print_commit=False, force=False,
-            attached=False):
+            no_qa=False, incremental=False, rollback=None, print_commit=False,
+            force=False, attached=False):
         try:
             from devscripts.autoland import (
                 LaunchpadBranchLander, MissingReviewError, MissingBugsError,
@@ -377,14 +401,10 @@ class cmd_land(EC2Command):
                 "wide because this will break the rest of Launchpad.\n\n"
                 "***************************************************\n")
             raise
-        if debug:
-            pdb.set_trace()
+        set_trace_if(debug)
         if print_commit and dry_run:
             raise BzrCommandError(
                 "Cannot specify --print-commit and --dry-run.")
-        if no_qa and incremental:
-            raise BzrCommandError(
-                "--no-qa and --incremental cannot be given at the same time.")
         lander = LaunchpadBranchLander.load()
 
         if merge_proposal is None:
@@ -406,9 +426,12 @@ class cmd_land(EC2Command):
             raise BzrCommandError(
                 "Commit text not specified. Use --commit-text, or specify a "
                 "message on the merge proposal.")
+        if rollback and (no_qa or incremental):
+            print (
+                "--rollback option used. Ignoring --no-qa and --incremental.")
         try:
-            commit_message = mp.get_commit_message(
-                commit_text, testfix, no_qa, incremental)
+            commit_message = mp.build_commit_message(
+                commit_text, testfix, no_qa, incremental, rollback=rollback)
         except MissingReviewError:
             raise BzrCommandError(
                 "Cannot land branches that haven't got approved code "
@@ -423,6 +446,15 @@ class cmd_land(EC2Command):
             raise BzrCommandError(
                 "--incremental option requires bugs linked to the branch. "
                 "Link the bugs or remove the --incremental option.")
+
+        # Override the commit message in the MP with the commit message built
+        # with the proper tags.
+        try:
+            mp.set_commit_message(commit_message)
+        except Exception, e:
+            raise BzrCommandError(
+                "Unable to set the commit message in the merge proposal.\n"
+                "Got: %s" % e)
 
         if print_commit:
             print commit_message
@@ -463,8 +495,7 @@ class cmd_demo(EC2Command):
     def run(self, test_branch=None, branch=None, trunk=False, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE, debug=False,
             include_download_cache_changes=False, demo=None):
-        if debug:
-            pdb.set_trace()
+        set_trace_if(debug)
         if branch is None:
             branch = []
         branches, test_branch = _get_branches_and_test_branch(
@@ -539,11 +570,17 @@ class cmd_update_image(EC2Command):
     def run(self, ami_name, machine=None, instance_type='m1.large',
             debug=False, postmortem=False, extra_update_image_command=None,
             public=False):
-        if debug:
-            pdb.set_trace()
+        set_trace_if(debug)
 
         if extra_update_image_command is None:
             extra_update_image_command = []
+
+        # These environment variables are passed through ssh connections to
+        # fresh Ubuntu images and cause havoc if the locales they refer to are
+        # not available. We kill them here to ease bootstrapping, then we
+        # later modify the image to prevent sshd from accepting them.
+        for variable in ['LANG', 'LC_ALL', 'LC_TIME']:
+            os.environ.pop(variable, None)
 
         credentials = EC2Credentials.load_from_file()
 
@@ -551,8 +588,8 @@ class cmd_update_image(EC2Command):
         instance = EC2Instance.make(
             session_name, instance_type, machine,
             credentials=credentials)
-        instance.check_bundling_prerequisites()
-
+        instance.check_bundling_prerequisites(
+            ami_name, credentials)
         instance.set_up_and_run(
             postmortem, True, self.update_image, instance,
             extra_update_image_command, ami_name, credentials, public)
@@ -577,7 +614,14 @@ class cmd_update_image(EC2Command):
         :param public: If true, remove proprietary code from the sourcecode
             directory before bundling.
         """
+        # Do NOT accept environment variables via ssh connections.
         user_connection = instance.connect()
+        user_connection.perform(
+            'sudo sed -i "s/^AcceptEnv/#AcceptEnv/" /etc/ssh/sshd_config')
+        user_connection.perform(
+            'sudo kill -HUP $(< /var/run/sshd.pid)')
+        # Reconnect to ensure that the environment is clean.
+        user_connection.reconnect()
         user_connection.perform(
             'bzr launchpad-login %s' % (instance._launchpad_login,))
         for cmd in extra_update_image_command:
@@ -598,6 +642,126 @@ class cmd_update_image(EC2Command):
             'rm -rf .ssh/known_hosts .bazaar .bzr.log')
         user_connection.close()
         instance.bundle(ami_name, credentials)
+
+
+class cmd_images(EC2Command):
+    """Display all available images.
+
+    The first in the list is the default image.
+    """
+
+    def run(self):
+        credentials = EC2Credentials.load_from_file()
+        session_name = EC2SessionName.make(EC2TestRunner.name)
+        account = credentials.connect(session_name)
+        format = "%5s  %-12s  %-12s  %s\n"
+        self.outf.write(format % ("Rev", "AMI", "Owner ID", "Owner"))
+        for revision, images in account.find_images():
+            for image in images:
+                self.outf.write(format % (
+                        revision, image.id, image.ownerId,
+                        VALID_AMI_OWNERS.get(image.ownerId, "unknown")))
+
+
+class cmd_list(EC2Command):
+    """List all your current EC2 test runs.
+
+    If an instance is publishing an 'info.json' file with 'description' and
+    'failed-yet' fields, this command will list that instance, whether it has
+    failed the test run and how long it has been up for.
+
+    [FAILED] means that the has been a failing test. [OK] means that the test
+    run has had no failures yet, it's not a guarantee of a successful run.
+    """
+
+    aliases = ["ls"]
+
+    takes_options = [
+        Option('show-urls',
+               help="Include more information about each instance"),
+        Option('all', short_name='a',
+               help="Show all instances, not just ones with ec2test data."),
+        ]
+
+    def iter_instances(self, account):
+        """Iterate through all instances in 'account'."""
+        for reservation in account.conn.get_all_instances():
+            for instance in reservation.instances:
+                yield instance
+
+    def get_uptime(self, instance):
+        """How long has 'instance' been running?"""
+        expected_format = '%Y-%m-%dT%H:%M:%S.000Z'
+        launch_time = datetime.strptime(instance.launch_time, expected_format)
+        return (
+            datetime.utcnow().replace(tzinfo=UTC)
+            - launch_time.replace(tzinfo=UTC))
+
+    def get_http_url(self, instance):
+        hostname = instance.public_dns_name
+        if not hostname:
+            return
+        return 'http://%s/' % (hostname,)
+
+    def get_ec2test_info(self, instance):
+        """Load the ec2test-specific information published by 'instance'."""
+        url = self.get_http_url(instance)
+        if url is None:
+            return
+        try:
+            json = get_transport(url).get_bytes('info.json')
+        except (ConnectionError, NoSuchFile):
+            # Probably not an ec2test instance, or not ready yet.
+            return None
+        return simplejson.loads(json)
+
+    def format_instance(self, instance, data, verbose):
+        """Format 'instance' for display.
+
+        :param instance: The EC2 instance to display.
+        :param data: Launchpad-specific data.
+        :param verbose: Whether we want verbose output.
+        """
+        uptime = self.get_uptime(instance)
+        if data is None:
+            description = instance.id
+            current_status =     'unknown '
+        else:
+            description = data['description']
+            if data['failed-yet']:
+                current_status = '[FAILED]'
+            else:
+                current_status = '[OK]    '
+        output = '%s  %s (up for %s)' % (description, current_status, uptime)
+        if verbose:
+            url = self.get_http_url(instance)
+            if url is None:
+                url = "No web service"
+            output += '\n  %s' % (url,)
+        return output
+
+    def format_summary(self, by_state):
+        return ', '.join(
+            ': '.join((state, str(num)))
+            for (state, num) in sorted(list(by_state.items())))
+
+    def run(self, show_urls=False, all=False):
+        credentials = EC2Credentials.load_from_file()
+        session_name = EC2SessionName.make(EC2TestRunner.name)
+        account = credentials.connect(session_name)
+        instances = list(self.iter_instances(account))
+        if len(instances) == 0:
+            print "No instances running."
+            return
+
+        by_state = {}
+        for instance in instances:
+            by_state[instance.state] = by_state.get(instance.state, 0) + 1
+            data = self.get_ec2test_info(instance)
+            if data is None and not all:
+                continue
+            print self.format_instance(instance, data, show_urls)
+        print 'Summary: %s' % (self.format_summary(by_state),)
 
 
 class cmd_help(EC2Command):

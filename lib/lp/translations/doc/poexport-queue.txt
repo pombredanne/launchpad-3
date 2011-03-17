@@ -1,17 +1,19 @@
-= Translation Export Queue =
+Translation Export Queue
+========================
 
-The Translation Export Queue is the functionality that allows us to export
-translation resources from the Launchpad portal.
+The Translation Export Queue is the functionality that allows us to
+export translation resources from the Launchpad portal.
 
 
-== ExportResult ==
+ExportResult
+------------
 
-ExportResult class is used to control the list of exported files that succeed
-and the ones that failed with the error associated.
+ExportResult class is used to control the list of exported files that
+succeed and the ones that failed with the error associated.
 
     >>> import transaction
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.testing.faketransaction import FakeTransaction
     >>> from lp.testing.mail_helpers import pop_notifications, print_emails
     >>> from lp.translations.scripts.po_export_queue import ExportResult
@@ -40,13 +42,13 @@ Record the error.
     ...     result.addFailure()
 
 In this case, there is an error, so there shouldn't be a URL to download
-anything, if we set it, the system will fail:
+anything.  If we set it, the system will fail:
 
     >>> result.url = 'http://someplace.com/somefile.tar.gz'
 
 Once we are done, we should notify the user that everything failed, but
-given that we set a URL, the notification will detect the programming error.
-In this example, 'carlos' will be the one that did the request.
+given that we set a URL, the notification will detect the programming
+error. In this example, 'carlos' will be the one that did the request.
 
     >>> result.notify()
     Traceback (most recent call last):
@@ -126,9 +128,9 @@ exported as context to help tracking down any bugs.
     <BLANKLINE>
     ----------------------------------------
 
-As a special case, some error messages are poisoned with non-ASCII characters
-and can't be reported without triggering an error themselves.  Those are
-specially handled and reported.
+As a special case, some error messages are poisoned with non-ASCII
+characters and can't be reported without triggering an error themselves.
+Those are specially handled and reported.
 
     >>> try:
     ...     raise AssertionError, "Really nasty \xc3 non-ASCII error!"
@@ -148,7 +150,8 @@ specially handled and reported.
     ...     else:
     ...         admin_email = email
 
-The user's notification looks no different from that for an ordinary error.
+The user's notification looks no different from that for an ordinary
+error.
 
     >>> print_emails(notifications=[carlos_email])
     From: ...
@@ -171,8 +174,8 @@ The user's notification looks no different from that for an ordinary error.
     <BLANKLINE>
     ----------------------------------------
 
-The one for the administrators, however, does not include the unprintable
-exception text.
+The one for the administrators, however, does not include the
+unprintable exception text.
 
     >>> print_emails(notifications=[admin_email])
     From: ...
@@ -197,8 +200,8 @@ exception text.
     <BLANKLINE>
     ----------------------------------------
 
-Finally, there is the case when there are no errors at all. This is the usual
-case.
+Finally, there is the case when there are no errors at all. This is the
+usual case.
 
     >>> result = ExportResult(carlos, [potemplate, pofile], logger)
 
@@ -246,7 +249,8 @@ In this case, there are no errors, so we should get just a single email
     ----------------------------------------
 
 
-== process_queue() ==
+process_queue()
+---------------
 
 This method handles entries from the queue of entries to be exported.
 
@@ -300,7 +304,7 @@ The confirmation email shows no errors at all.
     The translation files you requested from Launchpad are ready for
     download from the following location:
     <BLANKLINE>
-      http://localhost:58000/.../po_evolution-2.2.pot
+      http://.../.../po_evolution-2.2.pot
     <BLANKLINE>
     Note: this link will expire in about 1 week.  If you want to
     download these translations again, you will have to request
@@ -314,18 +318,27 @@ The confirmation email shows no errors at all.
     <BLANKLINE>
     ----------------------------------------
 
-Let's have a closer look at what is being exported. Usually all messages are
-exported but not all messages are equal. Some messages have been imported
-from upstream and then changed, others have been left as they are.
-This pofile has both kind of messages.
+Let's have a closer look at what is being exported. Usually all messages
+are exported but not all messages are equal. Some messages have been
+imported from upstream and then changed, others have been left as they
+are. This pofile has both kind of messages.
 
-    >>> potemplate = factory.makePOTemplate()
+    >>> package = factory.makeSourcePackage()
+    >>> potemplate = factory.makePOTemplate(
+    ...     distroseries=package.distroseries,
+    ...     sourcepackagename=package.sourcepackagename)
     >>> pofile = factory.makePOFile('eo', potemplate=potemplate)
-    >>> factory.makeTranslation(pofile, 1, "english1", "esperanto1", True)
-    >>> factory.makeTranslation(pofile, 2, "english2", "esperanto2", False)
+    >>> tm = factory.makeCurrentTranslationMessage(
+    ...     pofile=pofile, current_other=True, translations=["esperanto1"],
+    ...     potmsgset=factory.makePOTMsgSet(
+    ...         potemplate, singular="english1", sequence=1))
+    >>> tm = factory.makeCurrentTranslationMessage(
+    ...     pofile=pofile, current_other=False, translations=["esperanto2"],
+    ...     potmsgset=factory.makePOTMsgSet(
+    ...         potemplate, singular="english2", sequence=2))
 
-To see what is being exported we need to retrieve the exported file from the
-librarian.
+To see what is being exported we need to retrieve the exported file from
+the librarian.
 
     >>> from canonical.launchpad.testing.librarianhelpers import (
     ...     get_newest_librarian_file)
@@ -351,7 +364,7 @@ Exporting this pofile yields both messages in the resulting file.
     <BLANKLINE>
 
 Setting the format to POCHANGED yields only the message that was changed
-after having been imported.
+in Ubuntu compared to upstream.
 
     >>> export_request_set.addRequest(
     ...     carlos, pofiles=[pofile], format=TranslationFileFormat.POCHANGED)
@@ -378,3 +391,5 @@ anything:
     >>> process_queue(fake_transaction, logging.getLogger())
     >>> len(pop_notifications())
     0
+
+

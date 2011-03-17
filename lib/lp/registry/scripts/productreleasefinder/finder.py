@@ -7,27 +7,24 @@ __all__ = [
     'ProductReleaseFinder'
     ]
 
-import os
-import mimetypes
-import pytz
-import re
-import urlparse
-import urllib
 from datetime import datetime
+import mimetypes
+import os
+import re
+import urllib
+import urlparse
 
 from cscvs.dircompare import path
-
+import pytz
 from zope.component import getUtility
 
-from canonical.launchpad.validators.name import invalid_name_pattern
-from canonical.launchpad.validators.version import sane_version
-
-from lp.registry.interfaces.series import SeriesStatus
+from lp.app.validators.name import invalid_name_pattern
+from lp.app.validators.version import sane_version
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.productrelease import UpstreamFileType
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.scripts.productreleasefinder.filter import FilterPattern
 from lp.registry.scripts.productreleasefinder.hose import Hose
-from lp.registry.scripts.productreleasefinder.filter import (
-    FilterPattern)
 
 
 processors = '|'.join([

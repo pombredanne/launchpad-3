@@ -8,14 +8,16 @@ from urllib2 import URLError, HTTPError
 
 import transaction
 
-from canonical.testing import DatabaseLayer, LaunchpadFunctionalLayer
+from canonical.testing.layers import DatabaseLayer, LaunchpadFunctionalLayer
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
+from canonical.launchpad.interfaces.lpstorm import ISlaveStore
+from canonical.launchpad.webapp.dbpolicy import SlaveDatabasePolicy
 from canonical.librarian import client as client_module
 from canonical.librarian.client import (
     LibrarianClient, LibrarianServerError, RestrictedLibrarianClient)
 from canonical.librarian.interfaces import UploadFailed
-from canonical.launchpad.database import LibraryFileAlias
+from canonical.launchpad.database.librarian import LibraryFileAlias
 
 
 class InstrumentedLibrarianClient(LibrarianClient):
@@ -32,7 +34,7 @@ class InstrumentedLibrarianClient(LibrarianClient):
 
 
 def make_mock_file(error, max_raise):
-    """Return a surrogate for clinet._File.
+    """Return a surrogate for client._File.
 
     The surrogate function raises error when called for the first
     max_raise times.
@@ -44,13 +46,14 @@ def make_mock_file(error, max_raise):
         'num_calls': 0,
         }
 
-    def mock_file(url):
+    def mock_file(url_file, url):
         if file_status['num_calls'] < file_status['max_raise']:
             file_status['num_calls'] += 1
             raise file_status['error']
         return 'This is a fake file object'
 
     return mock_file
+
 
 class LibrarianClientTestCase(unittest.TestCase):
     layer = LaunchpadFunctionalLayer
@@ -90,6 +93,20 @@ class LibrarianClientTestCase(unittest.TestCase):
                 'Unexpected UploadFailed error: ' + msg)
         else:
             self.fail("UploadFailed not raised")
+
+    def test_addFile_uses_master(self):
+        # addFile is a write operation, so it should always use the
+        # master store, even if the slave is the default. Close the
+        # slave store and try to add a file, verifying that the master
+        # is used.
+        client = LibrarianClient()
+        ISlaveStore(LibraryFileAlias).close()
+        with SlaveDatabasePolicy():
+            alias_id = client.addFile(
+                'sample.txt', 6, StringIO('sample'), 'text/plain')
+        transaction.commit()
+        f = client.getFileByAlias(alias_id)
+        self.assertEqual(f.read(), 'sample')
 
     def test__getURLForDownload(self):
         # This protected method is used by getFileByAlias. It is supposed to

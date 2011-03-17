@@ -35,7 +35,8 @@ it.
 
     >>> from transaction import commit
     >>> commit()
-    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+    >>> from canonical.launchpad.interfaces.librarian import (
+    ...     ILibraryFileAliasSet)
     >>> log_alias = getUtility(ILibraryFileAliasSet)[log_alias_id]
 
     >>> sample_import = factory.makeCodeImport()

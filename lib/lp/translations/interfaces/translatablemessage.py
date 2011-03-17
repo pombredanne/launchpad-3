@@ -3,10 +3,17 @@
 
 # pylint: disable-msg=E0211,E0213
 
-from zope.interface import Attribute, Interface
-from zope.schema import Bool, Int
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Int,
+    )
 
 from canonical.launchpad import _
+
 
 __metaclass__ = type
 
@@ -21,41 +28,41 @@ class ITranslatableMessage(Interface):
     potmsgset = Attribute("The POTMsgset")
 
     sequence = Int(
-        title=_("The sequence number within the POTemplate."),
+        title=_("Sequence number within the POTemplate."),
         required=True)
 
     is_obsolete = Bool(
-        title=_("Flag indicating that this TranslatableMessage is obsolete"),
+        title=_("This TranslatableMessage is obsolete"),
         required=True)
 
     is_untranslated = Bool(
-        title=_("Flag indicating that the current translation is empty"),
+        title=_("The current translation is empty"),
         required=True)
 
     is_current_diverged = Bool(
-        title=_("Flag indicating that the current translation is diverged"),
+        title=_("The current translation is diverged"),
         required=True)
 
     is_current_imported = Bool(
-        title=_("Flag indicating that the current translation is imported"),
+        title=_("The current translation is used upstream"),
         required=True)
 
     has_plural_forms = Bool(
-        title=_("Flag indicating that there is an English plural string"),
+        title=_("There is an English plural string"),
         required=True)
 
     number_of_plural_forms = Int(
-        title=_("The number of plural forms in the target language"),
+        title=_("Number of plural forms in the target language"),
         required=True)
 
     def getCurrentTranslation():
         """Get the TranslationMessage that holds the current translation."""
 
     def getImportedTranslation():
-        """Get the TranslationMessage that is marked as imported.
+        """Get the TranslationMessage that is marked as current-upstream.
 
-        This can be None if there is no such message or it can be identical
-        to the current translation if the current translation is imported.
+        This can be None if there is no such message, or it can be
+        identical to the current Ubuntu translation.
         """
 
     def getSharedTranslation():

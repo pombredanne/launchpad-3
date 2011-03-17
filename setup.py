@@ -4,6 +4,8 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import ez_setup
+
+
 ez_setup.use_setuptools()
 
 from setuptools import setup, find_packages
@@ -25,12 +27,14 @@ setup(
     # used in zcml.
     install_requires=[
         'ampoule',
+        'BeautifulSoup',
         'bzr',
         'chameleon.core',
         'chameleon.zpt',
         'cssutils',
         # Required for pydkim
         'dnspython',
+        'fixtures',
         'FeedParser',
         'feedvalidator',
         'funkload',
@@ -45,14 +49,16 @@ setup(
         'lazr.testing',
         'lazr.uri',
         'lazr-js',
+        # Required for launchpadlib
+        'keyring',
         'manuel',
         'mechanize',
         'meliae',
         'mercurial',
         'mocker',
-        'numpy',
         'oauth',
         'paramiko',
+        'psycopg2',
         'python-memcached',
         'pyasn1',
         'pydkim',
@@ -62,6 +68,8 @@ setup(
         'RestrictedPython',
         'setproctitle',
         'setuptools',
+        'Sphinx',
+        'soupmatchers',
         'sourcecodegen',
         'storm',
         'testtools',
@@ -74,7 +82,7 @@ setup(
         'zope.app.apidoc',
         'zope.app.appsetup',
         'zope.app.component',
-        'zope.app.dav', # ./package-includes/dav-configure.zcml
+        'zope.app.dav', # ./zcml/package-includes/dav-configure.zcml
         'zope.app.error',
         'zope.app.exception',
         'zope.app.file',
@@ -149,6 +157,8 @@ setup(
             'start_librarian '
                 '= canonical.launchpad.scripts.runlaunchpad:start_librarian',
             'ec2 = devscripts.ec2test.entrypoint:main',
+            'compile_templates '
+                '= canonical.launchpad.scripts:execute_zcml_for_scripts',
         ]
     ),
 )

@@ -19,13 +19,15 @@ Now mark (because he's the bug reporter), Sample Person (a former bug
 supervisor), Landscape Developers (another former bug supervisor) and
 Robert Collins (the current bug supervisor) are subscribed to this bug:
 
+    >>> from itertools import chain
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
 
     >>> def subscriber_names(bug):
-    ...     subscribers = (
-    ...         bug.getDirectSubscribers() + bug.getIndirectSubscribers())
+    ...     subscribers = chain(
+    ...         bug.getDirectSubscribers(),
+    ...         bug.getIndirectSubscribers())
     ...     return sorted(subscriber.displayname for subscriber in subscribers)
 
     >>> login(ANONYMOUS)
@@ -38,7 +40,7 @@ Robert Collins (the current bug supervisor) are subscribed to this bug:
 For a security bug, only the reporter and the registrant gets
 subscribed, because Firefox does not have a security contact.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> login(ANONYMOUS)
     >>> firefox = getUtility(IProductSet).getByName("firefox")

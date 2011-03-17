@@ -3,7 +3,11 @@
 
 # pylint: disable-msg=E0211,E0213
 
-from zope.interface import Interface, Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+
 
 __metaclass__ = type
 

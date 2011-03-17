@@ -1,4 +1,20 @@
-= Answer Tracker Introduction Page =
+Answer Tracker Introduction Page
+================================
+
+First, we need to set some values for the later tests.
+
+    >>> import transaction
+    >>> from lp.app.enums import ServiceUsage
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from zope.component import getUtility
+    >>> login('admin@canonical.com')
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> firefox.answers_usage = ServiceUsage.LAUNCHPAD
+    >>> ubuntu.answers_usage = ServiceUsage.LAUNCHPAD
+    >>> logout()
+    >>> transaction.commit()
 
     >>> anon_browser.open('http://answers.launchpad.dev/')
     >>> print anon_browser.title
@@ -10,13 +26,13 @@ It shows the 5 latest questions asked:
     ...     anon_browser.contents, 'latest-questions-asked')
     >>> print latest_questions_asked.first('h2').renderContents()
     Latest questions asked
-    >>> for row in latest_questions_asked.fetch('tr', 'noted'):
+    >>> for row in latest_questions_asked.fetch('li'):
     ...     row.first('a').renderContents()
-    'Problemas de Impress\xc3\xa3o no Firefox'
-    'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
-    'Continue playing after shutdown'
-    'Installation failed'
-    'Firefox loses focus and gets stuck'
+    '...: Problemas de Impress\xc3\xa3o no Firefox'
+    '...: Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
+    '...: Continue playing after shutdown'
+    '...: Installation failed'
+    '...: Firefox loses focus and gets stuck'
 
 As well as the 5 latest questions solved:
 
@@ -24,9 +40,9 @@ As well as the 5 latest questions solved:
     ...     anon_browser.contents, 'latest-questions-solved')
     >>> print latest_questions_solved.first('h2').renderContents()
     Latest questions solved
-    >>> for row in latest_questions_solved.fetch('tr', 'noted'):
+    >>> for row in latest_questions_solved.fetch('li'):
     ...     row.first('a').renderContents()
-    'mailto: problem in webpage'
+    '...: mailto: problem in webpage'
 
 The application footer also contains a sample of stats for the application:
 
@@ -60,7 +76,7 @@ Add some recent questions so that this listing contains something.
     ...     anon_browser.contents, 'most-active-projects'))
     Most active projects
     Ubuntu
-    Mozilla Firefox ...
+    Mozilla Firefox
 
 Clicking on these project links will bring the user to the project
 Answers front page:

@@ -14,20 +14,33 @@ __all__ = [
     'NoSuchPackageSet',
     ]
 
-from zope.interface import Interface
-from zope.schema import Bool, Datetime, Int, List, TextLine
-
-from canonical.launchpad import _
-from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from lazr.restful.declarations import (
-    collection_default_content, export_as_webservice_collection,
-    export_as_webservice_entry, export_factory_operation,
-    export_read_operation, export_write_operation, exported,
-    operation_parameters, operation_returns_collection_of,
-    operation_returns_entry, webservice_error)
+    collection_default_content,
+    export_as_webservice_collection,
+    export_as_webservice_entry,
+    export_factory_operation,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    operation_parameters,
+    operation_returns_collection_of,
+    operation_returns_entry,
+    webservice_error,
+    )
 from lazr.restful.fields import Reference
 from lazr.restful.interface import copy_field
+from zope.interface import Interface
+from zope.schema import (
+    Bool,
+    Datetime,
+    Int,
+    List,
+    TextLine,
+    )
+
+from canonical.launchpad import _
+from lp.app.errors import NameLookupFailed
+from lp.app.validators.name import name_validator
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
@@ -49,7 +62,7 @@ class DuplicatePackagesetName(Exception):
 
 class IPackagesetViewOnly(IHasOwner):
     """A read-only interface for package sets."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     id = Int(title=_('ID'), required=True, readonly=True)
 
@@ -231,7 +244,7 @@ class IPackagesetViewOnly(IHasOwner):
 
 class IPackagesetEdit(Interface):
     """A writeable interface for package sets."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     def add(data):
         """Add source package names or other package sets to this one.
@@ -336,7 +349,7 @@ class IPackagesetEdit(Interface):
 
 class IPackageset(IPackagesetViewOnly, IPackagesetEdit):
     """An interface for package sets."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
 
 class IPackagesetSet(Interface):
@@ -397,8 +410,8 @@ class IPackagesetSet(Interface):
         """
 
     @collection_default_content()
-    def get(limit=50):
-        """Return the first `limit` package sets in Launchpad.
+    def get():
+        """Return all of the package sets in Launchpad.
 
         :return: A (potentially empty) sequence of `IPackageset` instances.
         """

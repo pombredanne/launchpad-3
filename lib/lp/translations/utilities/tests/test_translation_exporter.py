@@ -5,19 +5,24 @@
 
 __metaclass__ = type
 
-import unittest
-from operator import attrgetter
 from cStringIO import StringIO
+from operator import attrgetter
+import unittest
+
 from zope.interface.verify import verifyObject
 
-from lp.translations.utilities.translation_export import (
-    TranslationExporter, ExportedTranslationFile)
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.translations.interfaces.translationexporter import (
     IExportedTranslationFile,
-    ITranslationExporter)
+    ITranslationExporter,
+    )
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
-from canonical.testing import LaunchpadZopelessLayer
+    TranslationFileFormat,
+    )
+from lp.translations.utilities.translation_export import (
+    ExportedTranslationFile,
+    TranslationExporter,
+    )
 
 
 class TranslationExporterTestCase(unittest.TestCase):

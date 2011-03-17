@@ -15,16 +15,18 @@ from optparse import OptionParser
 import sys
 
 from zope.component import getUtility
+# Still needed fake import to stop circular imports.
+import canonical.launchpad.interfaces
 
 from canonical.config import config
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
-from canonical.launchpad.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from canonical.lp import initZopeless
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.scripts.ftpmaster import PubSourceChecker
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.enums import PackagePublishingStatus
 
 from contrib.glock import GlobalLock
 

@@ -8,34 +8,13 @@
      tal:define="overview_menu context/menu:overview">
 
   <tal:show-map condition="view/should_show_map_portlet">
-
     <h2>Location</h2>
 
     <div tal:condition="context/time_zone">
       <strong>Time zone:</strong>
       <span tal:replace="context/time_zone">UTC</span>
+      <a tal:replace="structure overview_menu/editlocation/fmt:icon" />
     </div>
-
-    <div style="width: 400px;" tal:condition="context/latitude">
-      <div id="person_map_actions"
-        style="position:relative; z-index: 9999;
-               float:right; width: 8.5em; margin: 2px;
-               background-color: white; padding-bottom:1px;"></div>
-      <div id="person_map_div" class="small-map"
-        style="height: 200px; border: 1px; margin-top: 4px;"></div>
-      <tal:mapscript replace="structure view/map_portlet_html" />
-      <div style="margin-top: 0px;">
-        <a tal:replace="structure overview_menu/editlocation/fmt:link-icon" />
-      </div>
-    </div>
-
-    <tal:comment condition="nothing">
-      Only the user can see the editlocation image and link.
-    </tal:comment>
-    <a tal:condition="not: context/latitude"
-       tal:attributes="href overview_menu/editlocation/target"
-       ><img src="/+icing/portlet-map-unknown.png" />
-    </a>
   </tal:show-map>
 
 </div>

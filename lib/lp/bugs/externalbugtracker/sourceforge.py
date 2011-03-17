@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Sourceforge ExternalBugTracker utility."""
@@ -11,12 +11,21 @@ import urllib
 
 from BeautifulSoup import BeautifulSoup
 
-from lp.bugs.externalbugtracker import (
-    BugNotFound, ExternalBugTracker, InvalidBugId, LookupTree,
-    PrivateRemoteBug, UnknownRemoteStatusError, UnparseableBugData)
-from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
-from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
 from canonical.launchpad.webapp import urlsplit
+from lp.bugs.externalbugtracker import (
+    BugNotFound,
+    ExternalBugTracker,
+    InvalidBugId,
+    LookupTree,
+    PrivateRemoteBug,
+    UnknownRemoteStatusError,
+    UnparsableBugData,
+    )
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
+from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
 
 
 class SourceForge(ExternalBugTracker):
@@ -68,7 +77,7 @@ class SourceForge(ExternalBugTracker):
                 else:
                     # If we can't find a status line in the output from
                     # SourceForge there's little point in continuing.
-                    raise UnparseableBugData(
+                    raise UnparsableBugData(
                         'Remote bug %s does not define a status.' % bug_id)
 
             # We need to do the same for Resolution, though if we can't
@@ -167,7 +176,7 @@ class SourceForge(ExternalBugTracker):
         try:
             return '%(status)s:%(resolution)s' % remote_bug
         except KeyError:
-            raise UnparseableBugData(
+            raise UnparsableBugData(
                 "Remote bug %i does not define a status." % bug_id)
 
     def convertRemoteImportance(self, remote_importance):
@@ -257,4 +266,3 @@ class SourceForge(ExternalBugTracker):
             return None
         else:
             return "%s&%s" % (group_id, atid)
-

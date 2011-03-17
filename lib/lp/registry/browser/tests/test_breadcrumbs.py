@@ -9,7 +9,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.publisher import canonical_url
-
+from lp.testing import login_person
 from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 
 
@@ -58,7 +58,7 @@ class TestDistributionMirrorBreadcrumb(BaseBreadcrumbTestCase):
             http_url=http_url)
         crumbs = self.getBreadcrumbsForObject(mirror)
         last_crumb = crumbs[-1]
-        self.assertEqual("Example.com-archive", last_crumb.text)
+        self.assertEqual(mirror.displayname, last_crumb.text)
 
     def test_distributionmirror_withFtpUrl(self):
         # If no displayname, the breadcrumb text will be the mirror name,
@@ -70,7 +70,7 @@ class TestDistributionMirrorBreadcrumb(BaseBreadcrumbTestCase):
             ftp_url=ftp_url)
         crumbs = self.getBreadcrumbsForObject(mirror)
         last_crumb = crumbs[-1]
-        self.assertEqual("Example.com-archive", last_crumb.text)
+        self.assertEqual(mirror.displayname, last_crumb.text)
 
 
 class TestMilestoneBreadcrumb(BaseBreadcrumbTestCase):
@@ -90,6 +90,7 @@ class TestMilestoneBreadcrumb(BaseBreadcrumbTestCase):
         self.assertEqual(self.milestone.name, last_crumb.text)
 
     def test_milestone_with_code_name(self):
+        login_person(self.milestone.productseries.product.owner)
         self.milestone.code_name = "duck"
         crumbs = self.getBreadcrumbsForObject(self.milestone)
         last_crumb = crumbs[-1]
@@ -123,6 +124,32 @@ class TestPollBreadcrumb(BaseBreadcrumbTestCase):
         crumbs = self.getBreadcrumbsForObject(self.poll)
         last_crumb = crumbs[-1]
         self.assertEqual(self.poll.title, last_crumb.text)
+
+from lp.registry.interfaces.nameblacklist import INameBlacklistSet
+
+
+class TestNameblacklistBreadcrumb(BaseBreadcrumbTestCase):
+    """Test breadcrumbs for +nameblacklist."""
+
+    def setUp(self):
+        super(TestNameblacklistBreadcrumb, self).setUp()
+        self.name_blacklist_set = getUtility(INameBlacklistSet)
+        self.registry_expert = self.factory.makeRegistryExpert()
+        login_person(self.registry_expert)
+
+    def test_nameblacklist(self):
+        expected = [('Name Blacklist', 'http://launchpad.dev/+nameblacklist')]
+        self.assertBreadcrumbs(expected, self.name_blacklist_set)
+
+    def test_nameblacklist_edit(self):
+        blacklist = self.name_blacklist_set.getByRegExp(u'blacklist')
+        expected = [
+            ('Name Blacklist',
+             'http://launchpad.dev/+nameblacklist'),
+            ('Edit a blacklist expression',
+             'http://launchpad.dev/+nameblacklist/1/+edit'),
+            ]
+        self.assertBreadcrumbs(expected, blacklist, view_name='+edit')
 
 
 def test_suite():

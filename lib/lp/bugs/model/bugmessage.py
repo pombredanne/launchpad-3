@@ -8,14 +8,28 @@ __all__ = ['BugMessage', 'BugMessageSet']
 
 from email.Utils import make_msgid
 
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    IntCol,
+    StringCol,
+    )
+from storm.store import Store
 from zope.interface import implements
 
-from sqlobject import BoolCol, ForeignKey, StringCol
-from storm.store import Store
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.database.message import (
+    Message,
+    MessageChunk,
+    )
+from lp.bugs.interfaces.bugmessage import (
+    IBugMessage,
+    IBugMessageSet,
+    )
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
-from lp.bugs.interfaces.bugmessage import IBugMessage, IBugMessageSet
-from canonical.launchpad.database.message import Message, MessageChunk
 
 class BugMessage(SQLBase):
     """A table linking bugs and messages."""
@@ -31,6 +45,12 @@ class BugMessage(SQLBase):
         notNull=False, default=None)
     remote_comment_id = StringCol(notNull=False, default=None)
     visible = BoolCol(notNull=True, default=True)
+    # -- The index of the message is cached in the DB.
+    index = IntCol(notNull=True)
+
+    def __repr__(self):
+        return "<BugMessage at 0x%x message=%s index=%s>" % (
+            id(self), self.message, self.index)
 
 
 class BugMessageSet:
@@ -44,7 +64,8 @@ class BugMessageSet:
             parent=bug.initial_message, owner=owner,
             rfc822msgid=make_msgid('malone'), subject=subject)
         chunk = MessageChunk(message=msg, content=content, sequence=1)
-        bugmsg = BugMessage(bug=bug, message=msg)
+        bugmsg = BugMessage(bug=bug, message=msg,
+            index=bug.bug_messages.count())
 
         # XXX 2008-05-27 jamesh:
         # Ensure that BugMessages get flushed in same order as they

@@ -1,4 +1,5 @@
-= The Bug Watch Widget =
+The Bug Watch Widget
+====================
 
 There's a custom widget used to link a bug watch to a bug task. It's a
 simple RadioWidget with some modifications.
@@ -8,7 +9,7 @@ the Debian task in bug 1
 
     >>> login('test@canonical.com')
 
-    >>> from canonical.launchpad.interfaces import IBugSet, IBugTask
+    >>> from lp.bugs.interfaces.bug import IBugSet, IBugTask
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bugwatch_field = IBugTask['bugwatch']
     >>> debian_task = bug_one.bugtasks[2]
@@ -19,8 +20,8 @@ the Debian task in bug 1
 
 Now we can create a widget using a test request:
 
-    >>> from canonical.widgets.bugtask import BugTaskBugWatchWidget
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.bugs.browser.widgets.bugtask import BugTaskBugWatchWidget
     >>> request = LaunchpadTestRequest()
     >>> bugwatch_widget = BugTaskBugWatchWidget(
     ...     bugwatch_field, bugwatch_field.vocabulary, request)
@@ -64,7 +65,7 @@ will be selected.
 
     >>> for item in bugwatch_widget.renderItems(mozilla_bugwatch):
     ...     print_item(item)
-    NOT SELECTED: <label...> None, the status of the bug is updated manually...
+    NOT SELECTED: <label...> None, the status of the bug is updated manuall...
     SELECTED: <label...> The Mozilla.org Bug Tracker <a...>#123543</a>...
     NOT SELECTED: <label...> The Mozilla.org Bug Tracker <a...>#2000</a>...
     NOT SELECTED: <label...> The Mozilla.org Bug Tracker <a...>#42</a>...
@@ -79,7 +80,7 @@ button will be selected.
     >>> new_bugwatch_value = bugwatch_widget._new_bugwatch_value
     >>> for item in bugwatch_widget.renderItems(new_bugwatch_value):
     ...     print_item(item)
-    NOT SELECTED: <label...> None, the status of the bug is updated manually...
+    NOT SELECTED: <label...> None, the status of the bug is updated manuall...
     NOT SELECTED: <label...> The Mozilla.org Bug Tracker <a...>#123543</a>...
     NOT SELECTED: <label...> The Mozilla.org Bug Tracker <a...>#2000</a>...
     NOT SELECTED: <label...> The Mozilla.org Bug Tracker <a...>#42</a>...
@@ -88,22 +89,24 @@ button will be selected.
     <div>URL: <input...></div>
     </label>
 
-Now let's use the widget to actually create a new bug watch. First let's take a look at which bug watches are currently associated with the bug.
+Now let's use the widget to actually create a new bug watch. First
+let's take a look at which bug watches are currently associated with
+the bug.
 
     >>> for bug_watch in bug_one.watches:
-    ...     print "%s: #%s" % (bug_watch.bugtracker.title, bug_watch.remotebug)
+    ...     print "%s: #%s" % (
+    ...         bug_watch.bugtracker.title, bug_watch.remotebug)
     The Mozilla.org Bug Tracker: #123543
     The Mozilla.org Bug Tracker: #2000
     The Mozilla.org Bug Tracker: #42
     Debian Bug tracker: #304014
 
-
 Now let's create a new bug watch, pointing at bug #84 in the Gnome tracker.
 
     >>> NEW = BugTaskBugWatchWidget._new_bugwatch_value
     >>> request = LaunchpadTestRequest(form={
-    ...     'field.bugwatch': NEW,
-    ...     'field.url': u'http://bugzilla.gnome.org/bugs/show_bug.cgi?id=84'})
+    ...     'field.bugwatch': NEW, 'field.url': (
+    ...         u'http://bugzilla.gnome.org/bugs/show_bug.cgi?id=84')})
     >>> bugwatch_widget = BugTaskBugWatchWidget(
     ...     bugwatch_field, bugwatch_field.vocabulary, request)
     >>> bugwatch = bugwatch_widget.getInputValue()
@@ -114,7 +117,8 @@ Now let's create a new bug watch, pointing at bug #84 in the Gnome tracker.
     u'84'
 
     >>> for bug_watch in bug_one.watches:
-    ...     print "%s: #%s" % (bug_watch.bugtracker.title, bug_watch.remotebug)
+    ...     print "%s: #%s" % (
+    ...         bug_watch.bugtracker.title, bug_watch.remotebug)
     The Mozilla.org Bug Tracker: #123543
     The Mozilla.org Bug Tracker: #2000
     The Mozilla.org Bug Tracker: #42
@@ -125,8 +129,8 @@ If we try to create a bug watch that already exists, the existing bug
 watch is being returned, and no new bug watch is created.
 
     >>> request = LaunchpadTestRequest(form={
-    ...     'field.bugwatch': NEW,
-    ...     'field.url': u'http://bugzilla.gnome.org/bugs/show_bug.cgi?id=84'})
+    ...     'field.bugwatch': NEW, 'field.url': (
+    ...         u'http://bugzilla.gnome.org/bugs/show_bug.cgi?id=84')})
     >>> bugwatch_widget = BugTaskBugWatchWidget(
     ...     bugwatch_field, bugwatch_field.vocabulary, request)
     >>> bugwatch = bugwatch_widget.getInputValue()
@@ -136,7 +140,8 @@ watch is being returned, and no new bug watch is created.
     u'84'
 
     >>> for bug_watch in bug_one.watches:
-    ...     print "%s: #%s" % (bug_watch.bugtracker.title, bug_watch.remotebug)
+    ...     print "%s: #%s" % (
+    ...         bug_watch.bugtracker.title, bug_watch.remotebug)
     The Mozilla.org Bug Tracker: #123543
     The Mozilla.org Bug Tracker: #2000
     The Mozilla.org Bug Tracker: #42
@@ -163,9 +168,8 @@ part of the vocabulary, we've overridden _toFieldValue(), so that when
 it's passed 'NEW', it will return the newly created bug watch.
 
     >>> request = LaunchpadTestRequest(form={
-    ...     'field.bugwatch': NEW,
-    ...     'field.url': 'http://bugzilla.gnome.org/bugs/show_bug.cgi?id=177'})
+    ...     'field.bugwatch': NEW, 'field.url': (
+    ...         'http://bugzilla.gnome.org/bugs/show_bug.cgi?id=177')})
     >>> bugwatch_widget = BugTaskBugWatchWidget(
     ...     bugwatch_field, bugwatch_field.vocabulary, request)
     >>> bugwatch = bugwatch_widget._toFieldValue(NEW)
-

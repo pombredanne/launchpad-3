@@ -32,7 +32,7 @@ first. There is no delete button on the page.
     LookupError: ...
 
 Sample person chooses to cancel the action and make the 1.0 series the focus
-of development. He then removes the linked package which he beleives is
+of development. He then removes the linked package which he believes is
 bogus.
 
     >>> owner_browser.getLink('Cancel').click()

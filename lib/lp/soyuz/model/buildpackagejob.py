@@ -8,23 +8,28 @@ __all__ = [
 
 
 from datetime import datetime
+
 import pytz
-
-from storm.locals import Int, Reference, Storm
-
+from storm.locals import (
+    Int,
+    Reference,
+    Storm,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
-
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
-from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
+from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 
 
@@ -103,7 +108,7 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
         # otherwise.
         if self.build.source_package_release.section.name == 'translations':
             pass
-        elif self.build.archive.purpose == ArchivePurpose.COPY:
+        elif self.build.archive.is_copy:
             score = rebuild_archive_score
         else:
             # Calculates the urgency-related part of the score.
@@ -115,9 +120,8 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
             score += score_pocket
 
             # Calculates the component-related part of the score.
-            score_component = score_componentname[
-                self.build.current_component.name]
-            score += score_component
+            score += score_componentname.get(
+                self.build.current_component.name, 0)
 
             # Calculates the build queue time component of the score.
             right_now = datetime.now(pytz.timezone('UTC'))
@@ -226,8 +230,8 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
         # The extra clause is only used if the number of available
         # builders is greater than one, or nothing would get dispatched
         # at all.
-        num_arch_builders = Builder.selectBy(
-            processor=processor, manual=False, builderok=True).count()
+        num_arch_builders = getUtility(IBuilderSet).getBuildersForQueue(
+            processor, virtualized).count()
         if num_arch_builders > 1:
             sub_query += """
             AND Archive.id NOT IN (

@@ -13,13 +13,13 @@ __all__ = [
     'test_suite',
     ]
 
-from lp.testing import TestCaseWithFactory
-
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadFunctionalLayer
-
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.soyuz.browser.sourceslist import (
-    SourcesListEntries, SourcesListEntriesView)
+    SourcesListEntries,
+    SourcesListEntriesView,
+    )
+from lp.testing import TestCaseWithFactory
 
 
 class TestDefaultSelectedSeries(TestCaseWithFactory):

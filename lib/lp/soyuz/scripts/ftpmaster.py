@@ -19,41 +19,53 @@ __all__ = [
     'SyncSourceError',
     ]
 
-import apt_pkg
 import commands
+from debian.deb822 import Changes
 import hashlib
 import os
 import stat
 import sys
 import tempfile
+import time
 
+import apt_pkg
 from zope.component import getUtility
 
-from lp.archiveuploader.utils import re_extract_src_version
-from lp.soyuz.adapters.packagelocation import (
-    PackageLocationError, build_package_location)
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.librarian.interfaces import (
+    ILibrarianClient,
+    UploadFailed,
+    )
+from canonical.librarian.utils import copy_and_close
+from lp.app.errors import NotFoundError
 from lp.archiveuploader.utils import (
-    determine_source_file_type)
+    determine_source_file_type,
+    re_extract_src_version,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import (
-    PackagePublishingPocket, pocketsuffix)
+    PackagePublishingPocket,
+    pocketsuffix,
+    )
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
-from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageReleaseSet
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.services.scripts.base import (
-    LaunchpadScript, LaunchpadScriptFailure)
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
+from lp.soyuz.adapters.packagelocation import (
+    build_package_location,
+    PackageLocationError,
+    )
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.scripts.ftpmasterbase import (
-    SoyuzScript, SoyuzScriptError)
-from canonical.librarian.interfaces import (
-    ILibrarianClient, UploadFailed)
-from canonical.librarian.utils import copy_and_close
+    SoyuzScript,
+    SoyuzScriptError,
+    )
 
 
 class ArchiveCruftCheckerError(Exception):
@@ -61,6 +73,7 @@ class ArchiveCruftCheckerError(Exception):
 
     Mostly used to describe errors in the initialisation of this object.
     """
+
 
 class TagFileNotFound(Exception):
     """Raised when an archive tag file could not be found."""
@@ -75,10 +88,7 @@ class ArchiveCruftChecker:
     """
 
     # XXX cprov 2006-05-15: the default archive path should come
-    # from the IDistroSeries.lucilleconfig. But since it's still
-    # not optimal and we have real plans to migrate it from DB
-    # text field to default XML config or a more suitable/reliable
-    # method it's better to not add more obsolete code to handle it.
+    # from the config.
     def __init__(self, logger, distribution_name='ubuntu', suite=None,
                  archive_path='/srv/launchpad.net/ubuntu-archive'):
         """Store passed arguments.
@@ -113,6 +123,7 @@ class ArchiveCruftChecker:
     def architectures(self):
         return dict([(a.architecturetag, a)
                      for a in self.distroseries.architectures])
+
     @property
     def components(self):
         return dict([(c.name, c) for c in self.distroseries.components])
@@ -210,7 +221,6 @@ class ArchiveCruftChecker:
             for architecture in self.architectures:
                 self.buildArchNBS(component, architecture)
 
-
     def buildArchNBS(self, component, architecture):
         """Build NBS per architecture.
 
@@ -244,7 +254,7 @@ class ArchiveCruftChecker:
                     source = m.group(1)
                     version = m.group(2)
 
-                if not self.bin_pkgs.has_key(package):
+                if package not in self.bin_pkgs:
                     self.nbs.setdefault(source, {})
                     self.nbs[source].setdefault(package, {})
                     self.nbs[source][package][version] = ""
@@ -252,7 +262,7 @@ class ArchiveCruftChecker:
                 if architecture != "all":
                     self.arch_any.setdefault(package, "0")
                     if apt_pkg.VersionCompare(
-                        version,self.arch_any[package]) < 1:
+                        version, self.arch_any[package]) < 1:
                         self.arch_any[package] = version
         finally:
             # close fd and remove temporary file used to store uncompressed
@@ -260,14 +270,12 @@ class ArchiveCruftChecker:
             temp_fd.close()
             os.unlink(temp_filename)
 
-
     def buildASBA(self):
         """Build the group of 'all superseded by any' binaries."""
         self.logger.debug("Building all superseded by any list (ASBA):")
         for component in self.components_and_di:
             for architecture in self.architectures:
                 self.buildArchASBA(component, architecture)
-
 
     def buildArchASBA(self, component, architecture):
         """Build ASBA per architecture.
@@ -302,7 +310,7 @@ class ArchiveCruftChecker:
                     version = m.group(2)
 
                 if architecture == "all":
-                    if (self.arch_any.has_key(package) and
+                    if (package in self.arch_any and
                         apt_pkg.VersionCompare(
                         version, self.arch_any[package]) > -1):
                         self.asba.setdefault(source, {})
@@ -320,9 +328,7 @@ class ArchiveCruftChecker:
 
         Ensure the package is still published in the suite before add.
         """
-        bpr = getUtility(IBinaryPackageReleaseSet)
-        result = bpr.getByNameInDistroSeries(
-            self.distroseries, package)
+        result = self.distroseries.getBinaryPackagePublishing(name=package)
 
         if len(list(result)) == 0:
             return
@@ -459,7 +465,7 @@ class ArchiveCruftChecker:
                     pass
                 else:
                     version = bpph.binarypackagerelease.version
-                    self.logger.info ("Removed %s_%s from %s/%s ... "
+                    self.logger.info("Removed %s_%s from %s/%s ... "
                                       % (package, version,
                                          self.distroseries.name,
                                          distroarchseries.architecturetag))
@@ -470,6 +476,7 @@ class PubBinaryContent:
 
     Currently used for auxiliary storage in PubSourceChecker.
     """
+
     def __init__(self, name, version, arch, component, section, priority):
         self.name = name
         self.version = version
@@ -508,6 +515,7 @@ class PubBinaryContent:
 
         return "\n".join(report)
 
+
 class PubBinaryDetails:
     """Store the component, section and priority of binary packages and, for
     each binary package the most frequent component, section and priority.
@@ -524,6 +532,7 @@ class PubBinaryDetails:
     - correct_sections: same as correct_components, but for sections
     - correct_priorities: same as correct_components, but for priorities
     """
+
     def __init__(self):
         self.components = {}
         self.sections = {}
@@ -578,6 +587,7 @@ class PubSourceChecker:
     Receive the source publication data and its binaries and perform
     a group of heuristic consistency checks.
     """
+
     def __init__(self, name, version, component, section, urgency):
         self.name = name
         self.version = version
@@ -642,7 +652,8 @@ class PubSourceChecker:
     def renderReport(self):
         """Render a formatted report for the publication group.
 
-        Return None if no issue was annotated or an formatted string including:
+        Return None if no issue was annotated or an formatted string
+        including:
 
           SourceName_Version Component/Section/Urgency | # bin
           <BINREPORTS>
@@ -706,7 +717,7 @@ class ChrootManager:
         ftype = filenameToContentType(filename)
 
         try:
-            alias_id  = getUtility(ILibrarianClient).addFile(
+            alias_id = getUtility(ILibrarianClient).addFile(
                 filename, flen, fd, contentType=ftype)
         except UploadFailed, info:
             raise ChrootManagerError("Librarian upload failed: %s" % info)
@@ -832,7 +843,8 @@ class SyncSource:
         origin: a dictionary similar to 'files' but where the values
                 contain information for download files to be synchronized
         logger: a logger
-        downloader: a callable that fetchs URLs, 'downloader(url, destination)'
+        downloader: a callable that fetchs URLs,
+                    'downloader(url, destination)'
         todistro: target distribution object
         """
         self.files = files
@@ -1405,3 +1417,56 @@ class ManageChrootScript(SoyuzScript):
             # Collect extra debug messages from chroot_manager.
             for debug_message in chroot_manager._messages:
                 self.logger.debug(debug_message)
+
+
+def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes,
+                     lp_closes, section, priority, description,
+                     files_from_librarian, requested_by, origin):
+    """Generate a Changes object.
+
+    :param dsc: A `Dsc` instance for the related source package.
+    :param suite: Distribution name
+    :param changelog: Relevant changelog data
+    :param urgency: Urgency string (low, medium, high, etc)
+    :param closes: Sequence of Debian bug numbers (as strings) fixed by
+        this upload.
+    :param section: Debian section
+    :param priority: Package priority
+    """
+
+    # XXX cprov 2007-07-03:
+    # Changed-By can be extracted from most-recent changelog footer,
+    # but do we care?
+
+    changes = Changes()
+    changes["Origin"] = "%s/%s" % (origin["name"], origin["suite"])
+    changes["Format"] = "1.7"
+    changes["Date"] = time.strftime("%a,  %d %b %Y %H:%M:%S %z")
+    changes["Source"] = dsc["source"]
+    changes["Binary"] = dsc["binary"]
+    changes["Architecture"] = "source"
+    changes["Version"] = dsc["version"]
+    changes["Distribution"] = suite
+    changes["Urgency"] = urgency
+    changes["Maintainer"] = dsc["maintainer"]
+    changes["Changed-By"] = requested_by
+    if description:
+        changes["Description"] = "\n %s" % description
+    if closes:
+        changes["Closes"] = " ".join(closes)
+    if lp_closes:
+        changes["Launchpad-bugs-fixed"] = " ".join(lp_closes)
+    files = []
+    for filename in dsc_files:
+        if filename in files_from_librarian:
+            continue
+        files.append({"md5sum": dsc_files[filename]["md5sum"],
+                      "size": dsc_files[filename]["size"],
+                      "section": section,
+                      "priority": priority,
+                      "name": filename,
+                     })
+
+    changes["Files"] = files
+    changes["Changes"] = "\n%s" % changelog
+    return changes

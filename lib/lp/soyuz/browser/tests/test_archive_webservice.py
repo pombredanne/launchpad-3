@@ -1,18 +1,20 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 import unittest
+
 from lazr.restfulclient.errors import HTTPError
 
-from lp.testing import (
-    celebrity_logged_in, launchpadlib_for, TestCaseWithFactory)
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
-from canonical.testing import DatabaseFunctionalLayer
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.soyuz.enums import ArchivePurpose
+from lp.testing import (
+    celebrity_logged_in,
+    launchpadlib_for,
+    TestCaseWithFactory,
+    )
 
 
 class TestArchiveWebservice(TestCaseWithFactory):

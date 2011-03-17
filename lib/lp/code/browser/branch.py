@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch views."""
@@ -16,6 +16,7 @@ __all__ = [
     'BranchReviewerEditView',
     'BranchMergeQueueView',
     'BranchMirrorStatusView',
+    'BranchMirrorMixin',
     'BranchNameValidationMixin',
     'BranchNavigation',
     'BranchEditMenu',
@@ -30,74 +31,130 @@ __all__ = [
     ]
 
 import cgi
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
-import pytz
-import simplejson
-
-from zope.app.form.browser import TextAreaWidget
-from zope.traversing.interfaces import IPathAdapter
-from zope.component import getUtility, queryAdapter
-from zope.event import notify
-from zope.formlib import form
-from zope.interface import Interface, implements, providedBy
-from zope.publisher.interfaces import NotFound
-from zope.schema import Bool, Choice, Text
-from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
-from lazr.enum import EnumeratedType, Item
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful.interface import (
+    copy_field,
+    use_template,
+    )
 from lazr.uri import URI
+import pytz
+import simplejson
+from zope.app.form.browser import TextAreaWidget
+from zope.component import (
+    getUtility,
+    queryAdapter,
+    )
+from zope.event import notify
+from zope.formlib import form
+from zope.interface import (
+    implements,
+    Interface,
+    providedBy,
+    )
+from zope.publisher.interfaces import NotFound
+from zope.schema import (
+    Bool,
+    Choice,
+    Text,
+    )
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
+from zope.traversing.interfaces import IPathAdapter
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-
-from lazr.restful.interface import copy_field, use_template
 from canonical.launchpad import _
-from canonical.launchpad.browser.feeds import BranchFeedLink, FeedsMixin
+from canonical.launchpad.browser.feeds import (
+    BranchFeedLink,
+    FeedsMixin,
+    )
 from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.helpers import truncate_text
-from lp.bugs.interfaces.bug import IBugSet
-from lp.bugs.interfaces.bugbranch import IBugBranch
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.blueprints.interfaces.specificationbranch import (
-    ISpecificationBranch)
+from canonical.launchpad import searchbuilder
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, enabled_with_permission,
-    LaunchpadView, Navigation, NavigationMenu, stepto, stepthrough,
-    LaunchpadFormView, LaunchpadEditFormView, action, custom_widget)
+    canonical_url,
+    ContextMenu,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    stepthrough,
+    stepto,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
-from canonical.widgets.branch import TargetBranchWidget
-from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
-from canonical.widgets.lazrjs import vocabulary_to_choice_edit_items
-
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
+from lp.app.errors import NotFoundError
+from lp.app.browser.lazrjs import EnumChoiceWidget
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from lp.app.widgets.suggestion import TargetBranchWidget
+from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
+from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
-from lp.code.browser.branchref import BranchRef
 from lp.code.browser.branchmergeproposal import (
-    latest_proposals_for_each_branch)
+    latest_proposals_for_each_branch,
+    )
+from lp.code.browser.branchref import BranchRef
 from lp.code.browser.decorations import DecoratedBranch
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.enums import (
-    BranchLifecycleStatus, BranchType,
-    CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems,
-    UICreatableBranchType)
+    BranchLifecycleStatus,
+    BranchType,
+    CodeImportResultStatus,
+    CodeImportReviewStatus,
+    RevisionControlSystems,
+    UICreatableBranchType,
+    )
 from lp.code.errors import (
-    CodeImportAlreadyRequested, CodeImportAlreadyRunning,
-    CodeImportNotInReviewedState, InvalidBranchMergeProposal)
+    BranchCreationForbidden,
+    BranchExists,
+    CodeImportAlreadyRequested,
+    CodeImportAlreadyRunning,
+    CodeImportNotInReviewedState,
+    InvalidBranchMergeProposal,
+    )
 from lp.code.interfaces.branch import (
-    BranchCreationForbidden, BranchExists, IBranch,
-    user_has_special_branch_access)
+    IBranch,
+    user_has_special_branch_access,
+    )
+from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
-from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
+from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
-from lp.registry.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
+from lp.services.propertycache import cachedproperty
+from lp.translations.interfaces.translationtemplatesbuild import (
+    ITranslationTemplatesBuildSource,
+    )
 
 
 def quote(text):
@@ -190,6 +247,16 @@ class BranchNavigation(Navigation):
         """Traverses to the `ICodeImport` for the branch."""
         return self.context.code_import
 
+    @stepthrough("+translation-templates-build")
+    def traverse_translation_templates_build(self, id_string):
+        """Traverses to a `TranslationTemplatesBuild`."""
+        try:
+            buildfarmjob_id = int(id_string)
+        except ValueError:
+            raise NotFoundError(id_string)
+        source = getUtility(ITranslationTemplatesBuildSource)
+        return source.getByBuildFarmJob(buildfarmjob_id)
+
 
 class BranchEditMenu(NavigationMenu):
     """Edit menu for IBranch."""
@@ -234,7 +301,8 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
     links = [
         'add_subscriber', 'browse_revisions', 'create_recipe', 'link_bug',
         'link_blueprint', 'register_merge', 'source', 'subscription',
-        'edit_status', 'edit_import', 'upgrade_branch', 'view_recipes']
+        'edit_status', 'edit_import', 'upgrade_branch', 'view_recipes',
+        'create_queue']
 
     @enabled_with_permission('launchpad.Edit')
     def edit_status(self):
@@ -265,7 +333,6 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         text = 'Subscribe someone else'
         return Link('+addsubscriber', text, icon='add')
 
-    @enabled_with_permission('launchpad.AnyPerson')
     def register_merge(self):
         text = 'Propose for merging'
         enabled = (
@@ -274,10 +341,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         return Link('+register-merge', text, icon='add', enabled=enabled)
 
     def link_bug(self):
-        if self.context.linked_bugs:
-            text = 'Link to another bug report'
-        else:
-            text = 'Link to a bug report'
+        text = 'Link a bug report'
         return Link('+linkbug', text, icon='add')
 
     def link_blueprint(self):
@@ -319,14 +383,49 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
             '+upgrade', 'Upgrade this branch', icon='edit', enabled=enabled)
 
     def create_recipe(self):
-        enabled = config.build_from_branch.enabled
+        # You can't create a recipe for a private branch.
+        enabled = not self.context.private
         text = 'Create packaging recipe'
         return Link('+new-recipe', text, enabled=enabled, icon='add')
 
+    @enabled_with_permission('launchpad.Edit')
+    def create_queue(self):
+        return Link('+create-queue', 'Create a new queue', icon='add')
 
-class BranchView(LaunchpadView, FeedsMixin):
 
-    __used_for__ = IBranch
+class BranchMirrorMixin:
+    """Provide mirror_location property.
+
+    Requires self.branch to be set by the class using this mixin.
+    """
+
+    @property
+    def mirror_location(self):
+        """Check the mirror location to see if it is a private one."""
+        branch = self.branch
+
+        # If the user has edit permissions, then show the actual location.
+        if branch.url is None or check_permission('launchpad.Edit', branch):
+            return branch.url
+
+        # XXX: Tim Penhey, 2008-05-30
+        # Instead of a configuration hack we should support the users
+        # specifying whether or not they want the mirror location
+        # hidden or not.  Given that this is a database patch,
+        # it isn't going to happen today.
+        # See bug 235916
+        hosts = config.codehosting.private_mirror_hosts.split(',')
+        private_mirror_hosts = [name.strip() for name in hosts]
+
+        uri = URI(branch.url)
+        for private_host in private_mirror_hosts:
+            if uri.underDomain(private_host):
+                return '<private server>'
+
+        return branch.url
+
+
+class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
 
     feed_types = (
         BranchFeedLink,
@@ -339,6 +438,7 @@ class BranchView(LaunchpadView, FeedsMixin):
     label = page_title
 
     def initialize(self):
+        self.branch = self.context
         self.notices = []
         # Replace our context with a decorated branch, if it is not already
         # decorated.
@@ -384,6 +484,11 @@ class BranchView(LaunchpadView, FeedsMixin):
             self.context.repository_format or
             self.context.control_format or
             self.context.stacked_on)
+
+    @property
+    def is_empty_directory(self):
+        """True if the branch is an empty directory without even a '.bzr'."""
+        return self.context.control_format is None
 
     @property
     def codebrowse_url(self):
@@ -442,7 +547,7 @@ class BranchView(LaunchpadView, FeedsMixin):
 
     @property
     def recipe_count_text(self):
-        count = self.context.getRecipes().count()
+        count = self.context.recipes.count()
         if count == 0:
             return 'No recipes'
         elif count == 1:
@@ -496,14 +601,20 @@ class BranchView(LaunchpadView, FeedsMixin):
         return len(self.landing_candidates) > 5
 
     @cachedproperty
-    def linked_bugs(self):
-        """Return a list of DecoratedBugs linked to the branch."""
-        bugs = self.context.linked_bugs
+    def linked_bugtasks(self):
+        """Return a list of bugtasks linked to the branch."""
         if self.context.is_series_branch:
-            bugs = [
-                bug for bug in bugs
-                if bug.bugtask.status in UNRESOLVED_BUGTASK_STATUSES]
-        return bugs
+            status_filter = searchbuilder.any(*UNRESOLVED_BUGTASK_STATUSES)
+        else:
+            status_filter = None
+        return list(self.context.getLinkedBugTasks(
+            self.user, status_filter))
+
+    @cachedproperty
+    def revision_info(self):
+        collection = getUtility(IAllBranches).visibleByUser(self.user)
+        return collection.getExtendedRevisionDetails(
+            self.user, self.context.latest_revisions)
 
     @cachedproperty
     def latest_code_import_results(self):
@@ -538,36 +649,11 @@ class BranchView(LaunchpadView, FeedsMixin):
         return url.startswith("http")
 
     @property
-    def mirror_location(self):
-        """Check the mirror location to see if it is a private one."""
-        branch = self.context
-
-        # If the user has edit permissions, then show the actual location.
-        if check_permission('launchpad.Edit', branch):
-            return branch.url
-
-        # XXX: Tim Penhey, 2008-05-30
-        # Instead of a configuration hack we should support the users
-        # specifying whether or not they want the mirror location
-        # hidden or not.  Given that this is a database patch,
-        # it isn't going to happen today.
-        # See bug 235916
-        hosts = config.codehosting.private_mirror_hosts.split(',')
-        private_mirror_hosts = [name.strip() for name in hosts]
-
-        uri = URI(branch.url)
-        for private_host in private_mirror_hosts:
-            if uri.underDomain(private_host):
-                return '<private server>'
-
-        return branch.url
-
-    @property
     def show_merge_links(self):
         """Return whether or not merge proposal links should be shown.
 
-        Merge proposal links should not be shown if there is only one branch in
-        a non-final state.
+        Merge proposal links should not be shown if there is only one branch
+        in a non-final state.
         """
         if not self.context.target.supports_merge_proposals:
             return False
@@ -583,17 +669,11 @@ class BranchView(LaunchpadView, FeedsMixin):
         return list(self.context.getProductSeriesPushingTranslations())
 
     @property
-    def status_config(self):
+    def status_widget(self):
         """The config to configure the ChoiceSource JS widget."""
-        return simplejson.dumps({
-            'status_widget_items': vocabulary_to_choice_edit_items(
-                BranchLifecycleStatus,
-                css_class_prefix='branchstatus'),
-            'status_value': self.context.lifecycle_status.title,
-            'user_can_edit_status': check_permission(
-                'launchpad.Edit', self.context),
-            'branch_path': '/' + self.context.unique_name,
-            })
+        return EnumChoiceWidget(
+            self.context.branch, IBranch['lifecycle_status'],
+            header='Change status to', css_class_prefix='branchstatus')
 
 
 class BranchInProductView(BranchView):
@@ -1155,8 +1235,6 @@ class BranchSubscriptionsView(LaunchpadView):
 class BranchMergeQueueView(LaunchpadView):
     """The view used to render the merge queue for a branch."""
 
-    __used_for__ = IBranch
-
     @cachedproperty
     def merge_queue(self):
         """Get the merge queue and check visibility."""
@@ -1240,19 +1318,6 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
     page_title = label = 'Propose branch for merging'
 
     @property
-    def initial_values(self):
-        """The default reviewer is the code reviewer of the target."""
-        # If there is a default merge branch for the target, then default
-        # the reviewer to be the review team for that branch.
-        reviewer = None
-        default_target = self.context.target.default_merge_target
-        # Don't set the reviewer if the default branch is the same as the
-        # current context.
-        if default_target is not None and default_target != self.context:
-            reviewer = default_target.code_reviewer
-        return {'reviewer': reviewer}
-
-    @property
     def cancel_url(self):
         return canonical_url(self.context)
 
@@ -1273,8 +1338,11 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
 
         review_requests = []
         reviewer = data.get('reviewer')
+        review_type = data.get('review_type')
+        if reviewer is None:
+            reviewer = target_branch.code_reviewer
         if reviewer is not None:
-            review_requests.append((reviewer, data.get('review_type')))
+            review_requests.append((reviewer, review_type))
 
         try:
             proposal = source_branch.addLandingTarget(
@@ -1440,4 +1508,5 @@ class BranchSparkView(LaunchpadView):
             values['last_commit'] = adapter.approximatedate()
             values.update(self._commitCounts())
 
+        self.request.response.setHeader('content-type', 'application/json')
         return simplejson.dumps(values)

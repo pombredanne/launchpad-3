@@ -8,33 +8,68 @@ __all__ = [
     'BugEmailCommands',
     'get_error_message']
 
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectModifiedEvent,
+    )
+from lazr.lifecycle.interfaces import (
+    IObjectCreatedEvent,
+    IObjectModifiedEvent,
+    )
+from lazr.lifecycle.snapshot import Snapshot
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements, providedBy
-from zope.schema import ValidationError
+from zope.interface import (
+    implements,
+    providedBy,
+    )
+from zope.schema.interfaces import (
+    TooLong,
+    ValidationError,
+    )
 
-from lazr.lifecycle.snapshot import Snapshot
-
-from canonical.launchpad.interfaces import (
-        BugTaskImportance, IProduct, IDistribution, IDistroSeries, IBug,
-        IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
-        IBugTaskEditEmailCommand, IBugSet, ICveSet, ILaunchBag,
-        IMessageSet, IDistroBugTask,
-        IDistributionSourcePackage, EmailProcessingError,
-        NotFoundError, CreateBugParams, IPillarNameSet,
-        BugTargetNotFound, IProjectGroup, ISourcePackage, IProductSeries,
-        BugTaskStatus)
-from lazr.lifecycle.event import (
-    ObjectModifiedEvent, ObjectCreatedEvent)
-from lazr.lifecycle.interfaces import (
-    IObjectCreatedEvent, IObjectModifiedEvent)
-
+from canonical.launchpad.interfaces.mail import (
+    BugTargetNotFound,
+    EmailProcessingError,
+    IBugEditEmailCommand,
+    IBugEmailCommand,
+    IBugTaskEditEmailCommand,
+    IBugTaskEmailCommand,
+    )
+from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.mail.helpers import (
-    get_error_message, get_person_or_team)
-from canonical.launchpad.validators.name import valid_name
+    get_error_message,
+    get_person_or_team,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
-
-from lp.app.errors import UserCannotUnsubscribePerson
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.app.errors import (
+    NotFoundError,
+    UserCannotUnsubscribePerson,
+    )
+from lp.app.validators.name import valid_name
+from lp.bugs.interfaces.bug import (
+    CreateBugParams,
+    IBug,
+    IBugAddForm,
+    IBugSet,
+    )
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    IDistroBugTask,
+    )
+from lp.bugs.interfaces.cve import ICveSet
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 
 
 def normalize_arguments(string_args):
@@ -128,11 +163,28 @@ class BugEmailCommand(EmailCommand):
                 owner=getUtility(ILaunchBag).user,
                 filealias=filealias,
                 parsed_message=parsed_msg)
-            if message.text_contents.strip() == '':
+            description = message.text_contents
+            if description.strip() == '':
                 # The report for a new bug must contain an affects command,
                 # since the bug must have at least one task
                 raise EmailProcessingError(
                     get_error_message('no-affects-target-on-submit.txt'),
+                    stop_processing=True)
+
+            # Check the message validator.
+            validator = IBugAddForm['comment'].validate
+            try:
+                validator(description)
+            except TooLong:
+                raise EmailProcessingError(
+                    'The description is too long. If you have lots of '
+                    'text to add, use an attachment instead.',
+                    stop_processing=True)
+            except ValidationError as e:
+                # More a just in case than any real expectation of getting
+                # something.
+                raise EmailProcessingError(
+                    str(e),
                     stop_processing=True)
 
             params = CreateBugParams(
@@ -382,30 +434,40 @@ class SummaryEmailCommand(EditEmailCommand):
         return {'title': self.string_args[0]}
 
 
-class DuplicateEmailCommand(EditEmailCommand):
+class DuplicateEmailCommand(EmailCommand):
     """Marks a bug as a duplicate of another bug."""
 
     implements(IBugEditEmailCommand)
     _numberOfArguments = 1
 
-    def convertArguments(self, context):
-        """See EmailCommand."""
+    def execute(self, context, current_event):
+        """See IEmailCommand."""
+        self._ensureNumberOfArguments()
         [bug_id] = self.string_args
-        if bug_id == 'no':
+
+        if bug_id != 'no':
+            try:
+                bug = getUtility(IBugSet).getByNameOrID(bug_id)
+            except NotFoundError:
+                raise EmailProcessingError(
+                    get_error_message('no-such-bug.txt', bug_id=bug_id))
+        else:
             # 'no' is a special value for unmarking a bug as a duplicate.
-            return {'duplicateof': None}
-        try:
-            bug = getUtility(IBugSet).getByNameOrID(bug_id)
-        except NotFoundError:
-            raise EmailProcessingError(
-                get_error_message('no-such-bug.txt', bug_id=bug_id))
+            bug = None
+
         duplicate_field = IBug['duplicateof'].bind(context)
         try:
             duplicate_field.validate(bug)
         except ValidationError, error:
             raise EmailProcessingError(error.doc())
 
-        return {'duplicateof': bug}
+        context_snapshot = Snapshot(
+            context, providing=providedBy(context))
+        context.markAsDuplicate(bug)
+        current_event = ObjectModifiedEvent(
+            context, context_snapshot, 'duplicateof')
+        notify(current_event)
+        return bug, current_event
 
 
 class CVEEmailCommand(EmailCommand):

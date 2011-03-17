@@ -11,6 +11,13 @@ bazaar branch.
     >>> link
     <Link ... url='http://launchpad.dev/firefox/trunk/+linkbranch'>
     >>> link.click()
+    
+This page allows the user to import code from various source control systems  
+
+    >>> external_code = find_tag_by_id(sample_browser.contents, 'external-code')
+    >>> print extract_text(external_code)
+    If the code is in Git, Mercurial, CVS or Subversion you can
+    request that the branch be imported to Bazaar.
 
 This link is only shown to those that have edit permissions on the
 product series.
@@ -61,7 +68,7 @@ give an idea of overall and recent activity on the project.
 
     >>> revisions = find_tag_by_id(sample_browser.contents, 'branch-revision-details')
     >>> print extract_text(revisions)
-    15 revisions, 5 in the past month.
+    15 revisions.
 
 A helpful informational message is also shown to the user.
 

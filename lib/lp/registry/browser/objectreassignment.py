@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A view for changing the owner or registrant of an object.
@@ -11,19 +11,31 @@ __metaclass__ = type
 __all__ = ["ObjectReassignmentView"]
 
 
-from zope.app.form.interfaces import ConversionError, WidgetInputError
+from zope.app.form.interfaces import (
+    ConversionError,
+    WidgetInputError,
+    )
 from zope.component import getUtility
 from zope.formlib.form import FormFields
 from zope.schema import Choice
-from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 
 from canonical.launchpad import _
-from lp.registry.interfaces.person import IObjectReassignment, IPersonSet
-from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.launchpadform import (
-    action, custom_widget, LaunchpadFormView)
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
+from lp.app.validators.name import valid_name
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.registry.interfaces.person import (
+    IObjectReassignment,
+    IPersonSet,
+    )
 
 
 class ObjectReassignmentView(LaunchpadFormView):

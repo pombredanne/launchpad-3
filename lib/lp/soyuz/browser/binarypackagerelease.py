@@ -11,9 +11,11 @@ __all__ = [
 from apt_pkg import ParseDepends
 
 from canonical.launchpad.browser.packagerelationship import (
-    relationship_builder)
-from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageRelease
+    relationship_builder,
+    )
 from canonical.launchpad.webapp import Navigation
+from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageRelease
+
 
 class BinaryPackageReleaseNavigation(Navigation):
     usedfor = IBinaryPackageRelease

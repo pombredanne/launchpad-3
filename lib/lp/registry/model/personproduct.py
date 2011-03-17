@@ -8,10 +8,15 @@ __all__ = [
     'PersonProduct',
     ]
 
-from zope.interface import classProvides, implements
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 
 from lp.registry.interfaces.personproduct import (
-    IPersonProduct, IPersonProductFactory)
+    IPersonProduct,
+    IPersonProductFactory,
+    )
 
 
 class PersonProduct:

@@ -3,17 +3,28 @@
 
 __metaclass__ = type
 
+from datetime import datetime
 import unittest
 
+from lazr.restful.testing.webservice import FakeRequest
+import pytz
+from testtools.matchers import Equals
 from zope.publisher.interfaces import NotFound
+from zope.security.proxy import removeSecurityProxy
 
-from lp.testing import TestCaseWithFactory
+from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
 from canonical.launchpad.webapp.servers import StepsToGo
 from canonical.testing.layers import DatabaseFunctionalLayer
-
-from lazr.restful.testing.webservice import FakeRequest
-
+from lp.app.browser.tales import format_link
 from lp.blueprints.browser import specification
+from lp.blueprints.enums import SpecificationImplementationStatus
+from lp.blueprints.interfaces.specification import ISpecification
+from lp.testing import (
+    login_person,
+    person_logged_in,
+    TestCaseWithFactory,
+    )
+from lp.testing.views import create_initialized_view
 
 
 class LocalFakeRequest(FakeRequest):
@@ -110,6 +121,82 @@ class TestBranchTraversal(TestCaseWithFactory):
             self.specification.getBranchLink(branch), self.traverse(segments))
 
 
+class TestSpecificationEditStatusView(TestCaseWithFactory):
+    """Test the SpecificationEditStatusView."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_records_started(self):
+        spec = self.factory.makeSpecification(
+            implementation_status=SpecificationImplementationStatus.NOTSTARTED)
+        login_person(spec.owner)
+        form = {
+            'field.implementation_status': 'STARTED',
+            'field.actions.change': 'Change',
+            }
+        view = create_initialized_view(spec, name='+status', form=form)
+        self.assertEqual(
+            SpecificationImplementationStatus.STARTED, spec.implementation_status)
+        self.assertEqual(spec.owner, spec.starter)
+        [notification] = view.request.notifications
+        self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
+        self.assertEqual(
+            'Blueprint is now considered "Started".', notification.message)
+
+    def test_unchanged_lifecycle_has_no_notification(self):
+        spec = self.factory.makeSpecification(
+            implementation_status=SpecificationImplementationStatus.STARTED)
+        login_person(spec.owner)
+        form = {
+            'field.implementation_status': 'SLOW',
+            'field.actions.change': 'Change',
+            }
+        view = create_initialized_view(spec, name='+status', form=form)
+        self.assertEqual(
+            SpecificationImplementationStatus.SLOW, spec.implementation_status)
+        self.assertEqual(0, len(view.request.notifications))
+
+    def test_records_unstarting(self):
+        # If a spec was started, and is changed to not started, a notice is shown.
+        # Also the spec.starter is cleared out.
+        spec = self.factory.makeSpecification(
+            implementation_status=SpecificationImplementationStatus.STARTED)
+        login_person(spec.owner)
+        form = {
+            'field.implementation_status': 'NOTSTARTED',
+            'field.actions.change': 'Change',
+            }
+        view = create_initialized_view(spec, name='+status', form=form)
+        self.assertEqual(
+            SpecificationImplementationStatus.NOTSTARTED,
+            spec.implementation_status)
+        self.assertIs(None, spec.starter)
+        [notification] = view.request.notifications
+        self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
+        self.assertEqual(
+            'Blueprint is now considered "Not started".', notification.message)
+
+    def test_records_completion(self):
+        # If a spec is marked as implemented the user is notifiec it is now
+        # complete.
+        spec = self.factory.makeSpecification(
+            implementation_status=SpecificationImplementationStatus.STARTED)
+        login_person(spec.owner)
+        form = {
+            'field.implementation_status': 'IMPLEMENTED',
+            'field.actions.change': 'Change',
+            }
+        view = create_initialized_view(spec, name='+status', form=form)
+        self.assertEqual(
+            SpecificationImplementationStatus.IMPLEMENTED,
+            spec.implementation_status)
+        self.assertEqual(spec.owner, spec.completer)
+        [notification] = view.request.notifications
+        self.assertEqual(BrowserNotificationLevel.INFO, notification.level)
+        self.assertEqual(
+            'Blueprint is now considered "Complete".', notification.message)
+
+
 class TestSecificationHelpers(unittest.TestCase):
     """Test specification helper functions."""
 
@@ -127,6 +214,51 @@ class TestSecificationHelpers(unittest.TestCase):
             baz="zab")
         dot_attrs = specification.dict_to_DOT_attrs(dict_attrs, indent='  ')
         self.assertEqual(dot_attrs, expected_attrs)
+
+
+class TestSpecificationFieldXHTMLRepresentations(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_starter_empty(self):
+        blueprint = self.factory.makeBlueprint()
+        repr_method = specification.starter_xhtml_representation(
+            blueprint, ISpecification['starter'], None)
+        self.assertThat(repr_method(), Equals(''))
+
+    def test_starter_set(self):
+        user = self.factory.makePerson()
+        blueprint = self.factory.makeBlueprint(owner=user)
+        when = datetime(2011, 1, 1, tzinfo=pytz.UTC)
+        with person_logged_in(user):
+            blueprint.setImplementationStatus(
+                SpecificationImplementationStatus.STARTED, user)
+        removeSecurityProxy(blueprint).date_started = when
+        repr_method = specification.starter_xhtml_representation(
+            blueprint, ISpecification['starter'], None)
+        expected = format_link(user) + ' on 2011-01-01'
+        self.assertThat(repr_method(), Equals(expected))
+
+    def test_completer_empty(self):
+        blueprint = self.factory.makeBlueprint()
+        repr_method = specification.completer_xhtml_representation(
+            blueprint, ISpecification['completer'], None)
+        self.assertThat(repr_method(), Equals(''))
+
+    def test_completer_set(self):
+        user = self.factory.makePerson()
+        blueprint = self.factory.makeBlueprint(owner=user)
+        when = datetime(2011, 1, 1, tzinfo=pytz.UTC)
+        with person_logged_in(user):
+            blueprint.setImplementationStatus(
+                SpecificationImplementationStatus.IMPLEMENTED, user)
+        removeSecurityProxy(blueprint).date_completed = when
+        repr_method = specification.completer_xhtml_representation(
+            blueprint, ISpecification['completer'], None)
+        expected = format_link(user) + ' on 2011-01-01'
+        self.assertThat(repr_method(), Equals(expected))
+
+
 
 
 def test_suite():

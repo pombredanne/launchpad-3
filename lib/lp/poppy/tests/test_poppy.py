@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for poppy FTP daemon."""
@@ -8,77 +8,76 @@ __metaclass__ = type
 import ftplib
 import os
 import shutil
-import socket
+import stat
 import StringIO
 import tempfile
 import time
-import transaction
 import unittest
 
 from bzrlib.tests import (
-    condition_id_re, exclude_tests_by_condition, multiply_tests)
+    condition_id_re,
+    exclude_tests_by_condition,
+    multiply_tests,
+    )
 from bzrlib.transport import get_transport
+from fixtures import (
+    EnvironmentVariableFixture,
+    Fixture,
+    )
+import transaction
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.testing.layers import (
-    ZopelessAppServerLayer, ZopelessDatabaseLayer)
-from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
-from lp.poppy.tests.helpers import PoppyTestSetup
+    ZopelessAppServerLayer,
+    ZopelessDatabaseLayer,
+    )
+from lp.registry.interfaces.ssh import (
+    ISSHKeySet,
+    )
+from lp.poppy.hooks import Hooks
 from lp.testing import TestCaseWithFactory
+from lp.testing.keyserver import KeyServerTac
 
-class FTPServer:
+
+class FTPServer(Fixture):
     """This is an abstraction of connecting to an FTP server."""
 
     def __init__(self, root_dir, factory):
         self.root_dir = root_dir
-        self.port = 3421
+        self.port = 2121
 
     def setUp(self):
-        self.poppy = PoppyTestSetup(
-            self.root_dir, port=self.port, cmd='echo CLOSED')
-        self.poppy.startPoppy()
+        super(FTPServer, self).setUp()
+        self.poppytac = self.useFixture(PoppyTac(self.root_dir))
 
-    def tearDown(self):
-        self.poppy.killPoppy()
+    def getAnonTransport(self):
+        return get_transport(
+            'ftp://anonymous:me@example.com@localhost:%s/' % (self.port,))
 
     def getTransport(self):
         return get_transport('ftp://ubuntu:@localhost:%s/' % (self.port,))
 
     def disconnect(self, transport):
-        transport._get_connection().quit()
-
-    def _getFTPConnection(self):
-        # poppy usually takes sometime to come up, we need to wait, or insist.
-        conn = ftplib.FTP()
-        while True:
-            try:
-                conn.connect("localhost", self.port)
-            except socket.error:
-                if not self.poppy.alive:
-                    raise
-            else:
-                break
-        return conn
+        transport._get_connection().close()
 
     def waitForStartUp(self):
         """Wait for the FTP server to start up."""
-        conn = self._getFTPConnection()
-        conn.quit()
+        pass
 
-    def waitForClose(self):
+    def waitForClose(self, number=1):
         """Wait for an FTP connection to close.
 
-        Poppy is configured to echo 'CLOSED' to stdout when a
-        connection closes, so we wait for CLOSED to appear in its
+        Poppy is configured to echo 'Post-processing finished' to stdout
+        when a connection closes, so we wait for that to appear in its
         output as a way to tell that the server has finished with the
         connection.
         """
-        self.poppy.verify_output(['CLOSED'])
+        self.poppytac.waitForPostProcessing(number)
 
 
-class SFTPServer:
+class SFTPServer(Fixture):
     """This is an abstraction of connecting to an SFTP server."""
 
     def __init__(self, root_dir, factory):
@@ -103,27 +102,19 @@ class SFTPServer:
             user, os.path.join(os.path.dirname(__file__), 'poppy-sftp.pub'))
         # Set up a temporary home directory for Paramiko's sake
         self._home_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self._home_dir)
         os.mkdir(os.path.join(self._home_dir, '.ssh'))
         os.symlink(
             os.path.join(os.path.dirname(__file__), 'poppy-sftp'),
             os.path.join(self._home_dir, '.ssh', 'id_rsa'))
-        self._current_home = os.environ['HOME']
-        # We'd rather not have an agent interfere
-        os.environ.pop('SSH_AUTH_SOCK', None)
-        os.environ['HOME'] = self._home_dir
-        # XXX: Just blat over the BZR_SSH env var. Restoring env vars is a
-        # little tricky, see lp.testing.TestCaseWithFactory.useTempBzrHome.
-        os.environ['BZR_SSH'] = 'paramiko'
+        self.useFixture(EnvironmentVariableFixture('HOME', self._home_dir))
+        self.useFixture(EnvironmentVariableFixture('SSH_AUTH_SOCK', None))
+        self.useFixture(EnvironmentVariableFixture('BZR_SSH', 'paramiko'))
 
     def setUp(self):
+        super(SFTPServer, self).setUp()
         self.setUpUser('joe')
-        self._tac = PoppyTac(self.root_dir)
-        self._tac.setUp()
-
-    def tearDown(self):
-        shutil.rmtree(self._home_dir)
-        os.environ['HOME'] = self._current_home
-        self._tac.tearDown()
+        self.poppytac = self.useFixture(PoppyTac(self.root_dir))
 
     def disconnect(self, transport):
         transport._get_connection().close()
@@ -131,28 +122,35 @@ class SFTPServer:
     def waitForStartUp(self):
         pass
 
-    def waitForClose(self):
-        # XXX: Steve Kowalik 2010-05-24 bug=586695 There has to be a
-        # better way to wait for the SFTP server to process our upload
-        # rather than sleeping for 10 seconds.
-        time.sleep(10)
+    def waitForClose(self, number=1):
+        self.poppytac.waitForPostProcessing(number)
 
     def getTransport(self):
         return get_transport('sftp://joe@localhost:%s/' % (self.port,))
 
 
 class PoppyTac(TacTestSetup):
+    """A SFTP Poppy server fixture.
+
+    This class has two distinct roots:
+     - the POPPY_ROOT where the test looks for uploaded output.
+     - the server root where ssh keys etc go.
+    """
 
     def __init__(self, fs_root):
-        os.environ['POPPY_ROOT'] = fs_root
-        self.setUpRoot()
+        self.fs_root = fs_root
+        # The setUp check for stale pids races with self._root being assigned,
+        # so store a plausible path temporarily. Once all fixtures use unique
+        # environments this can go.
+        self._root = '/var/does/not/exist'
+
+    def setUp(self):
+        os.environ['POPPY_ROOT'] = self.fs_root
         super(PoppyTac, self).setUp(umask='0')
 
     def setUpRoot(self):
         self._root = tempfile.mkdtemp()
-
-    def tearDownRoot(self):
-        shutil.rmtree(self._root)
+        self.addCleanup(shutil.rmtree, self.root)
 
     @property
     def root(self):
@@ -165,11 +163,29 @@ class PoppyTac(TacTestSetup):
 
     @property
     def logfile(self):
-        return os.path.join('/tmp', 'poppy-sftp.log')
+        return os.path.join(self.root, 'poppy-sftp.log')
 
     @property
     def pidfile(self):
         return os.path.join(self.root, 'poppy-sftp.pid')
+
+    def waitForPostProcessing(self, number=1):
+        now = time.time()
+        deadline = now + 20
+        while now < deadline and not self._hasPostProcessed(number):
+            time.sleep(0.1)
+            now = time.time()
+
+        if now >= deadline:
+            raise Exception("Poppy post-processing did not complete")
+
+    def _hasPostProcessed(self, number):
+        if os.path.exists(self.logfile):
+            with open(self.logfile, "r") as logfile:
+                occurrences = logfile.read().count(Hooks.LOG_MAGIC)
+                return occurrences >= number
+        else:
+            return False
 
 
 class TestPoppy(TestCaseWithFactory):
@@ -180,7 +196,7 @@ class TestPoppy(TestCaseWithFactory):
         super(TestPoppy, self).setUp()
         self.root_dir = self.makeTemporaryDirectory()
         self.server = self.server_factory(self.root_dir, self.factory)
-        self.installFixture(self.server)
+        self.useFixture(self.server)
 
     def _uploadPath(self, path):
         """Return system path of specified path inside an upload.
@@ -191,16 +207,22 @@ class TestPoppy(TestCaseWithFactory):
         upload_dir = contents[1]
         return os.path.join(self.root_dir, upload_dir, path)
 
-    def test_change_directory(self):
+    def test_change_directory_anonymous(self):
+        # Check that FTP access with an anonymous user works.
+        transport = self.server.getAnonTransport()
+        self.test_change_directory(transport)
+
+    def test_change_directory(self, transport=None):
         """Check automatic creation of directories 'cwd'ed in.
 
         Also ensure they are created with proper permission (g+rwxs)
         """
         self.server.waitForStartUp()
 
-        transport = self.server.getTransport()
+        if transport is None:
+            transport = self.server.getTransport()
         transport.stat('foo/bar') # .stat will implicity chdir for us
-        
+
         self.server.disconnect(transport)
         self.server.waitForClose()
 
@@ -231,7 +253,7 @@ class TestPoppy(TestCaseWithFactory):
         transport.mkdir('foo/bar')
         transport.rmdir('foo/bar')
         transport.rmdir('foo')
-        
+
         self.server.disconnect(transport)
         self.server.waitForClose()
 
@@ -256,7 +278,11 @@ class TestPoppy(TestCaseWithFactory):
         wanted_path = self._uploadPath('foo/bar/baz')
         fs_content = open(os.path.join(wanted_path)).read()
         self.assertEqual(fs_content, "fake contents")
-        self.assertEqual(os.stat(wanted_path).st_mode, 0102674)
+        # Expected mode is -rw-rwSr--.
+        self.assertEqual(
+            os.stat(wanted_path).st_mode,
+            stat.S_IROTH | stat.S_ISGID | stat.S_IRGRP | stat.S_IWGRP
+            | stat.S_IWUSR | stat.S_IRUSR | stat.S_IFREG)
 
     def test_full_source_upload(self):
         """Check that the connection will deal with multiple files being
@@ -285,13 +311,17 @@ class TestPoppy(TestCaseWithFactory):
         if transport._user == 'joe':
             self.assertEqual(dir_name.startswith('upload-sftp-2'), True)
         elif transport._user == 'ubuntu':
-            self.assertEqual(dir_name.startswith('upload-2'), True)
+            self.assertEqual(dir_name.startswith('upload-ftp-2'), True)
         for upload in files:
             wanted_path = self._uploadPath(
                 "~ppa-user/ppa/ubuntu/%s" % upload)
             fs_content = open(os.path.join(wanted_path)).read()
             self.assertEqual(fs_content, upload)
-            self.assertEqual(os.stat(wanted_path).st_mode, 0102674)
+            # Expected mode is -rw-rwSr--.
+            self.assertEqual(
+                os.stat(wanted_path).st_mode,
+                stat.S_IROTH | stat.S_ISGID | stat.S_IRGRP | stat.S_IWGRP
+                | stat.S_IWUSR | stat.S_IRUSR | stat.S_IFREG)
 
     def test_upload_isolation(self):
         """Check if poppy isolates the uploads properly.
@@ -306,13 +336,13 @@ class TestPoppy(TestCaseWithFactory):
         fake_file = StringIO.StringIO("ONE")
         conn_one.put_file('test', fake_file, mode=None)
         self.server.disconnect(conn_one)
-        self.server.waitForClose()
+        self.server.waitForClose(1)
 
         conn_two = self.server.getTransport()
         fake_file = StringIO.StringIO("TWO")
         conn_two.put_file('test', fake_file, mode=None)
         self.server.disconnect(conn_two)
-        self.server.waitForClose()
+        self.server.waitForClose(2)
 
         # Perform a pair of sessions with simultaneous connections.
         conn_three = self.server.getTransport()
@@ -325,10 +355,10 @@ class TestPoppy(TestCaseWithFactory):
         conn_four.put_file('test', fake_file, mode=None)
 
         self.server.disconnect(conn_three)
-        self.server.waitForClose()
+        self.server.waitForClose(3)
 
         self.server.disconnect(conn_four)
-        self.server.waitForClose()
+        self.server.waitForClose(4)
 
         # Build a list of directories representing the 4 sessions.
         upload_dirs = [leaf for leaf in sorted(os.listdir(self.root_dir))
@@ -342,6 +372,37 @@ class TestPoppy(TestCaseWithFactory):
             content = open(os.path.join(
                 self.root_dir, upload_dirs[index], "test")).read()
             self.assertEqual(content, expected_contents[index])
+
+    def test_bad_gpg_on_changesfile(self):
+        """Check that we get a rejection error when uploading .changes files
+        with invalid GPG signatures.
+        """
+        # Start up the poppy server.
+        self.server.waitForStartUp()
+
+        transport = self.server.getTransport()
+        if transport.external_url().startswith("sftp"):
+            # We're not GPG-checking sftp uploads right now.
+            return
+
+        # Start up the test keyserver.
+        tac = KeyServerTac()
+        tac.setUp()
+        self.addCleanup(tac.tearDown)
+
+        fake_file = StringIO.StringIO("fake contents")
+
+        # We can't use bzrlib's transport here because it uploads a
+        # renamed file before renaming it on the server.
+        f = ftplib.FTP()
+        f.connect(host="localhost", port=config.poppy.ftp_port)
+        f.login()
+        self.assertRaises(
+            ftplib.error_perm,
+            f.storbinary,
+            'STOR '+'foo_source.changes',
+            fake_file)
+
 
 def test_suite():
     tests = unittest.TestLoader().loadTestsFromName(__name__)
@@ -358,4 +419,4 @@ def test_suite():
     # SFTP doesn't have the concept of the server changing directories, since
     # clients will only send absolute paths, so drop that test.
     return exclude_tests_by_condition(
-        suite, condition_id_re(r'test_change_directory\(sftp\)$'))
+        suite, condition_id_re(r'test_change_directory.*\(sftp\)$'))

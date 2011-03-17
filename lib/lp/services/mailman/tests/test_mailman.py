@@ -3,28 +3,32 @@
 
 """Test harness for Launchpad/Mailman doctests."""
 
-import os
 import errno
+import os
 import shutil
 import unittest
-import transaction
 
 # pylint: disable-msg=F0401
 from Mailman.MailList import MailList
-from Mailman.mm_cfg import MAILMAN_SITE_LIST, QUEUE_DIR, VAR_PREFIX
+from Mailman.mm_cfg import (
+    MAILMAN_SITE_LIST,
+    QUEUE_DIR,
+    VAR_PREFIX,
+    )
 from Mailman.Utils import list_names
-
-import lp.services.mailman.doc
-from lp.services.testing import build_test_suite
+import transaction
 
 from canonical.launchpad.testing.browser import (
     setUp as setUpBrowser,
-    tearDown as tearDownBrowser)
-from lp.testing.factory import LaunchpadObjectFactory
+    tearDown as tearDownBrowser,
+    )
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.testing.layers import LayerProcessController
+import lp.services.mailman.doc
 from lp.services.mailman.testing import helpers
 from lp.services.mailman.testing.layers import MailmanLayer
+from lp.services.testing import build_test_suite
+from lp.testing.factory import LaunchpadObjectFactory
 
 
 def setUp(testobj):

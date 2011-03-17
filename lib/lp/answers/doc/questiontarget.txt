@@ -532,9 +532,9 @@ title and description are taken from the bug.  The comments on the bug are
 copied to the question.
 
     >>> from datetime import datetime
-    >>> from pytz import UTC
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.registry.interfaces.product import IProductSet
+    >>> from pytz import UTC
 
     >>> now = datetime.now(UTC)
     >>> target = getUtility(IProductSet)['jokosher']

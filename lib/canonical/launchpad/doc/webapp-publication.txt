@@ -93,6 +93,10 @@ These are parsed into webapp.vhost.allvhosts.
     rooturl: http://ubuntu-openid.launchpad.dev/
     althosts:
     ----
+    vostok @ vostok.dev
+    rooturl: http://vostok.dev/
+    althosts:
+    ----
     xmlrpc @ xmlrpc.launchpad.dev
     rooturl: http://launchpad.dev/
     althosts:
@@ -124,6 +128,7 @@ request is headed to one of the officialy-used Launchpad host names:
     testopenid.dev
     translations.launchpad.dev
     ubuntu-openid.launchpad.dev
+    vostok.dev
     xmlrpc-private.launchpad.dev
     xmlrpc.launchpad.dev
 
@@ -139,8 +144,8 @@ methods.
     ...     LaunchpadBrowserPublication)
     >>> from canonical.launchpad.webapp.servers import (
     ...     LaunchpadBrowserRequest, VirtualHostRequestPublicationFactory)
-    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from zope.app.publication.interfaces import IRequestPublicationFactory
+    >>> from canonical.launchpad.webapp.testing import verifyObject
 
 Those factories provide the IRequestPublicationFactory interface.
 
@@ -870,7 +875,7 @@ But if there is a logged in user, the transaction user attribute will
 contain its ID (as well as an empty '/' path, which is a Zope artefact
 allowing different authentication based on the traversed objects):
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> personset = getUtility(IPersonSet)
     >>> txn = transaction.begin()
     >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
@@ -904,10 +909,10 @@ some string in its finishReadOnlyRequest().
 In the default implementation, the following database modification will
 be automatically reverted in a GET request.
 
+    >>> from canonical.launchpad.database.emailaddress import EmailAddress
     >>> from canonical.launchpad.ftests import syncUpdate
-    >>> from canonical.launchpad.database import EmailAddress
+    >>> from canonical.launchpad.interfaces.lpstorm import IMasterStore
     >>> from lp.registry.model.person import Person
-    >>> from canonical.launchpad.interfaces import IMasterStore
     >>> login('foo.bar@canonical.com')
     >>> txn = transaction.begin()
     >>> def get_foo_bar_person():
@@ -960,13 +965,13 @@ transaction after GET requests in order to persist new entries added to
 the OAuthNonce table.
 
     >>> import time
+    >>> from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 
+    >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
     >>> from canonical.launchpad.webapp.interfaces import IStoreSelector
-    >>> from zope.component import getUtility
     >>> getUtility(IStoreSelector).push(MasterDatabasePolicy())
 
     >>> salgado = getUtility(IPersonSet).getByName('salgado')

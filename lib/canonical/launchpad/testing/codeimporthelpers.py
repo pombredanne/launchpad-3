@@ -11,7 +11,10 @@ __all__ = [
     ]
 
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 from pytz import UTC
 from zope.component import getUtility
@@ -19,9 +22,12 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import sync
 from lp.code.enums import (
-    CodeImportJobState, CodeImportResultStatus, CodeImportReviewStatus)
-from lp.code.model.codeimportjob import CodeImportJobWorkflow
+    CodeImportJobState,
+    CodeImportResultStatus,
+    CodeImportReviewStatus,
+    )
 from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.model.codeimportjob import CodeImportJobWorkflow
 from lp.testing import time_counter
 from lp.testing.factory import LaunchpadObjectFactory
 

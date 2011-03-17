@@ -4,14 +4,21 @@
 __all__ = ['TranslatedLanguageMixin']
 
 import pytz
-
+from storm.expr import (
+    Coalesce,
+    Desc,
+    Max,
+    Sum,
+    )
 from zope.interface import implements
 
-from storm.expr import Coalesce, Desc, Max, Sum
-
-from lp.translations.interfaces.potemplate import IHasTranslationTemplates
+from lp.translations.interfaces.hastranslationtemplates import (
+    IHasTranslationTemplates,
+    )
 from lp.translations.interfaces.translatedlanguage import (
-    IPOFilesByPOTemplates, ITranslatedLanguage)
+    IPOFilesByPOTemplates,
+    ITranslatedLanguage,
+    )
 from lp.translations.model.pofile import POFile
 from lp.translations.model.potemplate import POTemplate
 

@@ -18,12 +18,15 @@ import sys
 
 from zope.component import getUtility
 
+# Still needed fake import to stop circular imports.
+import canonical.launchpad.interfaces
+
 from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
-from canonical.launchpad.interfaces import NotFoundError
+from lp.app.errors import NotFoundError
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
 from canonical.lp import initZopeless
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 

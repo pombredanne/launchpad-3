@@ -15,6 +15,9 @@
       </a>
       using this branch.
 
+      <a href="/+help/related-recipes.html" target="help" class="sprite maybe">
+        &nbsp;<span class="invisible-link">Tag help</span>
+      </a>
     </div>
 
     <span
@@ -22,7 +25,8 @@
       tal:condition="link/enabled"
       tal:replace="structure link/render"
       />
-    <img src="/@@/beta" alt="beta" title="This feature is in beta" />
+    <img src="/@@/beta" alt="beta" title="This feature is in beta"
+         tal:condition="request/features/code.recipes.beta"/>
   </div>
 
 </div>

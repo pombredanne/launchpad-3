@@ -31,9 +31,7 @@
         This archive has been disabled.
       </p>
 
-      <div id="edit-description" class="lazr-multiline-edit"
-        tal:content="structure view/archive_description_html"
-        />
+      <tal:widget replace="structure view/archive_description_html"/>
     </div>
 
     <tal:ppa-upload-hint condition="context/is_ppa">
@@ -150,10 +148,7 @@
             >Celso Providelo</a>.</p>
 
         <script type="text/javascript">
-YUI({
-        base: '../../lib/yui/current/build/',
-        filter: 'raw'
-    }).use('node', 'event', 'lazr.effects', function(Y) {
+    LPS.use('node', 'event', 'lazr.effects', function(Y) {
 
     // Hide the widget body contents.
     Y.one('#ppa-install .widget-body').addClass('lazr-closed');
@@ -280,7 +275,7 @@ YUI({
                 </tal:newer_version>
               </td>
               <td tal:define="spr publishing/sourcepackagerelease;
-                              signer spr/uploader/fmt:link|string:no signer">
+                              signer spr/uploader/fmt:link::no signer">
                   <span tal:replace="structure signer">Joe Bloggs</span>
                   <tal:date_published
                     condition="publishing/datepublished">

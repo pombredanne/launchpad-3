@@ -3,8 +3,6 @@
 
 """Classes and logic for the checkwatches BugWatchUpdater."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 __all__ = [
     'BugWatchUpdater',
@@ -12,23 +10,25 @@ __all__ = [
 
 import sys
 
+from lazr.lifecycle.event import ObjectCreatedEvent
 from zope.component import getUtility
 from zope.event import notify
 
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities, NotFoundError)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.webapp.publisher import canonical_url
-
-from lazr.lifecycle.event import ObjectCreatedEvent
-
+from lp.app.errors import NotFoundError
+from lp.bugs.externalbugtracker.base import BugWatchUpdateError
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.scripts.checkwatches.base import (
-    WorkingBase, commit_before)
+    commit_before,
+    WorkingBase,
+    )
 from lp.bugs.scripts.checkwatches.utilities import (
-    get_remote_system_oops_properties)
+    get_remote_system_oops_properties,
+    )
 from lp.registry.interfaces.person import PersonCreationRationale
 
 
@@ -54,14 +54,9 @@ class BugWatchUpdater(WorkingBase):
         self.can_push_comments = parent.can_push_comments
         self.can_back_link = parent.can_back_link
 
-    # XXX 2010-05-11 gmb bug=578714:
-    #     The last three parameters on this method aren't needed and
-    #     should be removed.
     @commit_before
     def updateBugWatch(self, new_remote_status, new_malone_status,
-                       new_remote_importance, new_malone_importance,
-                       can_import_comments=None, can_push_comments=None,
-                       can_back_link=None):
+                       new_remote_importance, new_malone_importance):
         """Update the BugWatch."""
         with self.transaction:
             if new_malone_status is not None:
@@ -79,33 +74,31 @@ class BugWatchUpdater(WorkingBase):
                 len(self.bug_watch.bugtasks) > 0
                 )
 
-        # XXX: Gavin Panella 2010-04-19 bug=509223:
-        # Exception handling is all wrong! If any of these
-        # throw an exception, *all* the watches in
-        # self.bug_watches, even those that have not errored,
-        # will have negative activity added.
         error_message = None
         error_status = None
         oops_id = None
         if do_sync:
             try:
-                if can_import_comments or self.can_import_comments:
+                if self.can_import_comments:
                     error_status = (
                         BugWatchActivityStatus.COMMENT_IMPORT_FAILED)
                     self.importBugComments()
-                if can_push_comments or self.can_push_comments:
+                if self.can_push_comments:
                     error_status = BugWatchActivityStatus.COMMENT_PUSH_FAILED
                     self.pushBugComments()
-                if can_back_link or self.can_back_link:
+                if self.can_back_link:
                     error_status = BugWatchActivityStatus.BACKLINK_FAILED
                     self.linkLaunchpadBug()
             except Exception, ex:
                 error_message = str(ex)
-                oops_id = self.error(
-                    "Failure updating bug %r on %s (local bug: %s)." %
-                        (self.remote_bug, self.external_bugtracker.baseurl,
-                        self.local_bug),
-                    self.oops_properties)
+                log_message = (
+                    "Failure updating bug %r on %s (local bug: %s)" %
+                    (self.remote_bug, self.external_bugtracker.baseurl,
+                    self.local_bug))
+                if isinstance(ex, BugWatchUpdateError):
+                    self.logger.info('%s: %s' % (log_message, ex))
+                else:
+                    oops_id = self.error(log_message, self.oops_properties)
             else:
                 error_status = None
 

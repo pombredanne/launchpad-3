@@ -8,12 +8,17 @@ __all__ = [
     'Collection',
     ]
 
+from storm.expr import (
+    Join,
+    LeftJoin,
+    )
 from zope.component import getUtility
 
-from storm.expr import Join, LeftJoin
-
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 
 
 class Collection(object):

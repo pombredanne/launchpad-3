@@ -5,8 +5,8 @@
 
 __metaclass__ = type
 
-import unittest
 import stat
+import unittest
 
 from bzrlib import errors
 from bzrlib.bzrdir import BzrDir
@@ -15,9 +15,12 @@ from bzrlib.transport import get_transport
 from bzrlib.transport.memory import MemoryTransport
 from bzrlib.urlutils import escape
 
-from lp.codehosting.vfs.branchfs import LaunchpadServer
-from lp.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.codehosting.inmemory import (
+    InMemoryFrontend,
+    XMLRPCWrapper,
+    )
+from lp.codehosting.vfs.branchfs import LaunchpadServer
 
 
 class TestFilesystem(TestCaseWithTransport):

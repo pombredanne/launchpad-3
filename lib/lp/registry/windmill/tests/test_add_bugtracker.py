@@ -8,10 +8,9 @@ __all__ = []
 
 import unittest
 
-from canonical.launchpad.windmill.testing import lpuser
-
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.testing import WindmillTestCase
+from lp.testing.windmill import lpuser
 
 
 def test_inline_add_bugtracker(client, url, name=None, suite='bugtracker',
@@ -57,9 +56,9 @@ def test_inline_add_bugtracker(client, url, name=None, suite='bugtracker',
     client.type(id='field.name', text=bugtracker_name)
     client.click(id=u'formoverlay-add-bugtracker')
     client.waits.forElement(
-        xpath="//div[contains(@class, 'yui-lazr-formoverlay-errors')]/ul/li")
+        xpath="//div[contains(@class, 'yui3-lazr-formoverlay-errors')]/ul/li")
     client.asserts.assertTextIn(
-        classname='yui-lazr-formoverlay-errors',
+        classname='yui3-lazr-formoverlay-errors',
         validator='name: %s is already in use' % bugtracker_name.lower())
     client.click(classname='close-button')
 
@@ -92,7 +91,8 @@ class TestAddBugTracker(WindmillTestCase):
     def test_adding_bugtracker_for_project(self):
         test_inline_add_bugtracker(
             self.client,
-            url='http://launchpad.dev:8085/bzr/+configure-bugtracker',
+            url='%s/bzr/+configure-bugtracker'
+                 % RegistryWindmillLayer.base_url,
             name='test_inline_add_bugtracker_for_project')
 
 

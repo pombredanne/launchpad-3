@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser code for the launchpad application."""
@@ -17,107 +17,141 @@ __all__ = [
     'LoginStatus',
     'MaintenanceMessage',
     'NavigationMenuTabs',
-    'RDFIndexView',
     'SoftTimeoutView',
     'get_launchpad_views',
     ]
 
 
 import cgi
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import operator
 import os
 import re
 import time
 import urllib
-from datetime import timedelta, datetime
 
+from lazr.uri import URI
 from zope import i18n
 from zope.app import zapi
-from zope.datetime import parseDatetimetz, tzinfo, DateTimeError
-from zope.component import getUtility, queryAdapter
-from zope.interface import implements
+from zope.component import (
+    getUtility,
+    queryAdapter,
+    )
+from zope.datetime import (
+    DateTimeError,
+    parseDatetimetz,
+    tzinfo,
+    )
 from zope.i18nmessageid import Message
+from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.lazr import ExportedFolder, ExportedImageFolder
 from canonical.launchpad.helpers import intOrZero
-from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.launchpad import (
-    IAppFrontPageSearchForm, IBazaarApplication, ILaunchpadCelebrities,
-    IRosettaApplication)
+    IAppFrontPageSearchForm,
+    IBazaarApplication,
+    ILaunchpadCelebrities,
+    IRosettaApplication,
+    )
 from canonical.launchpad.interfaces.launchpadstatistic import (
-    ILaunchpadStatisticSet)
+    ILaunchpadStatisticSet,
+    )
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.temporaryblobstorage import (
-    ITemporaryStorageManager)
+    ITemporaryStorageManager,
+    )
+from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp import (
-    LaunchpadFormView, LaunchpadView, Link, Navigation,
-    StandardLaunchpadFacets, canonical_name, canonical_url, custom_widget,
-    stepto)
+    canonical_name,
+    canonical_url,
+    LaunchpadView,
+    Link,
+    Navigation,
+    StandardLaunchpadFacets,
+    stepto,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import (
-    GoneError, IBreadcrumb, ILaunchBag, ILaunchpadRoot,
-    INavigationMenu, NotFoundError, POSTToNonCanonicalURL)
+    IBreadcrumb,
+    ILaunchBag,
+    ILaunchpadRoot,
+    INavigationMenu,
+    )
 from canonical.launchpad.webapp.publisher import RedirectionView
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.tales import PageTemplateContextsAPI
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.widgets.project import ProjectScopeWidget
-
-from lazr.uri import URI
-
-from lp.app.interfaces.headings import IMajorHeadingView
-from lp.registry.interfaces.announcement import IAnnouncementSet
-from lp.soyuz.interfaces.binarypackagename import (
-    IBinaryPackageNameSet)
-from lp.bugs.interfaces.bug import IBugSet
-from lp.bugs.interfaces.malone import IMaloneApplication
-from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.code.interfaces.branch import IBranchSet
-from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.branchnamespace import InvalidNamespace
-from lp.code.interfaces.codeimport import ICodeImportSet
-from lp.code.interfaces.linkedbranch import (
-    CannotHaveLinkedBranch, NoLinkedBranch)
-from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
-from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
-from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.karma import IKarmaActionSet
-from lp.registry.interfaces.mentoringoffer import IMentoringOfferSet
-from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.pillar import IPillarNameSet
-from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.registry.interfaces.product import (
-    InvalidProductName, IProductSet)
-from lp.registry.interfaces.projectgroup import IProjectGroupSet
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageNameSet)
-from lp.blueprints.interfaces.specification import ISpecificationSet
-from lp.blueprints.interfaces.sprint import ISprintSet
-from lp.services.worlddata.interfaces.country import ICountrySet
-from lp.translations.interfaces.translationgroup import (
-    ITranslationGroupSet)
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
-from lp.testopenid.interfaces.server import ITestOpenIDApplication
-
-
+from canonical.lazr import (
+    ExportedFolder,
+    ExportedImageFolder,
+    )
+from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.app.browser.launchpadform import (
+    custom_widget,
+    LaunchpadFormView,
+    )
 # XXX SteveAlexander 2005-09-22: this is imported here because there is no
 #     general timedelta to duration format adapter available.  This should
 #     be factored out into a generally available adapter for both this
 #     code and for TALES namespace code to use.
 #     Same for MenuAPI.
-from canonical.launchpad.webapp.tales import DurationFormatterAPI, MenuAPI
-
-from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.app.browser.tales import (
+    DurationFormatterAPI,
+    MenuAPI,
+    PageTemplateContextsAPI,
+    )
+from lp.app.errors import (
+    GoneError,
+    NotFoundError,
+    POSTToNonCanonicalURL,
+    )
+from lp.app.interfaces.headings import IMajorHeadingView
+from lp.app.widgets.project import ProjectScopeWidget
+from lp.blueprints.interfaces.specification import ISpecificationSet
+from lp.blueprints.interfaces.sprint import ISprintSet
+from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.code.errors import (
+    CannotHaveLinkedBranch,
+    InvalidNamespace,
+    NoLinkedBranch,
+    )
+from lp.code.interfaces.branch import IBranchSet
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.codeimport import ICodeImportSet
+from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
+from lp.registry.interfaces.announcement import IAnnouncementSet
+from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.karma import IKarmaActionSet
+from lp.registry.interfaces.nameblacklist import INameBlacklistSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.product import (
+    InvalidProductName,
+    IProductSet,
+    )
+from lp.registry.interfaces.projectgroup import IProjectGroupSet
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.propertycache import cachedproperty
+from lp.services.worlddata.interfaces.country import ICountrySet
+from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
+from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.testopenid.interfaces.server import ITestOpenIDApplication
+from lp.translations.interfaces.translationgroup import ITranslationGroupSet
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue,
+    )
 
 
 class NavigationMenuTabs(LaunchpadView):
@@ -451,10 +485,10 @@ class LaunchpadRootNavigation(Navigation):
 
     @stepto('support')
     def redirect_support(self):
-        """Redirect /support to Answers root site."""
+        """Redirect /support to launchpad Answers site."""
         target_url = canonical_url(
-            getUtility(ILaunchpadRoot), rootsite='answers')
-        return self.redirectSubTree(target_url + 'questions', status=301)
+            getUtility(ILaunchpadCelebrities).launchpad, rootsite='answers')
+        return self.redirectSubTree(target_url, status=301)
 
     @stepto('legal')
     def redirect_legal(self):
@@ -481,20 +515,51 @@ class LaunchpadRootNavigation(Navigation):
 
         'foo' can be the unique name of the branch, or any of the aliases for
         the branch.
+        If 'foo' resolves to an ICanHasLinkedBranch instance but the linked
+        branch is not yet set, redirect back to the referring page with a
+        suitable notification message.
+        If 'foo' is completely invalid, redirect back to the referring page
+        with a suitable error message.
         """
+
+        # The default target url to go to will be back to the referring page
+        # (in the case that there is an error resolving the branch url).
+        # Note: the http referer may be None if someone has hacked a url
+        # directly rather than following a /+branch/<foo> link.
+        target_url = self.request.getHeader('referer')
         path = '/'.join(self.request.stepstogo)
         try:
             branch_data = getUtility(IBranchLookup).getByLPPath(path)
-        except (CannotHaveLinkedBranch, NoLinkedBranch, InvalidNamespace,
-                InvalidProductName):
-            raise NotFoundError
-        branch, trailing = branch_data
-        if branch is None:
-            raise NotFoundError
-        url = canonical_url(branch)
-        if trailing is not None:
-            url = urlappend(url, trailing)
-        return self.redirectSubTree(url)
+            branch, trailing = branch_data
+            target_url = canonical_url(branch)
+            if trailing is not None:
+                target_url = urlappend(target_url, trailing)
+        except (NoLinkedBranch), e:
+            # A valid ICanHasLinkedBranch target exists but there's no
+            # branch or it's not visible.
+
+            # If are aren't arriving at this invalid branch URL from
+            # another page then we just raise a NotFoundError to generate
+            # a 404, otherwise we end up in a bad recursion loop. The
+            # target url will be None in that case.
+            if target_url is None:
+                raise NotFoundError
+            self.request.response.addNotification(
+                "The target %s does not have a linked branch." % path)
+        except (CannotHaveLinkedBranch, InvalidNamespace,
+                InvalidProductName, NotFoundError), e:
+            # If are aren't arriving at this invalid branch URL from another
+            # page then we just raise a NotFoundError to generate a 404,
+            # otherwise we end up in a bad recursion loop. The target url will
+            # be None in that case.
+            if target_url is None:
+                raise NotFoundError
+            error_msg = str(e)
+            if error_msg == '':
+                error_msg = "Invalid branch lp:%s." % path
+            self.request.response.addErrorNotification(error_msg)
+
+        return self.redirectSubTree(target_url)
 
     @stepto('+builds')
     def redirect_buildfarm(self):
@@ -521,7 +586,7 @@ class LaunchpadRootNavigation(Navigation):
         'karmaaction': IKarmaActionSet,
         '+imports': ITranslationImportQueue,
         '+languages': ILanguageSet,
-        '+mentoring': IMentoringOfferSet,
+        '+nameblacklist': INameBlacklistSet,
         'package-sets': IPackagesetSet,
         'people': IPersonSet,
         'pillars': IPillarNameSet,
@@ -574,7 +639,7 @@ class LaunchpadRootNavigation(Navigation):
                     raise NotFound(self.context, name)
                 # Only admins are permitted to see suspended users.
                 if person.account_status == AccountStatus.SUSPENDED:
-                    if not check_permission('launchpad.Admin', person):
+                    if not check_permission('launchpad.Moderate', person):
                         raise GoneError(
                             'User is suspended: %s' % name)
                 return person
@@ -603,7 +668,8 @@ class LaunchpadRootNavigation(Navigation):
             if pillar.name != name:
                 # This pillar was accessed through one of its aliases, so we
                 # must redirect to its canonical URL.
-                return self.redirectSubTree(canonical_url(pillar), status=301)
+                return self.redirectSubTree(
+                    canonical_url(pillar, self.request), status=301)
             return pillar
         return None
 
@@ -625,28 +691,11 @@ class LaunchpadRootNavigation(Navigation):
         if WebServiceLayer.providedBy(self.request):
             return None
 
-        mainsite_host = config.vhost.mainsite.hostname
-
         # If the hostname for our URL isn't under the main site
         # (e.g. shipit.ubuntu.com), don't redirect.
         uri = URI(self.request.getURL())
-        if not uri.host.endswith(mainsite_host):
+        if not uri.host.endswith(config.vhost.mainsite.hostname):
             return None
-
-        beta_host = config.launchpad.beta_testers_redirection_host
-        user = getUtility(ILaunchBag).user
-        # Test to see if the user is None before attempting to get the
-        # launchpad_beta_testers celebrity.  In the odd test where the
-        # database is empty the series of tests will work.
-        if user is None:
-            user_is_beta_tester = False
-        else:
-            beta_testers = (
-                getUtility(ILaunchpadCelebrities).launchpad_beta_testers)
-            if user.inTeam(beta_testers):
-                user_is_beta_tester = True
-            else:
-                user_is_beta_tester = False
 
         # If the request is for a bug then redirect straight to that bug.
         bug_match = re.match("/bugs/(\d+)$", self.request['PATH_INFO'])
@@ -655,34 +704,17 @@ class LaunchpadRootNavigation(Navigation):
             bug_set = getUtility(IBugSet)
             try:
                 bug = bug_set.get(bug_number)
-            except NotFoundError, e:
+            except NotFoundError:
                 raise NotFound(self.context, bug_number)
             if not check_permission("launchpad.View", bug):
-                raise Unauthorized("Bug %s is private" % bug_number)
-            uri = URI(canonical_url(bug.default_bugtask))
-            if beta_host is not None and user_is_beta_tester:
-                # Alter the host name to point at the beta target.
-                new_host = uri.host[:-len(mainsite_host)] + beta_host
-                uri = uri.replace(host=new_host)
-        else:
-            # If no redirection host is set or the user is not a beta tester,
-            # don't redirect.
-            if beta_host is None or not user_is_beta_tester:
                 return None
-            # Alter the host name to point at the beta target.
-            new_host = uri.host[:-len(mainsite_host)] + beta_host
-            uri = uri.replace(host=new_host)
-            # Complete the URL from the environment.
-            uri = uri.replace(path=self.request['PATH_INFO'])
-            query_string = self.request.get('QUERY_STRING')
-            if query_string:
-                uri = uri.replace(query=query_string)
-
-        # Empty the traversal stack, since we're redirecting.
-        self.request.setTraversalStack([])
-
-        # And perform a temporary redirect.
-        return RedirectionView(str(uri), self.request, status=303)
+            # Empty the traversal stack, since we're redirecting.
+            self.request.setTraversalStack([])
+            # And perform a temporary redirect.
+            return RedirectionView(canonical_url(bug.default_bugtask),
+                self.request, status=303)
+        # Explicit catchall - do not redirect.
+        return None
 
     def publishTraverse(self, request, name):
         beta_redirection_view = self._getBetaRedirectionView()
@@ -860,8 +892,3 @@ class DoesNotExistView:
 
     def __call__(self):
         raise NotFound(self.context, self.__name__)
-
-
-class RDFIndexView(LaunchpadView):
-    """View for /rdf page."""
-    page_title = label = "Launchpad RDF"

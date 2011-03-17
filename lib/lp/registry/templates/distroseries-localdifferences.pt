@@ -1,0 +1,122 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad">
+  <body>
+    <tal:heading metal:fill-slot="heading">
+      <h1 tal:content="view/label">Package differences between ...</h1>
+    </tal:heading>
+
+    <div class="top-portlet" metal:fill-slot="main"
+      tal:define="differences view/cached_differences;
+                  series_name context/displayname;
+                  parent_name context/parent_series/displayname;">
+      <p>Source packages shown here are present in both
+         <tal:replace replace="series_name">Derilucid</tal:replace>
+         and the parent series,
+         <tal:replace replace="context/parent_series/fullseriesname">Ubuntu Lucid
+         </tal:replace>, but are different somehow. Changes could be in
+         either or both series so check the versions (and the diff if
+         necessary) before syncing the
+         <tal:replace replace="parent_name">Lucid
+         </tal:replace> version
+         (<a href="/+help/soyuz/derived-series-syncing.html" target="help">Read
+             more about syncing from the parent series</a>).
+      </p>
+
+      <tal:distroseries_localdiff_search_form
+        tal:condition="view/has_differences">
+        <metal:package_filter_form
+          use-macro="context/@@+macros/distroseries-localdiff-search-form" />
+      </tal:distroseries_localdiff_search_form>
+
+
+      <div metal:use-macro="context/@@launchpad_form/form">
+
+      <div tal:condition="differences/batch" metal:fill-slot="widgets">
+        <tal:navigation_top
+          replace="structure differences/@@+navigation-links-upper" />
+          <table class="listing">
+          <thead>
+            <tr>
+              <th>Source</th>
+              <th><tal:replace replace="parent_name" /> version</th>
+              <th><tal:replace replace="series_name" /> version</th>
+              <th>Last uploaded</th>
+              <th>Latest comment</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tal:difference repeat="difference differences/batch">
+            <tr tal:define="parent_source_pub difference/parent_source_pub;
+                            source_pub difference/source_pub;
+                            src_name difference/source_package_name/name;
+                            signer source_pub/sourcepackagerelease/uploader;"
+                tal:attributes="class parent_source_pub/source_package_name">
+              <td>
+                <input tal:condition="view/canPerformSync"
+                  name="field.selected_differences" type="checkbox"
+                  tal:attributes="
+                    value src_name;
+                    id string:field.selected_differences.${src_name}"/>
+
+                <a tal:attributes="href difference/fmt:url" class="toggle-extra"
+                   tal:content="parent_source_pub/source_package_name">Foo</a>
+              </td>
+              <td><a tal:attributes="href parent_source_pub/sourcepackagerelease/fmt:url">
+                    <tal:replace
+                    replace="parent_source_pub/sourcepackagerelease/version"/></a>
+              </td>
+              <td><a tal:attributes="href source_pub/sourcepackagerelease/fmt:url"
+                     class="derived-version">
+                    <tal:replace
+                    replace="source_pub/sourcepackagerelease/version"/></a>
+              </td>
+              <td>
+                  <span tal:attributes="title difference/source_pub/datepublished/fmt:datetime"
+                        tal:content="difference/source_pub/datepublished/fmt:approximatedate">2005-09-16</span>
+                  <tal:signer condition="signer">
+                   by <a tal:replace="structure signer/fmt:link">Steph Smith</a>
+                  </tal:signer>
+              </td>
+              <td>
+                <tal:comment tal:define="comment python:difference.getComments().first();"
+                             tal:condition="comment">
+                  <span tal:replace="comment/body_text/fmt:shorten/50">I'm on this.</span>
+                  <br /><span class="greyed-out greylink"><span
+                      tal:replace="comment/comment_date/fmt:approximatedate">2005-09-16</span>
+                  by <a tal:replace="structure
+                      comment/comment_author/fmt:link">joesmith</a></span>
+                </tal:comment>
+              </td>
+            </tr>
+
+            </tal:difference>
+          </tbody>
+        </table>
+        <tal:selectable_differences_end
+               define="widget nocall:view/widgets/selected_differences;
+                       field_name widget/context/__name__;
+                       error python:view.getFieldError(field_name);">
+          <input tal:attributes="name string:${widget/name}-empty-marker"
+                 type="hidden" value="1" />
+          <div class="error message" tal:condition="error"
+               tal:content="structure error">Error message</div>
+           </tal:selectable_differences_end>
+      </div>
+    </div>
+<script type="text/javascript">
+LPS.use('lp.registry.distroseriesdifferences_details', function(Y) {
+  diff_module = Y.lp.registry.distroseriesdifferences_details
+
+  Y.on('domready', diff_module.setup_expandable_rows);
+});
+</script>
+
+    </div>
+
+  </body>
+</html>

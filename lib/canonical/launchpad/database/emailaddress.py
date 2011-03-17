@@ -15,17 +15,26 @@ __all__ = [
 import hashlib
 import operator
 
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol
-
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
-
-from canonical.launchpad.interfaces import (
-    EmailAddressAlreadyTaken, IEmailAddress, IEmailAddressSet,
-    EmailAddressStatus, InvalidEmailAddress)
-from canonical.launchpad.validators.email import valid_email
+from canonical.database.sqlbase import (
+    quote,
+    SQLBase,
+    sqlvalues,
+    )
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressAlreadyTaken,
+    EmailAddressStatus,
+    IEmailAddress,
+    IEmailAddressSet,
+    InvalidEmailAddress,
+    )
+from lp.app.validators.email import valid_email
 
 
 class HasOwnerMixin:

@@ -1,9 +1,10 @@
 The translation focus of a product can be explicitly set to a specific series.
 When not set, launchpad recommends the development focus to translate.
 
+    >>> from lp.app.enums import ServiceUsage
     >>> login('admin@canonical.com')
     >>> fooproject = factory.makeProduct(name="fooproject")
-    >>> fooproject.official_rosetta = True
+    >>> fooproject.translations_usage = ServiceUsage.LAUNCHPAD
     >>> fooproject_trunk = fooproject.getSeries("trunk")
     >>> fooproject_url = canonical_url(
     ...     fooproject, rootsite="translations")
@@ -11,12 +12,13 @@ When not set, launchpad recommends the development focus to translate.
 
 Only admin users are able to change the translation focus of a product.
 Unprivileged users can see the recommended series for translation,
-but have no access to the 'Change permissions' menu.
+but have no access to the 'Configure translations' menu.
 
     >>> admin_browser.open(fooproject_url)
     >>> print extract_text(
-    ...     find_tags_by_class(admin_browser.contents, 'edit sprite')[0])
-    Change permissions
+    ...     find_tags_by_class(admin_browser.contents,
+    ...                        'menu-link-configure_translations')[0])
+    Configure translations
 
     >>> browser.open(fooproject_url)
     >>> print extract_text(
@@ -25,7 +27,8 @@ but have no access to the 'Change permissions' menu.
     ...
     IndexError: list index out of range
 
-== Setting the translation focus ==
+Setting the translation focus
+=============================
 
     >>> login('admin@canonical.com')
     >>> from zope.security.proxy import removeSecurityProxy
@@ -35,7 +38,7 @@ but have no access to the 'Change permissions' menu.
     >>> pofile = factory.makePOFile("pt_BR", potemplate=pot_main)
     >>> logout()
 
-When the translation focus is not set, Launchpad suggests the 
+When the translation focus is not set, Launchpad suggests the
 development focus as the current series to be translated.
 It needs to be translatable.
 
@@ -83,5 +86,6 @@ We need to create a translatable series so we can set it as translation focus.
     >>> browser.open(fooproject_url)
     >>> print extract_text(find_tags_by_class(browser.contents, 'portlet')[0])
     Translation details...
-    Launchpad currently recommends translating... Fooproject other-series series.
+    Launchpad currently recommends translating...
+    Fooproject other-series series.
     ...
