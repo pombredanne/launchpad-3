@@ -9,6 +9,7 @@ import email
 import time
 
 import transaction
+from zope.component import getUtility
 from zope.security.management import (
     getSecurityPolicy,
     setSecurityPolicy,
@@ -23,9 +24,11 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.mail.handler import MaloneHandler
 from lp.services.mail import stub
 from lp.testing import (
+    celebrity_logged_in,
     login,
     person_logged_in,
     TestCaseWithFactory,
@@ -156,6 +159,19 @@ class TestMaloneHandler(TestCaseWithFactory):
         message = self.getFailureForMessage(
             'new@bugs.launchpad.dev', big_body_text)
         self.assertIn("The description is too long.", message)
+
+    def test_bug_not_found(self):
+        message = self.getFailureForMessage('1234@bugs.launchpad.dev')
+        self.assertIn(
+            "There is no such bug in Launchpad: 1234", message)
+
+    def test_inaccessible_private_bug_not_found(self):
+        with celebrity_logged_in('admin'):
+            getUtility(IBugSet).get(1).setPrivate(
+                True, self.factory.makePerson())
+        message = self.getFailureForMessage('1@bugs.launchpad.dev', 'foo bar')
+        self.assertIn(
+            "There is no such bug in Launchpad: 1", message)
 
 
 class FakeSignature:
