@@ -6,7 +6,6 @@ __metaclass__ = type
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_tag_by_id,
-    get_feedback_messages,
     )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
@@ -16,6 +15,7 @@ from lp.app.enums import ServiceUsage
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     BrowserTestCase,
+    EventRecorder,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -25,9 +25,10 @@ from lp.translations.browser.sourcepackage import (
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
+from lp.translations.model.translationpackagingjob import TranslationMergeJob
 
 
-class ConfigureUpstreamProjectMixin:
+class ConfigureScenarioMixin:
     """Provide a method for project configuration."""
 
     def configureUpstreamProject(self, productseries,
@@ -44,9 +45,34 @@ class ConfigureUpstreamProjectMixin:
             productseries.translations_autoimport_mode = (
                 translation_import_mode)
 
+    def makeFullyConfiguredSharing(self, suppress_merge_job=True):
+        """Setup a fully configured sharing scenario."""
+        if suppress_merge_job:
+            # Intercept the job creation request.
+            with EventRecorder():
+                packaging = self.factory.makePackagingLink(in_ubuntu=True)
+        else:
+            packaging = self.factory.makePackagingLink(in_ubuntu=True)
+        productseries = packaging.productseries
+        sourcepackage = packaging.sourcepackage
+        self.configureUpstreamProject(
+            productseries,
+            set_upstream_branch=True,
+            translations_usage=ServiceUsage.LAUNCHPAD,
+            translation_import_mode=(
+                TranslationsBranchImportMode.IMPORT_TRANSLATIONS))
+        return (sourcepackage, productseries)
+
+    def endMergeJob(self, sourcepackage):
+        """End the merge job that was automatically created."""
+        for job in TranslationMergeJob.iterReady():
+            if job.sourcepackage == sourcepackage:
+                job.start()
+                job.complete()
+
 
 class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
-                                            ConfigureUpstreamProjectMixin):
+                                                     ConfigureScenarioMixin):
     """Tests for SourcePackageTranslationSharingStatus."""
 
     layer = DatabaseFunctionalLayer
@@ -80,8 +106,10 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         A packaging link is always set; the remaining configuration is
         done only if explicitly specified.
         """
-        self.sourcepackage.setPackaging(
-            self.productseries, self.productseries.owner)
+        # Suppress merge job creation.
+        with EventRecorder():
+            self.sourcepackage.setPackaging(
+                self.productseries, self.productseries.owner)
         self.configureUpstreamProject(
             self.productseries, set_upstream_branch, translations_usage,
             translation_import_mode)
@@ -285,7 +313,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
 
 
 class TestSourcePackageSharingDetailsPage(BrowserTestCase,
-                                          ConfigureUpstreamProjectMixin):
+                                          ConfigureScenarioMixin):
     """Test for the sharing details page of a source package."""
 
     layer = DatabaseFunctionalLayer
@@ -299,19 +327,6 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         """Make a source package in Ubuntu."""
         distroseries = self.factory.makeUbuntuDistroSeries()
         return self.factory.makeSourcePackage(distroseries=distroseries)
-
-    def _makeFullyConfiguredSharing(self):
-        """Setup a fully configured sharing scenario."""
-        packaging = self.factory.makePackagingLink(in_ubuntu=True)
-        productseries = packaging.productseries
-        sourcepackage = packaging.sourcepackage
-        self.configureUpstreamProject(
-            productseries,
-            set_upstream_branch=True,
-            translations_usage=ServiceUsage.LAUNCHPAD,
-            translation_import_mode=(
-                TranslationsBranchImportMode.IMPORT_TRANSLATIONS))
-        return (sourcepackage, productseries)
 
     def _getSharingDetailsViewBrowser(self, sourcepackage):
         return self.getViewBrowser(
@@ -349,7 +364,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
 
     def test_checklist_fully_configured(self):
         # A fully configured sharing setup.
-        sourcepackage = self._makeFullyConfiguredSharing()[0]
+        sourcepackage = self.makeFullyConfiguredSharing()[0]
         browser = self._getSharingDetailsViewBrowser(sourcepackage)
         checklist = find_tag_by_id(browser.contents, 'sharing-checklist')
         self.assertIsNot(None, checklist)
@@ -377,7 +392,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
 
     def test_potlist_sharing(self):
         # With sharing configured, templates on both sides are listed.
-        sourcepackage, productseries = self._makeFullyConfiguredSharing()
+        sourcepackage, productseries = self.makeFullyConfiguredSharing()
         template_name = 'foo-template'
         self.factory.makePOTemplate(
             name=template_name, sourcepackage=sourcepackage)
@@ -395,7 +410,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
     def test_potlist_only_upstream(self):
         # A template that is only present in upstream is called
         # "only in upstream".
-        sourcepackage, productseries = self._makeFullyConfiguredSharing()
+        sourcepackage, productseries = self.makeFullyConfiguredSharing()
         template_name = 'foo-template'
         self.factory.makePOTemplate(
             name=template_name, productseries=productseries)
@@ -407,24 +422,67 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             foo-template  only in upstream  0  \d+ second(s)? ago""",
             extract_text(tbody))
 
+    def test_potlist_linking(self):
+        # When a merge job is running, the state is "linking".
+        sourcepackage, productseries = self.makeFullyConfiguredSharing(
+            suppress_merge_job=False)
+        template_name = 'foo-template'
+        self.factory.makePOTemplate(
+            name=template_name, sourcepackage=sourcepackage)
+        self.factory.makePOTemplate(
+            name=template_name, productseries=productseries)
+        browser = self._getSharingDetailsViewBrowser(sourcepackage)
+        tbody = find_tag_by_id(
+            browser.contents, 'template-table').find('tbody')
+        self.assertIsNot(None, tbody)
+        self.assertTextMatchesExpressionIgnoreWhitespace("""
+            foo-template  linking""",
+            extract_text(tbody))
+
+
+class TestTranslationSharingDetailsViewNotifications(TestCaseWithFactory,
+                                                     ConfigureScenarioMixin):
+    """Tests for Notifications in SourcePackageTranslationSharingView."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestTranslationSharingDetailsViewNotifications, self).setUp()
+        self.useFixture(FeatureFixture(
+            {'translations.sharing_information.enabled': 'on'}))
+
+    def _makeInitializedView(self, sourcepackage):
+        view = SourcePackageTranslationSharingDetailsView(
+            sourcepackage, LaunchpadTestRequest())
+        view.initialize()
+        return view
+
+    def _getNotifications(self, view):
+        notifications = view.request.response.notifications
+        return [extract_text(notification.message)
+                for notification in notifications]
+
+    no_templates_message = (
+        "No upstream templates have been found yet. Please follow "
+        "the import process by going to the Translation Import Queue "
+        "of the upstream project series.")
+
     def test_message_no_templates(self):
         # When sharing is fully configured but no upstream templates are
         # found, a message is displayed.
-        sourcepackage = self._makeFullyConfiguredSharing()[0]
-        browser = self._getSharingDetailsViewBrowser(sourcepackage)
-        self.assertEqual(
-            ["No upstream templates have been found yet. Please follow "
-             "the import process by going to the Translation Import Queue "
-             "of the upstream project series."],
-            get_feedback_messages(browser.contents))
+        sourcepackage = self.makeFullyConfiguredSharing()[0]
+        view = self._makeInitializedView(sourcepackage)
+        self.assertIn(
+            self.no_templates_message, self._getNotifications(view))
 
     def test_no_message_with_templates(self):
         # When sharing is fully configured and templates are found, no
         # message should be displayed.
-        sourcepackage, productseries = self._makeFullyConfiguredSharing()
+        sourcepackage, productseries = self.makeFullyConfiguredSharing()
         self.factory.makePOTemplate(productseries=productseries)
-        browser = self._getSharingDetailsViewBrowser(sourcepackage)
-        self.assertEqual([], get_feedback_messages(browser.contents))
+        view = self._makeInitializedView(sourcepackage)
+        self.assertNotIn(
+            self.no_templates_message, self._getNotifications(view))
 
     def test_no_message_with_incomplate_sharing(self):
         # When sharing is not fully configured and templates are found, no
@@ -433,5 +491,28 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         productseries = packaging.productseries
         sourcepackage = packaging.sourcepackage
         self.factory.makePOTemplate(productseries=productseries)
-        browser = self._getSharingDetailsViewBrowser(sourcepackage)
-        self.assertEqual([], get_feedback_messages(browser.contents))
+        view = self._makeInitializedView(sourcepackage)
+        self.assertNotIn(
+            self.no_templates_message, self._getNotifications(view))
+
+    job_running_message = (
+        "Translations are currently being linked by a background "
+        "job. When that job has finished, translations will be "
+        "shared with the upstream project.")
+
+    def test_message_job_running(self):
+        # When a merge job is running, a message is displayed.
+        sourcepackage = self.makeFullyConfiguredSharing(
+            suppress_merge_job=False)[0]
+        view = self._makeInitializedView(sourcepackage)
+        self.assertIn(
+            self.job_running_message, self._getNotifications(view))
+
+    def test_no_message_job_not_running(self):
+        # Without a merge job running, no such message is displayed.
+        sourcepackage = self.makeFullyConfiguredSharing(
+            suppress_merge_job=False)[0]
+        self.endMergeJob(sourcepackage)
+        view = self._makeInitializedView(sourcepackage)
+        self.assertNotIn(
+            self.job_running_message, self._getNotifications(view))

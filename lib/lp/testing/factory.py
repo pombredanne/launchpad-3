@@ -820,14 +820,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                       productseries=productseries, distroseries=distroseries,
                       name=name))
 
-    def makePackaging(self):
-        """Create a new Packaging."""
-        productseries = self.makeProductSeries()
-        sourcepackage = self.makeSourcePackage()
-        return productseries.setPackaging(
-            sourcepackage.distroseries, sourcepackage.sourcepackagename,
-            productseries.owner)
-
     def makeProcessor(self, family=None, name=None, title=None,
                       description=None):
         """Create a new processor.
@@ -1074,16 +1066,28 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makePackagingLink(self, productseries=None, sourcepackagename=None,
                           distroseries=None, packaging_type=None, owner=None,
-                          in_ubuntu=False):
+                          sourcepackage=None, in_ubuntu=False):
+        assert sourcepackage is None or (
+            distroseries is None and sourcepackagename is None), (
+            "Specify either a sourcepackage or a "
+            "distroseries/sourcepackagename pair")
         if productseries is None:
             productseries = self.makeProduct().development_focus
-        if sourcepackagename is None or isinstance(sourcepackagename, str):
-            sourcepackagename = self.makeSourcePackageName(sourcepackagename)
-        if distroseries is None:
-            if in_ubuntu:
-                distroseries = self.makeUbuntuDistroSeries()
-            else:
-                distroseries = self.makeDistroSeries()
+        if sourcepackage is not None:
+            distroseries = sourcepackage.distroseries
+            sourcepackagename = sourcepackage.sourcepackagename
+        else:
+            make_sourcepackagename = (
+                sourcepackagename is None or
+                isinstance(sourcepackagename, str))
+            if make_sourcepackagename:
+                sourcepackagename = self.makeSourcePackageName(
+                    sourcepackagename)
+            if distroseries is None:
+                if in_ubuntu:
+                    distroseries = self.makeUbuntuDistroSeries()
+                else:
+                    distroseries = self.makeDistroSeries()
         if packaging_type is None:
             packaging_type = PackagingType.PRIME
         if owner is None:

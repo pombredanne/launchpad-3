@@ -48,7 +48,7 @@ class TestPackaging(TestCaseWithFactory):
     def test_destroySelf_notifies(self):
         """destroySelf creates a notification."""
         packaging_util = getUtility(IPackagingUtil)
-        packaging = self.factory.makePackaging()
+        packaging = self.factory.makePackagingLink()
         with EventRecorder() as recorder:
             removeSecurityProxy(packaging).destroySelf()
         (event,) = recorder.events
@@ -199,7 +199,7 @@ class TestDeletePackaging(TestCaseWithFactory):
     def test_deletePackaging_notifies(self):
         """Deleting a Packaging creates a notification."""
         packaging_util = getUtility(IPackagingUtil)
-        packaging = self.factory.makePackaging()
+        packaging = self.factory.makePackagingLink()
         with EventRecorder() as recorder:
             packaging_util.deletePackaging(
                 packaging.productseries, packaging.sourcepackagename,

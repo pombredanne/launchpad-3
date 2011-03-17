@@ -57,7 +57,7 @@ class TranslationPackagingJob(PackagingJobDerived, BaseRunnableJob):
 
     @classmethod
     def forPackaging(cls, packaging):
-        """Create a TranslationMergeJob for a Packaging.
+        """Create a TranslationPackagingJob for a Packaging.
 
         :param packaging: The `Packaging` to create the job for.
         :return: A `TranslationMergeJob`.
