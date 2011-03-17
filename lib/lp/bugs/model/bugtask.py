@@ -26,10 +26,7 @@ import datetime
 from itertools import chain
 from operator import attrgetter
 
-from lazr.enum import (
-    DBItem,
-    Item,
-    )
+from lazr.enum import BaseItem
 import pytz
 from sqlobject import (
     ForeignKey,
@@ -172,8 +169,6 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services import features
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.enums import PackagePublishingStatus
-from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
 debbugsseveritymap = {
