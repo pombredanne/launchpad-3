@@ -1688,7 +1688,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if prerequisite_target is not None:
             prerequisite = bug.getBugTask(prerequisite_target)
             if prerequisite is None:
-                self.makeBugTask(bug, prerequisite_target)
+                self.makeBugTask(bug, prerequisite_target, publish=publish)
 
         return removeSecurityProxy(bug).addTask(owner, target)
 
