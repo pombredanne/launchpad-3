@@ -446,7 +446,10 @@ class TestMembershipManagement(TestCaseWithFactory):
                 sorted([superteam, targetteam]),
                 sorted([team for team in
                     targetteam.teamowner.teams_participated_in]))
-        targetteam.deactivateAllMembers(
+        from lp.registry.interfaces.teammembership import ITeamMembershipSet
+        membershipset = getUtility(ITeamMembershipSet)
+        membershipset.deactivateActiveMemberships(
+            targetteam,
             comment='test',
             reviewer=targetteam.teamowner)
         self.assertEqual(
@@ -463,7 +466,10 @@ class TestMembershipManagement(TestCaseWithFactory):
                 sorted([superteam, targetteam]),
                 sorted([team for team
                             in targetteam.teamowner.teams_participated_in]))
-        targetteam.deactivateAllMembers(
+        from lp.registry.interfaces.teammembership import ITeamMembershipSet
+        membershipset = getUtility(ITeamMembershipSet)
+        membershipset.deactivateActiveMemberships(
+            targetteam,
             comment='test',
             reviewer=targetteam.teamowner)
         self.assertEqual(
@@ -484,7 +490,10 @@ class TestMembershipManagement(TestCaseWithFactory):
         targetteam.join(superteam, targetteam.teamowner)
         targetteam.join(sharedteam, targetteam.teamowner)
         self.assertTrue(superteam in person.teams_participated_in)
-        targetteam.deactivateAllMembers(
+        from lp.registry.interfaces.teammembership import ITeamMembershipSet
+        membershipset = getUtility(ITeamMembershipSet)
+        membershipset.deactivateActiveMemberships(
+            targetteam,
             comment='test',
             reviewer=targetteam.teamowner)
         self.assertEqual(

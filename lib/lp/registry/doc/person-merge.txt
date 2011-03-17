@@ -418,14 +418,17 @@ until all the members are deactivated though.
 For cases like this we have an API which takes care of deactivating all
 active members of the team so that we can perform the merge.
 
+    >>> from lp.registry.interfaces.teammembership import ITeamMembershipSet
+
     # Only admins can use that API, though, so we need to login as an admin.
     >>> login('foo.bar@canonical.com')
 
     >>> comment = "We're merging this team into another one."
-    >>> test_team.deactivateAllMembers(comment, personset.getByName('name16'))
+    >>> membershipset = getUtility(ITeamMembershipSet)
+    >>> membershipset.deactivateActiveMemberships(
+    ...     test_team, comment, personset.getByName('name16'))
     >>> for team in test_team.super_teams:
     ...     test_team.retractTeamMembership(team, test_team.teamowner)
-
 
     >>> personset.merge(test_team, landscape)
 

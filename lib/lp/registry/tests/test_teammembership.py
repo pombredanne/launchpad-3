@@ -472,7 +472,7 @@ class TestTeamParticipationMesh(TeamParticipationTestCase):
             self.team6)
         self.assertEqual(previous_count - 8, self.getTeamParticipationCount())
 
-    def testRemoveTeam3Members_deactivateAllMembers(self):
+    def testRemoveTeam3Members_deactivateActiveMemberships(self):
         # Removing all the members of team2 will not remove memberships
         # to super teams from other paths.
         non_member = self.factory.makePerson()

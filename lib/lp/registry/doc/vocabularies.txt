@@ -740,8 +740,11 @@ PRIVATE_TEAM 'myteam' is not included in the results.
 
 Valid teams do not include teams that have been merged.
 
+    >>> from lp.registry.interfaces.teammembership import ITeamMembershipSet
     >>> login_person(foo_bar)
-    >>> ephemeral.deactivateAllMembers("Merging", foo_bar)
+    >>> membershipset = getUtility(ITeamMembershipSet)
+    >>> membershipset.deactivateActiveMemberships(
+    ...     ephemeral, "Merging", foo_bar)
     >>> person_set.merge(ephemeral, foo_bar)
     >>> login_person(sample_person)
     >>> sorted(person.name for person in vocab.search('team'))
