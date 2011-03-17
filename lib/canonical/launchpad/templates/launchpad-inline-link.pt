@@ -25,10 +25,11 @@
   <tal:link-linked-hidden
     condition="python: context.linked and context.hidden"><a
       href="" class="" title=""
-      style="line-height: 20px;display: none"
+      style="line-height: 20px;"
       tal:condition="context/icon"
       tal:attributes="
-        class string:menu-link-${context/name} ${view/sprite_class} ${context/icon};
+        class string:menu-link-${context/name} ${view/sprite_class}
+            ${context/icon} invisible-link;
         href context/url;
         title context/summary;
         "
