@@ -2493,7 +2493,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                 description=None, branches=(),
                                 build_daily=False, daily_build_archive=None,
                                 is_stale=None, recipe=None,
-                                date_created=None):
+                                date_created=DEFAULT):
         """Make a `SourcePackageRecipe`."""
         if registrant is None:
             registrant = self.makePerson()

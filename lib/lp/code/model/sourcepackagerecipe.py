@@ -202,8 +202,8 @@ class SourcePackageRecipe(Storm):
         sprecipe.description = description
         sprecipe.daily_build_archive = daily_build_archive
         sprecipe.build_daily = build_daily
-        if date_created is not None:
-            sprecipe.date_created = date_created
+        sprecipe.date_created = date_created
+        sprecipe.date_last_modified = date_created
         store.add(sprecipe)
         return sprecipe
 

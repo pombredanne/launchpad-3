@@ -780,9 +780,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         """Editing a recipe sets the date_last_modified property."""
         date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
         recipe = self.factory.makeSourcePackageRecipe(
-            owner=self.chef, registrant=self.chef,
-            name=u'things', description=u'This is a recipe',
-            distroseries=self.squirrel, date_created=date_created)
+            owner=self.chef, date_created=date_created)
 
         login_person(self.chef)
         view = SourcePackageRecipeEditView(recipe, LaunchpadTestRequest())

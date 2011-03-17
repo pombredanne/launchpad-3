@@ -864,23 +864,23 @@ class RecipeDateLastModified(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self, 'test@canonical.com')
+        date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
+        self.recipe = self.factory.makeSourcePackageRecipe(
+            date_created=date_created)
 
     def test_initialValue(self):
-        """Initially the date_last_modifed is the date_created."""
-        recipe = self.factory.makeSourcePackageRecipe()
-        self.assertEqual(recipe.date_last_modified, recipe.date_created)
+        """Initially the date_last_modified is the date_created."""
+        self.assertEqual(
+            self.recipe.date_last_modified, self.recipe.date_created)
 
     def test_modifiedevent_sets_date_last_updated(self):
         # We publish an object modified event to check that the last modified
         # date is set to UTC_NOW.
-        date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
-        recipe = self.factory.makeSourcePackageRecipe(
-                                    date_created=date_created)
         field = ISourcePackageRecipe['name']
         notify(ObjectModifiedEvent(
-            removeSecurityProxy(recipe), recipe, [field]))
+            removeSecurityProxy(self.recipe), self.recipe, [field]))
         self.assertSqlAttributeEqualsDate(
-            recipe, 'date_last_modified', UTC_NOW)
+            self.recipe, 'date_last_modified', UTC_NOW)
 
 
 class TestWebservice(TestCaseWithFactory):
