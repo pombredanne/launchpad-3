@@ -1562,10 +1562,6 @@ class Person(
         store = Store.of(self)
         cur = cursor()
         all_members = list(self.activemembers)
-        # Deactivate the approved/admin team members.
-        # XXX: EdwinGrubbs 2009-07-08 bug=397072
-        # There are problems using storm to write an update
-        # statement using DBITems in the comparison.
         cur.execute("""
             UPDATE TeamMembership
             SET status=%(status)s,
@@ -1582,9 +1578,7 @@ class Person(
                 comment=comment,
                 date_last_changed=now,
                 team=self.id,
-                original_statuses=(
-                    TeamMembershipStatus.ADMIN.value,
-                    TeamMembershipStatus.APPROVED.value)))
+                original_statuses=ACTIVE_STATES))
         from lp.registry.model.teammembership import _cleanTeamParticipation
         for member in all_members:
             # store.invalidate() is called for each iteration.
