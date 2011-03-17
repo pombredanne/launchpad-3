@@ -168,68 +168,23 @@ class TestTeamMembershipSet(TestCaseWithFactory):
             sample_person_on_motu.status, TeamMembershipStatus.EXPIRED)
         self.failIf(sample_person.inTeam(motu))
 
-    def test_deactivateActiveMemberships_cleans_up_deactivated(
-            self):
+    def test_deactivateActiveMemberships(self):
         superteam = self.factory.makeTeam(name='super')
         targetteam = self.factory.makeTeam(name='target')
+        member = self.factory.makePerson()
         login_celebrity('admin')
         targetteam.join(superteam, targetteam.teamowner)
-
-        # Now we create a deactivated link for the target team's teamowner.
+        targetteam.addMember(member, targetteam.teamowner)
         targetteam.teamowner.join(superteam, targetteam.teamowner)
-        targetteam.teamowner.leave(superteam)
-
-        self.assertEqual(
-                sorted([superteam, targetteam]),
-                sorted([team for team in
-                    targetteam.teamowner.teams_participated_in]))
         self.membershipset.deactivateActiveMemberships(
-            targetteam,
-            comment='test',
-            reviewer=targetteam.teamowner)
+            targetteam, comment='test', reviewer=targetteam.teamowner)
+        membership = self.membershipset.getByPersonAndTeam(member, targetteam)
+        self.assertEqual('test', membership.last_change_comment)
+        self.assertEqual(targetteam.teamowner, membership.last_changed_by)
+        self.assertEqual([], list(targetteam.allmembers))
         self.assertEqual(
-            [],
-            sorted([team for team in
-                targetteam.teamowner.teams_participated_in]))
-
-    def test_deactivateActiveMemberships_cleans_teamowner(self):
-        superteam = self.factory.makeTeam(name='super')
-        targetteam = self.factory.makeTeam(name='target')
-        login_celebrity('admin')
-        targetteam.join(superteam, targetteam.teamowner)
-        self.assertEqual(
-                sorted([superteam, targetteam]),
-                sorted([team for team
-                            in targetteam.teamowner.teams_participated_in]))
-        self.membershipset.deactivateActiveMemberships(
-            targetteam,
-            comment='test',
-            reviewer=targetteam.teamowner)
-        self.assertEqual(
-            [],
-            sorted([team for team
-                in targetteam.teamowner.teams_participated_in]))
-
-    def test_deactivateActiveMemberships_cleans_up_team_participation(self):
-        superteam = self.factory.makeTeam(name='super')
-        sharedteam = self.factory.makeTeam(name='shared')
-        anotherteam = self.factory.makeTeam(name='another')
-        targetteam = self.factory.makeTeam(name='target')
-        person = self.factory.makePerson()
-        login_celebrity('admin')
-        person.join(targetteam)
-        person.join(sharedteam)
-        person.join(anotherteam)
-        targetteam.join(superteam, targetteam.teamowner)
-        targetteam.join(sharedteam, targetteam.teamowner)
-        self.assertTrue(superteam in person.teams_participated_in)
-        self.membershipset.deactivateActiveMemberships(
-            targetteam,
-            comment='test',
-            reviewer=targetteam.teamowner)
-        self.assertEqual(
-            sorted([sharedteam, anotherteam]),
-            sorted([team for team in person.teams_participated_in]))
+            [superteam], list(targetteam.teamowner.teams_participated_in))
+        self.assertEqual([], list(member.teams_participated_in))
 
 
 class TeamParticipationTestCase(TestCaseWithFactory):
@@ -513,54 +468,6 @@ class TestTeamParticipationMesh(TeamParticipationTestCase):
             previous_count-3,
             self.getTeamParticipationCount())
 
-    def testRemoveTeam3Members_setMembershipData(self):
-        # Removing all the members of team2 will not remove memberships
-        # to super teams from other paths.
-        non_member = self.factory.makePerson()
-        self.team3.addMember(non_member, self.foo_bar, force_team_add=True)
-        previous_count = self.getTeamParticipationCount()
-        for member in self.team3.activemembers:
-            self.team3.setMembershipData(
-                member, TeamMembershipStatus.DEACTIVATED, self.foo_bar)
-        self.assertParticipantsEquals(
-            ['name16', 'no-priv', 'team2', 'team3', 'team4', 'team5'],
-            self.team1)
-        self.assertParticipantsEquals(
-            ['name16', 'no-priv', 'team3', 'team4', 'team5'], self.team2)
-        self.assertParticipantsEquals(
-            [], self.team3)
-        self.assertParticipantsEquals(
-            ['name16', 'no-priv', 'team5'], self.team4)
-        self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
-        self.assertParticipantsEquals(
-            ['name16', 'no-priv', 'team2', 'team3', 'team4', 'team5'],
-            self.team6)
-        self.assertEqual(previous_count - 8, self.getTeamParticipationCount())
-
-    def testRemoveTeam3Members_deactivateActiveMemberships(self):
-        # Removing all the members of team2 will not remove memberships
-        # to super teams from other paths.
-        non_member = self.factory.makePerson()
-        self.team3.addMember(non_member, self.foo_bar, force_team_add=True)
-        previous_count = self.getTeamParticipationCount()
-        membershipset = getUtility(ITeamMembershipSet)
-        membershipset.deactivateActiveMemberships(
-            self.team3, 'gone', self.foo_bar)
-        self.assertParticipantsEquals(
-            ['name16', 'no-priv', 'team2', 'team3', 'team4', 'team5'],
-            self.team1)
-        self.assertParticipantsEquals(
-            ['name16', 'no-priv', 'team3', 'team4', 'team5'], self.team2)
-        self.assertParticipantsEquals(
-            [], self.team3)
-        self.assertParticipantsEquals(
-            ['name16', 'no-priv', 'team5'], self.team4)
-        self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
-        self.assertParticipantsEquals(
-            ['name16', 'no-priv', 'team2', 'team3', 'team4', 'team5'],
-            self.team6)
-        self.assertEqual(previous_count - 8, self.getTeamParticipationCount())
-
     def testRemoveTeam5FromTeam4(self):
         previous_count = self.getTeamParticipationCount()
         self.team4.setMembershipData(
@@ -577,6 +484,31 @@ class TestTeamParticipationMesh(TeamParticipationTestCase):
         self.assertEqual(
             previous_count-10,
             self.getTeamParticipationCount())
+
+    def testTeam3_deactivateActiveMemberships(self):
+        # Removing all the members of team2 will not remove memberships
+        # to super teams from other paths.
+        non_member = self.factory.makePerson()
+        self.team3.addMember(non_member, self.foo_bar, force_team_add=True)
+        previous_count = self.getTeamParticipationCount()
+        membershipset = getUtility(ITeamMembershipSet)
+        membershipset.deactivateActiveMemberships(
+            self.team3, 'gone', self.foo_bar)
+        self.assertEqual([], list(self.team3.allmembers))
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team2', 'team3', 'team4', 'team5'],
+            self.team1)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team3', 'team4', 'team5'], self.team2)
+        self.assertParticipantsEquals(
+            [], self.team3)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team5'], self.team4)
+        self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
+        self.assertParticipantsEquals(
+            ['name16', 'no-priv', 'team2', 'team3', 'team4', 'team5'],
+            self.team6)
+        self.assertEqual(previous_count - 8, self.getTeamParticipationCount())
 
 
 class TestTeamMembership(TestCaseWithFactory):
