@@ -55,8 +55,7 @@
             </li>
             <li tal:attributes="class view/branch_complete_class">
             Upstream source branch is
-              <span class="link"><a tal:replace="structure view/branch_link">
-                  lp:gimp</a></span>.
+              <a tal:replace="structure view/branch_link">lp:gimp</a>.
               <span class="pickbranch2">
               <a tal:condition="view/is_packaging_configured"
                 tal:replace="structure context/productseries/menu:overview/set_branch/fmt:icon" />

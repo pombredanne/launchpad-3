@@ -24,7 +24,6 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from lp.app.browser.tales import BranchFormatterAPI
 from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.features import getFeatureFlag
@@ -154,7 +153,7 @@ class SourcePackageTranslationSharingDetailsView(
         else:
             title = ''
             url = '#'
-        return '<a class="sprite branch" href="%s">%s</a>' % (url, title)
+        return '<a class="sprite branch link" href="%s">%s</a>' % (url, title)
 
     @property
     def branch_incomplete_class(self):
