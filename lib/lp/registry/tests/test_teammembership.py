@@ -51,16 +51,18 @@ from lp.registry.model.teammembership import (
     TeamParticipation,
     )
 from lp.testing import (
+    login_celebrity,
     person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.mail_helpers import pop_notifications
 
 
-class TestTeamMembershipSet(TestCase):
+class TestTeamMembershipSet(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
+        super(TestTeamMembershipSet, self).setUp()
         login('test@canonical.com')
         self.membershipset = getUtility(ITeamMembershipSet)
         self.personset = getUtility(IPersonSet)
@@ -165,6 +167,69 @@ class TestTeamMembershipSet(TestCase):
         self.assertEqual(
             sample_person_on_motu.status, TeamMembershipStatus.EXPIRED)
         self.failIf(sample_person.inTeam(motu))
+
+    def test_deactivateActiveMemberships_cleans_up_deactivated(
+            self):
+        superteam = self.factory.makeTeam(name='super')
+        targetteam = self.factory.makeTeam(name='target')
+        login_celebrity('admin')
+        targetteam.join(superteam, targetteam.teamowner)
+
+        # Now we create a deactivated link for the target team's teamowner.
+        targetteam.teamowner.join(superteam, targetteam.teamowner)
+        targetteam.teamowner.leave(superteam)
+
+        self.assertEqual(
+                sorted([superteam, targetteam]),
+                sorted([team for team in
+                    targetteam.teamowner.teams_participated_in]))
+        self.membershipset.deactivateActiveMemberships(
+            targetteam,
+            comment='test',
+            reviewer=targetteam.teamowner)
+        self.assertEqual(
+            [],
+            sorted([team for team in
+                targetteam.teamowner.teams_participated_in]))
+
+    def test_deactivateActiveMemberships_cleans_teamowner(self):
+        superteam = self.factory.makeTeam(name='super')
+        targetteam = self.factory.makeTeam(name='target')
+        login_celebrity('admin')
+        targetteam.join(superteam, targetteam.teamowner)
+        self.assertEqual(
+                sorted([superteam, targetteam]),
+                sorted([team for team
+                            in targetteam.teamowner.teams_participated_in]))
+        self.membershipset.deactivateActiveMemberships(
+            targetteam,
+            comment='test',
+            reviewer=targetteam.teamowner)
+        self.assertEqual(
+            [],
+            sorted([team for team
+                in targetteam.teamowner.teams_participated_in]))
+
+    def test_deactivateActiveMemberships_cleans_up_team_participation(self):
+        superteam = self.factory.makeTeam(name='super')
+        sharedteam = self.factory.makeTeam(name='shared')
+        anotherteam = self.factory.makeTeam(name='another')
+        targetteam = self.factory.makeTeam(name='target')
+        person = self.factory.makePerson()
+        login_celebrity('admin')
+        person.join(targetteam)
+        person.join(sharedteam)
+        person.join(anotherteam)
+        targetteam.join(superteam, targetteam.teamowner)
+        targetteam.join(sharedteam, targetteam.teamowner)
+        self.assertTrue(superteam in person.teams_participated_in)
+        self.membershipset.deactivateActiveMemberships(
+            targetteam,
+            comment='test',
+            reviewer=targetteam.teamowner)
+        self.assertEqual(
+            sorted([sharedteam, anotherteam]),
+            sorted([team for team in person.teams_participated_in]))
 
 
 class TeamParticipationTestCase(TestCaseWithFactory):
