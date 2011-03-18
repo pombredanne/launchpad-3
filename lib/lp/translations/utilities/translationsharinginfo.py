@@ -27,7 +27,7 @@ __all__ = [
     'has_upstream_template',
     ]
 
-from storm.expr import (\
+from storm.expr import (
     And,
     Join,
     LeftJoin,

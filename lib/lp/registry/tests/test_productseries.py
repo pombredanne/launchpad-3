@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login
 from canonical.testing.layers import (
@@ -20,6 +21,7 @@ from lp.registry.interfaces.productseries import (
     IProductSeries,
     IProductSeriesSet,
     )
+from lp.registry.interfaces.series import SeriesStatus
 from lp.testing import (
     TestCaseWithFactory,
     WebServiceTestCase,
@@ -78,6 +80,68 @@ class TestProductSeriesSetPackaging(TestCaseWithFactory):
         # package publishing history before adding the packaging entry.
         self.product_series.setPackaging(
             self.debian_series, self.sourcepackagename, self.person)
+
+
+class TestProductSeriesGetUbuntuTranslationFocusPackage(TestCaseWithFactory):
+    """Test for ProductSeries.getUbuntuTranslationFocusPackage."""
+
+    layer = DatabaseFunctionalLayer
+
+    def _makeSourcePackage(self, productseries):
+        """Make a sourcepckage that packages the productseries."""
+        packaging = self.factory.makePackagingLink(
+            productseries=productseries, in_ubuntu=True)
+        return packaging.sourcepackage
+
+    def _test_packaged_in_series(
+            self, in_translation_focus, in_current_series, in_other_series):
+        """Test the given combination of packagings."""
+        productseries = self.factory.makeProductSeries()
+        package = None
+        if in_other_series:
+            package = self._makeSourcePackage(productseries)
+        if in_current_series:
+            package = self._makeSourcePackage(productseries)
+            removeSecurityProxy(package.distroseries).status = (
+                SeriesStatus.CURRENT)
+        if in_translation_focus:
+            package = self._makeSourcePackage(productseries)
+            naked_distribution = removeSecurityProxy(
+                package.distroseries.distribution)
+            naked_distribution.translation_focus = package.distroseries
+        self.assertEqual(
+            package, 
+            productseries.getUbuntuTranslationFocusPackage())
+
+    def test_no_sourcepackage(self):
+        self._test_packaged_in_series(
+            in_translation_focus=False,
+            in_current_series=False,
+            in_other_series=False)
+
+    def test_packaged_in_translation_focus(self):
+        # The productseries is packaged in the translation focus series
+        # and others but only the focus is returned.
+        self._test_packaged_in_series(
+            in_translation_focus=True,
+            in_current_series=True,
+            in_other_series=True)
+
+    def test_packaged_in_current_series(self):
+        # The productseries is packaged in the current series and others but
+        # only the current is returned.
+        self._test_packaged_in_series(
+            in_translation_focus=False,
+            in_current_series=True,
+            in_other_series=True)
+
+    def test_packaged_in_other_series(self):
+        # The productseries is not packaged in the translation focus or the
+        # current series, so that packaging is returned.
+        self._test_packaged_in_series(
+            in_translation_focus=False,
+            in_current_series=False,
+            in_other_series=True)
 
 
 class TestProductSeriesDrivers(TestCaseWithFactory):

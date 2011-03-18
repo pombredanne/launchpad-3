@@ -481,6 +481,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         # the distroseries to try to find a relevant packaging record
         raise NotFoundError(distroseries)
 
+    def getUbuntuTranslationFocusPackage(self):
+        """See `IProductSeries`."""
+
     def setPackaging(self, distroseries, sourcepackagename, owner):
         """See IProductSeries."""
         if distroseries.distribution.full_functionality:
