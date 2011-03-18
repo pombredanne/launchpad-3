@@ -411,17 +411,12 @@ class POFile(SQLBase, POFileMixIn):
                 return None
             subset = potemplateset.getSubset(productseries=productseries)
         else:
-            ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-            distroseries = ubuntu.translation_focus
-            if distroseries is None:
-                distroseries = ubuntu.currentseries
-            try:
-                sourcepackage = self.potemplate.productseries.getPackage(
-                    distroseries)
-            except NotFoundError:
+            productseries = self.potemplate.productseries
+            sourcepackage = productseries.getUbuntuTranslationFocusPackage()
+            if sourcepackage is None:
                 return None
             subset = potemplateset.getSubset(
-                distroseries=distroseries,
+                distroseries=sourcepackage.distroseries,
                 sourcepackagename=sourcepackage.sourcepackagename)
 
         other_potemplate = subset.getPOTemplateByName(self.potemplate.name)
