@@ -47,6 +47,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     IRequestPeopleMerge,
     )
+from lp.registry.interfaces.teammembership import ITeamMembershipSet
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import ArchiveStatus
 from lp.soyuz.interfaces.archive import IArchiveSet
@@ -317,7 +318,9 @@ class AdminTeamMergeView(AdminMergeBaseView):
             'issues with this change.'
             % (self.target_person.unique_displayname,
                canonical_url(self.target_person)))
-        self.dupe_person.deactivateAllMembers(comment, self.user)
+        membershipset = getUtility(ITeamMembershipSet)
+        membershipset.deactivateActiveMemberships(
+            self.dupe_person, comment, self.user)
         flush_database_updates()
         self.doMerge(data)
 

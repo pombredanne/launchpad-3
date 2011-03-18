@@ -15,14 +15,16 @@ from datetime import (
 from textwrap import dedent
 
 from mechanize import LinkNotFoundError
-from pytz import utc
+from pytz import UTC
 from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_main_content,
@@ -40,8 +42,8 @@ from canonical.testing.layers import (
 from lp.buildmaster.enums import BuildStatus
 from lp.code.browser.sourcepackagerecipe import (
     SourcePackageRecipeRequestBuildsView,
-    SourcePackageRecipeView,
-    )
+    SourcePackageRecipeEditView,
+    SourcePackageRecipeView)
 from lp.code.browser.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildView,
     )
@@ -63,6 +65,7 @@ from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
     login,
+    login_person,
     person_logged_in,
     TestCaseWithFactory,
     time_counter,
@@ -201,8 +204,6 @@ def get_message_text(browser, index):
     return extract_text(tags)
 
 
-
-
 class TestSourcePackageRecipeAddViewInitalValues(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -220,6 +221,15 @@ class TestSourcePackageRecipeAddViewInitalValues(TestCaseWithFactory):
         # When a package branch is used, the initial name is the name of the
         # source package followed by "-daily"
         branch = self.factory.makePackageBranch(sourcepackagename='widget')
+        with person_logged_in(branch.owner):
+            view = create_initialized_view(branch, '+new-recipe')
+        self.assertThat('widget-daily', Equals(view.initial_values['name']))
+
+    def test_personal_branch_initial_name(self):
+        # When a personal branch is used, the initial name is the name of the
+        # branch followed by "-daily". +junk-daily is not valid nor
+        # helpful.
+        branch = self.factory.makePersonalBranch(name='widget')
         with person_logged_in(branch.owner):
             view = create_initialized_view(branch, '+new-recipe')
         self.assertThat('widget-daily', Equals(view.initial_values['name']))
@@ -775,6 +785,22 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
         self.assertThat(
             'PPA 2', MatchesPickerText(content, 'edit-daily_build_archive'))
 
+    def test_edit_recipe_sets_date_last_modified(self):
+        """Editing a recipe sets the date_last_modified property."""
+        date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, date_created=date_created)
+
+        login_person(self.chef)
+        view = SourcePackageRecipeEditView(recipe, LaunchpadTestRequest())
+        view.initialize()
+        view.request_action.success({
+            'name': u'fings',
+            'recipe_text': recipe.recipe_text,
+            'distros': recipe.distroseries})
+        self.assertSqlAttributeEqualsDate(
+            recipe, 'date_last_modified', UTC_NOW)
+
     def test_admin_edit(self):
         self.factory.makeDistroSeries(
             displayname='Mumbly Midget', name='mumbly',
@@ -1041,8 +1067,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
         build.status = BuildStatus.FULLYBUILT
-        build.date_started = datetime(2010, 03, 16, tzinfo=utc)
-        build.date_finished = datetime(2010, 03, 16, tzinfo=utc)
+        build.date_started = datetime(2010, 03, 16, tzinfo=UTC)
+        build.date_finished = datetime(2010, 03, 16, tzinfo=UTC)
 
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Master Chef Recipes cake_recipe
@@ -1073,8 +1099,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
         build.status = BuildStatus.FULLYBUILT
-        build.date_started = datetime(2010, 03, 16, tzinfo=utc)
-        build.date_finished = datetime(2010, 03, 16, tzinfo=utc)
+        build.date_started = datetime(2010, 03, 16, tzinfo=UTC)
+        build.date_finished = datetime(2010, 03, 16, tzinfo=UTC)
         build.log = self.factory.makeLibraryFileAlias()
 
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
@@ -1089,8 +1115,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
         build.status = BuildStatus.FULLYBUILT
-        build.date_started = datetime(2010, 03, 16, tzinfo=utc)
-        build.date_finished = datetime(2010, 03, 16, tzinfo=utc)
+        build.date_started = datetime(2010, 03, 16, tzinfo=UTC)
+        build.date_finished = datetime(2010, 03, 16, tzinfo=UTC)
         build.log = self.factory.makeLibraryFileAlias()
         package_name = self.factory.getOrMakeSourcePackageName('chocolate')
         source_package_release = self.factory.makeSourcePackageRelease(
@@ -1120,8 +1146,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build = removeSecurityProxy(self.factory.makeSourcePackageRecipeBuild(
             recipe=recipe, distroseries=self.squirrel, archive=self.ppa))
         build.status = BuildStatus.FULLYBUILT
-        build.date_started = datetime(2010, 03, 16, tzinfo=utc)
-        build.date_finished = datetime(2010, 03, 16, tzinfo=utc)
+        build.date_started = datetime(2010, 03, 16, tzinfo=UTC)
+        build.date_finished = datetime(2010, 03, 16, tzinfo=UTC)
         build.log = self.factory.makeLibraryFileAlias()
         package_name = self.factory.getOrMakeSourcePackageName('chocolate')
         source_package_release = self.factory.makeSourcePackageRelease(
@@ -1138,8 +1164,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             processor=builder.processor))
         binary_build.queueBuild()
         binary_build.status = BuildStatus.FULLYBUILT
-        binary_build.date_started = datetime(2010, 04, 16, tzinfo=utc)
-        binary_build.date_finished = datetime(2010, 04, 16, tzinfo=utc)
+        binary_build.date_started = datetime(2010, 04, 16, tzinfo=UTC)
+        binary_build.date_finished = datetime(2010, 04, 16, tzinfo=UTC)
         binary_build.log = self.factory.makeLibraryFileAlias()
 
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
@@ -1197,7 +1223,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         # We create builds in time ascending order (oldest first) since we
         # use id as the ordering attribute and lower ids mean created earlier.
         date_gen = time_counter(
-            datetime(2010, 03, 16, tzinfo=utc), timedelta(days=1))
+            datetime(2010, 03, 16, tzinfo=UTC), timedelta(days=1))
         build1 = self.makeBuildJob(recipe, date_gen.next())
         build2 = self.makeBuildJob(recipe, date_gen.next())
         build3 = self.makeBuildJob(recipe, date_gen.next())
@@ -1516,7 +1542,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         view.context.buildqueue_record.job.start()
         clear_property_cache(view)
         self.assertTrue(view.estimate)
-        removeSecurityProxy(view.context).date_finished = datetime.now(utc)
+        removeSecurityProxy(view.context).date_finished = datetime.now(UTC)
         clear_property_cache(view)
         self.assertFalse(view.estimate)
 
@@ -1534,7 +1560,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         self.assertIs(None, view.eta)
         queue_entry = self.factory.makeSourcePackageRecipeBuildJob(
             recipe_build=build)
-        queue_entry._now = lambda: datetime(1970, 1, 1, 0, 0, 0, 0, utc)
+        queue_entry._now = lambda: datetime(1970, 1, 1, 0, 0, 0, 0, UTC)
         self.factory.makeBuilder()
         clear_property_cache(view)
         self.assertIsNot(None, view.eta)
@@ -1576,7 +1602,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         self.makeBinaryBuild(release, 'itanic')
         naked_build = removeSecurityProxy(release.source_package_recipe_build)
         naked_build.status = BuildStatus.FULLYBUILT
-        naked_build.date_finished = datetime(2009, 1, 1, tzinfo=utc)
+        naked_build.date_finished = datetime(2009, 1, 1, tzinfo=UTC)
         naked_build.date_started = (
             naked_build.date_finished - timedelta(minutes=1))
         naked_build.buildqueue_record.destroySelf()
