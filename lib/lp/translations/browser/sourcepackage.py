@@ -157,7 +157,7 @@ class SourcePackageTranslationSharingDetailsView(
 
     @property
     def branch_incomplete_class(self):
-        classes = ['incomplete', 'sprite', 'no']
+        classes = ['sprite', 'no']
         if self.has_upstream_branch:
             classes.append('unseen')
         if not self.is_packaging_configured:
@@ -166,7 +166,7 @@ class SourcePackageTranslationSharingDetailsView(
 
     @property
     def branch_complete_class(self):
-        classes = ['complete', 'sprite', 'yes']
+        classes = ['sprite', 'yes']
         if not self.has_upstream_branch:
             classes.append('unseen')
         return ' '.join(classes)
