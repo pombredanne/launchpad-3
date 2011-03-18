@@ -1691,7 +1691,7 @@ class TranslationTemplatesCollection(Collection):
         :return: A `TranslationTemplatesCollection based on this one but
             restricted to ones with the desired `name` value.
         """
-        return self
+        return self.refine(POTemplate.name == template_name)
 
     def joinPOFile(self):
         """Join `POFile` into the collection.
