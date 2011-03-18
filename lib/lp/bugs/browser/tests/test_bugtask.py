@@ -546,7 +546,7 @@ class TestBugTaskEditViewAssigneeField(TestCaseWithFactory):
 
 
 class TestBugTaskEditView(TestCaseWithFactory):
-    """Test the bugs overview page for Project Groups."""
+    """Test the bug task edit form."""
 
     layer = DatabaseFunctionalLayer
 
@@ -581,6 +581,33 @@ class TestBugTaskEditView(TestCaseWithFactory):
         self.assertEqual(
             'This bug has already been reported on mouse (ubuntu).',
             view.errors[0])
+
+    def test_retarget_product_with_milestone(self):
+        # Milestones are always cleared when retargeting a product bug task.
+        first_product = self.factory.makeProduct(name='bunny')
+        with person_logged_in(first_product.owner):
+            first_product.official_malone = True
+            bug = self.factory.makeBug(product=first_product)
+            bug_task = bug.bugtasks[0]
+            milestone = self.factory.makeMilestone(
+                productseries=first_product.development_focus, name='1.0')
+            bug_task.transitionToMilestone(milestone, first_product.owner)
+        second_product = self.factory.makeProduct(name='duck')
+        with person_logged_in(second_product.owner):
+            second_product.official_malone = True
+        user = self.factory.makePerson()
+        login_person(user)
+        form = {
+            'bunny.status': 'In Progress',
+            'bunny.assignee.option': 'bunny.assignee.assign_to_nobody',
+            'bunny.product': 'duck',
+            'bunny.actions.save': 'Save Changes',
+            }
+        view = create_initialized_view(
+            bug_task, name='+editstatus', form=form)
+        self.assertEqual([], view.errors)
+        self.assertEqual(second_product, bug_task.target)
+        self.assertEqual(None, bug_task.milestone)
 
 
 class TestProjectGroupBugs(TestCaseWithFactory):

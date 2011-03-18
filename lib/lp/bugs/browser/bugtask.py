@@ -49,7 +49,6 @@ from datetime import (
     timedelta,
     )
 from itertools import (
-    chain,
     groupby,
     )
 from math import (
@@ -118,7 +117,10 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import isinstance as zope_isinstance
+from zope.security.proxy import (
+    isinstance as zope_isinstance,
+    removeSecurityProxy,
+    )
 from zope.traversing.interfaces import IPathAdapter
 
 from canonical.config import config
@@ -815,7 +817,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
                     # There is a gap here, record it.
                     separator = {
                         'date': prev_comment.datecreated,
-                        'num_hidden': comment.index - prev_comment.index
+                        'num_hidden': comment.index - prev_comment.index,
                         }
                     events.insert(index, separator)
                     index += 1
@@ -1421,8 +1423,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         milestone_cleared = None
         milestone_ignored = False
         if (IUpstreamBugTask.providedBy(bugtask) and
-            (bugtask.product != new_values.get("product")) and
-            'milestone' in field_names):
+            (bugtask.product != new_values.get("product"))):
             # We clear the milestone value if one was already set. We ignore
             # the milestone value if it was currently None, and the user tried
             # to set a milestone value while also changing the product. This
@@ -1432,12 +1433,15 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
             elif new_values.get('milestone') is not None:
                 milestone_ignored = True
 
-            bugtask.milestone = None
+            # Regardless of the user's permission, the milestone
+            # must be cleared because the milestone is unique to a product.
+            removeSecurityProxy(bugtask).milestone = None
             # Remove the "milestone" field from the list of fields
             # whose changes we want to apply, because we don't want
             # the form machinery to try and set this value back to
             # what it was!
-            del data_to_apply["milestone"]
+            if 'milestone' in data_to_apply:
+                del data_to_apply["milestone"]
 
         # We special case setting assignee and status, because there's
         # a workflow associated with changes to these fields.
