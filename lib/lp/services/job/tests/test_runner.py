@@ -18,7 +18,10 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.testing.layers import LaunchpadZopelessLayer
+from canonical.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.code.interfaces.branchmergeproposal import IUpdatePreviewDiffJobSource
 from lp.services.job.interfaces.job import (
     IRunnableJob,
@@ -361,7 +364,7 @@ class StuckJob(BaseRunnableJob):
 
 class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def test_timeout(self):
         """When a job exceeds its lease, an exception is raised.
