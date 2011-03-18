@@ -1056,7 +1056,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             Base branch: lp://dev/~chef/chocolate/cake
             Debian version: {debupstream}-0~{revno}
             Daily build archive: Secret PPA Edit
-            Distribution series: Secret Squirrel
+            Distribution series: Edit Secret Squirrel
 
             Latest builds
             Status When complete Distribution series Archive

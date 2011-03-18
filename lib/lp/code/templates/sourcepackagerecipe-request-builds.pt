@@ -16,7 +16,7 @@
             <tal:widget define="widget nocall:view/widgets/archive">
               <metal:block use-macro="context/@@launchpad_form/widget_row" />
             </tal:widget>
-            <tal:widget define="widget nocall:view/widgets/distros">
+            <tal:widget define="widget nocall:view/widgets/distroseries">
               <metal:block use-macro="context/@@launchpad_form/widget_row" />
             </tal:widget>
           </table>

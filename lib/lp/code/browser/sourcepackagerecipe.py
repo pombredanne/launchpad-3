@@ -311,7 +311,7 @@ class SourcePackageRecipeView(LaunchpadView):
             field,
             attribute_type="reference",
             vocabulary='BuildableDistroSeries',
-            label="Distribution Series:",
+            label="Distribution series:",
             label_tag="dt",
             header="Change default distribution series:",
             empty_display_value="None",
