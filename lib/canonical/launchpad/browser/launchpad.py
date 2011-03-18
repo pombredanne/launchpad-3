@@ -211,6 +211,33 @@ class LinkView(LaunchpadView):
         else:
             return ''
 
+    @property
+    def css_class(self):
+        """Return the CSS class."""
+        value = ["menu-link-%s" % self.context.name]
+        if self.context.icon:
+            value.append(self.sprite_class)
+            value.append(self.context.icon)
+        if self.context.hidden:
+            value.append('invisible-link')
+        if not self.context.linked:
+            value.append('nolink')
+        return " ".join(value)
+
+    @property
+    def url(self):
+        """Return the url if linked."""
+        if self.context.linked:
+            return self.context.url
+        return ''
+
+    @property
+    def summary(self):
+        """Return the summary if linked."""
+        if self.context.linked:
+            return self.context.summary
+        return ''
+
 
 class Hierarchy(LaunchpadView):
     """The hierarchy part of the location bar on each page."""
