@@ -372,11 +372,17 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         """
         logger = BufferLogger()
         logger.setLevel(logging.INFO)
+        # StuckJob is actually a source of two jobs. The first is fast, the
+        # second slow.
         runner = TwistedJobRunner.runFromSource(
             StuckJob, 'branchscanner', logger)
 
+        # XXX: JonathanLange 2011-03-18 bug=505913: Sometimes in tests this is
+        # reported as 2.
         self.assertEqual(1, len(runner.completed_jobs))
         self.assertEqual(1, len(runner.incomplete_jobs))
+        # XXX: Potential source of race condition. Another OOPS could be
+        # logged.
         oops = errorlog.globalErrorUtility.getLastOopsReport()
         self.assertEqual(dedent("""\
              INFO Running through Twisted.
