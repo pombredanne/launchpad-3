@@ -281,10 +281,8 @@ class BugContextMenu(ContextMenu):
         else:
             text = "Mute bug mail"
 
-        # We link to '#' here because we don't yet have a view to handle
-        # this link.
         return Link(
-            '#', text, icon='remove', summary=(
+            '+mute', text, icon='remove', summary=(
                 "Mute this bug so that you will never receive emails "
                 "about it."))
 
