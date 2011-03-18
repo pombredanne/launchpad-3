@@ -42,7 +42,7 @@ A distribution source package has a name, displayname, title, and a summary.
     pmount
 
     >>> print dsp.displayname
-    pmount in ubuntu
+    pmount in Ubuntu
 
     >>> print dsp.title.encode('ascii', 'ignore')
     pmount package in Ubuntu

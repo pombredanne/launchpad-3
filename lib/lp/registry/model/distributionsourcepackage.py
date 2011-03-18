@@ -169,7 +169,7 @@ class DistributionSourcePackage(BugTargetBase,
     def displayname(self):
         """See `IDistributionSourcePackage`."""
         return '%s in %s' % (
-            self.sourcepackagename.name, self.distribution.name)
+            self.sourcepackagename.name, self.distribution.displayname)
 
     @property
     def bugtargetdisplayname(self):
