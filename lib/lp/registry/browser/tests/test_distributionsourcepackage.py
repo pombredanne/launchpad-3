@@ -12,6 +12,7 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+from lp.app.enums import ServiceUsage
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.testing import (
     celebrity_logged_in,
@@ -19,6 +20,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.matchers import BrowsesWithQueryLimit
+from lp.testing.views import create_view
 
 
 class TestDistributionSourcePackageFormatterAPI(TestCaseWithFactory):
@@ -53,3 +55,53 @@ class TestDistributionSourcePackageChangelogView(TestCaseWithFactory):
                 self.factory.makePackageDiff(
                     to_source=spph.sourcepackagerelease)
         self.assertThat(dsp, changelog_browses_under_limit)
+
+
+class TestDistributionSourceView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDistributionSourceView, self).setUp()
+        sourcepackagename = self.factory.makeSourcePackageName('mouse')
+        distro = self.factory.makeDistribution()
+        self.dsp = distro.getSourcePackage('mouse')
+
+    def test_bugs_answers_usage_none(self):
+        # The dict values are all None.
+        view = create_view(self.dsp, '+index')
+        self.assertFalse(view.bugs_answers_usage['uses_bugs'])
+        self.assertFalse(view.bugs_answers_usage['uses_answers'])
+        self.assertFalse(view.bugs_answers_usage['uses_both'])
+        self.assertFalse(view.bugs_answers_usage['uses_either'])
+
+    def test_bugs_answers_usage_bugs(self):
+        # The dict values are all None.
+        with celebrity_logged_in('admin'):
+            self.dsp.distribution.official_malone = True
+        view = create_view(self.dsp, '+index')
+        self.assertTrue(view.bugs_answers_usage['uses_bugs'])
+        self.assertFalse(view.bugs_answers_usage['uses_answers'])
+        self.assertFalse(view.bugs_answers_usage['uses_both'])
+        self.assertTrue(view.bugs_answers_usage['uses_either'])
+
+    def test_bugs_answers_usage_answers(self):
+        # The dict values are all None.
+        with celebrity_logged_in('admin'):
+            self.dsp.distribution.answers_usage = ServiceUsage.LAUNCHPAD
+        view = create_view(self.dsp, '+index')
+        self.assertFalse(view.bugs_answers_usage['uses_bugs'])
+        self.assertTrue(view.bugs_answers_usage['uses_answers'])
+        self.assertFalse(view.bugs_answers_usage['uses_both'])
+        self.assertTrue(view.bugs_answers_usage['uses_either'])
+
+    def test_bugs_answers_usage_both(self):
+        # The dict values are all None.
+        with celebrity_logged_in('admin'):
+            self.dsp.distribution.official_malone = True
+            self.dsp.distribution.answers_usage = ServiceUsage.LAUNCHPAD
+        view = create_view(self.dsp, '+index')
+        self.assertTrue(view.bugs_answers_usage['uses_bugs'])
+        self.assertTrue(view.bugs_answers_usage['uses_answers'])
+        self.assertTrue(view.bugs_answers_usage['uses_both'])
+        self.assertTrue(view.bugs_answers_usage['uses_either'])
