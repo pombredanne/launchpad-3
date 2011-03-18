@@ -899,6 +899,12 @@ def build_yui_unittest_suite(app_testing_path, yui_test_class):
 
 
 class ZopeTestInSubProcess:
+    # XXX: Turn this into a RunTest thingy, both to avoid multiple
+    # inheritance, and to make it easier to attach extra info to the log.
+
+    # XXX: Make sure that the child process stdout & stderr are attached as
+    # details to the parent process test.
+
     """Run tests in a sub-process, respecting Zope idiosyncrasies.
 
     Use this as a mixin with an interesting `TestCase` to isolate

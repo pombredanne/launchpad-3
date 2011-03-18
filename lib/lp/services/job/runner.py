@@ -372,6 +372,8 @@ class TwistedJobRunner(BaseJobRunner):
         deadline = timegm(job.lease_expires.timetuple())
         self.logger.debug(
             'Running %r, lease expires %s', job, job.lease_expires)
+        # XXX: Need to somehow capture output here. This is the bit that
+        # actually kicks off the subprocess stuff.
         deferred = self.pool.doWork(
             RunJobCommand, job_id = job_id, _deadline=deadline)
 

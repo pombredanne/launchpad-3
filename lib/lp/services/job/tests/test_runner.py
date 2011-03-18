@@ -8,6 +8,8 @@ import sys
 from textwrap import dedent
 from time import sleep
 
+from testtools.content import Content
+from testtools.content_type import UTF8_TEXT
 import transaction
 from zope.component import getUtility
 from zope.interface import implements
@@ -348,9 +350,13 @@ class StuckJob(BaseRunnableJob):
         self.job = Job()
 
     def acquireLease(self):
+        # XXX: What's the point of this method? How does it interact with the
+        # timeout?
         if self.id == 2:
             lease_length = 1
         else:
+            # XXX: We have a very long lease for the first job? I don't know
+            # what this means or what the aim is.
             lease_length = 10000
         return self.job.acquireLease(lease_length)
 
@@ -392,17 +398,22 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
 
         # XXX: JonathanLange 2011-03-18 bug=505913: Sometimes in tests this is
         # reported as 2.
-        self.assertEqual(1, len(runner.completed_jobs))
-        self.assertEqual(1, len(runner.incomplete_jobs))
+
         # XXX: Potential source of race condition. Another OOPS could be
         # logged.
         oops = errorlog.globalErrorUtility.getLastOopsReport()
-        self.assertEqual(dedent("""\
+        # XXX: Maybe we can combine all of these assertions so that we get a
+        # more informative error message.
+        self.assertEqual(
+            (1, 1,
+             dedent("""\
              INFO Running through Twisted.
              INFO Job resulted in OOPS: %s
-             """) % oops.id, logger.getLogBuffer())
-        self.assertEqual('TimeoutError', oops.type)
-        self.assertIn('Job ran too long.', oops.value)
+             """) % oops.id,
+             'TimeoutError', 'Job ran too long.'),
+            (len(runner.completed_jobs), len(runner.incomplete_jobs),
+             logger.getLogBuffer(),
+             oops.type, oops.value))
 
 
 class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
