@@ -215,13 +215,13 @@ class LinkView(LaunchpadView):
     def css_class(self):
         """Return the CSS class."""
         value = ["menu-link-%s" % self.context.name]
+        if not self.context.linked:
+            value.append('nolink')
         if self.context.icon:
             value.append(self.sprite_class)
             value.append(self.context.icon)
         if self.context.hidden:
             value.append('invisible-link')
-        if not self.context.linked:
-            value.append('nolink')
         return " ".join(value)
 
     @property
