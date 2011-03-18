@@ -16,9 +16,12 @@ from pytz import UTC
 from storm.locals import Store
 import transaction
 from zope.component import getUtility
+from zope.event import notify
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
@@ -853,6 +856,31 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         self.assertEqual(None, location)
         self.check_recipe_branch(
             child_branch, "zam", self.merged_branch.bzr_identity, revspec="2")
+
+
+class RecipeDateLastModified(TestCaseWithFactory):
+    """Exercises the situations where date_last_modified is updated."""
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self, 'test@canonical.com')
+        date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
+        self.recipe = self.factory.makeSourcePackageRecipe(
+            date_created=date_created)
+
+    def test_initialValue(self):
+        """Initially the date_last_modified is the date_created."""
+        self.assertEqual(
+            self.recipe.date_last_modified, self.recipe.date_created)
+
+    def test_modifiedevent_sets_date_last_updated(self):
+        # We publish an object modified event to check that the last modified
+        # date is set to UTC_NOW.
+        field = ISourcePackageRecipe['name']
+        notify(ObjectModifiedEvent(
+            removeSecurityProxy(self.recipe), self.recipe, [field]))
+        self.assertSqlAttributeEqualsDate(
+            self.recipe, 'date_last_modified', UTC_NOW)
 
 
 class TestWebservice(TestCaseWithFactory):
