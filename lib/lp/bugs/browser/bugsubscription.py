@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'AdvancedSubscriptionMixin',
+    'BugMuteSelfView',
     'BugPortletDuplicateSubcribersContents',
     'BugPortletSubcribersContents',
     'BugSubscriptionAddView',
@@ -584,3 +585,36 @@ class BugSubscriptionListView(LaunchpadView):
     @property
     def structural_subscriptions(self):
         return self.context.bug.getStructuralSubscriptionsForPerson(self.user)
+
+
+class BugMuteSelfView(LaunchpadFormView):
+    """A view to mute a user's bug mail for a given bug."""
+
+    schema = IBugSubscription
+    field_names = []
+
+    @property
+    def label(self):
+        return "Mute bug mail for bug %s" % self.context.bug.id
+
+    page_title = label
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
+
+    def initialize(self):
+        super(BugMuteSelfView, self).initialize()
+        # If the user is already muted, redirect them to the +subscribe
+        # page, since there's no point doing its work twice.
+        if self.context.bug.isMuted(self.user):
+            self.request.response.redirect(
+                canonical_url(self.context, view_name="+subscribe"))
+
+    @action('Mute bug mail', name='mute')
+    def mute_action(self, action, data):
+        self.context.bug.mute(self.user, self.user)
+        self.request.response.addInfoNotification(
+            "Bug mail for bug #%s has been muted." % self.context.bug.id)

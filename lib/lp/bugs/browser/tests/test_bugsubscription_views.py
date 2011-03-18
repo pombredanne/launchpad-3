@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from canonical.launchpad.ftests import LaunchpadFormHarness
+from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
 
 from lp.bugs.browser.bugsubscription import (
@@ -444,3 +445,38 @@ class BugPortletSubscribersContentsTestCase(TestCaseWithFactory):
                 decorator.subscription for decorator in
                 view.sorted_direct_subscriptions]
             self.assertFalse(subscription in sorted_subscriptions)
+
+
+class BugMuteSelfViewTestCase(TestCaseWithFactory):
+    """Tests for the BugMuteSelfView."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(BugMuteSelfViewTestCase, self).setUp()
+        self.bug = self.factory.makeBug()
+        self.person = self.factory.makePerson()
+
+    def test_bug_mute_self_view_mutes_bug(self):
+        # The BugMuteSelfView mutes bug mail for the current user when
+        # its form is submitted.
+        with person_logged_in(self.person):
+            mute_view = create_initialized_view(
+                self.bug.default_bugtask, name="+mute",
+                form={'field.actions.mute': 'Mute bug mail'})
+            self.assertTrue(self.bug.isMuted(self.person))
+
+    def test_bug_mute_self_view_redirects_muted_users(self):
+        # The BugMuteSelfView redirects muted users to the +subscribe
+        # page, where they can remove their muted subscription or change
+        # their BugNotificationLevel.
+        with person_logged_in(self.person):
+            self.bug.mute(self.person, self.person)
+            mute_view = create_initialized_view(
+                self.bug.default_bugtask, name="+mute")
+            response = mute_view.request.response
+            self.assertEqual(302, response.getStatus())
+            self.assertEqual(
+                canonical_url(self.bug.default_bugtask,
+                    view_name="+subscribe"),
+                response.getHeader('Location'))
