@@ -8,8 +8,6 @@ import sys
 from textwrap import dedent
 from time import sleep
 
-from testtools.content import Content
-from testtools.content_type import UTF8_TEXT
 import transaction
 from zope.component import getUtility
 from zope.interface import implements
@@ -350,13 +348,12 @@ class StuckJob(BaseRunnableJob):
         self.job = Job()
 
     def acquireLease(self):
-        # XXX: What's the point of this method? How does it interact with the
-        # timeout?
+        # For the first job, have a very long lease, so that it doesn't expire
+        # and so we soak up the ZCML loading time.  For the second job, have a
+        # short lease so we hit the timeout.
         if self.id == 2:
             lease_length = 1
         else:
-            # XXX: We have a very long lease for the first job? I don't know
-            # what this means or what the aim is.
             lease_length = 10000
         return self.job.acquireLease(lease_length)
 
