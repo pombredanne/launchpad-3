@@ -50,7 +50,6 @@ from zope.schema.vocabulary import (
     )
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.webapp import (
@@ -859,9 +858,6 @@ class SourcePackageRecipeEditView(RecipeRelatedBranchesMixin,
                 form_field.__name__ for form_field in self.form_fields]
             notify(ObjectModifiedEvent(
                 self.context, recipe_before_modification, field_names))
-            # Only specify that the context was modified if there
-            # was in fact a change.
-            self.context.date_last_modified = UTC_NOW
 
         self.next_url = canonical_url(self.context)
 
