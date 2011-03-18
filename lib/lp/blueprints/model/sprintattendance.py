@@ -11,6 +11,7 @@ from storm.locals import (
     Bool,
     Int,
     Reference,
+    Store,
     )
 from zope.interface import implements
 
@@ -38,3 +39,11 @@ class SprintAttendance(StormBase):
     time_starts = UtcDateTimeCol(notNull=True)
     time_ends = UtcDateTimeCol(notNull=True)
     is_physical = Bool(default=True)
+
+    def __init__(self, sprint, attendee, is_physical,
+                 time_starts, time_ends):
+        self.sprint = sprint
+        self.attendee = attendee
+        self.is_physical = is_physical
+        self.time_starts = time_starts
+        self.time_ends = time_ends

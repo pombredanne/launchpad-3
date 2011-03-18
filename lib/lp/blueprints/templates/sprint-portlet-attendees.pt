@@ -8,10 +8,11 @@
 
   <h2>Attendees</h2>
 
-  <div class="portletBody portletContent">
+  <div class="portletBody portletContent"
+       tal:define="attendances context/attendances">
 
     <ul>
-      <li tal:repeat="attendance context/attendances">
+      <li tal:repeat="attendance attendances">
         <a tal:replace="structure attendance/attendee/fmt:link">Foo Bar</a><br />
         <div class="discreet">
            <span tal:replace="python:view.formatDate(attendance.time_starts)">
@@ -21,7 +22,7 @@
         </div>
       </li>
     </ul>
-    <p tal:condition="not: context/attendees">
+    <p tal:condition="not: attendances">
       <img src="/@@/info" />
       <i>No attendees yet registered.</i>
     </p>

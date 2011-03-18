@@ -13,9 +13,9 @@ __all__ = [
 
 from sqlobject import (
     ForeignKey,
-    SQLRelatedJoin,
     StringCol,
     )
+from storm.locals import Store
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -45,7 +45,10 @@ from lp.blueprints.interfaces.sprint import (
 from lp.blueprints.model.specification import HasSpecificationsMixin
 from lp.blueprints.model.sprintattendance import SprintAttendance
 from lp.blueprints.model.sprintspecification import SprintSpecification
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    validate_public_person,
+    )
 from lp.registry.model.hasdrivers import HasDriversMixin
 
 
@@ -96,10 +99,10 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
             return [self.driver, self.owner]
         return [self.owner]
 
-    # useful joins
-    attendees = SQLRelatedJoin('Person',
-        joinColumn='sprint', otherColumn='attendee',
-        intermediateTable='SprintAttendance', orderBy='name')
+    @property
+    def attendees(self):
+        # Only really used in tests.
+        return [a.attendee for a in self.attendances]
 
     def spec_filter_clause(self, filter=None):
         """Figure out the appropriate query for specifications on a sprint.
@@ -281,30 +284,39 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
     # attendance
     def attend(self, person, time_starts, time_ends, is_physical):
         """See `ISprint`."""
-        # first see if a relevant attendance exists, and if so, update it
-        for attendance in self.attendances:
-            if attendance.attendee.id == person.id:
-                attendance.time_starts = time_starts
-                attendance.time_ends = time_ends
-                attendance.is_physical = is_physical
-                return attendance
-        # since no previous attendance existed, create a new one
+        # First see if a relevant attendance exists, and if so, update it.
+        attendance = Store.of(self).find(
+            SprintAttendance,
+            SprintAttendance.sprint == self,
+            SprintAttendance.attendee == person).one()
+        if attendance is not None:
+            attendance.time_starts = time_starts
+            attendance.time_ends = time_ends
+            attendance.is_physical = is_physical
+            return attendance
+        # Since no previous attendance existed, create a new one.
         return SprintAttendance(
             sprint=self, attendee=person, is_physical=is_physical,
             time_starts=time_starts, time_ends=time_ends)
 
     def removeAttendance(self, person):
         """See `ISprint`."""
-        for attendance in self.attendances:
-            if attendance.attendee.id == person.id:
-                attendance.destroySelf()
-                return
+        Store.of(self).find(
+            SprintAttendance,
+            SprintAttendance.sprint == self,
+            SprintAttendance.attendee == person).remove()
 
     @property
     def attendances(self):
-        ret = SprintAttendance.selectBy(sprint=self)
-        return sorted(ret.prejoin(['attendee']),
-                      key=lambda a: a.attendee.name)
+        result = list(Store.of(self).find(
+            SprintAttendance,
+            SprintAttendance.sprint == self))
+        people = [a.attendee_id for a in result]
+        # In order to populate the person cache we need to materialize the
+        # result set.  Listification should do.
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                people, need_validity=True))
+        return sorted(result, key=lambda a: a.attendee.name)
 
     # linking to specifications
     def linkSpecification(self, spec):
