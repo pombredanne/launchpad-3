@@ -71,7 +71,7 @@ class TestBugTaskView(TestCaseWithFactory):
         self.getUserBrowser(url, person_no_teams)
         # This may seem large: it is; there is easily another 30% fat in
         # there.
-        self.assertThat(recorder, HasQueryCount(LessThan(62)))
+        self.assertThat(recorder, HasQueryCount(LessThan(67)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
