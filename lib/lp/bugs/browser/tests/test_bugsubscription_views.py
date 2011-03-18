@@ -461,6 +461,7 @@ class BugMuteSelfViewTestCase(TestCaseWithFactory):
         # The BugMuteSelfView mutes bug mail for the current user when
         # its form is submitted.
         with person_logged_in(self.person):
+            self.assertFalse(self.bug.isMuted(self.person))
             mute_view = create_initialized_view(
                 self.bug.default_bugtask, name="+mute",
                 form={'field.actions.mute': 'Mute bug mail'})

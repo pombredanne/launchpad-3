@@ -617,4 +617,4 @@ class BugMuteSelfView(LaunchpadFormView):
     def mute_action(self, action, data):
         self.context.bug.mute(self.user, self.user)
         self.request.response.addInfoNotification(
-            "Bug mail for bug #%s has been muted." % self.context.bug.id)
+            "Mail for bug #%s has been muted." % self.context.bug.id)
