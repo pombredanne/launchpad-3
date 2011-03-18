@@ -1318,7 +1318,7 @@ class CustomizableFormatter(ObjectFormatterAPI):
         These values should not be escaped, as this will be performed later.
         For this reason, only string values should be supplied.
         """
-        raise NotImplementedError(self._title_values)
+        raise {}
 
     def _make_title(self):
         """Create a title from _title_template and _title_values().
