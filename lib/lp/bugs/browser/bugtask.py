@@ -3045,7 +3045,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         # they'll be needed for the vocabulary used in this view.
         bugtask_set = getUtility(IBugTaskSet)
         self.milestones = list(
-            bugtask_set.getBugTaskTargetMilestones(self.bugtasks, eager=True))
+            bugtask_set.getBugTaskTargetMilestones(self.bugtasks))
 
         distro_packages = defaultdict(list)
         distro_series_packages = defaultdict(list)
