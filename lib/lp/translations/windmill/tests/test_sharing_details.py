@@ -43,6 +43,15 @@ class TestSharingDetails(WindmillTestCase):
         self.client.waits.forPageLoad(timeout=PAGE_LOAD)
         lpuser.TRANSLATIONS_ADMIN.ensure_login(self.client)
         self.client.waits.forElement(id='branch', timeout=FOR_ELEMENT)
-        import pdb; pdb.set_trace()
         self.client.click(
-            xpath='//ul[id="branch"]/li[(contains(@class, "incomplete"))]/a')
+            xpath='//*[@id="branch"]/*[contains(@class, "incomplete")]/*'
+                '[@class="pickbranch"]/a')
+        self.client.type(
+            text='firefox', xpath='//input[@class="yui3-picker-search"]')
+        self.client.click(xpath='//button[@class="lazr-search lazr-btn"]')
+        self.client.click(xpath='//span[@class="yui3-picker-result-title"]')
+        self.client.waits.forElement(
+            xpath='//*[@id="branch"]/*[@class="complete sprite yes"]')
+        transaction.commit()
+        branch = packaging.productseries
+        self.assertEqual('~name12/firefox/main', branch.unique_name)
