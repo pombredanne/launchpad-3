@@ -1254,4 +1254,4 @@ class TestAPIPartipication(TestCaseWithFactory):
         # XXX: This number should really be 10, but see
         # https://bugs.launchpad.net/storm/+bug/619017 which is adding 3
         # queries to the test.
-        self.assertThat(collector, HasQueryCount(LessThan(13)))
+        self.assertThat(collector, HasQueryCount(LessThan(14)))
