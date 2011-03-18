@@ -67,7 +67,6 @@ from lp.translations.interfaces.translations import (
     )
 from lp.translations.utilities.translationsharinginfo import (
     has_ubuntu_template,
-    get_ubuntu_sharing_info,
     )
 
 
@@ -464,11 +463,7 @@ class ProductSeriesView(LaunchpadView,
 
     @property
     def sharing_sourcepackage(self):
-        infos = get_ubuntu_sharing_info(productseries=self.context)
-        if len(infos) == 0:
-            return None
-        sourcepackage, template = infos[0]
-        return sourcepackage
+        return self.context.getUbuntuTranslationFocusPackage()
 
     def getTranslationTarget(self):
         """See `TranslationSharingDetailsMixin`."""

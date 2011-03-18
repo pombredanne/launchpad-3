@@ -36,7 +36,6 @@ from lp.translations.interfaces.translations import (
 from lp.translations.model.translationpackagingjob import TranslationMergeJob
 from lp.translations.utilities.translationsharinginfo import (
     has_upstream_template,
-    get_upstream_sharing_info,
     )
 
 
@@ -63,12 +62,7 @@ class SourcePackageTranslationsView(TranslationsMixin,
 
     @property
     def sharing_productseries(self):
-        infos = get_upstream_sharing_info(self.context)
-        if len(infos) == 0:
-            return None
-
-        productseries, template = infos[0]
-        return productseries
+        return self.context.productseries
 
     def getTranslationTarget(self):
         """See `TranslationSharingDetailsMixin`."""

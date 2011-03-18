@@ -89,9 +89,7 @@ from lp.translations.interfaces.translationimportqueue import (
     )
 from lp.translations.utilities.translationsharinginfo import (
     has_ubuntu_template,
-    get_ubuntu_sharing_info,
     has_upstream_template,
-    get_upstream_sharing_info,
     )
 
 
@@ -364,18 +362,7 @@ class POTemplateView(LaunchpadView,
 
     @property
     def sharing_template(self):
-        if self.is_upstream_template:
-            infos = get_ubuntu_sharing_info(
-                productseries=self.context.productseries,
-                templatename=self.context.name)
-        else:
-            infos = get_upstream_sharing_info(
-                sourcepackage=self.context.sourcepackage,
-                templatename=self.context.name)
-        if len(infos) == 0:
-            return None
-        obj, template = infos[0]
-        return template
+        return self.context.getOtherSidePOTemplate()
 
     def getTranslationTarget(self):
         """See `TranslationSharingDetailsMixin`."""
