@@ -506,7 +506,8 @@ class BugViewMixin:
         else:
             dup_class = 'dup-subscribed-false'
 
-        if bug.personIsDirectSubscriber(self.user):
+        if (bug.personIsDirectSubscriber(self.user) and not
+            bug.isMuted(self.user)):
             return 'subscribed-true %s' % dup_class
         else:
             return 'subscribed-false %s' % dup_class
