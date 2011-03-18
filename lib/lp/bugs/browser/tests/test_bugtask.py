@@ -582,8 +582,8 @@ class TestBugTaskEditView(TestCaseWithFactory):
             'This bug has already been reported on mouse (ubuntu).',
             view.errors[0])
 
-    def test_retarget_product_with_milestone(self):
-        # Milestones are always cleared when retargeting a product bug task.
+    def setUpRetargetMilestone(self):
+        """Setup a bugtask with a milestone and a product to retarget to."""
         first_product = self.factory.makeProduct(name='bunny')
         with person_logged_in(first_product.owner):
             first_product.official_malone = True
@@ -595,6 +595,11 @@ class TestBugTaskEditView(TestCaseWithFactory):
         second_product = self.factory.makeProduct(name='duck')
         with person_logged_in(second_product.owner):
             second_product.official_malone = True
+        return bug_task, second_product
+
+    def test_retarget_product_with_milestone(self):
+        # Milestones are always cleared when retargeting a product bug task.
+        bug_task, second_product = self.setUpRetargetMilestone()
         user = self.factory.makePerson()
         login_person(user)
         form = {
@@ -608,6 +613,33 @@ class TestBugTaskEditView(TestCaseWithFactory):
         self.assertEqual([], view.errors)
         self.assertEqual(second_product, bug_task.target)
         self.assertEqual(None, bug_task.milestone)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        expected = ('The Bunny 1.0 milestone setting has been removed')
+        self.assertTrue(notifications.pop().message.startswith(expected))
+
+    def test_retarget_product_and_assign_milestone(self):
+        # Milestones are always cleared when retargeting a product bug task.
+        bug_task, second_product = self.setUpRetargetMilestone()
+        login_person(bug_task.target.owner)
+        milestone_id = bug_task.milestone.id
+        bug_task.transitionToMilestone(None, bug_task.target.owner)
+        form = {
+            'bunny.status': 'In Progress',
+            'bunny.assignee.option': 'bunny.assignee.assign_to_nobody',
+            'bunny.product': 'duck',
+            'bunny.milestone': milestone_id,
+            'bunny.actions.save': 'Save Changes',
+            }
+        view = create_initialized_view(
+            bug_task, name='+editstatus', form=form)
+        self.assertEqual([], view.errors)
+        self.assertEqual(second_product, bug_task.target)
+        self.assertEqual(None, bug_task.milestone)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        expected = ('The milestone setting was ignored')
+        self.assertTrue(notifications.pop().message.startswith(expected))
 
 
 class TestProjectGroupBugs(TestCaseWithFactory):
