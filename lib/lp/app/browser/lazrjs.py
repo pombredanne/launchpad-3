@@ -8,6 +8,7 @@ __all__ = [
     'BooleanChoiceWidget',
     'EnumChoiceWidget',
     'InlineEditPickerWidget',
+    'InlineMultiCheckboxWidget',
     'standard_text_html_representation',
     'TextAreaEditorWidget',
     'TextLineEditorWidget',
