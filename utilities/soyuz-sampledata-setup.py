@@ -218,14 +218,14 @@ def create_components(distroseries, uploader):
 def create_series(parent, full_name, version, status):
     """Set up a `DistroSeries`."""
     distribution = parent.distribution
-    owner = parent.owner
+    registrant = parent.owner
     name = full_name.split()[0].lower()
     title = "The " + full_name
     displayname = full_name.split()[0]
     new_series = distribution.newSeries(name=name, title=title,
         displayname=displayname, summary='Ubuntu %s is good.' % version,
         description='%s is awesome.' % version, version=version,
-        parent_series=parent, owner=owner)
+        parent_series=parent, registrant=registrant)
     new_series.status = status
     notify(ObjectCreatedEvent(new_series))
 

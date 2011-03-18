@@ -1,15 +1,15 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the POTemplate recipe view classes and templates."""
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_tag_by_id,
     )
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
@@ -253,7 +253,8 @@ class TestUbuntuPOTemplateSharingInfo(BrowserTestCase, TestSharingInfoMixin):
 
     def getAuthorizedUser(self, potemplate):
         with celebrity_logged_in('admin'):
-            potemplate.distroseries.owner = self.factory.makePerson(
+            distribution = potemplate.distroseries.distribution
+            distribution.owner = self.factory.makePerson(
                 password='test')
         return potemplate.distroseries.owner
 
@@ -283,6 +284,7 @@ class TestUbuntuSharingInfo(BrowserTestCase, TestSharingInfoMixin):
 
     def getAuthorizedUser(self, sourcepackage):
         with celebrity_logged_in('admin'):
-            sourcepackage.distroseries.owner = self.factory.makePerson(
+            makePerson = self.factory.makePerson
+            sourcepackage.distroseries.distribution.owner = makePerson(
                 password='test')
         return sourcepackage.distroseries.owner

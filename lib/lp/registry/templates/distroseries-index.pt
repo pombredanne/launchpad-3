@@ -19,8 +19,8 @@
     </tal:heading>
 
     <tal:registering metal:fill-slot="registering">
-        registered by
-        <a tal:replace="structure context/owner/fmt:link" />
+        Registered by
+        <a tal:replace="structure context/registrant/fmt:link" />
         <span tal:content="context/date_created/fmt:displaydate"
               tal:attributes="title context/date_created/fmt:datetime"
           >on 2005-01-01</span>
@@ -120,9 +120,6 @@
           </li>
           <li tal:condition="overview_menu/admin/enabled">
             <a tal:replace="structure overview_menu/admin/fmt:link" />
-          </li>
-          <li tal:condition="overview_menu/reassign/enabled">
-            <a tal:replace="structure overview_menu/reassign/fmt:link" />
           </li>
           <li>
             <a tal:replace="structure overview_menu/subscribe/fmt:link" />

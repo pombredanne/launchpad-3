@@ -227,8 +227,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     datereleased = UtcDateTimeCol(notNull=False, default=None)
     parent_series = ForeignKey(
         dbName='parent_series', foreignKey='DistroSeries', notNull=False)
-    owner = ForeignKey(
-        dbName='owner', foreignKey='Person',
+    registrant = ForeignKey(
+        dbName='registrant', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
@@ -404,6 +404,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def parent(self):
         """See `IDistroSeries`."""
         return self.distribution
+
+    @property
+    def owner(self):
+        """See `IDistroSeries`."""
+        return self.distribution.owner
 
     @property
     def sortkey(self):
@@ -1913,7 +1918,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             child = distribution.newSeries(
                 name=name, displayname=displayname, title=title,
                 summary=summary, description=description,
-                version=version, parent_series=self, owner=user)
+                version=version, parent_series=self, registrant=user)
             IStore(self).add(child)
         else:
             if child.parent_series is not self:

@@ -2253,7 +2253,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeDistroRelease(self, distribution=None, version=None,
                           status=SeriesStatus.DEVELOPMENT,
-                          parent_series=None, name=None, displayname=None):
+                          parent_series=None, name=None, displayname=None,
+                          registrant=None):
         """Make a new distro release."""
         if distribution is None:
             distribution = self.makeDistribution()
@@ -2263,6 +2264,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             displayname = name.capitalize()
         if version is None:
             version = "%s.0" % self.getUniqueInteger()
+        if registrant is None:
+            registrant = distribution.owner
 
         # We don't want to login() as the person used to create the product,
         # so we remove the security proxy before creating the series.
@@ -2273,7 +2276,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             displayname=displayname,
             title=self.getUniqueString(), summary=self.getUniqueString(),
             description=self.getUniqueString(),
-            parent_series=parent_series, owner=distribution.owner)
+            parent_series=parent_series, registrant=registrant)
         series.status = status
         return ProxyFactory(series)
 

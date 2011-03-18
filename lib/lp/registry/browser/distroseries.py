@@ -184,7 +184,7 @@ class DistroSeriesOverviewMenu(
 
     usedfor = IDistroSeries
     facet = 'overview'
-    links = ['edit', 'reassign', 'driver', 'answers',
+    links = ['edit', 'driver', 'answers',
              'packaging', 'needs_packaging', 'builds', 'queue',
              'add_port', 'create_milestone', 'subscribe', 'admin']
 
@@ -198,11 +198,6 @@ class DistroSeriesOverviewMenu(
         text = 'Appoint driver'
         summary = 'Someone with permission to set goals for this series'
         return Link('+driver', text, summary, icon='edit')
-
-    @enabled_with_permission('launchpad.Admin')
-    def reassign(self):
-        text = 'Change registrant'
-        return Link('+reassign', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def create_milestone(self):
@@ -496,9 +491,9 @@ class DistroSeriesAddView(LaunchpadFormView):
     @action(_('Create Series'), name='create')
     def createAndAdd(self, action, data):
         """Create and add a new Distribution Series"""
-        owner = getUtility(ILaunchBag).user
+        registrant = getUtility(ILaunchBag).user
 
-        assert owner is not None
+        assert registrant is not None
         distroseries = self.context.newSeries(
             name=data['name'],
             displayname=data['displayname'],
@@ -507,7 +502,7 @@ class DistroSeriesAddView(LaunchpadFormView):
             description=data['description'],
             version=data['version'],
             parent_series=data['parent_series'],
-            owner=owner)
+            registrant=registrant)
         notify(ObjectCreatedEvent(distroseries))
         self.next_url = canonical_url(distroseries)
         return distroseries

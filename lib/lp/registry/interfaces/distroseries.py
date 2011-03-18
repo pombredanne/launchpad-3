@@ -241,8 +241,13 @@ class IDistroSeriesPublic(
             description=_("The series from which this one was branched."),
             required=True, schema=Interface, # Really IDistroSeries, see below
             vocabulary='DistroSeries'))
-    owner = exported(
-        PublicPersonChoice(title=_("Owner"), vocabulary='ValidOwner'))
+    registrant = exported(
+        PublicPersonChoice(
+            title=_("Registrant"), vocabulary='ValidPersonOrTeam'))
+    owner = exported(Reference(
+        IPerson, title=_("Owning team of the derived series"), readonly=True,
+        description=_(
+            "This attribute mirrors the owner of the distribution.")))
     date_created = exported(
         Datetime(title=_("The date this series was registered.")))
     driver = exported(

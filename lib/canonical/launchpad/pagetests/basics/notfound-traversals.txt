@@ -222,7 +222,7 @@ is still pointing to this old URL (see bug #138090).
 >>> check("/ubuntu/hoary")
 >>> check("/ubuntu/hoary/+edit", auth=True)
 >>> check("/ubuntu/hoary/+specs")
->>> check("/ubuntu/hoary/+reassign", auth=True)
+>>> check_not_found("/ubuntu/hoary/+reassign")
 >>> check("/ubuntu/hoary/+packaging")
 >>> check("/ubuntu/hoary/+bugs")
 
