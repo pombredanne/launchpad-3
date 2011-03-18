@@ -541,6 +541,9 @@ class POTemplate(SQLBase, RosettaStats):
 
         return self._cached_pofiles_by_language[language_code]
 
+    def getOtherSidePOTemplate(self):
+        """See `IPOTemplate`."""
+
     def messageCount(self):
         """See `IRosettaStats`."""
         return self.messagecount

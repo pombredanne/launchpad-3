@@ -8,7 +8,10 @@ from operator import methodcaller
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -22,7 +25,6 @@ from lp.translations.interfaces.side import (
     )
 from lp.translations.model.potemplate import (
     get_pofiles_for,
-    POTemplate,
     )
 
 
@@ -595,3 +597,83 @@ class TestGetPOFilesFor(TestCaseWithFactory):
         pofiles = get_pofiles_for([self.potemplate], self.greek)
         pofile = pofiles[0]
         self.assertIsInstance(pofile, DummyPOFile)
+
+class TestPOTemplateUbuntuUpstreamSharingMixin:
+    """Test sharing between Ubuntu und upstream POTemplates."""
+
+    layer = ZopelessDatabaseLayer
+
+    def createData(self):
+        self.shared_template_name = self.factory.getUniqueString()
+        self.distroseries = self.factory.makeUbuntuDistroSeries()
+        self.distroseries.distribution.translation_focus = (
+            self.distroseries)
+        self.sourcepackage = self.factory.makeSourcePackage(
+            distroseries=self.distroseries)
+        self.productseries = self.factory.makeProductSeries()
+
+    def makeThisSidePOTemplate(self):
+        """Create POTemplate on this side."""
+        raise NotImplementedError
+
+    def makeOtherSidePOTemplate(self):
+        """Create POTemplate on the other side. Override in subclass."""
+        raise NotImplementedError
+
+    def _setPackagingLink(self):
+        """Create the packaging link from source package to product series."""
+        self.factory.makePackagingLink(
+            productseries=self.productseries,
+            sourcepackage=self.sourcepackage)
+
+    def test_getOtherSidePOTemplate_none(self):
+        # Without a packaging link, None is returned.
+        potemplate = self.makeThisSidePOTemplate()
+        self.assertIs(None, potemplate.getOtherSidePOTemplate())
+
+    def test_getOtherSidePOTemplate_linked_no_template(self):
+        # No sharing template exists on the other side.
+        self._setPackagingLink()
+        potemplate = self.makeThisSidePOTemplate()
+        self.assertIs(None, potemplate.getOtherSidePOTemplate())
+
+    def test_getOtherSidePOTemplate_shared(self):
+        # This is how sharing should look like.
+        this_potemplate = self.makeThisSidePOTemplate()
+        other_potemplate = self.makeOtherSidePOTemplate()
+        self._setPackagingLink()
+        self.assertEquals(
+            other_potemplate, this_potemplate.getOtherSidePOTemplate())
+
+class TestPOTemplateUbuntuSharing(TestCaseWithFactory,
+                                  TestPOTemplateUbuntuUpstreamSharingMixin):
+    """Test sharing on Ubuntu side."""
+
+    def setUp(self):
+        super(TestPOTemplateUbuntuSharing, self).setUp()
+        self.createData()
+
+    def makeThisSidePOTemplate(self):
+        return self.factory.makePOTemplate(
+            sourcepackage=self.sourcepackage, name=self.shared_template_name)
+
+    def makeOtherSidePOTemplate(self):
+        return self.factory.makePOTemplate(
+            productseries=self.productseries, name=self.shared_template_name)
+
+
+class TestPOTemplateUpstreamSharing(TestCaseWithFactory,
+                                    TestPOTemplateUbuntuUpstreamSharingMixin):
+    """Test sharing on upstream side."""
+
+    def setUp(self):
+        super(TestPOTemplateUpstreamSharing, self).setUp()
+        self.createData()
+
+    def makeThisSidePOTemplate(self):
+        return self.factory.makePOTemplate(
+            productseries=self.productseries, name=self.shared_template_name)
+
+    def makeOtherSidePOTemplate(self):
+        return self.factory.makePOTemplate(
+            sourcepackage=self.sourcepackage, name=self.shared_template_name)
