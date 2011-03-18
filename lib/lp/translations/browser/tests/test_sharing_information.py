@@ -253,8 +253,8 @@ class TestUbuntuPOTemplateSharingInfo(BrowserTestCase, TestSharingInfoMixin):
 
     def getAuthorizedUser(self, potemplate):
         with celebrity_logged_in('admin'):
-            makePerson = self.factory.makePerson
-            potemplate.distroseries.distribution.owner = makePerson(
+            distribution = potemplate.distroseries.distribution
+            distribution.owner = self.factory.makePerson(
                 password='test')
         return potemplate.distroseries.owner
 
