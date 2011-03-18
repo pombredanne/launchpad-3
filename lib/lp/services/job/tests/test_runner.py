@@ -12,6 +12,7 @@ import transaction
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.config import config
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -365,6 +366,15 @@ class StuckJob(BaseRunnableJob):
 class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestTwistedJobRunner, self).setUp()
+        # The test relies on _pythonpath being importable. Thus we need to add
+        # a directory that contains _pythonpath to the sys.path. We can rely
+        # on the root directory of the checkout containing _pythonpath.
+        if config.root not in sys.path:
+            sys.path.append(config.root)
+            self.addCleanup(sys.path.remove, config.root)
 
     def test_timeout(self):
         """When a job exceeds its lease, an exception is raised.
