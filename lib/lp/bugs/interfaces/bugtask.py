@@ -1274,7 +1274,9 @@ class BugTaskSearchParams:
             supported.
         """
         # Yay circular deps.
+        from lp.registry.interfaces.distribution import IDistribution
         from lp.registry.interfaces.distroseries import IDistroSeries
+        from lp.registry.interfaces.product import IProduct
         from lp.registry.interfaces.productseries import IProductSeries
         from lp.registry.interfaces.milestone import IMilestone
         if isinstance(target, (any, all)):
@@ -1283,8 +1285,12 @@ class BugTaskSearchParams:
             instance = target.query_values[0]
         else:
             instance = target
-        if IDistroSeries.providedBy(instance):
+        if IDistribution.providedBy(instance):
+            self.setDistribution(target)
+        elif IDistroSeries.providedBy(instance):
             self.setDistroSeries(target)
+        elif IProduct.providedBy(instance):
+            self.setProduct(target)
         elif IProductSeries.providedBy(instance):
             self.setProductSeries(target)
         elif IMilestone.providedBy(instance):

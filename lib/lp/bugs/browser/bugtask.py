@@ -247,6 +247,7 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -1762,6 +1763,26 @@ class BugsStatsMixin(BugsInfoMixin):
     These can be expensive to obtain.
     """
 
+    @cachedproperty
+    def _bug_stats(self):
+        bug_task_set = getUtility(IBugTaskSet)
+        open_bugs = bug_task_set.open_bugtask_search
+        open_bugs.setTarget(self.context)
+        groups = (BugTask.status,)
+        counts = bug_task_set.countBugs(open_bugs, groups)
+        # Sum the split out aggregates.
+        new = 0
+        open = 0
+        inprogress = 0
+        for status, child in counts.items():
+            if status == (BugTaskStatus.NEW,):
+                new += child
+            if status == (BugTaskStatus.INPROGRESS,):
+                inprogress += child
+            open += child
+        result = dict(new=new, open=open, inprogress=inprogress)
+        return result
+
     @property
     def bugs_fixed_elsewhere_count(self):
         """A count of bugs fixed elsewhere."""
@@ -1810,17 +1831,17 @@ class BugsStatsMixin(BugsInfoMixin):
     @property
     def new_bugs_count(self):
         """A count of new bugs."""
-        return self.context.new_bugtasks.count()
+        return self._bug_stats['new']
 
     @property
     def open_bugs_count(self):
         """A count of open bugs."""
-        return self.context.open_bugtasks.count()
+        return self._bug_stats['open']
 
     @property
     def inprogress_bugs_count(self):
         """A count of in-progress bugs."""
-        return self.context.inprogress_bugtasks.count()
+        return self._bug_stats['inprogress']
 
     @property
     def critical_bugs_count(self):
