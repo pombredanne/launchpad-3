@@ -782,6 +782,7 @@
                     linkMessage
                     markAsDuplicate
                     markUserAffected
+                    mute
                     newMessage
                     removeWatch
                     setPrivate
@@ -791,6 +792,7 @@
                     unlinkBranch
                     unlinkCVE
                     unlinkHWSubmission
+                    unmute
                     unsubscribe
                     unsubscribeFromDupes
                     updateHeat"
