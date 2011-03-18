@@ -3,6 +3,12 @@
 
 __metaclass__ = type
 
+
+from soupmatchers import (
+    HTMLContains,
+    Tag,
+)
+
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_tag_by_id,
@@ -318,16 +324,22 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             sourcepackage, no_login=True, rootsite="translations",
             view_name="+sharing-details")
 
+    def assertUnseen(self, browser, html_id):
+        branch_complete_unseen = Tag(html_id, 'li', attrs={
+            'id': html_id,
+            'class': lambda v: v and 'unseen' in v.split(' ')})
+        self.assertThat(browser.contents, HTMLContains(branch_complete_unseen))
+
     def test_checklist_unconfigured(self):
         # Without a packaging link, sharing is completely unconfigured
         sourcepackage = self._makeSourcePackage()
         browser = self._getSharingDetailsViewBrowser(sourcepackage)
         checklist = find_tag_by_id(browser.contents, 'sharing-checklist')
         self.assertIsNot(None, checklist)
+        self.assertUnseen(browser, 'branch-complete')
         self.assertTextMatchesExpressionIgnoreWhitespace("""
             Translation sharing configuration is incomplete.
-            No upstream project series has been linked. Change upstream link
-            No source branch exists for the upstream series.
+            .*
             Translations are not enabled on the upstream series.
             Automatic synchronization of translations is not enabled.""",
             extract_text(checklist))
@@ -338,11 +350,12 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         browser = self._getSharingDetailsViewBrowser(packaging.sourcepackage)
         checklist = find_tag_by_id(browser.contents, 'sharing-checklist')
         self.assertIsNot(None, checklist)
+        self.assertUnseen(browser, 'branch-complete')
         self.assertTextMatchesExpressionIgnoreWhitespace("""
             Translation sharing configuration is incomplete.
             Linked upstream series is .+ trunk series.
                 Change upstream link Remove upstream link
-            No source branch exists for the upstream series.
+            .*
             Translations are not enabled on the upstream series.
             Automatic synchronization of translations is not enabled.""",
             extract_text(checklist))
@@ -353,11 +366,12 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         browser = self._getSharingDetailsViewBrowser(sourcepackage)
         checklist = find_tag_by_id(browser.contents, 'sharing-checklist')
         self.assertIsNot(None, checklist)
+        self.assertUnseen(browser, 'branch-incomplete')
         self.assertTextMatchesExpressionIgnoreWhitespace("""
             Translation sharing with upstream is active.
             Linked upstream series is .+ trunk series.
                 Change upstream link Remove upstream link
-            Upstream source branch is .+[.]
+            .*
             Translations are enabled on the upstream project.
             Automatic synchronization of translations is enabled.""",
             extract_text(checklist))
