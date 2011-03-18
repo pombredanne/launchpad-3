@@ -45,13 +45,12 @@ class TestSharingDetails(WindmillTestCase):
         self.client.open(url=url)
         self.client.waits.forPageLoad(timeout=PAGE_LOAD)
         lpuser.TRANSLATIONS_ADMIN.ensure_login(self.client)
-        self.client.waits.forElement(id='branch', timeout=FOR_ELEMENT)
-        self.client.click(
-            xpath='//*[@id="branch"]/*[contains(@class, "incomplete")]/*'
-                '[@class="pickbranch"]/a')
-        search_and_select_picker_widget(self.client, 'firefox', 1)
         self.client.waits.forElement(
-            xpath='//*[@id="branch"]/*[@class="complete sprite yes"]')
+            id='branch-incomplete', timeout=FOR_ELEMENT)
+        self.client.click(xpath='//*[@id="branch-incomplete-picker"]/a')
+        search_and_select_picker_widget(self.client, 'firefox', 1)
+        self.client.waits.forElementProperty(
+            classname="unseen", option='id|branch-incomplete')
         transaction.commit()
         branch = packaging.productseries.branch
         self.assertEqual('~name12/firefox/main', branch.unique_name)
