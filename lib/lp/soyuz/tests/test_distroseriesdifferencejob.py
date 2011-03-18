@@ -5,12 +5,19 @@
 
 __metaclass__ = type
 
+import os
+import subprocess
+import sys
+import transaction
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
+from canonical.config import config
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.services.job.interfaces.job import JobStatus
-from lp.soyuz.interfaces.distroseriesdifferencejob import (
+from lp.soyuz.interfaces.distributionjob import (
     IDistroSeriesDifferenceJobSource,
     )
 from lp.soyuz.model.distroseriesdifferencejob import (
@@ -99,7 +106,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         sourcepackage = self.factory.makeSourcePackage()
         distroseries, sourcepackagename = (
             sourcepackage.distroseries, sourcepackage.distroseries)
-        job = create_job(distroseries, sourcepackagename)
+        create_job(distroseries, sourcepackagename)
         other_series = self.factory.makeDistroSeries()
         self.assertContentEqual(
             [], find_waiting_jobs(other_series, sourcepackagename))
@@ -108,7 +115,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         sourcepackage = self.factory.makeSourcePackage()
         distroseries, sourcepackagename = (
             sourcepackage.distroseries, sourcepackage.distroseries)
-        job = create_job(distroseries, sourcepackagename)
+        create_job(distroseries, sourcepackagename)
         other_spn = self.factory.makeSourcePackageName()
         self.assertContentEqual(
             [], find_waiting_jobs(distroseries, other_spn))
@@ -125,22 +132,83 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         self.assertContentEqual(
             [], find_waiting_jobs(distroseries, sourcepackagename))
 
-    def test_createForPackagedPublication_creates_job_for_parent_series(self):
+    def test_createForPackagedPublication_creates_jobs_for_its_child(self):
         derived_series = self.factory.makeDistroSeries(
             parent_series=self.makeDerivedDistroSeries())
         package = self.factory.makeSourcePackageName()
+        # Create a job for the derived_series parent, which should create
+        # two jobs. One for derived_series, and the other for its child.
         self.getJobSource().createForPackagePublication(
-            derived_series, package)
-        jobs = list(find_waiting_jobs(derived_series.parent_series, package))
-        self.assertEqual(1, len(jobs))
+            derived_series.parent_series, package)
+        jobs = (list(
+            find_waiting_jobs(derived_series.parent_series, package)) +
+            list(find_waiting_jobs(derived_series, package)))
+        self.assertEqual(2, len(jobs))
         self.assertEqual(package.id, jobs[0].metadata['sourcepackagename'])
+        self.assertEqual(package.id, jobs[1].metadata['sourcepackagename'])
+        # Lastly, a job was not created for the grandparent.
+        jobs = list(
+            find_waiting_jobs(derived_series.parent_series.parent_series,
+                package))
+        self.assertEqual(0, len(jobs))
 
     def test_createForPackagePublication_creates_job_for_derived_series(self):
         derived_series = self.makeDerivedDistroSeries()
-        parent_series = derived_series.parent_series
         package = self.factory.makeSourcePackageName()
         self.getJobSource().createForPackagePublication(
-            parent_series, package)
+            derived_series, package)
         jobs = list(find_waiting_jobs(derived_series, package))
         self.assertEqual(1, len(jobs))
         self.assertEqual(package.id, jobs[0].metadata['sourcepackagename'])
+
+    def test_cronscript(self):
+        derived_series = self.makeDerivedDistroSeries()
+        package = self.factory.makeSourcePackageName()
+        self.getJobSource().createForPackagePublication(
+            derived_series, package)
+        transaction.commit() # The cronscript is a different process.
+        script = os.path.join(
+            config.root, 'cronscripts', 'distroseriesdifference_job.py')
+        args = [sys.executable, script, '-v']
+        process = subprocess.Popen(
+            args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+        # The cronscript ran how we expected it to.
+        self.assertEqual(process.returncode, 0)
+        self.assertIn(
+            'INFO    Ran 1 DistroSeriesDifferenceJob jobs.', stderr)
+        # And it did what we expected.
+        jobs = list(find_waiting_jobs(derived_series, package))
+        self.assertEqual(0, len(jobs))
+        store = IMasterStore(DistroSeriesDifference)
+        ds_diff = store.find(
+            DistroSeriesDifference, 
+            DistroSeriesDifference.derived_series == derived_series,
+            DistroSeriesDifference.source_package_name == package)
+        self.assertEqual(1, ds_diff.count())
+
+    def test_job_runner_does_not_create_multiple_dsds(self):
+        derived_series = self.makeDerivedDistroSeries()
+        package = self.factory.makeSourcePackageName()
+        job = self.getJobSource().createForPackagePublication(
+            derived_series, package)
+        job[0].start()
+        job[0].run()
+        job[0].job.complete() # So we can create another job.
+        # The first job would have created a DSD for us.
+        store = IMasterStore(DistroSeriesDifference)
+        ds_diff = store.find(
+            DistroSeriesDifference, 
+            DistroSeriesDifference.derived_series == derived_series,
+            DistroSeriesDifference.source_package_name == package)
+        self.assertEqual(1, ds_diff.count())
+        # If we run the job again, it will not create another DSD.
+        job = self.getJobSource().createForPackagePublication(
+            derived_series, package)
+        job[0].start()
+        job[0].run()
+        ds_diff = store.find(
+            DistroSeriesDifference, 
+            DistroSeriesDifference.derived_series == derived_series,
+            DistroSeriesDifference.source_package_name == package)
+        self.assertEqual(1, ds_diff.count())

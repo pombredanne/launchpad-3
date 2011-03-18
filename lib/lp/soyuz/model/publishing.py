@@ -85,7 +85,7 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,
     IBinaryPackageBuildSet,
     )
-from lp.soyuz.interfaces.distroseriesdifferencejob import (
+from lp.soyuz.interfaces.distributionjob import (
     IDistroSeriesDifferenceJobSource,
     )
 from lp.soyuz.interfaces.publishing import (

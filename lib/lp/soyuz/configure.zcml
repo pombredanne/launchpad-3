@@ -901,14 +901,15 @@
     </class>
 
     <!-- DistroSeriesDifferenceJobSource -->
-    <class class="lp.soyuz.model.distroseriesdifferencejob.DistroSeriesDifferenceJob">
-        <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
-    </class>
     <securedutility
       component="lp.soyuz.model.distroseriesdifferencejob.DistroSeriesDifferenceJob"
-      provides="lp.soyuz.interfaces.distroseriesdifferencejob.IDistroSeriesDifferenceJobSource">
-        <allow interface="lp.soyuz.interfaces.distroseriesdifferencejob.IDistroSeriesDifferenceJobSource"/>
+      provides="lp.soyuz.interfaces.distributionjob.IDistroSeriesDifferenceJobSource">
+        <allow interface="lp.soyuz.interfaces.distributionjob.IDistroSeriesDifferenceJobSource"/>
     </securedutility>
+    <class class="lp.soyuz.model.distroseriesdifferencejob.DistroSeriesDifferenceJob">
+        <allow interface="lp.soyuz.interfaces.distributionjob.IDistroSeriesDifferenceJob" />
+        <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
+    </class>
 
     <!-- SyncPackageJobSource -->
     <securedutility
