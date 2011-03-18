@@ -12,7 +12,6 @@ __all__ = [
     'api_url',
     'build_yui_unittest_suite',
     'BrowserTestCase',
-    'capture_events',
     'celebrity_logged_in',
     'FakeTime',
     'get_lsb_information',
@@ -29,7 +28,7 @@ __all__ = [
     'normalize_whitespace',
     'oauth_access_token_for',
     'person_logged_in',
-    'quote_jquery_expression'
+    'quote_jquery_expression',
     'record_statements',
     'run_with_login',
     'run_with_storm_debug',
