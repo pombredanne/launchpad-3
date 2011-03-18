@@ -32,6 +32,7 @@ from lazr.restful.declarations import (
     export_write_operation,
     exported,
     mutator_for,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
@@ -488,6 +489,22 @@ class IBug(IPrivacy, IHasLinkedBranches):
         :returns: True if the user has a direct subscription to this bug
             with a BugNotificationLevel of NOTHING.
         """
+
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=False))
+    @call_with(muted_by=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def mute(person, muted_by):
+        """Add a muted subscription for `person`."""
+
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=False))
+    @call_with(unmuted_by=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def unmute(person, unmuted_by):
+        """Remove a muted subscription for `person`."""
 
     def getDirectSubscriptions():
         """A sequence of IBugSubscriptions directly linked to this bug."""
