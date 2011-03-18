@@ -21,6 +21,9 @@ from lp.testing.windmill.constants import (
     FOR_ELEMENT,
     PAGE_LOAD,
 )
+from lp.testing.windmill.widgets import (
+    search_and_select_picker_widget,
+)
 from lp.translations.windmill.testing import (
     TranslationsWindmillLayer,
 )
@@ -46,12 +49,9 @@ class TestSharingDetails(WindmillTestCase):
         self.client.click(
             xpath='//*[@id="branch"]/*[contains(@class, "incomplete")]/*'
                 '[@class="pickbranch"]/a')
-        self.client.type(
-            text='firefox', xpath='//input[@class="yui3-picker-search"]')
-        self.client.click(xpath='//button[@class="lazr-search lazr-btn"]')
-        self.client.click(xpath='//span[@class="yui3-picker-result-title"]')
+        search_and_select_picker_widget(self.client, 'firefox', 1)
         self.client.waits.forElement(
             xpath='//*[@id="branch"]/*[@class="complete sprite yes"]')
         transaction.commit()
-        branch = packaging.productseries
+        branch = packaging.productseries.branch
         self.assertEqual('~name12/firefox/main', branch.unique_name)
