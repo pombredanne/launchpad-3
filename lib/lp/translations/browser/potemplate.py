@@ -87,10 +87,6 @@ from lp.translations.interfaces.translationimporter import (
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
-from lp.translations.utilities.translationsharinginfo import (
-    has_ubuntu_template,
-    has_upstream_template,
-    )
 
 
 class POTemplateNavigation(Navigation):
@@ -351,14 +347,19 @@ class POTemplateView(LaunchpadView,
         return self.context.translation_side == TranslationSide.UPSTREAM
 
     def is_sharing(self):
-        if self.is_upstream_template:
-            return has_ubuntu_template(
-                productseries=self.context.productseries,
-                templatename=self.context.name)
+        if self.is_upstream_pofile:
+            productseries = self.context.productseries
+            other_side_object = (
+                productseries.getUbuntuTranslationFocusPackage())
         else:
-            return has_upstream_template(
-                sourcepackage=self.context.sourcepackage,
-                templatename=self.context.name)
+            sourcepackage = self.potemplate.sourcepackage
+            other_side_object = sourcepackage.productseries
+        if other_side_object is None:
+            return False
+        collection = other_side_object.getTemplatesCollection()
+        name = self.context.name
+        return bool(
+            collection.restrictCurrent().restrictName(name).select().any())
 
     @property
     def sharing_template(self):

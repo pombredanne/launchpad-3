@@ -59,10 +59,6 @@ from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
-from lp.translations.utilities.translationsharinginfo import (
-    has_ubuntu_template,
-    has_upstream_template,
-    )
 
 
 class POFileNavigation(Navigation):
@@ -997,13 +993,18 @@ class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
 
     def is_sharing(self):
         if self.is_upstream_pofile:
-            return has_ubuntu_template(
-                productseries=self.context.potemplate.productseries,
-                templatename=self.context.potemplate.name)
+            productseries = self.context.potemplate.productseries
+            other_side_object = (
+                productseries.getUbuntuTranslationFocusPackage())
         else:
-            return has_upstream_template(
-                sourcepackage=self.context.potemplate.sourcepackage,
-                templatename=self.context.potemplate.name)
+            sourcepackage = self.context.potemplate.sourcepackage
+            other_side_object = sourcepackage.productseries
+        if other_side_object is None:
+            return False
+        collection = other_side_object.getTemplatesCollection()
+        name = self.context.potemplate.name
+        return bool(
+            collection.restrictCurrent().restrictName(name).select().any())
 
     @property
     def sharing_pofile(self):

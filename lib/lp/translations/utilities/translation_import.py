@@ -444,9 +444,11 @@ class FileImporter(object):
         sourcepackage = getUtility(ISourcePackageFactory).new(
             self.translation_import_queue_entry.sourcepackagename,
             self.translation_import_queue_entry.distroseries)
-        from lp.translations.utilities.translationsharinginfo import (
-            has_upstream_template)
-        return not has_upstream_template(sourcepackage)
+        productseries = sourcepackage.productseries
+        if productseries is None:
+            return True
+        collection = productseries.getTemplateCollection().restrictCurrent()
+        return not bool(collection.select().any())
 
     @cachedproperty
     def translations_are_msgids(self):

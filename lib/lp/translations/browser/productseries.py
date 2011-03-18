@@ -65,9 +65,6 @@ from lp.translations.interfaces.translationimportqueue import (
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
-from lp.translations.utilities.translationsharinginfo import (
-    has_ubuntu_template,
-    )
 
 
 class ProductSeriesTranslationsMenuMixIn:
@@ -459,7 +456,11 @@ class ProductSeriesView(LaunchpadView,
         return check_permission("launchpad.TranslationsAdmin", self.context)
 
     def is_sharing(self):
-        return has_ubuntu_template(productseries=self.context)
+        sourcepackage = self.context.getUbuntuTranslationFocusPackage()
+        if sourcepackage is None:
+            return False
+        collection = sourcepackage.getTemplateCollection().restrictCurrent()
+        return bool(collection.select().any())
 
     @property
     def sharing_sourcepackage(self):
