@@ -54,26 +54,32 @@ def notify_bugtask_edited(modified_bugtask, event):
     modified_bugtask must be an IBugTask. event must be an
     IObjectModifiedEvent.
     """
-    bugtask_delta = event.object.getDelta(event.object_before_modification)
+    bugtask_before_modification = event.object_before_modification
+    bug = event.object.bug
+
+    bugtask_delta = event.object.getDelta(bugtask_before_modification)
     bug_delta = BugDelta(
-        bug=event.object.bug,
-        bugurl=canonical_url(event.object.bug),
+        bug=bug,
+        bugurl=canonical_url(bug),
         bugtask_deltas=bugtask_delta,
         user=IPerson(event.user))
 
     event_creator = IPerson(event.user)
-    previous_subscribers = event.object_before_modification.bug_subscribers
+    previous_subscribers = bugtask_before_modification.bug_subscribers
     current_subscribers = event.object.bug_subscribers
     prev_subs_set = set(previous_subscribers)
     cur_subs_set = set(current_subscribers)
     new_subs = cur_subs_set.difference(prev_subs_set)
 
+    bug._cacheViewPermission(
+        event.user.person, bugtask_before_modification.assignee,
+        previous_subscribers)
     add_bug_change_notifications(
-        bug_delta, old_bugtask=event.object_before_modification,
+        bug_delta, old_bugtask=bugtask_before_modification,
         new_subscribers=new_subs)
 
     send_bug_details_to_new_bug_subscribers(
-        event.object.bug, previous_subscribers, current_subscribers,
+        bug, previous_subscribers, current_subscribers,
         event_creator=event_creator)
 
     update_security_contact_subscriptions(event)

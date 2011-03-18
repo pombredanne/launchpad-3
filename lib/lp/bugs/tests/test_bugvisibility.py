@@ -5,7 +5,6 @@
 
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.testing import (
-    celebrity_logged_in,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -57,6 +56,20 @@ class TestPrivateBugVisibility(TestCaseWithFactory):
         # A regular (non-privileged) user can not view a private bug.
         user = self.factory.makePerson()
         self.assertFalse(self.bug.userCanView(user))
+
+    def test_privateBugRegularUserWithCachedAssigneePermission(self):
+        # A regular (non-privileged) user can view a private bug if the
+        # permissions have been cached.
+        user = self.factory.makePerson()
+        self.bug._cacheViewPermission(user, assignee=user)
+        self.assertTrue(self.bug.userCanView(user))
+
+    def test_privateBugRegularUserWithCachedSubscriberPermission(self):
+        # A regular (non-privileged) user can view a private bug if the
+        # permissions have been cached.
+        user = self.factory.makePerson()
+        self.bug._cacheViewPermission(user, subscribers=[user])
+        self.assertTrue(self.bug.userCanView(user))
 
     def test_privateBugOwner(self):
         # The bug submitter may view a private bug.

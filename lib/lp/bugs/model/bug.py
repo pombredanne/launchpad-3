@@ -1786,6 +1786,31 @@ BugMessage""" % sqlvalues(self.id))
         """
         return set()
 
+    def _cacheViewPermission(self, user, assignee=None, subscribers=None):
+        """Cache view permissions for subsequent call to userCanView.
+
+        When a bug is modified by having is assignee or subscribers changed,
+        it could be that the user may not be able to view the bug anymore.
+        But this doesn't account for the fact that at the time the change was
+        made, the user could view the bug. The result is that an error occurs
+        when bug change notifications are attempted to be published. This
+        method allows the bug modified notification handler to cache view
+        permissions for a given user for the original bug assignee and
+        subscriptions as they were before the change was made.
+        """
+
+        # Assignees to bugtasks can see the bug.
+        if assignee is not None and user.inTeam(assignee):
+            self._known_viewers.add(user.id)
+
+        if subscribers is None:
+            return
+        # Explicit subscribers may also view it.
+        for subscriber in subscribers:
+            if user.inTeam(subscriber):
+                self._known_viewers.add(user.id)
+                return
+
     def userCanView(self, user):
         """See `IBug`.
 
