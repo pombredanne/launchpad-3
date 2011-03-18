@@ -87,10 +87,13 @@ class TestProductSeriesGetUbuntuTranslationFocusPackage(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def _makeSourcePackage(self, productseries):
+    def _makeSourcePackage(self, productseries,
+                           series_status=SeriesStatus.EXPERIMENTAL):
         """Make a sourcepckage that packages the productseries."""
+        distroseries = self.factory.makeUbuntuDistroSeries(
+            status=series_status)
         packaging = self.factory.makePackagingLink(
-            productseries=productseries, in_ubuntu=True)
+            productseries=productseries, distroseries=distroseries)
         return packaging.sourcepackage
 
     def _test_packaged_in_series(
@@ -101,9 +104,8 @@ class TestProductSeriesGetUbuntuTranslationFocusPackage(TestCaseWithFactory):
         if in_other_series:
             package = self._makeSourcePackage(productseries)
         if in_current_series:
-            package = self._makeSourcePackage(productseries)
-            removeSecurityProxy(package.distroseries).status = (
-                SeriesStatus.CURRENT)
+            package = self._makeSourcePackage(
+                productseries, SeriesStatus.FROZEN)
         if in_translation_focus:
             package = self._makeSourcePackage(productseries)
             naked_distribution = removeSecurityProxy(
