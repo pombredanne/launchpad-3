@@ -41,7 +41,10 @@ from zope.interface import (
     implements,
     )
 
-from canonical.database.constants import UTC_NOW
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import (
@@ -187,7 +190,7 @@ class SourcePackageRecipe(Storm):
     @staticmethod
     def new(registrant, owner, name, recipe, description,
             distroseries=None, daily_build_archive=None, build_daily=False,
-            date_created=None):
+            date_created=DEFAULT):
         """See `ISourcePackageRecipeSource.new`."""
         store = IMasterStore(SourcePackageRecipe)
         sprecipe = SourcePackageRecipe()
