@@ -543,6 +543,16 @@ class POTemplate(SQLBase, RosettaStats):
 
     def getOtherSidePOTemplate(self):
         """See `IPOTemplate`."""
+        if self.translation_side == TranslationSide.UBUNTU:
+            other_side_object = self.sourcepackage.productseries
+        else:
+            other_side_object = (
+                self.productseries.getUbuntuTranslationFocusPackage())
+        if other_side_object is None:
+            return None
+        collection = (
+            other_side_object.getTemplatesCollection().restrictCurrent())
+        return collection.restrictName(self.name).select().one()
 
     def messageCount(self):
         """See `IRosettaStats`."""
