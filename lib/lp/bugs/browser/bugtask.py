@@ -247,6 +247,7 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.distribution import (
     IDistribution,
@@ -1768,7 +1769,8 @@ class BugsStatsMixin(BugsInfoMixin):
         bug_task_set = getUtility(IBugTaskSet)
         open_bugs = bug_task_set.open_bugtask_search
         open_bugs.setTarget(self.context)
-        groups = (BugTask.status, BugTask.importance)
+        groups = (BugTask.status, BugTask.importance,
+            Bug.latest_patch_uploaded != None)
         counts = bug_task_set.countBugs(open_bugs, groups)
         # Sum the split out aggregates.
         new = 0
@@ -1776,9 +1778,11 @@ class BugsStatsMixin(BugsInfoMixin):
         inprogress = 0
         critical = 0
         high = 0
+        with_patch = 0
         for metadata, count in counts.items():
             status = metadata[0]
             importance = metadata[1]
+            has_patch = metadata[2]
             if status == BugTaskStatus.NEW:
                 new += count
             elif status == BugTaskStatus.INPROGRESS:
@@ -1787,9 +1791,11 @@ class BugsStatsMixin(BugsInfoMixin):
                 critical += count
             elif importance == BugTaskImportance.HIGH:
                 high += count
+            if has_patch:
+                with_patch += count
             open += count
         result = dict(new=new, open=open, inprogress=inprogress, high=high,
-            critical=critical)
+            critical=critical, with_patch=with_patch)
         return result
 
     @property
@@ -1875,10 +1881,7 @@ class BugsStatsMixin(BugsInfoMixin):
     @property
     def bugs_with_patches_count(self):
         """A count of unresolved bugs with patches."""
-        return self.context.searchTasks(
-            None, user=self.user,
-            status=UNRESOLVED_BUGTASK_STATUSES,
-            omit_duplicates=True, has_patch=True).count()
+        return self._bug_stats['with_patch']
 
 
 class BugListingPortletInfoView(LaunchpadView, BugsInfoMixin):
