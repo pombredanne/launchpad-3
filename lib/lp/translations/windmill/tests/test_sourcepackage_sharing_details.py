@@ -3,6 +3,7 @@
 
 """Tests for sharing details page."""
 
+
 __metaclass__ = type
 
 
@@ -27,7 +28,6 @@ from lp.testing.windmill.widgets import (
 from lp.translations.windmill.testing import (
     TranslationsWindmillLayer,
 )
-
 
 
 class TestSharingDetails(WindmillTestCase):
