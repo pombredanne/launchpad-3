@@ -11,14 +11,13 @@ __all__ = [
 
 from debian.changelog import Changelog
 from lazr.enum import DBItem
+from sqlobject import StringCol
 from storm.expr import Desc
-
 from storm.locals import (
     And,
     Int,
     Reference,
     Storm,
-    Unicode,
     )
 from zope.component import getUtility
 from zope.interface import (
@@ -88,10 +87,10 @@ class DistroSeriesDifference(Storm):
                     enum=DistroSeriesDifferenceStatus)
     difference_type = DBEnum(name='difference_type', allow_none=False,
                              enum=DistroSeriesDifferenceType)
-    source_version = Unicode(name='source_version', allow_none=True)
-    parent_source_version = Unicode(name='parent_source_version',
-                                    allow_none=True)
-    base_version = Unicode(name='base_version', allow_none=True)
+    source_version = StringCol(dbName='source_version', notNull=False)
+    parent_source_version = StringCol(dbName='parent_source_version',
+                                      notNull=False)
+    base_version = StringCol(dbName='base_version', notNull=False)
 
     @staticmethod
     def new(derived_series, source_package_name):
@@ -117,7 +116,8 @@ class DistroSeriesDifference(Storm):
         distro_series,
         difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
         source_package_name_filter=None,
-        status=None):
+        status=None,
+        child_version_higher=False):
         """See `IDistroSeriesDifferenceSource`."""
         if status is None:
             status = (
@@ -131,11 +131,17 @@ class DistroSeriesDifference(Storm):
             DistroSeriesDifference.difference_type == difference_type,
             DistroSeriesDifference.status.is_in(status),
         ]
+
         if source_package_name_filter:
             conditions.extend([
                 DistroSeriesDifference.source_package_name ==
                     SourcePackageName.id,
                 SourcePackageName.name == source_package_name_filter])
+
+        if child_version_higher:
+            conditions.extend([
+                DistroSeriesDifference.source_version >
+                    DistroSeriesDifference.parent_source_version])
 
         return IStore(DistroSeriesDifference).find(
             DistroSeriesDifference,

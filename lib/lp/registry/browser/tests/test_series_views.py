@@ -38,6 +38,11 @@ from lp.testing import (
     login_person,
     person_logged_in,
     )
+from lp.registry.browser.distroseries import (
+    BLACKLISTED,
+    NON_BLACKLISTED,
+    HIGHER_VERSION_THAN_PARENT,
+    )
 from lp.testing.views import create_initialized_view
 
 
@@ -296,9 +301,38 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
         self.assertContentEqual(
             [diff2, diff1], unfiltered_view.cached_differences.batch)
 
-    def test_batch_blacklisted(self):
-        # The include_blacklisted_filter parameter allows to list
-        # blacklisted packages.
+    def test_batch_unfiltered(self):
+        # The default filter is all non blacklisted differences.
+        set_derived_series_ui_feature_flag(self)
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
+        diff1 = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            source_package_name_str="my-src-package")
+        diff2 = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            source_package_name_str="my-second-src-package")
+        blacklisted_diff = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
+
+        filtered_view = create_initialized_view(
+            derived_series,
+            '+localpackagediffs',
+            query_string='field.package_type=%s' %NON_BLACKLISTED)
+        filtered_view2 = create_initialized_view(
+            derived_series,
+            '+localpackagediffs')
+
+        self.assertContentEqual(
+            [diff2, diff1], filtered_view.cached_differences.batch)
+        self.assertContentEqual(
+            [diff2, diff1], filtered_view2.cached_differences.batch)
+
+    def test_batch_differences_packages(self):
+        # field.package_type parameter allows to list only
+        # blacklisted differences.
         set_derived_series_ui_feature_flag(self)
         derived_series = self.factory.makeDistroSeries(
             name='derilucid', parent_series=self.factory.makeDistroSeries(
@@ -310,13 +344,43 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
         blacklisted_view = create_initialized_view(
             derived_series,
             '+localpackagediffs',
-            query_string='field.include_blacklisted_filter=on')
+            query_string='field.package_type=%s' %BLACKLISTED)
         unblacklisted_view = create_initialized_view(
             derived_series,
             '+localpackagediffs')
 
         self.assertContentEqual(
             [blacklisted_diff], blacklisted_view.cached_differences.batch)
+        self.assertContentEqual(
+            [], unblacklisted_view.cached_differences.batch)
+
+    def test_batch_blacklisted_differences_with_higher_version(self):
+        # field.package_type parameter allows to list only
+        # blacklisted differences with a child's version higher than parent's.
+        set_derived_series_ui_feature_flag(self)
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
+        blacklisted_diff_higher = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
+            versions={'base': '1.1', 'parent': '1.3', 'derived': '1.10'})
+        blacklisted_diff_not_higher = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
+            versions={'base': '1.1', 'parent': '1.12', 'derived': '1.10'})
+
+        blacklisted_view = create_initialized_view(
+            derived_series,
+            '+localpackagediffs',
+            query_string='field.package_type=%s' %HIGHER_VERSION_THAN_PARENT)
+        unblacklisted_view = create_initialized_view(
+            derived_series,
+            '+localpackagediffs')
+
+        self.assertContentEqual(
+            [blacklisted_diff_higher],
+            blacklisted_view.cached_differences.batch)
         self.assertContentEqual(
             [], unblacklisted_view.cached_differences.batch)
 
