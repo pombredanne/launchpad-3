@@ -7,7 +7,6 @@ import logging
 import sys
 from textwrap import dedent
 from time import sleep
-from unittest import TestLoader
 
 import transaction
 from zope.component import getUtility
@@ -425,7 +424,3 @@ class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
             cronscript.main()
         finally:
             errorlog.globalErrorUtility = old_errorlog
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
