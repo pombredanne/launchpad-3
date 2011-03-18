@@ -401,6 +401,9 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
 
         # XXX: Potential source of race condition. Another OOPS could be
         # logged.
+
+        # XXX: Also confusing because it might be polluted by values from
+        # previous jobs.
         oops = errorlog.globalErrorUtility.getLastOopsReport()
         # XXX: Maybe we can combine all of these assertions so that we get a
         # more informative error message.
