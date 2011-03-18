@@ -55,6 +55,7 @@ from lp.registry.interfaces.person import (
     PersonVisibility,
     )
 from lp.registry.interfaces.product import IProductSet
+from lp.registry.interfaces.teammembership import ITeamMembershipSet
 from lp.registry.model.karma import (
     KarmaCategory,
     KarmaTotalCache,
@@ -284,13 +285,21 @@ class TestPerson(TestCaseWithFactory):
         self.assertFalse(person.is_merge_pending)
 
     def test_merge_pending(self):
-        # is_merge_pending returns True when this person is the "from" person
-        # of an active merge job.
+        # is_merge_pending returns True when this person is being merged with
+        # another person in an active merge job.
         from_person = self.factory.makePerson()
         to_person = self.factory.makePerson()
         getUtility(IPersonSet).mergeAsync(from_person, to_person)
         self.assertTrue(from_person.is_merge_pending)
-        self.assertFalse(to_person.is_merge_pending)
+        self.assertTrue(to_person.is_merge_pending)
+
+    def test_mergeAsync_success(self):
+        # mergeAsync returns a job with the from and to persons.
+        from_person = self.factory.makePerson()
+        to_person = self.factory.makePerson()
+        job = getUtility(IPersonSet).mergeAsync(from_person, to_person)
+        self.assertEqual(from_person, job.from_person)
+        self.assertEqual(to_person, job.to_person)
 
     def test_selfgenerated_bugnotifications_none_by_default(self):
         # Default for new accounts is to not get any
@@ -684,8 +693,9 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self.assertEqual(oldest_date, person.datecreated)
 
     def _doMerge(self, test_team, target_team):
-        test_team.deactivateAllMembers(
-            comment='',
+        membershipset = getUtility(ITeamMembershipSet)
+        membershipset.deactivateActiveMemberships(
+            test_team, comment='',
             reviewer=test_team.teamowner)
         self.person_set.merge(test_team, target_team)
 
@@ -1246,4 +1256,4 @@ class TestAPIPartipication(TestCaseWithFactory):
         # XXX: This number should really be 10, but see
         # https://bugs.launchpad.net/storm/+bug/619017 which is adding 3
         # queries to the test.
-        self.assertThat(collector, HasQueryCount(LessThan(13)))
+        self.assertThat(collector, HasQueryCount(LessThan(14)))

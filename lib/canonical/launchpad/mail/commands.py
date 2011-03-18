@@ -201,6 +201,8 @@ class BugEmailCommand(EmailCommand):
             try:
                 bug = getUtility(IBugSet).get(bugid)
             except NotFoundError:
+                bug = None
+            if bug is None or not check_permission('launchpad.View', bug):
                 raise EmailProcessingError(
                     get_error_message('no-such-bug.txt', bug_id=bugid))
             return bug, None

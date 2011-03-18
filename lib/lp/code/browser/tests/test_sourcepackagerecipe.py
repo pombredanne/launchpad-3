@@ -224,6 +224,15 @@ class TestSourcePackageRecipeAddViewInitalValues(TestCaseWithFactory):
             view = create_initialized_view(branch, '+new-recipe')
         self.assertThat('widget-daily', Equals(view.initial_values['name']))
 
+    def test_personal_branch_initial_name(self):
+        # When a personal branch is used, the initial name is the name of the
+        # branch followed by "-daily". +junk-daily is not valid nor
+        # helpful.
+        branch = self.factory.makePersonalBranch(name='widget')
+        with person_logged_in(branch.owner):
+            view = create_initialized_view(branch, '+new-recipe')
+        self.assertThat('widget-daily', Equals(view.initial_values['name']))
+
     def test_initial_name_exists(self):
         # If the initial name exists, a generator is used to find an unused
         # name by appending a numbered suffix on the end.
