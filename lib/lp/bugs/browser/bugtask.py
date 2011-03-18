@@ -311,8 +311,8 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
 
     :param for_display: If true, the zeroth comment is given an empty body so
         that it will be filtered by get_visible_comments.
-    :param slice_info: If not None, defines a list of slices of the comments to
-        retrieve.
+    :param slice_info: If not None, defines a list of slices of the comments
+        to retrieve.
     """
     comments = build_comments_from_chunks(bugtask, truncate=truncate,
         slice_info=slice_info)
@@ -657,11 +657,11 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             edit_url=canonical_url(self.context, view_name='+edit'))
 
         # XXX 2010-10-05 gmb bug=655597:
-        #     This line of code keeps the view's query count down,
-        #     possibly using witchcraft. It should be rewritten to be
-        #     useful or removed in favour of making other queries more
-        #     efficient. The witchcraft is because the subscribers are accessed
-        #     in the initial page load, so the data is actually used.
+        # This line of code keeps the view's query count down,
+        # possibly using witchcraft. It should be rewritten to be
+        # useful or removed in favour of making other queries more
+        # efficient. The witchcraft is because the subscribers are accessed
+        # in the initial page load, so the data is actually used.
         if self.user is not None:
             list(bug.getSubscribersForPerson(self.user))
 
@@ -3056,7 +3056,8 @@ class BugTasksAndNominationsView(LaunchpadView):
             distro_packages))
         distro_series_set = getUtility(IDistroSeriesSet)
         self.target_releases.update(
-            distro_series_set.getCurrentSourceReleases(distro_series_packages))
+            distro_series_set.getCurrentSourceReleases(
+                distro_series_packages))
         ids = set()
         for release_person_ids in map(attrgetter('creatorID', 'maintainerID'),
             self.target_releases.values()):
