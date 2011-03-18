@@ -1684,6 +1684,15 @@ class TranslationTemplatesCollection(Collection):
         """
         return self.refine(POTemplate.iscurrent == current_value)
 
+    def restrictName(self, template_name):
+        """Select based on `POTemplate.name`.
+
+        :param template: The value for `name` that you are looking for.
+        :return: A `TranslationTemplatesCollection based on this one but
+            restricted to ones with the desired `name` value.
+        """
+        return self
+
     def joinPOFile(self):
         """Join `POFile` into the collection.
 

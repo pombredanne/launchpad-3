@@ -171,6 +171,19 @@ class TestSomething(TestCaseWithFactory):
         self.assertContentEqual(
             [template], obsolete_templates.select())
 
+    def test_restrictName(self):
+        trunk = self.factory.makeProduct().getSeries('trunk')
+        template = self.factory.makePOTemplate(productseries=trunk)
+        template_name = template.name
+        # Other template that will not be returned.
+        self.factory.makePOTemplate(productseries=trunk)
+        collection = TranslationTemplatesCollection()
+        by_series = collection.restrictProductSeries(trunk)
+
+        same_name_templates = by_series.restrictName(template_name)
+        self.assertContentEqual(
+            [template], same_name_templates.select())
+
     def test_joinPOFile(self):
         trunk = self.factory.makeProduct().getSeries('trunk')
         translated_template = self.factory.makePOTemplate(productseries=trunk)
