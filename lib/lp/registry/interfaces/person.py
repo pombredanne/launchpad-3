@@ -1716,13 +1716,6 @@ class IPersonEditRestricted(Interface):
         """
 
 
-class IPersonModerate(Interface):
-    """IPerson attributes that require launchpad.Moderate."""
-
-    def deactivateAllMembers(comment, reviewer):
-        """Deactivate all the members of this team."""
-
-
 class IPersonCommAdminWriteRestricted(Interface):
     """IPerson attributes that require launchpad.Admin permission to set."""
 
@@ -1771,7 +1764,7 @@ class IPersonSpecialRestricted(Interface):
 
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
               IPersonCommAdminWriteRestricted, IPersonSpecialRestricted,
-              IPersonModerate, IHasStanding, ISetLocation, IRootContext):
+              IHasStanding, ISetLocation, IRootContext):
     """A Person."""
     export_as_webservice_entry(plural_name='people')
 

@@ -20,6 +20,7 @@ from lp.registry.interfaces.distroseriesdifference import (
     )
 from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.features import getFeatureFlag
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.distributionjob import (
     DistributionJobType,
@@ -30,6 +31,9 @@ from lp.soyuz.model.distributionjob import (
     DistributionJob,
     DistributionJobDerived,
     )
+
+
+FEATURE_FLAG_ENABLE_MODULE = u"soyuz.derived_series_jobs.enabled"
 
 
 def make_metadata(sourcepackagename):
@@ -106,6 +110,8 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
     @classmethod
     def createForPackagePublication(cls, distroseries, sourcepackagename):
         """See `IDistroSeriesDifferenceJobSource`."""
+        if not getFeatureFlag(FEATURE_FLAG_ENABLE_MODULE):
+            return
         jobs = []
         children = list(distroseries.getDerivedSeries())
         for relative in children + [distroseries]:

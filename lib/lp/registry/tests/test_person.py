@@ -55,6 +55,7 @@ from lp.registry.interfaces.person import (
     PersonVisibility,
     )
 from lp.registry.interfaces.product import IProductSet
+from lp.registry.interfaces.teammembership import ITeamMembershipSet
 from lp.registry.model.karma import (
     KarmaCategory,
     KarmaTotalCache,
@@ -684,8 +685,9 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self.assertEqual(oldest_date, person.datecreated)
 
     def _doMerge(self, test_team, target_team):
-        test_team.deactivateAllMembers(
-            comment='',
+        membershipset = getUtility(ITeamMembershipSet)
+        membershipset.deactivateActiveMemberships(
+            test_team, comment='',
             reviewer=test_team.teamowner)
         self.person_set.merge(test_team, target_team)
 

@@ -168,7 +168,6 @@ from lp.bugs.model.bugtask import (
     BugTask,
     bugtask_sort_key,
     get_bug_privacy_filter,
-    NullBugTask,
     )
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (
@@ -837,6 +836,27 @@ BugMessage""" % sqlvalues(self.id))
                 BugNotificationLevel.NOTHING)
         return not subscriptions.is_empty()
 
+    def mute(self, person, muted_by):
+        """See `IBug`."""
+        # If there's an existing subscription, update it.
+        store = Store.of(self)
+        subscriptions = store.find(
+            BugSubscription,
+            BugSubscription.bug == self,
+            BugSubscription.person == person)
+        if subscriptions.is_empty():
+            return self.subscribe(
+                person, muted_by, level=BugNotificationLevel.NOTHING)
+        else:
+            subscription = subscriptions.one()
+            subscription.bug_notification_level = (
+                BugNotificationLevel.NOTHING)
+            return subscription
+
+    def unmute(self, person, unmuted_by):
+        """See `IBug`."""
+        self.unsubscribe(person, unmuted_by)
+
     @property
     def subscriptions(self):
         """The set of `BugSubscriptions` for this bug."""
@@ -1428,16 +1448,6 @@ BugMessage""" % sqlvalues(self.id))
             list(PersonSet().getPrecachedPersonsFromIDs(owners,
                 need_validity=True))
         return DecoratedResultSet(result, pre_iter_hook=eager_load_owners)
-
-    def getNullBugTask(self, product=None, productseries=None,
-                    sourcepackagename=None, distribution=None,
-                    distroseries=None):
-        """See `IBug`."""
-        return NullBugTask(bug=self, product=product,
-                           productseries=productseries,
-                           sourcepackagename=sourcepackagename,
-                           distribution=distribution,
-                           distroseries=distroseries)
 
     def addNomination(self, owner, target):
         """See `IBug`."""
