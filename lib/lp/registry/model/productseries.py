@@ -483,6 +483,19 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
 
     def getUbuntuTranslationFocusPackage(self):
         """See `IProductSeries`."""
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        translation_focus = ubuntu.translation_focus
+        current_series = ubuntu.currentseries
+        candidate = None
+        for package in self.sourcepackages:
+            if package.distroseries == translation_focus:
+                return package
+            if package.distroseries == current_series:
+                candidate = package
+            elif package.distroseries.distribution == ubuntu:
+                if candidate is None:
+                    candidate = package
+        return candidate
 
     def setPackaging(self, distroseries, sourcepackagename, owner):
         """See IProductSeries."""
