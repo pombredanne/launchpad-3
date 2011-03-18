@@ -1603,6 +1603,12 @@ class IBugTaskSet(Interface):
 
     open_bugtask_search = Attribute("A search returning open bugTasks.")
 
+    def buildUpstreamClause(params):
+        """Create a SQL clause to do upstream checks in a bug search.
+        
+        :return: A string SQL expression.
+        """
+
 
 def valid_remote_bug_url(value):
     """Verify that the URL is to a bug to a known bug tracker."""

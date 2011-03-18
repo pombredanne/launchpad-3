@@ -77,6 +77,7 @@ from lazr.restful.interfaces import (
 from lazr.uri import URI
 from pytz import utc
 from simplejson import dumps
+from storm.expr import SQL
 from z3c.ptcompat import ViewPageTemplateFile
 from zope import (
     component,
@@ -1767,10 +1768,15 @@ class BugsStatsMixin(BugsInfoMixin):
     @cachedproperty
     def _bug_stats(self):
         bug_task_set = getUtility(IBugTaskSet)
+        upstream_open_bugs = bug_task_set.open_bugtask_search
+        upstream_open_bugs.setTarget(self.context)
+        upstream_open_bugs.resolved_upstream = True
+        fixed_upstream_clause = SQL(
+            bug_task_set.buildUpstreamClause(upstream_open_bugs))
         open_bugs = bug_task_set.open_bugtask_search
         open_bugs.setTarget(self.context)
         groups = (BugTask.status, BugTask.importance,
-            Bug.latest_patch_uploaded != None)
+            Bug.latest_patch_uploaded != None, fixed_upstream_clause)
         counts = bug_task_set.countBugs(open_bugs, groups)
         # Sum the split out aggregates.
         new = 0
@@ -1779,10 +1785,12 @@ class BugsStatsMixin(BugsInfoMixin):
         critical = 0
         high = 0
         with_patch = 0
+        resolved_upstream = 0
         for metadata, count in counts.items():
             status = metadata[0]
             importance = metadata[1]
             has_patch = metadata[2]
+            was_resolved_upstream = metadata[3]
             if status == BugTaskStatus.NEW:
                 new += count
             elif status == BugTaskStatus.INPROGRESS:
@@ -1793,17 +1801,18 @@ class BugsStatsMixin(BugsInfoMixin):
                 high += count
             if has_patch:
                 with_patch += count
+            if was_resolved_upstream:
+                resolved_upstream += count
             open += count
         result = dict(new=new, open=open, inprogress=inprogress, high=high,
-            critical=critical, with_patch=with_patch)
+            critical=critical, with_patch=with_patch,
+            resolved_upstream=resolved_upstream)
         return result
 
     @property
     def bugs_fixed_elsewhere_count(self):
         """A count of bugs fixed elsewhere."""
-        params = get_default_search_params(self.user)
-        params.resolved_upstream = True
-        return self.context.searchTasks(params).count()
+        return self._bug_stats['resolved_upstream']
 
     @property
     def open_cve_bugs_count(self):
