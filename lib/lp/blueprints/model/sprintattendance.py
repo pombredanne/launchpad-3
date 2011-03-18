@@ -32,9 +32,8 @@ class SprintAttendance(Storm):
     sprint_id = Int(name='sprint')
     sprint = Reference(sprint_id, 'Sprint.id')
 
-    attendee_id = Int(name='attendee')
-    attendee = Reference(attendee_id, 'Person.id',
-                         storm_validator=validate_public_person)
+    attendee_id = Int(name='attendee', validator=validate_public_person)
+    attendee = Reference(attendee_id, 'Person.id')
 
     time_starts = UtcDateTimeCol(notNull=True)
     time_ends = UtcDateTimeCol(notNull=True)
