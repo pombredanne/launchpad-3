@@ -401,25 +401,7 @@ class POFile(SQLBase, POFileMixIn):
 
     def getOtherSidePOFile(self):
         """See `IPOFile`."""
-        potemplateset = getUtility(IPOTemplateSet)
-        if self.potemplate.translation_side == TranslationSide.UBUNTU:
-            from lp.registry.model.sourcepackage import SourcePackage
-            productseries = SourcePackage(
-                self.potemplate.sourcepackagename,
-                self.potemplate.distroseries).productseries
-            if productseries is None:
-                return None
-            subset = potemplateset.getSubset(productseries=productseries)
-        else:
-            productseries = self.potemplate.productseries
-            sourcepackage = productseries.getUbuntuTranslationFocusPackage()
-            if sourcepackage is None:
-                return None
-            subset = potemplateset.getSubset(
-                distroseries=sourcepackage.distroseries,
-                sourcepackagename=sourcepackage.sourcepackagename)
-
-        other_potemplate = subset.getPOTemplateByName(self.potemplate.name)
+        other_potemplate = self.potemplate.getOtherSidePOTemplate()
         if other_potemplate is None:
             return None
         return other_potemplate.getPOFileByLang(self.language.code)
