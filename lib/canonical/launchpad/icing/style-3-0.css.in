@@ -923,6 +923,9 @@ h1 .edit {
     top: -3px;
     margin-left: 0.5em;
     }
+.yui3-editable_text {
+    outline: none;
+    }
 .yui3-ieditor {
     padding-right: 288px;
     }
