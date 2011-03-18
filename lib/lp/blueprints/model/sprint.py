@@ -289,15 +289,13 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
             SprintAttendance,
             SprintAttendance.sprint == self,
             SprintAttendance.attendee == person).one()
-        if attendance is not None:
-            attendance.time_starts = time_starts
-            attendance.time_ends = time_ends
-            attendance.is_physical = is_physical
-            return attendance
-        # Since no previous attendance existed, create a new one.
-        return SprintAttendance(
-            sprint=self, attendee=person, is_physical=is_physical,
-            time_starts=time_starts, time_ends=time_ends)
+        if attendance is None:
+            # Since no previous attendance existed, create a new one.
+            attendance = SprintAttendance(sprint=self, attendee=person)
+        attendance.time_starts = time_starts
+        attendance.time_ends = time_ends
+        attendance.is_physical = is_physical
+        return attendance
 
     def removeAttendance(self, person):
         """See `ISprint`."""
