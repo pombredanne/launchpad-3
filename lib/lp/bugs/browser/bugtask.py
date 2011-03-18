@@ -1768,19 +1768,28 @@ class BugsStatsMixin(BugsInfoMixin):
         bug_task_set = getUtility(IBugTaskSet)
         open_bugs = bug_task_set.open_bugtask_search
         open_bugs.setTarget(self.context)
-        groups = (BugTask.status,)
+        groups = (BugTask.status, BugTask.importance)
         counts = bug_task_set.countBugs(open_bugs, groups)
         # Sum the split out aggregates.
         new = 0
         open = 0
         inprogress = 0
-        for status, child in counts.items():
-            if status == (BugTaskStatus.NEW,):
-                new += child
-            if status == (BugTaskStatus.INPROGRESS,):
-                inprogress += child
-            open += child
-        result = dict(new=new, open=open, inprogress=inprogress)
+        critical = 0
+        high = 0
+        for metadata, count in counts.items():
+            status = metadata[0]
+            importance = metadata[1]
+            if status == BugTaskStatus.NEW:
+                new += count
+            elif status == BugTaskStatus.INPROGRESS:
+                inprogress += count
+            if importance == BugTaskImportance.CRITICAL:
+                critical += count
+            elif importance == BugTaskImportance.HIGH:
+                high += count
+            open += count
+        result = dict(new=new, open=open, inprogress=inprogress, high=high,
+            critical=critical)
         return result
 
     @property
@@ -1846,12 +1855,12 @@ class BugsStatsMixin(BugsInfoMixin):
     @property
     def critical_bugs_count(self):
         """A count of critical bugs."""
-        return self.context.critical_bugtasks.count()
+        return self._bug_stats['critical']
 
     @property
     def high_bugs_count(self):
         """A count of high priority bugs."""
-        return self.context.high_bugtasks.count()
+        return self._bug_stats['high']
 
     @property
     def my_bugs_count(self):
