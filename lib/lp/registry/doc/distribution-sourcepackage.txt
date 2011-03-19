@@ -54,7 +54,6 @@ A distribution source package has a name, displayname, title, and a summary.
 Aggregate attributes
 --------------------
 
-    u'pmount in ubuntu'
     >>> dsp.bugtasks().count()
     0
 
