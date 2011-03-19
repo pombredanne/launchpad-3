@@ -3088,3 +3088,51 @@ class BugTaskSet:
             counts.append(package_counts)
 
         return counts
+
+    def getBugTaskTargetMilestones(self, bugtasks):
+        from lp.registry.model.distribution import Distribution
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.registry.model.milestone import Milestone
+        from lp.registry.model.product import Product
+        from lp.registry.model.productseries import ProductSeries
+        store = Store.of(bugtasks[0])
+        distro_ids = set()
+        distro_series_ids = set()
+        product_ids = set()
+        product_series_ids = set()
+        
+        # Gather all the ids that might have milestones to preload for the
+        # for the milestone vocabulary
+        for task in bugtasks:
+            task = removeSecurityProxy(task)
+            distro_ids.add(task.distributionID)
+            distro_series_ids.add(task.distroseriesID)
+            product_ids.add(task.productID)
+            product_series_ids.add(task.productseriesID)
+
+        distro_ids.discard(None) 
+        distro_series_ids.discard(None) 
+        product_ids.discard(None) 
+        product_series_ids.discard(None) 
+        
+        milestones = store.find(
+            Milestone,
+            Or(
+                Milestone.distributionID.is_in(distro_ids),
+                Milestone.distroseriesID.is_in(distro_series_ids),
+                Milestone.productID.is_in(product_ids),
+                Milestone.productseriesID.is_in(product_series_ids)))
+
+        # Pull in all the related pillars
+        list(store.find(
+            Distribution, Distribution.id.is_in(distro_ids)))
+        list(store.find(
+            DistroSeries, DistroSeries.id.is_in(distro_series_ids)))
+        list(store.find(
+            Product, Product.id.is_in(product_ids)))
+        list(store.find(
+            ProductSeries, ProductSeries.id.is_in(product_series_ids)))
+            
+        return milestones
+
+        
