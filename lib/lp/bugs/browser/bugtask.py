@@ -1440,8 +1440,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
             # whose changes we want to apply, because we don't want
             # the form machinery to try and set this value back to
             # what it was!
-            if 'milestone' in data_to_apply:
-                del data_to_apply["milestone"]
+            data_to_apply.pop('milestone', None)
 
         # We special case setting assignee and status, because there's
         # a workflow associated with changes to these fields.
