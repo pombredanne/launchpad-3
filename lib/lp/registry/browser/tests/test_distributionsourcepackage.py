@@ -33,7 +33,7 @@ class TestDistributionSourcePackageFormatterAPI(TestCaseWithFactory):
         dsp = ubuntu.getSourcePackage('mouse')
         markup = (
             u'<a href="/ubuntu/+source/mouse" class="sprite package-source">'
-            u'mouse in ubuntu</a>')
+            u'mouse in Ubuntu</a>')
         self.assertEqual(markup, test_tales('dsp/fmt:link', dsp=dsp))
 
 
