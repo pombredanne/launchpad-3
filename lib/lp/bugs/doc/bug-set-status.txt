@@ -9,7 +9,7 @@ changing the status, the target, and the new status.
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> from lp.registry.interfaces.product import IProductSet
-    
+
     >>> with lp_dbuser():
     ...     login('no-priv@canonical.com')
     ...     no_priv = getUtility(IPersonSet).getByName('no-priv')
