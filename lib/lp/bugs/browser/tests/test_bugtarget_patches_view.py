@@ -89,14 +89,3 @@ class TestBugListingPortletStatsView(TestBugTargetPatchCountBase):
                 self.view.bugs_with_patches_count, number_of_bugs_shown,
                 "Unexpected number of bugs with patches displayed for status "
                 "%s" % bugtask_status)
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestBugTargetPatchView))
-    suite.addTest(unittest.makeSuite(TestBugListingPortletStatsView))
-    return suite
-
-
-if __name__ == '__main__':
-    unittest.TextTestRunner().run(test_suite())
