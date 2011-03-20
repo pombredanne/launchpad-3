@@ -1279,6 +1279,10 @@ class BugTaskSearchParams:
         from lp.registry.interfaces.product import IProduct
         from lp.registry.interfaces.productseries import IProductSeries
         from lp.registry.interfaces.milestone import IMilestone
+        from lp.registry.interfaces.projectgroup import IProjectGroup
+        from lp.registry.interfaces.sourcepackage import ISourcePackage
+        from lp.registry.interfaces.distributionsourcepackage import \
+            IDistributionSourcePackage
         if isinstance(target, (any, all)):
             assert len(target.query_values), \
                 'cannot determine target with no targets'
@@ -1295,6 +1299,12 @@ class BugTaskSearchParams:
             self.setProductSeries(target)
         elif IMilestone.providedBy(instance):
             self.milestone = target
+        elif ISourcePackage.providedBy(instance):
+            self.setSourcePackage(target)
+        elif IDistributionSourcePackage.providedBy(instance):
+            self.setSourcePackage(target)
+        elif IProjectGroup.providedBy(instance):
+            self.setProject(target)
         else:
             raise AssertionError("unknown target type %r" % target)
 
