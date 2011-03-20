@@ -274,6 +274,21 @@ from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
 
 
+DISPLAY_BUG_STATUS_FOR_PATCHES = {
+    BugTaskStatus.NEW:  True,
+    BugTaskStatus.INCOMPLETE: True,
+    BugTaskStatus.INVALID: False,
+    BugTaskStatus.WONTFIX: False,
+    BugTaskStatus.CONFIRMED: True,
+    BugTaskStatus.TRIAGED: True,
+    BugTaskStatus.INPROGRESS: True,
+    BugTaskStatus.FIXCOMMITTED: True,
+    BugTaskStatus.FIXRELEASED: False,
+    BugTaskStatus.UNKNOWN: False,
+    BugTaskStatus.EXPIRED: False
+    }
+
+
 @component.adapter(IBugTask, IReference, IWebServiceClientRequest)
 @implementer(IFieldHTMLRenderer)
 def bugtarget_renderer(context, field, request):
@@ -1799,7 +1814,7 @@ class BugsStatsMixin(BugsInfoMixin):
                 critical += count
             elif importance == BugTaskImportance.HIGH:
                 high += count
-            if has_patch:
+            if has_patch and DISPLAY_BUG_STATUS_FOR_PATCHES[status]:
                 with_patch += count
             if was_resolved_upstream:
                 resolved_upstream += count
