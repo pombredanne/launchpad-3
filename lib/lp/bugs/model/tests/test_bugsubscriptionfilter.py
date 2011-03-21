@@ -169,6 +169,12 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
             frozenset((BugTaskStatus.NEW,)),
             bug_subscription_filter.statuses)
 
+    def test_statuses_set_all(self):
+        # Setting all importances is normalized into setting no importances.
+        bug_subscription_filter = BugSubscriptionFilter()
+        bug_subscription_filter.statuses = list(BugTaskStatus.items)
+        self.assertEqual(frozenset(), bug_subscription_filter.statuses)
+
     def test_statuses_set_empty(self):
         # Assigning an empty iterable to statuses updates the database.
         bug_subscription_filter = BugSubscriptionFilter()
@@ -195,6 +201,12 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         self.assertEqual(
             frozenset((BugTaskImportance.HIGH,)),
             bug_subscription_filter.importances)
+
+    def test_importances_set_all(self):
+        # Setting all importances is normalized into setting no importances.
+        bug_subscription_filter = BugSubscriptionFilter()
+        bug_subscription_filter.importances = list(BugTaskImportance.items)
+        self.assertEqual(frozenset(), bug_subscription_filter.importances)
 
     def test_importances_set_empty(self):
         # Assigning an empty iterable to importances updates the database.
