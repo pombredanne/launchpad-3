@@ -262,7 +262,7 @@ class TestSourcePackageRecipeAddViewInitalValues(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         with person_logged_in(archive.owner):
             view = create_initialized_view(branch, '+new-recipe')
-        series = set(view.initial_values['distros'])
+        series = set(view.initial_values['distroseries'])
         initial_series = set([development, current])
         self.assertEqual(initial_series, series.intersection(initial_series))
         other_series = set(
@@ -442,7 +442,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         browser = self.getViewBrowser(self.makeBranch(), '+new-recipe')
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
-        browser.getControl(name='field.distros').value = []
+        browser.getControl(name='field.distroseries').value = []
         browser.getControl('Create Recipe').click()
         self.assertEqual(
             'You must specify at least one series for daily builds.',
@@ -770,8 +770,8 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             'lp://dev/~chef/ratatouille/meat',
             MatchesTagText(content, 'edit-recipe_text'))
         self.assertThat(
-            'Distribution series: Mumbly Midget',
-            MatchesTagText(content, 'distros'))
+            'Distribution series: Edit Mumbly Midget',
+            MatchesTagText(content, 'distroseries'))
         self.assertThat(
             'PPA 2', MatchesPickerText(content, 'edit-daily_build_archive'))
 
@@ -820,8 +820,8 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
             'lp://dev/~chef/ratatouille/meat',
             MatchesTagText(content, 'edit-recipe_text'))
         self.assertThat(
-            'Distribution series: Mumbly Midget',
-            MatchesTagText(content, 'distros'))
+            'Distribution series: Edit Mumbly Midget',
+            MatchesTagText(content, 'distroseries'))
 
     def test_edit_recipe_forbidden_instruction(self):
         self.factory.makeDistroSeries(

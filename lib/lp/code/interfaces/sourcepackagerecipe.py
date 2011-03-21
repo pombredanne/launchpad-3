@@ -36,6 +36,7 @@ from lazr.restful.declarations import (
 from lazr.restful.fields import (
     CollectionField,
     Reference,
+    ReferenceChoice,
     )
 from lazr.restful.interface import copy_field
 from zope.interface import (
@@ -201,7 +202,9 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
             description=_("The person or team who can edit this recipe.")))
 
     distroseries = exported(List(
-        Reference(IDistroSeries), title=_("Default distribution series"),
+        ReferenceChoice(schema=IDistroSeries,
+            vocabulary='BuildableDistroSeries'),
+        title=_("Default distribution series"),
         description=_("If built daily, these are the distribution "
             "versions that the recipe will be built for."),
         readonly=True))

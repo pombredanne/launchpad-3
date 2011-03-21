@@ -380,7 +380,7 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
 
         The distroseries function as defaults for requesting a build.
         """
-        initial_values = {'distros': self.context.distroseries}
+        initial_values = {'distroseries': self.context.distroseries}
         build = self.context.last_build
         if build is not None:
             initial_values['archive'] = build.archive
@@ -734,6 +734,11 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
         # all confused when we want to create a new PPA.
         archive_widget._displayItemForMissingValue = False
 
+    def setUpFields(self):
+        super(SourcePackageRecipeAddView, self).setUpFields()
+        # Ensure distro series widget allows input
+        self.form_fields['distroseries'].for_input = True
+
     def getBranch(self):
         """The branch on which the recipe is built."""
         return self.context
@@ -832,6 +837,9 @@ class SourcePackageRecipeEditView(RecipeRelatedBranchesMixin,
 
     def setUpFields(self):
         super(SourcePackageRecipeEditView, self).setUpFields()
+
+        # Ensure distro series widget allows input
+        self.form_fields['distroseries'].for_input = True
 
         if check_permission('launchpad.Admin', self.context):
             # Exclude the PPA archive dropdown.
