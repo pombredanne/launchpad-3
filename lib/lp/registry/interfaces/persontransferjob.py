@@ -100,17 +100,25 @@ class IPersonMergeJobSource(IJobSource):
     """An interface for acquiring IMembershipNotificationJobs."""
 
     def create(from_person, to_person):
-        """Create a new IMembershipNotificationJob."""
+        """Create a new IMembershipNotificationJob.
 
-    def find(from_person=None, to_person=None):
+        None is returned if either the from_person or to_person are already
+        in a pending merge.
+        """
+
+    def find(from_person=None, to_person=None, any_person=False):
         """Finds pending merge jobs.
 
         :param from_person: Match jobs on `from_person`, or `None` to ignore
             `from_person`.
         :param to_person: Match jobs on `to_person`, or `None` to ignore
             `from_person`.
+        :param any_person: Match jobs on the `to_person` or the `from_person`
+            when both `to_person` and `from_person` are not None.
         :return: A `ResultSet` yielding `IPersonMergeJob`.
 
         If both `from_person` and `to_person` is supplied, only jobs where
-        both match are returned.
+        both match are returned by default. When any_person is True and
+        `from_person` and `to_person` are supplied, jobs with either person
+        specified are returned.
         """

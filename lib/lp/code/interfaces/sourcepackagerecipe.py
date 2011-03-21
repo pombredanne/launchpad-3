@@ -261,7 +261,7 @@ class ISourcePackageRecipeSource(Interface):
     """
 
     def new(registrant, owner, distroseries, name,
-            builder_recipe, description):
+            builder_recipe, description, date_created):
         """Create an `ISourcePackageRecipe`."""
 
     def exists(owner, name):

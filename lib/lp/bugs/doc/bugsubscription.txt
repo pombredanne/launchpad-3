@@ -508,7 +508,7 @@ the COMMENTS level...
     >>> [(address, recipients.getReason(address)[1]) for address in addresses]
     [('foo.bar@canonical.com', 'Subscriber'),
      ('mark@example.com', 'Subscriber'),
-     ('no-priv@canonical.com', u'Subscriber (linux-source-2.6.15 in ubuntu)'),
+     ('no-priv@canonical.com', u'Subscriber (linux-source-2.6.15 in Ubuntu)'),
      ('robertc@robertcollins.net', 'Subscriber'),
      ('support@ubuntu.com', u'Subscriber @ubuntu-team'),
      ('test@canonical.com', 'Subscriber')]
