@@ -1,14 +1,15 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
+import unittest
+
 from BeautifulSoup import BeautifulSoup
+import soupmatchers
 from storm.zope.interfaces import IResultSet
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
-
-import unittest
 
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -17,31 +18,31 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
     LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.registry.browser.distroseries import (
+    BLACKLISTED,
+    HIGHER_VERSION_THAN_PARENT,
+    NON_BLACKLISTED,
     )
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
+    )
+from lp.services.features import (
+    getFeatureFlag,
+    per_thread,
     )
 from lp.services.features.flags import FeatureController
 from lp.services.features.model import (
     FeatureFlag,
     getFeatureStore,
     )
-from lp.services.features import (
-    getFeatureFlag,
-    per_thread,
-    )
 from lp.testing import (
-    TestCaseWithFactory,
     login_person,
     person_logged_in,
-    )
-from lp.registry.browser.distroseries import (
-    BLACKLISTED,
-    NON_BLACKLISTED,
-    HIGHER_VERSION_THAN_PARENT,
+    TestCaseWithFactory,
     )
 from lp.testing.views import create_initialized_view
 
@@ -275,6 +276,28 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
+    def test_higher_radio_mentions_parent(self):
+        set_derived_series_ui_feature_flag(self)
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid',
+                displayname='Lucid'))
+        diff1 = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            source_package_name_str="my-src-package")
+        view = create_initialized_view(
+            derived_series,
+            '+localpackagediffs')
+
+        radio_title = \
+            "&nbsp;Blacklisted packages with a higher version than in 'Lucid'"
+        radio_option_matches = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                "radio displays parent's name", 'label',
+                text=radio_title),
+            )
+        self.assertThat(view.render(), radio_option_matches)
+
     def test_batch_filtered(self):
         # The name_filter parameter allows to filter packages by name.
         set_derived_series_ui_feature_flag(self)
@@ -301,7 +324,7 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
         self.assertContentEqual(
             [diff2, diff1], unfiltered_view.cached_differences.batch)
 
-    def test_batch_unfiltered(self):
+    def test_batch_non_blacklisted(self):
         # The default filter is all non blacklisted differences.
         set_derived_series_ui_feature_flag(self)
         derived_series = self.factory.makeDistroSeries(
@@ -320,7 +343,7 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
         filtered_view = create_initialized_view(
             derived_series,
             '+localpackagediffs',
-            query_string='field.package_type=%s' %NON_BLACKLISTED)
+            query_string='field.package_type=%s' % NON_BLACKLISTED)
         filtered_view2 = create_initialized_view(
             derived_series,
             '+localpackagediffs')
@@ -344,7 +367,7 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
         blacklisted_view = create_initialized_view(
             derived_series,
             '+localpackagediffs',
-            query_string='field.package_type=%s' %BLACKLISTED)
+            query_string='field.package_type=%s' % BLACKLISTED)
         unblacklisted_view = create_initialized_view(
             derived_series,
             '+localpackagediffs')
@@ -373,7 +396,7 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
         blacklisted_view = create_initialized_view(
             derived_series,
             '+localpackagediffs',
-            query_string='field.package_type=%s' %HIGHER_VERSION_THAN_PARENT)
+            query_string='field.package_type=%s' % HIGHER_VERSION_THAN_PARENT)
         unblacklisted_view = create_initialized_view(
             derived_series,
             '+localpackagediffs')

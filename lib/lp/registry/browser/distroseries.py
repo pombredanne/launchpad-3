@@ -540,13 +540,18 @@ HIGHER_VERSION_THAN_PARENT = 'higher-than-parent'
 
 DEFAULT_PACKAGE_TYPE = NON_BLACKLISTED
 
-PACKAGE_TYPE_VOCABULARY = SimpleVocabulary((
-    SimpleTerm(NON_BLACKLISTED, NON_BLACKLISTED, 'Non blacklisted packages'),
-    SimpleTerm(BLACKLISTED, BLACKLISTED, 'Blacklisted packages'),
-    SimpleTerm(
-        HIGHER_VERSION_THAN_PARENT,
-        HIGHER_VERSION_THAN_PARENT,
-        'Blacklisted packages with a higher version than in the parent')))
+
+def make_package_type_vocabulary(parent_name):
+    return SimpleVocabulary((
+        SimpleTerm(NON_BLACKLISTED,
+                   NON_BLACKLISTED,
+                   'Non blacklisted packages'),
+        SimpleTerm(BLACKLISTED, BLACKLISTED, 'Blacklisted packages'),
+        SimpleTerm(
+            HIGHER_VERSION_THAN_PARENT,
+            HIGHER_VERSION_THAN_PARENT,
+            "Blacklisted packages with a higher version than in '%s'"
+                % parent_name)))
 
 
 class DistroSeriesNeedsPackagesView(LaunchpadView):
@@ -568,11 +573,6 @@ class IDifferencesFormSchema(Interface):
     name_filter = TextLine(
         title=_("Package name contains"), required=False)
 
-    package_type = Choice(
-        vocabulary=PACKAGE_TYPE_VOCABULARY,
-        default=DEFAULT_PACKAGE_TYPE,
-        required=True)
-
     selected_differences = List(
         title=_('Selected differences'),
         value_type=Choice(vocabulary=SimpleVocabulary([])),
@@ -583,7 +583,7 @@ class IDifferencesFormSchema(Interface):
 class DistroSeriesLocalDifferences(LaunchpadFormView):
     """Present differences between a derived series and its parent."""
     schema = IDifferencesFormSchema
-    field_names = ['selected_differences', 'package_type']
+    field_names = ['selected_differences']
     custom_widget('selected_differences', LabeledMultiCheckBoxWidget)
     custom_widget('package_type', LaunchpadRadioWidget)
 
@@ -613,6 +613,14 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
                 self.context.parent_series.displayname,
                 ))
 
+    def setupPackageFilterRadio(self):
+        return form.Fields(Choice(
+            __name__='package_type',
+            vocabulary=make_package_type_vocabulary(
+                self.context.parent_series.displayname),
+            default=DEFAULT_PACKAGE_TYPE,
+            required=True))
+
     def setUpFields(self):
         """Add the selected differences field.
 
@@ -620,6 +628,10 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
         for its own vocabulary, we set it up after all the others.
         """
         super(DistroSeriesLocalDifferences, self).setUpFields()
+        self.form_fields = (
+            self.setupPackageFilterRadio() +
+            self.form_fields)
+
         has_edit = check_permission('launchpad.Edit', self.context)
 
         terms = [
