@@ -1690,6 +1690,14 @@ class BugTaskSet:
                     "project group, or distribution")
         return (join_tables, extra_clauses)
 
+    def _require_params(self, params):
+        assert zope_isinstance(params, BugTaskSearchParams)
+        if not isinstance(params, BugTaskSearchParams):
+            # Browser code let this get wrapped, unwrap it here as its just a
+            # dumb data store that has no security implications.
+            params = removeSecurityProxy(params)
+        return params
+
     def buildQuery(self, params):
         """Build and return an SQL query with the given parameters.
 
@@ -1698,11 +1706,7 @@ class BugTaskSet:
         :return: A query, the tables to query, ordering expression and a
             decorator to call on each returned row.
         """
-        assert zope_isinstance(params, BugTaskSearchParams)
-        if not isinstance(params, BugTaskSearchParams):
-            # Browser code let this get wrapped, unwrap it here as its just a
-            # dumb data store that has no security implications.
-            params = removeSecurityProxy(params)
+        params = self._require_params(params)
         from lp.bugs.model.bug import Bug
         extra_clauses = ['Bug.id = BugTask.bug']
         clauseTables = [BugTask, Bug]
@@ -1934,7 +1938,7 @@ class BugTaskSet:
                 """BugTask.sourcepackagename in (
                     select sourcepackagename from spns)""")
 
-        upstream_clause = self._buildUpstreamClause(params)
+        upstream_clause = self.buildUpstreamClause(params)
         if upstream_clause:
             extra_clauses.append(upstream_clause)
 
@@ -2085,12 +2089,13 @@ class BugTaskSet:
             query, clauseTables, orderby_arg, decorator, join_tables,
             has_duplicate_results, with_clause)
 
-    def _buildUpstreamClause(self, params):
+    def buildUpstreamClause(self, params):
         """Return an clause for returning upstream data if the data exists.
 
         This method will handles BugTasks that do not have upstream BugTasks
         as well as thoses that do.
         """
+        params = self._require_params(params)
         upstream_clauses = []
         if params.pending_bugwatch_elsewhere:
             if params.product:
