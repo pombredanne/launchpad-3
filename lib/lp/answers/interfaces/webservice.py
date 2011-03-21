@@ -14,8 +14,3 @@ __all__ = [
     ]
 
 from lp.answers.interfaces.question import IQuestion
-
-# XXX: JonathanLange 2010-11-09 bug=673083: Legacy work-around for circular
-# import bugs.  Break this up into a per-package thing.
-#from canonical.launchpad.interfaces import _schema_circular_imports
-#_schema_circular_imports
