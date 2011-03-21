@@ -459,7 +459,7 @@ class ProductSeriesView(LaunchpadView,
         sourcepackage = self.context.getUbuntuTranslationFocusPackage()
         if sourcepackage is None:
             return False
-        collection = sourcepackage.getTemplateCollection().restrictCurrent()
+        collection = sourcepackage.getTemplatesCollection().restrictCurrent()
         return bool(collection.select().any())
 
     @property

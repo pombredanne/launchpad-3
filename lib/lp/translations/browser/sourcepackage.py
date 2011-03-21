@@ -58,7 +58,7 @@ class SourcePackageTranslationsView(TranslationsMixin,
         productseries = self.context.productseries
         if productseries is None:
             return False
-        collection = productseries.getTemplateCollection().restrictCurrent()
+        collection = productseries.getTemplatesCollection().restrictCurrent()
         return bool(collection.select().any())
 
     @property
@@ -123,7 +123,7 @@ class SourcePackageTranslationSharingDetailsView(
         productseries = self.context.productseries
         if productseries is None:
             return False
-        collection = productseries.getTemplateCollection().restrictCurrent()
+        collection = productseries.getTemplatesCollection().restrictCurrent()
         return bool(collection.select().any())
 
     def initialize(self):

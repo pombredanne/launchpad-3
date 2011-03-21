@@ -447,7 +447,7 @@ class FileImporter(object):
         productseries = sourcepackage.productseries
         if productseries is None:
             return True
-        collection = productseries.getTemplateCollection().restrictCurrent()
+        collection = productseries.getTemplatesCollection().restrictCurrent()
         return not bool(collection.select().any())
 
     @cachedproperty
