@@ -157,7 +157,7 @@ sourcepackagename attributes are reconciled with the IQuestionTarget.
 
     >>> firefox_question.target = evolution_in_ubuntu
     >>> print firefox_question.target.displayname
-    evolution in ubuntu
+    evolution in Ubuntu
     >>> print firefox_question.distribution.name
     ubuntu
     >>> print firefox_question.sourcepackagename.name

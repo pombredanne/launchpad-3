@@ -246,10 +246,7 @@ from lp.registry.interfaces.ssh import (
     SSHKeyCompromisedError,
     SSHKeyType,
     )
-from lp.registry.interfaces.teammembership import (
-    ACTIVE_STATES,
-    TeamMembershipStatus,
-    )
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.interfaces.wikiname import (
     IWikiName,
     IWikiNameSet,
@@ -1547,89 +1544,6 @@ class Person(
         tm.dateexpires += timedelta(days=team.defaultrenewalperiod)
         tm.sendSelfRenewalNotification()
 
-    def deactivateAllMembers(self, comment, reviewer):
-        """Deactivate all members of this team.
-
-        This method circuments the TeamMembership.setStatus() method
-        to improve performance; therefore, it does not send out any
-        status change noticiations to the team admins.
-
-        :param comment: Explanation of the change.
-        :param reviewer: Person who made the change.
-        """
-        assert self.is_team, "This method is only available for teams."
-        now = datetime.now(pytz.timezone('UTC'))
-        store = Store.of(self)
-        cur = cursor()
-
-        # Deactivate the approved/admin team members.
-        # XXX: EdwinGrubbs 2009-07-08 bug=397072
-        # There are problems using storm to write an update
-        # statement using DBITems in the comparison.
-        cur.execute("""
-            UPDATE TeamMembership
-            SET status=%(status)s,
-                last_changed_by=%(last_changed_by)s,
-                last_change_comment=%(comment)s,
-                date_last_changed=%(date_last_changed)s
-            WHERE
-                TeamMembership.team = %(team)s
-                AND TeamMembership.status IN %(original_statuses)s
-            """,
-            dict(
-                status=TeamMembershipStatus.DEACTIVATED,
-                last_changed_by=reviewer.id,
-                comment=comment,
-                date_last_changed=now,
-                team=self.id,
-                original_statuses=(
-                    TeamMembershipStatus.ADMIN.value,
-                    TeamMembershipStatus.APPROVED.value)))
-
-        # Since we've updated the database behind Storm's back,
-        # flush its caches.
-        store.invalidate()
-
-        # Remove all indirect TeamParticipation entries resulting from this
-        # team. If this were just a select, it would be a complicated but
-        # feasible set of joins. Since it's a delete, we have to use
-        # some sub selects.
-        cur.execute('''
-            DELETE FROM TeamParticipation
-                WHERE
-                    -- The person needs to be a member of the team in question
-                    person IN
-                        (SELECT person from TeamParticipation WHERE
-                            team = %(team)s) AND
-
-                    -- The teams being deleted should be teams that this team
-                    -- is a member of.
-                    team IN
-                        (SELECT team from TeamMembership WHERE
-                            person = %(team)s) AND
-
-                    -- The person needs to not have direct membership in the
-                    -- team.
-                    NOT EXISTS
-                        (SELECT tm1.person from TeamMembership tm1
-                            WHERE
-                                tm1.person = TeamParticipation.person and
-                                tm1.team = TeamParticipation.team and
-                                tm1.status IN %(active_states)s);
-            ''', dict(team=self.id, active_states=ACTIVE_STATES))
-
-        # Since we've updated the database behind Storm's back yet again,
-        # we need to flush its caches, again.
-        store.invalidate()
-
-        # Remove all members from the TeamParticipation table
-        # except for the team, itself.
-        participants = store.find(
-            TeamParticipation,
-            TeamParticipation.teamID == self.id,
-            TeamParticipation.personID != self.id)
-        participants.remove()
-
     def setMembershipData(self, person, status, reviewer, expires=None,
                           comment=None):
         """See `IPerson`."""
@@ -2138,7 +2052,8 @@ class Person(
     def is_merge_pending(self):
         """See `IPublicPerson`."""
         return not getUtility(
-            IPersonMergeJobSource).find(from_person=self).is_empty()
+            IPersonMergeJobSource).find(
+                from_person=self, to_person=self, any_person=True).is_empty()
 
     def visibilityConsistencyWarning(self, new_value):
         """Warning used when changing the team's visibility.
