@@ -241,8 +241,7 @@ class IProductSeriesPublic(
         description=_("Specify which files will be imported from the "
                       "source code branch.")),
         ('devel', {'exported': True}),
-        exported=False
-        )
+        exported=False)
 
     potemplate_count = Int(
         title=_("The total number of POTemplates in this series."),

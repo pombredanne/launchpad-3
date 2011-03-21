@@ -112,7 +112,7 @@ class TestProductSeriesGetUbuntuTranslationFocusPackage(TestCaseWithFactory):
                 package.distroseries.distribution)
             naked_distribution.translation_focus = package.distroseries
         self.assertEqual(
-            package, 
+            package,
             productseries.getUbuntuTranslationFocusPackage())
 
     def test_no_sourcepackage(self):

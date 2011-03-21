@@ -66,7 +66,6 @@ from canonical.launchpad.webapp.interfaces import (
     MASTER_FLAVOR,
     )
 from canonical.launchpad.webapp.publisher import canonical_url
-from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.propertycache import cachedproperty
 from lp.translations.enums import RosettaImportStatus
@@ -74,7 +73,6 @@ from lp.translations.interfaces.pofile import (
     IPOFile,
     IPOFileSet,
     )
-from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.potmsgset import TranslationCreditsType
 from lp.translations.interfaces.side import (
     ITranslationSideTraitsSet,

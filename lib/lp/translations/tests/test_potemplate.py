@@ -598,6 +598,7 @@ class TestGetPOFilesFor(TestCaseWithFactory):
         pofile = pofiles[0]
         self.assertIsInstance(pofile, DummyPOFile)
 
+
 class TestPOTemplateUbuntuUpstreamSharingMixin:
     """Test sharing between Ubuntu und upstream POTemplates."""
 
@@ -644,6 +645,7 @@ class TestPOTemplateUbuntuUpstreamSharingMixin:
         self._setPackagingLink()
         self.assertEquals(
             other_potemplate, this_potemplate.getOtherSidePOTemplate())
+
 
 class TestPOTemplateUbuntuSharing(TestCaseWithFactory,
                                   TestPOTemplateUbuntuUpstreamSharingMixin):
