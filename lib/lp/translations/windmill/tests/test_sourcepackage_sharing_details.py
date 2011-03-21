@@ -50,7 +50,8 @@ class TestSharingDetails(WindmillTestCase):
         self.client.click(xpath='//*[@id="branch-incomplete-picker"]/a')
         search_and_select_picker_widget(self.client, 'firefox', 1)
         self.client.waits.forElementProperty(
-            classname="unseen", option='id|branch-incomplete')
+            classname="unseen", option='id|branch-incomplete',
+            timeout=FOR_ELEMENT)
         transaction.commit()
         branch = packaging.productseries.branch
         self.assertEqual('~name12/firefox/main', branch.unique_name)
