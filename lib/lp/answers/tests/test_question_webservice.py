@@ -28,7 +28,7 @@ class TestQuestionRepresentation(TestCaseWithFactory):
         self.webservice = LaunchpadWebServiceCaller(
             'launchpad-library', 'salgado-change-anything')
 
-    def findQuestionDescription(self, response):
+    def findQuestionTitle(self, response):
         """Find the question title field in an XHTML document fragment."""
         soup = BeautifulSoup(response.body)
         dt = soup.find('dt', text="title").parent
@@ -43,8 +43,8 @@ class TestQuestionRepresentation(TestCaseWithFactory):
         self.assertEqual(response.status, 200)
 
         self.assertEqual(
-            self.findQuestionDescription(response),
-            "This is a question.")
+            self.findQuestionTitle(response),
+            "<p>This is a question</p>")
 
     def test_PATCH_xhtml_representation(self):
         new_title = "No, this is a question"

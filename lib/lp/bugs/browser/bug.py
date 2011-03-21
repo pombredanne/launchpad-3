@@ -278,11 +278,13 @@ class BugContextMenu(ContextMenu):
         user = getUtility(ILaunchBag).user
         if self.context.bug.isMuted(user):
             text = "Unmute bug mail"
+            link = "+subscribe"
         else:
             text = "Mute bug mail"
+            link = "+mute"
 
         return Link(
-            '+mute', text, icon='remove', summary=(
+            link, text, icon='remove', summary=(
                 "Mute this bug so that you will never receive emails "
                 "about it."))
 
