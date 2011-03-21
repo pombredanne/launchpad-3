@@ -19,20 +19,29 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
+from lp.registry.enum import (
+    DistroSeriesDifferenceStatus,
+    DistroSeriesDifferenceType,
+    )
 from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.distributionjob import (
     IDistroSeriesDifferenceJobSource,
     )
 from lp.soyuz.model.distroseriesdifferencejob import (
     create_job,
+    DistroSeriesDifferenceJob,
     FEATURE_FLAG_ENABLE_MODULE,
     find_waiting_jobs,
     make_metadata,
     may_require_job,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 
 
 class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
@@ -229,6 +238,194 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
             DistroSeriesDifference.derived_series == derived_series,
             DistroSeriesDifference.source_package_name == package)
         self.assertEqual(1, ds_diff.count())
+
+class TestDistroSeriesDifferenceJobEndToEnd(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestDistroSeriesDifferenceJobEndToEnd, self).setUp()
+        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: u'on'}))
+        self.store = IMasterStore(DistroSeriesDifference)
+
+    def getJobSource(self):
+        return getUtility(IDistroSeriesDifferenceJobSource)
+
+    def makeDerivedDistroSeries(self):
+        return self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+
+    def createPublication(self, source_package_name, versions, distroseries):
+        changelog_lfa = self.factory.makeChangelog(
+            source_package_name.name, versions)
+        transaction.commit() # Yay, librarian.
+        spr = self.factory.makeSourcePackageRelease(
+            sourcepackagename=source_package_name, version=versions[0],
+            changelog=changelog_lfa)
+        return self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr, archive=distroseries.main_archive,
+            distroseries=distroseries,
+            status=PackagePublishingStatus.PUBLISHED)
+
+    def findDSD(self, derived_series, source_package_name):
+        return self.store.find(
+            DistroSeriesDifference, 
+            DistroSeriesDifference.derived_series == derived_series,
+            DistroSeriesDifference.source_package_name ==
+            source_package_name)
+
+    def runJob(self, job):
+        transaction.commit() # Switching DB user performs an abort.
+        self.layer.switchDbUser('distroseriesdifferencejob')
+        dsdjob = DistroSeriesDifferenceJob(job)
+        dsdjob.start()
+        dsdjob.run()
+        dsdjob.complete()
+        transaction.commit() # Switching DB user performs an abort.
+        self.layer.switchDbUser('launchpad')
+
+    def test_parent_gets_newer(self):
+        # When a new source package is uploaded to the parent distroseries,
+        # a job is created that updates the relevant DSD.
+        derived_series = self.makeDerivedDistroSeries()
+        source_package_name = self.factory.makeSourcePackageName()
+        self.createPublication(
+            source_package_name, ['1.0-1derived1', '1.0-1'], derived_series)
+        self.createPublication(
+            source_package_name, ['1.0-1'], derived_series.parent_series)
+        # Creating the SPPHs has created jobs for us, so grab it off the
+        # queue.
+        jobs = find_waiting_jobs(derived_series, source_package_name)
+        self.runJob(jobs[0])
+        ds_diff = self.findDSD(derived_series, source_package_name)
+        self.assertEqual(1, ds_diff.count())
+        self.assertEqual('1.0-1', ds_diff[0].parent_source_version)
+        self.assertEqual('1.0-1derived1', ds_diff[0].source_version)
+        self.assertEqual('1.0-1', ds_diff[0].base_version)
+        # Now create a 1.0-2 upload to the parent.
+        self.createPublication(
+            source_package_name, ['1.0-2', '1.0-1'],
+            derived_series.parent_series)
+        jobs = find_waiting_jobs(derived_series, source_package_name)
+        self.runJob(jobs[0])
+        # And the DSD we have a hold of will have updated.
+        self.assertEqual('1.0-2', ds_diff[0].parent_source_version)
+        self.assertEqual('1.0-1derived1', ds_diff[0].source_version)
+        self.assertEqual('1.0-1', ds_diff[0].base_version)
+
+    def test_child_gets_newer(self):
+        # When a new source is uploaded to the child distroseries, the DSD is
+        # updated.
+        derived_series = self.makeDerivedDistroSeries()
+        source_package_name = self.factory.makeSourcePackageName()
+        self.createPublication(
+            source_package_name, ['1.0-1'], derived_series)
+        self.createPublication(
+            source_package_name, ['1.0-1'], derived_series.parent_series)
+        jobs = find_waiting_jobs(derived_series, source_package_name)
+        self.runJob(jobs[0])
+        ds_diff = self.findDSD(derived_series, source_package_name)
+        self.assertEqual(
+            DistroSeriesDifferenceStatus.RESOLVED, ds_diff[0].status)
+        self.createPublication(
+            source_package_name, ['2.0-0derived1', '1.0-1'], derived_series)
+        jobs = find_waiting_jobs(derived_series, source_package_name)
+        self.runJob(jobs[0])
+        self.assertEqual(
+            DistroSeriesDifferenceStatus.NEEDS_ATTENTION, ds_diff[0].status)
+        self.assertEqual('1.0-1', ds_diff[0].base_version)
+
+    def test_child_is_synced(self):
+        # If the source package gets 'synced' to the child from the parent,
+        # the job correctly updates the DSD.
+        derived_series = self.makeDerivedDistroSeries()
+        source_package_name = self.factory.makeSourcePackageName()
+        self.createPublication(
+            source_package_name, ['1.0-1derived1', '1.0-1'], derived_series)
+        self.createPublication(
+            source_package_name, ['1.0-2', '1.0-1'],
+            derived_series.parent_series)
+        jobs = find_waiting_jobs(derived_series, source_package_name)
+        self.runJob(jobs[0])
+        ds_diff = self.findDSD(derived_series, source_package_name)
+        self.assertEqual('1.0-1', ds_diff[0].base_version)
+        self.createPublication(
+            source_package_name, ['1.0-2', '1.0-1'], derived_series)
+        jobs = find_waiting_jobs(derived_series, source_package_name)
+        self.runJob(jobs[0])
+        self.assertEqual(
+            DistroSeriesDifferenceStatus.RESOLVED, ds_diff[0].status)
+        
+    def test_only_in_child(self):
+        # If a source package only exists in the child distroseries, the DSD
+        # is created with the right type.
+        derived_series = self.makeDerivedDistroSeries()
+        source_package_name = self.factory.makeSourcePackageName()
+        self.createPublication(
+            source_package_name, ['1.0-0derived1'], derived_series)
+        jobs = find_waiting_jobs(derived_series, source_package_name)
+        self.runJob(jobs[0])
+        ds_diff = self.findDSD(derived_series, source_package_name)
+        self.assertEqual(
+            DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES,
+            ds_diff[0].difference_type)
+
+    def test_only_in_parent(self):
+        # If a source package only exists in the parent distroseries, the DSD
+        # is created with the right type.
+        derived_series = self.makeDerivedDistroSeries()
+        source_package_name = self.factory.makeSourcePackageName()
+        self.createPublication(
+            source_package_name, ['1.0-1'],
+            derived_series.parent_series)
+        jobs = find_waiting_jobs(derived_series, source_package_name)
+        self.runJob(jobs[0])
+        ds_diff = self.findDSD(derived_series, source_package_name)
+        self.assertEqual(
+            DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES,
+            ds_diff[0].difference_type)
+
+    def test_deleted_in_parent(self):
+        # If a source package is deleted in the parent, a job is created, and
+        # the DSD is updated correctly.
+        derived_series = self.makeDerivedDistroSeries()
+        source_package_name = self.factory.makeSourcePackageName()
+        self.createPublication(
+            source_package_name, ['1.0-1'], derived_series)
+        spph = self.createPublication(
+            source_package_name, ['1.0-1'], derived_series.parent_series)
+        jobs = find_waiting_jobs(derived_series, source_package_name)
+        self.runJob(jobs[0])
+        ds_diff = self.findDSD(derived_series, source_package_name)
+        self.assertEqual(
+            DistroSeriesDifferenceStatus.RESOLVED, ds_diff[0].status)
+        spph.requestDeletion(self.factory.makePerson())
+        jobs = find_waiting_jobs(derived_series, source_package_name)
+        self.runJob(jobs[0])
+        self.assertEqual(
+            DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES,
+            ds_diff[0].difference_type)
+
+    def test_deleted_in_child(self):
+        # If a source package is deleted in the child, a job is created, and
+        # the DSD is updated correctly.
+        derived_series = self.makeDerivedDistroSeries()
+        source_package_name = self.factory.makeSourcePackageName()
+        spph = self.createPublication(
+            source_package_name, ['1.0-1'], derived_series)
+        self.createPublication(
+            source_package_name, ['1.0-1'], derived_series.parent_series)
+        jobs = find_waiting_jobs(derived_series, source_package_name)
+        self.runJob(jobs[0])
+        ds_diff = self.findDSD(derived_series, source_package_name)
+        self.assertEqual(
+            DistroSeriesDifferenceStatus.RESOLVED, ds_diff[0].status)
+        spph.requestDeletion(self.factory.makePerson())
+        jobs = find_waiting_jobs(derived_series, source_package_name)
+        self.runJob(jobs[0])
+        self.assertEqual(
+            DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES,
+            ds_diff[0].difference_type)
 
 
 class TestDistroSeriesDifferenceJobPermissions(TestCaseWithFactory):
