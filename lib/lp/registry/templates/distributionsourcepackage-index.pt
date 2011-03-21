@@ -34,18 +34,19 @@
     <div id="summary"
       tal:content="structure context/summary/fmt:text-to-html" />
 
-    <p>
+    <p tal:condition="view/bugs_answers_usage/uses_either">
       This package has
-      <a tal:attributes="href view/menu:overview/new_bugs/url">
-        <strong>
-          <tal:newbugs content="newbugs"/> new bug<tal:plural content="string:s" condition="python: newbugs!=1"/>
-        </strong>
+      <a tal:attributes="href view/menu:overview/new_bugs/url"
+        tal:condition="view/bugs_answers_usage/uses_bugs"
+        ><tal:newbugs content="newbugs"/> new
+        bug<tal:plural content="string:s" condition="python: newbugs!=1"/>
       </a>
-      and
-      <a tal:attributes="href view/menu:overview/open_questions/url">
-      <strong>
-        <tal:openq content="open_questions"/> open question<tal:plural content="string:s" condition="python: open_questions!=1"/>.
-        </strong>
+      <tal:both condition="view/bugs_answers_usage/uses_both">and</tal:both>
+      <a tal:attributes="href view/menu:overview/open_questions/url"
+        tal:condition="view/bugs_answers_usage/uses_answers"
+        ><tal:openq content="open_questions"/> open
+        question<tal:plural content="string:s"
+          condition="python: open_questions!=1"/>.
       </a>
     </p>
   </div>

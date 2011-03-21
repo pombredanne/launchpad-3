@@ -9,7 +9,10 @@ __all__ = ['active_features']
 
 from fixtures import Fixture
 
-from lp.services.features import per_thread
+from lp.services.features import (
+    get_relevant_feature_controller,
+    install_feature_controller,
+    )
 from lp.services.features.flags import FeatureController
 from lp.services.features.rulesource import (
     Rule,
@@ -51,10 +54,10 @@ class FeatureFixture(Fixture):
             rule_source.setAllRules, rule_source.getAllRulesAsTuples())
         rule_source.setAllRules(self.makeNewRules())
 
-        original_controller = getattr(per_thread, 'features', None)
-        controller = FeatureController(lambda _: True, rule_source)
-        per_thread.features = controller
-        self.addCleanup(setattr, per_thread, 'features', original_controller)
+        original_controller = get_relevant_feature_controller()
+        install_feature_controller(
+            FeatureController(lambda _: True, rule_source))
+        self.addCleanup(install_feature_controller, original_controller)
 
     def makeNewRules(self):
         """Make a set of new feature flag rules."""

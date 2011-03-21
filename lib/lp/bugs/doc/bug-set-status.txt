@@ -9,7 +9,7 @@ changing the status, the target, and the new status.
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> from lp.registry.interfaces.product import IProductSet
-    
+
     >>> with lp_dbuser():
     ...     login('no-priv@canonical.com')
     ...     no_priv = getUtility(IPersonSet).getByName('no-priv')
@@ -168,7 +168,7 @@ edited.
     >>> ubuntu_firefox_task = bug.setStatus(
     ...     ubuntu_firefox, BugTaskStatus.INCOMPLETE, no_priv)
     >>> ubuntu_firefox_task.target.displayname
-    u'mozilla-firefox in ubuntu'
+    u'mozilla-firefox in Ubuntu'
     >>> ubuntu_firefox_task.status.name
     'INCOMPLETE'
 
@@ -181,7 +181,7 @@ edited.
     >>> ubuntu_firefox_task = bug.setStatus(
     ...     warty_firefox, BugTaskStatus.CONFIRMED, no_priv)
     >>> ubuntu_firefox_task.target.displayname
-    u'mozilla-firefox in ubuntu'
+    u'mozilla-firefox in Ubuntu'
     >>> ubuntu_firefox_task.status.name
     'CONFIRMED'
 
@@ -190,7 +190,7 @@ edited.
     >>> ubuntu_firefox_task = bug.setStatus(
     ...     hoary_firefox, BugTaskStatus.NEW, no_priv)
     >>> ubuntu_firefox_task.target.displayname
-    u'mozilla-firefox in ubuntu'
+    u'mozilla-firefox in Ubuntu'
     >>> ubuntu_firefox_task.status.name
     'NEW'
 
