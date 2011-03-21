@@ -111,6 +111,7 @@ from lp.codehosting.bzrutils import UnsafeUrlSeen
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.osutils import override_environ
+from lp.services.propertycache import clear_property_cache
 from lp.testing import (
     ANONYMOUS,
     celebrity_logged_in,
@@ -146,6 +147,7 @@ class TestCodeImport(TestCase):
         branch = code_import.branch
         self.assertEqual(code_import, branch.code_import)
         CodeImportSet().delete(code_import)
+        clear_property_cache(branch)
         self.assertEqual(None, branch.code_import)
 
 
