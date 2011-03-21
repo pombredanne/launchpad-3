@@ -161,18 +161,21 @@
 
 
 <metal:lp-client-cache define-macro="lp-client-cache">
-  <tal:cache condition="view/user|nothing"
-              define="cache request/webservicerequest:cache;
-                      links cache/links;
-                      objects cache/objects;">
-    <script tal:repeat="key links"
-      tal:content="string:LP.links['${key}'] =
-                   '${links/?key/fmt:api_url}';">
-    </script>
-    <script tal:repeat="key objects"
-      tal:content="structure string:LP.cache['${key}'] =
-                   ${objects/?key/webservice:json};">
-    </script>
+  <tal:cache define="cache request/webservicerequest:cache;
+                     links cache/links;
+                     objects cache/objects;">
+    <tal:links repeat="key links">
+      <script tal:content="string:LP.links['${key}'] =
+                           '${links/?key/fmt:api_url}';"
+              tal:condition="links/?key">
+      </script>
+    </tal:links>
+    <tal:objects repeat="key objects">
+      <script tal:content="structure string:LP.cache['${key}'] =
+                           ${objects/?key/webservice:json};"
+              tal:condition="objects/?key">
+      </script>
+    </tal:objects>
   </tal:cache>
 
   <script tal:condition="context/webservice:is_entry"

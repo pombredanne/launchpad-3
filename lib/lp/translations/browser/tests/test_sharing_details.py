@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 
+from lazr.restful.interfaces import IJSONRequestCache
 from soupmatchers import (
     HTMLContains,
     Tag,
@@ -322,6 +323,13 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             ]
         self.assertEqual(expected, self.view.template_info())
 
+    def test_cache_contents(self):
+        self.configureSharing()
+        view = make_initialized_view(self.sourcepackage)
+        view.initialize()
+        cache = IJSONRequestCache(view.request)
+        self.assertEqual(self.productseries, cache.objects['productseries'])
+
 
 class TestSourcePackageSharingDetailsPage(BrowserTestCase,
                                           ConfigureScenarioMixin):
@@ -395,6 +403,12 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             Translations are enabled on the upstream project.
             Automatic synchronization of translations is enabled.""",
             extract_text(checklist))
+
+    def test_cache_javascript (self):
+        # Cache object entries propagate into the javascript.
+        sourcepackage = self.makeFullyConfiguredSharing()[0]
+        browser = self._getSharingDetailsViewBrowser(sourcepackage)
+        self.assertIn("LP.cache['productseries'] =", browser.contents)
 
     def test_potlist_only_ubuntu(self):
         # Without a packaging link, only Ubuntu templates are listed.
