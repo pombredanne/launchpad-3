@@ -34,6 +34,13 @@ from lp.translations.interfaces.translations import (
 from lp.translations.model.translationpackagingjob import TranslationMergeJob
 
 
+def make_initialized_view(sourcepackage):
+    view = SourcePackageTranslationSharingDetailsView(
+        sourcepackage, LaunchpadTestRequest())
+    view.initialize()
+    return view
+
+
 class ConfigureScenarioMixin:
     """Provide a method for project configuration."""
 
@@ -99,9 +106,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             productseries=self.productseries, name='shared-template')
         self.upstream_only_template = self.factory.makePOTemplate(
             productseries=self.productseries, name='upstream-only')
-        self.view = SourcePackageTranslationSharingDetailsView(
-            self.sourcepackage, LaunchpadTestRequest())
-        self.view.initialize()
+        self.view = make_initialized_view(self.sourcepackage)
 
     def configureSharing(self,
             set_upstream_branch=False,
@@ -465,12 +470,6 @@ class TestTranslationSharingDetailsViewNotifications(TestCaseWithFactory,
         self.useFixture(FeatureFixture(
             {'translations.sharing_information.enabled': 'on'}))
 
-    def _makeInitializedView(self, sourcepackage):
-        view = SourcePackageTranslationSharingDetailsView(
-            sourcepackage, LaunchpadTestRequest())
-        view.initialize()
-        return view
-
     def _getNotifications(self, view):
         notifications = view.request.response.notifications
         return [extract_text(notification.message)
@@ -485,7 +484,7 @@ class TestTranslationSharingDetailsViewNotifications(TestCaseWithFactory,
         # When sharing is fully configured but no upstream templates are
         # found, a message is displayed.
         sourcepackage = self.makeFullyConfiguredSharing()[0]
-        view = self._makeInitializedView(sourcepackage)
+        view = make_initialized_view(sourcepackage)
         self.assertIn(
             self.no_templates_message, self._getNotifications(view))
 
@@ -494,7 +493,7 @@ class TestTranslationSharingDetailsViewNotifications(TestCaseWithFactory,
         # message should be displayed.
         sourcepackage, productseries = self.makeFullyConfiguredSharing()
         self.factory.makePOTemplate(productseries=productseries)
-        view = self._makeInitializedView(sourcepackage)
+        view = make_initialized_view(sourcepackage)
         self.assertNotIn(
             self.no_templates_message, self._getNotifications(view))
 
@@ -505,7 +504,7 @@ class TestTranslationSharingDetailsViewNotifications(TestCaseWithFactory,
         productseries = packaging.productseries
         sourcepackage = packaging.sourcepackage
         self.factory.makePOTemplate(productseries=productseries)
-        view = self._makeInitializedView(sourcepackage)
+        view = make_initialized_view(sourcepackage)
         self.assertNotIn(
             self.no_templates_message, self._getNotifications(view))
 
@@ -518,7 +517,7 @@ class TestTranslationSharingDetailsViewNotifications(TestCaseWithFactory,
         # When a merge job is running, a message is displayed.
         sourcepackage = self.makeFullyConfiguredSharing(
             suppress_merge_job=False)[0]
-        view = self._makeInitializedView(sourcepackage)
+        view = make_initialized_view(sourcepackage)
         self.assertIn(
             self.job_running_message, self._getNotifications(view))
 
@@ -527,6 +526,6 @@ class TestTranslationSharingDetailsViewNotifications(TestCaseWithFactory,
         sourcepackage = self.makeFullyConfiguredSharing(
             suppress_merge_job=False)[0]
         self.endMergeJob(sourcepackage)
-        view = self._makeInitializedView(sourcepackage)
+        view = make_initialized_view(sourcepackage)
         self.assertNotIn(
             self.job_running_message, self._getNotifications(view))
