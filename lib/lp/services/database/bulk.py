@@ -84,6 +84,10 @@ def load(object_type, primary_keys, store=None):
 def load_related(object_type, owning_objects, foreign_keys):
     """Load objects of object_type referred to by owning_objects.
 
+    Note that complex types like Person are best loaded through dedicated
+    helpers that can eager load other related things (e.g. validity for
+    Person).
+
     :param object_type: The object type to load - e.g. Person.
     :param owning_objects: The objects holding the references. E.g. Bug.
     :param foreign_keys: A list of attributes that should be inspected for
