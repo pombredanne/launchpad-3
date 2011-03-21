@@ -13,11 +13,13 @@ import tarfile
 import tempfile
 import unittest
 
-from lp.testing import TestCase
-
 from lp.archivepublisher.customupload import (
-    CustomUpload, CustomUploadTarballInvalidFileType,
-    CustomUploadTarballBadFile, CustomUploadTarballBadSymLink)
+    CustomUpload,
+    CustomUploadTarballBadFile,
+    CustomUploadTarballBadSymLink,
+    CustomUploadTarballInvalidFileType,
+    )
+from lp.testing import TestCase
 
 
 class TestCustomUpload(unittest.TestCase):

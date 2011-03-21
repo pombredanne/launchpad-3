@@ -6,14 +6,24 @@ back into the main replication set as part of login server seperation.
 In addition to what Storm provides, we also have some Launchpad
 specific Storm tools to cope with our master and slave store arrangement.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     EmailAddressStatus, IEmailAddressSet,
-    ...     IMasterObject, IMasterStore, ISlaveStore, IStore)
-    >>> from canonical.launchpad.database import (
-    ...     Account, AccountPassword, EmailAddress)
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     EmailAddressStatus,
+    ...     IEmailAddressSet,
+    ...     )
+    >>> from canonical.launchpad.interfaces.lpstorm import (
+    ...     IMasterObject,
+    ...     IMasterStore,
+    ...     ISlaveStore,
+    ...     IStore,
+    ...     )
+    >>> from canonical.launchpad.database.account import (
+    ...     Account,
+    ...     AccountPassword,
+    ...     )
+    >>> from canonical.launchpad.database.emailaddress import EmailAddress
+    >>> from zope.security.proxy import ProxyFactory
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.model.person import Person
-    >>> from zope.security.proxy import ProxyFactory
 
 
 You need to use the correct master Store to make changes to

@@ -13,10 +13,14 @@ __all__ = [
     'IProcessorFamilySet',
     ]
 
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import Bool
+
 from canonical.launchpad import _
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool
 
 class IProcessor(Interface):
     """The SQLObject Processor Interface"""

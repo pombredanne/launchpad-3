@@ -7,19 +7,23 @@ __metaclass__ = type
 
 import unittest
 import xmlrpclib
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.functional import XMLRPCTestTransport
-from canonical.launchpad.interfaces import IPrivateApplication
 from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.launchpad import IPrivateApplication
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.registry.interfaces.person import (
-    IPersonSet, ISoftwareCenterAgentAPI, ISoftwareCenterAgentApplication,
-    PersonCreationRationale)
+    IPersonSet,
+    ISoftwareCenterAgentAPI,
+    ISoftwareCenterAgentApplication,
+    PersonCreationRationale,
+    )
 from lp.registry.xmlrpc.softwarecenteragent import SoftwareCenterAgentAPI
 from lp.testing import TestCaseWithFactory
+from lp.testing.xmlrpc import XMLRPCTestTransport
 
 
 class TestSoftwareCenterAgentAPI(TestCaseWithFactory):
@@ -41,13 +45,13 @@ class TestSoftwareCenterAgentAPI(TestCaseWithFactory):
         # The method returns the username of the person, and sets the
         # correct creation rational/comment.
         user_name = self.sca_api.getOrCreateSoftwareCenterCustomer(
-            'openid-ident', 'alice@b.com', 'Joe Blogs')
+            u'openid-ident', 'alice@b.com', 'Joe Blogs')
 
         self.assertEqual('alice', user_name)
         person = getUtility(IPersonSet).getByName(user_name)
         self.assertEqual(
-            'openid-ident',
-            removeSecurityProxy(person.account).openid_identifier)
+            'openid-ident', removeSecurityProxy(
+                person.account).openid_identifiers.any().identifier)
         self.assertEqual(
             PersonCreationRationale.SOFTWARE_CENTER_PURCHASE,
             person.creation_rationale)
@@ -76,18 +80,19 @@ class TestSoftwareCenterAgentApplication(TestCaseWithFactory):
     def test_getOrCreateSoftwareCenterCustomer_xmlrpc(self):
         # The method can be called via xmlrpc
         user_name = self.rpc_proxy.getOrCreateSoftwareCenterCustomer(
-            'openid-ident', 'a@b.com', 'Joe Blogs')
+            u'openid-ident', 'a@b.com', 'Joe Blogs')
         person = getUtility(IPersonSet).getByName(user_name)
         self.assertEqual(
-            'openid-ident',
-            removeSecurityProxy(person.account).openid_identifier)
+            u'openid-ident',
+            removeSecurityProxy(
+                person.account).openid_identifiers.any().identifier)
 
     def test_getOrCreateSoftwareCenterCustomer_xmlrpc_error(self):
         # A suspended account results in an appropriate xmlrpc fault.
         suspended_account = self.factory.makeAccount(
             'Joe Blogs', email='a@b.com', status=AccountStatus.SUSPENDED)
         openid_identifier = removeSecurityProxy(
-            suspended_account).openid_identifier
+            suspended_account).openid_identifiers.any().identifier
 
         # assertRaises doesn't let us check the type of Fault.
         fault_raised = False

@@ -13,11 +13,15 @@ __all__ = [
 
 from zope.interface import implements
 from zope.publisher.interfaces.browser import (
-    IBrowserRequest, IDefaultBrowserLayer)
+    IBrowserRequest,
+    IDefaultBrowserLayer,
+    )
 
 from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
 from canonical.launchpad.webapp.servers import (
-    LaunchpadBrowserRequest, VHostWebServiceRequestPublicationFactory)
+    LaunchpadBrowserRequest,
+    VHostWebServiceRequestPublicationFactory,
+    )
 
 
 class CodeLayer(IBrowserRequest, IDefaultBrowserLayer):

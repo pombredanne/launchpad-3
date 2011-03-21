@@ -9,30 +9,50 @@ from cStringIO import StringIO
 from datetime import datetime
 import logging
 import os
-import pytz
 from unittest import TestLoader
 
+import pytz
 from zope.component import getUtility
 from zope.testing.loghandler import Handler
 
 from canonical.config import config
-from lp.hardwaredb.interfaces.hwdb import (
-    HWBus, HWSubmissionFormat, HWSubmissionProcessingStatus,
-    IHWDeviceDriverLinkSet, IHWDeviceSet, IHWDriverSet,
-    IHWSubmissionDeviceSet, IHWSubmissionSet, IHWVendorIDSet,
-    IHWVendorNameSet)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.librarian.ftests.harness import fillLibrarianFile
-from canonical.librarian.interfaces import LibrarianServerError
-from lp.hardwaredb.scripts.hwdbsubmissions import (
-    HALDevice, PCI_CLASS_BRIDGE, PCI_CLASS_SERIALBUS_CONTROLLER,
-    PCI_CLASS_STORAGE, PCI_SUBCLASS_BRIDGE_CARDBUS, PCI_SUBCLASS_BRIDGE_PCI,
-    PCI_SUBCLASS_SERIALBUS_USB, PCI_SUBCLASS_STORAGE_SATA,
-    process_pending_submissions, SubmissionParser, UdevDevice)
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
-from canonical.testing import BaseLayer, LaunchpadZopelessLayer
-
-from lp.testing import TestCase, validate_mock_class
+from canonical.librarian.testing.server import fillLibrarianFile
+from canonical.librarian.interfaces import LibrarianServerError
+from canonical.testing.layers import (
+    BaseLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.hardwaredb.interfaces.hwdb import (
+    HWBus,
+    HWSubmissionFormat,
+    HWSubmissionProcessingStatus,
+    IHWDeviceDriverLinkSet,
+    IHWDeviceSet,
+    IHWDriverSet,
+    IHWSubmissionDeviceSet,
+    IHWSubmissionSet,
+    IHWVendorIDSet,
+    IHWVendorNameSet,
+    )
+from lp.hardwaredb.scripts.hwdbsubmissions import (
+    HALDevice,
+    PCI_CLASS_BRIDGE,
+    PCI_CLASS_SERIALBUS_CONTROLLER,
+    PCI_CLASS_STORAGE,
+    PCI_SUBCLASS_BRIDGE_CARDBUS,
+    PCI_SUBCLASS_BRIDGE_PCI,
+    PCI_SUBCLASS_SERIALBUS_USB,
+    PCI_SUBCLASS_STORAGE_SATA,
+    process_pending_submissions,
+    SubmissionParser,
+    UdevDevice,
+    )
+from lp.testing import (
+    TestCase,
+    validate_mock_class,
+    )
 
 
 class TestCaseHWDB(TestCase):

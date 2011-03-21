@@ -8,11 +8,12 @@ __metaclass__ = type
 import os
 import time
 
-from canonical.lazr.pidfile import get_pid
-
 from canonical.config import config
 from canonical.launchpad.webapp.sigdumpmem import (
-    DUMP_FILE, SIGDUMPMEM)
+    DUMP_FILE,
+    SIGDUMPMEM,
+    )
+from canonical.lazr.pidfile import get_pid
 from canonical.testing.layers import AppServerLayer
 from lp.testing import TestCase
 

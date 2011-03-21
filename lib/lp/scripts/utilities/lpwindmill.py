@@ -11,19 +11,20 @@ is started.  This allows one to invoke the windmill script multiple
 time directly.
 """
 
+import atexit
 import sys
 import time
 
-import atexit
+import windmill.bin.windmill_bin
+
 from canonical.config import config
 from canonical.testing.layers import (
     BaseLayer,
     DatabaseLayer,
-    LibrarianLayer,
     GoogleServiceLayer,
-    LayerProcessController)
-
-import windmill.bin.windmill_bin
+    LayerProcessController,
+    LibrarianLayer,
+    )
 
 
 def runLaunchpad():
@@ -40,6 +41,7 @@ def runLaunchpad():
     atexit.register(DatabaseLayer.tearDown)
     LibrarianLayer.setUp()
     GoogleServiceLayer.setUp()
+    LayerProcessController._setConfig()
     LayerProcessController.startSMTPServer()
     LayerProcessController.startAppServer()
     sys.stderr.write('done.\n')

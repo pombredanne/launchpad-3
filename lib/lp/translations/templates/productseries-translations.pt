@@ -1,17 +1,23 @@
+
 <html
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   metal:use-macro="view/macro:page/main_only">
 
+  <head>
+  <div metal:fill-slot="head_epilogue">
+    <metal:translations-js
+      use-macro="context/@@+translations-macros/translations-js" />
+    <metal:languages-table-js
+      use-macro="context/@@+translations-macros/languages-table-js" />
+    <tal:robots
+      condition="not:context/translations_usage/enumvalue:LAUNCHPAD">
+      <meta name="robots" content="noindex,nofollow" />
+    </tal:robots>
+  </div>
+  </head>
   <body>
-
-    <div metal:fill-slot="head_epilogue">
-      <metal:translations-js
-        use-macro="context/@@+translations-macros/translations-js" />
-      <metal:languages-table-js
-        use-macro="context/@@+translations-macros/languages-table-js" />
-    </div>
 
     <div metal:fill-slot="main">
       <div class="translation-help-links">
@@ -24,30 +30,37 @@
 
       <tal:no-languages condition="not:view/productserieslanguages">
         <div class="yui-b top-portlet">
-        <p>There are no translations for this release series.</p>
 
-        <p tal:condition="context/product/required:launchpad.Edit">To
-          <a href="https://help.launchpad.net/Translations/YourProject">start
-            translating your project</a>,
-          <tal:uses-translations condition="not:
-                                            context/product/official_rosetta">
-            you should enable translations in your project settings, and
-          </tal:uses-translations>
-          you can either
-          <a
-                tal:define="link context/menu:navigation/translationupload"
-                tal:attributes="href link/url"
-              >manually upload</a> templates and translations, or set up
+          <tal:not-using-launchpad
+            condition="not: context/translations_usage/enumvalue:LAUNCHPAD">
+            <tal:message
+              replace="structure context/@@+portlet-not-using-launchpad"/>
+          </tal:not-using-launchpad>
+
+          <p>There are no translations for this release series.</p>
+
+          <p tal:condition="context/product/required:launchpad.Edit">To
+            <a href="https://help.launchpad.net/Translations/YourProject">start
+              translating your project</a>,
+            <tal:uses-translations condition="not:
+              context/product/translations_usage/enumvalue:LAUNCHPAD">
+              you should enable translations in your project settings, and
+            </tal:uses-translations>
+            you can either
+            <a
+              tal:define="link context/menu:navigation/translationupload"
+              tal:attributes="href link/url">manually upload</a>
+              templates and translations, or set up
               <a
                 tal:define="link context/menu:navigation/settings"
-                tal:attributes="href link/url"
-              >automatic import from branches</a>
+                tal:attributes="href link/url">automatic import from branches
+              </a>
               (<a href="https://help.launchpad.net/Translations/ImportingFromBazaarBranches">read more</a>).
-        </p>
+          </p>
         </div>
       </tal:no-languages>
 
-      <div class="yui-g">
+      <div tal:condition="view/show_page_content" class="yui-g">
         <div class="yui-u first">
           <div class="portlet">
             <h3>Permissions</h3>
@@ -63,6 +76,24 @@
                   context/product/translationgroup/translation_guide_url
                   ">translation instructions</a> first.
             </p>
+          </div>
+          <div class="portlet" id="sharing-information"
+            tal:condition="features/translations.sharing_information.enabled">
+            <h3>Sharing Information</h3>
+            <p tal:condition="not:view/is_sharing">
+              This project series is not sharing translations with
+              an Ubuntu source package.
+            </p>
+            <p tal:condition="view/is_sharing"
+               tal:define="package view/sharing_sourcepackage">
+              This project series is sharing translations with
+              <a class="sprite package-source"
+            tal:attributes="href package/fmt:url"
+            tal:content="package/displayname">apache in ubuntu hoary</a>.
+            </p>
+            <a tal:replace="structure view/sharing_details">
+              View sharing details
+            </a>
           </div>
         </div>
 
@@ -86,7 +117,7 @@
       </div>
       <div class="yui-g">
         <div class="yui-u first">
-          <div class="portlet">
+          <div class="portlet automatic-synchronization">
             <h3>Automatic synchronization</h3>
             <tal:uses-bzr-sync condition="view/uses_bzr_sync">
               <tal:imports condition="view/has_imports_enabled">

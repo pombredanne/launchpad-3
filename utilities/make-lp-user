@@ -43,14 +43,12 @@ from storm.store import Store
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
-    IPersonSet,
-    ISSHKeySet,
-    TeamMembershipStatus,
-    )
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from lp.registry.interfaces.gpg import GPGKeyAlgorithm, IGPGKeySet
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.ssh import ISSHKeySet
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.testing.factory import LaunchpadObjectFactory
 
 # Shut up, pyflakes.
@@ -111,7 +109,7 @@ def add_ssh_public_keys(person):
     key_set = getUtility(ISSHKeySet)
     for filename in ('id_rsa.pub', 'id_dsa.pub'):
         try:
-            public_key_file = open(filename, 'r')
+            public_key_file = open(os.path.join(ssh_dir, filename), 'r')
             try:
                 public_key = public_key_file.read()
             finally:
@@ -120,6 +118,9 @@ def add_ssh_public_keys(person):
             continue
         key_set.new(person, public_key)
         print 'Registered SSH key: %s' % (filename,)
+        break
+    else:
+        print 'No SSH key files found in %s' % ssh_dir 
 
 
 def parse_fingerprints(gpg_output):

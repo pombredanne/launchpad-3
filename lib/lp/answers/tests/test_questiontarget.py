@@ -12,12 +12,15 @@ import unittest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import DatabaseFunctionalLayer
 from canonical.launchpad.ftests import login_person
+from canonical.launchpad.testing.systemdocs import (
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
 from lp.testing import TestCaseWithFactory
 
 

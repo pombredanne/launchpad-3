@@ -21,7 +21,7 @@ DistributionSourcePackageCache table, including:
  * fti, a tsvector generated on insert or update with the text indexes
    for name, binpkgnames, binpkgsummaries and binpkgdescriptions.
 
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
 
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
 
@@ -122,12 +122,9 @@ instance offers a method for removing obsolete records in cache:
 
 Let's use a fake logger object:
 
-  >>> class TestLog:
-  ...     def debug(self, msg):
-  ...         print 'DEBUG: %s' % msg
-
-  >>> ubuntu.removeOldCacheItems(archive=ubuntu.main_archive, log=TestLog())
-  DEBUG: Removing source cache for 'foobar' (10)
+  >>> from lp.services.log.logger import FakeLogger
+  >>> ubuntu.removeOldCacheItems(archive=ubuntu.main_archive, log=FakeLogger())
+  DEBUG Removing source cache for 'foobar' (10)
 
   >>> import transaction
   >>> transaction.commit()
@@ -162,12 +159,12 @@ cache when it's updated the next time.
 We can invoke the cache updater directly on IDistroSeries:
 
   >>> updates = ubuntu.updateCompleteSourcePackageCache(
-  ...    archive=ubuntu.main_archive, ztm=transaction, log=TestLog())
-  DEBUG: ...
-  DEBUG: Considering source 'cdrkit'
-  DEBUG: Creating new source cache entry.
+  ...    archive=ubuntu.main_archive, ztm=transaction, log=FakeLogger())
+  DEBUG ...
+  DEBUG Considering source 'cdrkit'
+  DEBUG Creating new source cache entry.
   ...
-  DEBUG: Considering source 'mozilla-firefox'
+  DEBUG Considering source 'mozilla-firefox'
   ...
 
   >>> print updates
@@ -215,7 +212,7 @@ cache when it's updated.
   >>> warty.searchPackages('foobar').count()
   1
 
-  >>> from canonical.launchpad.database import (
+  >>> from lp.soyuz.model.distroseriespackagecache import (
   ...      DistroSeriesPackageCache)
 
   >>> foobar_bin_cache = DistroSeriesPackageCache.selectOneBy(
@@ -227,8 +224,8 @@ cache when it's updated.
 Binary cache updates are driven by distroseries, IDistroSeries
 instance offers a method for removing obsolete records in cache:
 
-  >>> warty.removeOldCacheItems(archive=ubuntu.main_archive, log=TestLog())
-  DEBUG: Removing binary cache for 'foobar' (8)
+  >>> warty.removeOldCacheItems(archive=ubuntu.main_archive, log=FakeLogger())
+  DEBUG Removing binary cache for 'foobar' (8)
 
   >>> transaction.commit()
 
@@ -261,13 +258,13 @@ cache will be added to it.
 We can invoke the cache updater directly on IDistroSeries:
 
   >>> updates = warty.updateCompletePackageCache(
-  ...    archive=ubuntu.main_archive, ztm=transaction, log=TestLog())
-  DEBUG: Considering binary 'at'
+  ...    archive=ubuntu.main_archive, ztm=transaction, log=FakeLogger())
+  DEBUG Considering binary 'at'
   ...
-  DEBUG: Considering binary 'cdrkit'
-  DEBUG: Creating new binary cache entry.
+  DEBUG Considering binary 'cdrkit'
+  DEBUG Creating new binary cache entry.
   ...
-  DEBUG: Considering binary 'mozilla-firefox'
+  DEBUG Considering binary 'mozilla-firefox'
   ...
 
   >>> print updates
@@ -304,7 +301,7 @@ for them considering the packages currently published in their context.
 
 We will use Celso's PPA.
 
-  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> from lp.registry.interfaces.person import IPersonSet
   >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
 With empty cache contents in Archive table we can't even find a PPA by
@@ -357,14 +354,14 @@ If we populate the package caches and update the archive caches, the
 same queries work, pointing to Celso's PPA.
 
   >>> source_updates = ubuntu.updateCompleteSourcePackageCache(
-  ...    archive=cprov.archive, ztm=transaction, log=TestLog())
-  DEBUG: ...
-  DEBUG: Considering source 'pmount'
+  ...    archive=cprov.archive, ztm=transaction, log=FakeLogger())
+  DEBUG ...
+  DEBUG Considering source 'pmount'
   ...
 
   >>> binary_updates = warty.updateCompletePackageCache(
-  ...    archive=cprov.archive, ztm=transaction, log=TestLog())
-  DEBUG: Considering binary 'mozilla-firefox'
+  ...    archive=cprov.archive, ztm=transaction, log=FakeLogger())
+  DEBUG Considering binary 'mozilla-firefox'
   ...
 
   >>> cprov.archive.updateArchiveCache()
@@ -438,7 +435,7 @@ information will be available, no packages information will be cached.
 We insert a new source cache with texts containing punctuation and
 duplicated words pointing to Celso's PPA.
 
-  >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
+  >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
   >>> cdrkit_name = getUtility(ISourcePackageNameSet).queryByName('cdrkit')
 
   >>> unclean_cache = DistributionSourcePackageCache(
@@ -508,7 +505,7 @@ Only PENDING and PUBLISHED publications are considered.
 We will use `SoyuzTestPublisher` for creating convenient publications.
 
   >>> from canonical.database.sqlbase import commit
-  >>> from lp.soyuz.interfaces.publishing import (
+  >>> from lp.soyuz.enums import (
   ...     PackagePublishingStatus)
   >>> from lp.soyuz.tests.test_publishing import (
   ...     SoyuzTestPublisher)
@@ -614,7 +611,7 @@ The DistroSeriesBinaryPackage and DistroArchSeriesBinaryPackage
 objects uses a DistroSeriesPackageCache record to present summary and
 description for the context binary package.
 
-  >>> from canonical.launchpad.interfaces import IBinaryPackageNameSet
+  >>> from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
   >>> foobar_name = getUtility(IBinaryPackageNameSet).queryByName('foobar')
 
   >>> primary_cache = DistroSeriesPackageCache(
@@ -699,8 +696,8 @@ First, we rebuild and examinate the caches for Celso's PPA.
 
     # Helper functions for completing rebuilding and dumping cache
     # contents for a given Archive.
-    >>> from canonical.launchpad.scripts.logger import QuietFakeLogger
-    >>> logger = QuietFakeLogger()
+    >>> from lp.services.log.logger import BufferLogger
+    >>> logger = BufferLogger()
     >>> def rebuild_caches(archive):
     ...     ubuntu.removeOldCacheItems(archive=archive, log=logger)
     ...     ubuntu.updateCompleteSourcePackageCache(

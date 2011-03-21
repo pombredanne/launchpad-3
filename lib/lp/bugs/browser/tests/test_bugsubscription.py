@@ -4,8 +4,11 @@
 import unittest
 
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setUp, tearDown)
-from canonical.testing import LaunchpadFunctionalLayer
+    LayeredDocFileSuite,
+    setUp,
+    tearDown,
+    )
+from canonical.testing.layers import LaunchpadFunctionalLayer
 
 
 def test_suite():

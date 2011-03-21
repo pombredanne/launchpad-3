@@ -5,7 +5,8 @@ import unittest
 
 from lp.translations.utilities.pluralforms import (
     BadPluralExpression,
-    make_friendly_plural_forms)
+    make_friendly_plural_forms,
+    )
 
 
 class PluralFormsTest(unittest.TestCase):

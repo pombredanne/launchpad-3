@@ -30,8 +30,8 @@ We will create a set of `PackageDiff` so we can precisely test how
 they show up in the UI.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
 
     >>> login('foo.bar@canonical.com')
 
@@ -57,8 +57,8 @@ Create a series of 'biscuit' sources in ubuntu primary archive.
 
 Activate Foo Bar's PPA and upload another 'biscuit' source version.
 
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     ArchivePurpose, IArchiveSet)
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> foobar = getUtility(IPersonSet).getByName('name16')
     >>> ppa = getUtility(IArchiveSet).new(
     ...     owner=foobar, distribution=ubuntu, purpose=ArchivePurpose.PPA)
@@ -82,7 +82,7 @@ the first one (new upload).
     ...     requester=name16,
     ...     to_sourcepackagerelease=biscuit_four_pub.sourcepackagerelease)
 
-    >>> from canonical.launchpad.interfaces import IPackageDiffSet
+    >>> from lp.soyuz.interfaces.packagediff import IPackageDiffSet
     >>> diff_set = getUtility(IPackageDiffSet)
     >>> diffs = list(diff_set.getPendingDiffs())
     >>> for diff in diffs:
@@ -95,13 +95,12 @@ Perform some diffs in advance, the first diff in ubuntu and the diff
 in PPA will be performed, the second diff in ubuntu will be performed
 later.
 
-    >>> from StringIO import StringIO
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from StringIO import StringIO
     >>> from canonical.database.constants import UTC_NOW
     >>> from canonical.launchpad.ftests import syncUpdate
-    >>> from lp.soyuz.interfaces.packagediff import (
-    ...     PackageDiffStatus)
     >>> from canonical.librarian.interfaces import ILibrarianClient
+    >>> from lp.soyuz.enums import PackageDiffStatus
 
     >>> def perform_fake_diff(diff, filename):
     ...     naked_diff = removeSecurityProxy(diff)
@@ -203,7 +202,7 @@ corresponding source row in the PPA overview page.
     >>> anon_browser.open(
     ...     'http://launchpad.dev/~name16/+archive/ppa/+packages')
     >>> login('foo.bar@canonical.com')
-    >>> biscuit_ppa = name16.archive.getPublishedSources()[0]
+    >>> biscuit_ppa = name16.archive.getPublishedSources().first()
     >>> biscuit_ppa_id = biscuit_ppa.id
     >>> diff_three.date_fulfilled = None
     >>> diff_three.status = PackageDiffStatus.PENDING

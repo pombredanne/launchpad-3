@@ -8,9 +8,9 @@ from email.Message import Message
 import unittest
 
 from canonical.launchpad.helpers import is_ascii_only
-from lp.testing import TestCase
 from lp.services.mail import sendmail
 from lp.services.mail.sendmail import MailController
+from lp.testing import TestCase
 
 
 class TestMailController(TestCase):
@@ -243,7 +243,3 @@ def test_suite():
     suite.addTest(DocTestSuite('lp.services.mail.sendmail'))
     suite.addTests(unittest.TestLoader().loadTestsFromName(__name__))
     return suite
-
-
-if __name__ == '__main__':
-    unittest.main(defaultTest='test_suite')

@@ -13,7 +13,7 @@ __metaclass__ = type
 __all__ = []
 
 import _pythonpath
-from canonical.launchpad.scripts.garbo import DailyDatabaseGarbageCollector
+from lp.scripts.garbo import DailyDatabaseGarbageCollector
 
 if __name__ == '__main__':
     script = DailyDatabaseGarbageCollector()

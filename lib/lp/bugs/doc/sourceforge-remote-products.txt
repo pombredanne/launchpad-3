@@ -21,8 +21,8 @@ project without a remote_product set.
 If we add a Product and link it to a SourceForge project,
 getSFLinkedProductsWithNoneRemoteProduct() will return it.
 
-    >>> from transaction import commit
     >>> from lp.testing.factory import LaunchpadObjectFactory
+    >>> from transaction import commit
     >>> factory = LaunchpadObjectFactory()
 
     >>> product_1 = factory.makeProduct(name='my-first-product')
@@ -39,10 +39,10 @@ getSFLinkedProductsWithNoneRemoteProduct() will return it.
 We'll use a test version of SourceForgeRemoteProductFinder that won't
 try to access SourceForge.
 
-    >>> from canonical.launchpad.scripts import FakeLogger
+    >>> from lp.services.log.logger import FakeLogger
     >>> from lp.registry.tests.sfremoteproductfinder import (
     ...     TestSFRemoteProductFinder)
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> finder = TestSFRemoteProductFinder(
     ...     txn=LaunchpadZopelessLayer.txn, logger=FakeLogger())
 
@@ -117,8 +117,7 @@ remote_product fields.
     0
 
     >>> print err
-    INFO    Creating lockfile: /var/lock/launchpad-updateremoteproduct.lock
+    DEBUG   ...
     INFO    No Products to update.
     INFO    Time for this run: ... seconds.
     DEBUG   Removing lock file:...
-    <BLANKLINE>

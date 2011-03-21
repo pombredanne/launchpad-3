@@ -36,7 +36,7 @@ actions we consider to be a reasonable contribution.
 
 Setup an event listener to help ensure karma is assigned when it should.
 
-    >>> from lp.registry.tests.karma import KarmaAssignedEventListener
+    >>> from lp.testing.karma import KarmaAssignedEventListener
     >>> karma_helper = KarmaAssignedEventListener(show_person=True)
     >>> karma_helper.register_listener()
 
@@ -192,7 +192,7 @@ Changing the description of a question
 Linking to a bug
 ................
 
-    >>> from canonical.launchpad.database import Bug
+    >>> from lp.bugs.model.bug import Bug
     >>> questionbug = firefox_question.linkBug(Bug.get(5))
     Karma added: action=questionlinkedtobug, product=firefox, person=name12
 

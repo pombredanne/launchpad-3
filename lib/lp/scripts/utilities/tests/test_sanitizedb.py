@@ -9,8 +9,14 @@ import os.path
 import subprocess
 import unittest
 
-from canonical.config import config, dbconfig
-from canonical.database.sqlbase import connect, sqlvalues
+from canonical.config import (
+    config,
+    dbconfig,
+    )
+from canonical.database.sqlbase import (
+    connect,
+    sqlvalues,
+    )
 from canonical.testing.layers import DatabaseLayer
 from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import TestCase

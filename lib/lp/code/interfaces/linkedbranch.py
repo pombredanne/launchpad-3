@@ -16,10 +16,16 @@ __all__ = [
     'ICanHasLinkedBranch',
     ]
 
-from zope.interface import Attribute, Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.security.proxy import isinstance as zope_isinstance
 
-from lp.code.errors import CannotHaveLinkedBranch, NoLinkedBranch
+from lp.code.errors import (
+    CannotHaveLinkedBranch,
+    NoLinkedBranch,
+    )
 
 
 class ICanHasLinkedBranch(Interface):

@@ -7,41 +7,55 @@ __metaclass__ = type
 
 import datetime
 import os
-import pytz
 import unittest
 
 from bzrlib import bzrdir
 from bzrlib.tests import multiply_tests
 from bzrlib.urlutils import escape
-
+import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
-from lp.services.scripts.interfaces.scriptactivity import (
-    IScriptActivitySet)
-from lp.code.interfaces.codehosting import (
-    BRANCH_ALIAS_PREFIX, BRANCH_TRANSPORT, CONTROL_TRANSPORT)
-from canonical.launchpad.interfaces.launchpad import ILaunchBag
-from lp.testing import TestCaseWithFactory
-from lp.testing.factory import LaunchpadObjectFactory
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    logout,
+    )
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.xmlrpc import faults
-from canonical.testing import DatabaseFunctionalLayer, FunctionalLayer
-
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    )
 from lp.app.errors import NotFoundError
-from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
+from lp.code.bzr import (
+    BranchFormat,
+    ControlFormat,
+    RepositoryFormat,
+    )
 from lp.code.enums import BranchType
 from lp.code.errors import UnknownBranchTypeError
 from lp.code.interfaces.branch import BRANCH_NAME_VALIDATION_ERROR_MESSAGE
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.codehosting import (
+    BRANCH_ALIAS_PREFIX,
+    BRANCH_TRANSPORT,
+    CONTROL_TRANSPORT,
+    )
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.model.tests.test_branchpuller import AcquireBranchToPullTests
 from lp.code.xmlrpc.codehosting import (
-    CodehostingAPI, LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES, run_with_login)
-
+    CodehostingAPI,
+    LAUNCHPAD_ANONYMOUS,
+    LAUNCHPAD_SERVICES,
+    run_with_login,
+    )
 from lp.codehosting.inmemory import InMemoryFrontend
+from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
+from lp.testing import TestCaseWithFactory
+from lp.testing.factory import LaunchpadObjectFactory
 
 
 UTC = pytz.timezone('UTC')
@@ -209,7 +223,8 @@ class CodehostingTest(TestCaseWithFactory):
         started_tuple = tuple(started.utctimetuple())
         completed_tuple = tuple(completed.utctimetuple())
         success = self.codehosting_api.recordSuccess(
-            'test-recordsuccess', 'server-name', started_tuple, completed_tuple)
+            'test-recordsuccess', 'server-name',
+            started_tuple, completed_tuple)
         self.assertEqual(True, success)
 
         activity = self.getLastActivity('test-recordsuccess')
@@ -381,7 +396,8 @@ class CodehostingTest(TestCaseWithFactory):
         unique_name = '/~%s/ningnangnong/%s/%s/%s' % (
             owner.name, distroseries.name, sourcepackagename.name,
             branch_name)
-        fault = self.codehosting_api.createBranch(owner.id, escape(unique_name))
+        fault = self.codehosting_api.createBranch(
+            owner.id, escape(unique_name))
         message = "No such distribution: 'ningnangnong'."
         self.assertEqual(faults.NotFound(message), fault)
 
@@ -409,7 +425,8 @@ class CodehostingTest(TestCaseWithFactory):
         unique_name = '/~%s/%s/%s/ningnangnong/%s' % (
             owner.name, distroseries.distribution.name, distroseries.name,
             branch_name)
-        fault = self.codehosting_api.createBranch(owner.id, escape(unique_name))
+        fault = self.codehosting_api.createBranch(
+            owner.id, escape(unique_name))
         message = "No such source package: 'ningnangnong'."
         self.assertEqual(faults.NotFound(message), fault)
 
@@ -628,11 +645,6 @@ class CodehostingTest(TestCaseWithFactory):
             (branch.control_format, branch.branch_format,
              branch.repository_format))
 
-    def assertCannotTranslate(self, requester, path):
-        """Assert that we cannot translate 'path'."""
-        fault = self.codehosting_api.translatePath(requester.id, path)
-        self.assertEqual(faults.PathTranslationError(path), fault)
-
     def assertNotFound(self, requester, path):
         """Assert that the given path cannot be found."""
         if requester not in [LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES]:
@@ -667,7 +679,7 @@ class CodehostingTest(TestCaseWithFactory):
         # couldn't translate.
         requester = self.factory.makePerson()
         path = escape(u'/untranslatable')
-        self.assertCannotTranslate(requester, path)
+        self.assertNotFound(requester, path)
 
     def test_translatePath_no_preceding_slash(self):
         requester = self.factory.makePerson()
@@ -949,6 +961,23 @@ class CodehostingTest(TestCaseWithFactory):
         path = '/%s/%s' % (BRANCH_ALIAS_PREFIX, product.name)
         self.assertNotFound(requester, path)
 
+    def test_translatePath_branch_alias_no_linked_sourcepackage_branch(self):
+        # translatePath returns a not found when there's no linked branch for
+        # a distro series source package.
+        requester = self.factory.makePerson()
+        sourcepackage = self.factory.makeSourcePackage()
+        distro = sourcepackage.distribution
+        path = '/%s/%s/%s' % (
+            BRANCH_ALIAS_PREFIX, distro.name, sourcepackage.sourcepackagename)
+        self.assertNotFound(requester, path)
+
+    def test_translatePath_branch_alias_invalid_product_name(self):
+        # translatePath returns a not found when there is an invalid product name.
+        requester = self.factory.makePerson()
+        invalid_name = '_' + self.factory.getUniqueString()
+        path = '/%s/%s' % (BRANCH_ALIAS_PREFIX, invalid_name)
+        self.assertNotFound(requester, path)
+
     def test_translatePath_branch_alias_bzrdir_content(self):
         # translatePath('/+branch/.bzr/.*') *must* return not found, otherwise
         # bzr will look for it and we don't have a global bzr dir.
@@ -1168,7 +1197,6 @@ class LaunchpadDatabaseFrontend:
     def getLastActivity(self, activity_name):
         """Get the last script activity with 'activity_name'."""
         return getUtility(IScriptActivitySet).getLastActivity(activity_name)
-
 
 
 def test_suite():

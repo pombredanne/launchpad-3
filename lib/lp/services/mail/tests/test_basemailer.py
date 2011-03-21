@@ -8,12 +8,11 @@ __metaclass__ = type
 from smtplib import SMTPException
 import unittest
 
-from canonical.testing import LaunchpadZopelessLayer
-
-from lp.testing import TestCaseWithFactory
-from lp.testing.mail_helpers import pop_notifications
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.mail.basemailer import BaseMailer
 from lp.services.mail.sendmail import MailController
+from lp.testing import TestCaseWithFactory
+from lp.testing.mail_helpers import pop_notifications
 
 
 class FakeSubscription:
@@ -28,7 +27,7 @@ class FakeSubscription:
 class BaseMailerSubclass(BaseMailer):
     """Subclass of BaseMailer to avoid getting the body template."""
 
-    def _getBody(self, email):
+    def _getBody(self, email, recipient):
         return 'body'
 
 

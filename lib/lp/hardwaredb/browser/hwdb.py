@@ -13,23 +13,37 @@ __all__ = [
 
 from textwrap import dedent
 
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
 from zope.publisher.interfaces.browser import IBrowserPublisher
 
-from z3c.ptcompat import ViewPageTemplateFile
-
-from lp.app.errors import NotFoundError
-from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
-from lp.hardwaredb.interfaces.hwdb import (
-    HWSubmissionMissingFields, IHWDBApplication, IHWDeviceClassSet,
-    IHWDeviceSet, IHWDriverSet, IHWSubmissionDeviceSet, IHWSubmissionForm,
-    IHWSubmissionSet, IHWSystemFingerprintSet, IHWVendorIDSet)
 from canonical.launchpad.webapp import (
-    action, LaunchpadView, LaunchpadFormView, Navigation, stepthrough)
+    LaunchpadView,
+    Navigation,
+    stepthrough,
+    )
 from canonical.launchpad.webapp.batching import BatchNavigator
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
+from lp.app.errors import NotFoundError
+from lp.hardwaredb.interfaces.hwdb import (
+    HWSubmissionMissingFields,
+    IHWDBApplication,
+    IHWDeviceClassSet,
+    IHWDeviceSet,
+    IHWDriverSet,
+    IHWSubmissionDeviceSet,
+    IHWSubmissionForm,
+    IHWSubmissionSet,
+    IHWSystemFingerprintSet,
+    IHWVendorIDSet,
+    )
+from lp.registry.interfaces.distribution import IDistributionSet
 
 
 class HWDBUploadView(LaunchpadFormView):

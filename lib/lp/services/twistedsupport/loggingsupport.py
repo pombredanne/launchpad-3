@@ -12,6 +12,7 @@ __all__ = [
     'log_oops_from_failure',
     'set_up_logging_for_script',
     'set_up_oops_reporting',
+    'set_up_tacfile_logging',
     ]
 
 
@@ -22,7 +23,10 @@ import os
 import signal
 import sys
 
-from twisted.python import log, logfile
+from twisted.python import (
+    log,
+    logfile,
+    )
 from twisted.python.logfile import DailyLogFile
 from twisted.web import xmlrpc
 from zope.interface import implements
@@ -70,6 +74,25 @@ def set_up_logging_for_script(options, name):
     logger_object = logger(options, name)
     set_up_oops_reporting(name, name, mangle_stdout=True)
     return logger_object
+
+
+def set_up_tacfile_logging(name, level):
+    """Create a `Logger` object for use in tac files.
+
+    This is preferable to use over `set_up_logging_for_script` for .tac
+    files since there's no options to pass through.  The logger object
+    is connected to Twisted's log and returned.
+
+    :param name: The logger instance name.
+    :param level: The log level to use, eg. logging.INFO or logging.DEBUG
+    """
+    logger = logging.getLogger(name)
+    channel = logging.StreamHandler(log.StdioOnnaStick())
+    channel.setLevel(level)
+    channel.setFormatter(logging.Formatter('%(message)s'))
+    logger.addHandler(channel)
+    logger.setLevel(level)
+    return logger
 
 
 def set_up_oops_reporting(configuration, name, mangle_stdout=True):
@@ -185,6 +208,7 @@ class LoggingProxy(xmlrpc.Proxy):
         self.request_count += 1
         self.logger.log(
             self.level, 'Sending request [%d]: %s%s', request, method, args)
+
         def _logResult(result):
             self.logger.log(
                 self.level, 'Reply to request [%d]: %s', request, result)

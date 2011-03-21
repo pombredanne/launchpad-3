@@ -18,7 +18,7 @@ from canonical.database.sqlbase import cursor
 from canonical.database.revision import (
         confirm_dbrevision, InvalidDatabaseRevision,
         )
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 
 class TestRevision(unittest.TestCase):
     layer = LaunchpadZopelessLayer

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Featured Project views."""
@@ -9,16 +9,22 @@ __all__ = [
     'FeaturedProjectsView',
     ]
 
-from zope.interface import Interface
 from zope.component import getUtility
-from zope.schema import Choice, Set
+from zope.interface import Interface
+from zope.schema import (
+    Choice,
+    Set,
+    )
 
 from canonical.launchpad import _
-from lp.registry.interfaces.pillar import IPillarNameSet
-from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadFormView,
+from canonical.launchpad.webapp import canonical_url
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
     )
-from canonical.widgets import LabeledMultiCheckBoxWidget
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+from lp.registry.interfaces.pillar import IPillarNameSet
 
 
 class FeaturedProjectForm(Interface):

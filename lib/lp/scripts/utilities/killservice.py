@@ -7,14 +7,26 @@
 # pylint: disable-msg=W0403
 __metaclass__ = type
 
-import os, logging
-from signal import SIGKILL, SIGTERM
-import time
+import logging
 from optparse import OptionParser
+import os
+from signal import (
+    SIGKILL,
+    SIGTERM,
+    )
+import time
+
 from canonical.config import config
-from canonical.lazr.pidfile import get_pid, pidfile_path, remove_pidfile
-from canonical.launchpad.scripts import logger_options, logger
-from canonical.launchpad.mailman.runmailman import stop_mailman
+from lp.services.mailman.runmailman import stop_mailman
+from canonical.launchpad.scripts import (
+    logger,
+    logger_options,
+    )
+from canonical.lazr.pidfile import (
+    get_pid,
+    pidfile_path,
+    remove_pidfile,
+    )
 
 
 def main():

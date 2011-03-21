@@ -11,8 +11,12 @@
   <include package=".browser" />
 
   <publisher
-     name="answers"
-     factory="lp.answers.publisher.answers_request_publication_factory"/>
+      name="answers"
+      factory="lp.answers.publisher.answers_request_publication_factory"/>
+  <utility
+      component="lp.answers.publisher.AnswersLayer"
+      provides="zope.publisher.interfaces.browser.IDefaultBrowserLayer"
+      name="answers" />
 
     <subscriber
         for=".interfaces.question.IQuestion
@@ -54,12 +58,6 @@
         for=".interfaces.questionmessage.IQuestionMessage
              lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler=".karma.question_comment_added"
-        />
-
-    <subscriber
-        for=".interfaces.question.IQuestion
-             lazr.lifecycle.interfaces.IObjectModifiedEvent"
-        handler=".model.questionreopening.create_questionreopening"
         />
 
     <class class=".model.questionreopening.QuestionReopening">
@@ -104,7 +102,7 @@
       set_attributes="title description datedue target language"
       />
     <require
-      permission="launchpad.Moderate"
+      permission="launchpad.Append"
       attributes="reject"
       set_attributes="assignee"
       />

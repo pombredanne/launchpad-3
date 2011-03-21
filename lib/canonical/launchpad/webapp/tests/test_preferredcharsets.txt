@@ -1,8 +1,8 @@
 We have a custom IUserPreferredCharsets which always returns
 utf-8 as the preferred charset.
 
-    >>> from canonical.launchpad.webapp import Utf8PreferredCharsets
     >>> from zope.publisher.browser import TestRequest
+    >>> from canonical.launchpad.webapp import Utf8PreferredCharsets
     >>> user_preferred = Utf8PreferredCharsets(TestRequest())
 
     >>> from zope.i18n.interfaces import IUserPreferredCharsets

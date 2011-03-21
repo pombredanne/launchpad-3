@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views for IBugLinkTarget."""
@@ -11,20 +11,25 @@ __all__ = [
     'BugsUnlinkView',
     ]
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 from zope.event import notify
 from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized
 
-from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
-
 from canonical.launchpad import _
-from lp.bugs.interfaces.buglink import IBugLinkForm, IUnlinkBugsForm
-from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, LaunchpadFormView)
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
-
-from canonical.widgets import LabeledMultiCheckBoxWidget
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+from lp.bugs.interfaces.buglink import (
+    IBugLinkForm,
+    IUnlinkBugsForm,
+    )
 
 
 class BugLinkView(LaunchpadFormView):

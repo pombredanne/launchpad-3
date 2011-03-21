@@ -10,8 +10,10 @@ import shutil
 from StringIO import StringIO
 import tempfile
 
-import transaction
 import pytz
+from storm.store import Store
+from testtools.matchers import Equals
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -19,37 +21,51 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
-from canonical.testing.layers import reconnect_stores
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadZopelessLayer)
-
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    reconnect_stores,
+    )
 from lp.app.errors import NotFoundError
-from lp.archivepublisher.config import Config
+from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.soyuz.model.processor import ProcessorFamily
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+from lp.services.log.logger import DevNullLogger
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    BinaryPackageFormat,
+    PackageUploadStatus,
+    )
+from lp.soyuz.interfaces.archive import (
+    IArchiveSet,
+    )
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.interfaces.publishing import (
-    IPublishingSet, PackagePublishingPriority, PackagePublishingStatus)
-from lp.soyuz.interfaces.queue import PackageUploadStatus
-from canonical.launchpad.scripts import FakeLogger
-from lp.testing import TestCaseWithFactory
-from lp.testing.factory import (
-    LaunchpadObjectFactory, remove_security_proxy_and_shout_at_engineer)
-from lp.testing.fakemethod import FakeMethod
+    IPublishingSet,
+    PackagePublishingPriority,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.queue import QueueInconsistentStateError
+from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.model.processor import ProcessorFamily
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
+from lp.testing import (
+    StormStatementRecorder,
+    TestCaseWithFactory,
+    )
+from lp.testing.matchers import HasQueryCount
+from lp.testing.factory import LaunchpadObjectFactory
 
 
 class SoyuzTestPublisher:
@@ -172,7 +188,7 @@ class SoyuzTestPublisher:
                      build_conflicts_indep=None,
                      dsc_maintainer_rfc822='Foo Bar <foo@bar.com>',
                      maintainer=None, creator=None, date_uploaded=UTC_NOW,
-                     spr_only=False):
+                     spr_only=False, user_defined_fields=None):
         """Return a mock source publishing record.
 
         if spr_only is specified, the source is not published and the
@@ -216,7 +232,8 @@ class SoyuzTestPublisher:
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format,
             dsc_binaries=dsc_binaries,
-            archive=archive, dateuploaded=date_uploaded)
+            archive=archive, dateuploaded=date_uploaded,
+            user_defined_fields=user_defined_fields)
 
         changes_file_name = "%s_%s_source.changes" % (sourcename, version)
         if spr_only:
@@ -279,7 +296,7 @@ class SoyuzTestPublisher:
                        architecturespecific=False,
                        builder=None,
                        component='main',
-                       with_debug=False):
+                       with_debug=False, user_defined_fields=None):
         """Return a list of binary publishing records."""
         if distroseries is None:
             distroseries = self.distroseries
@@ -323,7 +340,8 @@ class SoyuzTestPublisher:
                 build, binaryname, filecontent, summary, description,
                 shlibdep, depends, recommends, suggests, conflicts, replaces,
                 provides, pre_depends, enhances, breaks, format,
-                binarypackagerelease_ddeb)
+                binarypackagerelease_ddeb,
+                user_defined_fields=user_defined_fields)
             pub_binaries += self.publishBinaryInArchive(
                 binarypackagerelease, archive, status, pocket,
                 scheduleddeletiondate, dateremoved)
@@ -344,7 +362,8 @@ class SoyuzTestPublisher:
         summary="summary", description="description", shlibdep=None,
         depends=None, recommends=None, suggests=None, conflicts=None,
         replaces=None, provides=None, pre_depends=None, enhances=None,
-        breaks=None, format=BinaryPackageFormat.DEB, debug_package=None):
+        breaks=None, format=BinaryPackageFormat.DEB, debug_package=None,
+        user_defined_fields=None, homepage=None):
         """Return the corresponding `BinaryPackageRelease`."""
         sourcepackagerelease = build.source_package_release
         distroarchseries = build.distro_arch_series
@@ -376,7 +395,8 @@ class SoyuzTestPublisher:
             architecturespecific=architecturespecific,
             binpackageformat=format,
             priority=PackagePublishingPriority.STANDARD,
-            debug_package=debug_package)
+            debug_package=debug_package,
+            user_defined_fields=user_defined_fields, homepage=homepage)
 
         # Create the corresponding binary file.
         if architecturespecific:
@@ -480,45 +500,47 @@ class SoyuzTestPublisher:
 
         return source
 
-    def makeSourcePackageWithBinaryPackageRelease(self):
+    def makeSourcePackageSummaryData(self, source_pub=None):
         """Make test data for SourcePackage.summary.
 
         The distroseries that is returned from this method needs to be
         passed into updateDistroseriesPackageCache() so that
         SourcePackage.summary can be populated.
         """
-        distribution = self.factory.makeDistribution(
-            name='youbuntu', displayname='Youbuntu')
-        distroseries = self.factory.makeDistroRelease(name='busy',
-            distribution=distribution)
-        source_package_name = self.factory.makeSourcePackageName(
-            name='bonkers')
-        source_package = self.factory.makeSourcePackage(
-            sourcepackagename=source_package_name,
-            distroseries=distroseries)
-        component = self.factory.makeComponent('multiverse')
+        if source_pub is None:
+            distribution = self.factory.makeDistribution(
+                name='youbuntu', displayname='Youbuntu')
+            distroseries = self.factory.makeDistroRelease(name='busy',
+                distribution=distribution)
+            source_package_name = self.factory.makeSourcePackageName(
+                name='bonkers')
+            source_package = self.factory.makeSourcePackage(
+                sourcepackagename=source_package_name,
+                distroseries=distroseries)
+            component = self.factory.makeComponent('multiverse')
+            source_pub = self.factory.makeSourcePackagePublishingHistory(
+                sourcepackagename=source_package_name,
+                distroseries=distroseries,
+                component=component)
+
         das = self.factory.makeDistroArchSeries(
-            distroseries=distroseries)
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagename=source_package_name,
-            distroseries=distroseries,
-            component=component)
+            distroseries=source_pub.distroseries)
 
         for name in ('flubber-bin', 'flubber-lib'):
             binary_package_name = self.factory.makeBinaryPackageName(name)
             build = self.factory.makeBinaryPackageBuild(
-                source_package_release=spph.sourcepackagerelease,
+                source_package_release=source_pub.sourcepackagerelease,
                 archive=self.factory.makeArchive(),
                 distroarchseries=das)
             bpr = self.factory.makeBinaryPackageRelease(
                 binarypackagename=binary_package_name,
                 summary='summary for %s' % name,
-                build=build, component=component)
+                build=build, component=source_pub.component)
             bpph = self.factory.makeBinaryPackagePublishingHistory(
                 binarypackagerelease=bpr, distroarchseries=das)
         return dict(
-            distroseries=distroseries,
-            source_package=source_package)
+            distroseries=source_pub.distroseries,
+            source_package=source_pub.meta_sourcepackage)
 
     def updateDistroSeriesPackageCache(
         self, distroseries, restore_db_connection='launchpad'):
@@ -530,14 +552,10 @@ class SoyuzTestPublisher:
         reconnect_stores(config.statistician.dbuser)
         distroseries = getUtility(IDistroSeriesSet).get(distroseries.id)
 
-        class TestLogger:
-            # Silent logger.
-            def debug(self, msg):
-                pass
         distroseries.updateCompletePackageCache(
             archive=distroseries.distribution.main_archive,
             ztm=transaction,
-            log=TestLogger())
+            log=DevNullLogger())
         transaction.commit()
         reconnect_stores(restore_db_connection)
 
@@ -555,13 +573,11 @@ class TestNativePublishingBase(TestCaseWithFactory, SoyuzTestPublisher):
         super(TestNativePublishingBase, self).setUp()
         self.layer.switchDbUser(config.archivepublisher.dbuser)
         self.prepareBreezyAutotest()
-        self.config = Config(self.ubuntutest)
+        self.config = getPubConfig(self.ubuntutest.main_archive)
         self.config.setupArchiveDirs()
         self.pool_dir = self.config.poolroot
         self.temp_dir = self.config.temproot
-        self.logger = FakeLogger()
-
-        self.logger.message = FakeMethod()
+        self.logger = DevNullLogger()
         self.disk_pool = DiskPool(self.pool_dir, self.temp_dir, self.logger)
 
     def tearDown(self):
@@ -940,6 +956,25 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
         self.copyAndCheck(
             binary, binary.distroarchseries.distroseries, 'universe')
 
+    def test_ppa_override_no_ancestry(self):
+        # Test a PPA publication with no ancestry is 'main'
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        spr = self.factory.makeSourcePackageRelease()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr, archive=ppa)
+        spph.overrideFromAncestry()
+        self.assertEquals(spph.component.name, 'main')
+
+    def test_ppa_override_with_ancestry(self):
+        # Test a PPA publication with ancestry
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        spr = self.factory.makeSourcePackageRelease()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr, archive=ppa)
+        spph2 = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr, archive=ppa)
+        spph2.overrideFromAncestry()
+        self.assertEquals(spph2.component.name, 'main')
 
 class BuildRecordCreationTests(TestNativePublishingBase):
     """Test the creation of build records."""
@@ -1308,3 +1343,170 @@ class TestBinaryGetOtherPublications(TestNativePublishingBase):
         # This will supersede both atomically.
         bins[0].supersede()
         self.checkOtherPublications(bins[0], [])
+
+    def testDoesntFindPublicationsInOtherSeries(self):
+        """Publications in other series shouldn't be found."""
+        bins = self.getPubBinaries(architecturespecific=False)
+        series = self.factory.makeDistroSeries()
+        arch = self.factory.makeDistroArchSeries(
+            distroseries=series, architecturetag='i386')
+        foreign_bins = bins[0].copyTo(
+            series, bins[0].pocket, bins[0].archive)
+        self.checkOtherPublications(bins[0], bins)
+        self.checkOtherPublications(foreign_bins[0], foreign_bins)
+
+class TestSPPHModel(TestCaseWithFactory):
+    """Test parts of the SourcePackagePublishingHistory model."""
+
+    layer = LaunchpadZopelessLayer
+
+    def testAncestry(self):
+        """Ancestry can be traversed."""
+        ancestor = self.factory.makeSourcePackagePublishingHistory()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            ancestor=ancestor)
+        self.assertEquals(spph.ancestor.displayname, ancestor.displayname)
+
+
+class TestGetBuiltBinaries(TestNativePublishingBase):
+    """Test SourcePackagePublishingHistory.getBuiltBinaries() works."""
+
+    def test_flat_query_count(self):
+        spph = self.getPubSource(architecturehintlist='any')
+        store = Store.of(spph)
+        store.flush()
+        store.invalidate()
+
+        # An initial invocation issues one query for the each of the
+        # SPPH, BPPHs and BPRs.
+        with StormStatementRecorder() as recorder:
+            bins = spph.getBuiltBinaries()
+        self.assertEquals(0, len(bins))
+        self.assertThat(recorder, HasQueryCount(Equals(3)))
+
+        self.getPubBinaries(pub_source=spph)
+        store.flush()
+        store.invalidate()
+
+        # A subsequent invocation with files preloaded queries the SPPH,
+        # BPPHs, BPRs, BPFs and LFAs. Checking the filenames of each
+        # BPF has no query penalty.
+        with StormStatementRecorder() as recorder:
+            bins = spph.getBuiltBinaries(want_files=True)
+            self.assertEquals(2, len(bins))
+            for bpph in bins:
+                files = bpph.binarypackagerelease.files
+                self.assertEqual(1, len(files))
+                for bpf in files:
+                    bpf.libraryfile.filename
+        self.assertThat(recorder, HasQueryCount(Equals(5)))
+
+
+class TestPublishBinaries(TestCaseWithFactory):
+    """Test PublishingSet.publishBinary() works."""
+
+    layer = LaunchpadZopelessLayer
+
+    def makeArgs(self, bprs, distroseries, archive=None):
+        """Create a dict of arguments for publishBinary."""
+        if archive is None:
+            archive = distroseries.main_archive
+        return {
+            'archive': archive,
+            'distroseries': distroseries,
+            'pocket': PackagePublishingPocket.BACKPORTS,
+            'binaries': dict(
+                (bpr, (self.factory.makeComponent(),
+                 self.factory.makeSection(),
+                 PackagePublishingPriority.REQUIRED)) for bpr in bprs),
+            }
+
+    def test_architecture_dependent(self):
+        # Architecture-dependent binaries get created as PENDING in the
+        # corresponding architecture of the destination series and pocket,
+        # with the given overrides.
+        arch_tag = self.factory.getUniqueString('arch-')
+        orig_das = self.factory.makeDistroArchSeries(
+            architecturetag=arch_tag)
+        target_das = self.factory.makeDistroArchSeries(
+            architecturetag=arch_tag)
+        build = self.factory.makeBinaryPackageBuild(distroarchseries=orig_das)
+        bpr = self.factory.makeBinaryPackageRelease(
+            build=build, architecturespecific=True)
+        args = self.makeArgs([bpr], target_das.distroseries)
+        [bpph] = getUtility(IPublishingSet).publishBinaries(**args)
+        overrides = args['binaries'][bpr]
+        self.assertEqual(bpr, bpph.binarypackagerelease)
+        self.assertEqual(
+            (args['archive'], target_das, args['pocket']),
+            (bpph.archive, bpph.distroarchseries, bpph.pocket))
+        self.assertEqual(
+            overrides, (bpph.component, bpph.section, bpph.priority))
+        self.assertEqual(PackagePublishingStatus.PENDING, bpph.status)
+
+    def test_architecture_independent(self):
+        # Architecture-independent binaries get published to all enabled
+        # DASes in the series.
+        bpr = self.factory.makeBinaryPackageRelease(
+            architecturespecific=False)
+        # Create 3 architectures. The binary will not be published in
+        # the disabled one.
+        target_das_a = self.factory.makeDistroArchSeries()
+        target_das_b = self.factory.makeDistroArchSeries(
+            distroseries=target_das_a.distroseries)
+        target_das_c = self.factory.makeDistroArchSeries(
+            distroseries=target_das_a.distroseries, enabled=False)
+        args = self.makeArgs([bpr], target_das_a.distroseries)
+        bpphs = getUtility(IPublishingSet).publishBinaries(
+            **args)
+        self.assertEquals(2, len(bpphs))
+        self.assertEquals(
+            set((target_das_a, target_das_b)),
+            set(bpph.distroarchseries for bpph in bpphs))
+
+    def test_does_not_duplicate(self):
+        # An attempt to copy something for a second time is ignored.
+        bpr = self.factory.makeBinaryPackageRelease()
+        target_das = self.factory.makeDistroArchSeries()
+        args = self.makeArgs([bpr], target_das.distroseries)
+        [new_bpph] = getUtility(IPublishingSet).publishBinaries(**args)
+        [] = getUtility(IPublishingSet).publishBinaries(**args)
+
+        # But changing the target (eg. to RELEASE instead of BACKPORTS)
+        # causes a new publication to be created.
+        args['pocket'] = PackagePublishingPocket.RELEASE
+        [another_bpph] = getUtility(IPublishingSet).publishBinaries(**args)
+
+    def test_ddebs_need_debug_archive(self):
+        debug = self.factory.makeBinaryPackageRelease(
+            binpackageformat=BinaryPackageFormat.DDEB)
+        args = self.makeArgs(
+            [debug], debug.build.distro_arch_series.distroseries)
+        self.assertRaises(
+            QueueInconsistentStateError,
+            getUtility(IPublishingSet).publishBinaries, **args)
+
+    def test_ddebs_go_to_debug_archive(self):
+        # Normal packages go to the given archive, but debug packages go
+        # to the corresponding debug archive.
+        das = self.factory.makeDistroArchSeries()
+        self.factory.makeArchive(
+            purpose=ArchivePurpose.DEBUG,
+            distribution=das.distroseries.distribution)
+        build = self.factory.makeBinaryPackageBuild(distroarchseries=das)
+        normal = self.factory.makeBinaryPackageRelease(build=build)
+        debug = self.factory.makeBinaryPackageRelease(
+            build=build, binpackageformat=BinaryPackageFormat.DDEB)
+        args = self.makeArgs([normal, debug], das.distroseries)
+        bpphs = getUtility(IPublishingSet).publishBinaries(**args)
+        self.assertEquals(2, len(bpphs))
+        self.assertEquals(
+            set((normal, debug)),
+            set(bpph.binarypackagerelease for bpph in bpphs))
+        self.assertEquals(
+            set((das.main_archive, das.main_archive.debug_archive)),
+            set(bpph.archive for bpph in bpphs))
+
+        # A second copy does nothing, because it checks in the debug
+        # archive too.
+        [] = getUtility(IPublishingSet).publishBinaries(**args)

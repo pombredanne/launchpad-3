@@ -6,13 +6,11 @@
 __metaclass__ = type
 __all__ = []
 
-import time
 import unittest
-
-from canonical.launchpad.windmill.testing import lpuser
 
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.testing import WindmillTestCase
+from lp.testing.windmill import lpuser
 
 
 def test_inline_add_milestone(client, url, name=None, suite='milestone',
@@ -58,9 +56,9 @@ def test_inline_add_milestone(client, url, name=None, suite='milestone',
     client.type(id='field.name', text=milestone_name)
     client.click(id=u'formoverlay-add-milestone')
     client.waits.forElement(
-        xpath="//div[contains(@class, 'yui-lazr-formoverlay-errors')]/ul/li")
+        xpath="//div[contains(@class, 'yui3-lazr-formoverlay-errors')]/ul/li")
     client.asserts.assertTextIn(
-        classname='yui-lazr-formoverlay-errors',
+        classname='yui3-lazr-formoverlay-errors',
         validator='The name %s is already used' % milestone_name.lower())
     client.click(classname='close-button')
 
@@ -88,7 +86,7 @@ class TestAddMilestone(WindmillTestCase):
     def test_adding_milestone_on_addrelease_page(self):
         test_inline_add_milestone(
             self.client,
-            url='http://launchpad.dev:8085/bzr/trunk/+addrelease',
+            url='%s/bzr/trunk/+addrelease' % RegistryWindmillLayer.base_url,
             name='test_inline_add_milestone_for_release')
 
 

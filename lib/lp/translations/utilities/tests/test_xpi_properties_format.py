@@ -3,15 +3,18 @@
 
 __metaclass__ = type
 
-import unittest
 from textwrap import dedent
+import unittest
 
-from lp.translations.utilities.xpi_properties_exporter import (
-    XpiPropertiesSubExporter)
-from lp.translations.utilities.mozilla_xpi_importer import (
-    PropertyFile)
 from lp.translations.interfaces.translationimporter import (
-    TranslationFormatInvalidInputError)
+    TranslationFormatInvalidInputError,
+    )
+from lp.translations.utilities.mozilla_xpi_importer import PropertyFile
+from lp.translations.utilities.xpi_properties_exporter import (
+    XpiPropertiesSubExporter,
+    )
+
+
 class PropertyFileFormatTestCase(unittest.TestCase):
     """Test class for property file format."""
 

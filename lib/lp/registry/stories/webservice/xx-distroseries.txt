@@ -84,7 +84,7 @@ For distroseries we publish a subset of its attributes.
     supported: False
     title: u'The Hoary Hedgehog Release'
     version: u'5.04'
-
+    web_link: u'http://launchpad.../ubuntu/hoary'
 
 Creating a milestone on the distroseries
 ----------------------------------------

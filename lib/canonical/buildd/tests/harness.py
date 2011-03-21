@@ -61,7 +61,8 @@ class BuilddTestCase(unittest.TestCase):
 class BuilddSlaveTestSetup(TacTestSetup):
     r"""Setup BuildSlave for use by functional tests
 
-    >>> BuilddSlaveTestSetup().setUp()
+    >>> fixture = BuilddSlaveTestSetup()
+    >>> fixture.setUp()
 
     Make sure the server is running
 
@@ -69,11 +70,11 @@ class BuilddSlaveTestSetup(TacTestSetup):
     >>> s = xmlrpclib.Server('http://localhost:8221/rpc/')
     >>> s.echo('Hello World')
     ['Hello World']
-    >>> BuilddSlaveTestSetup().tearDown()
+    >>> fixture.tearDown()
 
     Again for luck !
 
-    >>> BuilddSlaveTestSetup().setUp()
+    >>> fixture.setUp()
     >>> s = xmlrpclib.Server('http://localhost:8221/rpc/')
 
     >>> s.echo('Hello World')
@@ -95,7 +96,7 @@ class BuilddSlaveTestSetup(TacTestSetup):
     >>> s.status()
     ['BuilderStatus.IDLE', '']
 
-    >>> BuilddSlaveTestSetup().tearDown()
+    >>> fixture.tearDown()
     """
     def setUpRoot(self):
         """Recreate empty root directory to avoid problems."""
@@ -109,11 +110,7 @@ class BuilddSlaveTestSetup(TacTestSetup):
         # When we are about running it seriously we need :
         # * install sbuild package
         # * to copy the scripts for sbuild
-
-    def tearDown(self):
-        """Tear down the system normally and additionaly remove the root."""
-        TacTestSetup.tearDown(self)
-        remove_tree(self.root)
+        self.addCleanup(remove_tree, self.root)
 
     @property
     def root(self):

@@ -22,9 +22,12 @@ The IDistroSeriesSet utility is accessed in the usual fashion:
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistroSeries, IDistroSeriesSet, IDistributionSet)
-    >>> from lp.translations.interfaces.translationimportqueue import (
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.distroseries import (
+    ...     IDistroSeries,
+    ...     IDistroSeriesSet,
+    ...     )
+    >>> from lp.translations.interfaces.hastranslationimports import (
     ...     IHasTranslationImports)
     >>> distroseriesset = getUtility(IDistroSeriesSet)
 
@@ -127,10 +130,10 @@ and version values consistently.
     Warty (4.10)
 
 
-Published releases
-------------------
+Published sources
+-----------------
 
-DistroSeries.getPublishedReleases:
+DistroSeries.getPublishedSources:
 
     >>> from lp.registry.model.distroseries import DistroSeries
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
@@ -138,27 +141,27 @@ DistroSeries.getPublishedReleases:
 
 Passing a ISourcePackageName as argument:
 
-    >>> prs = warty2.getPublishedReleases(
+    >>> prs = warty2.getPublishedSources(
     ...       SourcePackageName.byName('mozilla-firefox'))
-    >>> print len(prs)
+    >>> print prs.count()
     1
     >>> print prs[0].sourcepackagerelease.sourcepackagename.name
     mozilla-firefox
 
 Passing a string name:
 
-    >>> print len(warty2.getPublishedReleases('mozilla-firefox'))
+    >>> print warty2.getPublishedSources('mozilla-firefox').count()
     1
 
 Including pending publication records in the result:
 
-    >>> print len(warty2.getPublishedReleases('mozilla-firefox',
-    ...           include_pending=True))
+    >>> print warty2.getPublishedSources('mozilla-firefox',
+    ...           include_pending=True).count()
     2
 
 Not found as empty list:
 
-    >>> print len(warty2.getPublishedReleases('nosuchpackage'))
+    >>> print warty2.getPublishedSources('nosuchpackage').count()
     0
 
 See distroseries-publishing-lookups.txt for more information.
@@ -166,13 +169,13 @@ See distroseries-publishing-lookups.txt for more information.
 canUploadToPocket method helps us to decide if an upload is allowed or
 not, according the distroseries status and the upload target pocket.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> breezy_autotest = ubuntu['breezy-autotest']
     >>> hoary = ubuntu['hoary']
 
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-    >>> from canonical.launchpad.interfaces import SeriesStatus
+    >>> from lp.registry.interfaces.series import SeriesStatus
 
     >>> warty.status.name
     'CURRENT'
@@ -247,8 +250,8 @@ other things) the uploader for validating incoming uploads.
     devel
     translations
 
-    >>> from canonical.launchpad.interfaces import (
-    ...    IComponentSet, ISectionSet)
+    >>> from lp.soyuz.interfaces.component import IComponentSet
+    >>> from lp.soyuz.interfaces.section import ISectionSet
     >>> python = getUtility(ISectionSet).ensure('python')
 
     >>> hoary.addSection(python)
@@ -317,9 +320,9 @@ again" type set of assertions.
     ...                          '99.2',hoary, hoary.owner)
     >>> ids = InitialiseDistroSeries(humpy)
     >>> ids.initialise()
-    >>> len(hoary.getPublishedReleases('pmount'))
+    >>> hoary.getPublishedSources('pmount').count()
     1
-    >>> len(humpy.getPublishedReleases('pmount'))
+    >>> humpy.getPublishedSources('pmount').count()
     1
     >>> len(hoary['i386'].getReleasedPackages('pmount'))
     1
@@ -502,10 +505,9 @@ upstream.
 DistroSeries can build meta objects for packages
 ------------------------------------------------
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     ISourcePackage,
-    ...     IDistroSeriesBinaryPackage,
-    ...     IDistroSeriesSourcePackageRelease)
+    >>> from lp.registry.interfaces.sourcepackage import ISourcePackage
+    >>> from lp.soyuz.interfaces.distroseriesbinarypackage import IDistroSeriesBinaryPackage
+    >>> from lp.soyuz.interfaces.distroseriessourcepackagerelease import IDistroSeriesSourcePackageRelease
 
     >>> pmount_src_name = SourcePackageName.byName('pmount')
     >>> pmount_source = hoary.getSourcePackage(pmount_src_name)
@@ -619,9 +621,7 @@ the future.
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> hoary = ubuntu['hoary']
 
-    >>> from canonical.launchpad.interfaces import (
-    ...    PackagePublishingStatus)
-
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> hoary_pub_sources = hoary.getSourcePackagePublishing(
     ...     PackagePublishingStatus.PUBLISHED,
     ...     PackagePublishingPocket.RELEASE)
@@ -711,8 +711,7 @@ publication in question:
     4
     >>> warty_mozilla_pub_bin = warty_mozilla_pub_binaries[0]
 
-    >>> from canonical.launchpad.interfaces import (
-    ...    IBinaryPackagePublishingHistory)
+    >>> from lp.soyuz.interfaces.publishing import IBinaryPackagePublishingHistory
     >>> verifyObject(IBinaryPackagePublishingHistory, warty_mozilla_pub_bin)
     True
 
@@ -904,7 +903,7 @@ informational.
     >>> distroset = getUtility(IDistributionSet)
     >>> kubuntu = distroset.getByName("kubuntu")
     >>> krunch = kubuntu.getSeries("krunch")
-    >>> from canonical.launchpad.interfaces import SpecificationFilter
+    >>> from lp.blueprints.enums import SpecificationFilter
 
 First, there should be one informational specs for krunch:
 

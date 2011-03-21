@@ -12,7 +12,10 @@ __all__ = [
     'IAnnouncementSet',
     ]
 
-from zope.interface import Attribute, Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 
 
 class IHasAnnouncements(Interface):

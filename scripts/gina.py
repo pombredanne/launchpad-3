@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009,2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # This module uses relative imports.
@@ -19,13 +19,11 @@ The callstack is essentially:
 
 __metaclass__ = type
 
+import _pythonpath
 
 # Set to non-zero if you'd like to be warned every so often
 COUNTDOWN = 0
 
-import _pythonpath
-
-from optparse import OptionParser
 import os
 import psycopg2
 import sys
@@ -33,20 +31,16 @@ import time
 
 from zope.component import getUtility
 
-from contrib.glock import GlobalLock, LockAlreadyAcquired
-
 from canonical import lp
-from canonical.lp import initZopeless
 from canonical.config import config
-from lp.soyuz.interfaces.component import IComponentSet
-from canonical.launchpad.scripts import (
-    execute_zcml_for_scripts, logger_options, log)
+from canonical.launchpad.scripts import log
 
+from lp.services.scripts.base import LaunchpadCronScript
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.scripts.gina import ExecutionError
 from lp.soyuz.scripts.gina.katie import Katie
 from lp.soyuz.scripts.gina.archive import (ArchiveComponentItems,
     PackagesMap, MangledArchiveError)
-
 from lp.soyuz.scripts.gina.handlers import (ImporterHandler,
     MultiplePackageReleaseError, NoSourcePackageError, DataSetupError)
 from lp.soyuz.scripts.gina.packages import (SourcePackageData,
@@ -63,56 +57,6 @@ def _get_keyring(keyrings_root):
     if not keyrings:
         raise AttributeError("Keyrings not found in ./keyrings/")
     return keyrings
-
-
-def main():
-    execute_zcml_for_scripts()
-    parser = OptionParser("Usage: %prog [OPTIONS] [target ...]")
-    logger_options(parser)
-
-    parser.add_option("-n", "--dry-run", action="store_true",
-            help="Don't commit changes to the database",
-            dest="dry_run", default=False)
-
-    parser.add_option("-a", "--all", action="store_true",
-            help="Run all sections defined in launchpad.conf (in order)",
-            dest="all", default=False)
-
-    parser.add_option( "-l", "--lockfile",
-            default="/var/lock/launchpad-gina.lock",
-            help="Ensure only one process is running that locks LOCKFILE",
-            metavar="LOCKFILE"
-            )
-
-    (options, targets) = parser.parse_args()
-
-    possible_targets = [target.category_and_section_names[1]
-                        for target in config.getByCategory('gina_target')]
-
-    if options.all:
-        targets = possible_targets[:]
-    else:
-        if not targets:
-            parser.error("Must specify at least one target to run, or --all")
-
-        for target in targets:
-            if target not in possible_targets:
-                parser.error("No Gina target %s in config file" % target)
-
-    lockfile = GlobalLock(options.lockfile, logger=log)
-    try:
-        lockfile.acquire()
-    except LockAlreadyAcquired:
-        log.info('Lockfile %s already locked. Exiting.', options.lockfile)
-        sys.exit(1)
-
-    ztm = initZopeless(dbuser=config.gina.dbuser)
-    try:
-        for target in targets:
-            target_section = config['gina_target.%s' % target]
-            run_gina(options, ztm, target_section)
-    finally:
-        lockfile.release()
 
 
 def run_gina(options, ztm, target_section):
@@ -135,7 +79,7 @@ def run_gina(options, ztm, target_section):
 
     dry_run = options.dry_run
 
-    LPDB = lp.dbname
+    LPDB = lp.get_dbname()
     LPDB_HOST = lp.dbhost
     LPDB_USER = config.gina.dbuser
     KTDB = target_section.katie_dbname
@@ -352,6 +296,39 @@ def do_one_binarypackage(binary, archtag, kdb, package_root, keyrings,
     importer_handler.commit()
 
 
-if __name__ == "__main__":
-    main()
+class Gina(LaunchpadCronScript):
 
+    def __init__(self):
+        super(Gina, self).__init__(name='gina', dbuser=config.gina.dbuser)
+
+    def add_my_options(self):
+        self.parser.add_option("-n", "--dry-run", action="store_true",
+            help="Don't commit changes to the database",
+            dest="dry_run", default=False)
+        self.parser.add_option("-a", "--all", action="store_true",
+            help="Run all sections defined in launchpad.conf (in order)",
+            dest="all", default=False)
+
+    def main(self):
+        possible_targets = [target.category_and_section_names[1]
+            for target in config.getByCategory('gina_target')]
+        targets = self.args
+        if self.options.all:
+            targets = possible_targets[:]
+        else:
+            if not targets:
+                self.parser.error(
+                    "Must specify at least one target to run, or --all")
+            for target in targets:
+                if target not in possible_targets:
+                    self.parser.error(
+                        "No Gina target %s in config file" % target)
+
+        for target in targets:
+            target_section = config['gina_target.%s' % target]
+            run_gina(self.options, self.txn, target_section)
+
+
+if __name__ == "__main__":
+    gina = Gina()
+    gina.lock_and_run()

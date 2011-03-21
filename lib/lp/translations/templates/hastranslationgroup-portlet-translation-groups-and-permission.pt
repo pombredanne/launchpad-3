@@ -12,9 +12,4 @@
             tal:content="context/translationpermission/title">certain</a>
     permissions.
   </p>
-  <div tal:condition="context/required:launchpad.TranslationsAdmin">
-    <a tal:replace="structure context/menu:translations/settings/fmt:link">
-      Change permissions
-    </a>
-  </div>
 </div>

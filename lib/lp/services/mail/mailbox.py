@@ -1,17 +1,21 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 import os
+import poplib
 import socket
 import threading
-import poplib
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import IMailBox, MailBoxError
+from canonical.launchpad.interfaces.mailbox import (
+    IMailBox,
+    MailBoxError,
+    )
 from lp.services.mail import stub
+
 
 class TestMailBox:
     """Mail box used for testing.

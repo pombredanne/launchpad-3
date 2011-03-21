@@ -6,8 +6,10 @@
 __metaclass__ = type
 __all__ = ['CodeImportResult', 'CodeImportResultSet']
 
-from sqlobject import ForeignKey, StringCol
-
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
@@ -16,7 +18,9 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from lp.code.enums import CodeImportResultStatus
 from lp.code.interfaces.codeimportresult import (
-    ICodeImportResult, ICodeImportResultSet)
+    ICodeImportResult,
+    ICodeImportResultSet,
+    )
 from lp.registry.interfaces.person import validate_public_person
 
 

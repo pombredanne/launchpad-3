@@ -4,7 +4,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'HelpTranslateButtonView',
     'RosettaApplicationView',
     'RosettaStatsView',
     'RosettaApplicationNavigation',
@@ -17,35 +16,27 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces.geoip import IRequestPreferredLanguages
 from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities, IRosettaApplication)
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-from lp.registry.interfaces.product import IProductSet
-from lp.services.worlddata.interfaces.country import ICountry
-from lp.registry.interfaces.person import IPersonSet
-from lp.translations.publisher import TranslationsLayer
+    ILaunchpadCelebrities,
+    IRosettaApplication,
+    )
 from canonical.launchpad.webapp import (
-    LaunchpadView, Navigation, stepto, canonical_url)
+    canonical_url,
+    LaunchpadView,
+    Navigation,
+    stepto,
+    )
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-
-
-class HelpTranslateButtonView:
-    """View that renders a button to help translate its context."""
-
-    def __call__(self):
-        return """
-              <a href="%s">
-                <img
-                  alt="Help translate"
-                  src="/+icing/but-sml-helptranslate.gif"
-                />
-              </a>
-        """ % canonical_url(self.context, rootsite='translations')
+from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
+from lp.services.geoip.interfaces import IRequestPreferredLanguages
+from lp.services.propertycache import cachedproperty
+from lp.services.worlddata.interfaces.country import ICountry
+from lp.translations.publisher import TranslationsLayer
 
 
 class TranslationsMixin:
@@ -63,7 +54,7 @@ class TranslationsMixin:
     @cachedproperty
     def answers_url(self):
         return canonical_url(
-            getUtility(ILaunchpadCelebrities).lp_translations,
+            getUtility(ILaunchpadCelebrities).launchpad,
             rootsite='answers')
 
 

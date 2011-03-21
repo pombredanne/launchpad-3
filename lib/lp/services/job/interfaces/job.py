@@ -11,14 +11,26 @@ __all__ = [
     'IJob',
     'IJobSource',
     'IRunnableJob',
+    'ITwistedJobSource',
     'JobStatus',
     'LeaseHeld',
     ]
 
 
-from zope.interface import Interface, Attribute
-from zope.schema import Choice, Datetime, Int, Text
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    Text,
+    )
 
 from canonical.launchpad import _
 
@@ -155,3 +167,10 @@ class IJobSource(Interface):
 
     def contextManager():
         """Get a context for running this kind of job in."""
+
+
+class ITwistedJobSource(IJobSource):
+    """Interface for a job source that is usable by the TwistedJobRunner."""
+
+    def get(id):
+        """Get a job by its id."""

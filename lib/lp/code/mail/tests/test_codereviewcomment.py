@@ -4,22 +4,25 @@
 """Test CodeReviewComment emailing functionality."""
 
 
-from unittest import TestLoader
-
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import LaunchpadFunctionalLayer
-
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.mail import format_address
 from canonical.launchpad.webapp import canonical_url
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.code.enums import (
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
-    CodeReviewVote)
-from lp.code.mail.codereviewcomment import  CodeReviewCommentMailer
-from lp.testing import login, login_person, TestCaseWithFactory
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    CodeReviewVote,
+    )
+from lp.code.mail.codereviewcomment import CodeReviewCommentMailer
+from lp.testing import (
+    login,
+    login_person,
+    TestCaseWithFactory,
+    )
 
 
 class TestCodeReviewComment(TestCaseWithFactory):
@@ -117,7 +120,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         mailer = CodeReviewCommentMailer.forCreation(comment)
         self.assertEqual(
             'A %(carefully)s constructed subject',
-            mailer._getSubject(email=None))
+            mailer._getSubject(email=None, recipient=subscriber))
 
     def test_getReplyAddress(self):
         """Ensure that the reply-to address is reasonable."""
@@ -179,7 +182,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
             '-- \n'
             'I am a wacky guy.\n')
         branch_name = mailer.merge_proposal.source_branch.bzr_identity
-        body = mailer._getBody(subscriber)
+        body = mailer._getBody(subscriber.preferredemail.email, subscriber)
         self.assertEqual(body.splitlines()[1:],
             ['-- ', 'I am a wacky guy.', '',
              canonical_url(mailer.merge_proposal),
@@ -252,7 +255,6 @@ class TestCodeReviewComment(TestCaseWithFactory):
         self.assertEqual(
             'This is a diff.', attachment.get_payload(decode=True))
 
-
     def makeCommentAndParticipants(self):
         """Create a merge proposal and comment.
 
@@ -318,6 +320,3 @@ class TestCodeReviewComment(TestCaseWithFactory):
         mailer = CodeReviewCommentMailer.forCreation(reply)
         to = mailer._getToAddresses(second_commenter, 'comment2@gmail.com')
         self.assertEqual([mailer.merge_proposal.address], to)
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

@@ -11,8 +11,7 @@ Set up test fixtures
 
 Set up an event listener to show when karma gets assigned.
 
-    >>> from lp.registry.tests.karma import (
-    ...     KarmaAssignedEventListener)
+    >>> from lp.testing.karma import KarmaAssignedEventListener
     >>> karma_helper = KarmaAssignedEventListener()
     >>> karma_helper.register_listener()
 
@@ -49,8 +48,9 @@ compared to the package creator, then both will get karma.
 
 Poke the queue entry so it looks like Foo Bar (name16) uploaded it:
 
-    >>> from canonical.launchpad.interfaces import IGPGKeySet, IPersonSet
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.registry.interfaces.gpg import IGPGKeySet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> name16 = getUtility(IPersonSet).getByName('name16')
     >>> key = getUtility(IGPGKeySet).getGPGKeysForPeople([name16])[0]
     >>> removeSecurityProxy(foo_src.queue_root).signing_key = key
@@ -81,9 +81,9 @@ Uploading to PPAs
 PPA uploads are always auto-accepted and we don't care about sponsors.  They
 will generate another different karma event for the uploader.
 
-    >>> from lp.archiveuploader.tests import getPolicy
-    >>> from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.soyuz.enums import ArchivePurpose
+    >>> from lp.soyuz.interfaces.archive import IArchiveSet
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> name16_ppa = getUtility(IArchiveSet).new(
     ...     owner=name16, distribution=ubuntu, purpose=ArchivePurpose.PPA)

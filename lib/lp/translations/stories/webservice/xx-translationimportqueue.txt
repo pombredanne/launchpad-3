@@ -1,4 +1,5 @@
-= Translation Import Queue =
+Translation Import Queue
+========================
 
 The queue of uploaded translation files is quite large.  It contains not
 just files waiting to be imported, but also blocked or failed uploads,
@@ -38,7 +39,8 @@ to be cleaned up.
     ...         print_dict_entries(entry, shown_keys=shown_keys)
 
 
-== Enumerating the queue ==
+Enumerating the queue
+---------------------
 
     >>> queue = webservice.get("/+imports").jsonBody()
     >>> queue['total_size']
@@ -73,7 +75,8 @@ to be cleaned up.
      uploader_link http://.../~name16
 
 
-== Entry fields ==
+Entry fields
+------------
 
 Most of the fields in a translation import queue entry are immutable
 from the web service's point of view.
@@ -81,7 +84,8 @@ from the web service's point of view.
     >>> from simplejson import dumps
 
 
-=== Path ===
+Path
+....
 
 An entry's file path can be changed by the entry's owner or an admin.
 
@@ -103,7 +107,8 @@ A regular user is not allowed to make this change.
     ...
 
 
-=== Status ===
+Status
+......
 
 For now, it is not possible to set an entry's status through the API.
 
@@ -134,3 +139,29 @@ Unprivileged users cannot change the status.
     HTTP/1.1 401 Unauthorized
     ...
 
+
+Target-specific import queues
+-----------------------------
+
+Objects that implement IHasTranslationImports (also known as "translation
+targets") expose their specific sub-sets of the import queue through
+getTranslationImportQueueEntries.
+
+In this example, a person:
+
+    >>> login(ANONYMOUS)
+    >>> target = factory.makePerson()
+    >>> target_url = '/~%s' % target.name
+    >>> matching_entry = factory.makeTranslationImportQueueEntry(
+    ...     'matching-entry.pot', uploader=target)
+    >>> other_entry = factory.makeTranslationImportQueueEntry(
+    ...     'other-entry.pot')
+    >>> logout()
+
+    >>> target_queue = webservice.named_get(
+    ...     target_url, 'getTranslationImportQueueEntries').jsonBody()
+    >>> print target_queue['total_size']
+    1
+
+    >>> print target_queue['entries'][0]['path']
+    matching-entry.pot

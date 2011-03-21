@@ -13,31 +13,47 @@ __metaclass__ = type
 
 __all__ = []
 
-from datetime import datetime, timedelta
-from pytz import UTC
-import unittest
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import traceback
+import unittest
 
+from lazr.lifecycle.interfaces import (
+    IObjectCreatedEvent,
+    IObjectModifiedEvent,
+    )
+from pytz import UTC
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lazr.lifecycle.interfaces import (
-    IObjectCreatedEvent, IObjectModifiedEvent)
-
-from canonical.launchpad.ftests import login, login_person, ANONYMOUS
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    login_person,
+    )
 from canonical.launchpad.ftests.event import TestEventListener
-from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.webapp.authorization import clear_cache
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.registry.interfaces.person import IPerson, IPersonSet
-from lp.registry.interfaces.distribution import IDistributionSet
-from lp.answers.interfaces.questionenums import QuestionAction, QuestionStatus
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.answers.interfaces.question import (
-    InvalidQuestionStateError, IQuestion)
+    InvalidQuestionStateError,
+    IQuestion,
+    )
+from lp.answers.interfaces.questionenums import (
+    QuestionAction,
+    QuestionStatus,
+    )
 from lp.answers.interfaces.questionmessage import IQuestionMessage
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    )
+from lp.services.worlddata.interfaces.language import ILanguageSet
 
 
 class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):

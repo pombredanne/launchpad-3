@@ -10,6 +10,14 @@ Hoary distroseries template.
 On a Hoary Evolution sourcepackage, we can see a suggestion coming
 from the upstream project.
 
+    >>> from zope.component import getUtility
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
+
+    >>> login(ANONYMOUS)
+    >>> utility = getUtility(IPOTemplateSet)
+    >>> dummy = utility.populateSuggestivePOTemplatesCache()
+    >>> logout()
+
     >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
     >>> browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/3/+translate')
     >>> print extract_text(find_tag_by_id(

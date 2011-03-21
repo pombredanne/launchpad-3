@@ -18,17 +18,24 @@ __all__ = [
 import xmlrpclib
 
 from zope.component import getUtility
-from zope.interface import Interface, implements
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
-from canonical.launchpad.interfaces import (
-    IAuthServerApplication, ILaunchBag,
-    IMailingListApplication, IPrivateApplication,
-    IPrivateMaloneApplication)
+from canonical.launchpad.interfaces.launchpad import (
+    IAuthServerApplication,
+    IPrivateApplication,
+    IPrivateMaloneApplication,
+    )
+from canonical.launchpad.webapp import LaunchpadXMLRPCView
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.code.interfaces.codehosting import ICodehostingApplication
 from lp.code.interfaces.codeimportscheduler import (
-    ICodeImportSchedulerApplication)
+    ICodeImportSchedulerApplication,
+    )
+from lp.registry.interfaces.mailinglist import IMailingListApplication
 from lp.registry.interfaces.person import ISoftwareCenterAgentApplication
-from canonical.launchpad.webapp import LaunchpadXMLRPCView
 
 
 class PrivateApplication:

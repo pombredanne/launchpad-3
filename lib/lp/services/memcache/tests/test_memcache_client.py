@@ -5,16 +5,17 @@
 
 __metaclass__ = type
 
-import unittest
-
+from lazr.restful.utils import get_current_browser_request
 from zope.component import getUtility
 
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.memcache.interfaces import IMemcacheClient
+from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.testing import TestCase
 
 
 class MemcacheClientTestCase(TestCase):
+
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
@@ -36,7 +37,19 @@ class MemcacheClientTestCase(TestCase):
             self.client.MemcachedKeyCharacterError,
             self.client.set, 'key with spaces', 'some value')
 
+    def test_set_recorded_to_timeline(self):
+        request = get_current_browser_request()
+        timeline = get_request_timeline(request)
+        self.client.set('foo', 'bar')
+        action = timeline.actions[-1]
+        self.assertEqual('memcache-set', action.category)
+        self.assertEqual('foo', action.detail)
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-
+    def test_get_recorded_to_timeline(self):
+        request = get_current_browser_request()
+        timeline = get_request_timeline(request)
+        self.client.set('foo', 'bar')
+        self.client.get('foo')
+        action = timeline.actions[-1]
+        self.assertEqual('memcache-get', action.category)
+        self.assertEqual('foo', action.detail)

@@ -7,15 +7,21 @@ __metaclass__ = type
 __all__ = []
 
 from zope.component.zcml import handler
-from zope.configuration.fields import GlobalInterface, Path
-from zope.publisher.interfaces.browser import (
-    IBrowserRequest, IBrowserPublisher)
-from zope.security.checker import defineChecker, NamesChecker
-
+from zope.configuration.fields import (
+    GlobalInterface,
+    Path,
+    )
 from zope.interface import Interface
+from zope.publisher.interfaces.browser import (
+    IBrowserPublisher,
+    IBrowserRequest,
+    )
+from zope.security.checker import (
+    defineChecker,
+    NamesChecker,
+    )
 
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
-
 from lp.services.inlinehelp.browser import HelpFolder
 
 

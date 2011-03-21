@@ -39,7 +39,7 @@
                  class python: view.getSubscriptionClassForUser(subscription.person)
                "
             >
-              <img class="unsub-icon" src="/@@/remove"
+              <img class="unsub-icon" src="/@@/remove" alt="Remove"
                 tal:attributes="id string:unsubscribe-icon-${subscription/css_name}" />
             </a>
 

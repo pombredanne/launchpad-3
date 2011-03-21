@@ -39,11 +39,11 @@ The page presents a table with all bugtrackers currently registered:
     Email Address
     0
     ------------------------
-    GNU Savannah Bug Tracker
-    http://savannah.gnu.org/
-      --> http://savannah.gnu.org/
+    T'other Gnome GBugGTracker
+    http://bugzilla.gnome.org/
+      --> http://bugzilla.gnome.org/
     &mdash;
-    Savane
+    Bugzilla
     0
     ------------------------
     ...
@@ -68,6 +68,8 @@ auto-created ones - so the title is also obfuscated.
     &mdash;
     Email Address
     0
+    ------------------------
+    ...
 
 The watch counts match the number of bugs listed, of course:
 

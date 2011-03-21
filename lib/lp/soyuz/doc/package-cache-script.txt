@@ -12,7 +12,7 @@ infrastructure and it is localised in the 'cronscripts' directory
 Database sampledata has two pending modifications of package cache
 contents:
 
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> warty = ubuntu['warty']
 

@@ -7,11 +7,18 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import os
 import re
 import shutil
-from subprocess import Popen, PIPE, STDOUT
+from subprocess import (
+    PIPE,
+    Popen,
+    STDOUT,
+    )
 import sys
 import tempfile
 import unittest
@@ -20,13 +27,17 @@ from pytz import UTC
 import transaction
 
 from canonical.config import config
-from canonical.testing import LaunchpadZopelessLayer
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.scripts.oops import (
-        referenced_oops, old_oops_files, unwanted_oops_files,
-        path_to_oopsid, prune_empty_oops_directories
-        )
+    old_oops_files,
+    path_to_oopsid,
+    prune_empty_oops_directories,
+    referenced_oops,
+    unwanted_oops_files,
+    )
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.log import uniquefileallocator
+
 
 class TestOopsPrune(unittest.TestCase):
     layer = LaunchpadZopelessLayer

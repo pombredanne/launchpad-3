@@ -3,8 +3,6 @@
 
 """Tests for branch listing."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 from datetime import timedelta
@@ -13,31 +11,53 @@ import re
 import unittest
 
 from lazr.uri import URI
-
-from storm.expr import Asc, Desc
+from storm.expr import (
+    Asc,
+    Desc,
+    )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.code.browser.branchlisting import (
-    BranchListingSort, BranchListingView,
-    GroupedDistributionSourcePackageBranchesView,
-    SourcePackageBranchesView)
-from lp.code.interfaces.seriessourcepackagebranch import (
-    IMakeOfficialBranchLinks)
-from lp.code.model.branch import Branch
-from lp.registry.model.person import Owner
-from lp.registry.model.product import Product
-from lp.registry.interfaces.person import PersonVisibility
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.testing import (
-    BrowserTestCase, TestCase, TestCaseWithFactory, login_person,
-    person_logged_in, time_counter)
-from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
-from lp.testing.views import create_initialized_view
-from canonical.launchpad.testing.pages import extract_text, find_tag_by_id
+from canonical.launchpad.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.code.browser.branchlisting import (
+    BranchListingSort,
+    BranchListingView,
+    GroupedDistributionSourcePackageBranchesView,
+    SourcePackageBranchesView,
+    )
+from lp.code.enums import BranchVisibilityRule
+from lp.code.interfaces.seriessourcepackagebranch import (
+    IMakeOfficialBranchLinks,
+    )
+from lp.code.model.branch import Branch
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonVisibility,
+    )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.person import Owner
+from lp.registry.model.product import Product
+from lp.testing import (
+    BrowserTestCase,
+    login_person,
+    normalize_whitespace,
+    person_logged_in,
+    TestCase,
+    TestCaseWithFactory,
+    time_counter,
+    )
+from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
+from lp.testing.sampledata import (
+    ADMIN_EMAIL,
+    COMMERCIAL_ADMIN_EMAIL,
+    )
+from lp.testing.views import create_initialized_view
 
 
 class TestListingToSortOrder(TestCase):
@@ -128,7 +148,8 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
         # the current batch.
         branch_ids = set([self.branches[0].id])
 
-        view = create_initialized_view(self.barney, name="+branches")
+        view = create_initialized_view(
+            self.barney, name="+branches", rootsite='code')
         self.assertEqual(
             view.branches().branch_ids_with_bug_links,
             branch_ids)
@@ -138,7 +159,8 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
         # the current batch.
         branch_ids = set([self.branches[1].id])
 
-        view = create_initialized_view(self.barney, name="+branches")
+        view = create_initialized_view(
+            self.barney, name="+branches", rootsite='code')
         self.assertEqual(
             view.branches().branch_ids_with_spec_links,
             branch_ids)
@@ -147,7 +169,8 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
         # _branches_for_current_batch should return a list of all branches in
         # the current batch.
         branch_ids = set([])
-        view = create_initialized_view(self.barney, name="+branches")
+        view = create_initialized_view(
+            self.barney, name="+branches", rootsite='code')
         self.assertEqual(
             view.branches().branch_ids_with_merge_proposals,
             branch_ids)
@@ -160,7 +183,8 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
         for branch_id in branch_ids:
             tip_revisions[branch_id] = None
 
-        view = create_initialized_view(self.barney, name="+branches")
+        view = create_initialized_view(
+            self.barney, name="+branches", rootsite='code')
         self.assertEqual(
             view.branches().tip_revisions,
             tip_revisions)
@@ -338,7 +362,8 @@ class TestDevelopmentFocusPackageBranches(TestCaseWithFactory):
             branch.distribution.name, branch.sourcepackagename.name)
         self.assertEqual(identity, branch.bzr_identity)
         # Now confirm that we get the same through the view.
-        view = create_initialized_view(branch.distribution, name='+branches')
+        view = create_initialized_view(
+            branch.distribution, name='+branches', rootsite='code')
         # There is only one branch.
         batch = view.branches()
         [view_branch] = batch.branches
@@ -401,6 +426,94 @@ class TestPersonBranchesPage(BrowserTestCase):
         # Since there are no teams with branches that the user can see, the
         # portlet isn't shown.
         self.assertIs(None, branches)
+
+
+class TestProjectGroupBranches(TestCaseWithFactory):
+    """Test for the project group branches page."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.project = self.factory.makeProject()
+
+    def test_project_with_no_branch_visibility_rule(self):
+        view = create_initialized_view(
+            self.project, name="+branches", rootsite='code')
+        privacy_portlet = find_tag_by_id(view(), 'privacy')
+        text = extract_text(privacy_portlet)
+        expected = """
+            Inherited branch visibility for all projects in .* is Public.
+            """
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            expected, text)
+
+    def test_project_with_private_branch_visibility_rule(self):
+        self.project.setBranchVisibilityTeamPolicy(
+            None, BranchVisibilityRule.FORBIDDEN)
+        view = create_initialized_view(
+            self.project, name="+branches", rootsite='code')
+        privacy_portlet = find_tag_by_id(view(), 'privacy')
+        text = extract_text(privacy_portlet)
+        expected = """
+            Inherited branch visibility for all projects in .* is Forbidden.
+            """
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            expected, text)
+
+    def _testBranchVisibilityLink(self, user):
+        login_person(user)
+        view = create_initialized_view(
+            self.project, name="+branches", rootsite='code',
+            principal=user)
+        action_portlet = find_tag_by_id(view(), 'action-portlet')
+        text = extract_text(action_portlet)
+        expected = '.*Define branch visibility.*'
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            expected, text)
+
+    def test_branch_visibility_link_admin(self):
+        # An admin will be displayed a link to define branch visibility in the
+        # action portlet.
+        admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
+        self._testBranchVisibilityLink(admin)
+
+    def test_branch_visibility_link_commercial_admin(self):
+        # A commercial admin will be displayed a link to define branch
+        # visibility in the action portlet.
+        admin = getUtility(IPersonSet).getByEmail(COMMERCIAL_ADMIN_EMAIL)
+        self._testBranchVisibilityLink(admin)
+
+    def test_branch_visibility_link_non_admin(self):
+        # A non-admin will not see the action portlet.
+        view = create_initialized_view(
+            self.project, name="+branches", rootsite='code')
+        action_portlet = find_tag_by_id(view(), 'action-portlet')
+        self.assertIs(None, action_portlet)
+
+    def test_no_branches_gets_message_not_listing(self):
+        # If there are no product branches on the project's products, then
+        # the view shows the no code hosting message instead of a listing.
+        self.factory.makeProduct(project=self.project)
+        view = create_initialized_view(
+            self.project, name='+branches', rootsite='code')
+        displayname = self.project.displayname
+        expected_text = normalize_whitespace(
+            ("Launchpad does not know where any of %s's "
+             "projects host their code." % displayname))
+        no_branch_div = find_tag_by_id(view(), "no-branchtable")
+        text = normalize_whitespace(extract_text(no_branch_div))
+        self.assertEqual(expected_text, text)
+
+    def test_branches_get_listing(self):
+        # If a product has a branch, then the project view has a branch
+        # listing.
+        product = self.factory.makeProduct(project=self.project)
+        self.factory.makeProductBranch(product=product)
+        view = create_initialized_view(
+            self.project, name='+branches', rootsite='code')
+        table = find_tag_by_id(view(), "branchtable")
+        self.assertIsNot(None, table)
 
 
 def test_suite():

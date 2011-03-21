@@ -11,6 +11,10 @@ __metaclass__ = type
 
 import _pythonpath
 
+# Avoid crappy circular imports caused by
+# canonical.launchpad.interfaces.__init__
+import canonical.launchpad.interfaces
+
 from canonical.config import config
 from lp.soyuz.scripts.ppakeygenerator import PPAKeyGenerator
 

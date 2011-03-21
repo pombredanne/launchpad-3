@@ -12,7 +12,9 @@ __all__ = [
 from zope.component import getUtility
 
 from lp.services.scripts.base import (
-    LaunchpadCronScript, LaunchpadScriptFailure)
+    LaunchpadCronScript,
+    LaunchpadScriptFailure,
+    )
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 
 

@@ -24,7 +24,7 @@ anonymous user, i.e. no private bugs will be included in the counts.
 
 It's possible to limit which statuses to return.
 
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> bug_counts = bugtarget.getBugCounts(
     ...     None, [BugTaskStatus.NEW, BugTaskStatus.CONFIRMED])
     >>> for status in sorted(bug_counts.keys()):
@@ -94,7 +94,7 @@ to view the bug. So if we set the INCOMPLETE bug above to be private,
 Sample Person (the bug reporter) will still get the bug included in the
 count, but not No Privileges Person or the anonymous user.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> old_counts = bugtarget.getBugCounts(None)
     >>> bug.setPrivate(True, getUtility(ILaunchBag).user)
     True

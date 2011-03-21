@@ -28,6 +28,10 @@ To search bugs by assignee, we can select from two options: `Nobody`
 Let's test the advanced form for a distribution.  We get the search
 results when we use a valid assignee.
 
+    >>> # Debian must enable the Launchpad bug tracker to access bugs.
+    >>> from lp.testing.service_usage_helpers import set_service_usage
+    >>> set_service_usage('debian', bug_tracking_usage='LAUNCHPAD')
+
     >>> anon_browser.open('http://bugs.launchpad.dev/debian/+bugs?advanced=1')
     >>> anon_browser.getControl(name='field.assignee').value = 'name12'
     >>> anon_browser.getControl('Search', index=0).click()
@@ -172,7 +176,7 @@ subscribed to any bugs. In this case, no bugs are found:
     >>> anon_browser.getControl('Bug subscriber').value = subscriber
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print extract_text(find_main_content(anon_browser.contents))
-    Mozilla Firefox ...
+    Bugs in Mozilla Firefox ...
     No results for search
 
 We'll continue by subscribing the same user to a couple of bugs. However,

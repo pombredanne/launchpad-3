@@ -10,7 +10,7 @@
   </tal:comment>
 
 <script type="text/javascript">
-LPS.use('node', 'io-base', 'lazr.anim', 'soyuz-base', function(Y) {
+LPS.use('node', 'io-base', 'lazr.anim', 'lp.soyuz.base', function(Y) {
 
 
 /*
@@ -23,7 +23,7 @@ function informFailure(transaction_id, response, args) {
         startUpdate(args.container);
     };
 
-    var failure_message = Y.soyuz.makeFailureNode(
+    var failure_message = Y.lp.soyuz.base.makeFailureNode(
         'Failed to fetch package details.', retry_handler);
 
     args.container.set('innerHTML', '');
@@ -48,7 +48,7 @@ function doUpdate(transaction_id, response, args) {
  * Dispatch a XHR for updating the given container.
  */
 function startUpdate(container) {
-    in_progress_message = Y.soyuz.makeInProgressNode(
+    in_progress_message = Y.lp.soyuz.base.makeInProgressNode(
         'Fetching package details ...')
 
     container.set('innerHTML', '');
@@ -66,12 +66,12 @@ function startUpdate(container) {
 
     /*
      * If a page wants to use this outside of an archive context then it
-     * can define LP.client.cache['archive_context'], which should be a
+     * can define LP.cache['archive_context'], which should be a
      * full or relative URL to the context archive page required.
      */
     var base_url = (
-        typeof(LP.client.cache['archive_context_url']) != "undefined")
-            ? LP.client.cache['archive_context_url']
+        typeof(LP.cache['archive_context_url']) != "undefined")
+            ? LP.cache['archive_context_url']
             : '';
     if (base_url !== '') {
         base_url += '/'

@@ -19,8 +19,7 @@
 
     <div metal:fill-slot="main">
       <p>There are
-      <strong class="registry-stat"
-              tal:content="context/count_all">5</strong>
+      <strong tal:content="context/count_all">5</strong>
       project groups registered in Launchpad.
       </p>
 
@@ -33,6 +32,9 @@
           tal:condition="not: view/search_requested"
           type="submit" value="Search project groups" />
       </form>
+      <script type="text/javascript"><!--
+         setFocusByName('text');
+       // --></script>
 
       <div tal:condition="view/search_requested">
           <tal:searching condition="view/search_results">

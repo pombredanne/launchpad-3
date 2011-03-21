@@ -12,17 +12,19 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.scripts import FakeLogger
-from lp.soyuz.scripts.ftpmaster import (
-    ObsoleteDistroseries, SoyuzScriptError)
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory,
-    SourcePackagePublishingHistory)
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.series import SeriesStatus
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.testing.fakemethod import FakeMethod
-from canonical.testing import LaunchpadZopelessLayer
+from lp.services.log.logger import DevNullLogger
+from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
+from lp.soyuz.scripts.ftpmaster import (
+    ObsoleteDistroseries,
+    SoyuzScriptError,
+    )
 
 
 class TestObsoleteDistroseriesScript(unittest.TestCase):
@@ -94,8 +96,7 @@ class TestObsoleteDistroseries(unittest.TestCase):
         obsoleter = ObsoleteDistroseries(
             name='obsolete-distroseries', test_args=test_args)
         # Swallow all log messages.
-        obsoleter.logger = FakeLogger()
-        obsoleter.logger.message = FakeMethod()
+        obsoleter.logger = DevNullLogger()
         obsoleter.setupLocation()
         return obsoleter
 

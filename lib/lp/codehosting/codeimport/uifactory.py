@@ -10,7 +10,10 @@ __all__ = ['LoggingUIFactory']
 import sys
 import time
 
-from bzrlib.ui.text import TextUIFactory, TextProgressView
+from bzrlib.ui.text import (
+    TextProgressView,
+    TextUIFactory,
+    )
 
 
 class LoggingUIFactory(TextUIFactory):
@@ -74,6 +77,24 @@ class LoggingTextProgressView(TextProgressView):
     def _render_bar(self):
         # There's no point showing a progress bar in a flat log.
         return ''
+
+    def _render_line(self):
+        bar_string = self._render_bar()
+        if self._last_task:
+            task_part, counter_part = self._format_task(self._last_task)
+        else:
+            task_part = counter_part = ''
+        if self._last_task and not self._last_task.show_transport_activity:
+            trans = ''
+        else:
+            trans = self._last_transport_msg
+        # the bar separates the transport activity from the message, so even
+        # if there's no bar or spinner, we must show something if both those
+        # fields are present
+        if (task_part and trans) and not bar_string:
+            bar_string = ' | '
+        s = trans + bar_string + task_part + counter_part
+        return s
 
     def _format_transport_msg(self, scheme, dir_char, rate):
         # We just report the amount of data transferred.

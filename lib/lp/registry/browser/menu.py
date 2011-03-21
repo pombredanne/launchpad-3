@@ -15,7 +15,10 @@ __all__ = [
 from zope.interface import Interface
 
 from canonical.launchpad.webapp.menu import (
-    Link, NavigationMenu, enabled_with_permission)
+    enabled_with_permission,
+    Link,
+    NavigationMenu,
+    )
 
 
 class TopLevelMenuMixin:
@@ -43,6 +46,11 @@ class TopLevelMenuMixin:
     def register_team(self):
         text = 'Register a team'
         return Link('/people/+newteam', text, icon='add')
+
+    @enabled_with_permission('launchpad.Admin')
+    def register_distribution(self):
+        text = 'Register a distribution'
+        return Link('/distros/+add', text, icon='add')
 
     def create_account(self):
         text = 'Create an account'

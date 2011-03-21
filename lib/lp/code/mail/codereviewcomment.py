@@ -11,12 +11,15 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
-
 from lp.code.enums import CodeReviewNotificationLevel
-from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.code.interfaces.branchmergeproposal import (
-    ICodeReviewCommentEmailJobSource)
-from lp.services.mail.sendmail import append_footer, format_address
+    ICodeReviewCommentEmailJobSource,
+    )
+from lp.code.mail.branchmergeproposal import BMPMailer
+from lp.services.mail.sendmail import (
+    append_footer,
+    format_address,
+    )
 
 
 def send(comment, event):
@@ -76,7 +79,7 @@ class CodeReviewCommentMailer(BMPMailer):
             code_review_comment, recipients,
             code_review_comment.message.rfc822msgid)
 
-    def _getSubject(self, email):
+    def _getSubject(self, email, recipient):
         """Don't do any string template insertions on subjects."""
         return self.code_review_comment.message.subject
 
@@ -94,7 +97,7 @@ class CodeReviewCommentMailer(BMPMailer):
         self.body_main = self.message.text_contents
         self.proposal_url = canonical_url(self.merge_proposal)
 
-    def _getBody(self, email):
+    def _getBody(self, email, recipient):
         """Return the complete body to use for this email.
 
         If there was a vote, we prefix "Review: " to the message.

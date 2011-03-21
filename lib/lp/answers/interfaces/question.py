@@ -15,19 +15,31 @@ __all__ = [
     'IQuestionLinkFAQForm',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
-     Bool, Choice, Datetime,  Int, List, Object, Text, TextLine)
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    List,
+    Object,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
-from lp.registry.interfaces.role import IHasOwner
-
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.questionenums import (
-    QuestionPriority, QuestionStatus)
+    QuestionPriority,
+    QuestionStatus,
+    )
 from lp.answers.interfaces.questionmessage import IQuestionMessage
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.registry.interfaces.role import IHasOwner
+from lp.services.fields import PublicPersonChoice
 
 
 class InvalidQuestionStateError(Exception):

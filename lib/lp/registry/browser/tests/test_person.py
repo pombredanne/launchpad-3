@@ -10,11 +10,11 @@ from textwrap import dedent
 import unittest
 
 from canonical.config import config
+from canonical.launchpad.ftests import login_person
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.browser.person import PersonView
-from canonical.launchpad.ftests import login_person
 from lp.testing import TestCaseWithFactory
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 
 class PersonView_openid_identity_url_TestCase(TestCaseWithFactory):

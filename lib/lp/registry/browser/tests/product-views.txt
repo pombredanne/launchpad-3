@@ -20,10 +20,10 @@ if one exists.  If the product does not have a driver, then the driver
 for the project is returned.  If the product has no project or the
 project has no driver then None is returned.
 
+    >>> from canonical.launchpad.ftests import ANONYMOUS
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from canonical.launchpad.ftests import ANONYMOUS
     >>> login('foo.bar@canonical.com')
     >>> mozilla = getUtility(IProjectGroupSet).getByName('mozilla')
     >>> firefox = getUtility(IProductSet).getByName('firefox')
@@ -128,7 +128,7 @@ cannot access the page.
     >>> view = create_initialized_view(firefox, name='+review-license')
     Traceback (most recent call last):
     ...
-    Unauthorized: (<Product..., 'license_reviewed', 'launchpad.ProjectReview')
+    Unauthorized: (<Product..., 'license_reviewed', 'launchpad.Moderate')
 
 Mark is in the registry admins team and is allowed to access the page.
 
@@ -137,7 +137,8 @@ Mark is in the registry admins team and is allowed to access the page.
     >>> print view.label
     Review project
 
-Adding the Commercial Admin to the registry experts team will allow him access.
+Adding the Commercial Admin to the registry experts team will give
+him access.
 
     >>> commercial_member = getUtility(IPersonSet).getByEmail(
     ...     'commercial-member@canonical.com')
@@ -416,39 +417,29 @@ releasefileglob fields.
     ftp://mozilla.org/firefox.*bz2
 
 
+Viewing series for a product
+============================
+
+All the product series can be viewed in batches.
+
+    >>> product = factory.makeProduct()
+    >>> for name in ('stable', 'testing', '1.1', '1.2', 'extra'):
+    ...     series = factory.makeProductSeries(product=product, name=name)
+    >>> view = create_view(product, name='+series')
+    >>> batch = view.batched_series.currentBatch()
+    >>> print batch.total()
+    6
+    >>> for series in batch:
+    ...     print series.name
+    trunk
+    1.2
+    1.1
+    testing
+    stable
+
+
 Product index view
 ==================
-
-Programming languages
----------------------
-
-When the product has no programming languages specified, nothing is displayed
-on the index page.
-
-    >>> login('no-priv@canonical.com')
-    >>> view = create_initialized_view(firefox, name='+index')
-    >>> view.show_programming_languages
-    False
-
-But if the project owner logs in, they will see the programming language
-details, so that they can edit them.
-
-    >>> login_person(firefox.owner)
-    >>> view = create_initialized_view(firefox, name='+index')
-    >>> view.show_programming_languages
-    True
-
-Once the programming languages are specified though, even users who aren't the
-owner will see the list.
-
-    >>> firefox.programminglang = 'C++'
-    >>> transaction.commit()
-
-    >>> login('no-priv@canonical.com')
-    >>> view = create_initialized_view(firefox, name='+index')
-    >>> view.show_programming_languages
-    True
-
 
 +index portlets
 ---------------
@@ -481,8 +472,9 @@ officially supports.
 The portlet are rendered when a product officially uses the Launchpad
 Answers, Blueprints, and Bugs applications.
 
-    >>> product.official_answers = True
-    >>> product.official_blueprints = True
+    >>> from lp.app.enums import ServiceUsage
+    >>> product.answers_usage = ServiceUsage.LAUNCHPAD
+    >>> product.blueprints_usage = ServiceUsage.LAUNCHPAD
     >>> product.official_malone = True
 
     >>> view = create_initialized_view(

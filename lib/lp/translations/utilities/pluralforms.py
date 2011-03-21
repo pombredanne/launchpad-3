@@ -9,10 +9,10 @@ __all__ = [
     'plural_form_mapper',
     ]
 
-import re
 import gettext
-from lp.translations.interfaces.translations import (
-    TranslationConstants)
+import re
+
+from lp.translations.interfaces.translations import TranslationConstants
 
 
 class BadPluralExpression(Exception):

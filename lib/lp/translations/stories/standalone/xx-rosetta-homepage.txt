@@ -1,4 +1,21 @@
-= Translations front page =
+Translations front page
+=======================
+
+Set up
+------
+
+    >>> import transaction
+    >>> from lp.app.enums import ServiceUsage
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from zope.component import getUtility
+    >>> login('admin@canonical.com')
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
+    >>> evolution.translations_usage = ServiceUsage.LAUNCHPAD
+    >>> logout()
+    >>> transaction.commit()    
+
+The front page
+--------------
 
     >>> browser.open('http://translations.launchpad.dev/')
     >>> print browser.title

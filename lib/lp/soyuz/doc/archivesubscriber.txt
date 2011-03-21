@@ -19,6 +19,10 @@ First, create a person 'joesmith' and a team 'team_cprov':
     ...                               displayname="John Smith",
     ...                               password="test",
     ...                               email="john@example.com")
+    >>> fredsmith = factory.makePerson(name="fredsmith",
+    ...                               displayname="Fred Smith",
+    ...                               password="test",
+    ...                               email="fred@example.com")
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
     >>> no_priv = getUtility(IPersonSet).getByName("no-priv")
@@ -108,7 +112,7 @@ Subscriptions also contain some date information:
 An email is sent to the subscribed person when the ArchiveSubscriber
 entry is created:
 
-    >>> print_emails(include_reply_to=True)
+    >>> print_emails(include_reply_to=True) #doctest: -NORMALIZE_WHITESPACE
     From: Celso Providelo <noreply@launchpad.net>
     To: joe@example.com
     Reply-To: Celso Providelo <celso.providelo@canonical.com>
@@ -119,8 +123,8 @@ entry is created:
     --------------------------------------
     <BLANKLINE>
     Celso Providelo has granted you access to a private software archive
-    "PPA named p3a for Celso Providelo" (ppa:cprov/p3a), which is hosted
-    by Launchpad and has the following description:
+    "PPA named p3a for Celso Providelo" (ppa:cprov/p3a), which is hosted by
+    Launchpad and has the following description:
     <BLANKLINE>
     packages to help my friends.
     <BLANKLINE>
@@ -137,11 +141,45 @@ entry is created:
     ignore this email. However, if you have any concerns you can contact the
     Launchpad team by emailing feedback@launchpad.net
     <BLANKLINE>
-    <BLANKLINE>
     Regards,
     The Launchpad team
     ----------------------------------------
 
+If the description of the P3A is changed to None, and a new user subscribed
+the e-mail does not contain the description.
+
+    >>> cprov_private_ppa.description = None
+    >>> unused = cprov_private_ppa.newSubscription(fredsmith, cprov)
+    >>> print_emails(include_reply_to=True) #doctest: -NORMALIZE_WHITESPACE
+    From: Celso Providelo <noreply@launchpad.net>
+    To: fred@example.com
+    Reply-To: Celso Providelo <celso.providelo@canonical.com>
+    Subject: PPA access granted for PPA named p3a for Celso Providelo
+    Hello Fred Smith,
+    <BLANKLINE>
+    Launchpad: access to a private archive
+    --------------------------------------
+    <BLANKLINE>
+    Celso Providelo has granted you access to a private software archive
+    "PPA named p3a for Celso Providelo" (ppa:cprov/p3a), which is hosted by
+    Launchpad.
+    <BLANKLINE>
+    To start downloading and using software from this archive you need to
+    view your access details by visiting this link:
+    <BLANKLINE>
+    <http://launchpad.dev/~fredsmith/+archivesubscriptions>
+    <BLANKLINE>
+    You can find out more about Celso Providelo here:
+    <BLANKLINE>
+    <http://launchpad.dev/~cprov>
+    <BLANKLINE>
+    If you'd prefer not to use software from this archive, you can safely
+    ignore this email. However, if you have any concerns you can contact the
+    Launchpad team by emailing feedback@launchpad.net
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
 
 A subscription for a subscriber who already has a current subscription
 cannot be created:
@@ -204,8 +242,9 @@ subscriber and archive.  To access subscriptions you need launchpad.View
 privilege which applies to the person in the subscriptions and launchpad
 admins.
 
+    >>> from lp.soyuz.enums import ArchiveSubscriberStatus
     >>> from lp.soyuz.interfaces.archivesubscriber import (
-    ...     ArchiveSubscriberStatus, IArchiveSubscriberSet)
+    ...     IArchiveSubscriberSet)
     >>> sub_set = getUtility(IArchiveSubscriberSet)
 
     >>> login("no-priv@canonical.com")
@@ -225,7 +264,7 @@ And retrieve the subscription by subscriber and archive:
     ...     new_sub.subscriber)[0].archive.displayname
     PPA named p3a for Celso Providelo
 
-    >>> print sub_set.getByArchive(new_sub.archive)[0].subscriber.name
+    >>> print sub_set.getByArchive(new_sub.archive)[1].subscriber.name
     joesmith
 
 The getBySubscriber() method takes an optional archive parameter for
@@ -360,8 +399,6 @@ We can also do this as an admin.
 
     >>> login("admin@canonical.com")
     >>> new_sub.description = u"changed by admin"
-    >>> from lp.soyuz.interfaces.archivesubscriber import (
-    ...     ArchiveSubscriberStatus)
     >>> new_sub.status = ArchiveSubscriberStatus.EXPIRED
 
 The subscriber and registrant properties are not editable.

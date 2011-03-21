@@ -8,6 +8,7 @@ __all__ = ['IMemcacheClient']
 
 from zope.interface import Interface
 
+
 class IMemcacheClient(Interface):
     """Interface to lookup an initialized memcache.Client instance."""
 

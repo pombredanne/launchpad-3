@@ -8,14 +8,14 @@ __metaclass__ = type
 
 
 import email
-import mailbox
-
 from email.Utils import make_msgid
 from logging import getLogger
+import mailbox
 
 from zope.app import zapi
-from zope.sendmail.interfaces import IMailer
 from zope.interface import implements
+from zope.sendmail.interfaces import IMailer
+
 
 COMMASPACE = ', '
 

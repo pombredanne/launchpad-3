@@ -5,14 +5,12 @@
 
 from zope.component import getUtility
 
-from canonical.testing import LaunchpadZopelessLayer
-
-from lp.testing import TestCaseWithFactory
-
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
+from lp.testing import TestCaseWithFactory
 
 
 class TestArchiveArch(TestCaseWithFactory):

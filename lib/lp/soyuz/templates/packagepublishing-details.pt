@@ -5,17 +5,17 @@
   omit-tag="">
   <ul>
     <li tal:condition="view/isRemoved">
-      <strong>Removed from disk</strong>
+      Removed from disk
       <span tal:attributes="title context/dateremoved/fmt:datetime"
             tal:content="context/dateremoved/fmt:displaydate" />.
     </li>
     <li tal:condition="view/isPendingRemoval">
-      <strong>Removal requested</strong>
+      Removal requested
       <span tal:attributes="title context/scheduleddeletiondate/fmt:datetime"
          tal:content="context/scheduleddeletiondate/fmt:displaydate" />.
     </li>
     <li tal:condition="view/wasDeleted">
-      <strong>Deleted</strong>
+      Deleted
       <span tal:attributes="title context/datesuperseded/fmt:datetime"
             tal:content="context/datesuperseded/fmt:displaydate" />
       by <a tal:replace="structure context/removed_by/fmt:link"/>
@@ -23,18 +23,19 @@
            tal:content="structure context/removal_comment/fmt:text-to-html" />
     </li>
     <li tal:condition="view/wasSuperseded">
-      <strong>Superseded</strong>
+      Superseded
       <span tal:attributes="title context/datesuperseded/fmt:datetime"
             tal:content="context/datesuperseded/fmt:displaydate"/>
       by <span tal:replace="context/supersededby/title" />
     </li>
+    <li tal:content="structure view/recipe_build_details" tal:condition="view/is_source" />
     <li tal:condition="context/datepublished">
-      <strong>Published</strong>
+      Published
       <span tal:attributes="title context/datepublished/fmt:datetime"
             tal:content="context/datepublished/fmt:displaydate" />
     </li>
     <li tal:condition="view/wasCopied">
-      <strong>Copied from</strong>
+      Copied from
       <tal:source_original_location condition="view/is_source">
         <tal:define
           define="linkify_archive view/linkify_source_archive;

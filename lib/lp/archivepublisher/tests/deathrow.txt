@@ -15,7 +15,7 @@ We will work within the Ubuntu distribution context only.
 
 The no-operation use case, reflects the sampledata status.
 
-    >>> from canonical.launchpad.scripts.logger import FakeLogger
+    >>> from lp.services.log.logger import FakeLogger
     >>> from lp.archivepublisher.deathrow import DeathRow
     >>> from lp.archivepublisher.diskpool import DiskPool
 
@@ -36,7 +36,7 @@ Setup `SoyuzTestPublisher` for creating publications for Ubuntu/hoary.
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.soyuz.enums import (
     ...     PackagePublishingStatus)
 
     >>> hoary = ubuntu.getSeries('hoary')
@@ -193,8 +193,8 @@ Group the test publications according to their purpose:
 
 Publish files on disk and build a list of all created file paths
 
-    >>> from canonical.launchpad.scripts.logger import QuietFakeLogger
-    >>> quiet_disk_pool = DiskPool(pool_path, temp_path, QuietFakeLogger())
+    >>> from lp.services.log.logger import BufferLogger
+    >>> quiet_disk_pool = DiskPool(pool_path, temp_path, BufferLogger())
 
     >>> unique_file_paths = set()
 
@@ -207,7 +207,7 @@ Publish files on disk and build a list of all created file paths
     ...                 pub_file.libraryfilealiasfilename.encode('utf-8')
     ...              )
     ...             unique_file_paths.add(file_path)
-    ...             pub_file.publish(quiet_disk_pool, QuietFakeLogger())
+    ...             pub_file.publish(quiet_disk_pool, BufferLogger())
 
     >>> all_test_file_paths = sorted(unique_file_paths)
 

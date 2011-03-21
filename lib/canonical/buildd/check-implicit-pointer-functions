@@ -35,10 +35,11 @@
 import re
 import sys
 
-implicit_pattern = re.compile("([^:]*):(\d+): warning: implicit declaration "
-                              + "of function [`']([^']*)'")
+implicit_pattern = re.compile(
+    "([^:]*):(\d+):(\d+:)? warning: implicit declaration "
+    "of function [`']([^']*)'")
 pointer_pattern = re.compile(
-    "([^:]*):(\d+): warning: "
+    "([^:]*):(\d+):(\d+:)? warning: "
     + "("
     +  "(assignment"
     +  "|initialization"
@@ -48,53 +49,55 @@ pointer_pattern = re.compile(
     +  ") makes pointer from integer without a cast"
     + "|"
     + "cast to pointer from integer of different size)")
-last_implicit_filename = ""
-last_implicit_linenum = -1
-last_implicit_func = ""
 
-errlist = ""
+def main():
+    last_implicit_filename = ""
+    last_implicit_linenum = -1
+    last_implicit_func = ""
 
-in_line = False
-warn_only = False
+    errlist = ""
 
-for arg in sys.argv[1:]:
-    if arg == '--inline':
-        in_line = True
-    elif arg == '--warnonly':
-        warn_only = True
+    in_line = False
+    warn_only = False
 
-rv = 0
-while True:
-    line = sys.stdin.readline()
-    if in_line:
-        sys.stdout.write(line)
-        sys.stdout.flush()
-    if line == '':
-        break
-    m = implicit_pattern.match(line)
-    if m:
-        last_implicit_filename = m.group(1)
-        last_implicit_linenum = int(m.group(2))
-        last_implicit_func = m.group(3)
-    else:
-        m = pointer_pattern.match(line)
+    for arg in sys.argv[1:]:
+        if arg == '--inline':
+            in_line = True
+        elif arg == '--warnonly':
+            warn_only = True
+
+    rv = 0
+    while True:
+        line = sys.stdin.readline()
+        if in_line:
+            sys.stdout.write(line)
+            sys.stdout.flush()
+        if line == '':
+            break
+        m = implicit_pattern.match(line)
         if m:
-            pointer_filename = m.group(1)
-            pointer_linenum = int(m.group(2))
-            if (last_implicit_filename == pointer_filename
-                and last_implicit_linenum == pointer_linenum):
-                err = "Function `%s' implicitly converted to pointer at " \
-                      "%s:%d" % (last_implicit_func, last_implicit_filename,
-                                 last_implicit_linenum)
-                errlist += err+"\n"
-                print err
-                if not warn_only:
-                    rv = 3
+            last_implicit_filename = m.group(1)
+            last_implicit_linenum = int(m.group(2))
+            last_implicit_func = m.group(4)
+        else:
+            m = pointer_pattern.match(line)
+            if m:
+                pointer_filename = m.group(1)
+                pointer_linenum = int(m.group(2))
+                if (last_implicit_filename == pointer_filename
+                    and last_implicit_linenum == pointer_linenum):
+                    err = "Function `%s' implicitly converted to pointer at " \
+                          "%s:%d" % (last_implicit_func, last_implicit_filename,
+                                     last_implicit_linenum)
+                    errlist += err+"\n"
+                    print err
+                    if not warn_only:
+                        rv = 3
 
-if len(errlist):
-    if in_line:
-	print errlist
-    print """
+    if len(errlist):
+        if in_line:
+            print errlist
+            print """
 
 Our automated build log filter detected the problem(s) above that will
 likely cause your package to segfault on architectures where the size of
@@ -106,7 +109,10 @@ Since use of implicitly converted pointers is always fatal to the application
 on ia64, they are errors.  Please correct them for your next upload.
 
 More information can be found at:
-    http://wiki.debian.org/ImplicitPointerConversions
+http://wiki.debian.org/ImplicitPointerConversions
 
-"""
-sys.exit(rv)
+    """
+    sys.exit(rv)
+
+if __name__ == '__main__':
+    main()

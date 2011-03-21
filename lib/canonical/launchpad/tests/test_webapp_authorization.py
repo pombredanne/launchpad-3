@@ -6,15 +6,19 @@ __metaclass__ = type
 import unittest
 
 from zope.component import provideAdapter
-from zope.interface import implements, Interface
+from zope.interface import (
+    implements,
+    Interface,
+    )
 from zope.testing.cleanup import CleanUp
 
-from canonical.testing import ZopelessLayer
-
-from canonical.launchpad.webapp.interfaces import ILaunchpadContainer
 from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.launchpad.webapp.interfaces import AccessLevel
+from canonical.launchpad.webapp.interfaces import (
+    AccessLevel,
+    ILaunchpadContainer,
+    )
+from canonical.testing.layers import ZopelessLayer
 
 
 class TestLaunchpadSecurityPolicy_getPrincipalsAccessLevel(

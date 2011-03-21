@@ -4,17 +4,6 @@ The Answer Tracker was renamed from the old Technical Support Tracker.
 As part of that rename many URLs were changed to reflect the new
 terminology. We provide redirect from the old names to the new ones.
 
-
-== Main application ==
-
-    >>> browser.open('http://launchpad.dev/support')
-    >>> print browser.url
-    http://answers.launchpad.dev/questions
-
-    >>> browser.open('http://launchpad.dev/support/+tickets')
-    >>> print browser.url
-    http://answers.launchpad.dev/questions/+questions
-
 == Answer Contact Page ==
 
     >>> user_browser.open('http://launchpad.dev/firefox/+support-contact')

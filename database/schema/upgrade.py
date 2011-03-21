@@ -32,17 +32,119 @@ SCHEMA_DIR = os.path.dirname(__file__)
 
 def main():
     con = connect(options.dbuser)
+    patches = get_patchlist(con)
+
     if replication.helpers.slony_installed(con):
         con.close()
         if options.commit is False:
             parser.error("--dry-run does not make sense with replicated db")
         log.info("Applying patches to Slony-I environment.")
         apply_patches_replicated()
+        con = connect(options.dbuser)
     else:
         log.info("Applying patches to unreplicated environment.")
         apply_patches_normal(con)
 
+    report_patch_times(con, patches)
+
+    # Commit changes
+    if options.commit:
+        log.debug("Committing changes")
+        con.commit()
+
     return 0
+
+
+# When we apply a number of patches in a transaction, they all end up
+# with the same start_time (the transaction start time). This SQL fixes
+# that up by setting the patch start time to the previous patches end
+# time when there are patches that share identical start times. The
+# FIX_PATCH_TIMES_PRE_SQL stores the start time of patch application,
+# which is probably not the same as the transaction timestamp because we
+# have to apply trusted.sql before applying patches (in addition to
+# other preamble time such as Slony-I grabbing locks).
+# FIX_PATCH_TIMES_POST_SQL does the repair work.
+FIX_PATCH_TIMES_PRE_SQL = dedent("""\
+    CREATE TEMPORARY TABLE _start_time AS (
+        SELECT statement_timestamp() AT TIME ZONE 'UTC' AS start_time);
+    """)
+FIX_PATCH_TIMES_POST_SQL = dedent("""\
+    UPDATE LaunchpadDatabaseRevision
+    SET start_time = prev_end_time
+    FROM (
+        SELECT
+            LDR1.major, LDR1.minor, LDR1.patch,
+            max(LDR2.end_time) AS prev_end_time
+        FROM
+            LaunchpadDatabaseRevision AS LDR1,
+            LaunchpadDatabaseRevision AS LDR2
+        WHERE
+            (LDR1.major, LDR1.minor, LDR1.patch)
+                > (LDR2.major, LDR2.minor, LDR2.patch)
+            AND LDR1.start_time = LDR2.start_time
+        GROUP BY LDR1.major, LDR1.minor, LDR1.patch
+        ) AS PrevTime
+    WHERE
+        LaunchpadDatabaseRevision.major = PrevTime.major
+        AND LaunchpadDatabaseRevision.minor = PrevTime.minor
+        AND LaunchpadDatabaseRevision.patch = PrevTime.patch
+        AND LaunchpadDatabaseRevision.start_time <> prev_end_time;
+
+    UPDATE LaunchpadDatabaseRevision
+    SET start_time=_start_time.start_time
+    FROM _start_time
+    WHERE
+        LaunchpadDatabaseRevision.start_time
+            = transaction_timestamp() AT TIME ZONE 'UTC';
+    """)
+
+
+def to_seconds(td):
+    """Convert a timedelta to seconds."""
+    return td.days * (24*60*60) + td.seconds + td.microseconds/1000000.0
+
+
+def report_patch_times(con, todays_patches):
+    """Report how long it took to apply the given patches."""
+    cur = con.cursor()
+
+    todays_patches = [patch_tuple for patch_tuple, patch_file
+        in todays_patches]
+
+    cur.execute("""
+        SELECT
+            major, minor, patch, start_time, end_time - start_time AS db_time
+        FROM LaunchpadDatabaseRevision
+        WHERE start_time > CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            - CAST('1 month' AS interval)
+        ORDER BY major, minor, patch
+        """)
+    for major, minor, patch, start_time, db_time in cur.fetchall():
+        if (major, minor, patch) in todays_patches:
+            continue
+        db_time = to_seconds(db_time)
+        start_time = start_time.strftime('%Y-%m-%d')
+        log.info(
+            "%d-%02d-%d applied %s in %0.1f seconds"
+            % (major, minor, patch, start_time, db_time))
+
+    for major, minor, patch in todays_patches:
+        cur.execute("""
+            SELECT end_time - start_time AS db_time
+            FROM LaunchpadDatabaseRevision
+            WHERE major = %s AND minor = %s AND patch = %s
+            """, (major, minor, patch))
+        db_time = cur.fetchone()[0]
+        # Patches before 2208-01-1 don't have timing information.
+        # Ignore this. We can remove this code the next time we
+        # create a new database baseline, as all patches will have
+        # timing information.
+        if db_time is None:
+            log.debug('%d-%d-%d no application time', major, minor, patch)
+            continue
+        log.info(
+            "%d-%02d-%d applied just now in %0.1f seconds",
+            major, minor, patch, to_seconds(db_time))
 
 
 def apply_patches_normal(con):
@@ -51,18 +153,19 @@ def apply_patches_normal(con):
     # be required for patches to apply correctly so must be run first.
     apply_other(con, 'trusted.sql')
 
+    # Prepare to repair patch timestamps if necessary.
+    con.cursor().execute(FIX_PATCH_TIMES_PRE_SQL)
+
     # Apply the patches
     patches = get_patchlist(con)
     for (major, minor, patch), patch_file in patches:
         apply_patch(con, major, minor, patch, patch_file)
 
+    # Repair patch timestamps if necessary.
+    con.cursor().execute(FIX_PATCH_TIMES_POST_SQL)
+
     # Update comments.
     apply_comments(con)
-
-    # Commit changes
-    if options.commit:
-        log.debug("Committing changes")
-        con.commit()
 
 
 def apply_patches_replicated():
@@ -97,6 +200,11 @@ def apply_patches_replicated():
                 );
             """ % full_path)
 
+    # We are going to generate some temporary files using
+    # NamedTempoararyFile. Store them here so we can control when
+    # they get closed and cleaned up.
+    temporary_files = []
+
     # Apply trusted.sql
     run_sql('trusted.sql')
 
@@ -105,35 +213,29 @@ def apply_patches_replicated():
     # they get closed and cleaned up.
     temporary_files = []
 
-    # Apply DB patches.
+    # Apply DB patches as one big hunk.
+    combined_script = NamedTemporaryFile(prefix='patch', suffix='.sql')
+    temporary_files.append(combined_script)
+
+    # Prepare to repair the start timestamps in
+    # LaunchpadDatabaseRevision.
+    print >> combined_script, FIX_PATCH_TIMES_PRE_SQL
+
     patches = get_patchlist(con)
     for (major, minor, patch), patch_file in patches:
-        run_sql(patch_file)
-        # Cause a failure if the patch neglected to update
-        # LaunchpadDatabaseRevision.
-        assert_script = NamedTemporaryFile(prefix='assert', suffix='.sql')
-        print >> assert_script, dedent("""
-            SELECT assert_patch_applied(%d, %d, %d);
-            """ % (major, minor, patch))
-        assert_script.flush()
-        run_sql(assert_script.name)
-        temporary_files.append(assert_script)
+        print >> combined_script, open(patch_file, 'r').read()
 
-    # Apply comments.sql. Default slonik refuses to run it as one
-    # 'execute script' because it contains too many statements, so chunk
-    # it (we don't want to rebuild slony with a higher limit).
-    comments_path = os.path.join(os.path.dirname(__file__), 'comments.sql')
-    comments = re.findall(
-            "(?ms).*?'\s*;\s*$", open(comments_path, 'r').read())
-    while comments:
-        comment_file = NamedTemporaryFile(prefix="comments", suffix=".sql")
-        print >> comment_file, '\n'.join(comments[:1000])
-        del comments[:1000]
-        comment_file.flush()
-        run_sql(comment_file.name)
-        # Store a reference so it doesn't get garbage collected before our
-        # slonik script is run.
-        temporary_files.append(comment_file)
+        # Trigger a failure if the patch neglected to update
+        # LaunchpadDatabaseRevision.
+        print >> combined_script, (
+            "SELECT assert_patch_applied(%d, %d, %d);"
+            % (major, minor, patch))
+
+    # Fix the start timestamps in LaunchpadDatabaseRevision.
+    print >> combined_script, FIX_PATCH_TIMES_POST_SQL
+
+    combined_script.flush()
+    run_sql(combined_script.name)
 
     # Close transaction block and abort on error.
     print >> outf, dedent("""\
@@ -394,26 +496,7 @@ def applied_patches(con):
 
 
 def apply_patch(con, major, minor, patch, patch_file):
-    log.info("Applying %s" % patch_file)
-    cur = con.cursor()
-    full_sql = open(patch_file).read()
-
-    # Strip comments
-    full_sql = re.sub('(?xms) \/\* .*? \*\/', '', full_sql)
-    full_sql = re.sub('(?xm) ^\s*-- .*? $', '', full_sql)
-
-    # Regular expression to extract a single statement.
-    # A statement may contain semicolons if it is a stored procedure
-    # definition, which requires a disgusting regexp or a parser for
-    # PostgreSQL specific SQL.
-    statement_re = re.compile(
-            r"( (?: [^;$] | \$ (?! \$) | \$\$.*? \$\$)+ )",
-            re.DOTALL | re.MULTILINE | re.VERBOSE
-            )
-    for sql in statement_re.split(full_sql):
-        sql = sql.strip()
-        if sql and sql != ';':
-            cur.execute(sql) # Will die on a bad patch.
+    apply_other(con, patch_file, no_commit=True)
 
     # Ensure the patch updated LaunchpadDatabaseRevision. We could do this
     # automatically and avoid the boilerplate, but then we would lose the
@@ -429,14 +512,21 @@ def apply_patch(con, major, minor, patch, patch_file):
         con.commit()
 
 
-def apply_other(con, script):
+def apply_other(con, script, no_commit=False):
     log.info("Applying %s" % script)
     cur = con.cursor()
     path = os.path.join(os.path.dirname(__file__), script)
     sql = open(path).read()
+    if not sql.rstrip().endswith(';'):
+        # This is important because patches are concatenated together
+        # into a single script when we apply them to a replicated
+        # environment.
+        log.fatal(
+            "Last non-whitespace character of %s must be a semicolon", script)
+        sys.exit(3)
     cur.execute(sql)
 
-    if options.commit and options.partial:
+    if not no_commit and options.commit and options.partial:
         log.debug("Committing changes")
         con.commit()
 

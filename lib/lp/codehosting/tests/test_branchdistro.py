@@ -9,7 +9,11 @@ __metaclass__ = type
 import os
 import re
 from StringIO import StringIO
-from subprocess import PIPE, Popen, STDOUT
+from subprocess import (
+    PIPE,
+    Popen,
+    STDOUT,
+    )
 import textwrap
 import unittest
 
@@ -19,20 +23,27 @@ from bzrlib.errors import NotStacked
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import get_transport
 from bzrlib.transport.chroot import ChrootServer
-
 from lazr.uri import URI
-
 import transaction
+from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.testing.layers import LaunchpadZopelessLayer
-from canonical.launchpad.scripts.logger import FakeLogger, QuietFakeLogger
-
-from lp.codehosting.branchdistro import DistroBrancher, switch_branches
+from lp.code.enums import BranchLifecycleStatus
+from lp.code.interfaces.branchjob import IBranchScanJobSource
+from lp.codehosting.branchdistro import (
+    DistroBrancher,
+    switch_branches,
+    )
 from lp.codehosting.vfs import branch_id_to_path
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.log.logger import (
+    FakeLogger,
+    BufferLogger,
+    )
+from lp.services.osutils import override_environ
 from lp.testing import TestCaseWithFactory
-
 
 # We say "RELEASE" often enough to not want to say "PackagePublishingPocket."
 # each time.
@@ -66,7 +77,10 @@ class TestSwitchBranches(TestCaseWithTransport):
         old_branch = FakeBranch(1)
         self.get_transport(old_branch.unique_name).create_prefix()
         tree = self.make_branch_and_tree(old_branch.unique_name)
-        tree.commit(message='.')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            tree.commit(message='.')
 
         new_branch = FakeBranch(2)
 
@@ -114,12 +128,16 @@ class TestDistroBrancher(TestCaseWithFactory):
         """Make an official package branch with an underlying bzr branch."""
         db_branch = self.factory.makePackageBranch(distroseries=distroseries)
         db_branch.sourcepackage.setBranch(RELEASE, db_branch, db_branch.owner)
+        self.factory.makeRevisionsForBranch(db_branch, count=1)
 
         transaction.commit()
 
         _, tree = self.create_branch_and_tree(
             tree_location=self.factory.getUniqueString(), db_branch=db_branch)
-        tree.commit('')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            tree.commit('')
 
         return db_branch
 
@@ -218,6 +236,50 @@ class TestDistroBrancher(TestCaseWithFactory):
              db_branch.sourcepackagename, brancher.new_distroseries.name],
             [new_branch.owner, new_branch.distribution,
              new_branch.sourcepackagename, new_branch.name])
+        # The new branch is set in the development state, and the old one is
+        # mature.
+        self.assertEqual(
+            BranchLifecycleStatus.DEVELOPMENT, new_branch.lifecycle_status)
+        self.assertEqual(
+            BranchLifecycleStatus.MATURE, db_branch.lifecycle_status)
+
+    def test_makeOneNewBranch_avoids_need_for_scan(self):
+        # makeOneNewBranch sets the appropriate properties of the new branch
+        # so a scan is unnecessary.  This can be done because we are making a
+        # copy of the source branch.
+        db_branch = self.makeOfficialPackageBranch()
+        self.factory.makeRevisionsForBranch(db_branch, count=10)
+        tip_revision_id = db_branch.last_mirrored_id
+        self.assertIsNot(None, tip_revision_id)
+        # The makeRevisionsForBranch will create a scan job for the db_branch.
+        # We don't really care about that, but what we do care about is that
+        # no new jobs are created.
+        existing_scan_job_count = len(
+            list(getUtility(IBranchScanJobSource).iterReady()))
+
+        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
+        brancher.makeOneNewBranch(db_branch)
+        new_branch = brancher.new_distroseries.getSourcePackage(
+            db_branch.sourcepackage.name).getBranch(RELEASE)
+
+        self.assertEqual(tip_revision_id, new_branch.last_mirrored_id)
+        self.assertEqual(tip_revision_id, new_branch.last_scanned_id)
+        # Make sure that the branch revisions have been copied.
+        old_ancestry, old_history = removeSecurityProxy(
+            db_branch).getScannerData()
+        new_ancestry, new_history = removeSecurityProxy(
+            new_branch).getScannerData()
+        self.assertEqual(old_ancestry, new_ancestry)
+        self.assertEqual(old_history, new_history)
+        self.assertFalse(new_branch.pending_writes)
+        self.assertIs(None, new_branch.stacked_on)
+        self.assertEqual(new_branch, db_branch.stacked_on)
+        # The script doesn't have permission to create branch jobs, but just
+        # to be insanely paradoid.
+        transaction.commit()
+        self.layer.switchDbUser('launchpad')
+        scan_jobs = list(getUtility(IBranchScanJobSource).iterReady())
+        self.assertEqual(existing_scan_job_count, len(scan_jobs))
 
     def test_makeOneNewBranch_inconsistent_branch(self):
         # makeOneNewBranch skips over an inconsistent official package branch
@@ -246,7 +308,7 @@ class TestDistroBrancher(TestCaseWithFactory):
             distribution=db_branch.distribution)
 
         brancher = DistroBrancher(
-            QuietFakeLogger(), db_branch.distroseries, new_distroseries)
+            BufferLogger(), db_branch.distroseries, new_distroseries)
 
         brancher.makeNewBranches()
 
@@ -484,8 +546,11 @@ class TestDistroBrancher(TestCaseWithFactory):
         brancher.makeOneNewBranch(db_branch)
         url = 'lp-internal:///' + db_branch.unique_name
         old_bzr_branch = Branch.open(url)
-        old_bzr_branch.create_checkout(
-            self.factory.getUniqueString()).commit('')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            old_bzr_branch.create_checkout(
+                self.factory.getUniqueString()).commit('')
         ok = brancher.checkOneBranch(db_branch)
         self.assertLogMessages([
             '^WARNING Repository at lp-internal:///.*/.*/.*/.* has 1 '

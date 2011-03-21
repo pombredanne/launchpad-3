@@ -21,5 +21,5 @@ little point in inspecting what it does to the test database in detail.
     INFO ...
     INFO Done.
 
-    >>> from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-    >>> LaunchpadTestSetup().force_dirty_database()
+    >>> from canonical.testing.layers import DatabaseLayer
+    >>> DatabaseLayer.force_dirty_database()

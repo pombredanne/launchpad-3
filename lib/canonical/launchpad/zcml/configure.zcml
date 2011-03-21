@@ -11,7 +11,6 @@
     <!-- Content class configuration -->
     <include file="account.zcml" />
     <include file="batchnavigator.zcml" />
-    <include file="binaryandsourcepackagename.zcml" />
     <include file="datetime.zcml" />
     <include file="decoratedresultset.zcml" />
     <include file="emailaddress.zcml" />
@@ -30,16 +29,11 @@
     <include file="temporaryblobstorage.zcml" />
     <include file="webservice.zcml" />
 
-    <include file="fields.zcml" />
-    <include file="widgets.zcml" />
-
     <!-- System homepages -->
 
     <!-- Event configuration -->
 
     <!-- Special Utilities -->
-    <include file="geoip.zcml" />
     <include file="gpghandler.zcml" />
-    <include file="searchservice.zcml" />
 
 </configure>

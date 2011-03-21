@@ -1,9 +1,10 @@
-= Authentication of Emails =
+Authentication of Emails
+========================
 
 When an email arrives in Launchpad the user who sent it needs to be
 authenticated. This is done by authenticateEmail:
 
-    >>> from canonical.launchpad.mail.incoming import authenticateEmail
+    >>> from lp.services.mail.incoming import authenticateEmail
 
 The only way of authenticating the user is by looking at the OpenPGP
 signature. First we have to import the OpenPGP keys we will use in the
@@ -12,19 +13,25 @@ emails:
     >>> from canonical.config import config
     >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.ftests import import_public_test_keys
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> import_public_test_keys()
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.processmail.dbuser)
 
+For most of these tests, we don't care whether the timestamps are out of
+date:
+
+    >>> def accept_any_timestamp(timestamp, context_message):
+    ...     pass
+
 Now Sample Person and Foo Bar have one OpenPGP key each. Next, let's get
 a test email that's signed and try to authenticate the user who sent it:
 
     >>> from canonical.launchpad.mail.ftests import read_test_message
     >>> msg = read_test_message('signed_detached.txt')
-    >>> principal = authenticateEmail(msg)
+    >>> principal = authenticateEmail(msg, accept_any_timestamp)
 
 If the user isn't registered in Launchpad, None is return, if it
 succeeds the authenticated principal:
@@ -36,8 +43,9 @@ We can check that the user really got authenticated by looking at the
 user in the launch bag:
 
     >>> import email
-    >>> from canonical.launchpad.interfaces import ILaunchBag, IPersonSet
     >>> from zope.component import getUtility
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> launchbag = getUtility(ILaunchBag)
     >>> name, addr = email.Utils.parseaddr(msg['From'])
     >>> from_user = getUtility(IPersonSet).getByEmail(addr)
@@ -50,7 +58,7 @@ In the above email the GPG signature was detached from the actual
 message. Inline signatures are supported as well.
 
     >>> msg = read_test_message('signed_inline.txt')
-    >>> principal = authenticateEmail(msg)
+    >>> principal = authenticateEmail(msg, accept_any_timestamp)
     >>> principal is not None
     True
     >>> name, addr = email.Utils.parseaddr(msg['From'])
@@ -63,7 +71,7 @@ message. Inline signatures are supported as well.
 As well as signed multipart messages:
 
     >>> msg = read_test_message('signed_multipart.txt')
-    >>> principal = authenticateEmail(msg)
+    >>> principal = authenticateEmail(msg, accept_any_timestamp)
     >>> principal is not None
     True
     >>> name, addr = email.Utils.parseaddr(msg['From'])
@@ -78,7 +86,7 @@ character in the signed content are required to be escaped, so we need
 to deal with it if we receive a dash escaped message.
 
     >>> msg = read_test_message('signed_dash_escaped.txt')
-    >>> principal = authenticateEmail(msg)
+    >>> principal = authenticateEmail(msg, accept_any_timestamp)
     >>> principal is not None
     True
     >>> name, addr = email.Utils.parseaddr(msg['From'])
@@ -94,7 +102,7 @@ InvalidSignature will be raised:
     >>> msg = read_test_message('signed_detached_invalid_signature.txt')
     >>> name, addr = email.Utils.parseaddr(msg['From'])
     >>> from_user = getUtility(IPersonSet).getByEmail(addr)
-    >>> principal = authenticateEmail(msg)
+    >>> principal = authenticateEmail(msg, accept_any_timestamp)
     Traceback (most recent call last):
       ...
     InvalidSignature:...
@@ -111,7 +119,7 @@ message.
     ...     '\n'.join(msg_lines), _class=SignedMessage)
     >>> msg.parsed_string = msg.as_string()
 
-    >>> from canonical.launchpad.interfaces import IGPGHandler
+    >>> from canonical.launchpad.interfaces.gpghandler import IGPGHandler
     >>> getUtility(IGPGHandler).getVerifiedSignature(
     ...     msg.signedContent, msg.signature)
     Traceback (most recent call last):
@@ -124,12 +132,12 @@ message.
 
 authenticateEmail() doesn't have any problems verifying the signature:
 
-    >>> from canonical.launchpad.interfaces import IPerson
+    >>> from lp.registry.interfaces.person import IPerson
     >>> for line_ending in '\n', '\r\n':
     ...     msg = email.message_from_string(
     ...         line_ending.join(msg_lines), _class=SignedMessage)
     ...     msg.parsed_string = msg.as_string()
-    ...     principal = authenticateEmail(msg)
+    ...     principal = authenticateEmail(msg, accept_any_timestamp)
     ...     authenticated_person = IPerson(principal)
     ...     print authenticated_person.preferredemail.email
     test@canonical.com
@@ -154,12 +162,13 @@ hack can be removed.
     Content-Type: multipart/mixed; boundary="--------------------EuxKj2iCbKjpUGkD"
     ...
 
-    >>> principal = authenticateEmail(msg)
+    >>> principal = authenticateEmail(msg, accept_any_timestamp)
     >>> print IPerson(principal).displayname
     Sample Person
 
 
-== IWeaklyAuthenticatedPrinipal ==
+IWeaklyAuthenticatedPrincipal
+-----------------------------
 
 It's a huge difference to signing an email with a key that is associated
 with the authenticated Person, and signing it with a key that isn't
@@ -172,9 +181,10 @@ with the user in the From address.
 
 An unsigned email:
 
-    >>> from canonical.launchpad.interfaces import IWeaklyAuthenticatedPrincipal
+    >>> from canonical.launchpad.interfaces.mail import (
+    ...     IWeaklyAuthenticatedPrincipal)
     >>> msg = read_test_message('unsigned_multipart.txt')
-    >>> principal = authenticateEmail(msg)
+    >>> principal = authenticateEmail(msg, accept_any_timestamp)
     >>> IWeaklyAuthenticatedPrincipal.providedBy(principal)
     True
 
@@ -187,7 +197,7 @@ An email which is signed with a key that isn't associated with the
 authenticated user:
 
     >>> msg = read_test_message('signed_key_not_registered.txt')
-    >>> principal = authenticateEmail(msg)
+    >>> principal = authenticateEmail(msg, accept_any_timestamp)
     >>> IWeaklyAuthenticatedPrincipal.providedBy(principal)
     True
 
@@ -201,7 +211,7 @@ the user, IWeaklyAuthenticatedPrincipal won't be provided by the
 principal.
 
     >>> msg = read_test_message('signed_inline.txt')
-    >>> principal = authenticateEmail(msg)
+    >>> principal = authenticateEmail(msg, accept_any_timestamp)
     >>> IWeaklyAuthenticatedPrincipal.providedBy(principal)
     False
 

@@ -4,7 +4,7 @@ We make Zope 3 give us real time statistics about Launchpad's operation.
 We can access them via XML-RPC:
 
     >>> import xmlrpclib
-    >>> from canonical.functional import XMLRPCTestTransport
+    >>> from lp.testing.xmlrpc import XMLRPCTestTransport
     >>> lp_xmlrpc = xmlrpclib.ServerProxy(
     ...     'http://xmlrpc.launchpad.dev/+opstats',
     ...     transport=XMLRPCTestTransport()
@@ -180,16 +180,14 @@ also return a timeout Fault:
     ... """)
     >>> output.getStatus()
     503
+    >>> # Reset the timeouts so +opstat doesn't die.
+    >>> base_test_data = config.pop('base_test_data')
     >>> report()
     503s: 1
     5XXs: 1
     http requests: 1
     requests: 1
     timeouts: 1
-
-Reset our config until Bug 78545 is fixed:
-
-    >>> base_test_data = config.pop('base_test_data')
 
 
 == HTTP access for Cricket ==
@@ -261,8 +259,8 @@ We can still access the opstats page.
 
 But our database connections are broken.
 
+    >>> from canonical.launchpad.interfaces.lpstorm import IStore
     >>> from lp.registry.model.person import Person
-    >>> from canonical.launchpad.interfaces import IStore
     >>> IStore(Person).find(Person, name='janitor')
     Traceback (most recent call last):
     ...

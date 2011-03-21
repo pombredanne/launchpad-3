@@ -46,8 +46,8 @@ the team's home page.
 If this was a moderated team, the membership would not have been automatically
 approved, though.
 
+    >>> from lp.registry.interfaces.person import TeamSubscriptionPolicy
     >>> from lp.registry.model.person import Person
-    >>> from canonical.launchpad.interfaces import TeamSubscriptionPolicy
     >>> myemail = Person.selectOneBy(name='myemail')
     >>> myemail.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
     >>> myemail.syncUpdate()

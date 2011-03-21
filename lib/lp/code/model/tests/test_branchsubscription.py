@@ -3,8 +3,6 @@
 
 """Tests for the BranchSubscrptions model object.."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 import unittest
@@ -12,8 +10,13 @@ import unittest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.code.enums import (
-    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
-from lp.testing import TestCaseWithFactory, person_logged_in
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 
 
 class TestBranchSubscriptions(TestCaseWithFactory):

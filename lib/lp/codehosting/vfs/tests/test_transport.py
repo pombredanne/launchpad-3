@@ -8,14 +8,18 @@ __metaclass__ = type
 import unittest
 
 from bzrlib.tests import per_transport
-from bzrlib.transport import chroot, get_transport, Transport
+from bzrlib.transport import (
+    chroot,
+    get_transport,
+    Transport,
+    )
 from bzrlib.transport.local import LocalTransport
 from bzrlib.urlutils import local_path_to_url
 
-from lp.codehosting.vfs.branchfs import LaunchpadInternalServer
-from lp.codehosting.vfs.branchfsclient import BlockingProxy
 from lp.codehosting.inmemory import InMemoryFrontend
 from lp.codehosting.tests.helpers import TestResultWrapper
+from lp.codehosting.vfs.branchfs import LaunchpadInternalServer
+from lp.services.twistedsupport.xmlrpc import DeferredBlockingProxy
 
 
 class TestingServer(LaunchpadInternalServer):
@@ -40,8 +44,12 @@ class TestingServer(LaunchpadInternalServer):
         # unreliable for tests that involve particular errors.
         LaunchpadInternalServer.__init__(
             self, 'lp-testing-%s:///' % id(self),
-            BlockingProxy(branchfs), LocalTransport(local_path_to_url('.')))
+            DeferredBlockingProxy(branchfs),
+            LocalTransport(local_path_to_url('.')))
         self._chroot_servers = []
+
+    def get_bogus_url(self):
+        return self._scheme + 'bogus'
 
     def _transportFactory(self, url):
         """See `LaunchpadInternalServer._transportFactory`.

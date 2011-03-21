@@ -8,7 +8,7 @@
 country_code = 'us'
 apt_cacher_ng_host = 'stumpy'
 distroseries_name = 'maverick'
-recipe_text = """# bzr-builder format 0.2 deb-version 0+{revno}
+recipe_text = """# bzr-builder format 0.2 deb-version {debupstream}-0~{revno}
 http://bazaar.launchpad.dev/~ppa-user/+junk/wakeonlan"""
 
 def deb_line(host, suites):

@@ -73,7 +73,7 @@ takes a single parameter, token, which is a Launchpad LoginToken.
 
 We can use the internal XML-RPC API to generate such a token.
 
-    >>> from canonical.launchpad.xmlrpc import ExternalBugTrackerTokenAPI
+    >>> from lp.bugs.xmlrpc.bug import ExternalBugTrackerTokenAPI
     >>> token_api = ExternalBugTrackerTokenAPI(None, None)
     >>> token_text = token_api.newBugTrackerToken()
 

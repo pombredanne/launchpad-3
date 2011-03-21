@@ -7,10 +7,12 @@ import asyncore
 import tempfile
 from time import time
 
-from zope.server.ftp.server import FTPServerChannel
-from zope.server.ftp.server import STORChannel as OriginalSTORChannel
-from zope.server.taskthreads import ThreadedTaskDispatcher
+from zope.server.ftp.server import (
+    FTPServerChannel,
+    STORChannel as OriginalSTORChannel,
+    )
 from zope.server.serverbase import ServerBase
+from zope.server.taskthreads import ThreadedTaskDispatcher
 
 from lp.poppy.filesystem import UploadFileSystem
 

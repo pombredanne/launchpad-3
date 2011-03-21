@@ -8,6 +8,7 @@ import unittest
 
 from canonical.testing import reset_logging
 
+
 def tearDown(test):
     reset_logging()
 
@@ -18,7 +19,3 @@ def test_suite():
         'canonical.launchpad.scripts.logger', tearDown=tearDown
         ))
     return suite
-
-if __name__ == '__main__':
-    unittest.main(defaultTest='test_suite')
-

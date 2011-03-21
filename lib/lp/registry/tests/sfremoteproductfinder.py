@@ -8,11 +8,12 @@ __all__ = ['TestSFRemoteProductFinder']
 
 import os
 import re
-
 from urllib2 import HTTPError
 
 from canonical.launchpad.scripts.sfremoteproductfinder import (
-    SourceForgeRemoteProductFinder)
+    SourceForgeRemoteProductFinder,
+    )
+
 
 class TestSFRemoteProductFinder(SourceForgeRemoteProductFinder):
 

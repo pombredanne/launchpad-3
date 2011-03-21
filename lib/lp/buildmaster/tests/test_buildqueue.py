@@ -4,31 +4,49 @@
 
 """Test BuildQueue features."""
 
-from datetime import datetime, timedelta
-from pytz import utc
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
+from pytz import utc
 from zope import component
-from zope.component import getGlobalSiteManager, getUtility
+from zope.component import (
+    getGlobalSiteManager,
+    getUtility,
+    )
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.testing import LaunchpadZopelessLayer, ZopelessDatabaseLayer
-
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from canonical.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
+from lp.buildmaster.enums import (
+    BuildFarmJobType,
+    BuildStatus,
+    )
 from lp.buildmaster.interfaces.builder import IBuilderSet
-from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, IBuildFarmJob)
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.buildmaster.model.builder import specific_job_classes
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobDerived
-from lp.buildmaster.model.buildqueue import BuildQueue, get_builder_data
+from lp.buildmaster.model.buildqueue import (
+    BuildQueue,
+    get_builder_data,
+    )
 from lp.services.job.model.job import Job
-from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.model.processor import ProcessorFamilySet
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod

@@ -2,41 +2,60 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Checkwatches unit tests."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
+from datetime import datetime
 import threading
 import unittest
+from xmlrpclib import ProtocolError
 
 import transaction
-
-from datetime import datetime
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.ftests import login
-from canonical.launchpad.interfaces import (
-    BugTaskStatus, BugTrackerType, IBugSet, IBugTaskSet,
-    ILaunchpadCelebrities, IPersonSet, IProductSet, IQuestionSet)
-from canonical.launchpad.scripts.logger import QuietFakeLogger
-from canonical.testing import LaunchpadZopelessLayer
-
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
-from lp.bugs.interfaces.bugtracker import IBugTrackerSet
+from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    IBugTaskSet,
+    )
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType,
+    IBugTrackerSet,
+    )
+from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.scripts import checkwatches
 from lp.bugs.scripts.checkwatches.base import (
-    CheckWatchesErrorUtility, WorkingBase)
+    CheckWatchesErrorUtility,
+    WorkingBase,
+    )
 from lp.bugs.scripts.checkwatches.core import (
-    CheckwatchesMaster, LOGIN, TwistedThreadScheduler)
+    CheckwatchesMaster,
+    LOGIN,
+    TwistedThreadScheduler,
+    )
 from lp.bugs.scripts.checkwatches.remotebugupdater import RemoteBugUpdater
 from lp.bugs.tests.externalbugtracker import (
-    TestBugzillaAPIXMLRPCTransport, TestExternalBugTracker, new_bugtracker)
-from lp.testing import TestCaseWithFactory, ZopeTestInSubProcess
+    new_bugtracker,
+    TestBugzillaAPIXMLRPCTransport,
+    TestExternalBugTracker,
+    )
+from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
+from lp.services.log.logger import BufferLogger
+from lp.testing import (
+    TestCaseWithFactory,
+    ZopeTestInSubProcess,
+    )
 
 
 class BugzillaAPIWithoutProducts(BugzillaAPI):
     """None of the remote bugs have products."""
+
     def getProductsForRemoteBugs(self, remote_bug_ids):
         return {}
 
@@ -90,7 +109,7 @@ class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
         # Create an updater with a limited set of syncable gnome
         # products.
         self.updater = checkwatches.CheckwatchesMaster(
-            transaction.manager, QuietFakeLogger(), ['test-product'])
+            transaction.manager, BufferLogger(), ['test-product'])
 
     def tearDown(self):
         checkwatches.externalbugtracker.get_external_bugtracker = (
@@ -147,6 +166,15 @@ class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
         self.failIf(remote_system.sync_comments)
 
 
+class BrokenCheckwatchesMaster(CheckwatchesMaster):
+
+    error_code = None
+
+    def _getExternalBugTrackersAndWatches(self, bug_tracker, bug_watches):
+        raise ProtocolError(
+            "http://example.com/", self.error_code, "Borked", "")
+
+
 class TestCheckwatchesMaster(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
@@ -159,12 +187,7 @@ class TestCheckwatchesMaster(TestCaseWithFactory):
         # Regression test for bug 497141. KeyErrors raised in
         # RemoteBugUpdater.updateRemoteBug() shouldn't cause
         # checkwatches to abort.
-
-        # Create a couple of bug watches for testing purposes.
-        bug_tracker = self.factory.makeBugTracker()
-        bug_watches = [
-            self.factory.makeBugWatch(bugtracker=bug_tracker)
-            for i in range(2)]
+        (bug_tracker, bug_watches) = self.factory.makeBugTrackerWithWatches()
 
         # Use a test XML-RPC transport to ensure no connections happen.
         test_transport = TestBugzillaAPIXMLRPCTransport(bug_tracker.baseurl)
@@ -172,7 +195,7 @@ class TestCheckwatchesMaster(TestCaseWithFactory):
             bug_tracker.baseurl, xmlrpc_transport=test_transport)
 
         working_base = WorkingBase()
-        working_base.init(LOGIN, transaction.manager, QuietFakeLogger())
+        working_base.init(LOGIN, transaction.manager, BufferLogger())
 
         for bug_watch in bug_watches:
             updater = NoBugWatchesByRemoteBugUpdater(
@@ -194,7 +217,10 @@ class TestCheckwatchesMaster(TestCaseWithFactory):
                 "Unexpected last OOPS value: %s" % last_oops.value)
 
     def test_suggest_batch_size(self):
-        class RemoteSystem: pass
+
+        class RemoteSystem:
+            pass
+
         remote_system = RemoteSystem()
         # When the batch_size is None, suggest_batch_size() will set
         # it accordingly.
@@ -207,6 +233,46 @@ class TestCheckwatchesMaster(TestCaseWithFactory):
         # If the batch_size is already set, it will not be changed.
         checkwatches.core.suggest_batch_size(remote_system, 99999)
         self.failUnlessEqual(247, remote_system.batch_size)
+
+    def test_xmlrpc_connection_errors_set_activity_properly(self):
+        # HTTP status codes of 502, 503 and 504 indicate connection
+        # errors. An XML-RPC request that fails with one of those is
+        # logged as a connection failure, not an OOPS.
+        master = BrokenCheckwatchesMaster(
+            transaction.manager, logger=BufferLogger())
+        master.error_code = 503
+        (bug_tracker, bug_watches) = self.factory.makeBugTrackerWithWatches(
+            base_url='http://example.com/')
+        transaction.commit()
+        master._updateBugTracker(bug_tracker)
+        for bug_watch in bug_watches:
+            self.assertEquals(
+                BugWatchActivityStatus.CONNECTION_ERROR,
+                bug_watch.last_error_type)
+        self.assertEqual(
+            "INFO 'Connection Error' error updating http://example.com/: "
+            "<ProtocolError for http://example.com/: 503 Borked>\n",
+            master.logger.getLogBuffer())
+
+    def test_xmlrpc_other_errors_set_activity_properly(self):
+        # HTTP status codes that indicate anything other than a
+        # connection error still aren't OOPSes. They are logged as an
+        # unknown error instead.
+        master = BrokenCheckwatchesMaster(
+            transaction.manager, logger=BufferLogger())
+        master.error_code = 403
+        (bug_tracker, bug_watches) = self.factory.makeBugTrackerWithWatches(
+            base_url='http://example.com/')
+        transaction.commit()
+        master._updateBugTracker(bug_tracker)
+        for bug_watch in bug_watches:
+            self.assertEquals(
+                BugWatchActivityStatus.UNKNOWN,
+                bug_watch.last_error_type)
+        self.assertEqual(
+            "INFO 'Unknown' error updating http://example.com/: "
+            "<ProtocolError for http://example.com/: 403 Borked>\n",
+            master.logger.getLogBuffer())
 
 
 class TestUpdateBugsWithLinkedQuestions(unittest.TestCase):
@@ -282,9 +348,11 @@ class TestUpdateBugsWithLinkedQuestions(unittest.TestCase):
 class TestSchedulerBase:
 
     def test_args_and_kwargs(self):
+
         def func(name, aptitude):
             self.failUnlessEqual("Robin Hood", name)
             self.failUnlessEqual("Riding through the glen", aptitude)
+
         # Positional args specified when adding a job are passed to
         # the job function at run time.
         self.scheduler.schedule(
@@ -383,7 +451,7 @@ class CheckwatchesMasterForThreads(CheckwatchesMaster):
     """
 
     def __init__(self, output_file):
-        logger = QuietFakeLogger()
+        logger = BufferLogger()
         super(CheckwatchesMasterForThreads, self).__init__(
             transaction.manager, logger)
         self.output_file = output_file
@@ -438,14 +506,12 @@ class TestTwistedThreadSchedulerInPlace(
             ["getRemoteStatus(bug_id=u'butterscotch-1')",
              "getRemoteStatus(bug_id=u'butterscotch-2')",
              "getRemoteStatus(bug_id=u'butterscotch-3')"],
-            output_file.output['butterscotch']
-            )
+            output_file.output['butterscotch'])
         self.assertEqual(
             ["getRemoteStatus(bug_id=u'strawberry-1')",
              "getRemoteStatus(bug_id=u'strawberry-2')",
              "getRemoteStatus(bug_id=u'strawberry-3')"],
-            output_file.output['strawberry']
-            )
+            output_file.output['strawberry'])
 
 
 def test_suite():

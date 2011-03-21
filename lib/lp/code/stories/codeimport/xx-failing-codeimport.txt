@@ -6,8 +6,8 @@ Imports that have failed more than the configured
     >>> login('admin@canonical.com')
     >>> from canonical.launchpad.testing.codeimporthelpers import (
     ...     make_finished_import)
-    >>> from lp.code.interfaces.codeimportresult import CodeImportResultStatus
     >>> from canonical.config import config
+    >>> from lp.code.interfaces.codeimportresult import CodeImportResultStatus
     >>> product = factory.makeProduct(name='imported')
     >>> owner = factory.makePerson(name='import-owner')
     >>> code_import = factory.makeProductCodeImport(

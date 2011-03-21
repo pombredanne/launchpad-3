@@ -277,7 +277,7 @@
         for="lp.soyuz.interfaces.archive.IArchive"
         class="lp.soyuz.browser.archive.ArchiveEditView"
         permission="launchpad.Edit"
-        template="../templates/archive-edit.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:page
         name="+delete"
         facet="overview"
@@ -291,7 +291,7 @@
         for="lp.soyuz.interfaces.archive.IArchive"
         class="lp.soyuz.browser.archive.ArchiveAdminView"
         permission="launchpad.Commercial"
-        template="../templates/archive-admin.pt"/>
+        template="../../app/templates/generic-edit.pt"/>
     <browser:pages
         for="lp.soyuz.interfaces.archive.IArchive"
         permission="launchpad.Edit"
@@ -388,7 +388,7 @@
     <browser:url
         for="lp.buildmaster.interfaces.builder.IBuilderSet"
         path_expression="string:builders"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
     <browser:defaultView
         for="lp.buildmaster.interfaces.builder.IBuilderSet"
         name="+index"/>
@@ -795,7 +795,7 @@
     <browser:url
         for="lp.soyuz.interfaces.packageset.IPackagesetSet"
         path_expression="string:package-sets"
-        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
         />
     <browser:navigation
         module="lp.soyuz.browser.packageset"
@@ -830,13 +830,6 @@
         facet="overview"
         permission="launchpad.View"
         template="../templates/buildqueue-current.pt"/>
-    <browser:page
-        for="lp.buildmaster.interfaces.buildqueue.IBuildFarmJob"
-        name="+current"
-        class="canonical.launchpad.webapp.publisher.LaunchpadView"
-        facet="overview"
-        permission="launchpad.View"
-        template="../templates/buildfarmjob-current.pt"/>
     <browser:page
         for="lp.buildmaster.interfaces.buildfarmbranchjob.IBuildFarmBranchJob"
         name="+current"

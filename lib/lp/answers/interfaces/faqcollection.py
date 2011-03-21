@@ -14,9 +14,12 @@ __all__ = [
     ]
 
 
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
 from zope.interface import Interface
 from zope.schema import TextLine
-from lazr.enum import EnumeratedType, Item
 
 from canonical.launchpad import _
 

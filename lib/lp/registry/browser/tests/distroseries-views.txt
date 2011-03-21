@@ -3,7 +3,7 @@ DistroSeries view classes
 
 Let's use ubuntu/hoary for these tests.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
 

@@ -10,18 +10,37 @@
   i18n:domain="malone"
 >
 
+  <metal:block fill-slot="head_epilogue">
+    <script type="text/javascript"
+            tal:condition="devmode"
+            tal:content="string:var yui_base='${yui}';"></script>
+    <script type="text/javascript"
+            tal:condition="devmode"
+            tal:define="lp_js string:${icingroot}/build"
+            tal:attributes="src string:${lp_js}/bugs/filebug-dupefinder.js"></script>
+
+    <script type="text/javascript" tal:condition="view/user_is_muted">
+        LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.bug_subscription',
+            function(Y) {
+            Y.on(
+              'domready',
+              Y.lp.bugs.bug_subscription.set_up_bug_notification_level_field);
+        });
+    </script>
+  </metal:block>
+
 <body>
   <div metal:fill-slot="main">
 
     <div id="maincontent">
       <div id="nonportlets" class="readable">
-        <h1 tal:define="subscribed view/userIsSubscribed">
+        <h1 tal:define="subscribed view/user_is_subscribed">
           <tal:action condition="subscribed">Unsubscribe from</tal:action>
           <tal:action condition="not:subscribed">Subscribe to</tal:action>
           bug #<span tal:replace="context/bug/id" />
         </h1>
 
-        <p tal:condition="not: view/userIsSubscribed">
+        <p tal:condition="not: view/user_is_subscribed">
           If you subscribe to a bug it shows up on your
           personal pages, you receive copies of all comments by email,
           and notification of any changes to the status of the bug upstream
@@ -34,30 +53,8 @@
           duplicates.
         </p>
 
-        <form action="." method="POST">
-
-          <div class="field">
-
-            <div>
-              <div tal:content="structure view/subscription_widget">
-                <input type="radio" />
-              </div>
-            </div>
-
-          </div>
-
-          <div class="actions">
-            <input tal:condition="not: view/userIsSubscribed"
-                   type="submit"
-                   name="subscribe"
-                   value="Continue" />
-            <input tal:condition="view/userIsSubscribed"
-                   type="submit"
-                   name="unsubscribe"
-                   value="Continue" />
-            or <a tal:attributes="href context/fmt:url">Cancel</a>
-          </div>
-        </form>
+        <div metal:use-macro="context/@@launchpad_form/form">
+        </div>
 
       </div>
     </div>

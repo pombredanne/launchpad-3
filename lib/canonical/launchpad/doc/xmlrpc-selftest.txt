@@ -2,7 +2,7 @@
 
 The Launchpad root object has a simple XMLRPC API to show that XMLRPC works.
 
-    >>> from canonical.launchpad.xmlrpc import SelfTest, ISelfTest
+    >>> from canonical.launchpad.xmlrpc.application import SelfTest, ISelfTest
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> selftestview = SelfTest('somecontext', 'somerequest')
     >>> verifyObject(ISelfTest, selftestview)
@@ -16,7 +16,7 @@ We can test our XMLRPC APIs using xmlrpclib, using a custom Transport
 which talks with the publisher directly.
 
     >>> import xmlrpclib
-    >>> from canonical.functional import XMLRPCTestTransport
+    >>> from lp.testing.xmlrpc import XMLRPCTestTransport
     >>> selftest = xmlrpclib.ServerProxy(
     ...     'http://xmlrpc.launchpad.dev/', transport=XMLRPCTestTransport())
     >>> selftest.concatenate('foo', 'bar')

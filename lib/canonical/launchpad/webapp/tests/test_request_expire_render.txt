@@ -9,12 +9,11 @@ timeout exception should provide IRequestExpired.
     ...     implements(IRequestExpired)
 
 After a timeout has happened, we can no longer do any more db queries,
-since _check_expired() returns True. However, if the user is logged in,
-a query will be issued to render the "Logged in as No Privileges
-Person".
+since get_request_remaining_seconds will raise. However, if the user is logged
+in, a query will be issued to render the "Logged in as No Privileges Person".
 
-    >>> from textwrap import dedent
     >>> from canonical.config import config
+    >>> from textwrap import dedent
     >>> test_data = dedent("""
     ...     [database]
     ...     db_statement_timeout: 10000
@@ -23,12 +22,14 @@ Person".
 
     >>> from time import time
     >>> from canonical.launchpad.webapp.adapter import (
-    ...     _check_expired, set_request_started)
+    ...     get_request_remaining_seconds, set_request_started)
     >>> login('no-priv@canonical.com')
     >>> too_early = time() - (config.database.db_statement_timeout / 1000 + 1)
     >>> set_request_started(too_early)
-    >>> _check_expired(config.database.db_statement_timeout)
-    True
+    >>> get_request_remaining_seconds()
+    Traceback (most recent call last):
+    ...
+    RequestExpired: request expired.
 
 Before the OOPS page is rendered, the timeout is reset, so that we can
 issue the DB query and render the page, showing the OOPS id to the user.
@@ -44,8 +45,8 @@ issue the DB query and render the page, showing the OOPS id to the user.
     >>> timeout_exception = TimeoutException()
     >>> exception_view = getMultiAdapter(
     ...     (timeout_exception, request), name="index.html")
-    >>> _check_expired(config.database.db_statement_timeout)
-    False
+    >>> get_request_remaining_seconds() > 0
+    True
     >>> print exception_view()
     <...OOPS_ID_MARKER...
 

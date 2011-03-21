@@ -102,6 +102,11 @@
       </h2>
 
       <p>This team doesn't have any members yet.</p>
+
+      <div tal:define="link view/menu:overview/add_member"
+           tal:condition="link/enabled">
+        <a tal:replace="structure link/fmt:link" />
+      </div>
     </li>
     <br />
 

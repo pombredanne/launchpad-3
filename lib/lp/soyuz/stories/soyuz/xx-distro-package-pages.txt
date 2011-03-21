@@ -47,5 +47,5 @@ And if you go to fetch it, you'll see it's actually a librarian URL:
   ... """ % path)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:58000/68/commercialpackage_1.0-1.dsc
+  Location: http://.../68/commercialpackage_1.0-1.dsc
   ...

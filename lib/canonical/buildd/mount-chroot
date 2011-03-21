@@ -2,8 +2,6 @@
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-#
-# Author: Daniel Silverstone <daniel.silverstone@canonical.com>
 
 # Buildd Slave tool to mount a chroot
 
@@ -23,4 +21,5 @@ echo "Mounting chroot for build $BUILDID"
 $SUDO mount -t proc none "$HOME/build-$BUILDID/chroot-autobuild/proc"
 $SUDO mount -t devpts none "$HOME/build-$BUILDID/chroot-autobuild/dev/pts"
 $SUDO mount -t sysfs none "$HOME/build-$BUILDID/chroot-autobuild/sys"
+$SUDO mount -t tmpfs none "$HOME/build-$BUILDID/chroot-autobuild/dev/shm"
 $SUDO cp /etc/hosts /etc/hostname /etc/resolv.conf $HOME/build-$BUILDID/chroot-autobuild/etc/

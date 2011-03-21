@@ -15,29 +15,40 @@ __all__ = [
     'ProjectRevisionFeed',
     ]
 
-from storm.locals import Asc, Desc
-
+from storm.locals import (
+    Asc,
+    Desc,
+    )
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.launchpad.webapp import canonical_url, LaunchpadView, urlparse
+from canonical.launchpad.webapp import (
+    canonical_url,
+    LaunchpadView,
+    urlparse,
+    )
 from canonical.lazr.feed import (
-    FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
+    FeedBase,
+    FeedEntry,
+    FeedPerson,
+    FeedTypedData,
+    MINUTES,
+    )
 from canonical.lazr.interfaces import IFeedPerson
-
-from z3c.ptcompat import ViewPageTemplateFile
-
 from lp.code.browser.branch import BranchView
 from lp.code.interfaces.branch import (
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch)
+    DEFAULT_BRANCH_STATUS_IN_LISTING,
+    IBranch,
+    )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.revisioncache import IRevisionCache
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.propertycache import cachedproperty
 
 
 def revision_feed_id(revision):
@@ -152,7 +163,7 @@ class BranchListingFeed(BranchFeedBase):
         from lp.code.model.branch import Branch
         collection = self._getCollection().visibleByUser(
             None).withLifecycleStatus(*DEFAULT_BRANCH_STATUS_IN_LISTING)
-        branches = collection.getBranches()
+        branches = collection.getBranches(eager_load=False)
         branches.order_by(
             Desc(Branch.date_last_modified),
             Asc(Branch.target_suffix),

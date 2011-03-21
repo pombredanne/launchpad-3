@@ -7,7 +7,7 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.hasbranches import IHasBranches
 from lp.testing import TestCaseWithFactory
 

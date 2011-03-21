@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -16,12 +16,16 @@ __all__ = [
     ]
 
 import cgi
-import pytz
 import urllib
 
+import pytz
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
-from zope.interface import alsoProvides, directlyProvides, Interface
+from zope.interface import (
+    alsoProvides,
+    directlyProvides,
+    Interface,
+    )
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
@@ -29,24 +33,44 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus, IEmailAddressSet)
+    EmailAddressStatus,
+    IEmailAddressSet,
+    )
 from canonical.launchpad.interfaces.gpghandler import (
-    GPGKeyExpired, GPGKeyRevoked, GPGKeyNotFoundError, GPGVerificationError,
-    IGPGHandler)
+    GPGKeyExpired,
+    GPGKeyNotFoundError,
+    GPGKeyRevoked,
+    GPGVerificationError,
+    IGPGHandler,
+    )
 from canonical.launchpad.interfaces.logintoken import (
-    IGPGKeyValidationForm, ILoginTokenSet)
+    IGPGKeyValidationForm,
+    ILoginTokenSet,
+    )
+from canonical.launchpad.webapp import (
+    canonical_url,
+    GetitemNavigation,
+    LaunchpadView,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    IAlwaysSubmittedWidget, IPlacelessLoginSource)
+    IAlwaysSubmittedWidget,
+    IPlacelessLoginSource,
+    )
 from canonical.launchpad.webapp.login import logInPrincipal
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, GetitemNavigation,
-    LaunchpadEditFormView, LaunchpadFormView, LaunchpadView)
-from canonical.widgets import LaunchpadRadioWidget
-
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.registry.browser.team import HasRenewalPolicyMixin
-from lp.registry.interfaces.person import IPersonSet, ITeam
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    ITeam,
+    )
 
 
 UTC = pytz.UTC
@@ -548,6 +572,17 @@ class MergePeopleView(BaseTokenView, LaunchpadView):
         self.context.consume()
 
     def _doMerge(self):
+        """Merges a duplicate person into a target person.
+
+        - Reassigns the duplicate user's primary email address to the
+          requesting user.
+
+        - Ensures that the requesting user has a preferred email address, and
+          uses the newly acquired one if not.
+
+        - If the duplicate user has no other email addresses, does the merge.
+
+        """
         # The user proved that he has access to this email address of the
         # dupe account, so we can assign it to him.
         requester = self.context.requester

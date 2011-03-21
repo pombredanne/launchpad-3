@@ -80,16 +80,9 @@ class RosettaStats(object):
         if self.messageCount() > 0:
             percent = float(value) / self.messageCount()
             percent *= 100
-            percent = round(percent, 2)
         else:
             percent = 0
-        # We use float(str()) to prevent problems with some floating point
-        # representations that could give us:
-        # >>> x = 3.141592
-        # >>> round(x, 2)
-        # 3.1400000000000001
-        # >>>
-        return float(str(percent))
+        return percent
 
     def translatedPercentage(self, language=None):
         """See IRosettaStats."""
@@ -114,4 +107,3 @@ class RosettaStats(object):
     def rosettaPercentage(self, language=None):
         """See IRosettaStats."""
         return self.asPercentage(self.rosettaCount(language))
-

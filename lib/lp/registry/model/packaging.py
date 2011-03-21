@@ -6,16 +6,26 @@
 __metaclass__ = type
 __all__ = ['Packaging', 'PackagingUtil']
 
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectDeletedEvent,
+    )
+from sqlobject import ForeignKey
+from zope.event import notify
 from zope.interface import implements
 
-from sqlobject import ForeignKey
-
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from lp.registry.interfaces.packaging import (
-    IPackaging, IPackagingUtil, PackagingType)
+    IPackaging,
+    IPackagingUtil,
+    PackagingType,
+    )
 from lp.registry.interfaces.person import validate_public_person
 
 
@@ -50,6 +60,14 @@ class Packaging(SQLBase):
         return SourcePackage(distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename)
 
+    def __init__(self, **kwargs):
+        super(Packaging, self).__init__(**kwargs)
+        notify(ObjectCreatedEvent(self))
+
+    def destroySelf(self):
+        notify(ObjectDeletedEvent(self))
+        super(Packaging, self).destroySelf()
+
 
 class PackagingUtil:
     """Utilities for Packaging."""
@@ -66,11 +84,11 @@ class PackagingUtil:
             raise AssertionError(
                 "A packaging entry for %s in %s already exists." %
                 (sourcepackagename.name, distroseries.name))
-        Packaging(productseries=productseries,
-                  sourcepackagename=sourcepackagename,
-                  distroseries=distroseries,
-                  packaging=packaging,
-                  owner=owner)
+        return Packaging(productseries=productseries,
+                         sourcepackagename=sourcepackagename,
+                         distroseries=distroseries,
+                         packaging=packaging,
+                         owner=owner)
 
     def deletePackaging(self, productseries, sourcepackagename, distroseries):
         """See `IPackaging`."""

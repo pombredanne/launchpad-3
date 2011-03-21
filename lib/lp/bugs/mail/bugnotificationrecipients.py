@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code for handling bug notification recipients in bug mail."""
@@ -10,111 +10,8 @@ __all__ = [
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import INotificationRecipientSet
-
-from lp.services.mail.basemailer import RecipientReason
-from lp.services.mail.notificationrecipientset import (
-    NotificationRecipientSet)
-
-
-class BugNotificationRecipientReason(RecipientReason):
-    """A `RecipientReason` subsclass specifically for `BugNotification`s."""
-
-    def _getTemplateValues(self):
-        template_values = (
-            super(BugNotificationRecipientReason, self)._getTemplateValues())
-        if self.recipient != self.subscriber or self.subscriber.is_team:
-            template_values['entity_is'] = (
-                'You are a member of %s, which is' %
-                self.subscriber.displayname)
-            template_values['lc_entity_is'] = (
-                'you are a member of %s, which is' %
-                self.subscriber.displayname)
-        return template_values
-
-    @classmethod
-    def makeRationale(cls, rationale, person, duplicate_bug=None):
-        """See `RecipientReason.makeRationale`."""
-        rationale = RecipientReason.makeRationale(rationale, person)
-        if duplicate_bug is not None:
-            rationale = "%s via Bug %s" % (rationale, duplicate_bug.id)
-
-        return rationale
-
-    @classmethod
-    def _getReasonTemplate(cls, reason_string, duplicate_bug=None):
-        """Return a reason template to pass to __init__()."""
-        if duplicate_bug is not None:
-            reason_suffix = " (via bug %s)." % duplicate_bug.id
-        else:
-            reason_suffix = "."
-
-        reason_parts = {
-            'prefix':
-                "You received this bug notification because %(lc_entity_is)s",
-            'reason': reason_string,
-            'suffix': reason_suffix,
-            }
-        return "%(prefix)s %(reason)s%(suffix)s" % reason_parts
-
-    @classmethod
-    def forDupeSubscriber(cls, person, duplicate_bug):
-        """Return a `BugNotificationRecipientReason` for a dupe subscriber.
-        """
-        header = cls.makeRationale(
-            'Subscriber of Duplicate', person, duplicate_bug)
-
-        reason = cls._getReasonTemplate(
-            "a direct subscriber of a duplicate bug (via bug %s)" %
-                duplicate_bug.id)
-        return cls(person, person, header, reason)
-
-    @classmethod
-    def forDirectSubscriber(cls, person, duplicate_bug=None):
-        """Return a `BugNotificationRecipientReason` for a direct subscriber.
-        """
-        header = cls.makeRationale("Subscriber", person, duplicate_bug)
-        reason = cls._getReasonTemplate(
-            "a direct subscriber of the bug", duplicate_bug)
-        return cls(person, person, header, reason)
-
-    @classmethod
-    def forAssignee(cls, person, duplicate_bug=None):
-        """Return a `BugNotificationRecipientReason` for a bug assignee."""
-        header = cls.makeRationale("Assignee", person, duplicate_bug)
-        reason = cls._getReasonTemplate("a bug assignee", duplicate_bug)
-        return cls(person, person, header, reason)
-
-    @classmethod
-    def forBugSupervisor(cls, person, target, duplicate_bug=None):
-        """Return a `BugNotificationRecipientReason` for a bug supervisor."""
-        # All displaynames in these reasons should be changed to bugtargetname
-        # (as part of bug 113262) once bugtargetname is finalized for packages
-        # (bug 113258). Changing it before then would be excessively
-        # disruptive.
-        header = cls.makeRationale(
-            "Bug Supervisor (%s)" % target.displayname, person, duplicate_bug)
-        reason = cls._getReasonTemplate(
-            "the bug supervisor for %s" % target.displayname, duplicate_bug)
-        return cls(person, person, header, reason)
-
-    @classmethod
-    def forStructuralSubscriber(cls, person, target, duplicate_bug=None):
-        """Return a recipient reason for a structural subscriber."""
-        header = cls.makeRationale(
-            "Subscriber (%s)" % target.displayname, person, duplicate_bug)
-        reason = cls._getReasonTemplate(
-            "subscribed to %s" % target.displayname, duplicate_bug)
-        return cls(person, person, header, reason)
-
-    @classmethod
-    def forRegistrant(cls, person, target, duplicate_bug=None):
-        """Return a recipient reason for a registrant."""
-        header = cls.makeRationale(
-            "Registrant (%s)" % target.displayname, person, duplicate_bug)
-        reason = cls._getReasonTemplate(
-            "the registrant for %s" % target.displayname, duplicate_bug)
-        return cls(person, person, header, reason)
+from canonical.launchpad.interfaces.launchpad import INotificationRecipientSet
+from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 
 
 class BugNotificationRecipients(NotificationRecipientSet):
@@ -209,21 +106,6 @@ class BugNotificationRecipients(NotificationRecipientSet):
             text = "are a bug assignee"
         self._addReason(person, text, reason)
 
-    def addDistroBugSupervisor(self, person, distro):
-        """Registers a distribution bug supervisor for this bug."""
-        reason = "Bug Supervisor (%s)" % distro.displayname
-        # All displaynames in these reasons should be changed to bugtargetname
-        # (as part of bug 113262) once bugtargetname is finalized for packages
-        # (bug 113258). Changing it before then would be excessively
-        # disruptive.
-        if person.isTeam():
-            text = ("are a member of %s, which is the bug supervisor for %s" %
-                (person.displayname, distro.displayname))
-            reason += " @%s" % person.name
-        else:
-            text = "are the bug supervisor for %s" % distro.displayname
-        self._addReason(person, text, reason)
-
     def addStructuralSubscriber(self, person, target):
         """Registers a structural subscriber to this bug's target."""
         reason = "Subscriber (%s)" % target.displayname
@@ -233,17 +115,6 @@ class BugNotificationRecipients(NotificationRecipientSet):
             reason += " @%s" % person.name
         else:
             text = "are subscribed to %s" % target.displayname
-        self._addReason(person, text, reason)
-
-    def addUpstreamBugSupervisor(self, person, upstream):
-        """Registers an upstream bug supervisor for this bug."""
-        reason = "Bug Supervisor (%s)" % upstream.displayname
-        if person.isTeam():
-            text = ("are a member of %s, which is the bug supervisor for %s" %
-                (person.displayname, upstream.displayname))
-            reason += " @%s" % person.name
-        else:
-            text = "are the bug supervisor for %s" % upstream.displayname
         self._addReason(person, text, reason)
 
     def addRegistrant(self, person, upstream):

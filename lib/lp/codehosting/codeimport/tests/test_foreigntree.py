@@ -9,16 +9,19 @@ import os
 import time
 import unittest
 
+from bzrlib.tests import TestCaseWithTransport
 import CVS
 import pysvn
 
-from bzrlib.tests import TestCaseWithTransport
-
+from canonical.testing.layers import BaseLayer
 from lp.codehosting.codeimport.foreigntree import (
-    CVSWorkingTree, SubversionWorkingTree)
+    CVSWorkingTree,
+    SubversionWorkingTree,
+    )
 from lp.codehosting.codeimport.tests.servers import (
-    CVSServer, SubversionServer)
-from canonical.testing import BaseLayer
+    CVSServer,
+    SubversionServer,
+    )
 
 
 class TestSubversionWorkingTree(TestCaseWithTransport):

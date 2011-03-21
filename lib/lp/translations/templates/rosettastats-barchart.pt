@@ -9,29 +9,13 @@
   tal:condition="not: context/messageCount"
   src="/@@/red-bar" height="10" width="100" style="height: 1em;" />
 <img
-  tal:condition="context/currentCount"
+  tal:condition="context/translatedCount"
   tal:attributes="
-    alt string: ${context/currentPercentage}% published, ;
-    title string:Unchanged: ${context/currentPercentage} %;
-    width context/currentPercentage;
+    alt string: ${context/translatedPercentage}% translated ;
+    title string:Translated: ${context/translatedPercentage} %;
+    width context/translatedPercentage;
   "
   height="10" src="/@@/green-bar" style="height: 1em;"
-/><img
-  tal:condition="context/updatesCount"
-  tal:attributes="
-    alt string: ${context/updatesPercentage}% changed, ;
-    width context/updatesPercentage;
-    title string: Changed: ${context/updatesPercentage} %
-  "
-  height="10" src="/@@/blue-bar" style="height: 1em;"
-/><img
-  tal:condition="context/newCount"
-  tal:attributes="
-    alt string: ${context/newPercentage}% new, ;
-    width context/newPercentage;
-    title string: New: ${context/newPercentage} %
-  "
-  height="10" src="/@@/purple-bar" style="height: 1em;"
 /><img
   tal:condition="context/untranslatedCount"
   tal:attributes="

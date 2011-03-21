@@ -5,7 +5,9 @@ __metaclass__ = type
 
 """Gina's changelog parser and muncher for great justice"""
 
-import re, sys
+import re
+import sys
+
 
 first_re = re.compile(r"^([a-z0-9][a-z0-9\\+\\.\\-]+)\s+\(([^ ]+)\)")
 urgency_re = re.compile(r'(?:urgency|priority)=([^ ,;:.]+)')

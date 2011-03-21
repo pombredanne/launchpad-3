@@ -19,12 +19,13 @@ __all__ = [
 
 from zope.interface import implements
 
-from lp.translations.interfaces.translationimporter import (
-    ITranslationFormatImporter)
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
-from lp.translations.utilities.gettext_po_importer import (
-    GettextPOImporter)
+    TranslationFileFormat,
+    )
+from lp.translations.interfaces.translationimporter import (
+    ITranslationFormatImporter,
+    )
+from lp.translations.utilities.gettext_po_importer import GettextPOImporter
 
 
 class KdePOImporter(GettextPOImporter):

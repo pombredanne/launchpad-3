@@ -7,8 +7,10 @@ admins.
 
 Unprivileged users do not see the visibility widget.
 
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from lp.registry.interfaces.person import PersonVisibility
+    >>> from lp.registry.interfaces.person import (
+    ...     IPersonSet,
+    ...     PersonVisibility,
+    ...     )
     >>> personset = getUtility(IPersonSet)
     >>> nopriv = personset.getByEmail('no-priv@canonical.com')
     >>> login('no-priv@canonical.com')
@@ -293,8 +295,8 @@ those permitted by private teams.
     ...     evolution.setBranchVisibilityTeamPolicy(
     ...         team, BranchVisibilityRule.PRIVATE)
     ...     # A PPA.
-    ...     from lp.soyuz.interfaces.archive import (
-    ...         ArchivePurpose, IArchiveSet)
+    ...     from lp.soyuz.enums import ArchivePurpose
+    ...     from lp.soyuz.interfaces.archive import IArchiveSet
     ...     from lp.registry.interfaces.distribution import (
     ...         IDistributionSet)
     ...     ubuntu = getUtility(IDistributionSet)['ubuntu']

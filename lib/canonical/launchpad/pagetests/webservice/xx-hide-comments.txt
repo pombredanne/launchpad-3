@@ -21,7 +21,8 @@ is preserved.  setCommentVisibility only affects page display
 not access in the Bug.messages array.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBugSet, IBugMessageSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> from lp.bugs.interfaces.bugmessage import IBugMessageSet
     >>> login('foo.bar@canonical.com')
     >>> bug_11 = getUtility(IBugSet).get(11)
     >>> bug_message = getUtility(IBugMessageSet).getByBugAndMessage(

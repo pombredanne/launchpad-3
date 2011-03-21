@@ -1,38 +1,154 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import with_statement
+
 """ Test layers
 
 Note that many tests are performed at run time in the layers themselves
 to confirm that the environment hasn't been corrupted by tests
 """
+
 __metaclass__ = type
 
+from contextlib import nested
+from cStringIO import StringIO
 import os
 import signal
 import smtplib
-import unittest
-
 from cStringIO import StringIO
 from urllib import urlopen
-import psycopg2
 
+from fixtures import (
+    Fixture,
+    EnvironmentVariableFixture,
+    TestWithFixtures,
+    )
+import psycopg2
+import testtools
 from zope.component import getUtility, ComponentLookupError
 
 from canonical.config import config, dbconfig
-from canonical.launchpad.ftests.harness import LaunchpadTestSetup
 from lazr.config import as_host_port
 from canonical.librarian.client import LibrarianClient, UploadFailed
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.lazr.pidfile import pidfile_path
 from canonical.testing.layers import (
-    AppServerLayer, BaseLayer, DatabaseLayer, FunctionalLayer,
-    LaunchpadFunctionalLayer, LaunchpadLayer, LaunchpadScriptLayer,
-    LaunchpadZopelessLayer, LayerInvariantError, LayerIsolationError,
-    LayerProcessController, LibrarianLayer, MemcachedLayer, ZopelessLayer)
+    AppServerLayer,
+    BaseLayer,
+    DatabaseLayer,
+    FunctionalLayer,
+    LaunchpadFunctionalLayer,
+    LaunchpadLayer,
+    LaunchpadScriptLayer,
+    LaunchpadTestSetup,
+    LaunchpadZopelessLayer,
+    LayerInvariantError,
+    LayerIsolationError,
+    LayerProcessController,
+    LibrarianLayer,
+    MemcachedLayer,
+    ZopelessLayer,
+    )
 from lp.services.memcache.client import memcache_client_factory
 
-class BaseTestCase(unittest.TestCase):
+
+class BaseLayerIsolator(Fixture):
+    """A fixture for isolating BaseLayer.
+
+    This is useful to test interactions with LP_PERSISTENT_TEST_SERVICES 
+    which makes tests within layers unable to test that easily.
+    """
+
+    def __init__(self, with_persistent=False):
+        """Create a BaseLayerIsolator.
+
+        :param with_persistent: If True LP_PERSISTENT_TEST_SERVICES will
+            be enabled during setUp.
+        """
+        super(BaseLayerIsolator, self).__init__()
+        self.with_persistent = with_persistent
+
+    def setUp(self):
+        super(BaseLayerIsolator, self).setUp()
+        if self.with_persistent:
+            env_value = ''
+        else:
+            env_value = None
+        self.useFixture(EnvironmentVariableFixture(
+            'LP_PERSISTENT_TEST_SERVICES', env_value))
+        self.useFixture(EnvironmentVariableFixture('LP_TEST_INSTANCE'))
+
+
+class LayerFixture(Fixture):
+    """Adapt a layer to a fixture.
+
+    Note that the layer setup/teardown are called, not the base class ones.
+
+    :ivar layer: The adapted layer.
+    """
+
+    def __init__(self, layer):
+        """Create a LayerFixture.
+
+        :param layer: The layer to use.
+        """
+        super(LayerFixture, self).__init__()
+        self.layer = layer
+
+    def setUp(self):
+        super(LayerFixture, self).setUp()
+        self.layer.setUp()
+        self.addCleanup(self.layer.tearDown)
+
+
+class TestBaseLayer(testtools.TestCase, TestWithFixtures):
+
+    def test_allocates_LP_TEST_INSTANCE(self):
+        self.useFixture(BaseLayerIsolator())
+        with LayerFixture(BaseLayer):
+            self.assertEqual(
+                str(os.getpid()),
+                os.environ.get('LP_TEST_INSTANCE'))
+        self.assertEqual(None, os.environ.get('LP_TEST_INSTANCE'))
+
+    def test_persist_test_services_disables_LP_TEST_INSTANCE(self):
+        self.useFixture(BaseLayerIsolator(with_persistent=True))
+        with LayerFixture(BaseLayer):
+            self.assertEqual(None, os.environ.get('LP_TEST_INSTANCE'))
+        self.assertEqual(None, os.environ.get('LP_TEST_INSTANCE'))
+
+    def test_generates_unique_config(self):
+        config.setInstance('testrunner')
+        orig_instance = config.instance_name
+        self.useFixture(
+            EnvironmentVariableFixture('LP_PERSISTENT_TEST_SERVICES'))
+        self.useFixture(EnvironmentVariableFixture('LP_TEST_INSTANCE'))
+        self.useFixture(EnvironmentVariableFixture('LPCONFIG'))
+        with LayerFixture(BaseLayer):
+            self.assertEqual(
+                'testrunner_%s' % os.environ['LP_TEST_INSTANCE'],
+                config.instance_name)
+        self.assertEqual(orig_instance, config.instance_name)
+
+    def test_generates_unique_config_dirs(self):
+        self.useFixture(
+            EnvironmentVariableFixture('LP_PERSISTENT_TEST_SERVICES'))
+        self.useFixture(EnvironmentVariableFixture('LP_TEST_INSTANCE'))
+        self.useFixture(EnvironmentVariableFixture('LPCONFIG'))
+        with LayerFixture(BaseLayer):
+            runner_root = 'configs/%s' % config.instance_name
+            runner_appserver_root = 'configs/testrunner-appserver_%s' % \
+                os.environ['LP_TEST_INSTANCE']
+            self.assertTrue(os.path.isfile(
+                runner_root + '/launchpad-lazr.conf'))
+            self.assertTrue(os.path.isfile(
+                runner_appserver_root + '/launchpad-lazr.conf'))
+        self.assertFalse(os.path.exists(runner_root))
+        self.assertFalse(os.path.exists(runner_appserver_root))
+
+
+class BaseTestCase(testtools.TestCase):
     """Both the Base layer tests, as well as the base Test Case
     for all the other Layer tests.
     """
@@ -123,22 +239,13 @@ class BaseTestCase(unittest.TestCase):
                     )
 
     def testLaunchpadDbAvailable(self):
-        try:
-            con = DatabaseLayer.connect()
-            cur = con.cursor()
-            cur.execute("SELECT id FROM Person LIMIT 1")
-            if cur.fetchone() is not None:
-                self.failUnless(
-                        self.want_launchpad_database,
-                        'Launchpad database should not be available.'
-                        )
-                return
-        except psycopg2.Error:
-            pass
-        self.failIf(
-                self.want_launchpad_database,
-                'Launchpad database should be available but is not.'
-                )
+        if not self.want_launchpad_database:
+            self.assertEqual(None, DatabaseLayer._db_fixture)
+            return
+        con = DatabaseLayer.connect()
+        cur = con.cursor()
+        cur.execute("SELECT id FROM Person LIMIT 1")
+        self.assertNotEqual(None, cur.fetchone())
 
     def testMemcachedWorking(self):
         client = MemcachedLayer.client or memcache_client_factory()
@@ -161,22 +268,52 @@ class MemcachedTestCase(BaseTestCase):
 class LibrarianTestCase(BaseTestCase):
     layer = LibrarianLayer
 
+    want_launchpad_database = True
     want_librarian_running = True
 
-    def testUploadsFail(self):
-        # This layer is not particularly useful by itself, as the Librarian
-        # cannot function correctly as there is no database setup.
+    def testUploadsSucceed(self):
+        # This layer is able to be used on its own as it depends on
+        # DatabaseLayer.
         # We can test this using remoteAddFile (it does not need the CA
         # loaded)
         client = LibrarianClient()
         data = 'This is a test'
-        self.failUnlessRaises(
-                UploadFailed, client.remoteAddFile,
-                'foo.txt', len(data), StringIO(data), 'text/plain'
-                )
+        client.remoteAddFile(
+            'foo.txt', len(data), StringIO(data), 'text/plain')
 
 
-class LibrarianNoResetTestCase(unittest.TestCase):
+class LibrarianLayerTest(testtools.TestCase, TestWithFixtures):
+
+    def test_makes_unique_instance(self):
+        # Capture the original settings
+        default_root = config.librarian_server.root
+        download_port = config.librarian.download_port
+        restricted_download_port = config.librarian.restricted_download_port
+        self.useFixture(BaseLayerIsolator())
+        with nested(
+            LayerFixture(BaseLayer),
+            LayerFixture(DatabaseLayer),
+            ):
+            with LayerFixture(LibrarianLayer):
+                active_root = config.librarian_server.root
+                # The config settings have changed:
+                self.assertNotEqual(default_root, active_root)
+                self.assertNotEqual(
+                    download_port, config.librarian.download_port)
+                self.assertNotEqual(
+                    restricted_download_port,
+                    config.librarian.restricted_download_port)
+                self.assertTrue(os.path.exists(active_root))
+            # This needs more sophistication in the config system (tearDown on
+            # the layer needs to pop the config fragment off of disk - and
+            # perhaps notify other processes that its done this. So for now we
+            # leave the new config in place).
+            # self.assertEqual(default_root, config.librarian_server.root)
+            # The working dir has to have been deleted.
+            self.assertFalse(os.path.exists(active_root))
+
+
+class LibrarianNoResetTestCase(testtools.TestCase):
     """Our page tests need to run multple tests without destroying
     the librarian database in between.
     """
@@ -219,7 +356,7 @@ class LibrarianNoResetTestCase(unittest.TestCase):
         self.failIfEqual(data, self.sample_data)
 
 
-class LibrarianHideTestCase(unittest.TestCase):
+class LibrarianHideTestCase(testtools.TestCase):
     layer = LaunchpadLayer
 
     def testHideLibrarian(self):
@@ -257,6 +394,12 @@ class DatabaseTestCase(BaseTestCase):
         num = cur.fetchone()[0]
         return num
 
+    # XXX: Parallel-fail: because layers are not cleanly integrated with
+    # unittest, what should be one test is expressed as three distinct
+    # tests here. We need to either write enough glue to push/pop the
+    # global state of zope.testing.runner or we need to stop using layers,
+    # before these tests will pass in a parallel run. Robert Collins
+    # 2010-11-01
     def testNoReset1(self):
         # Ensure that we can switch off database resets between tests
         # if necessary, such as used by the page tests
@@ -387,12 +530,13 @@ class LayerProcessControllerInvariantsTestCase(BaseTestCase):
                           LayerProcessController.startSMTPServer)
 
 
-class LayerProcessControllerTestCase(unittest.TestCase):
+class LayerProcessControllerTestCase(testtools.TestCase):
     """Tests for the `LayerProcessController`."""
     # We need the database to be set up, no more.
     layer = DatabaseLayer
 
     def tearDown(self):
+        super(LayerProcessControllerTestCase, self).tearDown()
         # Stop both servers.  It's okay if they aren't running.
         LayerProcessController.stopSMTPServer()
         LayerProcessController.stopAppServer()
@@ -400,6 +544,7 @@ class LayerProcessControllerTestCase(unittest.TestCase):
     def test_stopAppServer(self):
         # Test that stopping the app server kills the process and remove the
         # PID file.
+        LayerProcessController._setConfig()
         LayerProcessController.startAppServer()
         pid = LayerProcessController.appserver.pid
         pid_file = pidfile_path('launchpad',
@@ -413,6 +558,7 @@ class LayerProcessControllerTestCase(unittest.TestCase):
     def test_postTestInvariants(self):
         # A LayerIsolationError should be raised if the app server dies in the
         # middle of a test.
+        LayerProcessController._setConfig()
         LayerProcessController.startAppServer()
         pid = LayerProcessController.appserver.pid
         os.kill(pid, signal.SIGTERM)
@@ -422,19 +568,19 @@ class LayerProcessControllerTestCase(unittest.TestCase):
 
     def test_postTestInvariants_dbIsReset(self):
         # The database should be reset by the test invariants.
+        LayerProcessController._setConfig()
         LayerProcessController.startAppServer()
         LayerProcessController.postTestInvariants()
+        # XXX: Robert Collins 2010-10-17 bug=661967 - this isn't a reset, its
+        # a flag that it *needs* a reset, which is actually quite different;
+        # the lack of a teardown will leak daabases.
         self.assertEquals(True, LaunchpadTestSetup()._reset_db)
 
 
-class TestNameTestCase(unittest.TestCase):
+class TestNameTestCase(testtools.TestCase):
     layer = BaseLayer
     def testTestName(self):
         self.failUnlessEqual(
                 BaseLayer.test_name,
                 "testTestName "
                 "(canonical.testing.ftests.test_layers.TestNameTestCase)")
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

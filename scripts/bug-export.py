@@ -11,7 +11,7 @@ import optparse
 
 from zope.component import getUtility
 from canonical.lp import initZopeless
-from canonical.launchpad.interfaces import IProductSet
+from lp.registry.interfaces.product import IProductSet
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 
 from lp.bugs.scripts.bugexport import export_bugtasks

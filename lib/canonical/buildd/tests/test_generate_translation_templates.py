@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
+from StringIO import StringIO
 from unittest import TestLoader
 import tarfile
 
@@ -28,7 +29,8 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
         branch_url = 'lp://~my/translation/branch'
 
         generator = GenerateTranslationTemplates(
-            branch_url, self.result_name, self.makeTemporaryDirectory())
+            branch_url, self.result_name, self.makeTemporaryDirectory(),
+            log_file=StringIO())
         generator._checkout = FakeMethod()
         generator._getBranch()
 
@@ -41,7 +43,8 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
         branch_dir = '/home/me/branch'
 
         generator = GenerateTranslationTemplates(
-            branch_dir, self.result_name, self.makeTemporaryDirectory())
+            branch_dir, self.result_name, self.makeTemporaryDirectory(),
+            log_file=StringIO())
         generator._checkout = FakeMethod()
         generator._getBranch()
 
@@ -50,7 +53,7 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
 
     def _createBranch(self, content_map=None):
         """Create a working branch.
-        
+
         :param content_map: optional dict mapping file names to file contents.
             Each of these files with their contents will be written to the
             branch.
@@ -77,7 +80,7 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
 
         generator = GenerateTranslationTemplates(
             branch.getInternalBzrUrl(), self.result_name,
-            self.makeTemporaryDirectory())
+            self.makeTemporaryDirectory(), log_file=StringIO())
         generator.branch_dir = self.makeTemporaryDirectory()
         generator._getBranch()
 
@@ -96,7 +99,7 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
         tar.close()
 
         generator = GenerateTranslationTemplates(
-            branchdir, self.result_name, workdir)
+            branchdir, self.result_name, workdir, log_file=StringIO())
         generator._getBranch()
         generator._makeTarball(potnames)
         tar = tarfile.open(os.path.join(workdir, self.result_name), 'r|*')

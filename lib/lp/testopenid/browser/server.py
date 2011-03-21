@@ -14,6 +14,17 @@ __all__ = [
 
 from datetime import timedelta
 
+from openid import oidutil
+from openid.extensions.sreg import (
+    SRegRequest,
+    SRegResponse,
+    )
+from openid.server.server import (
+    CheckIDRequest,
+    ENCODE_HTML_FORM,
+    Server,
+    )
+from openid.store.memstore import MemoryStore
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
@@ -21,29 +32,46 @@ from zope.interface import implements
 from zope.security.proxy import isinstance as zisinstance
 from zope.session.interfaces import ISession
 
-from openid import oidutil
-from openid.server.server import CheckIDRequest, Server, ENCODE_HTML_FORM
-from openid.store.memstore import MemoryStore
-from openid.extensions.sreg import SRegRequest, SRegResponse
-
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
+from canonical.launchpad.interfaces.account import (
+    AccountStatus,
+    IAccountSet,
+    )
 from canonical.launchpad.webapp import (
-    action, LaunchpadFormView, LaunchpadView)
+    LaunchpadView,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    ICanonicalUrlData, IPlacelessLoginSource)
+    ICanonicalUrlData,
+    IPlacelessLoginSource,
+    )
 from canonical.launchpad.webapp.login import (
-    allowUnauthenticatedSession, logInPrincipal, logoutPerson)
-from canonical.launchpad.webapp.publisher import Navigation, stepthrough
-
+    allowUnauthenticatedSession,
+    logInPrincipal,
+    logoutPerson,
+    )
+from canonical.launchpad.webapp.publisher import (
+    Navigation,
+    stepthrough,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
 from lp.app.errors import UnexpectedFormData
-from lp.services.openid.browser.openiddiscovery import (
-    XRDSContentNegotiationMixin)
-from lp.testopenid.interfaces.server import (
-    get_server_url, ITestOpenIDApplication, ITestOpenIDLoginForm,
-    ITestOpenIDPersistentIdentity)
 from lp.registry.interfaces.person import IPerson
+from lp.services.openid.browser.openiddiscovery import (
+    XRDSContentNegotiationMixin,
+    )
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
+from lp.testopenid.interfaces.server import (
+    get_server_url,
+    ITestOpenIDApplication,
+    ITestOpenIDLoginForm,
+    ITestOpenIDPersistentIdentity,
+    )
 
 
 OPENID_REQUEST_SESSION_KEY = 'testopenid.request'
@@ -119,7 +147,7 @@ class OpenIDMixin:
         return (self.openid_request.idSelect() or
                 self.openid_request.identity == self.user_identity_url)
 
-    @cachedproperty('_openid_parameters')
+    @cachedproperty
     def openid_parameters(self):
         """A dictionary of OpenID query parameters from request."""
         query = {}
@@ -142,8 +170,9 @@ class OpenIDMixin:
     def restoreRequestFromSession(self):
         """Get the OpenIDRequest from our session."""
         session = self.getSession()
+        cache = get_property_cache(self)
         try:
-            self._openid_parameters = session[OPENID_REQUEST_SESSION_KEY]
+            cache.openid_parameters = session[OPENID_REQUEST_SESSION_KEY]
         except KeyError:
             raise UnexpectedFormData("No OpenID request in session")
 

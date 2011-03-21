@@ -5,7 +5,7 @@ First, set all the bugs to private.
 
     >>> from zope.security.interfaces import Unauthorized
     >>> from BeautifulSoup import BeautifulStoneSoup as BSS
-    >>> from canonical.launchpad.database import Bug
+    >>> from lp.bugs.model.bug import Bug
     >>> bugs = Bug.select()
     >>> for bug in bugs:
     ...     bug.private = True

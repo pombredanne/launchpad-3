@@ -7,28 +7,27 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
 import re
 from StringIO import StringIO
 import tarfile
-import transaction
 
+import transaction
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing import LaunchpadZopelessLayer
-from lp.testing import TestCaseWithFactory
-from canonical.launchpad.scripts.tests import run_script
-
 from canonical.launchpad.database.librarian import LibraryFileAliasSet
+from canonical.launchpad.scripts.tests import run_script
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.soyuz.model.sourcepackagerelease import (
-    _filter_ubuntu_translation_file)
+    _filter_ubuntu_translation_file,
+    )
+from lp.testing import TestCaseWithFactory
 from lp.translations.model.translationimportqueue import (
-    TranslationImportQueue)
-
+    TranslationImportQueue,
+    )
 from lp.translations.scripts.reupload_translations import (
-    ReuploadPackageTranslations)
+    ReuploadPackageTranslations,
+    )
 
 
 class UploadInjector:
@@ -38,6 +37,7 @@ class UploadInjector:
     getLatestTranslationsUploads method return the given library file
     alias.
     """
+
     def __init__(self, script, tar_alias):
         self.tar_alias = tar_alias
         self.script = script
@@ -190,7 +190,7 @@ class TestReuploadScript(TestCaseWithFactory):
                 '-s', self.distroseries.name,
                 '-p', self.sourcepackagename1.name,
                 '-p', self.sourcepackagename2.name,
-                '-vvv',
+                '-v',
                 '--dry-run',
             ])
 
@@ -204,8 +204,6 @@ class TestReuploadScript(TestCaseWithFactory):
             "INFO\s*Processing [^\s]+ in .*\n"
             "WARNING\s*Found no translations upload for .*\n"
             "INFO\s*Done.\n")
-        self.assertTrue(re.match(expected_output, stderr))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+        self.assertTrue(
+            re.match(expected_output, stderr),
+            'expected %s, got %s' % (expected_output, stderr))

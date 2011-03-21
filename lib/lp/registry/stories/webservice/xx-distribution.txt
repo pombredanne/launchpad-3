@@ -1,4 +1,5 @@
-= Distributions =
+Distributions
+=============
 
 At the top level we provide the collection of all distributions, with
 Ubuntu and its flavours being the first on the list.
@@ -48,9 +49,11 @@ And for every distribution we publish most of its attributes.
     series_collection_link: u'http://.../ubuntu/series'
     summary: u'Ubuntu is a new approach to Linux Distribution...'
     title: u'Ubuntu Linux'
+    web_link: u'http://launchpad.../ubuntu'
 
 
-== Distribution Custom Operations ==
+Distribution Custom Operations
+==============================
 
 Distribution has some custom operations.
 
@@ -69,7 +72,7 @@ Requesting a series that does not exist is a bad request.
     ...     name_or_version='fnord')
     HTTP/1.1 400 Bad Request
     ...
-    NoSuchDistroSeries: No such distribution series: 'fnord'.
+    No such distribution series: 'fnord'.
 
 "getDevelopmentSeries" returns all the distribution series for the
 distribution that are marked as in development.
@@ -113,11 +116,11 @@ packages matching (substring) the given text.
 
     >>> for entry in alsa_results['entries']:
     ...     print entry['self_link']
+    http://.../ubuntu/+source/alsa-utils
+    http://.../ubuntu/+source/commercialpackage
+    http://.../ubuntu/+source/foobar
     http://.../ubuntu/+source/mozilla-firefox
     http://.../ubuntu/+source/netapplet
-    http://.../ubuntu/+source/alsa-utils
-    http://.../ubuntu/+source/foobar
-    http://.../ubuntu/+source/commercialpackage
 
 "getArchive" returns a distribution archive (not a PPA) with the given name.
 
@@ -153,16 +156,17 @@ packages matching (substring) the given text.
     self_link: u'http://.../ubuntu/+mirror/canonical-releases'
     speed: u'100 Mbps'
     status: u'Official'
+    web_link: u'http://launchpad.../ubuntu/+mirror/canonical-releases'
     whiteboard: None
 
 "getCountryMirror" returns the country DNS mirror for a given country;
 returning None if there isn't one.
 
     >>> # Prepare stuff.
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from simplejson import dumps
 
@@ -190,7 +194,6 @@ returning None if there isn't one.
     >>> antarctica_patch_target = webservice.named_get(
     ...     ubuntu['self_link'], 'getMirrorByName',
     ...     name='mirror.showa.antarctica.org-archive').jsonBody()
-    ... )
 
     >>> response = karl_webservice.patch(
     ...     antarctica_patch_target['self_link'], 'application/json',

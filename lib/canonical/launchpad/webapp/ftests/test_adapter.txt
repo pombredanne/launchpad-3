@@ -9,6 +9,7 @@ Imports and test setup:
     >>> import threading
     >>> import transaction
     >>> from zope.component import getUtility
+    >>> from lazr.restful.utils import get_current_browser_request
     >>> from storm.zope.interfaces import IZStorm
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
@@ -17,13 +18,18 @@ Imports and test setup:
     >>> from canonical.launchpad.webapp.adapter import (
     ...     clear_request_started, get_request_statements,
     ...     set_request_started)
+    >>> from canonical.testing.layers import DatabaseLayer
+    >>> from lp.services.timeline.requesttimeline import get_request_timeline
 
 There are several possible database connections available via the
 IStoreSelector utility.
 
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-    >>> print store.execute("SELECT current_database()").get_one()[0]
-    launchpad_ftest
+    >>> dbname = DatabaseLayer._db_fixture.dbname
+    >>> active_name = store.execute("SELECT current_database()").get_one()[0]
+    >>> if active_name != dbname: print '%s != %s' % (active_name, dbname)
+    >>> active_name == dbname
+    True
 
 
 Statement Logging
@@ -40,15 +46,46 @@ not maintained outside of a request:
     >>> get_request_statements()
     []
 
-Now begin a request, and issue a number of statements:
-
+Now begin a request, and issue a number of statements.
+We include statements with bind variables to ensure these are logged
+correctly, especially for the case of LIKE which uses % characters.
     >>> set_request_started()
     >>> store.execute('SELECT 1', noresult=True)
     >>> store.execute('SELECT 2', noresult=True)
+    >>> store.execute('SELECT * FROM person where name = ?',
+    ...     [u'fred'], noresult=True)
+    >>> store.execute("SELECT * FROM person where name = '%s foo'",
+    ...     noresult=True)
+    >>> store.execute('SELECT * FROM person where id = ?',
+    ...     [2], noresult=True)
+    >>> store.execute("SELECT * FROM person where name like '%%' || ?",
+    ...     [u'fred'], noresult=True)
+    >>> store.execute("SELECT * FROM person where name like '%d foo'||'%%'",
+    ...     noresult=True)
     >>> for starttime, endtime, db_id, statement in get_request_statements():
     ...     print statement
     SELECT 1
     SELECT 2
+    SELECT * FROM person where name = u'fred'
+    SELECT * FROM person where name = '%s foo'
+    SELECT * FROM person where id = 2
+    SELECT * FROM person where name like '%%' || u'fred'
+    SELECT * FROM person where name like '%d foo'||'%%'
+
+A timeline is created too:
+
+    >>> timeline = get_request_timeline(get_current_browser_request())
+    >>> for action in timeline.actions:
+    ...    if not action.category.startswith("SQL-"):
+    ...        continue
+    ...    print action.detail
+    SELECT 1
+    SELECT 2
+    SELECT * FROM person where name = u'fred'
+    SELECT * FROM person where name = '%s foo'
+    SELECT * FROM person where id = 2
+    SELECT * FROM person where name like '%%' || u'fred'
+    SELECT * FROM person where name like '%d foo'||'%%'
 
 After we complete the request, the statement log is cleared:
 
@@ -90,6 +127,16 @@ that aborted transactions are still in the status "Active".
     SELECT 3
     Transaction completed, status: Active
     >>> clear_request_started()
+
+While you're not meant to call clear_request_started() without having
+a request in progress, some exception handlers do. We raise a warning and let
+it pass.
+
+    >>> import warnings
+    >>> with warnings.catch_warnings(record=True) as no_request_warning:
+    ...     clear_request_started()
+    >>> print no_request_warning[0].message
+    clear_request_started() called outside of a request
 
 
 Statement Timeout
@@ -284,14 +331,14 @@ another query:
     >>> store.execute('SELECT 2', noresult=True)
     Traceback (most recent call last):
     ...
-    TimeoutError: ...SELECT 2...
+    RequestExpired: request expired.
 
 The statement about to be executed is not recorded in the statement log.
 The request time limit was exceeded before the statement was issued to
 the database.
 
     >>> get_request_statements()
-    []
+    [(0, 0, 'SQL-launchpad-main-master', 'SELECT 2')]
 
 
 When a RequestExpired exception is raised, the current
@@ -347,7 +394,7 @@ remove the timout:
     >>> store.execute('SELECT 1', noresult=True)
     Traceback (most recent call last):
     ...
-    TimeoutError: ...SELECT 1...
+    RequestExpired: request expired.
     >>> statement_issued.set()
     >>> thread.join()
     >>> clear_request_started()

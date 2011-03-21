@@ -1,0 +1,77 @@
+<div class="profiling_info">
+  <div class="hide_reveal_profiling" id="reveal_profiling">
+  Click to REVEAL profiling information
+  </div>
+</div>
+<div class="profiling_info" id="profiling_info">
+  <div class="hide_reveal_profiling" id="hide_profiling">
+  Click to HIDE profiling information
+  </div>
+  <h1>Profiling Information</h1>
+  <tal:block condition="'help' in actions">
+    <h2>Help</h2>
+    <p>Hi.  I see you are using a <code>++profile++</code> request.
+    <tal:block condition="always_log">You have configured every request
+    to have a log, via the <code>profile_all_requests: True</code> in
+    the <code>[profiling]</code> section of your launchpad-lazr.conf, so
+    you'll always see some logging information below.  In order to also
+    get immediate profiling results in the browser, use
+    <code>++profile++show</code>.</tal:block> <tal:block condition="not
+    always_log">In order to get profiling results, you need to ask for
+    an HTML view (<code>++profile++show</code>), a KCacheGrind-friendly
+    log on the filesystem (<code>++profile++log</code>), or both
+    (<code>++profile++show,log</code>).</tal:block>  This can usually go
+    anywhere in the URL (e.g.,
+    <code>http://launchpad.dev/++profile++show</code> or
+    <code>http://launchpad.dev/++profile++show/Firefox</code> or
+    <code>http://launchpad.dev/Firefox/++profile++show</code>) but some
+    pages do seem to redirect in surprising ways, so experimentation may
+    be necessary.</p>
+  </tal:block>
+  <h2>Log information</h2>
+  <tal:block condition="'log' not in actions">
+    <p>Profile was not logged to file.</p>
+    <p>Use <code>++profile++log</code> in your URL in order to log the
+    information to file for later KCacheGrind analysis (or
+    <code>++profile++log,show</code> to see both the log information and
+    immediate results).</p>
+  </tal:block>
+  <tal:block condition="'log' in actions">
+    <p tal:condition="always_log"><strong>You have configured every
+    request to have a full profile log</strong>, via the
+    <code>profile_all_requests: True</code> in the
+    <code>[profiling]</code> section of your launchpad-lazr.conf.</p>
+    <p>Profile was logged to <tal:block replace="dump_path" />.</p>
+    <p>You should be able to use this simply by entering
+    <code>kcachegrind <tal:block replace="dump_path" /></code> in the
+    console for a great visualization of the profile.  The <a
+    href="https://dev.launchpad.net/Debugging#Profiling%%20page%%20requests"
+    >dev wiki</a> may have more information on how to use this.</p>
+  </tal:block>
+  <h2>Profile quick view</h2>
+  <tal:block condition="'show' not in actions">
+    <p>Use <code>++profile++show</code> in your URL in order to see
+    immediate profile results (or <code>++profile++log,show</code> to
+    see both the log information and immediate results).</p>
+  </tal:block>
+  <tal:block condition="'show' in actions">
+    <h3>Top Inline Time</h3>
+    <pre tal:content="inlinetime" />
+    <h3>Top Total Time</h3>
+    <pre tal:content="totaltime" />
+    <h3>Top Call Count</h3>
+    <pre tal:content="callcount" />
+    <h2>Raw OOPS Information</h2>
+    <pre tal:content="oops" />
+  </tal:block>
+</div>
+<script>
+LPS.use('node', 'lp', function (Y) {
+    Y.one('div#reveal_profiling').on('click', function (e) {
+        Y.one('div#profiling_info').setStyle('display', 'block');
+    });
+    Y.one('div#hide_profiling').on('click', function (e) {
+        Y.one('div#profiling_info').setStyle('display', 'none');
+    });
+});
+</script>

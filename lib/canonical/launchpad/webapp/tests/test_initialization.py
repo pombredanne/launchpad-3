@@ -7,15 +7,15 @@ As found in canonical.launchpad.webapp.initialization.py."""
 
 import unittest
 
-from lp.testing import TestCase
-from zope.interface import Interface
 from zope.component import getSiteManager
+from zope.interface import Interface
 from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.traversing.interfaces import ITraversable
 
 from canonical.launchpad.webapp.errorlog import OopsNamespace
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import FunctionalLayer
+from canonical.testing.layers import FunctionalLayer
+from lp.testing import TestCase
 
 
 class AnyObject:

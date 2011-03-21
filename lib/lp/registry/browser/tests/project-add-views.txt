@@ -159,8 +159,9 @@ When an open source license is selected, the project is created.
 Feedback notification
 ---------------------
 
-When projects are created with the Other/Proprietary license, a message is
-sent to feedback@launchpad.net.
+When projects are created with the Other/Proprietary, Other/Open Source or
+I Don't Know license, a message is sent to the user explaining the licensing
+rules.
 
     >>> form = {
     ...     'field.displayname': 'Badger',
@@ -239,30 +240,6 @@ However, when a proprietary license is selected, a description is required.
     Thanks,
     <BLANKLINE>
     The Launchpad team.
-    <BLANKLINE>
-    ----------------------------------------
-    From: Launchpad <noreply@launchpad.net>
-    To: Commercial <commercial@launchpad.net>
-    Subject: Project License Submitted for badger by name16
-    Please review this project's licenses.
-    http://launchpad.dev/badger
-    <BLANKLINE>
-    User: Foo Bar (name16)
-    <BLANKLINE>
-    <BLANKLINE>
-    Project Name: badger
-    <BLANKLINE>
-    <BLANKLINE>
-    Project Summary:
-        There's the Badger!
-    <BLANKLINE>
-    <BLANKLINE>
-    Licenses:
-        Other/Proprietary
-    <BLANKLINE>
-    <BLANKLINE>
-    License info:
-        The Badger(tm) License
     <BLANKLINE>
     ----------------------------------------
 

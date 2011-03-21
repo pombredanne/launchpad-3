@@ -13,8 +13,10 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from lp.code.interfaces.branch import IBranchListingQueryOptimiser
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.registry.model.distribution import Distribution

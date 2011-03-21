@@ -632,8 +632,9 @@ def delete_unwanted_files(con):
             dirnames.remove('incoming')
         if 'lost+found' in dirnames:
             dirnames.remove('lost+found')
-        if 'librarian.pid' in filenames:
-            filenames.remove('librarian.pid')
+        filenames = set(filenames)
+        filenames.discard('librarian.pid')
+        filenames.discard('librarian.log')
 
         for dirname in dirnames[:]:
             if len(dirname) != 2:
@@ -650,7 +651,7 @@ def delete_unwanted_files(con):
         # We need everything in order to ensure we visit files in the
         # same order we retrieve wanted files from the database.
         dirnames.sort()
-        filenames.sort()
+        filenames = sorted(filenames)
 
         # Noise in the storage area, or maybe we are looking at the wrong
         # path?

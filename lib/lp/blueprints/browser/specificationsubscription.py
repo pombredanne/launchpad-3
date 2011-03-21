@@ -11,10 +11,17 @@ __all__ = [
 
 
 from canonical.launchpad import _
-from lp.blueprints.interfaces.specificationsubscription import (
-    ISpecificationSubscription)
 from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadEditFormView, LaunchpadFormView)
+    canonical_url,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.blueprints.interfaces.specificationsubscription import (
+    ISpecificationSubscription,
+    )
 
 
 class SpecificationSubscriptionAddView(LaunchpadFormView):

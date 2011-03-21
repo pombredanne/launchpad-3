@@ -9,14 +9,24 @@
 from storm.locals import Store
 import transaction
 
-from canonical.testing import ZopelessAppServerLayer
-from lp.testing import TestCaseWithFactory
 from canonical.launchpad.scripts.tests import run_script
+from canonical.testing.layers import ZopelessAppServerLayer
 from lp.code.enums import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
-from lp.code.model.branchjob import BranchJob, BranchJobType, BranchScanJob
-from lp.services.job.model.job import Job, JobStatus
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
+from lp.code.model.branchjob import (
+    BranchJob,
+    BranchJobType,
+    BranchScanJob,
+    )
+from lp.services.job.model.job import (
+    Job,
+    JobStatus,
+    )
+from lp.services.osutils import override_environ
+from lp.testing import TestCaseWithFactory
 
 
 class TestScanBranches(TestCaseWithFactory):
@@ -27,9 +37,12 @@ class TestScanBranches(TestCaseWithFactory):
     def make_branch_with_commits_and_scan_job(self, db_branch):
         """Create a branch from a db_branch, make commits and a scan job."""
         target, target_tree = self.create_branch_and_tree(db_branch=db_branch)
-        target_tree.commit('First commit', rev_id='rev1')
-        target_tree.commit('Second commit', rev_id='rev2')
-        target_tree.commit('Third commit', rev_id='rev3')
+        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
+        # required to generate the revision-id.
+        with override_environ(BZR_EMAIL='me@example.com'):
+            target_tree.commit('First commit', rev_id='rev1')
+            target_tree.commit('Second commit', rev_id='rev2')
+            target_tree.commit('Third commit', rev_id='rev3')
         BranchScanJob.create(db_branch)
         transaction.commit()
 

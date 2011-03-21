@@ -74,7 +74,7 @@ load_plugins([_get_bzr_plugins_path()])
 def load_optional_plugin(plugin_name):
     """Load the plugin named `plugin_name` from optionalbzrplugins/."""
     from bzrlib import plugins
-    optional_plugin_dir = os.path.join(config.root, 'optionalbzrplugins')
+    optional_plugin_dir = os.path.join(config.root, 'bzrplugins/optional')
     if optional_plugin_dir not in plugins.__path__:
         plugins.__path__.append(optional_plugin_dir)
     __import__("bzrlib.plugins.%s" % plugin_name)

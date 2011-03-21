@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
-from canonical.testing import DatabaseLayer
+from canonical.testing.layers import DatabaseLayer
 
 
 def test_suite():

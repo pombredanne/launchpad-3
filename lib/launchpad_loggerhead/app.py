@@ -17,8 +17,8 @@ from loggerhead.apps.branch import BranchWSGIApp
 
 from openid.extensions.sreg import SRegRequest, SRegResponse
 from openid.consumer.consumer import CANCEL, Consumer, FAILURE, SUCCESS
-from openid.store.memstore import MemoryStore
 
+from paste import httpserver
 from paste.fileapp import DataApp
 from paste.request import construct_url, parse_querystring, path_info_pop
 from paste.httpexceptions import (
@@ -64,7 +64,6 @@ class RootApp:
         self.branchfs = xmlrpclib.ServerProxy(
             config.codehosting.codehosting_endpoint)
         self.session_var = session_var
-        self.store = MemoryStore()
         self.log = logging.getLogger('lp-loggerhead')
 
     def get_transport(self):
@@ -76,7 +75,10 @@ class RootApp:
 
     def _make_consumer(self, environ):
         """Build an OpenID `Consumer` object with standard arguments."""
-        return Consumer(environ[self.session_var], self.store)
+        # Multiple instances need to share a store or not use one at all (in
+        # which case they will use check_authentication). Using no store is
+        # easier, and check_authentication is cheap.
+        return Consumer(environ[self.session_var], None)
 
     def _begin_login(self, environ, start_response):
         """Start the process of authenticating with OpenID.
@@ -257,8 +259,8 @@ _oops_html_template = '''\
 <h1>Oops!</h1>
 <p>Something broke while generating the page.
 Please try again in a few minutes, and if the problem persists file a bug at
-<a href="https://bugs.launchpad.net/launchpad-code"
->https://bugs.launchpad.net/launchpad-code</a>
+<a href="https://bugs.launchpad.net/launchpad"
+>https://bugs.launchpad.net/launchpad</a>
 and quote OOPS-ID <strong>%(oopsid)s</strong>
 </p></body></html>'''
 
@@ -271,7 +273,7 @@ class WrappedStartResponse(object):
     """Wraps start_response (from a WSGI request) to keep track of whether
     start_response was called (and whether the callable it returns has been
     called).
-    
+
     Used by oops_middleware.
     """
 
@@ -293,12 +295,15 @@ class WrappedStartResponse(object):
             self.response_start += (exc_info,)
         return self.write_wrapper
 
-    def really_start(self):
+    def ensure_started(self):
+        if not self.body_started and self.response_start is not None:
+            self._really_start()
+
+    def _really_start(self):
         self._write_callable = self._real_start_response(*self.response_start)
 
     def write_wrapper(self, data):
-        if not self.body_started:
-            self.really_start()
+        self.ensure_started()
         self._write_callable(data)
 
     def generate_oops(self, environ, error_utility):
@@ -310,7 +315,7 @@ class WrappedStartResponse(object):
         oopsid = report_oops(environ, error_utility)
         if self.body_started:
             return False
-        write = self._real_start_response(_error_status, _error_headers)
+        write = self.start_response(_error_status, _error_headers)
         write(_oops_html_template % {'oopsid': oopsid})
         return True
 
@@ -324,7 +329,7 @@ def report_oops(environ, error_utility):
         [], URL=construct_url(environ))
     error_utility.raising(sys.exc_info(), request)
     return request.oopsid
-        
+
 
 def oops_middleware(app):
     """Middleware to log an OOPS if the request fails.
@@ -335,29 +340,41 @@ def oops_middleware(app):
     error_utility = make_error_utility()
     def wrapped_app(environ, start_response):
         wrapped = WrappedStartResponse(start_response)
-        # Start processing this request
         try:
+            # Start processing this request, build the app
             app_iter = iter(app(environ, wrapped.start_response))
+            # Start yielding the response
+            stopping = False
+            while not stopping:
+                try:
+                    data = app_iter.next()
+                except StopIteration:
+                    stopping = True
+                wrapped.ensure_started()
+                if not stopping:
+                    yield data
+        except httpserver.SocketErrors, e:
+            # The Paste WSGIHandler suppresses these exceptions.
+            # Generally it means something like 'EPIPE' because the
+            # connection was closed. We don't want to generate an OOPS
+            # just because the connection was closed prematurely.
+            logger = logging.getLogger('lp-loggerhead')
+            logger.info('Caught socket exception from %s: %s %s'
+                        % (environ.get('REMOTE_ADDR', '<unknown>'),
+                           e.__class__, e,))
+            return
+        except GeneratorExit, e:
+            # This generally means a client closed early during a streaming
+            # body. Nothing to worry about. GeneratorExit doesn't usually have
+            # any context associated with it, so not worth printing to the log.
+            logger = logging.getLogger('lp-loggerhead')
+            logger.info('Caught GeneratorExit from %s'
+                        % (environ.get('REMOTE_ADDR', '<unknown>')))
+            return
         except:
             error_page_sent = wrapped.generate_oops(environ, error_utility)
             if error_page_sent:
                 return
             # Could not send error page to user, so... just give up.
             raise
-        # Start yielding the response
-        while True:
-            try:
-                data = app_iter.next()
-            except StopIteration:
-                return
-            except:
-                error_page_sent = wrapped.generate_oops(environ, error_utility)
-                if error_page_sent:
-                    return
-                # Could not send error page to user, so... just give up.
-                raise
-            else:
-                if not wrapped.body_started:
-                    wrapped.really_start()
-                yield data
     return wrapped_app

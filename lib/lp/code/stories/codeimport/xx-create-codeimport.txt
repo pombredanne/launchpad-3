@@ -27,8 +27,28 @@ For projects that don't officially use Launchpad for code, there is also a
 link on the main branch listing page for the product.
 
     >>> browser.open('http://code.launchpad.dev/firefox')
-    >>> browser.getLink('Import your project').click()
+    >>> browser.getLink('Import a branch').click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
 
+The owner can configure code hosting for the project and then
+importing will be available to any user.
+
+    >>> owner_browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> owner_browser.open('http://code.launchpad.dev/firefox')
+    >>> owner_browser.getLink('Configure code hosting').click()
+    >>> owner_browser.getControl(
+    ...     'Import a branch').click()
+    >>> owner_browser.getControl('Branch URL').value = 'git://example.com/firefox'
+    >>> owner_browser.getControl('Git').click()
+    >>> owner_browser.getControl('Branch name').value = 'trunk'
+    >>> owner_browser.getControl('Update').click()
+
+Now a regular user can import another branch.
+
+    >>> browser.open('http://code.launchpad.dev/firefox')
+    >>> browser.getLink('Import a branch').click()
 
 Requesting a Subversion import
 ==============================

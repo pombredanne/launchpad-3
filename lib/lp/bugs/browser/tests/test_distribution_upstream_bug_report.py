@@ -10,12 +10,17 @@ import unittest
 
 from zope.component import getUtility
 
-from lp.bugs.browser.distribution_upstream_bug_report import (
-    DistributionUpstreamBugReport)
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    logout,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.systemdocs import create_view
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.bugs.browser.distribution_upstream_bug_report import (
+    DistributionUpstreamBugReport,
+    )
 
 
 class TestDistributionUpstreamBugReport(unittest.TestCase):

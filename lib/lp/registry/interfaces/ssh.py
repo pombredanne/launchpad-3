@@ -15,10 +15,20 @@ __all__ = [
     'SSHKeyType',
     ]
 
-from zope.schema import Choice, Int, TextLine
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
 from zope.interface import Interface
-from lazr.enum import DBEnumeratedType, DBItem
-from lazr.restful.declarations import (export_as_webservice_entry, exported)
+from zope.schema import (
+    Choice,
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 

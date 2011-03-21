@@ -8,17 +8,28 @@ __metaclass__ = type
 import os
 import unittest
 
-from zope.app.publisher.browser import getDefaultViewName
+from zope.publisher.defaultview import getDefaultViewName
 
-from canonical.testing.layers import DatabaseFunctionalLayer, FunctionalLayer
-from canonical.launchpad.testing.pages import extract_text, find_tag_by_id
-from canonical.launchpad.webapp.tales import IMainTemplateFile
-
-from lp.testing import TestCase, TestCaseWithFactory
+from canonical.launchpad.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    )
+from lp.app.browser.tales import IMainTemplateFile
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    )
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.views import create_initialized_view
 from lp.vostok.browser.root import VostokRootView
 from lp.vostok.browser.tests.request import VostokTestRequest
-from lp.vostok.publisher import VostokLayer, VostokRoot
+from lp.vostok.publisher import (
+    VostokLayer,
+    VostokRoot,
+    )
 
 
 class TestRootRegistrations(TestCase):

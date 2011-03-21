@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0231
@@ -13,27 +13,28 @@ __all__ = [
     'CommandRunner',
     'CommandRunnerError',
     'QueueActionError',
-    'name_queue_map'
+    'name_queue_map',
     ]
 
-
+from datetime import datetime
 import errno
 import hashlib
+
 import pytz
-
-from datetime import datetime
-
 from zope.component import getUtility
 
-from lp.app.errors import NotFoundError
-from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.section import ISectionSet
-from lp.soyuz.interfaces.queue import (
-    IPackageUploadSet, PackageUploadStatus, QueueInconsistentStateError)
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.launchpad.webapp.tales import DurationFormatterAPI
+from lp.app.browser.tales import DurationFormatterAPI
 from canonical.librarian.utils import filechunks
+from lp.app.errors import NotFoundError
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.enums import PackageUploadStatus
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.queue import (
+    IPackageUploadSet,
+    QueueInconsistentStateError,
+    )
+from lp.soyuz.interfaces.section import ISectionSet
 
 
 name_queue_map = {
@@ -41,7 +42,7 @@ name_queue_map = {
     "unapproved": PackageUploadStatus.UNAPPROVED,
     "accepted": PackageUploadStatus.ACCEPTED,
     "done": PackageUploadStatus.DONE,
-    "rejected": PackageUploadStatus.REJECTED
+    "rejected": PackageUploadStatus.REJECTED,
     }
 
 #XXX cprov 2006-09-19: We need to use template engine instead of harcoded
@@ -141,7 +142,6 @@ class QueueAction:
 
         if not self.announcelist:
             self.announcelist = self.distroseries.changeslist
-
 
     def initialize(self):
         """Builds a list of affected records based on the filter argument."""
@@ -301,6 +301,7 @@ class QueueAction:
 
 class QueueActionHelp(QueueAction):
     """Present provided actions summary"""
+
     def __init__(self, **kargs):
         self.kargs = kargs
         self.kargs['no_mail'] = True
@@ -311,7 +312,7 @@ class QueueActionHelp(QueueAction):
         """Mock initialization """
         pass
 
-    def run (self):
+    def run(self):
         """Present the actions description summary"""
         # present summary for specific or all actions
         if not self.actions:
@@ -321,12 +322,10 @@ class QueueActionHelp(QueueAction):
             actions_help = [
                 (action, provider)
                 for action, provider in queue_actions.items()
-                if action in self.actions
-                ]
+                if action in self.actions]
             not_available_actions = [
                 action for action in self.actions
-                if action not in queue_actions.keys()
-                ]
+                if action not in queue_actions.keys()]
         # present not available requested action if any.
         if not_available_actions:
             self.display(
@@ -344,6 +343,7 @@ class QueueActionHelp(QueueAction):
 
 class QueueActionReport(QueueAction):
     """Present a report about the size of available queues"""
+
     def initialize(self):
         """Mock initialization """
         self.setDefaultContext()
@@ -367,6 +367,7 @@ class QueueActionInfo(QueueAction):
 
     queue info <filter>
     """
+
     def run(self):
         """Present the filtered queue ordered by date."""
         self.displayTitle('Listing')
@@ -385,6 +386,7 @@ class QueueActionFetch(QueueAction):
 
     queue fetch <filter>
     """
+
     def run(self):
         self.displayTitle('Fetching')
         self.displayRule()
@@ -447,6 +449,7 @@ class QueueActionReject(QueueAction):
 
     queue reject <filter>
     """
+
     def run(self):
         """Perform Reject action."""
         self.displayTitle('Rejecting')
@@ -471,6 +474,7 @@ class QueueActionAccept(QueueAction):
 
     queue accept <filter>
     """
+
     def run(self):
         """Perform Accept action."""
         self.displayTitle('Accepting')
@@ -576,8 +580,7 @@ class QueueActionOverride(QueueAction):
                 queue_item.overrideSource(
                     component, section, [
                         component,
-                        queue_item.sourcepackagerelease.component
-                        ])
+                        queue_item.sourcepackagerelease.component])
                 self.overrides_performed += 1
             self.displayInfo(queue_item)
 
@@ -660,6 +663,7 @@ class CommandRunnerError(Exception):
 
 class CommandRunner:
     """A wrapper for queue_action classes."""
+
     def __init__(self, queue, distribution_name, suite_name,
                  announcelist, no_mail, component_name, section_name,
                  priority_name, display=default_display, log=None):
@@ -694,7 +698,7 @@ class CommandRunner:
         # perform the required action on queue.
         try:
             # be sure to send every args via kargs
-            queue_action  = queue_action_class(
+            queue_action = queue_action_class(
                 distribution_name=self.distribution_name,
                 suite_name=self.suite_name,
                 announcelist=self.announcelist,

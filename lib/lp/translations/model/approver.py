@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -12,13 +12,26 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.potemplate import IPOTemplateSet
-from lp.translations.interfaces.translationimportqueue import (
-    RosettaImportStatus)
 from lp.translations.utilities.template import (
-    make_domain, make_name, make_name_from_path)
-from lp.translations.utilities.translation_import import (
-    TranslationImporter)
+    make_domain,
+    make_name,
+    make_name_from_path,
+    )
+from lp.translations.utilities.translation_import import TranslationImporter
+
+
+def get_product_name(productseries):
+    """Get the series' product name, if any.
+
+    :return: A string; either the product's name or, if `productseries`
+        is None, the empty string.
+    """
+    if productseries is None:
+        return ''
+    else:
+        return productseries.product.name
 
 
 class TranslationNullApprover(object):
@@ -58,6 +71,7 @@ class TranslationBranchApprover(object):
         self.is_approval_possible = True
 
         potemplate_names = set()
+        product_name = get_product_name(productseries)
 
         importer = TranslationImporter()
         self._potemplateset = getUtility(IPOTemplateSet).getSubset(
@@ -67,7 +81,7 @@ class TranslationBranchApprover(object):
             if importer.isTemplateName(path):
                 potemplate = self._potemplateset.getPOTemplateByPath(path)
                 if potemplate is None:
-                    name = make_name_from_path(path)
+                    name = make_name_from_path(path, default=product_name)
                     potemplate = self._potemplateset.getPOTemplateByName(name)
                 else:
                     name = potemplate.name
@@ -113,10 +127,11 @@ class TranslationBranchApprover(object):
             return entry
         potemplate = None
         # Path must be a template path.
-        if not self._potemplates.has_key(entry.path):
+        if entry.path not in self._potemplates:
             return entry
 
-        domain = make_domain(entry.path)
+        product_name = get_product_name(entry.productseries)
+        domain = make_domain(entry.path, default=product_name)
         if self._potemplates[entry.path] is None:
             if self.unmatched_objects > 0:
                 # Unmatched entries in database, do not approve.
@@ -234,8 +249,9 @@ class TranslationBuildApprover(object):
         assert (
             entry.productseries == self._potemplateset.productseries and
             entry.distroseries == self._potemplateset.distroseries and
-            entry.sourcepackagename == self._potemplateset.sourcepackagename
-            ), ("Entry must be for same target as approver.")
+            entry.sourcepackagename ==
+                self._potemplateset.sourcepackagename), (
+            "Entry must be for same target as approver.")
 
         # This method is intended to be used to wrap
         # TranslationImportQueue.addOrUpdateEntry which may return None.
@@ -253,4 +269,3 @@ class TranslationBuildApprover(object):
                     RosettaImportStatus.APPROVED,
                     getUtility(ILaunchpadCelebrities).rosetta_experts)
         return entry
-

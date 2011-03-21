@@ -13,17 +13,34 @@ __all__ = [
     'ICveSet',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Choice, Datetime, Int, TextLine
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.restful.declarations import (
+    collection_default_content,
+    export_as_webservice_collection,
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.validation import valid_cve_sequence
 
-from lazr.enum import DBEnumeratedType, DBItem
-from lazr.restful.declarations import (
-    collection_default_content, export_as_webservice_collection,
-    export_as_webservice_entry, exported)
-from lazr.restful.fields import CollectionField, Reference
 
 class CveStatus(DBEnumeratedType):
     """The Status of this item in the CVE Database.

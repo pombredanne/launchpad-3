@@ -172,7 +172,7 @@ def main():
 
         echo 'Initializing new node.';
         try {
-            store node (id=@new_node, comment='%s');
+            store node (id=@new_node, comment='%s', event node=@master_node);
             echo 'Creating new node paths.';
         """ % (node_id, target_connection_string, comment))
 

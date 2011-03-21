@@ -19,18 +19,21 @@ import os
 
 from twisted.conch.interfaces import ISession
 from twisted.conch.ssh import filetransfer
-from twisted.cred.portal import IRealm, Portal
+from twisted.cred.portal import (
+    IRealm,
+    Portal,
+    )
 from twisted.python import components
 from twisted.web.xmlrpc import Proxy
-
 from zope.interface import implements
 
 from canonical.config import config
 from lp.codehosting import sftp
 from lp.codehosting.sshserver.session import launch_smart_server
 from lp.services.sshserver.auth import (
-    LaunchpadAvatar, PublicKeyFromLaunchpadChecker)
-
+    LaunchpadAvatar,
+    PublicKeyFromLaunchpadChecker,
+    )
 
 # The names of the key files of the server itself. The directory itself is
 # given in config.codehosting.host_key_pair_path.

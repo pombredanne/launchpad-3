@@ -66,7 +66,6 @@ reg ./browser/karma.py
     ./browser/librarian.py
     ./browser/logintoken.py
 reg ./browser/mailinglists.py
-reg ./browser/mentoringoffer.py
     ./browser/message.py
 reg ./browser/milestone.py
     ./browser/multistep.py
@@ -251,7 +250,6 @@ reg ./database/karma.py
     ./database/librarian.py
     ./database/logintoken.py
 reg ./database/mailinglist.py
-reg ./database/mentoringoffer.py
     ./database/message.py
 reg ./database/milestone.py
     ./database/oauth.py
@@ -442,7 +440,6 @@ fnd ./interfaces/mailbox.py
 reg ./interfaces/mailinglist.py
 reg ./interfaces/mailinglistsubscription.py
 bug ./interfaces/malone.py
-reg ./interfaces/mentoringoffer.py
 fnd ./interfaces/message.py
 reg ./interfaces/milestone.py
 fnd ./interfaces/oauth.py
@@ -607,7 +604,6 @@ reg ./scripts/keyringtrustanalyser.py
 reg ./scripts/listteammembers.py
     ./scripts/logger.py
     ./scripts/loghandlers.py
-    ./scripts/migrate_kde_potemplates.py
     ./scripts/mlistimport.py
     ./scripts/oops.py
     ./scripts/packagecopier.py
@@ -626,7 +622,6 @@ reg ./scripts/productreleasefinder/walker.py
     ./scripts/publishdistro.py
     ./scripts/questionexpiration.py
     ./scripts/queue.py
-    ./scripts/remove_obsolete_translations.py
     ./scripts/remove_translations.py
     ./scripts/revisionkarma.py
     ./scripts/runlaunchpad.py
@@ -937,7 +932,6 @@ reg ./zcml/mailinglist.zcml
     ./zcml/packagebugsupervisor.zcml
     ./zcml/translationimport.zcml
     ./zcml/seriessourcepackagebranch.zcml
-    ./zcml/mentoringoffer.zcml
     ./zcml/bugnotification.zcml
     ./zcml/decoratedresultset.zcml
     ./zcml/sourcepackagerelease.zcml
@@ -1053,7 +1047,7 @@ reg ./zcml/distribution.zcml
     ./mail/errortemplates/num-arguments-mismatch.txt
     ./mail/errortemplates/no-such-bug.txt
     ./mail/errortemplates/security-parameter-mismatch.txt
-    ./mail/errortemplates/not-gpg-signed.txt
+    ./mail/errortemplates/unauthenticated-bug-creation.txt
     ./mail/errortemplates/key-not-registered.txt
     ./mail/errortemplates/oops.txt
     ./mail/errortemplates/branchmergeproposal-exists.txt
@@ -1129,7 +1123,6 @@ reg ./zcml/distribution.zcml
     ./icing/but-sml-helptranslate-down.gif
     ./icing/navigation-hierarchy-home-bg
     ./icing/navigation-nw-w-selected.png
-    ./icing/but-sml-mentoring-over.gif
     ./icing/app-answers.gif
     ./icing/mainarea_bottom.gif
     ./icing/navigation-tabs-se-blueprints
@@ -1180,7 +1173,6 @@ reg ./zcml/distribution.zcml
     ./icing/app-register-sml.gif
     ./icing/app-register-sml-down.gif
     ./icing/app-translations-sml-over.gif
-    ./icing/but-sml-mentoring.gif
     ./icing/navigation-ne-e-normal.png
     ./icing/appchoose_tab2_a.gif
     ./icing/but-sml-helptranslate-over.gif
@@ -1210,7 +1202,6 @@ reg ./zcml/distribution.zcml
     ./icing/app-code-sml-down.gif
     ./icing/navigation-hierarchy-bg
     ./icing/help-bottom.gif
-    ./icing/but-sml-mentoring-off.gif
     ./icing/launchpad-tour-screenshot1.png
     ./icing/app-answers-wm.gif
     ./icing/navigation-hierarchy-chevron-selected
@@ -1242,7 +1233,6 @@ reg ./zcml/distribution.zcml
     ./icing/app-people-sml-over.gif
     ./icing/navigation-n.png
     ./icing/app-register-wm.gif
-    ./icing/but-sml-mentoring-down.gif
     ./icing/answers-feature-language.png
     ./icing/navigation-tabs-se-bugs-active
     ./icing/code-tour-screenshot3.png
@@ -1373,7 +1363,6 @@ reg ./zcml/distribution.zcml
     ./images/build-needed.png
     ./images/security.png
     ./images/security-large.png
-    ./images/mentoring.png
     ./images/bug-remote.png
     ./images/launchpad-logo.png
     ./images/edit.png
@@ -1385,7 +1374,6 @@ reg ./zcml/distribution.zcml
     ./images/translate.ubuntu.png
     ./images/bug.png
     ./images/crowd.png
-    ./images/mentoring-large.png
     ./images/rss-large.png
     ./images/file_icon.gif
     ./images/do-not-disturb.png
@@ -2033,7 +2021,6 @@ tra ./database/tests/test_vpoexport.py
     ./doc/buildd-scoring.txt
     ./doc/buildd-sequencer.txt
     ./doc/buildd-slave.txt
-    ./doc/buildd-slavescanner.txt
     ./doc/builder-pages.txt
     ./doc/builder.txt
     ./doc/buildqueue.txt
@@ -2325,7 +2312,6 @@ reg ./doc/mailinglist-subscriptions-xmlrpc.txt
 reg ./doc/mailinglist-subscriptions.txt
 reg ./doc/mailinglist-xmlrpc.txt
 reg ./doc/mailinglists.txt
-reg ./doc/mentoringoffer.txt
 reg ./doc/message-holds-xmlrpc.txt
 reg ./doc/message-holds.txt
 reg ./doc/milestone.txt
@@ -2919,8 +2905,6 @@ reg ./pagetests/mailinglists/lifecycle.txt
 reg ./pagetests/mailinglists/moderation.txt
 reg ./pagetests/mailinglists/subscriptions.txt
 reg ./pagetests/mailinglists/welcome-message.txt
-reg ./pagetests/mentoring
-reg ./pagetests/mentoring/mentoring.txt
 reg ./pagetests/milestone
 reg ./pagetests/milestone/object-milestones.txt
 reg ./pagetests/milestone/xx-create-milestone-on-distribution.txt
@@ -3862,7 +3846,6 @@ reg ./tests/bug-249185.txt
     ./tests/test_branchtarget.py
     ./tests/test_branchurifield.py
     ./tests/test_bugnotification.py
-    ./tests/test_chunkydiff_setting.py
     ./tests/test_datetimeutils.py
     ./tests/test_helpers.py
     ./tests/test_imports.py

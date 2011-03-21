@@ -1,8 +1,0 @@
-
- - a proper CVE - Distro report
- - CVE relevance indicator
- - watch relevance indicator
- - make BugWatchSet.fromText find sourceforge
- - make it tell the user what changed when it returns to the bug page
-   after editing a bug task
-

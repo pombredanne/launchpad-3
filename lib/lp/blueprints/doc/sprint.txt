@@ -4,8 +4,8 @@ Sprints / Meetings
 Sprints or meetings can be coordinated using Launchpad.
 
     >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.blueprints.interfaces.sprint import ISprintSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> sprintset = getUtility(ISprintSet)
 
 To find a sprint by name, use:
@@ -15,9 +15,9 @@ To find a sprint by name, use:
 The major pillars, product, distribution and project, have some
 properties which give us the sprints relevant to them.
 
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.interfaces.projectgroup import IProjectGroupSet
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
     >>> productset = getUtility(IProductSet)
     >>> projectset = getUtility(IProjectGroupSet)
@@ -77,8 +77,7 @@ approved, not ones where the only specs are proposed.  So, we'll change
 the specs related to the Ubuntu "futurista" sprint to "proposed", and
 then check the coming sprints and all sprints.
 
-    >>> from lp.blueprints.interfaces.sprintspecification import (
-    ...     SprintSpecificationStatus)
+    >>> from lp.blueprints.enums import SprintSpecificationStatus
 
 We're directly using the database classes here, bypassing the security
 proxies because this is just set-up for the next step, it's not the
@@ -114,7 +113,7 @@ is informational.
 
     >>> ubz = sprintset["ubz"]
 
-    >>> from lp.blueprints.interfaces.specification import SpecificationFilter
+    >>> from lp.blueprints.enums import SpecificationFilter
 
 First, there should be no informational specs for ubz:
 
@@ -156,8 +155,8 @@ And if we ask just for specs, we get them all
 
 Inactive products are excluded from the listings.
 
-    >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.launchpad.ftests import login
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> login("foo.bar@canonical.com")

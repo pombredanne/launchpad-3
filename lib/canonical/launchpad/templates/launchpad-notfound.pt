@@ -21,9 +21,11 @@
           Otherwise, complain to the maintainers of the page that linked here.
         </p>
         <p>
-          If this is blocking your work, let us know by sending an message to
-          <a href="mailto:feedback@launchpad.net"
-             >feedback@launchpad.net</a>.
+          If this is blocking your work, let us know by asking a question at
+          <a tal:condition="not: view/user|nothing"
+            href="/feedback">Launchpad Support</a>
+          <a tal:condition="view/user|nothing"
+            href="/support">Launchpad Support</a>.
           Include the error <abbr>ID</abbr>
           <code class="oopsid" tal:content="request/oopsid">OOPS-A1234</code>
           in your message.

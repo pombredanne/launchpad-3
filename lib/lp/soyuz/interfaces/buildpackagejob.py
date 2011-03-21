@@ -11,10 +11,10 @@ __all__ = [
     'IBuildPackageJob',
     ]
 
+from lazr.restful.fields import Reference
 from zope.schema import Int
 
 from canonical.launchpad import _
-from lazr.restful.fields import Reference
 from lp.services.job.interfaces.job import IJob
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob

@@ -4,7 +4,19 @@ Milestone-targeted bugs portlet
 The milestone-targeted bugs portlet displays the number of bugs that have
 been targeted to a specific milestone.
 
-This portlet is available from a distribution's bug page.
+This portlet is not available from a distribution's bug page if it
+does not use Launchpad for tracking bugs.
+
+    >>> anon_browser.open("http://bugs.launchpad.dev/debian/+bugs")
+    >>> portlet = find_portlet(
+    ...     anon_browser.contents, "Milestone-targeted bugs")
+    >>> print portlet
+    None
+
+Change debian to track bugs in Launchpad and the portlet becomes visible.
+
+    >>> from lp.testing.service_usage_helpers import set_service_usage
+    >>> set_service_usage('debian', bug_tracking_usage='LAUNCHPAD')
 
     >>> anon_browser.open("http://bugs.launchpad.dev/debian/+bugs")
     >>> portlet = find_portlet(
@@ -43,8 +55,8 @@ Bug 4 has a Firefox bugtask, which can be used once a milestone is selected.
     >>> print ff_bugtask.bug.id
     4
 
-    >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.interfaces.milestone import IMilestoneSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> ff_milestone = getUtility(IMilestoneSet).getByNameAndProduct(
     ...     "1.0", firefox)

@@ -21,16 +21,21 @@ import os
 import stat
 import tempfile
 
-from zope.interface import implements
 from zope.component import getUtility
+from zope.interface import implements
 
-from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, default_name_by_purpose)
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import LoopTuner
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.mem import resident
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.services.profile.mem import resident
+from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.interfaces.archive import (
+    default_name_by_purpose,
+    )
 
 
 def get_ppa_reference(ppa):
@@ -69,13 +74,11 @@ def count_alive(store, logger):
 # 1 StupidCache + clear_current_connection_caches() [this];
 # 2 storm.Cache + clear_current_connection_caches() [no difference];
 # 3 StupidCache + store.invalidate(obj) [references left behind];
-# 4 stormCache + store.invlaidate(obj)  [references left behind];
+# 4 stormCache + store.invalidate(obj)  [references left behind];
 # 5 No batches [memory exhausted].
 
-# XXX cprov 20080630: If we decide to keep this code/functionality, which
-# I think we should, independently of the need to cleanup the cache after
-# processing each batch, we should generalize and test it as suggested in
-# bug #244328.
+# XXX JeroenVermeulen 2011-02-03 bug=244328: That was mid-2008.  We have
+# the GenerationalCache now.  We may not need any of this any more.
 
 class PublishingTunableLoop(object):
     """An `ITunableLoop` for dealing with huge publishing result sets."""
@@ -104,7 +107,8 @@ class PublishingTunableLoop(object):
         end = start + chunk_size
 
         # The reason why we listify the sliced ResultSet is because we
-        # cannot very it's size using 'count' (see bug #217644). However,
+        # cannot very it's size using 'count' (see bug #217644 and note
+        # that it was fixed in storm but not SQLObjectResultSet). However,
         # It's not exactly a problem considering non-empty set will be
         # iterated anyway.
         batch = list(self.input[start:end])

@@ -7,9 +7,10 @@ tagged with all the specified tags).
 
 First, we create some bugs.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IProductSet, CreateBugParams)
     >>> from zope.component import getUtility
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.launchpad.ftests import login, logout
 
     >>> login("no-priv@canonical.com")
@@ -45,7 +46,7 @@ Both bugs are returned.
     Summary        Importance  Status   Heat
     16 test bug a  Undecided   New
     17 test bug b  Undecided   New
-    
+
 Same works for user related bugs:
 
     >>> anon_browser.open('http://launchpad.dev/~name16/+bugs?advanced=1')

@@ -12,12 +12,24 @@ __all__ = [
     'IAuthToken',
     ]
 
-from zope.schema import Choice, Datetime, Int, Text, TextLine
-from zope.interface import Attribute, Interface
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    Datetime,
+    Int,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PasswordField
-from lazr.enum import DBEnumeratedType, DBItem
+from lp.services.fields import PasswordField
 
 
 class LoginTokenType(DBEnumeratedType):

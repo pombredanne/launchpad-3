@@ -16,7 +16,7 @@
         <tal:has-subscribers condition="view/subscribers/currentBatch">
           <p>The following people are subscribed to the team mailing list and
           will receive email messages sent to the list.</p>
-          <tal:cache content="cache:public, 60 minute">
+          <tal:cache content="cache:anonymous, 10 minute">
             <tal:subscribers replace="structure view/renderTable" />
           </tal:cache>
           <br />

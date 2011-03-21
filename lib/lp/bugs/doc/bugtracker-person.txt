@@ -19,7 +19,7 @@ linkPersonToSelf() method of IBugTracker.
 We'll rename the bugtracker to make the tests more readable.
 
     >>> from canonical.database.sqlbase import commit
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
     >>> bugtracker.name = 'bugzilla-checkwatches'

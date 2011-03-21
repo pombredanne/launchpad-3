@@ -9,16 +9,16 @@ __metaclass__ = type
 
 import contextlib
 import datetime
-import errno
 from itertools import repeat
 import logging
 import os
+import stat
 import re
 import rfc822
-import threading
 import types
 import urllib
 
+from lazr.restful.utils import get_current_browser_request
 import pytz
 from zope.component.interfaces import ObjectEvent
 from zope.error.interfaces import IErrorReportingUtility
@@ -28,18 +28,22 @@ from zope.interface import implements
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.traversing.namespace import view
 
-from lazr.restful.utils import get_current_browser_request
-from canonical.lazr.utils import safe_hasattr
 from canonical.config import config
-from canonical.launchpad import versioninfo
+from lp.app import versioninfo
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.adapter import (
-    get_request_statements, get_request_duration,
-    soft_timeout_expired)
+    get_request_duration,
+    soft_timeout_expired,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    IErrorReport, IErrorReportEvent, IErrorReportRequest)
-from lp.services.log.uniquefileallocator import UniqueFileAllocator
+    IErrorReport,
+    IErrorReportEvent,
+    IErrorReportRequest,
+    )
 from canonical.launchpad.webapp.opstats import OpStats
+from canonical.lazr.utils import safe_hasattr
+from lp.services.log.uniquefileallocator import UniqueFileAllocator
+from lp.services.timeline.requesttimeline import get_request_timeline
 
 UTC = pytz.utc
 
@@ -58,11 +62,13 @@ _rate_restrict_period = datetime.timedelta(seconds=60)
 # minute.
 _rate_restrict_burst = 5
 
+
 def _normalise_whitespace(s):
     """Normalise the whitespace in a string to spaces"""
     if s is None:
         return None
     return ' '.join(s.split())
+
 
 def _safestr(obj):
     if isinstance(obj, unicode):
@@ -79,13 +85,16 @@ def _safestr(obj):
             'Error in ErrorReportingService while getting a str '
             'representation of an object')
         value = '<unprintable %s object>' % (
-            str(type(obj).__name__)
-            )
+            str(type(obj).__name__))
+    # Some str() calls return unicode objects.
+    if isinstance(value, unicode):
+        return _safestr(value)
     # encode non-ASCII characters
     value = value.replace('\\', '\\\\')
     value = re.sub(r'[\x80-\xff]',
                    lambda match: '\\x%02x' % ord(match.group(0)), value)
     return value
+
 
 def _is_sensitive(request, name):
     """Return True if the given request variable name is sensitive.
@@ -151,20 +160,23 @@ class ErrorReport:
         self.req_vars = req_vars
         self.db_statements = db_statements
         self.branch_nick = versioninfo.branch_nick
-        self.revno  = versioninfo.revno
+        self.revno = versioninfo.revno
         self.informational = informational
 
     def __repr__(self):
         return '<ErrorReport %s %s: %s>' % (self.id, self.type, self.value)
 
     def get_chunks(self):
+        """Returns a list of bytestrings making up the oops disk content."""
         chunks = []
         chunks.append('Oops-Id: %s\n' % _normalise_whitespace(self.id))
-        chunks.append('Exception-Type: %s\n' % _normalise_whitespace(self.type))
-        chunks.append('Exception-Value: %s\n' % _normalise_whitespace(self.value))
+        chunks.append(
+            'Exception-Type: %s\n' % _normalise_whitespace(self.type))
+        chunks.append(
+            'Exception-Value: %s\n' % _normalise_whitespace(self.value))
         chunks.append('Date: %s\n' % self.time.isoformat())
         chunks.append('Page-Id: %s\n' % _normalise_whitespace(self.pageid))
-        chunks.append('Branch: %s\n' % self.branch_nick)
+        chunks.append('Branch: %s\n' % _safestr(self.branch_nick))
         chunks.append('Revision: %s\n' % self.revno)
         chunks.append('User: %s\n' % _normalise_whitespace(self.username))
         chunks.append('URL: %s\n' % _normalise_whitespace(self.url))
@@ -199,7 +211,7 @@ class ErrorReport:
         duration = int(float(msg.getheader('duration', '-1')))
         informational = msg.getheader('informational')
 
-        # Explicitely use an iterator so we can process the file
+        # Explicitly use an iterator so we can process the file
         # sequentially. In most instances the iterator will actually
         # be the file object passed in because file objects should
         # support iteration.
@@ -289,7 +301,7 @@ class ErrorReportingUtility:
         # the current log_namer naming rules and the exact timestamp.
         oops_filename = self.log_namer.getFilename(serial_from_time, time)
         # Note that if there were no logs written, or if there were two
-        # oops that matched the time window of directory on disk, this 
+        # oops that matched the time window of directory on disk, this
         # call can raise an IOError.
         oops_report = open(oops_filename, 'r')
         try:
@@ -313,7 +325,7 @@ class ErrorReportingUtility:
         # Check today
         oopsid, filename = self.log_namer._findHighestSerialFilename(time=now)
         if filename is None:
-            # Check yesterday
+            # Check yesterday, we may have just passed midnight.
             yesterday = now - datetime.timedelta(days=1)
             oopsid, filename = self.log_namer._findHighestSerialFilename(
                 time=yesterday)
@@ -332,7 +344,8 @@ class ErrorReportingUtility:
             determined if not supplied.  Useful for testing.  Not part of
             IErrorReportingUtility).
         """
-        self._raising(info, request=request, now=now, informational=False)
+        return self._raising(
+            info, request=request, now=now, informational=False)
 
     def _raising(self, info, request=None, now=None, informational=False):
         """Private method used by raising() and handling()."""
@@ -341,6 +354,10 @@ class ErrorReportingUtility:
             return
         filename = entry._filename
         entry.write(open(filename, 'wb'))
+        # Set file permission to: rw-r--r--
+        wanted_permission = (
+            stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+        os.chmod(filename, wanted_permission)
         if request:
             request.oopsid = entry.id
             request.oops = entry
@@ -349,6 +366,7 @@ class ErrorReportingUtility:
             self._do_copy_to_zlog(
                 entry.time, entry.type, entry.url, info, entry.id)
         notify(ErrorReportEvent(entry))
+        return entry
 
     def _makeErrorReport(self, info, request=None, now=None,
                          informational=False):
@@ -442,11 +460,17 @@ class ErrorReportingUtility:
         strurl = _safestr(url)
 
         duration = get_request_duration()
-
-        statements = sorted(
-            (start, end, _safestr(database_id), _safestr(statement))
-            for (start, end, database_id, statement)
-                in get_request_statements())
+        # In principle the timeline is per-request, but see bug=623199 -
+        # at this point the request is optional, but get_request_timeline
+        # does not care; when it starts caring, we will always have a
+        # request object (or some annotations containing object).
+        # RBC 20100901
+        timeline = get_request_timeline(request)
+        statements = []
+        for action in timeline.actions:
+            start, end, category, detail = action.logTuple()
+            statements.append(
+                (start, end, _safestr(category), _safestr(detail)))
 
         oopsid, filename = self.log_namer.newId(now)
 
@@ -465,8 +489,10 @@ class ErrorReportingUtility:
             info.
         :param now: The datetime to use as the current time.  Will be
             determined if not supplied.  Useful for testing.
+        :return: The ErrorReport created.
         """
-        self._raising(info, request=request, now=now, informational=True)
+        return self._raising(
+            info, request=request, now=now, informational=True)
 
     def _do_copy_to_zlog(self, now, strtype, url, info, oopsid):
         distant_past = datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=UTC)
@@ -487,7 +513,7 @@ class ErrorReportingUtility:
             # We disable the pylint warning for the blank except.
             try:
                 raise info[0], info[1], traceback
-            except:
+            except info[0]:
                 logging.getLogger('SiteError').exception(
                     '%s (%s)' % (url, oopsid))
 
@@ -496,8 +522,10 @@ class ErrorReportingUtility:
         """Add an oops message to be included in oopses from this context."""
         key = self._oops_message_key_iter.next()
         self._oops_messages[key] = message
-        yield
-        del self._oops_messages[key]
+        try:
+            yield
+        finally:
+            del self._oops_messages[key]
 
 
 globalErrorUtility = ErrorReportingUtility()

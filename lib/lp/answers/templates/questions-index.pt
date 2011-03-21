@@ -90,22 +90,22 @@
 
         <div id="latest-questions-asked" class="three column middle">
           <h2>Latest questions asked</h2>
-          <table>
+          <ul>
             <tal:question
               repeat="question view/latest_questions_asked"
               content="structure question/@@+listing-detailed"
             />
-          </table>
+          </ul>
         </div>
 
         <div id="latest-questions-solved" class="three column right">
           <h2>Latest questions solved</h2>
-          <table>
+          <ul>
             <tal:question
               repeat="question view/latest_questions_solved"
               content="structure question/@@+listing-detailed"
             />
-          </table>
+          </ul>
         </div>
       </div>
 

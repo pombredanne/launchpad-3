@@ -1,15 +1,25 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import unittest
 import doctest
+import unittest
 
-from zope.app.form.interfaces import IDisplayWidget, IInputWidget
-from zope.interface import directlyProvides, implements
-from canonical.launchpad.webapp import LaunchpadFormView
+from zope.app.form.interfaces import (
+    IDisplayWidget,
+    IInputWidget,
+    )
+from zope.interface import (
+    directlyProvides,
+    implements,
+    )
+
 from canonical.launchpad.webapp.interfaces import (
-    ISingleLineWidgetLayout, IMultiLineWidgetLayout, ICheckBoxWidgetLayout)
-from canonical.testing import FunctionalLayer
+    ICheckBoxWidgetLayout,
+    IMultiLineWidgetLayout,
+    ISingleLineWidgetLayout,
+    )
+from canonical.testing.layers import FunctionalLayer
+from lp.app.browser.launchpadform import LaunchpadFormView
 
 
 class LaunchpadFormTest(unittest.TestCase):

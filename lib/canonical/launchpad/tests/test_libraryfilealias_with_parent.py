@@ -9,9 +9,14 @@ from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces.librarian import (
-    ILibraryFileAliasWithParent)
-from canonical.testing import LaunchpadFunctionalLayer
-from lp.testing import login_person, TestCaseWithFactory
+    ILibraryFileAliasWithParent,
+    )
+from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
+
 
 class TestLibraryFileAliasForBugAttachment(TestCaseWithFactory):
     """Tests for ILibraryFileAliasWithParent."""
@@ -51,3 +56,17 @@ class TestLibraryFileAliasForBugAttachment(TestCaseWithFactory):
         self.assertRaises(
             Unauthorized, setattr, self.lfa_with_parent, 'restricted', True)
 
+    def test_createToken_authorized_user(self):
+        # Persons having access to a parent object of a restricted
+        # Librarian file can call the method
+        # ILibraryFileAliasWithParent.createToken()
+        login_person(self.bug_owner)
+        self.lfa_with_parent.createToken()
+
+    def test_createToken_unauthorized_user(self):
+        # Users without access to a parent object cannot call
+        # ILibraryFileAliasWithParent.createToken()
+        other_person = self.factory.makePerson()
+        login_person(other_person)
+        self.assertRaises(
+            Unauthorized, getattr, self.lfa_with_parent, 'createToken')

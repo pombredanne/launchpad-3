@@ -15,10 +15,11 @@ __all__ = [
     'PackagesMap',
     ]
 
-import apt_pkg
-import tempfile
-import os
 from collections import defaultdict
+import os
+import tempfile
+
+import apt_pkg
 
 from canonical.launchpad.scripts import log
 from lp.soyuz.scripts.gina import call

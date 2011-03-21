@@ -19,15 +19,14 @@ class SBuildExitCodes:
 class BuildLogRegexes:
     """Build log regexes for performing actions based on regexes, and extracting dependencies for auto dep-waits"""
     GIVENBACK = [
-        (" terminated by signal 4"),
         ("^E: There are problems and -y was used without --force-yes"),
-        ("^make.* Illegal instruction"),
         ]
     DEPFAIL = [
         ("(?P<pk>[\-+.\w]+)\(inst [^ ]+ ! >> wanted (?P<v>[\-.+\w:~]+)\)","\g<pk> (>> \g<v>)"),
         ("(?P<pk>[\-+.\w]+)\(inst [^ ]+ ! >?= wanted (?P<v>[\-.+\w:~]+)\)","\g<pk> (>= \g<v>)"),
         ("(?s)^E: Couldn't find package (?P<pk>[\-+.\w]+)(?!.*^E: Couldn't find package)","\g<pk>"),
-        ("(?s)^E: Package (?P<pk>[\-+.\w]+) has no installation candidate(?!.*^E: Package)","\g<pk>"),
+        ("(?s)^E: Package '?(?P<pk>[\-+.\w]+)'? has no installation candidate(?!.*^E: Package)","\g<pk>"),
+        ("(?s)^E: Unable to locate package (?P<pk>[\-+.\w]+)(?!.*^E: Unable to locate package)", "\g<pk>"),
         ]
 
 

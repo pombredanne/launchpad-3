@@ -11,14 +11,20 @@ __all__ = [
     'IDistroSeriesBinaryPackage',
     ]
 
-from zope.interface import Interface, Attribute
+from lazr.restful.fields import Reference
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+
 from canonical.launchpad import _
 from lp.soyuz.interfaces.distroarchseriesbinarypackagerelease import (
-    IDistroArchSeriesBinaryPackageRelease)
+    IDistroArchSeriesBinaryPackageRelease,
+    )
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
-    IDistroSeriesSourcePackageRelease)
+    IDistroSeriesSourcePackageRelease,
+    )
 
-from lazr.restful.fields import Reference
 
 class IDistroSeriesBinaryPackage(Interface):
     """A binary package in a distroseries."""

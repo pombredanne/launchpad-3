@@ -11,16 +11,21 @@ __all__ = [
     ]
 
 from zope.component import getUtility
-from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+from canonical.database.sqlbase import sqlvalues
+from canonical.launchpad.helpers import ensure_unicode
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.packagelocation import PackageLocation
-from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
-from lp.soyuz.interfaces.queue import PackageUploadStatus
-from lp.soyuz.model.packagecloner import clone_packages
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackageUploadStatus,
+    )
+from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.packagecloner import IPackageCloner
+from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.model.packageset import Packageset
 
 
 class InitialisationError(Exception):
@@ -41,9 +46,9 @@ class InitialiseDistroSeries:
       The distroarchseries set up in the parent series will be copied.
       The publishing structure will be copied from the parent. All
       PUBLISHED and PENDING packages in the parent will be created in
-      this distroseries and its distroarchseriess. The lucille config
-      will be copied in, all component and section selections will be
-      duplicated as will any permission-related structures.
+      this distroseries and its distroarchseriess. All component and section
+      selections will be duplicated, as will any permission-related
+      structures.
 
     Note:
       This method will raise a InitialisationError when the pre-conditions
@@ -54,11 +59,17 @@ class InitialiseDistroSeries:
       in the initialisation of a derivative.
     """
 
-    def __init__(self, distroseries):
+    def __init__(
+        self, distroseries, arches=(), packagesets=(), rebuild=False):
+        # Avoid circular imports
+        from lp.registry.model.distroseries import DistroSeries
         self.distroseries = distroseries
         self.parent = self.distroseries.parent_series
-        self._store = getUtility(
-            IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.arches = arches
+        self.packagesets = [
+            ensure_unicode(packageset) for packageset in packagesets]
+        self.rebuild = rebuild
+        self._store = IMasterStore(DistroSeries)
 
     def check(self):
         if self.parent is None:
@@ -78,7 +89,7 @@ class InitialiseDistroSeries:
         pending_builds = self.parent.getBuildRecords(
             BuildStatus.NEEDSBUILD, pocket=PackagePublishingPocket.RELEASE)
 
-        if pending_builds.count():
+        if pending_builds.any():
             raise InitialisationError("Parent series has pending builds.")
 
     def _checkQueue(self):
@@ -103,30 +114,35 @@ class InitialiseDistroSeries:
         error = (
             "Can not copy distroarchseries from parent, there are "
             "already distroarchseries(s) initialised for this series.")
-        if sources.count():
+        if bool(sources):
             raise InitialisationError(error)
         binaries = self.distroseries.getAllPublishedBinaries()
-        if binaries.count():
+        if bool(binaries):
             raise InitialisationError(error)
-        if self.distroseries.architectures.count():
+        if bool(self.distroseries.architectures):
             raise InitialisationError(error)
-        if self.distroseries.components.count():
+        if bool(self.distroseries.components):
             raise InitialisationError(error)
-        if self.distroseries.sections.count():
+        if bool(self.distroseries.sections):
             raise InitialisationError(error)
 
     def initialise(self):
         self._copy_architectures()
         self._copy_packages()
+        self._copy_packagesets()
 
     def _copy_architectures(self):
+        include = ''
+        if self.arches:
+            include = "AND architecturetag IN %s" % sqlvalues(self.arches)
         self._store.execute("""
             INSERT INTO DistroArchSeries
             (distroseries, processorfamily, architecturetag, owner, official)
             SELECT %s, processorfamily, architecturetag, %s, official
             FROM DistroArchSeries WHERE distroseries = %s
-            """ % sqlvalues(self.distroseries, self.distroseries.owner,
-            self.parent))
+            AND enabled = TRUE %s
+            """ % (sqlvalues(self.distroseries, self.distroseries.owner,
+            self.parent) + (include,)))
 
         self.distroseries.nominatedarchindep = self.distroseries[
             self.parent.nominatedarchindep.architecturetag]
@@ -139,22 +155,13 @@ class InitialiseDistroSeries:
         # shall be copied.
         distroarchseries_list = []
         for arch in self.distroseries.architectures:
+            if self.arches and (arch.architecturetag not in self.arches):
+                continue
             parent_arch = self.parent[arch.architecturetag]
             distroarchseries_list.append((parent_arch, arch))
         # Now copy source and binary packages.
         self._copy_publishing_records(distroarchseries_list)
-        self._copy_lucille_config()
         self._copy_packaging_links()
-
-    def _copy_lucille_config(self):
-        """Copy all lucille related configuration from our parent series."""
-        self._store.execute('''
-            UPDATE DistroSeries SET lucilleconfig=(
-                SELECT pdr.lucilleconfig FROM DistroSeries AS pdr
-                WHERE pdr.id = %s)
-            WHERE id = %s
-            ''' % sqlvalues(self.parent.id,
-            self.distroseries.id))
 
     def _copy_publishing_records(self, distroarchseries_list):
         """Copy the publishing records from the parent arch series
@@ -166,6 +173,15 @@ class InitialiseDistroSeries:
         We copy only the RELEASE pocket in the PRIMARY and DEBUG archives.
         """
         archive_set = getUtility(IArchiveSet)
+
+        spns = []
+        # The overhead from looking up each packageset is mitigated by
+        # this usually running from a job
+        if self.packagesets:
+            for pkgsetname in self.packagesets:
+                pkgset = getUtility(IPackagesetSet).getByName(
+                    pkgsetname, distroseries=self.parent)
+                spns += list(pkgset.getSourcesIncluded())
 
         for archive in self.parent.distribution.all_distro_archives:
             if archive.purpose not in (
@@ -183,7 +199,15 @@ class InitialiseDistroSeries:
             destination = PackageLocation(
                 target_archive, self.distroseries.distribution,
                 self.distroseries, PackagePublishingPocket.RELEASE)
-            clone_packages(origin, destination, distroarchseries_list)
+            proc_families = None
+            if self.rebuild:
+                proc_families = [
+                    das[1].processorfamily
+                    for das in distroarchseries_list]
+                distroarchseries_list = ()
+            getUtility(IPackageCloner).clonePackages(
+                origin, destination, distroarchseries_list,
+                proc_families, spns, self.rebuild)
 
     def _copy_component_section_and_format_selections(self):
         """Copy the section, component and format selections from the parent
@@ -254,3 +278,33 @@ class InitialiseDistroSeries:
                         )
                     )
             """ % self.distroseries.id)
+
+    def _copy_packagesets(self):
+        """Copy packagesets from the parent distroseries."""
+        packagesets = self._store.find(Packageset, distroseries=self.parent)
+        parent_to_child = {}
+        # Create the packagesets, and any archivepermissions
+        for parent_ps in packagesets:
+            if self.packagesets and parent_ps.name not in self.packagesets:
+                continue
+            child_ps = getUtility(IPackagesetSet).new(
+                parent_ps.name, parent_ps.description,
+                self.distroseries.owner, distroseries=self.distroseries,
+                related_set=parent_ps)
+            self._store.execute("""
+                INSERT INTO Archivepermission
+                (person, permission, archive, packageset, explicit)
+                SELECT person, permission, %s, %s, explicit
+                FROM Archivepermission WHERE packageset = %s
+                """ % sqlvalues(
+                    self.distroseries.main_archive, child_ps.id,
+                    parent_ps.id))
+            parent_to_child[parent_ps] = child_ps
+        # Copy the relations between sets, and the contents
+        for old_series_ps, new_series_ps in parent_to_child.items():
+            old_series_sets = old_series_ps.setsIncluded(
+                direct_inclusion=True)
+            for old_series_child in old_series_sets:
+                new_series_ps.add(parent_to_child[old_series_child])
+            new_series_ps.add(old_series_ps.sourcesIncluded(
+                direct_inclusion=True))

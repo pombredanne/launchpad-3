@@ -8,16 +8,26 @@ __all__ = [
     'SourcePackageFormatSelectionSet',
     ]
 
-from storm.locals import Storm, Int, Reference
+from storm.locals import (
+    Int,
+    Reference,
+    Storm,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR)
 from canonical.database.enumcol import DBEnum
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
+from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.sourcepackageformat import (
-    ISourcePackageFormatSelection, ISourcePackageFormatSelectionSet,
-    SourcePackageFormat)
+    ISourcePackageFormatSelection,
+    ISourcePackageFormatSelectionSet,
+    )
 
 
 class SourcePackageFormatSelection(Storm):

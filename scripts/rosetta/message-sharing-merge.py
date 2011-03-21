@@ -9,7 +9,7 @@ __metaclass__ = type
 
 import _pythonpath
 
-from lp.translations.scripts.message_sharing_migration import (
+from lp.translations.translationmerger import (
     MessageSharingMerge)
 
 # This script merges POTMsgSets for sharing POTemplates.  This involves

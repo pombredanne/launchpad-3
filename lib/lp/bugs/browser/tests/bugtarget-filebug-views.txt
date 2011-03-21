@@ -1,4 +1,5 @@
-= Filebug view classes =
+Filebug view classes
+====================
 
 The base class used for all the filebug pages is FileBugViewBase. It
 contains enough functionality to file bug, the classes inheriting from
@@ -7,7 +8,7 @@ similar bug reports, etc.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from lp.bugs.browser.bugtarget import FileBugViewBase
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu_firefox = ubuntu.getSourcePackage('mozilla-firefox')
     >>> bug_data = dict(
@@ -36,14 +37,17 @@ directly.
     >>> filebug_view = create_view(ubuntu_firefox, LaunchpadTestRequest())
     >>> filebug_view.validate(bug_data) is None
     True
+
     >>> filebug_view.submit_bug_action.success(bug_data)
     >>> filebug_view.added_bug.title
     u'Test Title'
+
     >>> filebug_view.added_bug.description
     u'Test description.'
 
 
-== URLs to additional FileBug elements ==
+URLs to additional FileBug elements
+-----------------------------------
 
 FileBugViewBase's inline_filebug_base_url returns the base URL for all
 inline +filebug work.
@@ -90,7 +94,8 @@ for those project groups.
     http://launchpad.dev/evolution/+filebug-show-similar
 
 
-== Adding extra info to filed bugs ==
+Adding extra info to filed bugs
+-------------------------------
 
 It's possible for bug reporting tools to upload a file with debug
 information to Launchpad, and pass that information to the filebug page.
@@ -103,7 +108,9 @@ The uploaded debug information should be MIME multipart message, where
 the Content-Disposition header tells Launchpad what to do with the
 different parts.
 
-=== First inline part ==
+
+First inline part
+.................
 
 The first inline part will be appended to the bug description.
 
@@ -113,14 +120,13 @@ The first inline part will be appended to the bug description.
     ... --boundary
     ... Content-disposition: inline
     ... Content-type: text/plain; charset=utf-8
-    ...
+    ... 
     ... This should be added to the description.
     ...
     ... --boundary--
     ... """
-
     >>> import transaction
-    >>> from canonical.launchpad.interfaces import ITemporaryStorageManager
+    >>> from canonical.launchpad.interfaces.temporaryblobstorage import ITemporaryStorageManager
     >>> token = getUtility(ITemporaryStorageManager).new(debug_data)
 
 We need to commit the transaction since the data will be stored in the
@@ -143,8 +149,8 @@ processing the blob.
     ...     job.job.complete()
     >>> process_blob(token)
 
-Now, if we pass the token to the filebug view, the extra_data
-attribute will be set with the actual data.
+Now, if we pass the token to the filebug view, the extra_data attribute
+will be set with the actual data.
 
     >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
     >>> filebug_view.publishTraverse(
@@ -156,9 +162,11 @@ attribute will be set with the actual data.
 
     >>> filebug_view.validate(bug_data) is None
     True
+
     >>> filebug_view.submit_bug_action.success(bug_data)
     >>> filebug_view.added_bug.title
     u'Test Title'
+
     >>> print filebug_view.added_bug.description #doctest: -NORMALIZE_WHITESPACE
     Test description.
     <BLANKLINE>
@@ -168,11 +176,12 @@ A notification was added to inform the user about what happened.
 
     >>> for notification in filebug_view.request.response.notifications:
     ...     print notification.message
-    Thank you for your bug report.
+    <p class="last">Thank you for your bug report.</p>
     Additional information was added to the bug description.
 
 
-=== Other inline parts ===
+Other inline parts
+..................
 
 If there are more than one inline part, those will be added as comments
 to the bug.
@@ -183,19 +192,19 @@ to the bug.
     ... --boundary
     ... Content-disposition: inline
     ... Content-type: text/plain; charset=utf-8
-    ...
+    ... 
     ... This should be added to the description.
     ...
     ... --boundary
     ... Content-disposition: inline
     ... Content-type: text/plain; charset=utf-8
-    ...
+    ... 
     ... This should be added as a comment.
     ...
     ... --boundary
     ... Content-disposition: inline
     ... Content-type: text/plain; charset=utf-8
-    ...
+    ... 
     ... This should be added as another comment.
     ...
     ... --boundary--
@@ -208,12 +217,15 @@ to the bug.
     >>> filebug_view.publishTraverse(filebug_view.request,
     ...     token) is filebug_view
     True
+
     >>> filebug_view.validate(bug_data) is None
     True
+
     >>> filebug_view.submit_bug_action.success(bug_data)
 
     >>> filebug_view.added_bug.title
     u'Test Title'
+
     >>> print filebug_view.added_bug.description #doctest: -NORMALIZE_WHITESPACE
     Test description.
     <BLANKLINE>
@@ -229,17 +241,18 @@ Notifications were added to inform the user about what happened.
 
     >>> for notification in filebug_view.request.response.notifications:
     ...     print notification.message
-    Thank you for your bug report.
+    <p class="last">Thank you for your bug report.</p>
     Additional information was added to the bug description.
     A comment with additional information was added to the bug report.
     A comment with additional information was added to the bug report.
 
 
-=== Attachments ===
+Attachments
+...........
 
-All the parts that have a 'Content-disposition: attachment' header
-will get added as attachments to the bug. The attachment description can
-be specified using a Content-description header, but it's not required.
+All the parts that have a 'Content-disposition: attachment' header will
+get added as attachments to the bug. The attachment description can be
+specified using a Content-description header, but it's not required.
 
     >>> debug_data = """MIME-Version: 1.0
     ... Content-type: multipart/mixed; boundary=boundary
@@ -247,14 +260,14 @@ be specified using a Content-description header, but it's not required.
     ... --boundary
     ... Content-disposition: attachment; filename='attachment1'
     ... Content-type: text/plain; charset=utf-8
-    ...
+    ... 
     ... This is an attachment.
     ...
     ... --boundary
     ... Content-disposition: attachment; filename='attachment2'
     ... Content-description: Attachment description.
     ... Content-type: text/plain; charset=ISO-8859-1
-    ...
+    ... 
     ... This is another attachment, with a description.
     ...
     ... --boundary--
@@ -267,8 +280,10 @@ be specified using a Content-description header, but it's not required.
     >>> filebug_view.publishTraverse(filebug_view.request,
     ...     token) is filebug_view
     True
+
     >>> filebug_view.validate(bug_data) is None
     True
+
     >>> filebug_view.submit_bug_action.success(bug_data)
 
 Since the attachments are stored in the Librarian, we need to commit the
@@ -278,13 +293,14 @@ transaction in order to access them.
 
     >>> filebug_view.added_bug.title
     u'Test Title'
+
     >>> print filebug_view.added_bug.description
     Test description.
 
 The attachments got added, with the charsets preserved, and the one that
 didn't specify a description got an autogenerated one.
 
-    >>> for attachment in filebug_view.added_bug.attachments:
+    >>> for attachment in filebug_view.added_bug.attachments_unpopulated:
     ...     print "Filename: %s" % attachment.libraryfile.filename
     ...     print "Content type: %s" % attachment.libraryfile.mimetype
     ...     print "Description: %s" % attachment.title
@@ -307,7 +323,7 @@ Notifications were added to inform the user about what happened.
 
     >>> for notification in filebug_view.request.response.notifications:
     ...     print notification.message
-    Thank you for your bug report.
+    <p class="last">Thank you for your bug report.</p>
     The file "attachment1" was attached to the bug report.
     The file "attachment2" was attached to the bug report.
 
@@ -319,10 +335,11 @@ The attachments are all added to the same comment.
     Comment by No Privileges Person: 2 attachment(s)
 
 
-=== Private Bugs ===
+Private Bugs
+............
 
-We can specify whether a bug is private by providing Private field in the
-message.
+We can specify whether a bug is private by providing Private field in
+the message.
 
     >>> debug_data = """MIME-Version: 1.0
     ... Content-type: multipart/mixed; boundary=boundary
@@ -331,7 +348,7 @@ message.
     ... --boundary
     ... Content-disposition: inline
     ... Content-type: text/plain; charset=utf-8
-    ...
+    ... 
     ... This bug should be private.
     ...
     ... --boundary--
@@ -344,27 +361,34 @@ message.
     >>> filebug_view.publishTraverse(filebug_view.request,
     ...     token) is filebug_view
     True
+
     >>> filebug_view.extra_data.extra_description
     u'This bug should be private.'
+
     >>> filebug_view.extra_data.private
     True
 
     >>> filebug_view.validate(bug_data) is None
     True
+
     >>> filebug_view.submit_bug_action.success(bug_data)
     >>> filebug_view.added_bug.title
     u'Test Title'
+
     >>> print filebug_view.added_bug.description #doctest: -NORMALIZE_WHITESPACE
     Test description.
     <BLANKLINE>
     This bug should be private.
+
     >>> filebug_view.added_bug.private
     True
+
     >>> filebug_view.added_bug.security_related
     False
 
-Since the bug was marked private before it was filed, only the bug reporter has
-been subscribed to the bug and there should be no indirect subscribers.
+Since the bug was marked private before it was filed, only the bug
+reporter has been subscribed to the bug and there should be no indirect
+subscribers.
 
     >>> for subscriber in filebug_view.added_bug.getDirectSubscribers():
     ...     print subscriber.displayname
@@ -387,7 +411,7 @@ We can also specify that a bug is public via the same field.
     ... --boundary
     ... Content-disposition: inline
     ... Content-type: text/plain; charset=utf-8
-    ...
+    ... 
     ... This bug should be public.
     ...
     ... --boundary--
@@ -400,25 +424,30 @@ We can also specify that a bug is public via the same field.
     >>> filebug_view.publishTraverse(filebug_view.request,
     ...     token) is filebug_view
     True
+
     >>> filebug_view.extra_data.extra_description
     u'This bug should be public.'
+
     >>> filebug_view.extra_data.private
     False
 
     >>> filebug_view.validate(bug_data) is None
     True
+
     >>> filebug_view.submit_bug_action.success(bug_data)
     >>> filebug_view.added_bug.title
     u'Test Title'
+
     >>> print filebug_view.added_bug.description #doctest: -NORMALIZE_WHITESPACE
     Test description.
     <BLANKLINE>
     This bug should be public.
+
     >>> filebug_view.added_bug.private
     False
 
-Since this bug is public, both the reporter and the bug supervisor have been
-subscribed.
+Since this bug is public, both the reporter and the bug supervisor have
+been subscribed.
 
     >>> for subscriber in filebug_view.added_bug.getDirectSubscribers():
     ...     print subscriber.displayname
@@ -430,11 +459,12 @@ subscribed.
     Ubuntu Team
 
 
-=== Subscriptions ===
+Subscriptions
+.............
 
-We can also subscribe someone to this bug when we file it by using a Subscribe
-field in the message. Multiple people can be specified and they can be
-identified by their Launchpad name or their e-mail address.
+We can also subscribe someone to this bug when we file it by using a
+Subscribe field in the message. Multiple people can be specified and
+they can be identified by their Launchpad name or their e-mail address.
 
     >>> debug_data = """MIME-Version: 1.0
     ... Content-type: multipart/mixed; boundary=boundary
@@ -443,7 +473,7 @@ identified by their Launchpad name or their e-mail address.
     ... --boundary
     ... Content-disposition: inline
     ... Content-type: text/plain; charset=utf-8
-    ...
+    ... 
     ... Other people are interested in this bug.
     ...
     ... --boundary--
@@ -467,9 +497,11 @@ identified by their Launchpad name or their e-mail address.
 
     >>> filebug_view.validate(bug_data) is None
     True
+
     >>> filebug_view.submit_bug_action.success(bug_data)
     >>> filebug_view.added_bug.title
     u'Test Title'
+
     >>> print filebug_view.added_bug.description #doctest: -NORMALIZE_WHITESPACE
     Test description.
     <BLANKLINE>
@@ -489,16 +521,17 @@ subscribed to this bug.
 
     >>> for notification in filebug_view.request.response.notifications:
     ...     print notification.message
-    Thank you for your bug report.
+    <p class="last">Thank you for your bug report.</p>
     Additional information was added to the bug description.
     David Allouche has been subscribed to this bug.
     Sample Person has been subscribed to this bug.
 
 
-=== Subscribers to Private bugs ===
+Subscribers to Private bugs
+...........................
 
-The Private and Subscriber fields are intended to be used together to subscribe
-certain people and teams to bugs when they are filed.
+The Private and Subscriber fields are intended to be used together to
+subscribe certain people and teams to bugs when they are filed.
 
     >>> debug_data = """MIME-Version: 1.0
     ... Content-type: multipart/mixed; boundary=boundary
@@ -508,7 +541,7 @@ certain people and teams to bugs when they are filed.
     ... --boundary
     ... Content-disposition: inline
     ... Content-type: text/plain; charset=utf-8
-    ...
+    ... 
     ... This bug should be private, and Mark Shuttleworth subscribed.
     ...
     ... --boundary--
@@ -546,11 +579,12 @@ certain people and teams to bugs when they are filed.
 
     >>> filebug_view.added_bug.private
     True
+
     >>> filebug_view.added_bug.security_related
     False
 
-As well as the reporter, Mark Shuttleworth should have been subscribed to the
-bug.
+As well as the reporter, Mark Shuttleworth should have been subscribed
+to the bug.
 
     >>> for subscriber in filebug_view.added_bug.getDirectSubscribers():
     ...     print subscriber.displayname
@@ -562,18 +596,19 @@ Since the bug is private, there should be no indirect subscribers.
     >>> filebug_view.added_bug.getIndirectSubscribers()
     []
 
-The user will be notified that Mark Shuttleworth has been subscribed to this
-bug and that the bug has been marked as private.
+The user will be notified that Mark Shuttleworth has been subscribed to
+this bug and that the bug has been marked as private.
 
     >>> for notification in filebug_view.request.response.notifications:
     ...     print notification.message
-    Thank you for your bug report.
+    <p class="last">Thank you for your bug report.</p>
     Additional information was added to the bug description.
     Mark Shuttleworth has been subscribed to this bug.
     This bug report has been marked private...
 
 
-== publishTraverse() ==
+publishTraverse()
+-----------------
 
 As already seen above, it's the FileBugViewBase's publishTraverse that
 finds the right blob to use.
@@ -582,8 +617,10 @@ finds the right blob to use.
     >>> filebug_view.publishTraverse(filebug_view.request,
     ...     token) is filebug_view
     True
+
     >>> filebug_view.extra_data_token == token
     True
+
     >>> filebug_view.extra_data is not None
     True
 
@@ -597,7 +634,8 @@ well, so if we call the method again, it represents a URL like
     NotFound:...
 
 
-=== Not found tokens ===
+Not found tokens
+................
 
 If publishTraverse is called with a token that can't be found, a
 NotFound error is raised.
@@ -609,7 +647,8 @@ NotFound error is raised.
     NotFound:...
 
 
-== Adding tags to filed bugs ==
+Adding tags to filed bugs
+-------------------------
 
     >>> bug_data = dict(
     ...     title=u'Test Title', comment=u'Test description.',
@@ -623,18 +662,22 @@ directly.
     >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
     >>> filebug_view.validate(bug_data) is None
     True
+
     >>> filebug_view.submit_bug_action.success(bug_data)
     >>> filebug_view.added_bug.title
     u'Test Title'
+
     >>> filebug_view.added_bug.description
     u'Test description.'
+
     >>> for tag in filebug_view.added_bug.tags:
     ...     print tag
     bar
     foo
 
 
-== Filing security bugs ==
+Filing security bugs
+--------------------
 
 The base class allows security bugs to be filed.
 
@@ -645,14 +688,17 @@ The base class allows security bugs to be filed.
     >>> filebug_view = create_initialized_view(ubuntu_firefox, '+filebug')
     >>> filebug_view.validate(bug_data) is None
     True
+
     >>> filebug_view.submit_bug_action.success(bug_data)
     >>> filebug_view.added_bug.title
     u'Security bug'
+
     >>> filebug_view.added_bug.security_related
     True
 
 
-== Extra fields for bug supervisors ==
+Extra fields for bug supervisors
+--------------------------------
 
 Bug supervisors are offered several extra options when filing bugs.
 
@@ -692,57 +738,18 @@ Bugs can be filed with settings for all these extra fields.
     ...     milestone=milestone, status=BugTaskStatus.TRIAGED)
     >>> print filebug_view.validate(bug_data)
     None
+
     >>> filebug_view.submit_bug_action.success(bug_data)
     >>> [added_bugtask] = filebug_view.added_bug.bugtasks
 
     >>> print added_bugtask.status.title
     Triaged
+
     >>> print added_bugtask.importance.title
     High
+
     >>> print added_bugtask.assignee.name
     bug-superdude
+
     >>> print added_bugtask.milestone.name
     bug-superdude-milestone
-
-
-== Validation ==
-
-
-=== The comment field ===
-
-When filing a bug, supplying an empty comment causes a validation error:
-
-    >>> from lp.bugs.browser.bugtarget import FileBugGuidedView
-    >>> request = LaunchpadTestRequest(
-    ...     form={'field.actions.submit_bug': 'Submit Bug Request'})
-    >>> filebug_view = FileBugGuidedView(ubuntu, request)
-    >>> filebug_view.submit_bug_action.submitted()
-    True
-    >>> bug_data = dict(title='Test Title', comment='')
-    >>> filebug_view.setUpFields()
-    >>> filebug_view.setUpWidgets()
-    >>> filebug_view.validate(bug_data)
-    >>> print filebug_view.getFieldError('comment')
-    Required input is missing.
-
-Comments can be up to 50000 characters in length:
-
-    >>> comment = 'x' * 50000
-    >>> bug_data = dict(title='Test Title', comment=comment)
-    >>> filebug_view = FileBugGuidedView(ubuntu, request)
-    >>> filebug_view.setUpFields()
-    >>> filebug_view.setUpWidgets()
-    >>> filebug_view.validate(bug_data)
-    >>> print filebug_view.getFieldError('comment')
-    <BLANKLINE>
-
-Supplying a comment that is too long causes a validation error:
-
-    >>> comment = 'x' * 50001
-    >>> bug_data = dict(title='Test Title', comment=comment)
-    >>> filebug_view = FileBugGuidedView(ubuntu, request)
-    >>> filebug_view.setUpFields()
-    >>> filebug_view.setUpWidgets()
-    >>> filebug_view.validate(bug_data)
-    >>> print filebug_view.getFieldError('comment')
-    The description is too long...

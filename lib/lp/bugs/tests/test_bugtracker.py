@@ -3,38 +3,93 @@
 
 __metaclass__ = type
 
-from doctest import NORMALIZE_WHITESPACE, ELLIPSIS
-from doctest import DocTestSuite
-
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from doctest import (
+    DocTestSuite,
+    ELLIPSIS,
+    NORMALIZE_WHITESPACE,
+    )
 import unittest
-from urllib2 import HTTPError, Request
-
-from datetime import datetime, timedelta
-
-from pytz import utc
-
-import transaction
-
-from zope.security.proxy import removeSecurityProxy
+from urllib2 import (
+    HTTPError,
+    Request,
+    )
 
 from lazr.lifecycle.snapshot import Snapshot
+from pytz import utc
+import transaction
+from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import login_person
-from canonical.testing import LaunchpadFunctionalLayer
-
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.bugs.externalbugtracker import (
-    BugTrackerConnectError, Mantis, MantisLoginHandler)
-from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTracker
-from lp.bugs.tests.externalbugtracker import Urlib2TransportTestHandler
-from lp.testing import TestCaseWithFactory
+    BugTrackerConnectError,
+    Mantis,
+    MantisLoginHandler,
+    )
+from lp.bugs.interfaces.bugtracker import (
+    BugTrackerType,
+    IBugTracker,
+    )
+from lp.bugs.model.bugtracker import (
+    BugTrackerSet,
+    make_bugtracker_name,
+    make_bugtracker_title,
+    )
+from lp.bugs.tests.externalbugtracker import UrlLib2TransportTestHandler
+from lp.registry.interfaces.person import IPersonSet
+from lp.testing import (
+    login,
+    login_person,
+    TestCase,
+    TestCaseWithFactory,
+    )
+from lp.testing.sampledata import ADMIN_EMAIL
 
 
-class TestBugTracker(TestCaseWithFactory):
+class TestBugTrackerSet(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_trackers(self):
+        tracker = self.factory.makeBugTracker()
+        trackers = BugTrackerSet()
+        # Active trackers are in all trackers,
+        self.assertTrue(tracker in trackers.trackers())
+        # and active,
+        self.assertTrue(tracker in trackers.trackers(active=True))
+        # But not inactive.
+        self.assertFalse(tracker in trackers.trackers(active=False))
+        login(ADMIN_EMAIL)
+        tracker.active = False
+        # Inactive trackers are in all trackers
+        self.assertTrue(tracker in trackers.trackers())
+        # and inactive,
+        self.assertTrue(tracker in trackers.trackers(active=False))
+        # but not in active.
+        self.assertFalse(tracker in trackers.trackers(active=True))
+
+
+class BugTrackerTestCase(TestCaseWithFactory):
+    """Unit tests for the `BugTracker` class."""
+
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        super(TestBugTracker, self).setUp()
-        transaction.commit()
+        super(BugTrackerTestCase, self).setUp()
+        self.bug_tracker = self.factory.makeBugTracker()
+        for i in range(5):
+            self.factory.makeBugWatch(bugtracker=self.bug_tracker)
+
+        self.now = datetime.now(utc)
 
     def test_multi_product_constraints_observed(self):
         """BugTrackers for which multi_product=True should return None
@@ -132,6 +187,82 @@ class TestBugTracker(TestCaseWithFactory):
         removeSecurityProxy(bug_message).remote_comment_id = 'brains'
         self.failUnless(bug_tracker.watches_with_unpushed_comments.is_empty())
 
+    def _assertBugWatchesAreCheckedInTheFuture(self):
+        """Check the dates of all self.bug_tracker.watches.
+
+        Raise an error if:
+         * The next_check dates aren't in the future.
+         * The next_check dates aren't <= 1 day in the future.
+         * The lastcheck dates are not None
+         * The last_error_types are not None.
+        """
+        for watch in self.bug_tracker.watches:
+            self.assertTrue(
+                watch.next_check is not None,
+                "BugWatch next_check time should not be None.")
+            self.assertTrue(
+                watch.next_check >= self.now,
+                "BugWatch next_check time should be in the future.")
+            self.assertTrue(
+                watch.next_check <= self.now + timedelta(days=1),
+                "BugWatch next_check time should be one day or less in "
+                "the future.")
+            self.assertTrue(
+                watch.lastchecked is None,
+                "BugWatch lastchecked should be None.")
+            self.assertTrue(
+                watch.last_error_type is None,
+                "BugWatch last_error_type should be None.")
+
+    def test_unprivileged_user_cant_reset_watches(self):
+        # It isn't possible for a user who isn't an admin or a member of
+        # the Launchpad Developers team to reset the watches for a bug
+        # tracker.
+        unprivileged_user = self.factory.makePerson()
+        login_person(unprivileged_user)
+        self.assertRaises(
+            Unauthorized, getattr, self.bug_tracker, 'resetWatches',
+            "Unprivileged users should not be allowed to reset a "
+            "tracker's watches.")
+
+    def test_admin_can_reset_watches(self):
+        # Launchpad admins can reset the watches on a bugtracker.
+        admin_user = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
+        login_person(admin_user)
+        self.bug_tracker.resetWatches()
+        self._assertBugWatchesAreCheckedInTheFuture()
+
+    def test_lp_dev_can_reset_watches(self):
+        # Launchpad developers can reset the watches on a bugtracker.
+        login(ADMIN_EMAIL)
+        admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
+        launchpad_developers = getUtility(
+            ILaunchpadCelebrities).launchpad_developers
+        lp_dev = self.factory.makePerson()
+        launchpad_developers.addMember(lp_dev, admin)
+        login_person(lp_dev)
+        self.bug_tracker.resetWatches()
+        self._assertBugWatchesAreCheckedInTheFuture()
+
+    def test_janitor_can_reset_watches(self):
+        # The Janitor can reset the watches on a bug tracker.
+        janitor = getUtility(ILaunchpadCelebrities).janitor
+        login_person(janitor)
+        self.bug_tracker.resetWatches()
+        self._assertBugWatchesAreCheckedInTheFuture()
+
+
+class TestMantis(TestCaseWithFactory):
+    """Tests for the Mantis-specific bug tracker code."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestMantis, self).setUp()
+        # We need to commit to avoid there being errors from the
+        # checkwatches isolation protection code.
+        transaction.commit()
+
     def test_mantis_login_redirects(self):
         # The Mantis bug tracker needs a special HTTP redirect handler
         # in order to login in. Ensure that redirects to the page with
@@ -154,7 +285,7 @@ class TestBugTracker(TestCaseWithFactory):
         # Ensure that the special Mantis login handler is used
         # by the Mantis tracker
         tracker = Mantis('http://mantis.example.com')
-        test_handler = Urlib2TransportTestHandler()
+        test_handler = UrlLib2TransportTestHandler()
         test_handler.setRedirect('http://mantis.example.com/login_page.php'
             '?return=%2Fsome%2Fpage')
         opener = tracker._opener
@@ -173,7 +304,7 @@ class TestBugTracker(TestCaseWithFactory):
         # Ensure that the OpenerDirector of the Mantis bug tracker
         # handles cookies.
         tracker = Mantis('http://mantis.example.com')
-        test_handler = Urlib2TransportTestHandler()
+        test_handler = UrlLib2TransportTestHandler()
         opener = tracker._opener
         opener.add_handler(test_handler)
         opener.open('http://mantis.example.com', '')
@@ -188,7 +319,7 @@ class TestBugTracker(TestCaseWithFactory):
         # indication that we should screen scrape the bug data and
         # thus set csv_data to None.
         tracker = Mantis('http://mantis.example.com')
-        test_handler = Urlib2TransportTestHandler()
+        test_handler = UrlLib2TransportTestHandler()
         opener = tracker._opener
         opener.add_handler(test_handler)
         test_handler.setError(
@@ -202,7 +333,7 @@ class TestBugTracker(TestCaseWithFactory):
         # If the Mantis server returns other HTTP errors than 500,
         # they appear as BugTrackerConnectErrors.
         tracker = Mantis('http://mantis.example.com')
-        test_handler = Urlib2TransportTestHandler()
+        test_handler = UrlLib2TransportTestHandler()
         opener = tracker._opener
         opener.add_handler(test_handler)
         test_handler.setError(
@@ -220,12 +351,43 @@ class TestBugTracker(TestCaseWithFactory):
         self.assertRaises(BugTrackerConnectError, tracker._csv_data)
 
 
+class TestMakeBugtrackerName(TestCase):
+    """Tests for make_bugtracker_name."""
+
+    def test_url(self):
+        self.assertEquals(
+            'auto-bugs.example.com',
+            make_bugtracker_name('http://bugs.example.com/shrubbery'))
+
+    def test_email_address(self):
+        self.assertEquals(
+            'auto-foo.bar',
+            make_bugtracker_name('mailto:foo.bar@somewhere.com'))
+
+    def test_sanitises_forbidden_characters(self):
+        self.assertEquals(
+            'auto-foobar',
+            make_bugtracker_name('mailto:foo_bar@somewhere.com'))
+
+
+class TestMakeBugtrackerTitle(TestCase):
+    """Tests for make_bugtracker_title."""
+
+    def test_url(self):
+        self.assertEquals(
+            'bugs.example.com/shrubbery',
+            make_bugtracker_title('http://bugs.example.com/shrubbery'))
+
+    def test_email_address(self):
+        self.assertEquals(
+            'Email to foo.bar@somewhere',
+            make_bugtracker_title('mailto:foo.bar@somewhere.com'))
+
+
 def test_suite():
-    suite = unittest.TestSuite()
+    suite = unittest.TestLoader().loadTestsFromName(__name__)
     doctest_suite = DocTestSuite(
         'lp.bugs.model.bugtracker',
         optionflags=NORMALIZE_WHITESPACE|ELLIPSIS)
-
-    suite.addTest(unittest.makeSuite(TestBugTracker))
     suite.addTest(doctest_suite)
     return suite

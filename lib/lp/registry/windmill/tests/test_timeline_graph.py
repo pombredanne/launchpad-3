@@ -22,7 +22,8 @@ class TestTimelineGraph(WindmillTestCase):
         """Test timeline graph on /$project/+timeline-graph page."""
 
         self.client.open(
-            url=u'http://launchpad.dev:8085/firefox/+timeline-graph')
+            url=u'%s/firefox/+timeline-graph'
+                % RegistryWindmillLayer.base_url)
         self.client.waits.forElement(id=u'spinner', timeout=u'20000')
         self.client.waits.forElementProperty(
             id=u'spinner',
@@ -35,7 +36,7 @@ class TestTimelineGraph(WindmillTestCase):
     def test_project_timeline_graph(self):
         """Test that the timeline graph loads on /$project page."""
 
-        self.client.open(url=u'http://launchpad.dev:8085/firefox')
+        self.client.open(url=u'%s/firefox' % RegistryWindmillLayer.base_url)
 
         self.client.waits.forElementProperty(
             id=u'timeline-loading',
@@ -49,7 +50,8 @@ class TestTimelineGraph(WindmillTestCase):
     def test_series_timeline_graph(self):
         """Test that the timeline graph loads on /$project/$series page."""
 
-        self.client.open(url=u'http://launchpad.dev:8085/firefox/trunk')
+        self.client.open(url=u'%s/firefox/trunk'
+                        % RegistryWindmillLayer.base_url)
 
         self.client.waits.forElementProperty(
             id=u'timeline-iframe',
@@ -64,7 +66,8 @@ class TestTimelineGraph(WindmillTestCase):
     def test_all_series_timeline_graph(self):
         """Test that the timeline graph loads on /$project/+series page."""
 
-        self.client.open(url=u'http://launchpad.dev:8085/firefox/+series')
+        self.client.open(url=u'%s/firefox/+series'
+                        % RegistryWindmillLayer.base_url)
 
         self.client.waits.forElement(
             id=u'timeline-loading',

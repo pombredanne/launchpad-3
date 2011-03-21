@@ -9,11 +9,14 @@ from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
 
-from lp.translations.interfaces.productserieslanguage import (
-    IProductSeriesLanguage, IProductSeriesLanguageSet)
+from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.app.enums import ServiceUsage
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import TestCaseWithFactory
-from canonical.testing import ZopelessDatabaseLayer
+from lp.translations.interfaces.productserieslanguage import (
+    IProductSeriesLanguage,
+    IProductSeriesLanguageSet,
+    )
 
 
 class TestProductSeriesLanguages(TestCaseWithFactory):
@@ -24,8 +27,10 @@ class TestProductSeriesLanguages(TestCaseWithFactory):
     def setUp(self):
         # Create a productseries that uses translations.
         TestCaseWithFactory.setUp(self)
-        self.productseries = self.factory.makeProductSeries()
-        self.productseries.product.official_rosetta = True
+        product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
+        self.productseries = self.factory.makeProductSeries(
+            product=product)
 
     def test_no_templates_no_translation(self):
         # There are no templates and no translations.
@@ -123,8 +128,10 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
     def setUp(self):
         # Create a productseries that uses translations.
         TestCaseWithFactory.setUp(self)
-        self.productseries = self.factory.makeProductSeries()
-        self.productseries.product.official_rosetta = True
+        product = self.factory.makeProduct(
+            translations_usage=ServiceUsage.LAUNCHPAD)
+        self.productseries = self.factory.makeProductSeries(
+            product=product)
         self.psl_set = getUtility(IProductSeriesLanguageSet)
         self.language = getUtility(ILanguageSet).getLanguageByCode('sr')
 

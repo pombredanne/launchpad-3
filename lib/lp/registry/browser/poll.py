@@ -17,22 +17,43 @@ __all__ = [
     'PollBreadcrumb',
     ]
 
-from zope.event import notify
-from zope.component import getUtility
-from zope.interface import implements, Interface
-from zope.lifecycleevent import ObjectCreatedEvent
+from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import TextWidget
+from zope.component import getUtility
+from zope.event import notify
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.lifecycleevent import ObjectCreatedEvent
 
-from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, custom_widget,
-    enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView, Link,
-    Navigation, NavigationMenu, stepthrough)
-from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.webapp.breadcrumb import TitleBreadcrumb
-from lp.registry.interfaces.poll import (
-    IPoll, IPollOption, IPollOptionSet, IPollSubset, IVoteSet, PollAlgorithm,
-    PollSecrecy)
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.webapp import (
+    ApplicationMenu,
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    stepthrough,
+    )
+from canonical.launchpad.webapp.breadcrumb import TitleBreadcrumb
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.registry.interfaces.poll import (
+    IPoll,
+    IPollOption,
+    IPollOptionSet,
+    IPollSubset,
+    IVoteSet,
+    PollAlgorithm,
+    PollSecrecy,
+    )
 
 
 class PollEditLinksMixin:
@@ -201,11 +222,8 @@ class PollView(BasePollView):
         request = self.request
         if (self.userCanVote() and self.context.isOpen() and
             self.context.getActiveOptions()):
-            context_url = canonical_url(self.context)
-            if self.isSimple():
-                request.response.redirect("%s/+vote-simple" % context_url)
-            elif self.isCondorcet():
-                request.response.redirect("%s/+vote-condorcet" % context_url)
+            vote_url = canonical_url(self.context, view_name='+vote')
+            request.response.redirect(vote_url)
 
     def getVotesByOption(self, option):
         """Return the number of votes the given option received."""
@@ -237,6 +255,18 @@ class PollVoteView(BasePollView):
     If the user already voted, the current vote is displayed and the user can
     change it. Otherwise he can register his vote.
     """
+
+    default_template = ViewPageTemplateFile(
+        '../templates/poll-vote-simple.pt')
+    condorcet_template = ViewPageTemplateFile(
+        '../templates/poll-vote-condorcet.pt')
+
+    @property
+    def template(self):
+        if self.isCondorcet():
+            return self.condorcet_template
+        else:
+            return self.default_template
 
     def initialize(self):
         """Process the form, if it was submitted."""

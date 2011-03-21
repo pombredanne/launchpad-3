@@ -11,23 +11,7 @@
       src="/@@/green-bar"
       style="height: 1em; width: 2em;"
     />
-    Translation unchanged since last synchronized
-  </div>
-  <div>
-    <img
-      alt="&#8220;Changed&#8221; means"
-      src="/@@/blue-bar"
-      style="height: 1em; width: 2em;"
-    />
-    Changed in Launchpad
-  </div>
-  <div>
-    <img
-      alt="&#8220;new&#8221; means"
-      src="/@@/purple-bar"
-      style="height: 1em; width: 2em;"
-    />
-    Newly translated in Launchpad
+    Translated
   </div>
   <div>
     <img

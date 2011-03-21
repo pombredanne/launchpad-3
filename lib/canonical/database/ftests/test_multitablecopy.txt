@@ -5,8 +5,8 @@ may be interlinked through foreign keys.
 
     >>> import transaction
     >>> from canonical.database import postgresql
-    >>> from canonical.database.sqlbase import cursor
     >>> from canonical.database.multitablecopy import MultiTableCopy
+    >>> from canonical.database.sqlbase import cursor
 
     >>> # Keep track of tables we'll want to clean up later
     >>> tables_to_clean_up = []

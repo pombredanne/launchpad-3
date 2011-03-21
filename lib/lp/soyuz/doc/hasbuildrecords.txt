@@ -22,7 +22,7 @@ The method can be called without any arguments.
 The method has a number of filtering options, such as filtering by build
 status,
 
-    >>> from lp.buildmaster.interfaces.buildbase import BuildStatus
+    >>> from lp.buildmaster.enums import BuildStatus
     >>> hoary.getBuildRecords(build_state=BuildStatus.FULLYBUILT).count()
     2
 

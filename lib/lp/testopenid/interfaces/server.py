@@ -11,11 +11,10 @@ __all__ = [
 from zope.interface import Interface
 from zope.schema import TextLine
 
-from canonical.launchpad.fields import PasswordField
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
-
+from lp.services.fields import PasswordField
 from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
 
 

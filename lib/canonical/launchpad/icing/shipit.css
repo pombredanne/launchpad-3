@@ -2,7 +2,7 @@
 
 html {
   position: relative;
-  font-family: bitstream vera sans, dejavu sans, verdana, sans-serif;
+  font-family: UbuntuBeta, Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
   font-size: 12pt;
   color: black;
   background-color: #FFFFFF;
@@ -52,7 +52,7 @@ form {border: 0; margin: 0; padding: 0;}
 input, select, textarea {
   background-color: #fff;
   color: #656565;
-  font-family: bitstream vera sans, dejavu sans, verdana, sans-serif;
+  font-family: UbuntuBeta, Ubuntu, 'Bitstream Vera Sans', 'DejaVu Sans', Tahoma, sans-serif;
   margin: 0;
 }
 input[type="text"], input[type="submit"], input[type="reset"], textarea {

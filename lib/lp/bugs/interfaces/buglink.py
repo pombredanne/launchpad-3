@@ -14,16 +14,35 @@ __all__ = [
     'IUnlinkBugsForm',
     ]
 
-from zope.interface import implements, Interface
-from zope.schema import Choice, List, Object, Set
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.schema import (
+    Choice,
+    List,
+    Object,
+    Set,
+    )
 from zope.schema.interfaces import IContextSourceBinder
-from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
+from zope.schema.vocabulary import (
+    SimpleTerm,
+    SimpleVocabulary,
+    )
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import BugField
-from lp.bugs.interfaces.bug import IBug
 from canonical.launchpad.interfaces.launchpad import IHasBug
+from lp.bugs.interfaces.bug import IBug
+from lp.services.fields import BugField
 
 
 class IBugLink(IHasBug):
@@ -37,13 +56,15 @@ class IBugLink(IHasBug):
 
 
 class IBugLinkTarget(Interface):
-    """An entity which can be linked to a bug.
+    """An entity which can be linked to bugs.
 
-    Examples include an IQuestion, and an ICve.
+    Examples include an ISpecification.
     """
+    export_as_webservice_entry()
 
-    bugs = List(title=_("Bugs related to this object."),
-                value_type=Object(schema=IBug), readonly=True)
+    bugs = exported(CollectionField(title=_("Bugs related to this object."),
+                value_type=Reference(schema=IBug), readonly=True),
+                ('devel', dict(exported=True)), exported=False)
     bug_links = List(title=_("The links between bugs and this object."),
                      value_type=Object(schema=IBugLink), readonly=True)
 

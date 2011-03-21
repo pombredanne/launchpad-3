@@ -4,10 +4,10 @@ The FAQ vocabulary contains all the FAQs available in a particular
 collection. It provides the IHugeVocabulary interface.
 
     >>> from zope.component import getUtility
-    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from zope.schema.vocabulary import getVocabularyRegistry
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
-    >>> from zope.schema.vocabulary import getVocabularyRegistry
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> vocabulary_registry = getVocabularyRegistry()
     >>> firefox = getUtility(IProductSet).getByName('firefox')

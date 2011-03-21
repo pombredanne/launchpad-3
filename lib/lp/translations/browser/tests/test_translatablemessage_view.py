@@ -3,14 +3,13 @@
 
 __metaclass__ = type
 
-import unittest
-
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.testing import TestCaseWithFactory
 from lp.translations.browser.browser_helpers import text_to_html
 from lp.translations.browser.translatablemessage import (
-    TranslatableMessageView)
+    TranslatableMessageView,
+    )
 from lp.translations.model.translatablemessage import TranslatableMessage
 
 
@@ -49,7 +48,7 @@ class TestTranslatableMessageView(TestCaseWithFactory):
     def test_singular_message(self):
         # View information for a singular message.
         translator = self.factory.makePerson()
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             self.pofile, self.potmsgset,
             translations=[u'foo'], translator=translator)
         view = self._create_view()
@@ -67,7 +66,7 @@ class TestTranslatableMessageView(TestCaseWithFactory):
         # View information for a message with plural.
         self.potmsgset.updatePluralForm(u'English plural')
         translator = self.factory.makePerson()
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             self.pofile, self.potmsgset,
             translations=[u'foo', u'bar'], translator=translator)
         view = self._create_view()
@@ -87,7 +86,7 @@ class TestTranslatableMessageView(TestCaseWithFactory):
         TRANSLATION = u"foo \nbar"
         translator = self.factory.makePerson()
         self.potmsgset.updatePluralForm(u'English plural')
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             self.pofile, self.potmsgset,
             translations=[TRANSLATION], translator=translator)
         view = self._create_view()
@@ -96,8 +95,3 @@ class TestTranslatableMessageView(TestCaseWithFactory):
         self.assertEqual(
             text_to_html(TRANSLATION, self.potmsgset.flags),
             info['translations'][0]['text'])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

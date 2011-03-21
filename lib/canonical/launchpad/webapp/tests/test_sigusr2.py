@@ -15,6 +15,7 @@ import tempfile
 import time
 import unittest
 
+
 class SIGUSR2TestCase(unittest.TestCase):
     def setUp(self):
         self.logdir = tempfile.mkdtemp()

@@ -14,32 +14,50 @@ __all__ = [
     ]
 
 from operator import itemgetter
-from zope.component import queryMultiAdapter
 
+from z3c.ptcompat import ViewPageTemplateFile
+from zope.component import (
+    getMultiAdapter,
+    queryMultiAdapter,
+    )
+
+from canonical.config import config
+from canonical.launchpad import _
+from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces.launchpad import IHasDrivers
+from canonical.launchpad.webapp import (
+    canonical_url,
+    LaunchpadView,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.menu import (
+    enabled_with_permission,
+    Link,
+    )
+from canonical.lazr.utils import (
+    safe_hasattr,
+    smartquote,
+    )
+from lp.app.enums import service_uses_launchpad
+from lp.app.interfaces.launchpad import IServiceUsage
+from lp.blueprints.enums import (
+    SpecificationFilter,
+    SpecificationSort,
+    )
+from lp.blueprints.interfaces.specificationtarget import ISpecificationTarget
+from lp.blueprints.interfaces.sprint import ISprint
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
-from canonical.launchpad.interfaces.launchpad import IHasDrivers
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import (
-    IProjectGroup, IProjectGroupSeries)
-from lp.blueprints.interfaces.specification import (
-    SpecificationFilter, SpecificationSort)
-from lp.blueprints.interfaces.specificationtarget import (
-    ISpecificationTarget)
-from lp.blueprints.interfaces.sprint import ISprint
-
-from canonical.config import config
-from canonical.launchpad import _
-from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.menu import enabled_with_permission, Link
-from canonical.launchpad.helpers import shortlist
-from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.webapp import canonical_url
-from canonical.lazr.utils import smartquote
+    IProjectGroup,
+    IProjectGroupSeries,
+    )
+from lp.services.propertycache import cachedproperty
 
 
 class HasSpecificationsMenuMixin:
@@ -123,21 +141,76 @@ class HasSpecificationsView(LaunchpadView):
     is_project = False
     is_series = False
     is_sprint = False
+    has_wiki = False
     has_drivers = False
+
+    # Templates for the various conditions of blueprints:
+    # * On Launchpad
+    # * External
+    # * Disabled
+    # * Unknown
+    default_template = ViewPageTemplateFile(
+        '../templates/hasspecifications-specs.pt')
+    not_launchpad_template = ViewPageTemplateFile(
+        '../templates/unknown-specs.pt')
+
+    @property
+    def template(self):
+        # Check for the magical "index" added by the browser:page template
+        # machinery. If it exists this is actually the
+        # zope.app.pagetemplate.simpleviewclass.simple class that is magically
+        # mixed in by the browser:page zcml directive the template defined in
+        # the directive should be used.
+        if safe_hasattr(self, 'index'):
+            return super(HasSpecificationsView, self).template
+
+        # Sprints and Persons don't have a usage enum for blueprints, so we
+        # have to fallback to the default.
+        if (ISprint.providedBy(self.context)
+            or IPerson.providedBy(self.context)):
+            return self.default_template
+
+        # ProjectGroups are a special case, as their products may be a
+        # combination of usage settings. To deal with this, check all
+        # products via the involvment menu.
+        if (IProjectGroup.providedBy(self.context)
+            or IProjectGroupSeries.providedBy(self.context)):
+            involvement = getMultiAdapter(
+                (self.context, self.request),
+                name='+get-involved')
+            if service_uses_launchpad(involvement.blueprints_usage):
+                return self.default_template
+            else:
+                return self.not_launchpad_template
+
+        # Otherwise, determine usage and provide the correct template.
+        service_usage = IServiceUsage(self.context)
+        if service_uses_launchpad(service_usage.blueprints_usage):
+            return self.default_template
+        else:
+            return self.not_launchpad_template
+
+    def render(self):
+        return self.template()
 
     # XXX: jsk: 2007-07-12 bug=173972: This method might be improved by
     # replacing the conditional execution with polymorphism.
     def initialize(self):
         if IPerson.providedBy(self.context):
             self.is_person = True
-        elif (IDistribution.providedBy(self.context) or
-              IProduct.providedBy(self.context)):
+        elif IDistribution.providedBy(self.context):
             self.is_target = True
             self.is_pillar = True
+            self.show_series = True
+        elif IProduct.providedBy(self.context):
+            self.is_target = True
+            self.is_pillar = True
+            self.has_wiki = True
             self.show_series = True
         elif IProjectGroup.providedBy(self.context):
             self.is_project = True
             self.is_pillar = True
+            self.has_wiki = True
             self.show_target = True
             self.show_series = True
         elif IProjectGroupSeries.providedBy(self.context):
@@ -160,6 +233,16 @@ class HasSpecificationsView(LaunchpadView):
         self.batchnav = BatchNavigator(
             self.specs, self.request,
             size=config.launchpad.default_batch_size)
+
+    @property
+    def can_configure_blueprints(self):
+        """Can the user configure blueprints for the `ISpecificationTarget`.
+        """
+        target = self.context
+        if IProduct.providedBy(target) or IDistribution.providedBy(target):
+            return check_permission('launchpad.Edit', self.context)
+        else:
+            return False
 
     @property
     def label(self):
@@ -191,7 +274,7 @@ class HasSpecificationsView(LaunchpadView):
             'distroseries',
             'direction_approved',
             'man_days',
-            'delivery'
+            'delivery',
             ]
         def dbschema(item):
             """Format a dbschema sortably for a spreadsheet."""
@@ -316,6 +399,12 @@ class HasSpecificationsView(LaunchpadView):
     def specs(self):
         filter = self.spec_filter
         return self.context.specifications(filter=filter)
+
+    @cachedproperty
+    def specs_batched(self):
+        navigator = BatchNavigator(self.specs, self.request, size=500)
+        navigator.setHeadings('specification', 'specifications')
+        return navigator
 
     @cachedproperty
     def spec_count(self):

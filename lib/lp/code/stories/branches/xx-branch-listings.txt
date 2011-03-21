@@ -154,7 +154,7 @@ If anyone tries to hack the URL, and put in an invalid
 status value, it will default to current branches.
 
     >>> browser.open(
-    ...  'http://launchpad.dev/~name12/+branches?field.lifecycle=Fubar')
+    ...  'http://code.launchpad.dev/~name12/+branches?field.lifecycle=Fubar')
     >>> browser.getControl(name='field.lifecycle').displayValue
     ['Any active status']
     >>> table = find_tag_by_id(browser.contents, 'branchtable')

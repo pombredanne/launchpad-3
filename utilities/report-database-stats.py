@@ -132,7 +132,24 @@ def get_cpu_stats(cur, options):
         GROUP BY username
         """ % params)
     cur.execute(query)
-    return set(cur.fetchall())
+    cpu_stats = set(cur.fetchall())
+
+    # Fold edge into lpnet, as they are now running the same code.
+    # This is a temporary hack until we drop edge entirely. See
+    # Bug #667883 for details.
+    lpnet_avg_cpu = 0.0
+    edge_avg_cpu = 0.0
+    for stats_tuple in list(cpu_stats):
+        avg_cpu, username = stats_tuple
+        if username == 'lpnet':
+            lpnet_avg_cpu = avg_cpu
+            cpu_stats.discard(stats_tuple)
+        elif username == 'edge':
+            edge_avg_cpu = avg_cpu
+            cpu_stats.discard(stats_tuple)
+    cpu_stats.add((lpnet_avg_cpu + edge_avg_cpu, 'lpnet'))
+
+    return cpu_stats
 
 
 def main():

@@ -10,17 +10,21 @@ __all__ = [
 
 from textwrap import TextWrapper
 
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
 from zope.interface import implements
-
-from sqlobject import ForeignKey, StringCol
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from lp.code.enums import CodeReviewVote
-from lp.code.interfaces.codereviewcomment import (
-    ICodeReviewComment, ICodeReviewCommentDeletion)
 from lp.code.interfaces.branch import IBranchNavigationMenu
 from lp.code.interfaces.branchtarget import IHasBranchTarget
+from lp.code.interfaces.codereviewcomment import (
+    ICodeReviewComment,
+    ICodeReviewCommentDeletion,
+    )
 from lp.services.mail.signedmessage import signed_message_from_string
 
 

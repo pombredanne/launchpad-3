@@ -7,10 +7,10 @@ __metaclass__ = type
 
 from testtools import TestCase
 
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archiveuploader.changesfile import determine_file_class_and_name
 from lp.archiveuploader.nascentupload import NascentUpload
-from lp.archiveuploader.tests import mock_logger
+from lp.services.log.logger import DevNullLogger
 
 
 class FakeChangesFile:
@@ -30,7 +30,7 @@ class TestMatchDDEBs(TestCase):
     def setUp(self):
         super(TestMatchDDEBs, self).setUp()
         self.changes = FakeChangesFile()
-        self.upload = NascentUpload(self.changes, None, mock_logger)
+        self.upload = NascentUpload(self.changes, None, DevNullLogger())
 
     def addFile(self, filename):
         """Add a file of the right type to the upload."""

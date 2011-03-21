@@ -5,8 +5,11 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.ftests import login, logout
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.launchpad.ftests import (
+    login,
+    logout,
+    )
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 
 
@@ -91,6 +94,8 @@ class TestBugCanBeNominatedForDistroSeries(
         # to a series of that distribution.
         sp_bug = self.factory.makeBug()
         spn = self.factory.makeSourcePackageName()
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=self.series, sourcepackagename=spn)
 
         self.assertFalse(sp_bug.canBeNominatedFor(self.series))
         sp_bug.addTask(

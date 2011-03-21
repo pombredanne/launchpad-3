@@ -8,10 +8,9 @@ __all__ = []
 
 import unittest
 
-from canonical.launchpad.windmill.testing import lpuser
-
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.testing import WindmillTestCase
+from lp.testing.windmill import lpuser
 
 
 class TestNewProjectStep2(WindmillTestCase):
@@ -33,7 +32,8 @@ class TestNewProjectStep2(WindmillTestCase):
 
         # Perform step 1 of the project registration, using information
         # that will yield search results.
-        self.client.open(url=u'http://launchpad.dev:8085/projects/+new')
+        self.client.open(url=u'%s/projects/+new'
+                        % RegistryWindmillLayer.base_url)
 
         lpuser.SAMPLE_PERSON.ensure_login(self.client)
 

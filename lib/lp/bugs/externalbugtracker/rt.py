@@ -10,17 +10,23 @@ import email
 import urllib
 import urllib2
 
-
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.webapp.url import urlparse
-
 from lp.bugs.externalbugtracker import (
-    BugNotFound, BugTrackerConnectError, ExternalBugTracker, InvalidBugId,
-    LookupTree, UnknownRemoteStatusError)
-from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
-from lp.bugs.interfaces.bugtask import BugTaskStatus
+    BugNotFound,
+    BugTrackerConnectError,
+    ExternalBugTracker,
+    InvalidBugId,
+    LookupTree,
+    UnknownRemoteStatusError,
+    )
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
+from lp.services.database.isolation import ensure_no_transaction
+from lp.services.propertycache import cachedproperty
 
 
 class RequestTracker(ExternalBugTracker):
@@ -195,11 +201,11 @@ class RequestTracker(ExternalBugTracker):
 
     def getRemoteImportance(self, bug_id):
         """See `IExternalBugTracker`."""
-        pass
+        return UNKNOWN_REMOTE_IMPORTANCE
 
     def convertRemoteImportance(self, remote_importance):
         """See `IExternalBugTracker`."""
-        return UNKNOWN_REMOTE_IMPORTANCE
+        return BugTaskImportance.UNKNOWN
 
     _status_lookup_titles = 'RT status',
     _status_lookup = LookupTree(

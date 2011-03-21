@@ -14,7 +14,7 @@ from zope.component import getUtility
 from contrib.glock import GlobalLock
 
 from canonical.config import config
-from canonical.launchpad.interfaces import IDistributionSet
+from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.lp import initZopeless
@@ -35,6 +35,11 @@ def main():
     parser.add_option("-d", "--distro", dest="distribution", metavar="DISTRO",
                       default="ubuntu",
                       help="Distribution name")
+
+    parser.add_option(
+        "-a", "--arches", dest="arches",
+        help="A comma-seperated list of arches to limit the child "
+        "distroseries to inheriting")
 
     (options, args) = parser.parse_args()
 
@@ -69,7 +74,10 @@ def main():
         log.debug('Check for no pending builds in parentseries')
         log.debug('Copying distroarchseries from parent '
                       'and setting nominatedarchindep.')
-        ids = InitialiseDistroSeries(distroseries)
+        arches = ()
+        if options.arches is not None:
+            arches = tuple(options.arches.split(','))
+        ids = InitialiseDistroSeries(distroseries, arches)
         ids.check()
         log.debug('initialising from parent, copying publishing records.')
         ids.initialise()

@@ -14,7 +14,9 @@ from zope.component import getUtility
 from canonical.config import config
 from lp.code.enums import BranchSubscriptionNotificationLevel
 from lp.code.interfaces.branchjob import (
-    IRevisionsAddedJobSource, IRevisionMailJobSource)
+    IRevisionMailJobSource,
+    IRevisionsAddedJobSource,
+    )
 
 
 def subscribers_want_notification(db_branch):

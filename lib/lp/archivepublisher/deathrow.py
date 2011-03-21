@@ -8,23 +8,26 @@ __metaclass__ = type
 
 import datetime
 import logging
-import pytz
 import os
 
-from lp.archivepublisher import ELIGIBLE_DOMINATION_STATES
-from lp.archivepublisher.config import getPubConfig, LucilleConfigError
-from lp.archivepublisher.diskpool import DiskPool
-from lp.archivepublisher.utils import process_in_batches
+import pytz
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
-
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.archivepublisher import ELIGIBLE_DOMINATION_STATES
+from lp.archivepublisher.config import (
+    getPubConfig,
+    LucilleConfigError,
+    )
+from lp.archivepublisher.diskpool import DiskPool
+from lp.archivepublisher.utils import process_in_batches
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,
-    ISourcePackagePublishingHistory)
-from lp.soyuz.interfaces.publishing import (
-    MissingSymlinkInPool, NotInPool)
+    ISourcePackagePublishingHistory,
+    MissingSymlinkInPool,
+    NotInPool,
+    )
 
 
 def getDeathRow(archive, log, pool_root_override):
@@ -117,8 +120,7 @@ class DeathRow:
             SourcePackagePublishingHistory.scheduleddeletiondate < %s AND
             SourcePackagePublishingHistory.dateremoved IS NULL AND
             NOT EXISTS (
-              SELECT 1 FROM sourcepackagepublishinghistory as spph,
-                  sourcepackagerelease as spr
+              SELECT 1 FROM sourcepackagepublishinghistory as spph
               WHERE
                   SourcePackagePublishingHistory.sourcepackagerelease =
                       spph.sourcepackagerelease AND
@@ -133,8 +135,7 @@ class DeathRow:
             BinaryPackagePublishingHistory.scheduleddeletiondate < %s AND
             BinaryPackagePublishingHistory.dateremoved IS NULL AND
             NOT EXISTS (
-              SELECT 1 FROM binarypackagepublishinghistory as bpph,
-                  binarypackagerelease as bpr
+              SELECT 1 FROM binarypackagepublishinghistory as bpph
               WHERE
                   BinaryPackagePublishingHistory.binarypackagerelease =
                       bpph.binarypackagerelease AND
@@ -201,7 +202,6 @@ class DeathRow:
             if pub.scheduleddeletiondate is None:
                 return False
             # Deny removal if any reference is still in 'quarantine'.
-            # See PubConfig.pendingremovalduration value.
             if pub.scheduleddeletiondate > right_now:
                 return False
 

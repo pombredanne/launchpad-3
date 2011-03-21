@@ -172,7 +172,7 @@ form.
     form information for this language...
 
     >>> print browser.getLink(id='plural_question').url
-    http://answers.launchpad.dev/rosetta/+addquestion
+    http://answers.launchpad.dev/launchpad/+addquestion
 
 We will see a note that Launchpad does not know in which countries
 this language is spoken and a link to add question page for informing
@@ -185,7 +185,7 @@ Rosetta admin about the countries where this page is officially spoken.
     country...
 
     >>> print browser.getLink(id='country_question').url
-    http://answers.launchpad.dev/rosetta/+addquestion
+    http://answers.launchpad.dev/launchpad/+addquestion
 
 
 Edit language information

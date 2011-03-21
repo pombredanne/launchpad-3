@@ -74,7 +74,7 @@ Launchpad is free to use for <a href="https://help.launchpad.net/Legal/ProjectLi
 			</ul><br />
 			<p>To get going, register your project and select <em>Other/Proprietary</em> as its licence.</p><br />
 			<p>Want to know more? <a href="mailto:commercial@launchpad.net">Get in touch</a>!</p><br />
-			<p><small>* US Dollars. Add VAT at 17.5% if you're in the European Union. Subscription is per project. Prices may change in the future.</small></p>
+			<p><small>* US Dollars. Add VAT at 20% if you're in the European Union. Subscription is per project. Prices may change in the future.</small></p>
 			<p style="float: right;"><a href="https://launchpad.net/projects/+new">Register your project &gt;</a></p><br />
 
                         </p>
@@ -114,7 +114,7 @@ Launchpad is free to use for <a href="https://help.launchpad.net/Legal/ProjectLi
                 <a href="index" title="Return to the start of the Launchpad tour" accesskey="g" tabindex="5">Start</a>
             </li>
              <li class="copyright">
-                &copy; 2004-2010 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="h" tabindex="6">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="i" tabindex="7">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="j" tabindex="8">FAQ</a>
+                &copy; 2004-2011 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="h" tabindex="6">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="i" tabindex="7">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="j" tabindex="8">FAQ</a>
             </li>
         </ul>
     </div>

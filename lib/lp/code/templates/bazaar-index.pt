@@ -38,6 +38,10 @@
         <input id="text" type="text" name="text" size="50" />
         <input type="submit" value="Find a Project" />
       </form>
+      <script type="text/javascript"><!--
+         setFocusByName('text');
+       // --></script>
+
       <p id="application-summary">
         Launchpad can host your project&#8217;s source code
         using the <a href="http://bazaar.canonical.com/">Bazaar</a>
@@ -52,9 +56,15 @@
         so you can use Bazaar with those too.
         (<a href="https://help.launchpad.net/Code">Read our guide</a>)
       </p>
+      <p id="build-recipes" class="application-summary" style="padding-top: 0.25em;">
+        Launchpad can build Ubuntu packages directly from branches using recipes.
+        We currently build over <a href="/+daily-builds">100 different packages</a>
+        into PPAs automatically using this method.
+        (<a href="https://help.launchpad.net/Packaging/SourceBuilds">Learn more about recipes</a>)
+      </p>
 
       <div id="project-cloud-preview" tal:content="cache:public,6 hours">
-        <h2>Projects with active branches</h2>
+        <h2>Most active projects in the last month</h2>
         <a tal:repeat="product view/short_product_tag_cloud"
            tal:attributes="href product/url;
                            class product/html_class;

@@ -9,27 +9,44 @@ import StringIO
 import unittest
 
 import transaction
-
-from zope.component import provideAdapter, provideUtility
-from zope.interface import classProvides, implements, Interface
+from zope.component import (
+    provideAdapter,
+    provideUtility,
+    )
+from zope.interface import (
+    classProvides,
+    implements,
+    Interface,
+    )
 from zope.testing.cleanup import CleanUp
-
-from canonical.lazr.interfaces import IObjectPrivacy
 
 from canonical.launchpad.interfaces.account import IAccount
 from canonical.launchpad.security import AuthorizationBase
 from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.webapp.authorization import (
-    check_permission, LaunchpadSecurityPolicy,
-    precache_permission_for_objects)
+    check_permission,
+    LaunchpadSecurityPolicy,
+    precache_permission_for_objects,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    AccessLevel, IAuthorization, ILaunchpadPrincipal, ILaunchpadContainer,
-    IStoreSelector)
+    AccessLevel,
+    IAuthorization,
+    ILaunchpadContainer,
+    ILaunchpadPrincipal,
+    IStoreSelector,
+    )
 from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
 from canonical.launchpad.webapp.servers import (
-    LaunchpadBrowserRequest, LaunchpadTestRequest)
-from canonical.testing import DatabaseFunctionalLayer
-from lp.testing import ANONYMOUS, login, TestCase
+    LaunchpadBrowserRequest,
+    LaunchpadTestRequest,
+    )
+from canonical.lazr.interfaces import IObjectPrivacy
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing import (
+    ANONYMOUS,
+    login,
+    TestCase,
+    )
 from lp.testing.factory import ObjectFactory
 
 

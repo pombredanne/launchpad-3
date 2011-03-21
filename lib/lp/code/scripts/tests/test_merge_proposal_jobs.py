@@ -1,15 +1,21 @@
 #! /usr/bin/python
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the sendbranchmail script"""
 
 import unittest
 
-from canonical.testing import ZopelessAppServerLayer
-from lp.testing import TestCaseWithFactory
+import transaction
+
 from canonical.launchpad.scripts.tests import run_script
+from canonical.testing.layers import ZopelessAppServerLayer
+from lp.code.model.tests.test_branchmergeproposaljobs import (
+    make_runnable_incremental_diff_job,
+    )
+from lp.services.job.interfaces.job import JobStatus
+from lp.testing import TestCaseWithFactory
 
 
 class TestMergeProposalJobScript(TestCaseWithFactory):
@@ -18,6 +24,8 @@ class TestMergeProposalJobScript(TestCaseWithFactory):
 
     def test_script_runs(self):
         """Ensure merge-proposal-jobs script runs."""
+        job = make_runnable_incremental_diff_job(self)
+        transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/merge-proposal-jobs.py', [])
         self.assertEqual(0, retcode)
@@ -25,7 +33,10 @@ class TestMergeProposalJobScript(TestCaseWithFactory):
         self.assertEqual(
             'INFO    Creating lockfile:'
             ' /var/lock/launchpad-merge-proposal-jobs.lock\n'
-            'INFO    Running through Twisted.\n', stderr)
+            'INFO    Running through Twisted.\n'
+            'INFO    Ran 1 GenerateIncrementalDiffJob jobs.\n', stderr)
+        self.assertEqual(JobStatus.COMPLETED, job.status)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

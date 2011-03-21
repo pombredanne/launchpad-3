@@ -8,7 +8,7 @@ distribution. Let's start with a product, this is done using
 affects and creates the new bugtask.
 
     >>> login('test@canonical.com')
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_four = getUtility(IBugSet).get(4)
     >>> len(bug_four.bugtasks)
     1
@@ -97,8 +97,8 @@ the product manually, since it's hard to guess which product that is
 most likely to get added. Let's take a look how it works for packages,
 which can have packaging links that helps us choose the product.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     CreateBugParams, IDistributionSet)
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> owner = getUtility(ILaunchBag).user
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu_firefox = ubuntu.getSourcePackage('mozilla-firefox')
@@ -125,6 +125,9 @@ be chosen manually, and the user may choose to link the package to the
 project..
 
     >>> ubuntu_thunderbird = ubuntu.getSourcePackage('thunderbird')
+    >>> ignore = factory.makeSourcePackagePublishingHistory(
+    ...     distroseries=ubuntu.currentseries,
+    ...     sourcepackagename=ubuntu_thunderbird.sourcepackagename)
     >>> thunderbird_bug = ubuntu_thunderbird.createBug(create_params)
     >>> ubuntu_thunderbird_task = thunderbird_bug.bugtasks[0]
 
@@ -168,8 +171,8 @@ In order to show that all the events get fired off, let's create an
 event listener and register it:
 
     >>> from zope.interface import Interface
-    >>> from lazr.lifecycle.interfaces import IObjectCreatedEvent
     >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from lazr.lifecycle.interfaces import IObjectCreatedEvent
 
     >>> def on_created_event(object, event):
     ...     print "ObjectCreatedEvent: %r" % object
@@ -224,8 +227,8 @@ This worked without any problems since Evolution does use Malone as its
 offical bug tracker.
 
     >>> evolution_task = bug_four.bugtasks[0]
-    >>> evolution_task.target.official_malone
-    True
+    >>> evolution_task.target.bug_tracking_usage
+    <DBItem ServiceUsage.LAUNCHPAD, (20) Launchpad>
 
     >>> transaction.commit()
 
@@ -275,8 +278,8 @@ But since no bug watch was specified, the status and importance
 are set to the default values.
 
     >>> alsa_task = bug_four.bugtasks[0]
-    >>> alsa_task.target.official_malone
-    False
+    >>> alsa_task.target.bug_tracking_usage
+    <DBItem ServiceUsage.UNKNOWN, (10) Unknown>
     >>> alsa_task.status.title
     'New'
     >>> alsa_task.importance.title
@@ -368,8 +371,8 @@ the bug watch's status later.
     >>> alsa_task = bug_four.bugtasks[0]
     >>> alsa_task.bugtargetname
     u'alsa-utils'
-    >>> alsa_task.product.official_malone
-    False
+    >>> alsa_task.product.bug_tracking_usage
+    <DBItem ServiceUsage.UNKNOWN, (10) Unknown>
     >>> alsa_task.bugwatch == bug_four.watches[0]
     True
 
@@ -646,5 +649,5 @@ bug trackers will always be a usable URL.
     >>> product.bugtracker = trac_bugtracker
 
     >>> print_links(add_task_view.upstream_bugtracker_links)
-    bug_filing_url: http://trac.example.com/newticket
+    bug_filing_url: http://trac.example.com/newticket?summary=Reflow%20...
     bug_search_url: http://trac.example.com/search?ticket=on&q=Reflow%20...

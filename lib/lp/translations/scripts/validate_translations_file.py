@@ -17,7 +17,8 @@ from canonical.launchpad import scripts
 from lp.translations.utilities.gettext_po_parser import POParser
 from lp.translations.utilities.mozilla_dtd_parser import DtdFile
 from lp.translations.utilities.mozilla_xpi_importer import (
-    MozillaZipImportParser)
+    MozillaZipImportParser,
+    )
 from lp.translations.utilities.xpi_manifest import XpiManifest
 
 

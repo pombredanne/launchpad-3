@@ -60,7 +60,7 @@ distribution.
     ...     distribution=distro, sourcepackagename=branch1.sourcepackagename)
     >>> transaction.commit()
     >>> distro_source_package_listing = canonical_url(
-    ...     distro_source_package, view_name="+branches")
+    ...     distro_source_package, view_name="+branches", rootsite='code')
     >>> logout()
 
     >>> browser.open(distro_source_package_listing)

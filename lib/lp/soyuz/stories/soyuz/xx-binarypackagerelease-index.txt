@@ -14,7 +14,7 @@ Let's find a build that produced some binaries:
   ...     'i386 build of mozilla-firefox 0.9 in ubuntu '
   ...     'warty RELEASE')
   >>> build_link.url
-  'http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+build/2'
+  'http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+buildjob/2'
 
 Next, we'll manually create a suitable package upload record for our
 build:
@@ -40,7 +40,7 @@ XXX: noodles 2009-01-16 bug 317863: move this into the STP.
 
   >>> build_link.click()
   >>> browser.url
-  'http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+build/2'
+  'http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+buildjob/2'
 
 This build produced one BinaryPackage, called 'mozilla-firefox 0.9',
 which is presented in the right portlet, called 'Resulting Binaries'.

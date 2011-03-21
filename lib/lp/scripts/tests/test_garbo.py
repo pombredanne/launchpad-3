@@ -1,0 +1,777 @@
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+"""Test the database garbage collector."""
+
+__metaclass__ = type
+__all__ = []
+
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from fixtures import TempDir
+import os
+import subprocess
+import time
+
+from pytz import UTC
+from storm.expr import (
+    Min,
+    SQL,
+    )
+from storm.locals import Storm, Int
+from storm.store import Store
+import transaction
+from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
+
+from canonical.config import config
+from canonical.database import sqlbase
+from canonical.database.constants import (
+    THIRTY_DAYS_AGO,
+    UTC_NOW,
+    )
+from canonical.launchpad.database.librarian import TimeLimitedToken
+from canonical.launchpad.database.message import Message
+from canonical.launchpad.database.oauth import OAuthNonce
+from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.scripts.tests import run_script
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector,
+    MAIN_STORE,
+    MASTER_FLAVOR,
+    )
+from canonical.testing.layers import (
+    DatabaseLayer,
+    LaunchpadScriptLayer,
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
+from lp.archiveuploader.dscfile import findFile
+from lp.bugs.model.bugnotification import (
+    BugNotification,
+    BugNotificationRecipient,
+    )
+from lp.code.bzr import (
+    BranchFormat,
+    RepositoryFormat,
+    )
+from lp.code.enums import CodeImportResultStatus
+from lp.code.interfaces.codeimportevent import ICodeImportEventSet
+from lp.code.model.branchjob import (
+    BranchJob,
+    BranchUpgradeJob,
+    )
+from lp.code.model.codeimportevent import CodeImportEvent
+from lp.code.model.codeimportresult import CodeImportResult
+from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonCreationRationale,
+    )
+from lp.scripts.garbo import (
+    BulkPruner,
+    DailyDatabaseGarbageCollector,
+    HourlyDatabaseGarbageCollector,
+    OpenIDConsumerAssociationPruner,
+    )
+from lp.services.job.model.job import Job
+from lp.services.log.logger import BufferLogger
+from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
+
+
+class TestGarboScript(TestCase):
+    layer = LaunchpadScriptLayer
+
+    def test_daily_script(self):
+        """Ensure garbo-daily.py actually runs."""
+        rv, out, err = run_script(
+            "cronscripts/garbo-daily.py", ["-q"], expect_returncode=0)
+        self.failIf(out.strip(), "Output to stdout: %s" % out)
+        self.failIf(err.strip(), "Output to stderr: %s" % err)
+        DatabaseLayer.force_dirty_database()
+
+    def test_hourly_script(self):
+        """Ensure garbo-hourly.py actually runs."""
+        # Our sampledata doesn't contain anything that PopulateSPRChangelogs
+        # can process without errors, so it's easier to just set all of the
+        # changelogs to a random LFA. We can't just expire every LFA, since
+        # a bunch of SPRs have no SPRFs at all.
+        IMasterStore(SourcePackageRelease).find(SourcePackageRelease).set(
+            changelogID=1)
+        transaction.commit() # run_script() is a different process.
+        rv, out, err = run_script(
+            "cronscripts/garbo-hourly.py", ["-q"], expect_returncode=0)
+        self.failIf(out.strip(), "Output to stdout: %s" % out)
+        self.failIf(err.strip(), "Output to stderr: %s" % err)
+
+
+class BulkFoo(Storm):
+    __storm_table__ = 'bulkfoo'
+    id = Int(primary=True)
+
+
+class BulkFooPruner(BulkPruner):
+    target_table_class = BulkFoo
+    ids_to_prune_query = "SELECT id FROM BulkFoo WHERE id < 5"
+    maximum_chunk_size = 2
+
+
+class TestBulkPruner(TestCase):
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestBulkPruner, self).setUp()
+
+        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.store.execute("CREATE TABLE BulkFoo (id serial PRIMARY KEY)")
+
+        for i in range(10):
+            self.store.add(BulkFoo())
+
+    def test_bulkpruner(self):
+        log = BufferLogger()
+        pruner = BulkFooPruner(log)
+
+        # The loop thinks there is stuff to do. Confirm the initial
+        # state is sane.
+        self.assertFalse(pruner.isDone())
+
+        # An arbitrary chunk size.
+        chunk_size = 2
+
+        # Determine how many items to prune and to leave rather than
+        # hardcode these numbers.
+        num_to_prune = self.store.find(
+            BulkFoo, BulkFoo.id < 5).count()
+        num_to_leave = self.store.find(
+            BulkFoo, BulkFoo.id >= 5).count()
+        self.assertTrue(num_to_prune > chunk_size)
+        self.assertTrue(num_to_leave > 0)
+
+        # Run one loop. Make sure it committed by throwing away
+        # uncommitted changes.
+        pruner(chunk_size)
+        transaction.abort()
+
+        # Confirm 'chunk_size' items where removed; no more, no less.
+        num_remaining = self.store.find(BulkFoo).count()
+        expected_num_remaining = num_to_leave + num_to_prune - chunk_size
+        self.assertEqual(num_remaining, expected_num_remaining)
+
+        # The loop thinks there is more stuff to do.
+        self.assertFalse(pruner.isDone())
+
+        # Run the loop to completion, removing the remaining targetted
+        # rows.
+        while not pruner.isDone():
+            pruner(1000000)
+        transaction.abort()
+
+        # Confirm we have removed all targetted rows.
+        self.assertEqual(self.store.find(BulkFoo, BulkFoo.id < 5).count(), 0)
+
+        # Confirm we have the expected number of remaining rows.
+        # With the previous check, this means no untargetted rows
+        # where removed.
+        self.assertEqual(
+            self.store.find(BulkFoo, BulkFoo.id >= 5).count(), num_to_leave)
+
+        # Cleanup clears up our resources.
+        pruner.cleanUp()
+
+        # We can run it again - temporary objects cleaned up.
+        pruner = BulkFooPruner(log)
+        while not pruner.isDone():
+            pruner(chunk_size)
+
+
+class TestGarbo(TestCaseWithFactory):
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestGarbo, self).setUp()
+        # Run the garbage collectors to remove any existing garbage,
+        # starting us in a known state.
+        self.runDaily()
+        self.runHourly()
+
+    def runDaily(self, maximum_chunk_size=2, test_args=()):
+        transaction.commit()
+        LaunchpadZopelessLayer.switchDbUser('garbo_daily')
+        collector = DailyDatabaseGarbageCollector(test_args=list(test_args))
+        collector._maximum_chunk_size = maximum_chunk_size
+        collector.logger = BufferLogger()
+        collector.main()
+        return collector
+
+    def runHourly(self, maximum_chunk_size=2, test_args=()):
+        LaunchpadZopelessLayer.switchDbUser('garbo_hourly')
+        collector = HourlyDatabaseGarbageCollector(test_args=list(test_args))
+        collector._maximum_chunk_size = maximum_chunk_size
+        collector.logger = BufferLogger()
+        collector.main()
+        return collector
+
+    def test_OAuthNoncePruner(self):
+        now = datetime.utcnow().replace(tzinfo=UTC)
+        timestamps = [
+            now - timedelta(days=2), # Garbage
+            now - timedelta(days=1) - timedelta(seconds=60), # Garbage
+            now - timedelta(days=1) + timedelta(seconds=60), # Not garbage
+            now, # Not garbage
+            ]
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        store = IMasterStore(OAuthNonce)
+
+        # Make sure we start with 0 nonces.
+        self.failUnlessEqual(store.find(OAuthNonce).count(), 0)
+
+        for timestamp in timestamps:
+            OAuthNonce(
+                access_tokenID=1,
+                request_timestamp = timestamp,
+                nonce = str(timestamp))
+        transaction.commit()
+
+        # Make sure we have 4 nonces now.
+        self.failUnlessEqual(store.find(OAuthNonce).count(), 4)
+
+        self.runHourly(maximum_chunk_size=60) # 1 minute maximum chunk size
+
+        store = IMasterStore(OAuthNonce)
+
+        # Now back to two, having removed the two garbage entries.
+        self.failUnlessEqual(store.find(OAuthNonce).count(), 2)
+
+        # And none of them are older than a day.
+        # Hmm... why is it I'm putting tz aware datetimes in and getting
+        # naive datetimes back? Bug in the SQLObject compatibility layer?
+        # Test is still fine as we know the timezone.
+        self.failUnless(
+            store.find(
+                Min(OAuthNonce.request_timestamp)).one().replace(tzinfo=UTC)
+            >= now - timedelta(days=1))
+
+    def test_OpenIDConsumerNoncePruner(self):
+        now = int(time.mktime(time.gmtime()))
+        MINUTES = 60
+        HOURS = 60 * 60
+        DAYS = 24 * HOURS
+        timestamps = [
+            now - 2 * DAYS, # Garbage
+            now - 1 * DAYS - 1 * MINUTES, # Garbage
+            now - 1 * DAYS + 1 * MINUTES, # Not garbage
+            now, # Not garbage
+            ]
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+
+        store = IMasterStore(OpenIDConsumerNonce)
+
+        # Make sure we start with 0 nonces.
+        self.failUnlessEqual(store.find(OpenIDConsumerNonce).count(), 0)
+
+        for timestamp in timestamps:
+            store.add(OpenIDConsumerNonce(
+                    u'http://server/', timestamp, u'aa'))
+        transaction.commit()
+
+        # Make sure we have 4 nonces now.
+        self.failUnlessEqual(store.find(OpenIDConsumerNonce).count(), 4)
+
+        # Run the garbage collector.
+        self.runHourly(maximum_chunk_size=60) # 1 minute maximum chunks.
+
+        store = IMasterStore(OpenIDConsumerNonce)
+
+        # We should now have 2 nonces.
+        self.failUnlessEqual(store.find(OpenIDConsumerNonce).count(), 2)
+
+        # And none of them are older than 1 day
+        earliest = store.find(Min(OpenIDConsumerNonce.timestamp)).one()
+        self.failUnless(earliest >= now - 24*60*60, 'Still have old nonces')
+
+    def test_CodeImportResultPruner(self):
+        now = datetime.utcnow().replace(tzinfo=UTC)
+        store = IMasterStore(CodeImportResult)
+
+        results_to_keep_count = (
+            config.codeimport.consecutive_failure_limit - 1)
+
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        code_import_id = self.factory.makeCodeImport().id
+        machine_id = self.factory.makeCodeImportMachine().id
+        requester_id = self.factory.makePerson().id
+        transaction.commit()
+
+        def new_code_import_result(timestamp):
+            LaunchpadZopelessLayer.switchDbUser('testadmin')
+            CodeImportResult(
+                date_created=timestamp,
+                code_importID=code_import_id, machineID=machine_id,
+                requesting_userID=requester_id,
+                status=CodeImportResultStatus.FAILURE,
+                date_job_started=timestamp)
+            transaction.commit()
+
+        new_code_import_result(now - timedelta(days=60))
+        for i in range(results_to_keep_count - 1):
+            new_code_import_result(now - timedelta(days=19+i))
+
+        # Run the garbage collector
+        self.runDaily()
+
+        # Nothing is removed, because we always keep the
+        # ``results_to_keep_count`` latest.
+        store = IMasterStore(CodeImportResult)
+        self.failUnlessEqual(
+            results_to_keep_count,
+            store.find(CodeImportResult).count())
+
+        new_code_import_result(now - timedelta(days=31))
+        self.runDaily()
+        store = IMasterStore(CodeImportResult)
+        self.failUnlessEqual(
+            results_to_keep_count,
+            store.find(CodeImportResult).count())
+
+        new_code_import_result(now - timedelta(days=29))
+        self.runDaily()
+        store = IMasterStore(CodeImportResult)
+        self.failUnlessEqual(
+            results_to_keep_count,
+            store.find(CodeImportResult).count())
+
+        # We now have no CodeImportResults older than 30 days
+        self.failUnless(
+            store.find(
+                Min(CodeImportResult.date_created)).one().replace(tzinfo=UTC)
+            >= now - timedelta(days=30))
+
+    def test_CodeImportEventPruner(self):
+        now = datetime.utcnow().replace(tzinfo=UTC)
+        store = IMasterStore(CodeImportResult)
+
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        machine = self.factory.makeCodeImportMachine()
+        requester = self.factory.makePerson()
+        # Create 6 code import events for this machine, 3 on each side of 30
+        # days. Use the event set to the extra event data rows get created
+        # too.
+        event_set = getUtility(ICodeImportEventSet)
+        for age in (35, 33, 31, 29, 27, 15):
+            event_set.newOnline(
+                machine, user=requester, message='Hello',
+                _date_created=(now - timedelta(days=age)))
+        transaction.commit()
+
+        # Run the garbage collector
+        self.runDaily()
+
+        # Only the three most recent results are left.
+        events = list(machine.events)
+        self.assertEqual(3, len(events))
+        # We now have no CodeImportEvents older than 30 days
+        self.failUnless(
+            store.find(
+                Min(CodeImportEvent.date_created)).one().replace(tzinfo=UTC)
+            >= now - timedelta(days=30))
+
+    def test_OpenIDConsumerAssociationPruner(self):
+        pruner = OpenIDConsumerAssociationPruner
+        table_name = pruner.table_name
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        store_selector = getUtility(IStoreSelector)
+        store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
+        now = time.time()
+        # Create some associations in the past with lifetimes
+        for delta in range(0, 20):
+            store.execute("""
+                INSERT INTO %s (server_url, handle, issued, lifetime)
+                VALUES (%s, %s, %d, %d)
+                """ % (table_name, str(delta), str(delta), now-10, delta))
+        transaction.commit()
+
+        # Ensure that we created at least one expirable row (using the
+        # test start time as 'now').
+        num_expired = store.execute("""
+            SELECT COUNT(*) FROM %s
+            WHERE issued + lifetime < %f
+            """ % (table_name, now)).get_one()[0]
+        self.failUnless(num_expired > 0)
+
+        # Expire all those expirable rows, and possibly a few more if this
+        # test is running slow.
+        self.runHourly()
+
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
+        # Confirm all the rows we know should have been expired have
+        # been expired. These are the ones that would be expired using
+        # the test start time as 'now'.
+        num_expired = store.execute("""
+            SELECT COUNT(*) FROM %s
+            WHERE issued + lifetime < %f
+            """ % (table_name, now)).get_one()[0]
+        self.failUnlessEqual(num_expired, 0)
+
+        # Confirm that we haven't expired everything. This test will fail
+        # if it has taken 10 seconds to get this far.
+        num_unexpired = store.execute(
+            "SELECT COUNT(*) FROM %s" % table_name).get_one()[0]
+        self.failUnless(num_unexpired > 0)
+
+    def test_RevisionAuthorEmailLinker(self):
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        rev1 = self.factory.makeRevision('Author 1 <author-1@Example.Org>')
+        rev2 = self.factory.makeRevision('Author 2 <author-2@Example.Org>')
+        rev3 = self.factory.makeRevision('Author 3 <author-3@Example.Org>')
+
+        person1 = self.factory.makePerson(email='Author-1@example.org')
+        person2 = self.factory.makePerson(
+            email='Author-2@example.org',
+            email_address_status=EmailAddressStatus.NEW)
+        account3 = self.factory.makeAccount(
+            'Author 3', 'Author-3@example.org')
+
+        self.assertEqual(rev1.revision_author.person, None)
+        self.assertEqual(rev2.revision_author.person, None)
+        self.assertEqual(rev3.revision_author.person, None)
+
+        self.runDaily()
+
+        # Only the validated email address associated with a Person
+        # causes a linkage.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(rev1.revision_author.person, person1)
+        self.assertEqual(rev2.revision_author.person, None)
+        self.assertEqual(rev3.revision_author.person, None)
+
+        # Validating an email address creates a linkage.
+        person2.validateAndEnsurePreferredEmail(person2.guessedemails[0])
+        self.assertEqual(rev2.revision_author.person, None)
+
+        self.runDaily()
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(rev2.revision_author.person, person2)
+
+        # Creating a person for an existing account creates a linkage.
+        person3 = account3.createPerson(PersonCreationRationale.UNKNOWN)
+        self.assertEqual(rev3.revision_author.person, None)
+
+        self.runDaily()
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(rev3.revision_author.person, person3)
+
+    def test_HWSubmissionEmailLinker(self):
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        sub1 = self.factory.makeHWSubmission(
+            emailaddress='author-1@Example.Org')
+        sub2 = self.factory.makeHWSubmission(
+            emailaddress='author-2@Example.Org')
+        sub3 = self.factory.makeHWSubmission(
+            emailaddress='author-3@Example.Org')
+
+        person1 = self.factory.makePerson(email='Author-1@example.org')
+        person2 = self.factory.makePerson(
+            email='Author-2@example.org',
+            email_address_status=EmailAddressStatus.NEW)
+        account3 = self.factory.makeAccount(
+            'Author 3', 'Author-3@example.org')
+
+        self.assertEqual(sub1.owner, None)
+        self.assertEqual(sub2.owner, None)
+        self.assertEqual(sub3.owner, None)
+
+        self.runDaily()
+
+        # Only the validated email address associated with a Person
+        # causes a linkage.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(sub1.owner, person1)
+        self.assertEqual(sub2.owner, None)
+        self.assertEqual(sub3.owner, None)
+
+        # Validating an email address creates a linkage.
+        person2.validateAndEnsurePreferredEmail(person2.guessedemails[0])
+        self.assertEqual(sub2.owner, None)
+
+        self.runDaily()
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(sub2.owner, person2)
+
+        # Creating a person for an existing account creates a linkage.
+        person3 = account3.createPerson(PersonCreationRationale.UNKNOWN)
+        self.assertEqual(sub3.owner, None)
+
+        self.runDaily()
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(sub3.owner, person3)
+
+    def test_PersonPruner(self):
+        personset = getUtility(IPersonSet)
+        # Switch the DB user because the garbo_daily user isn't allowed to
+        # create person entries.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+
+        # Create two new person entries, both not linked to anything. One of
+        # them will have the present day as its date created, and so will not
+        # be deleted, whereas the other will have a creation date far in the
+        # past, so it will be deleted.
+        self.factory.makePerson(name='test-unlinked-person-new')
+        person_old = self.factory.makePerson(name='test-unlinked-person-old')
+        removeSecurityProxy(person_old).datecreated = datetime(
+            2008, 01, 01, tzinfo=UTC)
+
+        # Normally, the garbage collector will do nothing because the
+        # PersonPruner is experimental
+        self.runDaily()
+        self.assertIsNot(
+            personset.getByName('test-unlinked-person-new'), None)
+        self.assertIsNot(
+            personset.getByName('test-unlinked-person-old'), None)
+
+        # When we run the garbage collector with experimental jobs turned
+        # on, the old unlinked Person is removed.
+        self.runDaily(test_args=['--experimental'])
+        self.assertIsNot(
+            personset.getByName('test-unlinked-person-new'), None)
+        self.assertIs(personset.getByName('test-unlinked-person-old'), None)
+
+    def test_BugNotificationPruner(self):
+        # Create some sample data
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        notification = BugNotification(
+            messageID=1,
+            bugID=1,
+            is_comment=True,
+            date_emailed=None)
+        BugNotificationRecipient(
+            bug_notification=notification,
+            personID=1,
+            reason_header='Whatever',
+            reason_body='Whatever')
+        # We don't create an entry exactly 30 days old to avoid
+        # races in the test.
+        for delta in range(-45, -14, 2):
+            message = Message(rfc822msgid=str(delta))
+            notification = BugNotification(
+                message=message,
+                bugID=1,
+                is_comment=True,
+                date_emailed=UTC_NOW + SQL("interval '%d days'" % delta))
+            BugNotificationRecipient(
+                bug_notification=notification,
+                personID=1,
+                reason_header='Whatever',
+                reason_body='Whatever')
+
+        store = IMasterStore(BugNotification)
+
+        # Ensure we are at a known starting point.
+        num_unsent = store.find(
+            BugNotification,
+            BugNotification.date_emailed == None).count()
+        num_old = store.find(
+            BugNotification,
+            BugNotification.date_emailed < THIRTY_DAYS_AGO).count()
+        num_new = store.find(
+            BugNotification,
+            BugNotification.date_emailed > THIRTY_DAYS_AGO).count()
+
+        self.assertEqual(num_unsent, 1)
+        self.assertEqual(num_old, 8)
+        self.assertEqual(num_new, 8)
+
+        # Run the garbage collector.
+        self.runDaily()
+
+        # We should have 9 BugNotifications left.
+        self.assertEqual(
+            store.find(
+                BugNotification,
+                BugNotification.date_emailed == None).count(),
+            num_unsent)
+        self.assertEqual(
+            store.find(
+                BugNotification,
+                BugNotification.date_emailed > THIRTY_DAYS_AGO).count(),
+            num_new)
+        self.assertEqual(
+            store.find(
+                BugNotification,
+                BugNotification.date_emailed < THIRTY_DAYS_AGO).count(),
+            0)
+
+    def test_BranchJobPruner(self):
+        # Garbo should remove jobs completed over 30 days ago.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        store = IMasterStore(Job)
+
+        db_branch = self.factory.makeAnyBranch()
+        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
+        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
+        Store.of(db_branch).flush()
+        branch_job = BranchUpgradeJob.create(db_branch)
+        branch_job.job.date_finished = THIRTY_DAYS_AGO
+
+        self.assertEqual(
+            store.find(
+                BranchJob,
+                BranchJob.branch == db_branch.id).count(),
+                1)
+
+        self.runDaily()
+
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(
+            store.find(
+                BranchJob,
+                BranchJob.branch == db_branch.id).count(),
+                0)
+
+    def test_BranchJobPruner_doesnt_prune_recent_jobs(self):
+        # Check to make sure the garbo doesn't remove jobs that aren't more
+        # than thirty days old.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        store = IMasterStore(Job)
+
+        db_branch = self.factory.makeAnyBranch(
+            branch_format=BranchFormat.BZR_BRANCH_5,
+            repository_format=RepositoryFormat.BZR_KNIT_1)
+
+        branch_job = BranchUpgradeJob.create(db_branch)
+        branch_job.job.date_finished = THIRTY_DAYS_AGO
+
+        db_branch2 = self.factory.makeAnyBranch(
+            branch_format=BranchFormat.BZR_BRANCH_5,
+            repository_format=RepositoryFormat.BZR_KNIT_1)
+        BranchUpgradeJob.create(db_branch2)
+
+        self.runDaily()
+
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(store.find(BranchJob).count(), 1)
+
+    def test_ObsoleteBugAttachmentDeleter(self):
+        # Bug attachments without a LibraryFileContent record are removed.
+
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        bug = self.factory.makeBug()
+        attachment = self.factory.makeBugAttachment(bug=bug)
+        transaction.commit()
+
+        # Bug attachments that have a LibraryFileContent record are
+        # not deleted.
+        self.assertIsNot(attachment.libraryfile.content, None)
+        self.runDaily()
+        self.assertEqual(bug.attachments.count(), 1)
+
+        # But once we delete the LfC record, the attachment is deleted
+        # in the next daily garbo run.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        removeSecurityProxy(attachment.libraryfile).content = None
+        transaction.commit()
+        self.runDaily()
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(bug.attachments.count(), 0)
+
+    def test_TimeLimitedTokenPruner(self):
+        # Ensure there are no tokens
+        store = sqlbase.session_store()
+        map(store.remove, store.find(TimeLimitedToken))
+        store.flush()
+        self.assertEqual(0, len(list(store.find(TimeLimitedToken,
+            path="sample path"))))
+        # One to clean and one to keep
+        store.add(TimeLimitedToken(path="sample path", token="foo",
+            created=datetime(2008, 01, 01, tzinfo=UTC)))
+        store.add(TimeLimitedToken(path="sample path", token="bar")),
+        store.commit()
+        self.assertEqual(2, len(list(store.find(TimeLimitedToken,
+            path="sample path"))))
+        self.runDaily()
+        self.assertEqual(0, len(list(store.find(TimeLimitedToken,
+            path="sample path", token="foo"))))
+        self.assertEqual(1, len(list(store.find(TimeLimitedToken,
+            path="sample path", token="bar"))))
+
+    def test_CacheSuggestivePOTemplates(self):
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        template = self.factory.makePOTemplate()
+        self.runDaily()
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        count, = store.execute("""
+            SELECT count(*)
+            FROM SuggestivePOTemplate
+            WHERE potemplate = %s
+            """ % sqlbase.quote(template.id)).get_one()
+
+        self.assertEqual(1, count)
+
+    def upload_to_debian(self, restricted=False):
+        sid = getUtility(IDistributionSet)['debian']['sid']
+        spn = self.factory.makeSourcePackageName('9wm')
+        spr = self.factory.makeSourcePackageRelease(
+            sourcepackagename=spn, version='1.2-7', distroseries=sid)
+        archive = sid.main_archive
+        if restricted:
+            archive = self.factory.makeArchive(
+                distribution=sid.distribution, private=True)
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr, archive=archive,
+            status=PackagePublishingStatus.PUBLISHED)
+        for name in (
+            '9wm_1.2-7.diff.gz', '9wm_1.2.orig.tar.gz', '9wm_1.2-7.dsc'):
+            path = os.path.join(
+                'lib/lp/soyuz/scripts/tests/gina_test_archive/pool/main/9',
+                '9wm', name)
+            lfa = getUtility(ILibraryFileAliasSet).create(
+                name, os.stat(path).st_size, open(path, 'r'),
+                'application/octet-stream', restricted=restricted)
+            spr.addFile(lfa)
+        with TempDir() as tmp_dir:
+            fnull = open('/dev/null', 'w')
+            ret = subprocess.call(
+                ['dpkg-source', '-x', path, os.path.join(
+                    tmp_dir.path, 'extracted')],
+                    stdout=fnull, stderr=fnull)
+            fnull.close()
+            self.assertEqual(0, ret)
+            changelog_path = findFile(tmp_dir.path, 'debian/changelog')
+            changelog = open(changelog_path, 'r').read()
+        transaction.commit() # .runHourly() switches dbuser.
+        return (spr, changelog)
+
+    def test_populateSPRChangelogs(self):
+        # We set SPR.changelog for imported records from Debian.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        spr, changelog = self.upload_to_debian()
+        collector = self.runHourly()
+        log = collector.logger.getLogBuffer()
+        self.assertTrue(
+            'SPR %d (9wm 1.2-7) changelog imported.' % spr.id in log)
+        self.assertFalse(spr.changelog == None)
+        self.assertFalse(spr.changelog.restricted)
+        self.assertEqual(changelog, spr.changelog.read())
+
+    def test_populateSPRChangelogs_restricted_sprf(self):
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        spr, changelog = self.upload_to_debian(restricted=True)
+        collector = self.runHourly()
+        log = collector.logger.getLogBuffer()
+        self.assertTrue(
+            'SPR %d (9wm 1.2-7) changelog imported.' % spr.id in log)
+        self.assertFalse(spr.changelog == None)
+        self.assertTrue(spr.changelog.restricted)
+        self.assertEqual(changelog, spr.changelog.read())

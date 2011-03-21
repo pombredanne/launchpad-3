@@ -8,19 +8,27 @@ import time
 from unittest import TestLoader
 
 import pytz
+from storm.locals import Store
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
-from canonical.testing import LaunchpadZopelessLayer
-from storm.locals import Store
-
-from lp.services.job.model.job import (
-    InvalidTransition, Job, LeaseHeld)
-from lp.services.job.interfaces.job import IJob, JobStatus
-from lp.testing import TestCase
-from canonical.launchpad.webapp.testing import verifyObject
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from canonical.launchpad.webapp.testing import verifyObject
+from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.services.job.interfaces.job import (
+    IJob,
+    JobStatus,
+    )
+from lp.services.job.model.job import (
+    InvalidTransition,
+    Job,
+    LeaseHeld,
+    )
+from lp.testing import TestCase
 
 
 class TestJob(TestCase):

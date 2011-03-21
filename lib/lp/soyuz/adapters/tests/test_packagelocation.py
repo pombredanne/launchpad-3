@@ -7,13 +7,15 @@ import unittest
 
 from zope.component import getUtility
 
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.soyuz.adapters.packagelocation import (
-    PackageLocationError, build_package_location)
-from lp.soyuz.interfaces.archive import ArchivePurpose
+    build_package_location,
+    PackageLocationError,
+    )
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import remove_security_proxy_and_shout_at_engineer
-from canonical.testing import LaunchpadZopelessLayer
 
 
 class TestPackageLocation(TestCaseWithFactory):

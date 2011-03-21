@@ -7,12 +7,8 @@ __metaclass__ = type
 __all__ = []
 
 from doctest import DocTestSuite
-import unittest
 
 import canonical.testing.doctestcodec
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(DocTestSuite(canonical.testing.doctestcodec))
-    return suite
-
+    return DocTestSuite(canonical.testing.doctestcodec)

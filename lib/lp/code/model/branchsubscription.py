@@ -6,19 +6,20 @@
 __metaclass__ = type
 __all__ = ['BranchSubscription']
 
+from sqlobject import ForeignKey
 from zope.interface import implements
 
-from sqlobject import ForeignKey
-
 from canonical.database.constants import DEFAULT
-from canonical.database.sqlbase import SQLBase
 from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces.launchpad import IPersonRoles
 from lp.code.enums import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
-from lp.code.interfaces.branchsubscription import IBranchSubscription
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
 from lp.code.interfaces.branch import IBranchNavigationMenu
+from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.security import BranchSubscriptionEdit
 from lp.registry.interfaces.person import validate_person

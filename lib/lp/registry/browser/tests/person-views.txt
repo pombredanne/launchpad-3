@@ -64,7 +64,7 @@ Inactive and suspended users are invalid; the homepage content is
 escaped HTML.
 
     >>> from canonical.launchpad.interfaces.account import AccountStatus
-    >>> from canonical.launchpad.interfaces import IMasterObject
+    >>> from canonical.launchpad.interfaces.lpstorm import IMasterObject
 
     # Only admins can change an account.
 
@@ -106,14 +106,16 @@ email addresses and the visible_email_address_description summarises who
 can see them
 
 Mark has a registered email address, and he has chosen to disclose it to
-the world.
+anyone in Launchpad..
 
+    >>> login('test@canonical.com')
     >>> mark = person_set.getByEmail('mark@example.com')
     >>> mark.preferredemail.email
     u'mark@example.com'
 
     >>> mark.hide_email_addresses
     False
+    >>> logout()
 
 Anonymous users cannot see any Launchpad user's email addresses. The
 email addresses state is LOGIN_REQUIRED, there is no description, nor
@@ -301,108 +303,6 @@ parenthesis.
     Portuguese (Brazil)
 
 
-Location
---------
-
-The Person profile page contains the location portlet that shows a map.
-The map requires the google GMap JavaScript to display, so the views set
-the state of the request's needs_gmap2 attribute to True only when the
-user has set his latitude, it is visible, and the viewing user wishes to
-see it. The map is not rendered if the user has not set his location.
-
-    >>> sample_person.latitude is None
-    True
-
-    >>> person_view = create_initialized_view(sample_person, '+index')
-    >>> person_view.request.needs_gmap2
-    False
-
-The map_portlet_html property that creates the map cannot be called.
-
-    >>> print person_view.map_portlet_html
-    Traceback (most recent call last):
-     ...
-    AssertionError: Can't generate the map for a person who hasn't set
-                    a visible location.
-
-If the user sets his location, but does not make it visible, needs_gmap2
-will still be False and the map_portlet_html property cannot be called.
-
-    >>> login_person(sample_person)
-    >>> sample_person.setLocation(
-    ...     38.81, 77.1, 'America/New_York', sample_person)
-    >>> sample_person.setLocationVisibility(False)
-    >>> login('no-priv@canonical.com')
-
-    >>> person_view = create_initialized_view(sample_person, '+index')
-    >>> person_view.request.needs_gmap2
-    False
-
-    >>> print person_view.map_portlet_html
-    Traceback (most recent call last):
-     ...
-    AssertionError: Can't generate the map for a person who hasn't set
-                    a visible location.
-
-When the user set's his visibility to True, needs_gmap2 will be true and
-the map_portlet_html can be called.
-
-    >>> login_person(sample_person)
-    >>> sample_person.setLocationVisibility(True)
-
-    >>> person_view = create_initialized_view(sample_person, '+index')
-    >>> person_view.request.needs_gmap2
-    True
-
-    >>> print person_view.map_portlet_html
-    <script type="text/javascript">
-      YUI().use('node', 'lp.app.mapping', function(Y) { ...
-
-The small_maps key in the launchpad_views cookie can be set of the
-viewing user to 'false' to indicate that small maps are not wanted.
-While needs_gmap2 is False, the map_portlet_html property's markup is
-still needed to render the 'Show maps' checkbox.
-
-    >>> cookie = 'launchpad_views=small_maps=false'
-    >>> person_view = create_initialized_view(
-    ...     sample_person, '+index', cookie=cookie)
-    >>> person_view.request.needs_gmap2
-    False
-
-    >>> print person_view.map_portlet_html
-    <script type="text/javascript">
-      YUI().use('node', 'lp.app.mapping', function(Y) { ...
-
-The map portlet is shown if the user has not set his location and is
-viewing his own page.
-
-    >>> user = factory.makePerson()
-    >>> user.latitude is None
-    True
-
-    >>> login_person(user)
-    >>> person_view = create_initialized_view(
-    ...     user, '+index')
-    >>> person_view.should_show_map_portlet
-    True
-
-However another user will not be shown the portlet.
-
-    >>> login('foo.bar@canonical.com')
-    >>> person_view = create_initialized_view(
-    ...     user, '+index')
-    >>> person_view.should_show_map_portlet
-    False
-
-If a user has a location set and it is visibible then the portlet is
-shown.
-
-    >>> person_view = create_initialized_view(
-    ...     sample_person, '+index')
-    >>> person_view.should_show_map_portlet
-    True
-
-
 Things a person is working on
 -----------------------------
 
@@ -432,10 +332,9 @@ progress.
 Assigned specifications that do not display when they are not in an in
 progress state.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...    SpecificationImplementationStatus)
+    >>> from lp.blueprints.enums import SpecificationImplementationStatus
 
-    >>> login(user.preferredemail.email)
+    >>> login_person(user)
     >>> product = factory.makeProduct(name="tool", owner=user)
     >>> spec = factory.makeSpecification(
     ...     product=product, title='Specs need stories')
@@ -454,8 +353,7 @@ The specification is displayed only when it is in a in progress state
 specifications is a link to show all the specifications that the user is
 working on.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...    SpecificationDefinitionStatus)
+    >>> from lp.blueprints.enums import SpecificationDefinitionStatus
 
     >>> spec.definition_status = SpecificationDefinitionStatus.APPROVED
     >>> newstate = spec.updateLifecycleStatus(user)
@@ -495,7 +393,7 @@ Assigned bugs do not display when their status is not INPROGRESS.
 The assigned bug is displayed in the "Working on..." section when its
 status is in INPROGRESS.
 
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> bug.bugtasks[0].transitionToStatus(BugTaskStatus.INPROGRESS, user)
 
     # Create a new view because we're testing some cached properties.

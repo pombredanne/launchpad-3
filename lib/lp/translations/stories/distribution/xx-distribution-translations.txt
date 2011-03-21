@@ -1,4 +1,5 @@
-= Distribution translations =
+Distribution translations
+=========================
 
 This page shows a list of PO templates contained within all source
 packages for the distroseries that is the translation focus for a
@@ -79,7 +80,18 @@ we should not have a link to it.
     LinkNotFoundError
 
 Let's try now a distribution that lacks a translation focus. Debian is
-a good example. We should get latest release as the translation focus.
+a good example, if enable translations for it.
+
+    >>> from zope.component import getUtility
+    >>> from lp.app.enums import ServiceUsage
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> login('admin@canonical.com')
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+    >>> debian.translations_usage = ServiceUsage.LAUNCHPAD
+    >>> transaction.commit()
+    >>> logout()
+
+We should get latest release as the translation focus.
 
     >>> browser.open('http://translations.launchpad.dev/debian')
     >>> browser.url
@@ -123,11 +135,11 @@ Administrator can change the translation focus for a distribution.
     ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
     >>> editor_browser.open('http://launchpad.dev/ubuntu')
     >>> editor_browser.getLink('Change details').click()
-    >>> editor_browser.getControl('Translation Focus').displayValue
+    >>> editor_browser.getControl('Translation focus').displayValue
     ['ubuntu hoary']
-    >>> editor_browser.getControl('Translation Focus').displayValue = [
+    >>> editor_browser.getControl('Translation focus').displayValue = [
     ...     'ubuntu grumpy']
     >>> editor_browser.getControl('Change', index=3).click()
     >>> editor_browser.getLink('Change details').click()
-    >>> editor_browser.getControl('Translation Focus').displayValue
+    >>> editor_browser.getControl('Translation focus').displayValue
     ['ubuntu grumpy']

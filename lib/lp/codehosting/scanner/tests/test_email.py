@@ -8,16 +8,20 @@ __metaclass__ = type
 import email
 import unittest
 
-from zope.event import notify
 from zope.component import getUtility
+from zope.event import notify
 
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.enums import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
 from lp.code.interfaces.branchjob import (
-    IRevisionMailJobSource, IRevisionsAddedJobSource)
-from lp.code.model.branchjob import (RevisionMailJob)
+    IRevisionMailJobSource,
+    IRevisionsAddedJobSource,
+    )
+from lp.code.model.branchjob import RevisionMailJob
 from lp.codehosting.scanner import events
 from lp.codehosting.scanner.tests.test_bzrsync import BzrSyncTestCase
 from lp.registry.interfaces.person import IPersonSet

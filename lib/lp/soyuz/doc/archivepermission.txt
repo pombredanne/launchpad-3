@@ -7,8 +7,9 @@ an easy way of accessing the data through convenient helpers.
 Two main operations are supported: upload and queue administration.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.soyuz.enums import ArchivePermissionType
     >>> from lp.soyuz.interfaces.archivepermission import (
-    ...     ArchivePermissionType, IArchivePermission, IArchivePermissionSet)
+    ...     IArchivePermission, IArchivePermissionSet)
     >>> from lp.soyuz.model.archivepermission import ArchivePermission
 
     >>> permission_set = getUtility(IArchivePermissionSet)
@@ -24,8 +25,9 @@ It's possible to make a direct permission enquiry using the method
 'checkAuthenticated'.  The "Ubuntu Team" has a few permissions set in
 the sample data that we can check.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IComponentSet, IDistributionSet, IPersonSet)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> ubuntu_team = getUtility(IPersonSet).getByName("ubuntu-team")
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> main_component = getUtility(IComponentSet)['main']
@@ -68,7 +70,7 @@ permission on a SourcePackageName, which gives a smaller radius of
 permission than allowing access to the whole component.  Just pass
 a SourcePacakgeName as the "item" parameter:
 
-    >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
+    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
     >>> alsa_utils = getUtility(ISourcePackageNameSet)['alsa-utils']
     >>> alsa_permissions = permission_set.checkAuthenticated(
     ...     ubuntu_team, ubuntu.main_archive, ArchivePermissionType.UPLOAD,

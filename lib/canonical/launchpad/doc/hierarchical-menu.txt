@@ -22,8 +22,8 @@ First, we need a hierarchy of objects to build upon:
     >>> class ICooker(Interface):
     ...     """A cooker."""
 
-    >>> from canonical.launchpad.webapp.url import urlappend
     >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+    >>> from canonical.launchpad.webapp.url import urlappend
 
     >>> class BaseContent:
     ...     implements(ICanonicalUrlData)
@@ -83,13 +83,14 @@ The ICookbook and IRecipe breadcrumb objects show up in the hierarchy after
 IBreadcrumb adapters are registered for them.  The hierarchy builds a list of
 breadcrumbs starting with the breadcrumb closest to the hierarchy root.
 
-    >>> from canonical.launchpad.webapp.breadcrumb import Breadcrumb
     >>> from canonical.launchpad.browser.launchpad import Hierarchy
+    >>> from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 
     # Monkey patch Hierarchy.makeBreadcrumbForRequestedPage so that we don't
     # have to create fake views and other stuff to test breadcrumbs here. The
     # functionality provided by that method is tested in
     # webapp/tests/test_breadcrumbs.py.
+    >>> make_breadcrumb_func = Hierarchy.makeBreadcrumbForRequestedPage
     >>> Hierarchy.makeBreadcrumbForRequestedPage = lambda self: None
 
     # Note that the Hierarchy assigns the breadcrumb's URL, but we need to
@@ -174,8 +175,8 @@ which adapts a context object and produces an IBreadcrumb object for that
 context.  The default adapter provides the url attribute, but the breadcrumb's
 text must be overriden in subclasses.
 
-    >>> from canonical.launchpad.webapp.interfaces import IBreadcrumb
     >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.interfaces import IBreadcrumb
     >>> breadcrumb = Breadcrumb(cookbook)
     >>> verifyObject(IBreadcrumb, breadcrumb)
     True
@@ -269,3 +270,8 @@ considered to be on the home page if there are no breadcrumbs.
 
     >>> homepage_hierarchy.render().strip()
     u''
+
+
+Put the monkey patched method back.
+
+    >>> Hierarchy.makeBreadcrumbForRequestedPage = make_breadcrumb_func

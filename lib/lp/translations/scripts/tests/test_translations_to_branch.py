@@ -3,30 +3,33 @@
 
 """Acceptance test for the translations-export-to-branch script."""
 
+import datetime
+import pytz
 import re
-import unittest
-import transaction
-
 from textwrap import dedent
 
+from bzrlib.errors import NotBranchError
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from bzrlib.errors import NotBranchError
-
 from canonical.config import config
-
-from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.launchpad.scripts.tests import run_script
-from canonical.testing import ZopelessAppServerLayer
-
+from canonical.testing.layers import ZopelessAppServerLayer
+from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.teammembership import (
-    ITeamMembershipSet, TeamMembershipStatus)
-from lp.testing import map_branch_contents, TestCaseWithFactory
+    ITeamMembershipSet,
+    TeamMembershipStatus,
+    )
+from lp.services.log.logger import BufferLogger
+from lp.testing import (
+    map_branch_contents,
+    TestCaseWithFactory,
+    )
 from lp.testing.fakemethod import FakeMethod
-
 from lp.translations.scripts.translations_to_branch import (
-    ExportTranslationsToBranch)
+    ExportTranslationsToBranch,
+    )
 
 
 class GruesomeException(Exception):
@@ -57,7 +60,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         # Set up a translations_branch for the series.
         db_branch, tree = self.create_branch_and_tree(product=product)
         removeSecurityProxy(db_branch).last_scanned_id = 'null:'
-        product.official_rosetta = True
+        product.translations_usage = ServiceUsage.LAUNCHPAD
         series.translations_branch = db_branch
 
         # Set up a template & Dutch translation for the series.
@@ -69,7 +72,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
             template, singular='Hello World', sequence=1)
         pofile = self.factory.makePOFile(
             'nl', potemplate=template, owner=product.owner)
-        self.factory.makeTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             pofile=pofile, potmsgset=potmsgset,
             translator=product.owner, reviewer=product.owner,
             translations=['Hallo Wereld'])
@@ -144,7 +147,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         # cope well with non-ASCII exception strings.
         productseries = self.factory.makeProductSeries()
         exporter = ExportTranslationsToBranch(test_args=[])
-        exporter.logger = QuietFakeLogger()
+        exporter.logger = BufferLogger()
         boom = u'\u2639'
         exporter._exportToBranch = FakeMethod(failure=GruesomeException(boom))
 
@@ -154,8 +157,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
 
         self.assertEqual(1, exporter._exportToBranch.call_count)
 
-        exporter.logger.output_file.seek(0)
-        message = exporter.logger.output_file.read()
+        message = exporter.logger.getLogBuffer()
         self.assertTrue(message.startswith("ERROR"))
         self.assertTrue("GruesomeException" in message)
 
@@ -164,7 +166,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         # branch.  The exporter deals with that by calling
         # _handleUnpushedBranch.
         exporter = ExportTranslationsToBranch(test_args=[])
-        exporter.logger = QuietFakeLogger()
+        exporter.logger = BufferLogger()
         productseries = self.factory.makeProductSeries()
         productseries.translations_branch = self.factory.makeBranch()
 
@@ -191,7 +193,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
 
     def test_handleUnpushedBranch_mails_branch_owner(self):
         exporter = ExportTranslationsToBranch(test_args=[])
-        exporter.logger = QuietFakeLogger()
+        exporter.logger = BufferLogger()
         productseries = self.factory.makeProductSeries()
         email = self.factory.getUniqueEmailAddress()
         branch_owner = self.factory.makePerson(email=email)
@@ -223,7 +225,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         # was not exercised by the full-script test.  Ensure that it has
         # the database privileges that it requires.
         exporter = ExportTranslationsToBranch(test_args=[])
-        exporter.logger = QuietFakeLogger()
+        exporter.logger = BufferLogger()
         productseries = self.factory.makeProductSeries()
         email = self.factory.getUniqueEmailAddress()
         branch_owner = self.factory.makePerson(email=email)
@@ -244,7 +246,7 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         # Notifying a branch owner that is a team can require other
         # database privileges.  The script also has these privileges.
         exporter = ExportTranslationsToBranch(test_args=[])
-        exporter.logger = QuietFakeLogger()
+        exporter.logger = BufferLogger()
         productseries = self.factory.makeProductSeries()
         email = self.factory.getUniqueEmailAddress()
         team_member = self.factory.makePerson(email=email)
@@ -264,6 +266,75 @@ class TestExportTranslationsToBranch(TestCaseWithFactory):
         # database changes still pending in the ORM that are going to
         # fail either.
         transaction.commit()
+
+    def test_sets_bzr_id(self):
+        # The script commits to the branch under a user id that mentions
+        # the automatic translations exports as well as the Launchpad
+        # name of the branch owner.
+        self.useBzrBranches(direct_database=False)
+        exporter = ExportTranslationsToBranch(test_args=[])
+        branch, tree = self.create_branch_and_tree()
+        committer = exporter._makeDirectBranchCommit(branch)
+        committer.unlock()
+        self.assertEqual(
+            "Launchpad Translations on behalf of %s" % branch.owner.name,
+            committer.getBzrCommitterID())
+
+    def test_findChangedPOFiles(self):
+        # Returns all POFiles changed in a productseries after a certain
+        # date.
+        date_in_the_past = (
+            datetime.datetime.now(pytz.UTC) - datetime.timedelta(1))
+        pofile = self.factory.makePOFile()
+
+        exporter = ExportTranslationsToBranch(test_args=[])
+        self.assertEquals(
+            [pofile],
+            list(exporter._findChangedPOFiles(
+                pofile.potemplate.productseries,
+                changed_since=date_in_the_past)))
+
+    def test_findChangedPOFiles_all(self):
+        # If changed_since date is passed in as None, all POFiles are
+        # returned.
+        pofile = self.factory.makePOFile()
+        exporter = ExportTranslationsToBranch(test_args=[])
+        self.assertEquals(
+            [pofile],
+            list(exporter._findChangedPOFiles(
+                pofile.potemplate.productseries, changed_since=None)))
+
+    def test_findChangedPOFiles_unchanged(self):
+        # If a POFile has been changed before changed_since date,
+        # it is not returned.
+        pofile = self.factory.makePOFile()
+        date_in_the_future = (
+            datetime.datetime.now(pytz.UTC) + datetime.timedelta(1))
+
+        exporter = ExportTranslationsToBranch(test_args=[])
+        self.assertEquals(
+            [],
+            list(exporter._findChangedPOFiles(
+                pofile.potemplate.productseries,
+                date_in_the_future)))
+
+    def test_findChangedPOFiles_unchanged_template_changed(self):
+        # If a POFile has been changed before changed_since date,
+        # and template has been updated after it, POFile is still
+        # considered changed and thus returned.
+        pofile = self.factory.makePOFile()
+        date_in_the_future = (
+            datetime.datetime.now(pytz.UTC) + datetime.timedelta(1))
+        date_in_the_far_future = (
+            datetime.datetime.now(pytz.UTC) + datetime.timedelta(2))
+        pofile.potemplate.date_last_updated = date_in_the_far_future
+
+        exporter = ExportTranslationsToBranch(test_args=[])
+        self.assertEquals(
+            [pofile],
+            list(exporter._findChangedPOFiles(
+                pofile.potemplate.productseries,
+                date_in_the_future)))
 
 
 class TestExportToStackedBranch(TestCaseWithFactory):
@@ -305,7 +376,3 @@ class TestExportToStackedBranch(TestCaseWithFactory):
             committer.commit("x!")
         finally:
             committer.unlock()
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -1,4 +1,5 @@
-= Migrating translations between distro series =
+Migrating translations between distro series
+============================================
 
 When a new release series is created for a distribution it usually inherits
 all settings and data from its parent (preceding) series. To facilitate this
@@ -24,17 +25,15 @@ Functions to create source packages, templates and and translations.
     ...         sourcepackagename=package.sourcepackagename,
     ...         name=name, translation_domain=name+'-domain')
 
-    >>> global_sequence = 1
     >>> def makeTranslation(template, msgid, translations, sequence=None):
-    ...     global global_sequence
     ...     if sequence is None:
-    ...         sequence = global_sequence
-    ...         global_sequence += 1
+    ...         sequence = factory.getUniqueInteger()
     ...     msgset = factory.makePOTMsgSet(template, msgid, sequence=sequence)
     ...     for language, translation in translations.items():
     ...         pofile = template.getPOFileByLang(language)
-    ...         factory.makeSharedTranslationMessage(pofile, msgset,
-    ...             translations=[translation], is_imported=True)
+    ...         factory.makeCurrentTranslationMessage(
+    ...             pofile, msgset, translations=[translation],
+    ...             current_other=True)
     ...     return msgset
 
     >>> package1 = makeSourcePackage('package1')
@@ -69,7 +68,8 @@ We need a transaction manager (in this case a fake one) to make the copy work.
     >>> transaction_stub = FakeTransaction()
 
 
-== Preconditions for migrating translations between distro series ==
+Preconditions for migrating translations between distro series
+==============================================================
 
 Before we are able to migrate translations, there are a set of preconditions
 that should be met:
@@ -102,7 +102,8 @@ accepting uploads for this distroseries.
     >>> carty.defer_translation_imports = True
 
 
-== Performing the migration ==
+Performing the migration
+========================
 
 A pristine distroseries can be filled with copies of translation templates
 and translation files from the parent. The actual translations, stored in
@@ -165,7 +166,8 @@ Because of message sharing incremental copies are no longer needed.
     The child series must not yet have any translation templates.
 
 
-== Running the script ==
+Running the script
+==================
 
 Now, we execute the script that will do the migration using
 copyTranslationsFromParent. For that we create a new child series to receive

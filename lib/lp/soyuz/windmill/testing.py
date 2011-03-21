@@ -15,4 +15,10 @@ from canonical.testing.layers import BaseWindmillLayer
 class SoyuzWindmillLayer(BaseWindmillLayer):
     """Layer for Soyuz Windmill tests."""
 
-    base_url = 'http://launchpad.dev:8085/'
+    @classmethod
+    def setUp(cls):
+        cls.base_url = cls.appserver_root_url()
+        super(SoyuzWindmillLayer, cls).setUp()
+
+
+

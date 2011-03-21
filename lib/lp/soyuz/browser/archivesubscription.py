@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -17,30 +17,44 @@ __all__ = [
 import datetime
 
 import pytz
-
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
 from zope.formlib import form
-from zope.interface import Interface, implements
-from zope.schema import Date, Text
+from zope.interface import (
+    implements,
+    Interface,
+    )
+from zope.schema import (
+    Date,
+    Text,
+    )
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.fields import PersonChoice
-from lp.soyuz.browser.sourceslist import (
-    SourcesListEntries, SourcesListEntriesView)
-from lp.soyuz.interfaces.archive import IArchiveSet
-from lp.soyuz.interfaces.archiveauthtoken import (
-    IArchiveAuthTokenSet)
-from lp.soyuz.interfaces.archivesubscriber import (
-    IArchiveSubscriberSet, IPersonalArchiveSubscription)
-from canonical.launchpad.webapp.launchpadform import (
-    action, custom_widget, LaunchpadFormView, LaunchpadEditFormView)
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, LaunchpadView)
-from canonical.widgets import DateWidget
-from canonical.widgets.popup import PersonPickerWidget
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.app.widgets.date import DateWidget
+from lp.app.widgets.popup import PersonPickerWidget
+from lp.services.fields import PersonChoice
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.browser.sourceslist import (
+    SourcesListEntries,
+    SourcesListEntriesView,
+    )
+from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
+from lp.soyuz.interfaces.archivesubscriber import (
+    IArchiveSubscriberSet,
+    IPersonalArchiveSubscription,
+    )
 
 
 def archive_subscription_ui_adapter(archive_subscription):

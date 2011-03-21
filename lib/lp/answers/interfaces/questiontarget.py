@@ -14,15 +14,23 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Choice, List, Set, TextLine
+from zope.schema import (
+    Choice,
+    List,
+    Set,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
-
 from lp.answers.interfaces.questioncollection import (
-    ISearchableByQuestionOwner, QUESTION_STATUS_DEFAULT_SEARCH)
+    ISearchableByQuestionOwner,
+    QUESTION_STATUS_DEFAULT_SEARCH,
+    )
 from lp.answers.interfaces.questionenums import (
-    QuestionSort, QuestionStatus)
+    QuestionSort,
+    QuestionStatus,
+    )
+from lp.services.fields import PublicPersonChoice
 
 
 class IQuestionTarget(ISearchableByQuestionOwner):

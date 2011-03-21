@@ -19,7 +19,7 @@ from canonical.buildd.pottery import intltool
 class GenerateTranslationTemplates:
     """Script to generate translation templates from a branch."""
 
-    def __init__(self, branch_spec, result_name, work_dir):
+    def __init__(self, branch_spec, result_name, work_dir, log_file=None):
         """Prepare to generate templates for a branch.
 
         :param branch_spec: Either a branch URL or the path of a local
@@ -29,17 +29,21 @@ class GenerateTranslationTemplates:
         :param result_name: The name of the result tarball. Should end in
             .tar.gz.
         :param work_dir: The directory to work in. Must exist.
+        :param log_file: File-like object to log to. If None, defaults to
+            stderr.
         """
         self.work_dir = work_dir
         self.branch_spec = branch_spec
         self.result_name = result_name
-        self.logger = self._setupLogger()
+        self.logger = self._setupLogger(log_file)
 
-    def _setupLogger(self):
+    def _setupLogger(self, log_file):
         """Sets up and returns a logger."""
+        if log_file is None:
+            log_file = sys.stderr
         logger = logging.getLogger("generate-templates")
         logger.setLevel(logging.DEBUG)
-        ch = logging.StreamHandler()
+        ch = logging.StreamHandler(log_file)
         ch.setLevel(logging.DEBUG)
         logger.addHandler(ch)
         return logger

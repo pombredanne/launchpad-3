@@ -1,34 +1,24 @@
 We should also be able to set a translation group and translation
 permissions on a product. We'll use the Netapplet product for this test.
-
 First make sure it uses Launchpad for translations.
 
     >>> netapplet_owner_browser = setupBrowser(
     ...     auth='Basic test@canonical.com:test')
     >>> netapplet_owner_browser.open('http://launchpad.dev/netapplet')
-    >>> print extract_text(
-    ...     find_tag_by_id(netapplet_owner_browser.contents, 'uses'))
-    Does not use Launchpad for development.
-
     >>> netapplet_owner_browser.getLink(
     ...   'Configure translations').click()
     >>> print netapplet_owner_browser.title
-    Configure Translations : NetApplet
+    Configure translations : NetApplet
 
-    >>> netapplet_owner_browser.getControl(
-    ...     'Translations for this project are done in Launchpad'
-    ...     ).selected = True
+    >>> netapplet_owner_browser.getControl('Launchpad').click()
     >>> netapplet_owner_browser.getControl('Change').click()
     >>> print netapplet_owner_browser.title
     Network Applet in Launchpad
 
-    >>> print extract_text(
-    ...     find_tag_by_id(netapplet_owner_browser.contents, 'uses'))
-    Uses Launchpad for: Translations.
-
 Netapplet doesn't have TranslationGroup and uses open permissions. We
 can see that from the translations page.
 
+    >>> netapplet_owner_browser.open('http://launchpad.dev/netapplet')
     >>> netapplet_owner_browser.getLink('Translations').click()
     >>> print netapplet_owner_browser.title
     Translations : NetApplet
@@ -36,17 +26,17 @@ can see that from the translations page.
     >>> print extract_text(
     ...     find_tag_by_id(netapplet_owner_browser.contents,
     ...                    'translation-permissions'))
-    NetApplet (Unspecified) is translated with Open permissions.
+    NetApplet is translated with Open permissions.
 
 Now let's make sure we can see the page to let us change translation
 group and permissions.
 
     >>> translations_page_url = netapplet_owner_browser.url
-    >>> netapplet_owner_browser.getLink('Change permissions').click()
+    >>> netapplet_owner_browser.getLink('Configure translations').click()
     >>> change_translators_url = netapplet_owner_browser.url
 
     >>> print netapplet_owner_browser.title
-    Permissions and policies...
+    Configure translations : Translations : NetApplet
 
     >>> print netapplet_owner_browser.getControl(
     ...     'Translation group').displayOptions
@@ -57,11 +47,11 @@ group and permissions.
     ...     'Translation group').displayValue
     ['(no value)']
 
-Ordinary users cannot see the "Change permissions" link or the page it
+Ordinary users cannot see the "Configure translations" link or the page it
 leads to.
 
     >>> user_browser.open(translations_page_url)
-    >>> user_browser.getLink('Change permissions').click()
+    >>> user_browser.getLink('Configure translations').click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError

@@ -14,10 +14,15 @@ __all__ = [
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action, NavigationMenu, canonical_url, enabled_with_permission,
-    LaunchpadView, LaunchpadEditFormView, Link)
+    action,
+    canonical_url,
+    enabled_with_permission,
+    LaunchpadEditFormView,
+    LaunchpadView,
+    Link,
+    NavigationMenu,
+    )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-
 from lp.answers.browser.faqcollection import FAQCollectionMenu
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqcollection import IFAQCollection

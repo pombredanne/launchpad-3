@@ -10,10 +10,14 @@ BugWatch, Message and BugMessage instances with which to work.
     >>> from canonical.config import config
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, CreateBugParams, IBugMessageSet,
-    ...     IBugWatchSet, IMessageSet, IPersonSet, IProductSet)
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
+    >>> from lp.bugs.interfaces.bug import CreateBugParams
+    >>> from lp.bugs.interfaces.bugmessage import IBugMessageSet
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
+    >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> bug_tracker = new_bugtracker(BugTrackerType.TRAC)
 
@@ -46,8 +50,7 @@ In order to test the pushing of comments to remote systems we'll create
 an example ExternalBugTracker that implements the
 ISupportsCommentPushing interface.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     ISupportsCommentPushing)
+    >>> from lp.bugs.interfaces.externalbugtracker import ISupportsCommentPushing
     >>> from lp.bugs.externalbugtracker import (
     ...     ExternalBugTracker)
 
@@ -187,8 +190,7 @@ The bug watch updater won't try to push comments that have been imported
 from the remote bugtracker. To demonstrate this, we need to create an
 example ExternalBugTracker that does comment importing.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     ISupportsCommentImport)
+    >>> from lp.bugs.interfaces.externalbugtracker import ISupportsCommentImport
     >>> class CommentImportingExternalBugTracker(
     ...     CommentPushingExternalBugTracker):
     ...     implements(ISupportsCommentImport)
@@ -286,7 +288,7 @@ formatted to include data about the comment in Launchpad.
     >>> for remote_comment_id in sorted(remote_comments.keys()):
     ...     print remote_comments[remote_comment_id]
     ...     print "--------------------"
-    Sample Person added the following comment to Launchpad bug #...:
+    Sample Person added the following comment to Launchpad bug report...:
     <BLANKLINE>
     Pushing, for the purpose of.
     <BLANKLINE>
@@ -294,7 +296,7 @@ formatted to include data about the comment in Launchpad.
     http://launchpad.net/bugs/...
     <BLANKLINE>
     --------------------
-    Sample Person added the following comment to Launchpad bug #...:
+    Sample Person added the following comment to Launchpad bug report...:
     <BLANKLINE>
     Body the second.
     <BLANKLINE>
@@ -302,7 +304,7 @@ formatted to include data about the comment in Launchpad.
     http://launchpad.net/bugs/...
     <BLANKLINE>
     --------------------
-    Sample Person added the following comment to Launchpad bug #...:
+    Sample Person added the following comment to Launchpad bug report...:
     <BLANKLINE>
     Body the third.
     <BLANKLINE>
@@ -318,7 +320,7 @@ the comment author, with the pushed comment.
 
     >>> formatted_message = bugwatch_updater._formatRemoteComment(message)
     >>> print formatted_message
-    Sample Person added the following comment to Launchpad bug #...:
+    Sample Person added the following comment to Launchpad bug report...:
     <BLANKLINE>
     Pushing, for the purpose of.
     <BLANKLINE>

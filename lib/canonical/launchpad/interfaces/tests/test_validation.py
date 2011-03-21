@@ -5,10 +5,19 @@
 
 __metaclass__ = type
 
+from doctest import (
+    DocTestSuite,
+    ELLIPSIS,
+    NORMALIZE_WHITESPACE,
+    )
 from unittest import TestSuite
-from doctest import DocTestSuite, ELLIPSIS, NORMALIZE_WHITESPACE
-from canonical.launchpad.testing.systemdocs import setUp, tearDown
-from canonical.testing import LaunchpadFunctionalLayer
+
+from canonical.launchpad.testing.systemdocs import (
+    setUp,
+    tearDown,
+    )
+from canonical.testing.layers import LaunchpadFunctionalLayer
+
 
 def test_suite():
     suite = TestSuite()

@@ -325,9 +325,10 @@ SUPERSEDED source with a PUBLISHED binary in No Privileged Person's PPA.
 
     >>> from canonical.database.constants import UTC_NOW
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces import (
-    ...    IDistributionSet, ILibraryFileAliasSet, IPersonSet,
-    ...    PackagePublishingStatus)
+    >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
 
@@ -506,7 +507,7 @@ Remove the just deleted publication from disk setting its
     >>> login('foo.bar@canonical.com')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> deleted_pub = no_priv.archive.getPublishedSources(
-    ...     status=PackagePublishingStatus.DELETED)[0]
+    ...     status=PackagePublishingStatus.DELETED).first()
     >>> deleted_pub.dateremoved = deleted_pub.datecreated
     >>> logout()
 

@@ -61,39 +61,65 @@ __all__ = [
     'LaunchpadServer',
     ]
 
+import sys
 import xmlrpclib
 
+from bzrlib import urlutils
 from bzrlib.branch import Branch
-from bzrlib.bzrdir import BzrDir, BzrDirFormat
+from bzrlib.bzrdir import (
+    BzrDir,
+    BzrDirFormat,
+    )
 from bzrlib.config import TransportConfig
-from bzrlib.errors import NoSuchFile, PermissionDenied, TransportNotPossible
+from bzrlib.errors import (
+    NoSuchFile,
+    PermissionDenied,
+    TransportNotPossible,
+    )
 from bzrlib.plugins.loom.branch import LoomSupport
 from bzrlib.smart.request import jail_info
 from bzrlib.transport import get_transport
 from bzrlib.transport.memory import MemoryServer
-from bzrlib import urlutils
-
 from lazr.uri import URI
-
-from twisted.internet import defer
-from twisted.python import failure, log
-
+from twisted.internet import (
+    defer,
+    error,
+    )
+from twisted.python import (
+    failure,
+    log,
+    )
 from zope.component import getUtility
-from zope.interface import implements, Interface
+from zope.interface import (
+    implements,
+    Interface,
+    )
 
-from lp.codehosting.bzrutils import get_stacked_on_url
-from lp.codehosting.vfs.branchfsclient import (
-    BlockingProxy, BranchFileSystemClient)
-from lp.codehosting.vfs.transport import (
-    AsyncVirtualServer, AsyncVirtualTransport, TranslationError,
-    get_chrooted_transport, get_readonly_transport)
 from canonical.config import config
+from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.xmlrpc import faults
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import (
-    BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_SERVICES)
-from lp.services.twistedsupport.xmlrpc import trap_fault
+    BRANCH_TRANSPORT,
+    CONTROL_TRANSPORT,
+    LAUNCHPAD_SERVICES,
+    )
+from lp.codehosting.bzrutils import get_stacked_on_url
+from lp.codehosting.vfs.branchfsclient import (
+    BranchFileSystemClient,
+    )
+from lp.codehosting.vfs.transport import (
+    AsyncVirtualServer,
+    AsyncVirtualTransport,
+    get_chrooted_transport,
+    get_readonly_transport,
+    TranslationError,
+    )
+from lp.services.twistedsupport.xmlrpc import (
+    DeferredBlockingProxy,
+    trap_fault,
+    )
 
 
 class BadUrl(Exception):
@@ -119,8 +145,13 @@ class BadUrlScheme(BadUrl):
 # The directories allowed directly beneath a branch directory. These are the
 # directories that Bazaar creates as part of regular operation. We support
 # only two numbered backups to avoid indefinite space usage.
-ALLOWED_DIRECTORIES = ('.bzr', '.bzr.backup', 'backup.bzr', 'backup.bzr.~1~',
-	'backup.bzr.~2~')
+ALLOWED_DIRECTORIES = (
+    '.bzr',
+    '.bzr.backup',
+    'backup.bzr',
+    'backup.bzr.~1~',
+    'backup.bzr.~2~',
+    )
 FORBIDDEN_DIRECTORY_ERROR = (
     "Cannot create '%s'. Only Bazaar branches are allowed.")
 
@@ -170,7 +201,7 @@ def is_lock_directory(absolute_path):
 def get_ro_server():
     """Get a Launchpad internal server for scanning branches."""
     proxy = xmlrpclib.ServerProxy(config.codehosting.codehosting_endpoint)
-    codehosting_endpoint = BlockingProxy(proxy)
+    codehosting_endpoint = DeferredBlockingProxy(proxy)
     branch_transport = get_readonly_transport(
         get_transport(config.codehosting.internal_branch_by_id_root))
     return LaunchpadInternalServer(
@@ -193,7 +224,7 @@ def get_rw_server(direct_database=False):
         return DirectDatabaseLaunchpadServer('lp-internal:///', transport)
     else:
         proxy = xmlrpclib.ServerProxy(config.codehosting.codehosting_endpoint)
-        codehosting_endpoint = BlockingProxy(proxy)
+        codehosting_endpoint = DeferredBlockingProxy(proxy)
         return LaunchpadInternalServer(
             'lp-internal:///', codehosting_endpoint, transport)
 
@@ -479,10 +510,12 @@ class AsyncLaunchpadTransport(AsyncVirtualTransport):
         # Launchpad branch.
         deferred = AsyncVirtualTransport._getUnderylingTransportAndPath(
             self, relpath)
+
         def maybe_make_branch_in_db(failure):
             # Looks like we are trying to make a branch.
             failure.trap(NoSuchFile)
             return self.server.createBranch(self._abspath(relpath))
+
         def real_mkdir((transport, path)):
             return getattr(transport, 'mkdir')(path, mode)
 
@@ -666,10 +699,42 @@ class LaunchpadServer(_BaseLaunchpadServer):
                 data['id'], stacked_on_url, last_revision,
                 control_string, branch_string, repository_string)
 
-        # It gets really confusing if we raise an exception from this method
-        # (the branch remains locked, but this isn't obvious to the client) so
-        # just log the error, which will result in an OOPS being logged.
-        return deferred.addCallback(got_path_info).addErrback(log.err)
+        def handle_error(failure=None, **kw):
+            # It gets really confusing if we raise an exception from this
+            # method (the branch remains locked, but this isn't obvious to
+            # the client). We could just log the failure using Twisted's
+            # log.err but this results in text containing traceback
+            # information etc being written to stderr. Since stderr is
+            # displayed to the user, if for example they arrive at this point
+            # via the smart server, we want to ensure that the message is
+            # sanitised. So what we will do is raise an oops and ask the user
+            # to log a bug with the oops information.
+            # See bugs 674305 and 675517 for details.
+
+            request = errorlog.ScriptRequest([
+                ('source', virtual_url_fragment),
+                ('error-explanation', failure.getErrorMessage())])
+            self.unexpectedError(failure, request)
+            fault = faults.OopsOccurred(
+                "updating a Launchpad branch", request.oopsid)
+            # Twisted's log.err used to write to stderr but it doesn't now so
+            # we will write to stderr as well as log.err.
+            print >> sys.stderr, repr(fault)
+            log.err(repr(fault))
+            return fault
+        return deferred.addCallback(got_path_info).addErrback(handle_error)
+
+    def unexpectedError(self, failure, request=None, now=None):
+        # If the sub-process exited abnormally, the stderr it produced is
+        # probably a much more interesting traceback than the one attached to
+        # the Failure we've been passed.
+        traceback = None
+        if failure.check(error.ProcessTerminated):
+            traceback = getattr(failure, 'error', None)
+        if traceback is None:
+            traceback = failure.getTraceback()
+        errorlog.globalErrorUtility.raising(
+            (failure.type, failure.value, traceback), request, now)
 
 
 def get_lp_server(user_id, codehosting_endpoint_url=None, branch_url=None,
@@ -700,7 +765,7 @@ def get_lp_server(user_id, codehosting_endpoint_url=None, branch_url=None,
 
     codehosting_client = xmlrpclib.ServerProxy(codehosting_endpoint_url)
     lp_server = LaunchpadServer(
-        BlockingProxy(codehosting_client), user_id, branch_transport,
+        DeferredBlockingProxy(codehosting_client), user_id, branch_transport,
         seen_new_branch_hook)
     return lp_server
 

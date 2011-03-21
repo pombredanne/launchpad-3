@@ -15,18 +15,21 @@ import unittest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.archivepublisher.config import getPubConfig
 from canonical.config import config
-from canonical.launchpad.scripts.logger import QuietFakeLogger
-from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, IArchiveSet)
+from lp.archivepublisher.config import getPubConfig
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
-from lp.soyuz.interfaces.binarypackagerelease import (
-    BinaryPackageFormat)
-from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.scripts import publishdistro
+from lp.services.log.logger import BufferLogger
 from lp.services.scripts.base import LaunchpadScriptFailure
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    BinaryPackageFormat,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.archive import (
+    IArchiveSet,
+    )
+from lp.soyuz.scripts import publishdistro
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 
 
@@ -46,8 +49,8 @@ class TestPublishDistro(TestNativePublishingBase):
         publishdistro.add_options(parser)
         options, args = parser.parse_args(args=args)
         self.layer.switchDbUser(config.archivepublisher.dbuser)
-        result = publishdistro.run_publisher(options, self.layer.txn,
-                                             log=QuietFakeLogger())
+        publishdistro.run_publisher(
+            options, self.layer.txn, log=BufferLogger())
         self.layer.switchDbUser('launchpad')
 
     def runPublishDistroScript(self):

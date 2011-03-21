@@ -5,7 +5,7 @@ It's possible to edit a bug watch on +edit, as well as deleting it.
 Deleting a bug watch is only possible when the bug watch isn't linked to
 a bug task.
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> linked_bugwatches = [
     ...     bugwatch for bugwatch in bug_one.watches

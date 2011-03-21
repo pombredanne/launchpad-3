@@ -19,28 +19,36 @@ import random
 from UserDict import UserDict
 
 from contrib.oauth import OAuthRequest
-
 from zope.annotation.interfaces import IAnnotations
-from zope.authentication.interfaces import IUnauthenticatedPrincipal
-from zope.interface import implements
-from zope.component import adapts, getUtility
-from zope.event import notify
-from zope.preference.interfaces import IPreferenceGroup
-
-from zope.security.proxy import removeSecurityProxy
-
-from zope.session.interfaces import ISession
 from zope.app.security.interfaces import ILoginPassword
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
+from zope.authentication.interfaces import IUnauthenticatedPrincipal
+from zope.component import (
+    adapts,
+    getUtility,
+    )
+from zope.event import notify
+from zope.interface import implements
+from zope.preference.interfaces import IPreferenceGroup
+from zope.security.proxy import removeSecurityProxy
+from zope.session.interfaces import ISession
 
 from canonical.config import config
 from canonical.launchpad.interfaces.account import IAccountSet
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.interfaces.oauth import OAUTH_CHALLENGE
-from lp.registry.interfaces.person import IPerson, IPersonSet
 from canonical.launchpad.webapp.interfaces import (
-    AccessLevel, BasicAuthLoggedInEvent, CookieAuthPrincipalIdentifiedEvent,
-    ILaunchpadPrincipal, IPlacelessAuthUtility, IPlacelessLoginSource)
+    AccessLevel,
+    BasicAuthLoggedInEvent,
+    CookieAuthPrincipalIdentifiedEvent,
+    ILaunchpadPrincipal,
+    IPlacelessAuthUtility,
+    IPlacelessLoginSource,
+    )
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    )
 
 
 class PlacelessAuthUtility:

@@ -5,7 +5,7 @@ IBranchSetAPI
     >>> from datetime import datetime
     >>> import pytz
     >>> import xmlrpclib
-    >>> from canonical.functional import XMLRPCTestTransport
+    >>> from lp.testing.xmlrpc import XMLRPCTestTransport
     >>> branchset_api = xmlrpclib.ServerProxy(
     ...     'http://foo.bar@canonical.com:test@xmlrpc.launchpad.dev/bazaar/',
     ...     transport=XMLRPCTestTransport())
@@ -143,7 +143,10 @@ If we try to register a URL with a unsupported scheme:
     ...     'test@canonical.com', 'evolution')
     Traceback (most recent call last):
     ...
-    Fault: <Fault 120: 'Invalid URL: svn://chinstrap.ubuntu.com/foo/bar/baz\nThe URI scheme "svn" is not allowed.  Only URIs with the following schemes may be used: bzr+ssh, ftp, http, https, sftp'>
+    Fault: <Fault 120: 'Invalid URL:
+    svn://chinstrap.ubuntu.com/foo/bar/baz\nThe URI scheme "svn" is not
+    allowed.  Only URIs with the following schemes may be used: bzr+ssh,
+    ftp, http, https, sftp'>
 
 If we try to register a root URL:
 
@@ -153,18 +156,22 @@ If we try to register a root URL:
     ...     'test@canonical.com', 'evolution')
     Traceback (most recent call last):
     ...
-    Fault: <Fault 120: 'Invalid URL: http://example.com\nURLs for branches cannot point to the root of a site.'>
+    Fault: <Fault 120: 'Invalid URL: http://example.com\nURLs for branches
+    cannot point to the root of a site.'>
 
 If we try to register a URL in launchpad.net (actually, launchpad.dev because
 we are in the testing environment):
 
     >>> launchpad_url = 'https://blueprints.launchpad.dev/foo/bar/baz'
     >>> branchset_api.register_branch(
-    ...     launchpad_url, 'branch_name', 'branch title', 'branch description',
-    ...     'test@canonical.com', 'evolution')
+    ...     launchpad_url, 'branch_name', 'branch title',
+    ...     'branch description', 'test@canonical.com', 'evolution')
     Traceback (most recent call last):
     ...
-    Fault: <Fault 120: 'Invalid URL: https://blueprints.launchpad.dev/foo/bar/baz\nFor Launchpad to mirror a branch, the original branch cannot be on <code>launchpad.dev</code>.'>
+    Fault: <Fault 120:
+    'Invalid URL: https://blueprints.launchpad.dev/foo/bar/baz\nFor
+    Launchpad to mirror a branch, the original branch cannot be on
+    <code>launchpad.dev</code>.'>
 
 Registering a branch name that ends in a slash works, but the slash
 gets removed from the stored URL:
@@ -282,7 +289,7 @@ URL is returned.
 
 Let's take a look to see that the branch actually got linked to the bug:
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> for bug_branch in bug_one.linked_branches:
     ...     print bug_branch.branch.url
@@ -300,7 +307,8 @@ We get an error if we try to specify a non-existant branch or bug:
     Fault: <Fault 40: 'No such bug: 99'>
 
 
-== resolve_lp_path ==
+resolve_lp_path
+---------------
 
 The resolve_lp_path API allows clients to retrieve a list of URLs for a
 branch by specifying the path component of an lp: URL.
@@ -338,120 +346,4 @@ accessed:
 The URLs that are likely to be faster or provide write access appear
 earlier in the list.
 
-
-lp:project
-==========
-
-If you specify a path with a single segment, then Launchpad treats that
-path as the name of a project, and returns URLs to the branch
-associated with the project's development focus series.
-
-    >>> results = branchset_api.resolve_lp_path('evolution')
-    >>> for url in results['urls']:
-    ...     print url
-    bzr+ssh://bazaar.launchpad.dev/~vcs-imports/evolution/main
-    http://bazaar.launchpad.dev/~vcs-imports/evolution/main
-
-
-Launchpad returns a fault if the development focus doesn't have branch
-associated with it.
-
-    >>> branchset_api.resolve_lp_path('firefox')
-    Traceback (most recent call last):
-    ...
-    Fault: <Fault 170: 'Mozilla Firefox has no default branch.'>
-
-
-Launchpad also returns a fault if the project doesn't exist.
-
-    >>> branchset_api.resolve_lp_path('doesntexist')
-    Traceback (most recent call last):
-    ...
-    Fault: <Fault 10: 'No such project: doesntexist'>
-
-
-lp:project/series
-=================
-
-If you specify a path with two segments, Launchpad treats that as a
-reference to a particular series on a project.
-
-    >>> results = branchset_api.resolve_lp_path('evolution/trunk')
-    >>> for url in results['urls']:
-    ...     print url
-    bzr+ssh://bazaar.launchpad.dev/~vcs-imports/evolution/main
-    http://bazaar.launchpad.dev/~vcs-imports/evolution/main
-
-
-If the series doesn't exist, then the server returns a fault.
-
-    >>> branchset_api.resolve_lp_path('firefox/doesntexist')
-    Traceback (most recent call last):
-    ...
-    Fault: <Fault 180: 'Project firefox has no series called "doesntexist"'>
-
-
-Similarly if the project doesn't exist:
-
-    >>> branchset_api.resolve_lp_path('doesntexist/trunk')
-    Traceback (most recent call last):
-    ...
-    Fault: <Fault 10: 'No such project: doesntexist'>
-
-
-lp:~owner/product/branch
-========================
-
-Anything longer than two segments is treated as a unique branch name
-followed by an arbitrary path:
-
-    >>> results = branchset_api.resolve_lp_path('~vcs-imports/evolution/main')
-    >>> for url in results['urls']:
-    ...     print url
-    bzr+ssh://bazaar.launchpad.dev/~vcs-imports/evolution/main
-    http://bazaar.launchpad.dev/~vcs-imports/evolution/main
-
-
-Launchpad will still resolve the branch even if it doesn't exist:
-
-    >>> results = branchset_api.resolve_lp_path('~mark/+junk/doesntexist')
-    >>> for url in results['urls']:
-    ...     print url
-    bzr+ssh://bazaar.launchpad.dev/~mark/%2Bjunk/doesntexist
-    http://bazaar.launchpad.dev/~mark/%2Bjunk/doesntexist
-
-
-But if the project or the user doesn't exist, Launchpad will return a fault:
-
-    >>> branchset_api.resolve_lp_path('~doesntexist/+junk/trunk')
-    Traceback (most recent call last):
-    ...
-    Fault: <Fault 200: 'No such person or team: doesntexist'>
-
-    >>> branchset_api.resolve_lp_path('~mark/doesntexist/trunk')
-    Traceback (most recent call last):
-    ...
-    Fault: <Fault 10: 'No such project: doesntexist'>
-
-
-Remote branches
-===============
-
-Some branches on Launchpad are 'remote' branches. These branches are
-not hosted on Launchpad and are only available (if at all) on remote
-sites. For these branches, resolve_lp_path returns only a single URL.
-
-    >>> from lp.code.enums import BranchType
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> arbitrary_person = getUtility(IPersonSet).getByName('name12')
-    >>> from lp.code.interfaces.branchnamespace import (
-    ...     get_branch_namespace)
-    >>> namespace = get_branch_namespace(arbitrary_person)
-    >>> namespace.createBranch(
-    ...     branch_type=BranchType.REMOTE, name='remote',
-    ...     registrant=arbitrary_person,
-    ...     url='http://example.com/remote_branch')
-    <Branch u'~name12/+junk/remote' (...)>
-    >>> results = branchset_api.resolve_lp_path('~name12/+junk/remote')
-    >>> results['urls']
-    ['http://example.com/remote_branch']
+For more tests see `lp.code.xmlrpc.tests.test_branch.py`.

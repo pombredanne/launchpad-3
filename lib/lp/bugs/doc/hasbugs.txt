@@ -5,9 +5,10 @@ interface. IHasBugs provides properties representing the relationship
 between the object and some of the bug tasks connected to it, and allows
 searching through the list of bugs.
 
-    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IHasBugs, IDistributionSet
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from lp.bugs.interfaces.bugtarget import IHasBugs
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> distroset = getUtility(IDistributionSet)
     >>> debian = distroset.getByName("debian")
     >>> debian_firefox = debian.getSourcePackage("mozilla-firefox")
@@ -29,8 +30,11 @@ values to have some sample data for the examples that follow.
 
     >>> login("foo.bar@canonical.com")
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTaskImportance, BugTaskStatus, IBugTaskSet)
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     BugTaskImportance,
+    ...     BugTaskStatus,
+    ...     IBugTaskSet,
+    ...     )
 
     >>> bug_one_in_debian_firefox = getUtility(IBugTaskSet).get(4)
     >>> bug_two_in_debian_firefox = getUtility(IBugTaskSet).get(5)

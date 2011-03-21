@@ -9,11 +9,15 @@ __all__ = [
     'IOpenIDRPSummarySet',
     ]
 
-from zope.schema import Datetime, Int, TextLine
+from lazr.restful.fields import Reference
 from zope.interface import Interface
+from zope.schema import (
+    Datetime,
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad.interfaces.account import IAccount
-from lazr.restful.fields import Reference
 
 
 class IOpenIDRPSummary(Interface):

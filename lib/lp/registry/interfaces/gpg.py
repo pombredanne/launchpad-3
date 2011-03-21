@@ -18,14 +18,27 @@ __all__ = [
 
 import re
 
-from zope.schema import Bool, Int, TextLine, Choice
-from zope.interface import Interface, Attribute
-
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    exported,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Int,
+    TextLine,
+    )
 
 from canonical.launchpad import _
 from lp.registry.interfaces.role import IHasOwner
-from lazr.restful.declarations import export_as_webservice_entry, exported
 
 
 def valid_fingerprint(fingerprint):

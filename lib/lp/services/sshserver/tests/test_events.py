@@ -8,13 +8,19 @@ __metaclass__ = type
 import logging
 import unittest
 
-from zope.component import adapter, getGlobalSiteManager, provideHandler
+from zope.component import (
+    adapter,
+    getGlobalSiteManager,
+    provideHandler,
+    )
 # This non-standard import is necessary to hook up the event system.
 import zope.component.event
 from zope.event import notify
 
-from lp.services.sshserver.events import ILoggingEvent, LoggingEvent
-
+from lp.services.sshserver.events import (
+    ILoggingEvent,
+    LoggingEvent,
+    )
 from lp.testing import TestCase
 
 

@@ -4,10 +4,6 @@ Adapting Requests to Countries
 
 Adapting a request to a country allows you to see where the request came from.
 
-    >>> from canonical.launchpad.ftests.harness import (
-    ...     LaunchpadFunctionalTestSetup)
-    >>> LaunchpadFunctionalTestSetup().setUp()
-
 Here's a dummy request. Zope adds the REMOTE_ADDR CGI environment variable
 for us. Upstream proxy servers (and tinkering users!) may also add
 X-Forwarded-For: headers. The X-Forwarded-For: header takes precidence
@@ -21,7 +17,7 @@ if it is set.
 
 Here's us converting it to a country.
 
-    >>> from canonical.launchpad.interfaces import ICountry
+    >>> from lp.services.worlddata.interfaces.country import ICountry
     >>> country = ICountry(request)
     >>> country.name
     u'United Kingdom'
@@ -34,6 +30,3 @@ Sometimes we don't know where the request came from.
     Traceback (most recent call last):
     ...
     TypeError: ('Could not adapt', ...
-
-    >>> LaunchpadFunctionalTestSetup().tearDown()
-

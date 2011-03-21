@@ -1,15 +1,16 @@
-= Branch Details =
+Branch Details
+==============
 
 Imports used later in the document:
 
     >>> import pytz
-    >>> from datetime import datetime
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from datetime import datetime
     >>> from lp.code.enums import BranchType
     >>> from lp.code.bzr import BranchFormat, RepositoryFormat
-    >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
+    >>> from lp.registry.interfaces.person import IPersonSet
 
 Modifying/creating test data for this test case.
 
@@ -24,22 +25,25 @@ Modifying/creating test data for this test case.
     >>> logout()
 
 
-== Reaching to branches ==
+Reaching to branches
+--------------------
 
-On the Code site, registered branches are reached by
-/<owner>/<product>/<branch-name>, where <product> can be either a product's
-name or any of its aliases.  In case an alias is used, the user is redirected
-to the branch's canonical URL -- the one which uses the product name.
+On the Code site, registered branches are reached by /<owner>/<product
+>/<branch-name>, where <product> can be either a product's name or any
+of its aliases.  In case an alias is used, the user is redirected to the
+branch's canonical URL -- the one which uses the product name.
 
     >>> anon_browser.open('http://code.launchpad.dev/~eric/fooix/trunk')
     >>> anon_browser.url
     'http://code.launchpad.dev/~eric/fooix/trunk'
+
     >>> anon_browser.open('http://code.launchpad.dev/~eric/fooey/trunk')
     >>> anon_browser.url
     'http://code.launchpad.dev/~eric/fooix/trunk'
 
 
-== Recent Revisions ==
+Recent Revisions
+----------------
 
 We display the recent revisions of a branch if it has been scanned.
 
@@ -56,12 +60,13 @@ We display the recent revisions of a branch if it has been scanned.
     None
 
 
-=== Revision information ===
+Revision information
+....................
 
-Underneath that heading we see the ten most-recent revisions of the branch in
-reverse-chronological order.  If the revision author has been linked to a
-Launchpad person, then a link to the person is shown rather than the
-text of the revision author.
+Underneath that heading we see the ten most-recent revisions of the
+branch in reverse-chronological order.  If the revision author has been
+linked to a Launchpad person, then a link to the person is shown rather
+than the text of the revision author.
 
     >>> def print_revisions(browser):
     ...     revisions = find_tags_by_class(
@@ -84,24 +89,24 @@ Each of the revision numbers are anchors to codebrowse.
     <a href="http://bazaar.launchpad.dev/~eric/fooix/trunk/revision/5">5</a>
 
 
-=== Commit messages ===
+Commit messages
+...............
 
-The commit message is displayed in paragraphs underneath the revision id and
-author.
+The commit message is displayed in paragraphs underneath the revision id
+and author.
 
-    >>> browser.open('http://code.launchpad.dev/~name12/+branch/+junk/junk.dev')
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/+branch/+junk/junk.dev')
     >>> commit_messages = find_tags_by_class(
     ...         browser.contents, 'revision-comment')
     >>> print commit_messages[0].p.renderContents()
     fix bug in bar
 
-
-When a commit message refers to a bug using the form "bug <bugnumber>", a link
-to that bug is created.
+When a commit message refers to a bug using the form "bug <bugnumber>",
+a link to that bug is created.
 
     >>> print commit_messages[3].p.renderContents()
     fix <a ...>bug 1</a>
-
 
 This link can be followed to the bug's details page.
 
@@ -110,59 +115,71 @@ This link can be followed to the bug's details page.
     Bug #1 in Mozilla Firefox...
 
 
-== Unscanned branches ==
+Unscanned branches
+------------------
 
-Some branches won't have any revisions in the database. Sometimes, this is
-simply because the branch is empty. However, much of the time, the lack of
-revisions will be because of an error or delay in the scanning process.
+Some branches won't have any revisions in the database. Sometimes, this
+is simply because the branch is empty. However, much of the time, the
+lack of revisions will be because of an error or delay in the scanning
+process.
 
 Before we can display the revisions, a branch needs to be mirrored (or
 'published') and scanned. When a branch is not yet mirrored, we'll see a
 helpful message.
 
     >>> browser.open('http://code.launchpad.dev/~name12/firefox/main')
-    >>> print extract_text(find_tag_by_id(browser.contents, 'recent-revisions'))
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'recent-revisions'))
     Recent revisions
     This branch has not been mirrored yet.
 
-We don't want to use the word 'mirrored' for hosted or imported branches,
-because those branches are only mirrored internally.
+We don't want to use the word 'mirrored' for hosted or imported
+branches, because those branches are only mirrored internally.
 
-    >>> browser.open('http://code.launchpad.dev/~name12/gnome-terminal/pushed')
-    >>> print extract_text(find_tag_by_id(browser.contents, 'recent-revisions'))
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/pushed')
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'recent-revisions'))
     Recent revisions
     This branch has not been pushed to yet.
 
-    >>> browser.open('http://code.launchpad.dev/~vcs-imports/evolution/main')
-    >>> print extract_text(find_tag_by_id(browser.contents, 'recent-revisions'))
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~vcs-imports/evolution/main')
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'recent-revisions'))
     Recent revisions
     This branch has not been imported yet.
 
-If a branch has been mirrored, but not scanned, we display a different message.
-This is helpful particularly for hosted and imported branches, which are
-available for download as soon as they are published.
+If a branch has been mirrored, but not scanned, we display a different
+message. This is helpful particularly for hosted and imported branches,
+which are available for download as soon as they are published.
 
-    >>> browser.open('http://code.launchpad.dev/~name12/gnome-terminal/mirrored')
-    >>> print extract_text(find_tag_by_id(browser.contents, 'recent-revisions'))
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/mirrored')
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'recent-revisions'))
     Recent revisions
     This branch has not been scanned yet.
 
-If a branch has been mirrored and scanned, and has no revisions, then it is
-empty.
+If a branch has been mirrored and scanned, and has no revisions, then it
+is empty.
 
-    >>> browser.open('http://code.launchpad.dev/~name12/gnome-terminal/scanned')
-    >>> print extract_text(find_tag_by_id(browser.contents, 'recent-revisions'))
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'recent-revisions'))
     Recent revisions
     This branch is empty.
 
 
-== Branch Details ==
+Branch Details
+--------------
 
-The branch page includes a table of details about the branch. The exact details
-vary from branch type to branch type.
+The branch page includes a table of details about the branch. The exact
+details vary from branch type to branch type.
 
-For hosted branches, the table has a link to the branch's project and the URL
-for the branch's canonical location.
+For hosted branches, the table has a link to the branch's project and
+the URL for the branch's canonical location.
 
     >>> def get_branch_details_table():
     ...     return find_tag_by_id(browser.contents, 'branch-info')
@@ -174,7 +191,7 @@ for the branch's canonical location.
     >>> print extract_text(get_branch_details_table())
     Branch information
     Owner: Sample Person
-    Project: GNOME Terminal (Unspecified)
+    Project: GNOME Terminal
     Status: Development
 
     >>> print extract_text(get_branch_management_portlet())
@@ -183,11 +200,12 @@ for the branch's canonical location.
     View the branch content
 
 For mirrored branches, the table has a link to the branch's project, the
-location of the original branch, the mirror on Launchpad, information about
-when the branch was last mirrored and when it will be mirrored again.
+location of the original branch, the mirror on Launchpad, information
+about when the branch was last mirrored and when it will be mirrored
+again.
 
-First we create an example branch, then call the APIs to indicate that it has
-been mirrored:
+First we create an example branch, then call the APIs to indicate that
+it has been mirrored:
 
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
@@ -219,14 +237,15 @@ The branch description should not be shown if there is none.
     Traceback (most recent call last):
     TypeError: expected string or buffer
 
-Branches that have never been mirrored don't have a 'Last mirrored' field.
+Branches that have never been mirrored don't have a 'Last mirrored'
+field.
 
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
     >>> print extract_text(get_branch_details_table())
     Branch information
     Owner: Sample Person
-    Project: GNOME Terminal (Unspecified)
+    Project: GNOME Terminal
     Status: Development
     Location: http://example.com/gnome-terminal/main
     Last mirrored: Not mirrored yet
@@ -235,7 +254,6 @@ Branches that have never been mirrored don't have a 'Last mirrored' field.
     >>> print get_branch_description(browser)
     Main branch of development for GNOME Terminal.
     Stable branches are based on that one...
-
 
 If next_mirror_time is NULL, then mirroring of the branch is disabled.
 
@@ -251,7 +269,6 @@ If next_mirror_time is NULL, then mirroring of the branch is disabled.
     >>> flush_database_updates()
     >>> logout()
 
-
     >>> browser.open(
     ...     'http://code.launchpad.dev/~no-priv/+junk/mirror-disabled')
     >>> print extract_text(get_branch_details_table())
@@ -263,7 +280,8 @@ If next_mirror_time is NULL, then mirroring of the branch is disabled.
     Next mirror: Disabled
 
 
-== Codebrowse link ==
+Codebrowse link
+---------------
 
 The codebrowse link only appears for branches that have revisions.
 
@@ -274,33 +292,35 @@ The codebrowse link only appears for branches that have revisions.
     Recent revisions
     This branch is empty.
 
-In addition, there is a "All revisions" link that links to the
-changelog view in codebrowse.
+In addition, there is a "All revisions" link that links to the changelog
+view in codebrowse.
 
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/+junk/junk.dev')
     >>> print browser.getLink('All revisions').url
     http://bazaar.launchpad.dev/~name12/+junk/junk.dev/changes
 
-If the branch is private, the browse code link is not shown.
-In order to see the private branch, we need to log in as a user that
-is able to see the branch.
+If the branch is private, the browse code link is not shown. In order to
+see the private branch, we need to log in as a user that is able to see
+the branch.
 
     >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> browser.open(
     ...     'http://code.launchpad.dev/~landscape-developers/landscape/trunk')
 
 
-== Download URL ==
+Download URL
+------------
 
 In the details table there is a link to the branch download URL.
 
-For public branches this shows links to the codehosting using http, whereas
-private branches show bzr+ssh as they are not available over anonymous
-http, and anyone who can see the branch is able to access it using bzr+ssh.
+For public branches this shows links to the codehosting using http,
+whereas private branches show bzr+ssh as they are not available over
+anonymous http, and anyone who can see the branch is able to access it
+using bzr+ssh.
 
-The download URL is only shown for branches that actually have revisions.
-So we need to fake that here.
+The download URL is only shown for branches that actually have
+revisions. So we need to fake that here.
 
     >>> login('foo.bar@canonical.com')
     >>> branch = getUtility(IBranchLookup).getByUniqueName(
@@ -330,7 +350,8 @@ Public branches use the lp spec bzr lookup name.
     ...
 
 
-== Branch formats ==
+Branch formats
+--------------
 
     >>> login('no-priv@canonical.com')
     >>> branch = factory.makeAnyBranch(
@@ -345,13 +366,15 @@ The data that we specified is shown on the web page.
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, 'branch-format'))
     Branch format: Branch format 5
+
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, 'repository-format'))
     Repository format:
     Bazaar pack repository format 1 (needs bzr 0.92)
 
 
-=== Stacking ===
+Stacking
+........
 
 Say we have one branch stacked on another:
 
@@ -377,13 +400,15 @@ The stacked-on information appears in the branch summary:
     True
 
 
-=== Navigation Context ===
+Navigation Context
+..................
 
-The tabs shown for a branch depend on whether or not the branch is a junk
-branch or not.  If the branch is associated with a product, then the product
-is the primary context, and used for the tabs and the breadcrumbs.  If the
-branch is not associated with a product then the owner of the branch is used
-as the primary context for the branch and used for the breadcrumbs and tabs.
+The tabs shown for a branch depend on whether or not the branch is a
+junk branch or not.  If the branch is associated with a product, then
+the product is the primary context, and used for the tabs and the
+breadcrumbs.  If the branch is not associated with a product then the
+owner of the branch is used as the primary context for the branch and
+used for the breadcrumbs and tabs.
 
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
@@ -409,3 +434,5 @@ as the primary context for the branch and used for the breadcrumbs and tabs.
     * Translations - http://translations.launchpad.dev/~name12
     * Answers - http://answers.launchpad.dev/~name12
     Main heading: lp://dev/~name12/+junk/junk.dev
+
+

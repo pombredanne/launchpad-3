@@ -13,30 +13,58 @@ __all__ = [
 import hashlib
 
 from lazr.delegates import delegates
-
 import pytz
-
-from storm.expr import Coalesce, Desc, LeftJoin, Or
-from storm.locals import Bool, DateTime, Int, Reference, Storm
+from storm.expr import (
+    And,
+    Desc,
+    LeftJoin,
+    Or,
+    Select,
+    Union,
+    )
+from storm.locals import (
+    Bool,
+    DateTime,
+    Int,
+    Reference,
+    Storm,
+    )
 from storm.store import Store
-
-from zope.component import ComponentLookupError, getAdapter, getUtility
-from zope.interface import classProvides, implements
+from zope.component import (
+    ComponentLookupError,
+    getAdapter,
+    getUtility,
+    )
+from zope.interface import (
+    classProvides,
+    implements,
+    )
 from zope.proxy import isProxy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IMasterStore,
+    IStore,
+    )
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
-
-from lp.buildmaster.interfaces.buildbase import BuildStatus
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from lp.app.errors import NotFoundError
+from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, IBuildFarmJob, IBuildFarmJobOld,
-    IBuildFarmJobSet, IBuildFarmJobSource,
-    InconsistentBuildFarmJobError, ISpecificBuildFarmJob)
+    IBuildFarmJob,
+    IBuildFarmJobOld,
+    IBuildFarmJobSet,
+    IBuildFarmJobSource,
+    InconsistentBuildFarmJobError,
+    ISpecificBuildFarmJob,
+    )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.registry.model.teammembership import TeamParticipation
 
@@ -209,6 +237,10 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
     job_type = DBEnum(
         name='job_type', allow_none=False, enum=BuildFarmJobType)
 
+    failure_count = Int(name='failure_count', allow_none=False)
+
+    dependencies = None
+
     def __init__(self, job_type, status=BuildStatus.NEEDSBUILD,
                  processor=None, virtualized=None, date_created=None):
         super(BuildFarmJob, self).__init__()
@@ -245,7 +277,7 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
         return self.date_finished - self.date_started
 
     def makeJob(self):
-        """See `IBuildFarmJob`."""
+        """See `IBuildFarmJobOld`."""
         raise NotImplementedError
 
     def jobStarted(self):
@@ -312,6 +344,7 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
         """See `IBuild`"""
         return self.status not in [BuildStatus.NEEDSBUILD,
                                    BuildStatus.BUILDING,
+                                   BuildStatus.UPLOADING,
                                    BuildStatus.SUPERSEDED]
 
     def getSpecificJob(self):
@@ -342,6 +375,10 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
 
         return build_without_outer_proxy
 
+    def gotFailure(self):
+        """See `IBuildFarmJob`."""
+        self.failure_count += 1
+
 
 class BuildFarmJobDerived:
     implements(IBuildFarmJob)
@@ -365,19 +402,55 @@ class BuildFarmJobSet:
         # Currently only package builds can be private (via their
         # related archive), but not all build farm jobs will have a
         # related package build - hence the left join.
-        origin = [BuildFarmJob]
-        left_join_archive = [
+        origin = [
+            BuildFarmJob,
             LeftJoin(
                 PackageBuild,
                 PackageBuild.build_farm_job == BuildFarmJob.id),
-            LeftJoin(
-                Archive, PackageBuild.archive == Archive.id),
             ]
+
+        # STORM syntax has totally obfuscated this query and wasted
+        # THREE hours of my time converting perfectly good SQL syntax.  I'm
+        # really sorry if you're the poor sap who has to maintain this.
+
+        inner_privacy_query = (
+            Union(
+                Select(
+                    Archive.id,
+                    tables=(Archive,),
+                    where=(Archive.private == False)
+                    ),
+                Select(
+                    Archive.id,
+                    tables=(Archive,),
+                    where=And(
+                        Archive.private == True,
+                        Archive.ownerID.is_in(
+                            Select(
+                                TeamParticipation.teamID,
+                                where=(TeamParticipation.person == user),
+                                distinct=True
+                            )
+                        )
+                    )
+                )
+            )
+        )
 
         if user is None:
             # Anonymous requests don't get to see private builds at all.
-            origin.extend(left_join_archive)
-            extra_clauses.append(Coalesce(Archive.private, False) == False)
+            extra_clauses.append(
+                Or(
+                    PackageBuild.id == None,
+                    PackageBuild.archive_id.is_in(
+                        Select(
+                            Archive.id,
+                            tables=(Archive,),
+                            where=(Archive.private == False)
+                            )
+                        )
+                    )
+                )
 
         elif user.inTeam(getUtility(ILaunchpadCelebrities).admin):
             # Admins get to see everything.
@@ -385,12 +458,12 @@ class BuildFarmJobSet:
         else:
             # Everyone else sees all public builds and the
             # specific private builds to which they have access.
-            origin.extend(left_join_archive)
-            origin.append(LeftJoin(
-                TeamParticipation, TeamParticipation.teamID == Archive.ownerID))
             extra_clauses.append(
-                Or(Coalesce(Archive.private, False) == False,
-                   TeamParticipation.person == user))
+                Or(
+                    PackageBuild.id == None,
+                    PackageBuild.archive_id.is_in(inner_privacy_query)
+                    )
+                )
 
         filtered_builds = IStore(BuildFarmJob).using(*origin).find(
             BuildFarmJob, *extra_clauses)
@@ -400,3 +473,11 @@ class BuildFarmJobSet:
         filtered_builds.config(distinct=True)
 
         return filtered_builds
+
+    def getByID(self, job_id):
+        """See `IBuildfarmJobSet`."""
+        job = IStore(BuildFarmJob).find(BuildFarmJob,
+                BuildFarmJob.id == job_id).one()
+        if job is None:
+            raise NotFoundError(job_id)
+        return job

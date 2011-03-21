@@ -18,10 +18,16 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Bool, Int, List, TextLine
+from zope.schema import (
+    Bool,
+    Int,
+    List,
+    TextLine,
+    )
 
 from lp.translations.interfaces.translationcommonformat import (
-    TranslationImportExportBaseException)
+    TranslationImportExportBaseException,
+    )
 
 
 class OutdatedTranslationError(TranslationImportExportBaseException):
@@ -158,8 +164,8 @@ class ITranslationImporter(Interface):
         :raise OutdatedTranslationError: If the entry is older than the
             previously imported file.
         :raise NotExportedFromLaunchpad: If the entry imported is not
-            published and doesn't have the tag added by Launchpad on export
-            time.
+            from upstream and doesn't have the tag added by Launchpad on
+            export time.
         :return: a tuple of two lists: error descriptors, and warnings.
 
         The errors list contains dictionaries describing messages that

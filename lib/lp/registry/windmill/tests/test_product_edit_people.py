@@ -8,11 +8,10 @@ __all__ = []
 
 import unittest
 
-from canonical.launchpad.windmill.testing.widgets import (
-    FormPickerWidgetTest)
-
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.testing import WindmillTestCase
+from lp.testing.windmill.widgets import FormPickerWidgetTest
+
 
 class TestProductEditPeople(WindmillTestCase):
     """Test picker +edit-people page."""
@@ -22,7 +21,7 @@ class TestProductEditPeople(WindmillTestCase):
     def test_product_edit_people_driver(self):
         test = FormPickerWidgetTest(
             name='test_product_edit_people_driver',
-            url='http://launchpad.dev:8085/firefox/+edit-people',
+            url='%s/firefox/+edit-people' % RegistryWindmillLayer.base_url,
             short_field_name='driver',
             search_text='Perell\xc3\xb3',
             result_index=1,
@@ -32,7 +31,7 @@ class TestProductEditPeople(WindmillTestCase):
     def test_product_edit_people_owner(self):
         test = FormPickerWidgetTest(
             name='test_product_edit_people_owner',
-            url='http://launchpad.dev:8085/firefox/+edit-people',
+            url='%s/firefox/+edit-people' % RegistryWindmillLayer.base_url,
             short_field_name='owner',
             search_text='guadamen',
             result_index=1,

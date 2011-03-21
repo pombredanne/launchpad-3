@@ -17,7 +17,14 @@ from zope.schema import TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    LaunchpadFormView, LaunchpadView, action, canonical_url, custom_widget)
+    canonical_url,
+    LaunchpadView,
+    )
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadFormView,
+    )
 
 
 class _IStepMachinery(Interface):

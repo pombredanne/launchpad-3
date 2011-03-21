@@ -8,18 +8,22 @@ import _pythonpath
 import logging
 import os
 import sys
+import time
+import traceback
 
 from paste import httpserver
 from paste.deploy.config import PrefixMiddleware
 from paste.httpexceptions import HTTPExceptionHandler
 from paste.request import construct_url
 from paste.translogger import TransLogger
+from paste.wsgilib import catch_errors
 
 from canonical.config import config
 import lp.codehosting
 
-LISTEN_HOST = '0.0.0.0'
-LISTEN_PORT = 8080
+
+LISTEN_HOST = config.codebrowse.listen_host
+LISTEN_PORT = config.codebrowse.port
 THREADPOOL_WORKERS = 10
 
 
@@ -53,7 +57,7 @@ def setup_logging(home, foreground):
     if not log_folder:
         log_folder = os.path.join(home, 'logs')
     if not os.path.exists(log_folder):
-        os.mkdir(log_folder)
+        os.makedirs(log_folder)
 
     f = logging.Formatter(
         '%(levelname)-.3s [%(asctime)s.%(msecs)03d] [%(thread)d] %(name)s: %(message)s',
@@ -129,13 +133,22 @@ secret = open(os.path.join(config.root, config.codebrowse.secret_path)).read()
 app = RootApp(SESSION_VAR)
 app = HTTPExceptionHandler(app)
 app = SessionHandler(app, SESSION_VAR, secret)
-def log_on_request_start(app):
+def log_request_start_and_stop(app):
     def wrapped(environ, start_response):
         log = logging.getLogger('loggerhead')
-        log.info("Starting to process %s", construct_url(environ))
-        return app(environ, start_response)
+        url = construct_url(environ)
+        log.info("Starting to process %s", url)
+        start_time = time.time()
+        def request_done_ok():
+            log.info("Processed ok %s [%0.3f seconds]", url, time.time() -
+                    start_time)
+        def request_done_err(exc_info):
+            log.info("Processed err %s [%0.3f seconds]: %s", url, time.time() -
+                    start_time, traceback.format_exception_only(*exc_info[:2]))
+        return catch_errors(app, environ, start_response, request_done_err,
+                request_done_ok)
     return wrapped
-app = log_on_request_start(app)
+app = log_request_start_and_stop(app)
 app = PrefixMiddleware(app)
 app = TransLogger(app)
 app = threadpool_debug(app)

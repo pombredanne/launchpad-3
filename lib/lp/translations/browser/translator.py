@@ -10,11 +10,19 @@ __all__ = [
 
 import cgi
 
-from lp.translations.interfaces.translator import (
-    ITranslator, IEditTranslator)
 from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadEditFormView, LaunchpadFormView)
+    canonical_url,
+    )
 from canonical.launchpad.webapp.menu import structured
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
+from lp.translations.interfaces.translator import (
+    IEditTranslator,
+    ITranslator,
+    )
 
 
 class TranslatorAdminView(LaunchpadEditFormView):

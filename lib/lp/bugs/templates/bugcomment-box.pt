@@ -9,7 +9,7 @@
               python: comment.show_for_admin and 'adminHiddenComment' or ''"
   tal:attributes="class string:boardComment ${remote_bug_comment_class}
                  ${admin_comment_hidden_class}"
-  tal:content="cache:authenticated,comment/rendered_cache_time,comment/index">
+  tal:content="cache:authenticated noparam,comment/rendered_cache_time,comment/index">
 
   <div class="boardCommentDetails">
     <table>

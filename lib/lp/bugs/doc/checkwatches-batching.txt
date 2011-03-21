@@ -67,9 +67,9 @@ Querying the remote system for modified bugs
 For bug watches that have been checked before, the remote system is
 asked which of a list of bugs have been modified since a given date.
 
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> from datetime import datetime
     >>> from pytz import UTC
-    >>> from zope.security.proxy import removeSecurityProxy
 
     >>> class QueryableRemoteSystem:
     ...     sync_comments = False

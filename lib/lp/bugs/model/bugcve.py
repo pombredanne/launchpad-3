@@ -6,12 +6,13 @@
 __metaclass__ = type
 __all__ = ['BugCve']
 
-from zope.interface import implements
-
 from sqlobject import ForeignKey
+from zope.interface import implements
 
 from canonical.database.sqlbase import SQLBase
 from lp.bugs.interfaces.bugcve import IBugCve
+
+
 class BugCve(SQLBase):
     """A table linking bugs and CVE entries."""
 

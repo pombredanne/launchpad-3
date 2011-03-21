@@ -10,9 +10,7 @@ __all__ = [
     ]
 
 from canonical.launchpad.security import AuthorizationBase
-
 from lp.code.interfaces.branchsubscription import IBranchSubscription
-
 
 
 class BranchSubscriptionEdit(AuthorizationBase):

@@ -60,9 +60,9 @@ The +edit page for a watch also displays some details about the watch.
 If we change the next_check date of the watch its will be shown in the
 Next check column.
 
+    >>> from zope.component import getUtility
     >>> from datetime import datetime
     >>> from pytz import utc
-    >>> from zope.component import getUtility
 
     >>> from canonical.launchpad.ftests import login, logout
     >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
@@ -261,3 +261,70 @@ watch for checking.
     Traceback (most recent call last):
       ...
     LookupError: label 'Update Now'
+
+
+Resetting a watch
+-----------------
+
+It's possible to reset a watch at any time by clicking the "Reset this
+watch" button on the watch's page.
+
+    >>> from lp.testing.sampledata import ADMIN_EMAIL
+    >>> login(ADMIN_EMAIL)
+    >>> bug_watch = factory.makeBugWatch()
+    >>> bug_watch.lastchecked = datetime.now(utc)
+    >>> watch_url = (
+    ...     'http://bugs.launchpad.dev/bugs/%s/+watch/%s' %
+    ...     (bug_watch.bug.id, bug_watch.id))
+    >>> logout()
+
+The "Reset this watch" button will appear for administrators.
+
+    >>> admin_browser.open(watch_url)
+    >>> admin_browser.getControl('Reset this watch')
+    <SubmitControl...>
+
+It also appears for Launchpad Developers.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.registry.interfaces.person import IPersonSet
+
+    >>> login(ADMIN_EMAIL)
+    >>> admin_user = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
+    >>> new_lp_developer = factory.makePerson(password='newpassword')
+    >>> launchpad_developers = getUtility(
+    ...     ILaunchpadCelebrities).launchpad_developers
+    >>> dev_added = launchpad_developers.addMember(
+    ...     new_lp_developer, admin_user)
+
+    >>> lp_dev_browser = setupBrowser(
+    ...     auth='Basic %s:newpassword' %
+    ...         new_lp_developer.preferredemail.email)
+    >>> logout()
+
+    >>> lp_dev_browser.open(watch_url)
+    >>> reset_button = lp_dev_browser.getControl('Reset this watch')
+
+Clicking the button will reset the watch completely.
+
+    >>> reset_button.click()
+    >>> for message in find_tags_by_class(
+    ...     lp_dev_browser.contents, 'informational message'):
+    ...     print extract_text(message)
+    The ... bug watch has been reset.
+
+    >>> data_tag = find_tag_by_id(
+    ...     user_browser.contents, 'bugwatch-lastchecked')
+    >>> print extract_text(data_tag.renderContents())
+    Checked:
+
+Should a non-admin, non-Launchpad-developer user visit the page, the
+button will not appear.
+
+    >>> user_browser.open(watch_url)
+    >>> user_browser.getControl('Reset this watch')
+    Traceback (most recent call last):
+      ...
+    LookupError: label 'Reset this watch'

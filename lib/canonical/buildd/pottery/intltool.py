@@ -3,8 +3,6 @@
 
 """Functions to build PO templates on the build slave."""
 
-from __future__ import with_statement
-
 __metaclass__ = type
 __all__ = [
     'check_potfiles_in',

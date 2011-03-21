@@ -19,24 +19,45 @@ __all__ = [
     'UpstreamFileType',
     ]
 
-from zope.schema import Bytes, Choice, Datetime, Int, Text, TextLine
-from zope.interface import Interface
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    export_factory_operation,
+    export_operation_as,
+    export_write_operation,
+    exported,
+    operation_parameters,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    ReferenceChoice,
+    )
+from lazr.restful.interface import copy_field
 from zope.component import getUtility
-from lazr.enum import DBEnumeratedType, DBItem
+from zope.interface import Interface
+from zope.schema import (
+    Bytes,
+    Choice,
+    Datetime,
+    Int,
+    Text,
+    TextLine,
+    )
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.validators.version import sane_version
-from canonical.launchpad.fields import (
-    ContentNameField, PersonChoice)
-from canonical.launchpad.validators import LaunchpadValidationError
-
-from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
-from lazr.restful.interface import copy_field
-from lazr.restful.declarations import (
-    REQUEST_USER, call_with, export_as_webservice_entry,
-    export_factory_operation, export_operation_as, export_write_operation,
-    exported, operation_parameters)
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.version import sane_version
+from lp.services.fields import (
+    ContentNameField,
+    PersonChoice,
+    )
 
 
 def file_size_constraint(value, max_size):
@@ -196,7 +217,7 @@ class IProductReleaseFilePublic(Interface):
 class IProductReleaseFile(IProductReleaseFileEditRestricted,
                           IProductReleaseFilePublic):
     """A file associated with a ProductRelease."""
-    export_as_webservice_entry("project_release_file")
+    export_as_webservice_entry("project_release_file", publish_web_link=False)
 
 
 class IProductReleaseEditRestricted(Interface):

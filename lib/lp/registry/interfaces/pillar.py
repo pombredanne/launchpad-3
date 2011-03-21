@@ -10,14 +10,29 @@ Pillars are currently Product, ProjectGroup and Distribution.
 
 __metaclass__ = type
 
-from zope.interface import Interface, Attribute
-from zope.schema import Bool, Int, List, TextLine
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    export_read_operation,
+    exported,
+    operation_parameters,
+    operation_returns_collection_of,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Int,
+    List,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from lazr.restful.fields import CollectionField, Reference
-from lazr.restful.declarations import (
-    export_as_webservice_entry, export_read_operation, exported,
-    operation_parameters, operation_returns_collection_of)
 
 
 __all__ = ['IHasAliases', 'IPillar', 'IPillarName', 'IPillarNameSet']

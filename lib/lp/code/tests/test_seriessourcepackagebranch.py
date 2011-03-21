@@ -9,21 +9,26 @@ from datetime import datetime
 import unittest
 
 import pytz
-
 import transaction
-
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
+from canonical.launchpad.ftests import (
+    ANONYMOUS,
+    login,
+    login_person,
+    logout,
+    )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.seriessourcepackagebranch import (
-    IFindOfficialBranchLinks, IMakeOfficialBranchLinks,
-    ISeriesSourcePackageBranch)
+    IFindOfficialBranchLinks,
+    IMakeOfficialBranchLinks,
+    ISeriesSourcePackageBranch,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import TestCaseWithFactory
-from canonical.testing import DatabaseFunctionalLayer
 
 
 class TestSeriesSourcePackageBranch(TestCaseWithFactory):

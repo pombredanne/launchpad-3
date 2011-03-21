@@ -3,9 +3,10 @@
 First import some stuff and setup some things we'll use in this test.
 
   >>> from zope.component import getUtility, getMultiAdapter
-  >>> from canonical.launchpad.interfaces import IPollSet, IPersonSet
   >>> from zope.publisher.browser import TestRequest
   >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+  >>> from lp.registry.interfaces.person import IPersonSet
+  >>> from lp.registry.interfaces.poll import IPollSet
   >>> from datetime import datetime, timedelta
   >>> login("test@canonical.com")
   >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
@@ -78,7 +79,7 @@ level checks.
 
     >>> request = TestRequest(form={'changevote': 'Change Vote'})
     >>> request.method = 'POST'
-    >>> voting_page = getMultiAdapter((poll, request), name="+vote-condorcet")
+    >>> voting_page = getMultiAdapter((poll, request), name="+vote")
     >>> form_processed = False
     >>> def form_processing():
     ...     form_processed = True

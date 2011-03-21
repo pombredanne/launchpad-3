@@ -10,15 +10,19 @@ __all__ = [
     'SectionSet'
     ]
 
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
 from zope.interface import implements
 
-from sqlobject import StringCol, ForeignKey
-
 from canonical.database.sqlbase import SQLBase
-
 from lp.app.errors import NotFoundError
 from lp.soyuz.interfaces.section import (
-    ISection, ISectionSelection, ISectionSet)
+    ISection,
+    ISectionSelection,
+    ISectionSet,
+    )
 
 
 class Section(SQLBase):

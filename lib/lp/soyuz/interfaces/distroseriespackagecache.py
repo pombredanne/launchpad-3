@@ -11,7 +11,11 @@ __all__ = [
     'IDistroSeriesPackageCache',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+
 
 class IDistroSeriesPackageCache(Interface):
 

@@ -38,7 +38,7 @@
            </span>
         </dd>
       </dl>
-      <dl class="bugwatch-data">
+      <dl class="bugwatch-data" id="bugwatch-lastchecked">
         <dt>Checked:</dt>
         <dd>
           <span

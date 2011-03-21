@@ -3,14 +3,13 @@
 
 """Snapshot adapter for the Storm result set."""
 
-from storm.zope.interfaces import IResultSet
-
-from zope.interface import implementer
-from zope.component import adapter
-
 from lazr.lifecycle.interfaces import ISnapshotValueFactory
+from storm.zope.interfaces import IResultSet
+from zope.component import adapter
+from zope.interface import implementer
 
 from canonical.launchpad.helpers import shortlist
+
 
 HARD_LIMIT_FOR_SNAPSHOT = 1000
 

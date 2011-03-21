@@ -34,8 +34,8 @@ Create and populate a temporary file and pretend it is a chroot:
 Setup a function to return a ManageChrootScript object given some
 parameters.
 
+    >>> from lp.services.log.logger import FakeLogger
     >>> from lp.soyuz.scripts.ftpmaster import ManageChrootScript
-    >>> from canonical.launchpad.scripts import FakeLogger
     >>> def getScriptObject(command, distribution='ubuntu', suite='hoary',
     ...                     arch='i386', filepath=filepath):
     ...     test_args = ['-s', suite,
@@ -132,7 +132,7 @@ Adding a chroot using a non-existent path will result in an error.
 
 Commit the work done so far so the librarian has the uploaded file.
 
-    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> LaunchpadZopelessLayer.txn.commit()
 
 Using the "get" command will retrieve a specified chroot to a given

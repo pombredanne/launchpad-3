@@ -20,12 +20,15 @@ import os
 from zope.interface import implements
 
 from lp.translations.interfaces.translationexporter import (
-    ITranslationFormatExporter)
-from lp.translations.interfaces.translations import TranslationConstants
+    ITranslationFormatExporter,
+    )
 from lp.translations.interfaces.translationfileformat import (
-    TranslationFileFormat)
+    TranslationFileFormat,
+    )
+from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.utilities.translation_common_format import (
-    TranslationMessageData)
+    TranslationMessageData,
+    )
 
 
 def strip_last_newline(text):
@@ -341,37 +344,37 @@ class GettextPOExporterBase:
                 continue
             chunks.append(self.exportTranslationMessageData(message))
 
-            # Gettext .po files are supposed to end with a new line.
-            exported_file_content = u'\n\n'.join(chunks) + u'\n'
+        # Gettext .po files are supposed to end with a new line.
+        exported_file_content = u'\n\n'.join(chunks) + u'\n'
 
-            # Try to encode the file
-            if force_utf8:
-                translation_file.header.charset = 'UTF-8'
-            try:
-                encoded_file_content = self._encode_file_content(
-                    translation_file, exported_file_content)
-            except UnicodeEncodeError:
-                if translation_file.header.charset.upper() == 'UTF-8':
-                    # It's already UTF-8, we cannot do anything.
-                    raise
-                # This file content cannot be represented in the current
-                # encoding.
-                if translation_file.path:
-                    file_description = translation_file.path
-                elif translation_file.language_code:
-                    file_description = (
-                        "%s translation" % translation_file.language_code)
-                else:
-                    file_description = "template"
-                logging.info(
-                    "Can't represent %s as %s; using UTF-8 instead." % (
-                        file_description,
-                        translation_file.header.charset.upper()))
-                # Use UTF-8 instead.
-                translation_file.header.charset = 'UTF-8'
-                # This either succeeds or raises UnicodeError.
-                encoded_file_content = self._encode_file_content(
-                    translation_file, exported_file_content)
+        # Try to encode the file
+        if force_utf8:
+            translation_file.header.charset = 'UTF-8'
+        try:
+            encoded_file_content = self._encode_file_content(
+                translation_file, exported_file_content)
+        except UnicodeEncodeError:
+            if translation_file.header.charset.upper() == 'UTF-8':
+                # It's already UTF-8, we cannot do anything.
+                raise
+            # This file content cannot be represented in the current
+            # encoding.
+            if translation_file.path:
+                file_description = translation_file.path
+            elif translation_file.language_code:
+                file_description = (
+                    "%s translation" % translation_file.language_code)
+            else:
+                file_description = "template"
+            logging.info(
+                "Can't represent %s as %s; using UTF-8 instead." % (
+                    file_description,
+                    translation_file.header.charset.upper()))
+            # Use UTF-8 instead.
+            translation_file.header.charset = 'UTF-8'
+            # This either succeeds or raises UnicodeError.
+            encoded_file_content = self._encode_file_content(
+                translation_file, exported_file_content)
 
         storage.addFile(
             file_path, file_extension, encoded_file_content, mime_type)

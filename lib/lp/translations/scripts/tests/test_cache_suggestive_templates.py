@@ -6,14 +6,15 @@
 __metaclass__ = type
 
 import transaction
-
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE)
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.testing import TestCaseWithFactory
-
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 

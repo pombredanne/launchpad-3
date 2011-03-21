@@ -23,6 +23,9 @@ Person's. A comment is also sent to the applying users and the team admins.
     >>> browser.getControl(name='action_7').value = ['approve']
     >>> browser.getControl(name='comment').value = 'Thanks for your interest'
     >>> browser.getControl('Save changes').click()
+    >>> from lp.testing.mail_helpers import run_mail_jobs
+    >>> login(ANONYMOUS)
+    >>> run_mail_jobs()
     >>> len(stub.test_emails)
     12
     >>> for from_addr, to_addrs, raw_msg in sorted(stub.test_emails):

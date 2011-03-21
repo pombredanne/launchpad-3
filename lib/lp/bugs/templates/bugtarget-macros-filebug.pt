@@ -219,7 +219,7 @@
           </tal:has-bugtracker>
           <tal:XXX condition="nothing">
             XXX: Gavin Panella 2009-09-14 bug=429354:
-            Asking people to use feedback@launchpad.net is not
+            Asking people to use answers is not
             ideal. We could instead link project owners to the +edit
             page and provide the +contactuser form for everyone else
             to contact the owner.
@@ -228,8 +228,8 @@
             <p class="warning message">
               Launchpad doesn't know what bug tracker <span
               tal:replace="product_or_distro/displayname">Alsa
-              Utils</span> uses. Do you know? <a href="mailto:
-              feedback@launchpad.net">Tell us about it.</a>
+              Utils</span> uses. Do you know?
+              <a href="/support">Tell us about it.</a>
             </p>
           </tal:not-has-bugtracker>
         </tal:defines>
@@ -298,7 +298,7 @@
           </p>
         </tal:singular>
         <ul class="product-bug-options" tal:repeat="product context/products">
-          <li condition="product/official_malone">
+          <li condition="product/bug_tracking_usage/enumvalue:LAUNCHPAD">
             <tal:link replace="structure product/fmt:link" />
             <ul class="bulleted">
               <tal:external-tracker
@@ -354,7 +354,8 @@
     <td colspan="2" id="bug-reporting-guidelines">
       <tal:guidelines repeat="guideline guidelines">
         <h3><span tal:replace="guideline/source" /> bug reporting guidelines:</h3>
-        <div tal:content="structure guideline/content/fmt:text-to-html" />
+        <div
+          tal:content="structure guideline/content/fmt:text-to-html-with-target" />
       </tal:guidelines>
     </td>
   </tr>

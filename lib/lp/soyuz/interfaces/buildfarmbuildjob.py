@@ -8,8 +8,9 @@ __all__ = [
     'IBuildFarmBuildJob'
     ]
 
-from canonical.launchpad import _
 from lazr.restful.fields import Reference
+
+from canonical.launchpad import _
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobOld
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 

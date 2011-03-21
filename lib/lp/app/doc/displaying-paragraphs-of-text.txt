@@ -229,13 +229,13 @@ links:
     <a href="/bugs/123">bug    123</a><br />
     <a href="/bugs/123">bug #123</a><br />
     <a href="/bugs/123">bug number 123</a><br />
-    <a href="/bugs/123">bug number. 123</a><br />
+    bug number. 123<br />
     <a href="/bugs/123">bug num 123</a><br />
     <a href="/bugs/123">bug num. 123</a><br />
     <a href="/bugs/123">bug no 123</a><br />
     <a href="/bugs/123">bug report 123</a><br />
     <a href="/bugs/123">bug no. 123</a><br />
-    <a href="/bugs/123">bug#123</a><br />
+    bug#123<br />
     <a href="/bugs/123">bug-123</a><br />
     <a href="/bugs/123">bug-report-123</a><br />
     <a href="/bugs/123">bug=123</a><br />
@@ -290,7 +290,7 @@ Even line breaks cannot stop the power of bug linking:
 To check a private bug, we need to log in and set a bug to be private.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from lp.bugs.interfaces.bug import IBugSet
     >>> bugset = getUtility(IBugSet)
     >>> firefox_crashes = bugset.get(6)
     >>> login("test@canonical.com")
@@ -357,17 +357,17 @@ Branch references are linkified:
     ...     'lp:///foo\n'
     ...     'lp:/foo\n')
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p><a href="/+branch/~foo/bar/baz">lp:~foo/bar/baz</a><br />
-    <a href="/+branch/~foo/bar/bug-123">lp:~foo/bar/bug-123</a><br />
-    <a href="/+branch/~foo/+junk/baz">lp:~foo/+junk/baz</a><br />
-    <a href="/+branch/~foo/ubuntu/jaunty/evolution/baz">lp:~foo/ubuntu/jaunty/evolution/baz</a><br />
-    <a href="/+branch/foo/bar">lp:foo/bar</a><br />
-    <a href="/+branch/foo">lp:foo</a><br />
-    <a href="/+branch/foo">lp:foo</a>,<br />
-    <a href="/+branch/foo/bar">lp:foo/bar</a>.<br />
-    <a href="/+branch/foo/bar/baz">lp:foo/bar/baz</a><br />
-    <a href="/+branch/foo">lp:///foo</a><br />
-    <a href="/+branch/foo">lp:/foo</a></p>
+    <p><a href="/+branch/~foo/bar/baz" class="...">lp:~foo/bar/baz</a><br />
+    <a href="/+branch/~foo/bar/bug-123" class="...">lp:~foo/bar/bug-123</a><br />
+    <a href="/+branch/~foo/+junk/baz" class="...">lp:~foo/+junk/baz</a><br />
+    <a href="/+branch/~foo/ubuntu/jaunty/evolution/baz" class="...">lp:~foo/ubuntu/jaunty/evolution/baz</a><br />
+    <a href="/+branch/foo/bar" class="...">lp:foo/bar</a><br />
+    <a href="/+branch/foo" class="...">lp:foo</a><br />
+    <a href="/+branch/foo" class="...">lp:foo</a>,<br />
+    <a href="/+branch/foo/bar" class="...">lp:foo/bar</a>.<br />
+    <a href="/+branch/foo/bar/baz" class="...">lp:foo/bar/baz</a><br />
+    <a href="/+branch/foo" class="...">lp:///foo</a><br />
+    <a href="/+branch/foo" class="...">lp:/foo</a></p>
 
 Text that looks like a branch reference, but is followed only by digits is
 treated as a link to a bug.

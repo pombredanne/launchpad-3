@@ -7,17 +7,22 @@ __metaclass__ = type
 __all__ = []
 
 
-from zope.event import notify
-
-from canonical.launchpad import _
-from zope.interface import providedBy
-
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from zope.event import notify
+from zope.interface import providedBy
 
-from lp.bugs.interfaces.bug import CreateBugParams,  IBug
+from canonical.launchpad import _
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.launchpadform import action, LaunchpadFormView
+from lp.app.browser.launchpadform import (
+    action,
+    LaunchpadFormView,
+    )
+from lp.bugs.interfaces.bug import (
+    CreateBugParams,
+    IBug,
+    )
+
 
 class QuestionMakeBugView(LaunchpadFormView):
     """Browser class for adding a bug from a question."""

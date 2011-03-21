@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for `TranslationGroup` and related classes."""
@@ -7,12 +7,19 @@ __metaclass__ = type
 
 from unittest import TestLoader
 
+from lazr.restfulclient.errors import Unauthorized
+import transaction
 from zope.component import getUtility
 
-from canonical.testing import ZopelessDatabaseLayer
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.registry.interfaces.teammembership import (
-    ITeamMembershipSet, TeamMembershipStatus)
-from lp.testing import TestCaseWithFactory
+    ITeamMembershipSet,
+    TeamMembershipStatus,
+    )
+from lp.testing import (
+    TestCaseWithFactory,
+    WebServiceTestCase,
+    )
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 
 
@@ -59,6 +66,27 @@ class TestTranslationGroupSet(TestCaseWithFactory):
         self.assertEqual(
             [group],
             list(getUtility(ITranslationGroupSet).getByPerson(person)))
+
+
+class TestWebService(WebServiceTestCase):
+
+    def test_getByName(self):
+        """getByName returns the TranslationGroup for the specified name."""
+        group = self.factory.makeTranslationGroup()
+        transaction.commit()
+        ws_group = self.service.translation_groups.getByName(name=group.name)
+        self.assertEqual(group.name, ws_group.name)
+
+    def test_attrs(self):
+        """TranslationGroup provides the expected attributes."""
+        group = self.factory.makeTranslationGroup()
+        transaction.commit()
+        ws_group = self.wsObject(group)
+        self.assertEqual(group.name, ws_group.name)
+        self.assertEqual(group.title, ws_group.title)
+        ws_group.name = 'foo'
+        e = self.assertRaises(Unauthorized, ws_group.lp_save)
+        self.assertIn("'name', 'launchpad.Edit'", str(e))
 
 
 def test_suite():

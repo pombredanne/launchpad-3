@@ -77,7 +77,7 @@ Removed by request
 Flag the database as dirty since it has been modified without the test suite
 knowing.
 
->>> from canonical.testing import DatabaseLayer
+>>> from canonical.testing.layers import DatabaseLayer
 >>> DatabaseLayer.force_dirty_database()
 
 

@@ -70,10 +70,11 @@ permission to manipulate them.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import (
-    ... IBinaryPackageNameSet, IComponentSet, ISourcePackageNameSet)
-    >>> from canonical.launchpad.database import (
-    ...     BinaryPackageRelease, SourcePackageRelease)
+    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+    >>> from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
+    >>> from lp.soyuz.interfaces.component import IComponentSet
+    >>> from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+    >>> from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
     >>> universe = getUtility(IComponentSet)['universe']
     >>> alsa_utils = getUtility(
     ...     ISourcePackageNameSet).queryByName("alsa-utils")

@@ -10,16 +10,25 @@ __all__ = [
     ]
 
 import transaction
-from zope.component import getUtility, queryMultiAdapter
+from zope.component import (
+    getUtility,
+    queryMultiAdapter,
+    )
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing import LaunchpadFunctionalLayer
-
+from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.archiveuploader.tests import datadir
+from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
-from lp.soyuz.interfaces.queue import IPackageUploadSet, PackageUploadStatus
+from lp.soyuz.interfaces.queue import (
+    IPackageUploadSet,
+    )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-from lp.testing import login, logout, TestCaseWithFactory
+from lp.testing import (
+    login,
+    logout,
+    TestCaseWithFactory,
+    )
 
 
 class TestAcceptQueueUploads(TestCaseWithFactory):

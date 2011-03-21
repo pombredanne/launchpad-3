@@ -10,16 +10,22 @@ __all__ = [
 
 
 from email.Utils import parseaddr
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus, IEmailAddressSet)
+    EmailAddressStatus,
+    IEmailAddressSet,
+    )
 from lp.registry.interfaces.mailinglist import (
-    CannotSubscribe, IMailingListSet, MailingListStatus)
+    CannotSubscribe,
+    IMailingListSet,
+    MailingListStatus,
+    )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
-from canonical.launchpad.scripts import QuietFakeLogger
+from lp.services.log.logger import BufferLogger
 
 
 class Importer:
@@ -36,7 +42,7 @@ class Importer:
         assert self.mailing_list.status == MailingListStatus.ACTIVE, (
             'Team mailing list is not active: %s' % team_name)
         if log is None:
-            self.log = QuietFakeLogger()
+            self.log = BufferLogger()
         else:
             self.log = log
 

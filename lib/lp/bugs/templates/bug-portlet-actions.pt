@@ -18,8 +18,8 @@
       class="menu-link-mark-dupe">Mark as duplicate</a>
     </span>
     <tal:block
-      tal:condition="context/duplicates"
-      tal:define="number_of_dupes context/duplicates/count"
+      tal:condition="context/number_of_duplicates"
+      tal:define="number_of_dupes context/number_of_duplicates"
     >
     </tal:block>
     <tal:block

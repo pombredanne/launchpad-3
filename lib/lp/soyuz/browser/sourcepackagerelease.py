@@ -155,5 +155,5 @@ class SourcePackageReleaseView(LaunchpadView):
             return ''
         # Match any string with 2 or more non-consecutive slashes in it.
         pattern = re.compile(r'([\S]+/[\S]+/[\S]+)')
-        highlight = r'<span class="highlighted">\1</span>'
+        highlight = r'<span class="highlight">\1</span>'
         return pattern.sub(highlight, self.context.copyright)

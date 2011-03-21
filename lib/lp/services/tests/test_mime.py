@@ -5,12 +5,11 @@
 
 __metaclass__ = type
 
+import mimetypes
 import unittest
 
-import mimetypes
-from lp.testing import TestCase
 from lp.services.mime import customizeMimetypes
-
+from lp.testing import TestCase
 
 # In our run-time environment this call is made via the initialization section
 # of buildout.cfg but that initialization is not done for tests so it must be

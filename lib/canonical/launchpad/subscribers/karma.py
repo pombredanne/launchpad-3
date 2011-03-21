@@ -5,10 +5,10 @@
 application."""
 
 from canonical.database.sqlbase import block_implicit_flushes
-from canonical.launchpad.interfaces import BugTaskStatus
+from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.subscribers.bug import get_bug_delta
 from lp.code.enums import BranchMergeProposalStatus
 from lp.registry.interfaces.person import IPerson
-from canonical.launchpad.mailnotification import get_bug_delta
 
 
 @block_implicit_flushes
@@ -17,6 +17,7 @@ def bug_created(bug, event):
     # All newly created bugs get at least one bugtask associated with
     assert len(bug.bugtasks) >= 1
     _assignKarmaUsingBugContext(IPerson(event.user), bug, 'bugcreated')
+
 
 def _assign_karma_using_bugtask_context(person, bugtask, actionname):
     """Extract the right context from the bugtask and assign karma."""
@@ -156,6 +157,7 @@ def spec_modified(spec, event):
 def branch_created(branch, event):
     """Assign karma to the user who registered the branch."""
     branch.target.assignKarma(branch.registrant, 'branchcreated')
+
 
 @block_implicit_flushes
 def bug_branch_created(bug_branch, event):

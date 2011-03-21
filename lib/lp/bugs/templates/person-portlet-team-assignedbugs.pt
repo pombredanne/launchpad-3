@@ -5,7 +5,7 @@
   omit-tag="">
 
 <div class="portlet" id="portlet-team-assigned-bugs"
-     tal:condition="context/myactivememberships">
+     tal:condition="context/team_memberships">
 
   <h2><span tal:replace="context/title" />'s teams</h2>
 

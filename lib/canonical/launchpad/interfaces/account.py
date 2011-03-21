@@ -19,13 +19,29 @@ __all__ = [
     ]
 
 
-from zope.interface import Interface
-from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
+from zope.interface import Attribute, Interface
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    Text,
+    TextLine,
+    )
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import StrippedTextLine, PasswordField
-from lazr.restful.fields import CollectionField, Reference
+from lp.services.fields import (
+    PasswordField,
+    StrippedTextLine,
+    )
 
 
 class AccountSuspendedError(Exception):
@@ -266,9 +282,7 @@ class IAccountPrivate(Interface):
         title=_("Rationale for this account's creation."), required=True,
         readonly=True, values=AccountCreationRationale.items)
 
-    openid_identifier = TextLine(
-        title=_("Key used to generate opaque OpenID identities."),
-        readonly=True, required=True)
+    openid_identifiers = Attribute(_("Linked OpenId Identifiers"))
 
     password = PasswordField(
         title=_("Password."), readonly=False, required=True)

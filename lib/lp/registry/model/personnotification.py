@@ -10,20 +10,29 @@ __all__ = [
     ]
 
 from datetime import datetime
+
 import pytz
-
-from sqlobject import ForeignKey, StringCol
-
+from sqlobject import (
+    ForeignKey,
+    StringCol,
+    )
 from zope.interface import implements
 
 from canonical.config import config
-
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.sqlbase import (
+    SQLBase,
+    sqlvalues,
+    )
 from lp.registry.interfaces.personnotification import (
-    IPersonNotification, IPersonNotificationSet)
-from lp.services.mail.sendmail import format_address, simple_sendmail
+    IPersonNotification,
+    IPersonNotificationSet,
+    )
+from lp.services.mail.sendmail import (
+    format_address,
+    simple_sendmail,
+    )
 
 
 class PersonNotification(SQLBase):

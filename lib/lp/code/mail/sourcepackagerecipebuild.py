@@ -1,7 +1,6 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-
 __metaclass__ = type
 
 __all__ = [
@@ -11,8 +10,11 @@ __all__ = [
 
 from canonical.config import config
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.tales import DurationFormatterAPI
-from lp.services.mail.basemailer import BaseMailer, RecipientReason
+from lp.app.browser.tales import DurationFormatterAPI
+from lp.services.mail.basemailer import (
+    BaseMailer,
+    RecipientReason,
+    )
 
 
 class SourcePackageRecipeBuildMailer(BaseMailer):
@@ -47,10 +49,11 @@ class SourcePackageRecipeBuildMailer(BaseMailer):
             })
         return headers
 
-    def _getTemplateParams(self, email):
+    def _getTemplateParams(self, email, recipient):
         """See `BaseMailer`"""
         params = super(
-            SourcePackageRecipeBuildMailer, self)._getTemplateParams(email)
+            SourcePackageRecipeBuildMailer, self)._getTemplateParams(
+                email, recipient)
         params.update({
             'status': self.build.status.title,
             'build_id': self.build.id,
@@ -64,6 +67,7 @@ class SourcePackageRecipeBuildMailer(BaseMailer):
             'duration': '',
             'builder_url': '',
             'build_url': canonical_url(self.build),
+            'upload_log_url': '',
         })
         if self.build.builder is not None:
             params['builder_url'] = canonical_url(self.build.builder)
@@ -72,6 +76,8 @@ class SourcePackageRecipeBuildMailer(BaseMailer):
             params['duration'] = duration_formatter.approximateduration()
         if self.build.log is not None:
             params['log_url'] = self.build.log.getURL()
+        if self.build.upload_log is not None:
+            params['upload_log_url'] = self.build.upload_log_url
         return params
 
     def _getFooter(self, params):

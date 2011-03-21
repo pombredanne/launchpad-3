@@ -3,7 +3,7 @@
      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
      class="portletBody">
   <div class="section" tal:define="tags_cloud_data view/tags_cloud_data">
-    <tal:tags content="cache:public, 60 minutes">
+    <tal:tags content="cache:public noparam, 60 minutes">
         <h2 tal:condition="tags_cloud_data">Tags</h2>
         <div style="text-align: justify">
           <a tal:repeat="tag_info view/tags_cloud_data"

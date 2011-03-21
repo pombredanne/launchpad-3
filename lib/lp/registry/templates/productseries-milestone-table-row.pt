@@ -4,8 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   define="milestone_menu view/milestone/menu:overview;
           milestone view/milestone;
-          release view/release"
-  tal:content="cache:private, 1 hour">
+          release view/release">
   <tr>
     <td>
       <img src="/@@/milestone" alt="" />

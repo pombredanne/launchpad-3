@@ -13,6 +13,7 @@
   </tal:comment>
   <metal:macros fill-slot="bogus">
     <metal:macro define-macro="tracker-table">
+      <tal:navigation content="structure trackers/@@+navigation-links-upper" />
       <table class="sortable listing" tal:attributes="id id">
         <thead>
           <tr>
@@ -24,7 +25,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="tracker trackers">
+          <tr tal:repeat="tracker trackers/currentBatch">
             <td>
               <a tal:replace="structure tracker/fmt:link" />
             </td>
@@ -53,6 +54,7 @@
           </tr>
         </tbody>
       </table>
+      <tal:navigation content="structure trackers/@@+navigation-links-lower" />
     </metal:macro>
   </metal:macros>
 
@@ -70,7 +72,7 @@
           the external status changes.
         </p>
         <tal:table define="id string:trackers;
-                           trackers view/active_bug_trackers">
+                           trackers view/active_trackers">
           <metal:table use-macro="template/macros/tracker-table" />
         </tal:table>
         <p style="margin-top: 1em"
@@ -81,11 +83,11 @@
         </p>
       </div>
     </div>
-    <div class="yui-u" tal:condition="view/inactive_bug_trackers">
+    <div class="yui-u" tal:condition="view/inactive_tracker_count">
       <div class="portlet">
         <h2>Inactive bug trackers</h2>
         <tal:table define="id string:inactive-trackers;
-                           trackers view/inactive_bug_trackers">
+                           trackers view/inactive_trackers">
           <metal:table use-macro="template/macros/tracker-table" />
         </tal:table>
       </div>

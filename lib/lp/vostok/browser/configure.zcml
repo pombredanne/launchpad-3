@@ -6,18 +6,23 @@
    i18n_domain="launchpad">
 
   <browser:defaultView
-     for="lp.vostok.publisher.IVostokRoot"
-     name="+index"
-     />
+      for="..publisher.IVostokRoot"
+      name="+index"
+      />
 
   <browser:page
-     for="lp.vostok.publisher.IVostokRoot"
-     name="+index"
-     class="lp.vostok.browser.root.VostokRootView"
-     template="../templates/root.pt"
-     permission="zope.Public"
-     layer="lp.vostok.publisher.VostokLayer"
-     />
+      for="..publisher.IVostokRoot"
+      name="+index"
+      class=".root.VostokRootView"
+      template="../templates/root.pt"
+      permission="zope.Public"
+      layer="..publisher.VostokLayer"
+      />
+
+  <browser:navigation
+      module=".distribution"
+      classes="DistributionNavigation"
+      layer="..publisher.VostokLayer" />
 
   <browser:navigation
       module="lp.vostok.publisher"

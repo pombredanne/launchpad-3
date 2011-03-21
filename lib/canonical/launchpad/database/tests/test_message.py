@@ -6,26 +6,32 @@ __metaclass__ = type
 from cStringIO import StringIO
 from doctest import DocTestSuite
 from email.Message import Message
-from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
-from email.Utils import formatdate, make_msgid
-import transaction
+from email.MIMEText import MIMEText
+from email.Utils import (
+    formatdate,
+    make_msgid,
+    )
 import unittest
 
-from canonical.testing import LaunchpadFunctionalLayer
 from sqlobject import SQLObjectNotFound
+import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.database import (
-    MessageSet, MessageJob, MessageJobAction)
-from lp.services.job.model.job import Job
+from canonical.launchpad.database.message import (
+    MessageJob,
+    MessageJobAction,
+    MessageSet,
+    )
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.message import IMessageJob
+from canonical.launchpad.webapp.testing import verifyObject
+from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.services.job.model.job import Job
 from lp.services.mail.sendmail import MailController
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.launchpad.webapp.testing import verifyObject
 
 
 class TestMessageSet(unittest.TestCase):
@@ -97,6 +103,33 @@ class TestMessageSet(unittest.TestCase):
         attachment['Content-Type'] = 'text/x-diff'
         attachment['Content-Disposition'] = (
             'attachment; filename="review.diff"')
+        msg.attach(attachment)
+        # Now create the message from the MessageSet.
+        message = MessageSet().fromEmail(msg.as_string())
+        text, diff = message.chunks
+        self.assertEqual('This is the body of the email.', text.content)
+        self.assertEqual('review.diff', diff.blob.filename)
+        self.assertEqual('text/x-diff', diff.blob.mimetype)
+        # Need to commit in order to read back out of the librarian.
+        transaction.commit()
+        self.assertEqual('This is the diff, honest.', diff.blob.read())
+
+    def test_fromEmail_strips_attachment_paths(self):
+        # Build a simple multipart message with a plain text first part
+        # and an text/x-diff attachment.
+        sender = self.factory.makePerson()
+        msg = MIMEMultipart()
+        msg['Message-Id'] = make_msgid('launchpad')
+        msg['Date'] = formatdate()
+        msg['To'] = 'to@example.com'
+        msg['From'] = sender.preferredemail.email
+        msg['Subject'] = 'Sample'
+        msg.attach(MIMEText('This is the body of the email.'))
+        attachment = Message()
+        attachment.set_payload('This is the diff, honest.')
+        attachment['Content-Type'] = 'text/x-diff'
+        attachment['Content-Disposition'] = (
+            'attachment; filename="/tmp/foo/review.diff"')
         msg.attach(attachment)
         # Now create the message from the MessageSet.
         message = MessageSet().fromEmail(msg.as_string())

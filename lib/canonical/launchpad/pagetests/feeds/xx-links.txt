@@ -116,8 +116,11 @@ it must have quotes and html escaped.
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> login('foo.bar@canonical.com')
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchBag, IProductSet, License)
+    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
+    >>> from lp.registry.interfaces.product import (
+    ...     IProductSet,
+    ...     License,
+    ...     )
     >>> user = getUtility(ILaunchBag).user
     >>> getUtility(IProductSet).createProduct(
     ...     user, 'bad-displayname',
@@ -253,7 +256,7 @@ show a link to the atom feed for that source package's latest bugs.
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/ubuntu/+source/cnews/latest-bugs.atom"
-        title="Latest Bugs for cnews in ubuntu" />]
+        title="Latest Bugs for cnews in Ubuntu" />]
 
 
 == Latest Branches for a ProjectGroup ==

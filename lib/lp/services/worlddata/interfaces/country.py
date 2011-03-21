@@ -13,22 +13,36 @@ __all__ = [
     'IContinent'
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Int, TextLine
-
-from canonical.launchpad.fields import Title, Description
-from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad import _
-
 from lazr.restful.declarations import (
-    export_as_webservice_collection, collection_default_content,
-    export_read_operation, export_as_webservice_entry, exported,
-    operation_parameters, operation_returns_entry)
+    collection_default_content,
+    export_as_webservice_collection,
+    export_as_webservice_entry,
+    export_read_operation,
+    exported,
+    operation_parameters,
+    operation_returns_entry,
+    )
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
+from zope.schema import (
+    Int,
+    TextLine,
+    )
+
+from canonical.launchpad import _
+from lp.app.validators.name import valid_name
+from lp.services.fields import (
+    Description,
+    Title,
+    )
 
 
 class ICountry(Interface):
     """The country description."""
-    export_as_webservice_entry(plural_name='countries')
+    export_as_webservice_entry(
+        plural_name='countries', publish_web_link=False)
 
     id = Int(
         title=_('Country ID'), required=True, readonly=True,

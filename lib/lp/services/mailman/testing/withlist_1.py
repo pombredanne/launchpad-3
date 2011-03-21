@@ -9,11 +9,12 @@
 # This script must be called like so:
 #
 # bin/withlist -r \
-#   canonical.launchpad.mailman.tests.withlist_1.test_site_list mailman
+#   lp.services.mailman.tests.withlist_1.test_site_list mailman
 #
 # where the final argument is the name of the site list, which must exist.
 
 import sys
+
 from Mailman.mm_cfg import MAILMAN_SITE_LIST
 
 

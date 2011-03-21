@@ -7,11 +7,13 @@ import random
 import unittest
 
 from canonical.database.constants import UTC_NOW
-from canonical.testing import DatabaseFunctionalLayer
 from canonical.launchpad.components.tokens import (
-    create_token, create_unique_token_for_table)
+    create_token,
+    create_unique_token_for_table,
+    )
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
+from canonical.testing.layers import DatabaseFunctionalLayer
 
 
 class Test_create_token(unittest.TestCase):

@@ -8,10 +8,12 @@ link, they'll be sent to the OP to authenticate.
 
     # Set handleErrors to True so that the Unauthorized exception is handled
     # by the publisher and we get redirected to the +login page.
+    >>> from canonical.testing.layers import BaseLayer
+    >>> root_url = BaseLayer.appserver_root_url()
     >>> browser = Browser()
     >>> browser.handleErrors = True
     >>> browser.open(
-    ...     'http://launchpad.dev:8085/people/?name=foo&searchfor=all')
+    ...     '%s/people/?name=foo&searchfor=all' % root_url)
     >>> browser.getLink('Log in / Register').click()
 
     # On a browser with JS support, this page would've been automatically
@@ -32,16 +34,17 @@ The OpenID Provider will ask us to authenticate.
 Once authenticated, we're redirected back to the page where we started, with
 the query args preserved.
 
-    >>> url = browser.url
-    >>> print url
-    http://launchpad.dev:8085/people?...
+    >>> browser.vhost
+    'http://launchpad.dev'
+    >>> browser.urlpath
+    '/people'
     >>> import re
-    >>> print sorted(re.sub('.*\?', '', url).split('&'))
+    >>> print sorted(re.sub('.*\?', '', browser.url).split('&'))
     ['name=foo', 'searchfor=all']
 
 If we load the +login page while already logged in, it will say we're already
 logged in and ask us to log out if we're somebody else.
 
-    >>> browser.open('http://launchpad.dev:8085/+login')
+    >>> browser.open('%s/+login' % root_url)
     >>> print extract_text(find_main_content(browser.contents))
     You are already logged in...

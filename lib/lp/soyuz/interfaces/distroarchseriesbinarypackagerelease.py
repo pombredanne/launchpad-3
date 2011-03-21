@@ -14,6 +14,8 @@ __all__ = [
 from zope.interface import Attribute
 
 from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageRelease
+
+
 class IDistroArchSeriesBinaryPackageRelease(IBinaryPackageRelease):
     """This is a BinaryPackageRelease-In-A-DistroArchSeries. It represents
     a real binary package release that has been uploaded to a distroseries

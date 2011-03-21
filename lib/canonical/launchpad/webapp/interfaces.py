@@ -7,21 +7,39 @@ __metaclass__ = type
 
 import logging
 
+from lazr.batchnavigator.interfaces import IBatchNavigator
+from lazr.enum import (
+    DBEnumeratedType,
+    DBItem,
+    use_template,
+    )
+import zope.app.publication.interfaces
+from zope.app.security.interfaces import (
+    IAuthentication,
+    IPrincipal,
+    IPrincipalSource,
+    )
+from zope.component.interfaces import IObjectEvent
+from zope.interface import (
+    Attribute,
+    implements,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    Datetime,
+    Int,
+    Object,
+    Text,
+    TextLine,
+    )
+from zope.traversing.interfaces import IContainmentRoot
+
+from canonical.launchpad import _
 # Import only added to allow change to land.  Needs to be removed when shipit
 # is updated.
 from lp.app.errors import UnexpectedFormData
-
-import zope.app.publication.interfaces
-from zope.component.interfaces import IObjectEvent
-from zope.interface import Interface, Attribute, implements
-from zope.app.security.interfaces import (
-    IAuthentication, IPrincipal, IPrincipalSource)
-from zope.traversing.interfaces import IContainmentRoot
-from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
-from lazr.batchnavigator.interfaces import IBatchNavigator
-from lazr.enum import DBEnumeratedType, DBItem, use_template
-
-from canonical.launchpad import _
 
 
 class IAPIDocRoot(IContainmentRoot):
@@ -168,6 +186,12 @@ class ILinkData(Interface):
     # action menu is not used anymore and we move to use inline navigation.
     sort_key = Attribute(
         "The sort key to use when rendering it with a group of links.")
+
+    hidden = Attribute(
+        "Boolean to say whether this link is hidden.  This is separate from "
+        "being enabled and is used to support links which need to be be "
+        "enabled but not viewable in the rendered HTML.  The link may be "
+        "changed to visible by JavaScript or some other means.")
 
 
 class ILink(ILinkData):
@@ -316,6 +340,10 @@ class IBasicLaunchpadRequest(Interface):
 
     query_string_params = Attribute(
         'A dictionary of the query string parameters.')
+
+    is_ajax = Bool(
+        title=_('Is ajax'), required=False, readonly=True,
+        description=_("Indicates whether the request is an XMLHttpRequest."))
 
     def getRootURL(rootsite):
         """Return this request's root URL.
@@ -509,6 +537,14 @@ class OAuthPermission(DBEnumeratedType):
         for reading and changing anything, including private data.
         """)
 
+    DESKTOP_INTEGRATION = DBItem(60, """
+        Integrate an entire system
+
+        Every application running on your desktop will have read-write
+        access to your Launchpad account, including to your private
+        data. You should not allow this unless you trust the computer
+        you're using right now.
+        """)
 
 class AccessLevel(DBEnumeratedType):
     """The level of access any given principal has."""
@@ -535,18 +571,13 @@ class ILaunchpadPrincipal(IPrincipal):
 #
 
 class BrowserNotificationLevel:
-    """Matches the standard logging levels, with the addition of notice
-    (which we should probably add to our log levels as well)
-    """
-    # XXX mpt 2006-03-22 bugs=36287:
-    # NOTICE and INFO should be merged.
+    """Matches the standard logging levels."""
     DEBUG = logging.DEBUG     # A debugging message
     INFO = logging.INFO       # simple confirmation of a change
-    NOTICE = logging.INFO + 5 # action had effects you might not have intended
     WARNING = logging.WARNING # action will not be successful unless you ...
     ERROR = logging.ERROR     # the previous action did not succeed, and why
 
-    ALL_LEVELS = (DEBUG, INFO, NOTICE, WARNING, ERROR)
+    ALL_LEVELS = (DEBUG, INFO, WARNING, ERROR)
 
 
 class INotification(Interface):
@@ -563,7 +594,7 @@ class INotificationList(Interface):
 
     def __getitem__(index_or_levelname):
         """Retrieve an INotification by index, or a list of INotification
-        instances by level name (DEBUG, NOTICE, INFO, WARNING, ERROR).
+        instances by level name (DEBUG, INFO, WARNING, ERROR).
         """
 
     def __iter__():
@@ -586,7 +617,7 @@ class INotificationResponse(Interface):
     have been set when redirect() is called.
     """
 
-    def addNotification(msg, level=BrowserNotificationLevel.NOTICE):
+    def addNotification(msg, level=BrowserNotificationLevel.INFO):
         """Append the given message to the list of notifications.
 
         A plain string message will be CGI escaped.  Passing a message
@@ -599,7 +630,7 @@ class INotificationResponse(Interface):
             or an instance of `IStructuredString`.
 
         :param level: One of the `BrowserNotificationLevel` values: DEBUG,
-            INFO, NOTICE, WARNING, ERROR.
+            INFO, WARNING, ERROR.
         """
 
     def removeAllNotifications():
@@ -618,9 +649,6 @@ class INotificationResponse(Interface):
 
     def addInfoNotification(msg):
         """Shortcut to addNotification(msg, INFO)."""
-
-    def addNoticeNotification(msg):
-        """Shortcut to addNotification(msg, NOTICE)."""
 
     def addWarningNotification(msg):
         """Shortcut to addNotification(msg, WARNING)."""
@@ -832,14 +860,6 @@ class IStoreSelector(Interface):
         """
 
 
-class IWebBrowserOriginatingRequest(Interface):
-    """Marker interface for converting webservice requests into webapp ones.
-
-    It's used in the webservice domain for calculating webapp URLs, for
-    instance, `ProxiedLibraryFileAlias`.
-    """
-
-
 # XXX mars 2010-07-14 bug=598816
 #
 # We need a conditional import of the request events until the real events
@@ -849,7 +869,7 @@ class IWebBrowserOriginatingRequest(Interface):
 
 try:
     from zope.publisher.interfaces import StartRequestEvent
-except:
+except ImportError:
     class IStartRequestEvent(Interface):
         """An event that gets sent before the start of a request."""
 

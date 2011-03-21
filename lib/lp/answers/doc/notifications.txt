@@ -83,8 +83,8 @@ contains in short format the reason for the user to be contacted.
 Register the Ubuntu Team as Ubuntu's answer contact, so that they get
 notified about the changes as well:
 
-    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> ubuntu_team.addLanguage(getUtility(ILanguageSet)['en'])
     >>> ubuntu.addAnswerContact(ubuntu_team)
@@ -103,9 +103,9 @@ Edit Notifications
 If we edit the title and description of the question, a notification
 will be sent.
 
+    >>> from zope.interface import providedBy
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> from zope.interface import providedBy
 
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(ILaunchBag).user
@@ -136,10 +136,10 @@ Foo Bar, and one to Ubuntu Team:
     [Question #...]: Installer doesn't work on a Mac
 
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Question #... libstdc++ in ubuntu changed:
+    Question #... libstdc++ in Ubuntu changed:
     http://.../ubuntu/+source/libstdc++/+question/...
     <BLANKLINE>
-        Project: Ubuntu => libstdc++ in ubuntu
+        Project: Ubuntu => libstdc++ in Ubuntu
     <BLANKLINE>
     Summary changed to:
     Installer doesn't work on a Mac
@@ -174,7 +174,7 @@ does not include priority.
     Question #... Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
-        Project: libstdc++ in ubuntu => Ubuntu
+        Project: libstdc++ in Ubuntu => Ubuntu
     <BLANKLINE>
     --...
     You received this question notification because you are the assignee for

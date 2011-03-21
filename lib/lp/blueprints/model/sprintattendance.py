@@ -7,15 +7,16 @@ __metaclass__ = type
 
 __all__ = ['SprintAttendance']
 
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    )
 from zope.interface import implements
-
-from sqlobject import BoolCol, ForeignKey
-
-from lp.blueprints.interfaces.sprintattendance import ISprintAttendance
-from lp.registry.interfaces.person import validate_public_person
 
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
+from lp.blueprints.interfaces.sprintattendance import ISprintAttendance
+from lp.registry.interfaces.person import validate_public_person
 
 
 class SprintAttendance(SQLBase):

@@ -7,9 +7,9 @@ __all__ = [
     'PackageSearchViewBase'
     ]
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import LaunchpadView
+from lp.services.propertycache import cachedproperty
 
 
 class PackageSearchViewBase(LaunchpadView):
@@ -29,14 +29,14 @@ class PackageSearchViewBase(LaunchpadView):
     @cachedproperty
     def matches(self):
         """Return the number of matched search results."""
-        return self.search_results.count()
+        return self.batchnav.batch.total()
 
     @property
     def detailed(self):
         """Return whether detailed results should be provided."""
         return self.matches <= 5
 
-    @property
+    @cachedproperty
     def batchnav(self):
         """Return the batch navigator for the search results."""
         return BatchNavigator(self.search_results, self.request)

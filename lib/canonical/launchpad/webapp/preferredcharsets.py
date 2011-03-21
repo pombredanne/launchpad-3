@@ -8,8 +8,8 @@ __metaclass__ = type
 __all__ = ['Utf8PreferredCharsets']
 
 from zope.component import adapts
-from zope.interface import implements
 from zope.i18n.interfaces import IUserPreferredCharsets
+from zope.interface import implements
 from zope.publisher.interfaces.http import IHTTPRequest
 
 

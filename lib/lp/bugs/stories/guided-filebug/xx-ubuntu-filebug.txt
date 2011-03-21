@@ -47,7 +47,8 @@ When filing bugs directly on source packages we are also not redirected.
 Ubuntu's bug supervisor doesn't get automatically redirected either.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IDistributionSet, IPersonSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('foo.bar@canonical.com')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> foobar = getUtility(IPersonSet).getByName('name16')

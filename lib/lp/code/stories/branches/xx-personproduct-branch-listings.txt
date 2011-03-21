@@ -1,4 +1,6 @@
-= Person / Product listings =
+=========================
+Person / Product listings
+=========================
 
 These listings are where only the branches associated with the product and the
 person are shown, rather than all of the person's branches.
@@ -36,8 +38,8 @@ that only the fooix branches are shown.
     >>> logout()
 
     >>> browser.open('http://code.launchpad.dev/~eric/fooix')
-    >>> print_tag_with_id(browser.contents, 'page-summary')
-    2 owned branches, ...
+    >>> print_tag_with_id(browser.contents, 'portlet-person-codesummary')
+    2 owned branches ...
     >>> print_tag_with_id(browser.contents, 'branchtable')
     Name                         ...
     lp://dev/~eric/fooix/feature ...

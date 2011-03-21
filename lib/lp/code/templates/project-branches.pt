@@ -3,22 +3,76 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/main_only"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad">
 
   <body>
 
+    <metal:side fill-slot="side"
+                tal:define="context_menu context/menu:context"
+                tal:condition="not:
+                context/codehosting_usage/enumvalue:UNKNOWN">
+      <div id="privacy"
+           tal:define="priv not:view/base_visibility_rule/enumvalue:PUBLIC"
+           tal:attributes="class python: priv and 'first portlet private' or 'first portlet public'">
+        <p id="default-policy" style="margin-bottom: 0;">
+          Inherited branch visibility for all projects in
+          <strong tal:content="context/displayname">Project</strong> is
+          <strong tal:content="view/base_visibility_rule/title">Public</strong>.
+        </p>
+
+        <tal:has-policies condition="view/team_policies">
+          <p>Except for the following teams:</p>
+          <ul id="team-policies">
+            <li tal:repeat="item view/team_policies">
+              <tal:team replace="structure item/team/fmt:link:mainsite"
+                        condition="item/team">Team Name</tal:team>:
+              <tal:team condition="not: item/team">Everyone</tal:team>
+              <tal:policy replace="item/rule/title">Public</tal:policy>
+            </li>
+          </ul>
+        </tal:has-policies>
+      </div>
+
+      <div id="action-portlet"
+           class="portlet"
+           tal:define="menu context/menu:overview;
+                       link menu/branch_visibility"
+           tal:condition="link/enabled">
+        <div tal:content="structure link/render" />
+      </div>
+    </metal:side>
+
     <div metal:fill-slot="main"
          tal:define="branches view/branches">
 
-      <div style="float:right" id="floating-links"
-           tal:define="menu context/menu:overview">
-        <div tal:define="link menu/branch_visibility"
-             tal:condition="link/enabled"
-             tal:content="structure link/render" />
-      </div>
-
-      <tal:branchlisting content="structure branches/@@+branch-listing" />
+      <tal:no-branches
+        condition="not:context/has_branches">
+        <div id="no-branchtable">
+          <p>
+            <strong>Launchpad does not know where any of
+            <tal:project replace="context/displayname"/>'s
+            projects host their code.</strong>
+          </p>
+          <div tal:define="products context/getConfigurableProducts">
+          <p id="projectgroup-products"
+             tal:condition="products">
+            You can set up code hosting for the following projects that
+            are part of <tal:project replace="context/displayname"/>.
+          </p>
+            <ul id="product-list" tal:repeat="product products">
+              <li>
+                <a tal:attributes="href product/@@+code-index/configure_codehosting/fmt:url"
+                   tal:content="product/title" />
+              </li>
+            </ul>
+        </div>
+        </div>
+      </tal:no-branches>
+      <tal:has-branches
+        condition="context/has_branches">
+        <tal:branchlisting content="structure branches/@@+branch-listing" />
+      </tal:has-branches>
     </div>
 
   </body>

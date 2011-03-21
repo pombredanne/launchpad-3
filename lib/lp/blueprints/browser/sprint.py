@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Sprint views."""
@@ -23,36 +23,56 @@ __all__ = [
     ]
 
 import csv
-import pytz
 from StringIO import StringIO
 
+import pytz
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import (
-    GetitemNavigation, LaunchpadEditFormView,
-    LaunchpadFormView, LaunchpadView, Link, Navigation, NavigationMenu,
-    StandardLaunchpadFacets, action, canonical_url, custom_widget,
-    enabled_with_permission)
+    canonical_url,
+    enabled_with_permission,
+    GetitemNavigation,
+    LaunchpadView,
+    Link,
+    Navigation,
+    NavigationMenu,
+    StandardLaunchpadFacets,
+    )
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.lazr.utils import smartquote
-from canonical.widgets.date import DateTimeWidget
-
+from lp.app.browser.launchpadform import (
+    action,
+    custom_widget,
+    LaunchpadEditFormView,
+    LaunchpadFormView,
+    )
 from lp.app.interfaces.headings import IMajorHeadingView
+from lp.app.widgets.date import DateTimeWidget
 from lp.blueprints.browser.specificationtarget import (
-    HasSpecificationsMenuMixin, HasSpecificationsView)
-from lp.blueprints.interfaces.specification import (
-    SpecificationDefinitionStatus, SpecificationFilter, SpecificationPriority,
-    SpecificationSort)
-from lp.blueprints.interfaces.sprint import ISprint, ISprintSet
+    HasSpecificationsMenuMixin,
+    HasSpecificationsView,
+    )
+from lp.blueprints.enums import (
+    SpecificationDefinitionStatus,
+    SpecificationFilter,
+    SpecificationPriority,
+    SpecificationSort,
+    )
+from lp.blueprints.interfaces.sprint import (
+    ISprint,
+    ISprintSet,
+    )
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.menu import (
-    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
+    IRegistryCollectionNavigationMenu,
+    RegistryCollectionActionMenuBase,
+    )
+from lp.services.propertycache import cachedproperty
 
 
 class SprintFacets(StandardLaunchpadFacets):

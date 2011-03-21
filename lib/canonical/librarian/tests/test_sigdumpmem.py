@@ -9,12 +9,12 @@ import os
 import time
 
 from canonical.librarian.interfaces import DUMP_FILE, SIGDUMPMEM
-from canonical.librarian.ftests.harness import TacLibrarianTestSetup
 from canonical.testing.layers import LibrarianLayer
 from lp.testing import TestCase
 
 
 class SIGDUMPMEMTestCase(TestCase):
+
     layer = LibrarianLayer
 
     def test_sigdumpmem(self):
@@ -23,9 +23,8 @@ class SIGDUMPMEMTestCase(TestCase):
             os.unlink(DUMP_FILE)
         self.assertFalse(os.path.exists(DUMP_FILE))
 
-        # We rely on the fact that the librarian was started by the test
-        # runner here as we use the LibrarianLayer.
-        pid = int(open(TacLibrarianTestSetup().pidfile).read())
+        # Use the global instance used by the Layer machinery
+        pid = LibrarianLayer.librarian_fixture.pid
 
         # Send the signal and ensure the dump file is created.
         os.kill(pid, SIGDUMPMEM)

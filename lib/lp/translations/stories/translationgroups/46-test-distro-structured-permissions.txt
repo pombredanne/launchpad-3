@@ -1,11 +1,13 @@
-First, we state that netapplet is using Launchpad Translations.
+First, we verify that netapplet is using Launchpad Translations.
 
     >>> admin_browser.open('http://launchpad.dev/netapplet')
     >>> admin_browser.getLink('Configure translations').click()
-    >>> admin_browser.getControl(
-    ...     'Translations for this project are done in Launchpad'
-    ...     ).selected = True
-    >>> admin_browser.getControl('Change').click()
+    >>> print_radio_button_field(admin_browser.contents, "translations_usage")
+    ( ) Unknown
+    (*) Launchpad
+    ( ) External
+    ( ) Not Applicable
+    >>> admin_browser.getLink('Cancel').click()
     >>> print admin_browser.title
     Network Applet in Launchpad
 
@@ -13,7 +15,7 @@ We set the 'Structured' permission and select the 'Just a testing team'
 as the translation group for the netapplet product...
 
     >>> admin_browser.getLink('Translations').click()
-    >>> admin_browser.getLink('Change permissions').click()
+    >>> admin_browser.getLink('Configure translations').click()
     >>> admin_browser.getControl('Translation group').displayOptions
     ['(no value)', 'Single-language Translators',
      'The PolyGlot Translation Group', 'Just a testing team']

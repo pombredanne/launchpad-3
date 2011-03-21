@@ -10,7 +10,7 @@ from twisted.protocols import portforward
 from twisted.application.internet import TCPServer
 
 import canonical.lp
-from canonical.launchpad.daemons.tachandler import ReadyService
+from canonical.launchpad.daemons.readyservice import ReadyService
 
 application = service.Application('portforward_to_postgres')
 

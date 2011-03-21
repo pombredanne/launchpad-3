@@ -53,7 +53,8 @@ We can retrieve all unredeemed vouchers for a person.
     ...     IProductSet)
     >>> from zope.security.proxy import removeSecurityProxy
     >>> mark = getUtility(IPersonSet).getByName('mark')
-    >>> mark_identifier = removeSecurityProxy(mark.account).openid_identifier
+    >>> mark_identifier = removeSecurityProxy(
+    ...     mark.account).openid_identifiers.any().identifier
 
     >>> vouchers = server.getUnredeemedVouchers(mark_identifier)
     >>> print_vouchers(vouchers)

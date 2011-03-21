@@ -39,7 +39,7 @@ also have a Translations page.)
     * Blueprints - not linked
     * Translations - not linked
     * Answers - http://answers.launchpad.dev/ubuntu/+source/alsa-utils
-    Main heading: (No main heading)
+    Main heading: Bugs in ?alsa-utils? package in Ubuntu
 
 
 == Distribution source package release ==
@@ -196,4 +196,3 @@ Bugs, Blueprints and Translations from the distribution series.
     * Translations - http://translations.launchpad.dev/ubuntu/hoary
     * Answers - not linked
     Main heading: pmount 0.1-1 (i386 binary) in ubuntu hoary
-

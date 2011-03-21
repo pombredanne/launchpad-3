@@ -24,8 +24,8 @@ Questions filed against project in a project group
 You can search for all questions filed against projects in a project using the
 project group's searchQuestions() method.
 
-    >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.product import IProductSet
 
     >>> login('test@canonical.com')
     >>> thunderbird = getUtility(IProductSet).getByName('thunderbird')

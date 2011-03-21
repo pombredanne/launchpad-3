@@ -6,15 +6,19 @@ __all__ = [
     'TranslationRelicensingAgreement',
     ]
 
+from sqlobject import (
+    BoolCol,
+    ForeignKey,
+    )
 from zope.interface import implements
-from sqlobject import BoolCol, ForeignKey
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
-from lp.translations.interfaces.translationrelicensingagreement import (
-    ITranslationRelicensingAgreement)
 from lp.registry.interfaces.person import validate_public_person
+from lp.translations.interfaces.translationrelicensingagreement import (
+    ITranslationRelicensingAgreement,
+    )
 
 
 class TranslationRelicensingAgreement(SQLBase):

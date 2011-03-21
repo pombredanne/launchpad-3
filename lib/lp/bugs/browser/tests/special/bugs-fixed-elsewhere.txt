@@ -21,11 +21,14 @@ bugs that are fixed elsewhere. This count can take a while to
 calculate, so it is put on this separate view which can be requested
 asyncronously.
 
-    >>> view = getMultiAdapter(
-    ...     (bugtarget, LaunchpadTestRequest()),
-    ...     name='+bugtarget-portlet-bugfilters-stats')
-    >>> view.initialize()
+    >>> def get_view():
+    ...     view = getMultiAdapter(
+    ...         (bugtarget, LaunchpadTestRequest()),
+    ...         name='+bugtarget-portlet-bugfilters-stats')
+    ...     view.initialize()
+    ...     return view
 
+    >>> view = get_view()
     >>> view.bugs_fixed_elsewhere_url
     u'http://.../+bugs?field.status_upstream=resolved_upstream'
     >>> view.bugs_fixed_elsewhere_count
@@ -33,30 +36,30 @@ asyncronously.
 
 Simply opening a bug elsewhere won't increase the count.
 
-    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from lp.registry.interfaces.product import IProductSet
     >>> evolution = getUtility(IProductSet).getByName('evolution')
     >>> evolution != bugtarget
     True
 
     >>> bug = filebug(bugtarget, 'Example Bug')
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
     >>> elsewhere = getUtility(IBugTaskSet).createTask(
     ...     bug, owner=getUtility(ILaunchBag).user, product=evolution)
-    >>> view.bugs_fixed_elsewhere_count
+    >>> get_view().bugs_fixed_elsewhere_count
     0
 
 But if we mark the bug as fixed in the other, the count will increase
 by one.
 
     >>> from canonical.launchpad.ftests import syncUpdate
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> elsewhere.transitionToStatus(
     ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     >>> syncUpdate(elsewhere)
 
-    >>> view.bugs_fixed_elsewhere_count
-    1
+    >>> get_view().bugs_fixed_elsewhere_count
+    1L
 
 Bugs fixed elsewhere also show up when we perform an advanced bug
 search, using the appropriate query string parameter to ask for "bugs
@@ -93,20 +96,15 @@ Only bugs that the user has permission to view are included in the count.
     ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     >>> syncUpdate(another_elsewhere)
 
-    >>> view.bugs_fixed_elsewhere_count
-    2
+    >>> get_view().bugs_fixed_elsewhere_count
+    2L
 
 This means that No Privileges Person will see that there is only one bug
 fixed elsewhere.
 
     >>> login('no-priv@canonical.com')
-    >>> view = getMultiAdapter(
-    ...     (bugtarget, LaunchpadTestRequest()),
-    ...     name='+bugtarget-portlet-bugfilters-stats')
-    >>> view.initialize()
-
-    >>> view.bugs_fixed_elsewhere_count
-    1
+    >>> get_view().bugs_fixed_elsewhere_count
+    1L
 
 If the private bug is made public again, he will of course see that
 there are two bugs fixed.
@@ -117,8 +115,8 @@ there are two bugs fixed.
     >>> syncUpdate(another_bug)
 
     >>> login('no-priv@canonical.com')
-    >>> view.bugs_fixed_elsewhere_count
-    2
+    >>> get_view().bugs_fixed_elsewhere_count
+    2L
 
 
 == Duplicate Bugs ==
@@ -128,8 +126,8 @@ Bugs that are duplicate of other bugs aren't included in the count.
     >>> another_bug.markAsDuplicate(bug)
     >>> syncUpdate(another_bug)
 
-    >>> view.bugs_fixed_elsewhere_count
-    1
+    >>> get_view().bugs_fixed_elsewhere_count
+    1L
 
 
 == Resolved Bugs ==
@@ -145,5 +143,5 @@ The count includes only bugs that are open in the current context.
     ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     >>> syncUpdate(bugtask)
 
-    >>> view.bugs_fixed_elsewhere_count
+    >>> get_view().bugs_fixed_elsewhere_count
     0

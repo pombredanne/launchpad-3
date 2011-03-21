@@ -96,7 +96,7 @@ Size and offset parameters can be passed in to switch between batches.
             {
                 "api_uri": "/~name16",
                 "css": "sprite person",
-                "description": "foo.bar@canonical.com",
+                "description": "<email address hidden>",
                 "title": "Foo Bar",
                 "value": "name16"
             }

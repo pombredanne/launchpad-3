@@ -9,7 +9,6 @@ from zope.component import getMultiAdapter
 from zope.traversing.interfaces import IPathAdapter
 
 from canonical.testing.layers import FunctionalLayer
-
 from lp.testing import TestCase
 from lp.vostok.browser.tests.request import VostokTestRequest
 from lp.vostok.publisher import VostokRoot
