@@ -172,7 +172,7 @@ def construct_email_notifications(bug_notifications):
                     filters.add(notification_filter.description)
         if filters:
             # There are some filters as well, add it to the email body.
-            filters_text = u"\nMatching filters: %s" % ", ".join(filters)
+            filters_text = u"\nMatching subscriptions: %s" % ", ".join(filters)
         else:
             filters_text = u""
         # XXX deryck 2009-11-17 Bug #484319
