@@ -612,7 +612,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         else:
             return True
 
-    @property
+    @cachedproperty
     def code_import(self):
         from lp.code.model.codeimport import CodeImportSet
         return CodeImportSet().getByBranch(self)
