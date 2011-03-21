@@ -19,7 +19,7 @@ import operator
 from lazr.delegates import delegates
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
-from lazr.restful.error import expose
+from lazr.restful.declarations import webservice_error
 import pytz
 from sqlobject import (
     BoolCol,
@@ -286,6 +286,7 @@ class ProductWithLicenses:
 
 class UnDeactivateable(Exception):
     """Raised when a project is requested to deactivate but can not."""
+    webservice_error(400)
 
     def __init__(self, msg):
         super(UnDeactivateable, self).__init__(msg)
@@ -464,9 +465,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         # Validate deactivation.
         if self.active == True and value == False:
             if len(self.sourcepackages) > 0:
-                raise expose(UnDeactivateable(
+                raise UnDeactivateable(
                     'This project cannot be deactivated since it is '
-                    'linked to source packages.'))
+                    'linked to source packages.')
         return value
 
     active = BoolCol(dbName='active', notNull=True, default=True,

@@ -9,6 +9,7 @@ __metaclass__ = type
 __all__ = [
     'ANONYMOUS',
     'anonymous_logged_in',
+    'api_url',
     'build_yui_unittest_suite',
     'BrowserTestCase',
     'capture_events',
@@ -71,11 +72,11 @@ import tempfile
 import time
 import unittest
 
+from bzrlib import trace
 from bzrlib.bzrdir import (
     BzrDir,
     format_registry,
     )
-from bzrlib import trace
 from bzrlib.transport import get_transport
 import fixtures
 import pytz
@@ -152,6 +153,7 @@ from lp.testing._login import (
 # XXX: JonathanLange 2010-01-01: Why?!
 from lp.testing._tales import test_tales
 from lp.testing._webservice import (
+    api_url,
     launchpadlib_credentials_for,
     launchpadlib_for,
     oauth_access_token_for,
@@ -159,7 +161,10 @@ from lp.testing._webservice import (
 from lp.testing.fixture import ZopeEventHandlerFixture
 from lp.testing.karma import KarmaRecorder
 from lp.testing.matchers import Provides
-from lp.testing.windmill import constants, lpuser
+from lp.testing.windmill import (
+    constants,
+    lpuser,
+    )
 
 
 class FakeTime:
@@ -963,6 +968,7 @@ class EventRecorder:
     This prevents the events from propagating to their normal subscribers.
     The recorded events can be accessed via the 'events' list.
     """
+
     def __init__(self):
         self.events = []
         self.old_subscribers = None
@@ -982,13 +988,13 @@ class EventRecorder:
 def feature_flags():
     """Provide a context in which feature flags work."""
     empty_request = LaunchpadTestRequest()
-    old_features = getattr(features.per_thread, 'features', None)
-    features.per_thread.features = FeatureController(
-        ScopesFromRequest(empty_request).lookup)
+    old_features = features.get_relevant_feature_controller()
+    features.install_feature_controller(FeatureController(
+        ScopesFromRequest(empty_request).lookup))
     try:
         yield
     finally:
-        features.per_thread.features = old_features
+        features.install_feature_controller(old_features)
 
 
 def get_lsb_information():
@@ -1097,12 +1103,12 @@ def set_feature_flag(name, value, scope=u'default', priority=1):
     """Set a feature flag to the specified value.
 
     In order to access the flag, use the feature_flags context manager or
-    populate features.per_thread.features some other way.
+    set the feature controller in some other way.
     :param name: The name of the flag.
     :param value: The value of the flag.
     :param scope: The scope in which the specified value applies.
     """
-    assert getattr(features.per_thread, 'features', None) is not None
+    assert features.get_relevant_feature_controller() is not None
     flag = FeatureFlag(
         scope=scope, flag=name, value=value, priority=priority)
     store = getFeatureStore()

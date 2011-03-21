@@ -72,7 +72,6 @@
       <div id="tags-autocomplete">
        <div id="tags-autocomplete-content"></div>
       </div>
-      <tal:block condition="view/reportBugInContext" />
 
       <p class="informational message"
          tal:condition="view/notices"

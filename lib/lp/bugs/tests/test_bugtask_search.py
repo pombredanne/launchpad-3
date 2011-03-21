@@ -309,7 +309,6 @@ class SearchTestBase:
         # bugtasks returned for a search for has_no_upstream_bugtask
         # would always be empty.
         if (IDistribution.providedBy(self.searchtarget) or
-            IDistroSeries.providedBy(self.searchtarget) or
             ISourcePackage.providedBy(self.searchtarget) or
             IDistributionSourcePackage.providedBy(self.searchtarget)):
             if IDistribution.providedBy(self.searchtarget):
@@ -317,10 +316,17 @@ class SearchTestBase:
                 expected = [bug.default_bugtask]
             else:
                 bug = self.factory.makeBug(
-                    distribution=self.searchtarget.distribution)
+                    distribution=self.searchtarget.distribution,
+                    sourcepackagename=self.factory.makeSourcePackageName())
                 bugtask = self.factory.makeBugTask(
                     bug=bug, target=self.searchtarget)
                 expected = [bugtask]
+        elif IDistroSeries.providedBy(self.searchtarget):
+            bug = self.factory.makeBug(
+                distribution=self.searchtarget.distribution)
+            bugtask = self.factory.makeBugTask(
+                bug=bug, target=self.searchtarget)
+            expected = [bugtask]
         else:
             # Bugs without distribution related bugtasks have always at
             # least one product related bugtask, hence a

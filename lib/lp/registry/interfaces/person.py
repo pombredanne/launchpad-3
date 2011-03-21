@@ -974,9 +974,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
             description=_("Private teams are visible only to "
                           "their members.")))
 
-    is_merge_pending = Bool(
-        title=_("Is this person due to be merged into another?"),
-        required=False, default=False)
+    is_merge_pending = exported(Bool(
+        title=_("Is this person due to be merged with another?"),
+        required=False, default=False))
 
     @invariant
     def personCannotHaveIcon(person):
@@ -1716,13 +1716,6 @@ class IPersonEditRestricted(Interface):
         """
 
 
-class IPersonModerate(Interface):
-    """IPerson attributes that require launchpad.Moderate."""
-
-    def deactivateAllMembers(comment, reviewer):
-        """Deactivate all the members of this team."""
-
-
 class IPersonCommAdminWriteRestricted(Interface):
     """IPerson attributes that require launchpad.Admin permission to set."""
 
@@ -1771,7 +1764,7 @@ class IPersonSpecialRestricted(Interface):
 
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
               IPersonCommAdminWriteRestricted, IPersonSpecialRestricted,
-              IPersonModerate, IHasStanding, ISetLocation, IRootContext):
+              IHasStanding, ISetLocation, IRootContext):
     """A Person."""
     export_as_webservice_entry(plural_name='people')
 
@@ -2160,9 +2153,10 @@ class IPersonSet(Interface):
         This schedules a call to `merge()` to happen outside of the current
         context/request. The intention is that it is called soon after this
         method is called but there is no guarantee of that, nor is that call
-        guaranteed to succeed.
+        guaranteed to succeed. If either user is in a pending person merge
+        job, None is returned.
 
-        :return: A `PersonMergeJob`.
+        :return: A `PersonMergeJob` or None.
         """
 
     def merge(from_person, to_person):

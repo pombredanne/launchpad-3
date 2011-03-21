@@ -5,11 +5,13 @@
 
 __metaclass__ = type
 __all__ = [
+    'load',
     'reload',
     ]
 
 
 from collections import defaultdict
+from functools import partial
 
 from storm.info import get_cls_info
 from storm.store import Store
@@ -69,8 +71,29 @@ def load(object_type, primary_keys, store=None):
             "Compound primary keys are not supported: %s." %
             object_type.__name__)
     primary_key_column = primary_key[0]
+    primary_keys = set(primary_keys)
+    primary_keys.discard(None)
+    if not primary_keys:
+        return []
     condition = primary_key_column.is_in(primary_keys)
     if store is None:
         store = IStore(object_type)
-    query = store.find(object_type, condition)
-    return list(query)
+    return list(store.find(object_type, condition))
+
+
+def load_related(object_type, owning_objects, foreign_keys):
+    """Load objects of object_type referred to by owning_objects.
+
+    Note that complex types like Person are best loaded through dedicated
+    helpers that can eager load other related things (e.g. validity for
+    Person).
+
+    :param object_type: The object type to load - e.g. Person.
+    :param owning_objects: The objects holding the references. E.g. Bug.
+    :param foreign_keys: A list of attributes that should be inspected for
+        keys. e.g. ['ownerID']
+    """
+    keys = set()
+    for owning_object in owning_objects:
+        keys.update(map(partial(getattr, owning_object), foreign_keys))
+    return load(object_type, keys)

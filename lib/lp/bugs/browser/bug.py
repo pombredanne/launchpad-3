@@ -281,10 +281,8 @@ class BugContextMenu(ContextMenu):
         else:
             text = "Mute bug mail"
 
-        # We link to '#' here because we don't yet have a view to handle
-        # this link.
         return Link(
-            '#', text, icon='remove', summary=(
+            '+mute', text, icon='remove', summary=(
                 "Mute this bug so that you will never receive emails "
                 "about it."))
 
@@ -506,10 +504,20 @@ class BugViewMixin:
         else:
             dup_class = 'dup-subscribed-false'
 
-        if bug.personIsDirectSubscriber(self.user):
+        if (bug.personIsDirectSubscriber(self.user) and not
+            bug.isMuted(self.user)):
             return 'subscribed-true %s' % dup_class
         else:
             return 'subscribed-false %s' % dup_class
+
+    @property
+    def current_user_mute_class(self):
+        bug = self.context
+        subscription_class = self.current_user_subscription_class
+        if bug.isMuted(self.user):
+            return 'muted-true %s' % subscription_class
+        else:
+            return 'muted-false %s' % subscription_class
 
     @cachedproperty
     def _bug_attachments(self):
