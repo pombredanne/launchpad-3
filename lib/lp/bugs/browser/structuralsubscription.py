@@ -4,6 +4,10 @@
 __metaclass__ = type
 
 __all__ = [
+    'expose_enum_to_js',
+    'expose_user_administered_teams_to_js',
+    'expose_user_subscription_status_to_js',
+    'expose_user_subscriptions_to_js',
     'StructuralSubscriptionMenuMixin',
     'StructuralSubscriptionTargetTraversalMixin',
     'StructuralSubscriptionView',
@@ -12,6 +16,10 @@ __all__ = [
 
 from operator import attrgetter
 
+from lazr.restful.interfaces import (
+    IJSONRequestCache,
+    IWebServiceClientRequest,
+    )
 from zope.component import getUtility
 from zope.formlib import form
 from zope.schema import (
@@ -22,6 +30,8 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
+from zope.traversing.browser import absoluteURL
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import Link
@@ -37,6 +47,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscription,
     IStructuralSubscriptionForm,
@@ -45,8 +56,11 @@ from lp.bugs.interfaces.structuralsubscription import (
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.propertycache import cachedproperty
 
 
@@ -346,6 +360,72 @@ class StructuralSubscriptionMenuMixin:
             return Link('+subscribe', text, icon=icon, enabled=False)
         else:
             return Link('+subscribe', text, icon=icon, enabled=enabled)
+
+
+def expose_enum_to_js(request, enum, name):
+    """Make a list of enum titles and value available to JavaScript."""
+    info = []
+    for item in enum:
+        info.append(item.title)
+    IJSONRequestCache(request).objects[name] = info
+
+
+def expose_user_administered_teams_to_js(request, user,
+        absoluteURL=absoluteURL):
+    """Make the list of teams the user adminsters available to JavaScript."""
+    info = []
+    api_request = IWebServiceClientRequest(request)
+    if user is not None:
+        for team in user.getAdministratedTeams():
+            info.append({
+                'link': absoluteURL(team, api_request),
+                'title': team.title,
+            })
+    IJSONRequestCache(request).objects['administratedTeams'] = info
+
+
+def expose_user_subscription_status_to_js(context, request, user):
+    """Make the user's subscription state available to JavaScript."""
+    IJSONRequestCache(request).objects['userHasBugSubscriptions'] = (
+        context.userHasBugSubscriptions(user))
+
+
+def person_is_team_admin(person, team):
+    answer = False
+    admins = team.adminmembers
+    for admin in admins:
+        if person.inTeam(admin):
+            answer = True
+            break
+    return answer
+
+
+def expose_user_subscriptions_to_js(user, subscriptions, request):
+    """Make the user's subscriptions available to JavaScript."""
+    info = {}
+    api_request = IWebServiceClientRequest(request)
+    for subscription in subscriptions:
+        target = subscription.target
+        record = info.get(target)
+        if record is None:
+            record = info[target] = dict(
+                target_title=target.title,
+                target_url=absoluteURL(target, request),
+                filters=[])
+        for filter in subscription.bug_filters:
+            subscriber = subscription.subscriber
+            is_team = subscriber.isTeam()
+            user_is_team_admin = (is_team and
+                                  person_is_team_admin(user, subscriber))
+            record['filters'].append(dict(
+                filter=filter,
+                subscriber_link=absoluteURL(subscriber, api_request),
+                subscriber_title=subscriber.title,
+                subscriber_is_team=is_team,
+                user_is_team_admin=user_is_team_admin,))
+    info = info.values()
+    info.sort(key=lambda item: item['target_url'])
+    IJSONRequestCache(request).objects['subscription_info'] = info
 
 
 class StructuralSubscribersPortletView(LaunchpadView):
