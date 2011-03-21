@@ -15,6 +15,27 @@ __all__ = [
     'IQuestionLinkFAQForm',
     ]
 
+
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    export_factory_operation,
+    export_operation_as,
+    export_read_operation,
+    export_write_operation,
+    exported,
+    mutator_for,
+    operation_for_version,
+    operation_parameters,
+    operation_returns_collection_of,
+    operation_returns_entry,
+    rename_parameters_as,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
 from zope.interface import (
     Attribute,
     Interface,
@@ -53,42 +74,44 @@ class InvalidQuestionStateError(Exception):
 class IQuestion(IHasOwner):
     """A single question, often a support request."""
 
-    id = Int(
+    export_as_webservice_entry()
+
+    id = exported(Int(
         title=_('Question Number'), required=True, readonly=True,
-        description=_("The tracking number for this question."))
-    title = TextLine(
+        description=_("The tracking number for this question.")))
+    title = exported(TextLine(
         title=_('Summary'), required=True, description=_(
-        "A one-line summary of the issue or problem."))
-    description = Text(
+        "A one-line summary of the issue or problem.")))
+    description = exported(Text(
         title=_('Description'), required=True, description=_(
         "Include as much detail as possible: what "
         u"you\N{right single quotation mark}re trying to achieve, what steps "
-        "you take, what happens, and what you think should happen instead."))
-    status = Choice(
+        "you take, what happens, and what you think should happen instead.")))
+    status = exported(Choice(
         title=_('Status'), vocabulary=QuestionStatus,
-        default=QuestionStatus.OPEN, readonly=True)
-    priority = Choice(
+        default=QuestionStatus.OPEN, readonly=True))
+    priority = exported(Choice(
         title=_('Priority'), vocabulary=QuestionPriority,
-        default=QuestionPriority.NORMAL)
+        default=QuestionPriority.NORMAL))
     # XXX flacoste 2006-10-28: It should be more precise to define a new
     # vocabulary that excludes the English variants.
     language = Choice(
         title=_('Language'), vocabulary='Language',
         description=_('The language in which this question is written.'))
-    owner = PublicPersonChoice(
+    owner = exported(PublicPersonChoice(
         title=_('Owner'), required=True, readonly=True,
-        vocabulary='ValidPersonOrTeam')
-    assignee = PublicPersonChoice(
+        vocabulary='ValidPersonOrTeam'))
+    assignee = exported(PublicPersonChoice(
         title=_('Assignee'), required=False,
         description=_("The person responsible for helping to resolve the "
         "question."),
-        vocabulary='ValidPersonOrTeam')
-    answerer = PublicPersonChoice(
+        vocabulary='ValidPersonOrTeam'))
+    answerer = exported(PublicPersonChoice(
         title=_('Answered By'), required=False,
         description=_("The person who last provided a response intended to "
         "resolve the question."),
-        vocabulary='ValidPersonOrTeam')
-    answer = Object(
+        vocabulary='ValidPersonOrTeam'))
+    answer = Reference(
         title=_('Answer'), required=False,
         description=_("The IQuestionMessage that contains the answer "
             "confirmed by the owner as providing a solution to his problem."),
@@ -146,13 +169,13 @@ class IQuestion(IHasOwner):
         'The set of subscriptions to this question.')
     reopenings = Attribute(
         "Records of times when this question was reopened.")
-    messages = List(
+    messages = exported(List(
         title=_("Messages"),
         description=_(
             "The list of messages that were exchanged as part of this "
             "question , sorted from first to last."),
         value_type=Object(schema=IQuestionMessage),
-        required=True, default=[], readonly=True)
+        required=True, default=[], readonly=True))
 
     # Workflow methods
     def setStatus(user, new_status, comment, datecreated=None):

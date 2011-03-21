@@ -388,6 +388,7 @@ def canonical_urldata_iterator(obj):
     while current_object is obj or urldata.inside is not None:
         urldata = ICanonicalUrlData(current_object, None)
         if urldata is None:
+            import pdb; pdb.set_trace()
             raise NoCanonicalUrl(obj, current_object)
         yield urldata
         current_object = urldata.inside
