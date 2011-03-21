@@ -309,6 +309,11 @@
                 attributes="
                     setTarget
                     "/>
+            <require
+                permission="zope.Public"
+                set_attributes="
+                    resolved_upstream
+                    "/>
         </class>
 
         <!-- BugTaskSet -->
