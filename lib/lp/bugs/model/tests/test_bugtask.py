@@ -1351,7 +1351,7 @@ class TestPrivateBugTask(TestCaseWithFactory):
             print "%s" % event
 
         self.listener = TestEventListener(
-            IBug, IObjectModifiedEvent, bug_listener)
+            IBugTask, IObjectModifiedEvent, bug_listener)
         # A user can unassign themselves from a private bug.
         bug_assignee = self.factory.makePerson(name="bugassignee")
         # Assign a user
