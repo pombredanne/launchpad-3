@@ -4,9 +4,9 @@
 __metaclass__ = type
 
 from datetime import timedelta
-from doctest import DocTestSuite
 import unittest
 
+from lazr.lifecycle.interfaces import IObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from testtools.matchers import Equals
 from zope.component import getUtility
@@ -19,12 +19,13 @@ from canonical.launchpad.searchbuilder import (
     any,
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.lazr.testing.event import TestEventListener
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
 from lp.app.enums import ServiceUsage
-from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bug import IBugSet, IBug
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
@@ -34,7 +35,7 @@ from lp.bugs.interfaces.bugtask import (
     IUpstreamBugTask,
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
-    )
+    IBugTask)
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.model.bugtask import build_tag_search_clause
 from lp.bugs.tests.bug import (
@@ -58,11 +59,12 @@ from lp.testing import (
     login_person,
     logout,
     normalize_whitespace,
+    person_logged_in,
     StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
     )
-from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.factory import LaunchpadObjectFactory, remove_security_proxy_and_shout_at_engineer
 from lp.testing.matchers import HasQueryCount
 
 
@@ -1333,8 +1335,30 @@ class TestBugTaskStatuses(TestCase):
         self.assertNotIn(BugTaskStatus.UNKNOWN, UNRESOLVED_BUGTASK_STATUSES)
 
 
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
-    suite.addTest(DocTestSuite('lp.bugs.model.bugtask'))
-    return suite
+class TestPrivateBugTask(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def tearDown(self):
+        self.listener.unregister()
+        super(TestPrivateBugTask, self).tearDown()
+
+    def test_privateBugUnassignMe(self):
+        owner = self.factory.makePerson(name="bugowner")
+        bug = self.factory.makeBug(owner=owner, private=True)
+
+        def bug_listener(object, event):
+            print "%s" % event
+
+        self.listener = TestEventListener(
+            IBug, IObjectModifiedEvent, bug_listener)
+        # A user can unassign themselves from a private bug.
+        bug_assignee = self.factory.makePerson(name="bugassignee")
+        # Assign a user
+        with person_logged_in(owner):
+            bug.default_bugtask.transitionToAssignee(bug_assignee)
+        # Unassign the user
+        with person_logged_in(bug_assignee):
+            bug.default_bugtask.transitionToAssignee(None)
+        self.assertTrue(not bug.userCanView(bug_assignee))
+

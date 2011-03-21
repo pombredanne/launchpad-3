@@ -684,7 +684,6 @@
                     who_made_private
                     date_made_private
                     userCanView
-                    _cacheViewPermission
                     personIsDirectSubscriber
                     personIsAlsoNotifiedSubscriber
                     personIsSubscribedToDuplicate

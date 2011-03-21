@@ -1015,8 +1015,11 @@ class BugTask(SQLBase, BugTaskMixin):
             # value.
             self.date_assigned = None
             # The bugtask is unassigned, so clear the _known_viewer cached
-            # property for the bug.
-            get_property_cache(self.bug)._known_viewers = set()
+            # property for the bug. Retain the current assignee as a viewer so
+            # that they are able to unassign themselves and get confirmation
+            # that that worked.
+            get_property_cache(self.bug)._known_viewers = set(
+                [self.assignee.id])
         if not self.assignee and assignee:
             # The task is going from not having an assignee to having
             # one, so record when this happened
@@ -1024,10 +1027,12 @@ class BugTask(SQLBase, BugTaskMixin):
 
         self.assignee = assignee
         # Invalidate the old visibility cache for this bug and replace it with
-        # the new assignee.
+        # the new assignee. If there is no new assignee, reset the cache.
         if self.assignee is not None:
-            get_property_cache(self.bug)._known_viewers = set(
-                [self.assignee.id])
+            known_viewers = set([self.assignee.id])
+        else:
+            known_viewers = set()
+        get_property_cache(self.bug)._known_viewers = known_viewers
 
     def transitionToTarget(self, target):
         """See `IBugTask`.
