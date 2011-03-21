@@ -77,6 +77,7 @@ from lazr.restful.interfaces import (
 from lazr.uri import URI
 from pytz import utc
 from simplejson import dumps
+from storm.expr import SQL
 from z3c.ptcompat import ViewPageTemplateFile
 from zope import (
     component,
@@ -247,6 +248,8 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.bugs.model.bug import Bug
+from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -268,7 +271,25 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.vocabularies import MilestoneVocabulary
 from lp.services.fields import PersonChoice
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
+
+
+DISPLAY_BUG_STATUS_FOR_PATCHES = {
+    BugTaskStatus.NEW:  True,
+    BugTaskStatus.INCOMPLETE: True,
+    BugTaskStatus.INVALID: False,
+    BugTaskStatus.WONTFIX: False,
+    BugTaskStatus.CONFIRMED: True,
+    BugTaskStatus.TRIAGED: True,
+    BugTaskStatus.INPROGRESS: True,
+    BugTaskStatus.FIXCOMMITTED: True,
+    BugTaskStatus.FIXRELEASED: False,
+    BugTaskStatus.UNKNOWN: False,
+    BugTaskStatus.EXPIRED: False
+    }
 
 
 @component.adapter(IBugTask, IReference, IWebServiceClientRequest)
@@ -1762,12 +1783,54 @@ class BugsStatsMixin(BugsInfoMixin):
     These can be expensive to obtain.
     """
 
+    @cachedproperty
+    def _bug_stats(self):
+        bug_task_set = getUtility(IBugTaskSet)
+        upstream_open_bugs = bug_task_set.open_bugtask_search
+        upstream_open_bugs.setTarget(self.context)
+        upstream_open_bugs.resolved_upstream = True
+        fixed_upstream_clause = SQL(
+            bug_task_set.buildUpstreamClause(upstream_open_bugs))
+        open_bugs = bug_task_set.open_bugtask_search
+        open_bugs.setTarget(self.context)
+        groups = (BugTask.status, BugTask.importance,
+            Bug.latest_patch_uploaded != None, fixed_upstream_clause)
+        counts = bug_task_set.countBugs(open_bugs, groups)
+        # Sum the split out aggregates.
+        new = 0
+        open = 0
+        inprogress = 0
+        critical = 0
+        high = 0
+        with_patch = 0
+        resolved_upstream = 0
+        for metadata, count in counts.items():
+            status = metadata[0]
+            importance = metadata[1]
+            has_patch = metadata[2]
+            was_resolved_upstream = metadata[3]
+            if status == BugTaskStatus.NEW:
+                new += count
+            elif status == BugTaskStatus.INPROGRESS:
+                inprogress += count
+            if importance == BugTaskImportance.CRITICAL:
+                critical += count
+            elif importance == BugTaskImportance.HIGH:
+                high += count
+            if has_patch and DISPLAY_BUG_STATUS_FOR_PATCHES[status]:
+                with_patch += count
+            if was_resolved_upstream:
+                resolved_upstream += count
+            open += count
+        result = dict(new=new, open=open, inprogress=inprogress, high=high,
+            critical=critical, with_patch=with_patch,
+            resolved_upstream=resolved_upstream)
+        return result
+
     @property
     def bugs_fixed_elsewhere_count(self):
         """A count of bugs fixed elsewhere."""
-        params = get_default_search_params(self.user)
-        params.resolved_upstream = True
-        return self.context.searchTasks(params).count()
+        return self._bug_stats['resolved_upstream']
 
     @property
     def open_cve_bugs_count(self):
@@ -1810,27 +1873,27 @@ class BugsStatsMixin(BugsInfoMixin):
     @property
     def new_bugs_count(self):
         """A count of new bugs."""
-        return self.context.new_bugtasks.count()
+        return self._bug_stats['new']
 
     @property
     def open_bugs_count(self):
         """A count of open bugs."""
-        return self.context.open_bugtasks.count()
+        return self._bug_stats['open']
 
     @property
     def inprogress_bugs_count(self):
         """A count of in-progress bugs."""
-        return self.context.inprogress_bugtasks.count()
+        return self._bug_stats['inprogress']
 
     @property
     def critical_bugs_count(self):
         """A count of critical bugs."""
-        return self.context.critical_bugtasks.count()
+        return self._bug_stats['critical']
 
     @property
     def high_bugs_count(self):
         """A count of high priority bugs."""
-        return self.context.high_bugtasks.count()
+        return self._bug_stats['high']
 
     @property
     def my_bugs_count(self):
@@ -1845,10 +1908,7 @@ class BugsStatsMixin(BugsInfoMixin):
     @property
     def bugs_with_patches_count(self):
         """A count of unresolved bugs with patches."""
-        return self.context.searchTasks(
-            None, user=self.user,
-            status=UNRESOLVED_BUGTASK_STATUSES,
-            omit_duplicates=True, has_patch=True).count()
+        return self._bug_stats['with_patch']
 
 
 class BugListingPortletInfoView(LaunchpadView, BugsInfoMixin):
@@ -3037,6 +3097,13 @@ class BugTasksAndNominationsView(LaunchpadView):
         self.many_bugtasks = len(self.bugtasks) >= 10
         self.cached_milestone_source = CachedMilestoneSourceFactory()
         self.user_is_subscribed = self.context.isSubscribed(self.user)
+
+        # Pull all of the related milestones into the storm cache, since
+        # they'll be needed for the vocabulary used in this view.
+        bugtask_set = getUtility(IBugTaskSet)
+        self.milestones = list(
+            bugtask_set.getBugTaskTargetMilestones(self.bugtasks))
+
         distro_packages = defaultdict(list)
         distro_series_packages = defaultdict(list)
         for bugtask in self.bugtasks:
@@ -3098,16 +3165,16 @@ class BugTasksAndNominationsView(LaunchpadView):
         view.is_conjoined_slave = is_conjoined_slave
         if IBugTask.providedBy(context):
             view.target_link_title = self.getTargetLinkTitle(context.target)
-        view.milestone_source = self.cached_milestone_source
 
         view.edit_view = getMultiAdapter(
             (context, self.request), name='+edit-form')
+        view.milestone_source = self.cached_milestone_source
         view.edit_view.milestone_source = self.cached_milestone_source
         view.edit_view.user_is_subscribed = self.user_is_subscribed
         # Hint to optimize when there are many bugtasks.
         view.many_bugtasks = self.many_bugtasks
         return view
-
+    
     def getBugTaskAndNominationViews(self):
         """Return the IBugTasks and IBugNominations views for this bug.
 

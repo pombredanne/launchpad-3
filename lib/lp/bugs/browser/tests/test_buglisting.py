@@ -49,7 +49,7 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
         self.assertTrue(len(top_portlet) > 0,
                         "Tag with class=top-portlet not found")
         self.assertTextMatchesExpressionIgnoreWhitespace("""
-            test-dsp in test-distro does not use Launchpad for bug tracking.
+            test-dsp in Test-distro does not use Launchpad for bug tracking.
             Getting started with bug tracking in Launchpad.""",
             extract_text(top_portlet[0]))
 

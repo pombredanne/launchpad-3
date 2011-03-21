@@ -138,4 +138,4 @@ be reported on the project's source packages.
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'also-in-ubuntu'))
     Ubuntu also tracks bugs for packages derived from this project:
-    test-project-package in ubuntu.
+    test-project-package in Ubuntu.
