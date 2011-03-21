@@ -1587,11 +1587,9 @@ And the order is not the same than the original source set.
     Mismatch: ...
 
 We will check a little bit of the `ArchiveSourcePublications`
-internals. There are three essential methods to fetch distinct
+internals. There is one essential method to fetch distinct
 information to be cached in the decorated objects:
 
-  * getBuildsBySource;
-  * getUnpublishedBuildsBySource;
   * getChangesFileBySources
 
 They exclude the extra references ('prejoins') returned  from the
@@ -1600,24 +1598,6 @@ a dictionary, keyed by `SourcePackagePublishingHistory `, in way they
 can be quickly looked up when building `ArchiveSourcePublications`.
 
     >>> real_pub = cprov_published_sources[1]
-
-Builds by source.
-
-    >>> builds_by_source = decorated_set.getBuildsBySource()
-
-    >>> compare_ids(
-    ...     real_pub.getBuilds(), builds_by_source.get(real_pub, []))
-    Matches
-
-Unpublished builds by source.
-
-    >>> unpublished_builds_by_source = (
-    ...     decorated_set.getUnpublishedBuildsBySource())
-
-    >>> compare_ids(
-    ...     real_pub.getUnpublishedBuilds(),
-    ...     unpublished_builds_by_source.get(real_pub, []))
-    Matches
 
 getChangesFileBySources() returns a dictionary mapping each individual
 source package publication to its corresponding .changes file (as a

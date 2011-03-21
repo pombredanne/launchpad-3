@@ -30,7 +30,10 @@ from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database.stormbase import StormBase
-from lp.services.job.interfaces.job import IJob
+from lp.services.job.interfaces.job import (
+    IJob,
+    JobStatus,
+    )
 from lp.services.job.model.job import Job
 
 
@@ -178,6 +181,24 @@ class PackagingJobDerived:
             Job.id.is_in(Job.ready_jobs),
             *extra_clauses)
         return (cls._subclass[job.job_type](job) for job in jobs)
+
+    @classmethod
+    def getNextJobStatus(cls, packaging):
+        """Return the status of the next job to run."""
+        store = IStore(PackagingJob)
+        result = store.find(
+            Job, Job.id == PackagingJob.job_id,
+            PackagingJob.distroseries_id == packaging.distroseries.id,
+            PackagingJob.sourcepackagename_id ==
+                packaging.sourcepackagename.id,
+            PackagingJob.productseries_id == packaging.productseries.id,
+            PackagingJob.job_type == cls.class_job_type,
+            Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING]))
+        result.order_by(PackagingJob.id)
+        job = result.first()
+        if job is None:
+            return None
+        return job.status
 
 
 #make accessible to zcml

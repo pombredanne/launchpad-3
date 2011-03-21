@@ -893,9 +893,6 @@
                 permission="launchpad.Moderate"
                 set_attributes="name"/>
             <require
-                permission="launchpad.Moderate"
-                interface="lp.registry.interfaces.person.IPersonModerate" />
-            <require
                 permission="launchpad.Commercial"
                 set_schema="lp.registry.interfaces.person.IPersonCommAdminWriteRestricted"/>
             <require
