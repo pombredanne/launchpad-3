@@ -163,10 +163,6 @@ class LaunchpadScript:
         else:
             self._name = name
 
-        self.original_feature_controller = get_relevant_feature_controller()
-        install_feature_controller(
-            make_script_feature_controller(self.name))
-
         self._dbuser = dbuser
 
         # The construction of the option parser is a bit roundabout, but
@@ -304,6 +300,10 @@ class LaunchpadScript:
     @log_unhandled_exception_and_exit
     def run(self, use_web_security=False, isolation=None):
         """Actually run the script, executing zcml and initZopeless."""
+        self.original_feature_controller = get_relevant_feature_controller()
+        install_feature_controller(
+            make_script_feature_controller(self.name))
+
         if isolation is None:
             isolation = ISOLATION_LEVEL_DEFAULT
         self._init_zca(use_web_security=use_web_security)
