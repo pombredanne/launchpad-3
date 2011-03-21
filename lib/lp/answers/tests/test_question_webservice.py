@@ -62,6 +62,5 @@ class TestQuestionRepresentation(TestCaseWithFactory):
         self.assertEqual(response.status, 209)
 
         self.assertEqual(
-            self.findQuestionDescription(response),
-            u'<p>See <a href="/questions/%d">question %d</a></p>' % (
-            self.question.id, self.question.id))
+            self.findQuestionTitle(response),
+            "<p>No, this is a question</p>")
