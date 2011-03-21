@@ -1822,10 +1822,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         assert sourcepackage is not None, (
             "Translations sharing policy requires a SourcePackage.")
 
-        has_upstream_translations = (
-            sourcepackage.productseries is not None and
-            sourcepackage.productseries.has_current_translation_templates)
-        if not has_upstream_translations:
+        has_upstream_translations = False
+        productseries = sourcepackage.productseries
+        if productseries is not None:
+            collection = productseries.getTemplatesCollection()
+            has_upstream_translations = bool(
+                collection.restrictCurrent().select().any())
+        if productseries is None or not has_upstream_translations:
             # There is no known upstream template or series.  Take the
             # uploader's word for whether these are upstream translations
             # (in which case they're shared) or not.
