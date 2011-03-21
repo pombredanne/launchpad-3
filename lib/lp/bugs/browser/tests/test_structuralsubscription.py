@@ -276,3 +276,4 @@ class TestStructuralSubscriptionAPI(TestCaseWithFactory):
              ws_subscription_filter2.self_link,
              initial_filter_link],
             bug_filter_links())
+
