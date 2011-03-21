@@ -61,4 +61,3 @@ def message_to_canonical_url_data(message):
         return BugMessageCanonicalUrlData(message.bugs[0], message)
     if IQuestionMessage.providedBy(message):
         return QuestionMessageCanonicalUrlData(message.question, message)
-

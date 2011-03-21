@@ -15,15 +15,17 @@ from lp.testing import (
     celebrity_logged_in,
     )
 
+
 class TestQuestionRepresentation(TestCaseWithFactory):
     """Test ways of interacting with Question webservice representations."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestQuestionRepresentation, self).setUp() 
+        super(TestQuestionRepresentation, self).setUp()
         with celebrity_logged_in('admin'):
-            self.question = self.factory.makeQuestion(title="This is a question")
+            self.question = self.factory.makeQuestion(
+                title="This is a question")
 
         self.webservice = LaunchpadWebServiceCaller(
             'launchpad-library', 'salgado-change-anything')

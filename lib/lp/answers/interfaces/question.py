@@ -19,18 +19,7 @@ __all__ = [
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
-    export_factory_operation,
-    export_operation_as,
-    export_read_operation,
-    export_write_operation,
     exported,
-    mutator_for,
-    operation_for_version,
-    operation_parameters,
-    operation_returns_collection_of,
-    operation_returns_entry,
-    rename_parameters_as,
-    REQUEST_USER,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -445,6 +434,7 @@ class IQuestion(IHasOwner):
 
         :return: A list of persons sorted by displayname.
         """
+
     def getIndirectSubscribers():
         """Return the persons who are implicitly subscribed to this question.
 
