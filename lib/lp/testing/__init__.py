@@ -846,7 +846,7 @@ class YUIUnitTestCase(WindmillTestCase):
         Preventing the choice of test method ensures that we can safely
         provide a test ID based on the file path.
         """
-        super(YUIUnitTestCase, self).__init__()
+        super(YUIUnitTestCase, self).__init__("checkResults")
 
     def initialize(self, test_path):
         self.test_path = test_path
@@ -886,7 +886,12 @@ class YUIUnitTestCase(WindmillTestCase):
             self._yui_results[test_name] = dict(
                 result=result, message=message)
 
-    def runTest(self):
+    def checkResults(self):
+        """Check the results.
+
+        The tests are run during `setUp()`, but failures need to be reported
+        from here.
+        """
         if self._yui_results is None or len(self._yui_results) == 0:
             self.fail("Test harness or js failed.")
         for test_name in self._yui_results:
