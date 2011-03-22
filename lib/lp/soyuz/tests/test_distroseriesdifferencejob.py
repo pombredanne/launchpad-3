@@ -188,7 +188,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
             derived_series, package)
         transaction.commit() # The cronscript is a different process.
         return_code, stdout, stderr = run_script(
-            'cronscripts/distroseriesdifference_job.py', ['-vvv'])
+            'cronscripts/distroseriesdifference_job.py', ['-v'])
         # The cronscript ran how we expected it to.
         self.assertEqual(return_code, 0)
         self.assertIn(
