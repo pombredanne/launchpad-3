@@ -446,6 +446,10 @@ class TwistedJobRunner(BaseJobRunner):
 
         def producer():
             while True:
+                # XXX: If we're getting all of the jobs at the start anyway,
+                # we can use a DeferredSemaphore, instead of the more complex
+                # PollingTaskSource, which is better suited to cases where we
+                # don't know how much work there will be.
                 jobs = list(self.job_source.iterReady())
                 if len(jobs) == 0:
                     yield None
@@ -455,6 +459,9 @@ class TwistedJobRunner(BaseJobRunner):
 
     def doConsumer(self):
         """Create a ParallelLimitedTaskConsumer for this job type."""
+        # XXX: 1 is hard-coded for now until we're sure we'd get gains by
+        # running more than one at a time.  Note that test_timeout sort of
+        # relies on this being 1.
         consumer = ParallelLimitedTaskConsumer(1, logger=None)
         return consumer.consume(self.getTaskSource())
 
