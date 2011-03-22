@@ -20,6 +20,9 @@ from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
     exported,
+    export_write_operation,
+    operation_parameters,
+    REQUEST_USER,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -468,6 +471,18 @@ class IQuestion(IHasOwner):
             notify along the rationale for doing so.
         """
 
+    @operation_parameters(
+        comment_number=Int(
+            title=_('The number of the comment in the list of messages.'),
+            required=True),
+        visible=Bool(title=_('Show this comment?'), required=True))
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    def setCommentVisibility(user, comment_number, visible):
+        """Set the visible attribute on a bug comment.  This is restricted
+        to Launchpad admins, and will return a HTTP Error 401: Unauthorized
+        error for non-admin callers.
+        """
 
 # These schemas are only used by browser/question.py and should really live
 # there. See Bug #66950.
