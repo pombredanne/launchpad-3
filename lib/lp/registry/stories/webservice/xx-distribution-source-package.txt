@@ -11,7 +11,7 @@ Source packages can be obtained from the context of a distribution.
     >>> print pretty(mozilla_firefox)
     {u'bug_reported_acknowledgement': None,
      u'bug_reporting_guidelines': None,
-     u'display_name': u'mozilla-firefox in debian',
+     u'display_name': u'mozilla-firefox in Debian',
      u'distribution_link': u'http://.../debian',
      u'http_etag': u'...',
      u'name': u'mozilla-firefox',

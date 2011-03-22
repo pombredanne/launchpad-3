@@ -190,6 +190,8 @@ IBranchMergeProposal['all_comments'].value_type.schema = ICodeReviewComment
 IBranchMergeProposal['nominateReviewer'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ICodeReviewVoteReference
 IBranchMergeProposal['votes'].value_type.schema = ICodeReviewVoteReference
+patch_collection_return_type(
+    IBranchMergeProposal, 'getRelatedBugTasks', IBugTask)
 
 patch_collection_return_type(IHasBranches, 'getBranches', IBranch)
 patch_collection_return_type(
@@ -403,6 +405,9 @@ patch_collection_return_type(
 patch_reference_property(IDistroSeries, 'parent_series', IDistroSeries)
 patch_plain_parameter_type(
     IDistroSeries, 'deriveDistroSeries', 'distribution', IDistribution)
+patch_collection_return_type(
+    IDistroSeries, 'getDerivedSeries', IDistroSeries)
+
 
 # IDistroSeriesDifferenceComment
 IDistroSeriesDifferenceComment['comment_author'].schema = IPerson
@@ -550,7 +555,8 @@ patch_reference_property(IProductSeries, 'product', IProduct)
 
 # ISpecification
 patch_collection_property(ISpecification, 'dependencies', ISpecification)
-patch_collection_property(ISpecification, 'linked_branches', ISpecificationBranch)
+patch_collection_property(
+    ISpecification, 'linked_branches', ISpecificationBranch)
 
 # ISpecificationTarget
 patch_entry_return_type(

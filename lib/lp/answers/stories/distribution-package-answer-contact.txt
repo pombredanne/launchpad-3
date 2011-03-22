@@ -30,7 +30,7 @@ and another one listing those of the distribution.
     >>> anon_browser.getLink('Answers').click()
     >>> portlet = find_portlet(
     ...     anon_browser.contents,
-    ...     'Answer contacts for evolution in ubuntu')
+    ...     'Answer contacts for evolution in Ubuntu')
     >>> print portlet.first('div').renderContents()
     <p>
       <i>There are no answer contacts.</i>
@@ -77,16 +77,16 @@ a message is displayed to confirm the changes:
     >>> browser.getControl('Continue').click()
     >>> for message in find_tags_by_class(browser.contents, 'message'):
     ...     print extract_text(message)
-    You have been added as an answer contact for evolution in ubuntu.
+    You have been added as an answer contact for evolution in Ubuntu.
     English was added to Landscape Developers's preferred languages.
     Landscape Developers has been added as an answer contact for
-    evolution in ubuntu.
+    evolution in Ubuntu.
 
 The answer contacts portlet for the source package was updated:
 
     >>> for answer_contact in find_portlet(
     ...     browser.contents,
-    ...     'Answer contacts for evolution in ubuntu').fetch('a'):
+    ...     'Answer contacts for evolution in Ubuntu').fetch('a'):
     ...     print answer_contact.renderContents()
     Landscape Developers
     Sample Person
@@ -108,11 +108,11 @@ portlet for the source package is updated.
     >>> browser.getControl('Continue').click()
     >>> for message in find_tags_by_class(browser.contents, 'message'):
     ...     print message.renderContents()
-    You have been removed as an answer contact for evolution in ubuntu.
+    You have been removed as an answer contact for evolution in Ubuntu.
 
     >>> for answer_contact in find_portlet(
     ...     browser.contents,
-    ...     'Answer contacts for evolution in ubuntu').fetch('a'):
+    ...     'Answer contacts for evolution in Ubuntu').fetch('a'):
     ...     print answer_contact.renderContents()
     Landscape Developers
 

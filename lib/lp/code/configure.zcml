@@ -247,7 +247,7 @@
                     getIncrementalDiffs
                     votes
                     all_comments
-                    related_bugs
+                    getRelatedBugTasks
                     revision_end_date
                     isMergable
                     getComment
@@ -984,6 +984,10 @@
      class="bzrlib.plugins.builder.recipe.NestInstruction">
     <allow attributes="as_tuple recipe_branch nest_path" />
   </class>
+
+  <subscriber
+    for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+    handler="lp.code.model.sourcepackagerecipe.recipe_modified"/>
 
   <utility component="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuildJob"
         name="RECIPEBRANCHBUILD"

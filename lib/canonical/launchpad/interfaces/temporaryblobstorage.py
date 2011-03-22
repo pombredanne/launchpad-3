@@ -91,8 +91,4 @@ class ITemporaryStorageManager(Interface):
 
     @collection_default_content()
     def default_temporary_blob_storage_list():
-        """Return the default list of `ITemporaryBlobStorage` objects.
-
-        :returns: All the the `ITemporaryBlobStorage` blobs whose file
-                  aliases have not expired.
-        """
+        """Return an empty set - only exists to keep lazr.restful happy."""

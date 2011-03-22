@@ -62,12 +62,28 @@ class TestSharingInfoMixin:
 
     SHARING_TEXT = None
 
-    def _test_sharing_information(self, obj, expected_text):
+    def getAuthorizedUser(self, obj):
+        """Get a user that is authorized to edit sharing details on obj."""
+        raise NotImplementedError
+
+    SHARING_DETAILS_INFO = "View sharing details"
+    SHARING_DETAILS_SETUP = "Set up sharing"
+    SHARING_DETAILS_EDIT = "Edit sharing details"
+
+    def _test_sharing_information(self, obj,
+                                  id_under_test, expected_text,
+                                  authorized=False):
         self.useFixture(FeatureFixture(
             {'translations.sharing_information.enabled': 'on'}))
+        if authorized:
+            user = self.getAuthorizedUser(obj)
+        else:
+            user = None
         browser = self.getViewBrowser(
-            obj, no_login=True, rootsite="translations")
-        sharing_info = find_tag_by_id(browser.contents, 'sharing-information')
+                obj, user=user, no_login=(not authorized),
+                rootsite="translations")
+
+        sharing_info = find_tag_by_id(browser.contents, id_under_test)
         if expected_text is None:
             self.assertIs(None, sharing_info)
         else:
@@ -77,11 +93,36 @@ class TestSharingInfoMixin:
 
     def test_not_sharing(self):
         self._test_sharing_information(
-            self.makeNotSharingObject(), self.NOT_SHARING_TEXT)
+            self.makeNotSharingObject(),
+            'sharing-information', self.NOT_SHARING_TEXT)
 
     def test_sharing(self):
         self._test_sharing_information(
-            self.makeSharingObject(), self.SHARING_TEXT)
+            self.makeSharingObject(),
+            'sharing-information', self.SHARING_TEXT)
+
+    def test_sharing_details_info(self):
+        # For unauthorized users, the link to the sharing details page is
+        # informational.
+        self._test_sharing_information(
+            self.makeSharingObject(),
+            'sharing-details', self.SHARING_DETAILS_INFO)
+
+    def test_sharing_details_setup(self):
+        # For authorized users of not sharing objects, the link to the
+        # sharing details page encourages action.
+        self._test_sharing_information(
+            self.makeNotSharingObject(),
+            'sharing-details', self.SHARING_DETAILS_SETUP,
+            authorized=True)
+
+    def test_sharing_details_edit(self):
+        # For authorized users, the link to the sharing details page is for
+        # editing
+        self._test_sharing_information(
+            self.makeSharingObject(),
+            'sharing-details', self.SHARING_DETAILS_EDIT,
+            authorized=True)
 
 
 class TestUpstreamPOTemplateSharingInfo(BrowserTestCase,
@@ -104,6 +145,9 @@ class TestUpstreamPOTemplateSharingInfo(BrowserTestCase,
     SHARING_TEXT = """
         This template is sharing translations with .*"""
 
+    def getAuthorizedUser(self, potemplate):
+        return potemplate.productseries.product.owner
+
 
 class TestPOFileSharingInfo(BrowserTestCase, TestSharingInfoMixin):
     """Test display of POFile sharing info."""
@@ -125,6 +169,13 @@ class TestPOFileSharingInfo(BrowserTestCase, TestSharingInfoMixin):
     SHARING_TEXT = """
         These translations are shared with .*"""
 
+    def getAuthorizedUser(self, productseries):
+        return None
+
+    SHARING_DETAILS_INFO = None
+    SHARING_DETAILS_SETUP = None
+    SHARING_DETAILS_EDIT = None
+
 
 class TestDummyPOFileSharingInfo(BrowserTestCase, TestSharingInfoMixin):
     """Test display of DummyPOFile sharing info."""
@@ -144,6 +195,13 @@ class TestDummyPOFileSharingInfo(BrowserTestCase, TestSharingInfoMixin):
 
     SHARING_TEXT = """
         These translations are shared with .*"""
+
+    def getAuthorizedUser(self, productseries):
+        return None
+
+    SHARING_DETAILS_INFO = None
+    SHARING_DETAILS_SETUP = None
+    SHARING_DETAILS_EDIT = None
 
 
 class TestUpstreamSharingInfo(BrowserTestCase, TestSharingInfoMixin):
@@ -166,6 +224,9 @@ class TestUpstreamSharingInfo(BrowserTestCase, TestSharingInfoMixin):
 
     SHARING_TEXT = """
         This project series is sharing translations with .*"""
+
+    def getAuthorizedUser(self, productseries):
+        return productseries.product.owner
 
 
 class TestUbuntuPOTemplateSharingInfo(BrowserTestCase, TestSharingInfoMixin):
@@ -190,6 +251,12 @@ class TestUbuntuPOTemplateSharingInfo(BrowserTestCase, TestSharingInfoMixin):
     SHARING_TEXT = """
         This template is sharing translations with .*"""
 
+    def getAuthorizedUser(self, potemplate):
+        with celebrity_logged_in('admin'):
+            potemplate.distroseries.owner = self.factory.makePerson(
+                password='test')
+        return potemplate.distroseries.owner
+
 
 class TestUbuntuSharingInfo(BrowserTestCase, TestSharingInfoMixin):
     """Test display of source package sharing info."""
@@ -213,3 +280,9 @@ class TestUbuntuSharingInfo(BrowserTestCase, TestSharingInfoMixin):
 
     SHARING_TEXT = """
         This source package is sharing translations with .*"""
+
+    def getAuthorizedUser(self, sourcepackage):
+        with celebrity_logged_in('admin'):
+            sourcepackage.distroseries.owner = self.factory.makePerson(
+                password='test')
+        return sourcepackage.distroseries.owner

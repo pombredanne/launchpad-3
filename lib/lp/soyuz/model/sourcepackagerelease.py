@@ -137,7 +137,6 @@ class SourcePackageRelease(SQLBase):
     dateuploaded = UtcDateTimeCol(dbName='dateuploaded', notNull=True,
         default=UTC_NOW)
     dsc = StringCol(dbName='dsc')
-    copyright = StringCol(dbName='copyright', notNull=False, default=DEFAULT)
     version = StringCol(dbName='version', notNull=True)
     changelog = ForeignKey(foreignKey='LibraryFileAlias', dbName='changelog')
     changelog_entry = StringCol(dbName='changelog_entry')
@@ -183,7 +182,30 @@ class SourcePackageRelease(SQLBase):
             kwargs['_user_defined_fields'] = simplejson.dumps(
                 kwargs['user_defined_fields'])
             del kwargs['user_defined_fields']
+        # copyright isn't on the Storm class, since we don't want it
+        # loaded every time. Set it separately.
+        if 'copyright' in kwargs:
+            copyright = kwargs.pop('copyright')
         super(SourcePackageRelease, self).__init__(*args, **kwargs)
+        self.copyright = copyright
+
+    @property
+    def copyright(self):
+        """See `ISourcePackageRelease`."""
+        store = Store.of(self)
+        store.flush()
+        return store.execute(
+            "SELECT copyright FROM sourcepackagerelease WHERE id=%s",
+            (self.id,)).get_one()[0]
+
+    @copyright.setter
+    def copyright(self, content):
+        """See `ISourcePackageRelease`."""
+        store = Store.of(self)
+        store.flush()
+        store.execute(
+            "UPDATE sourcepackagerelease SET copyright=%s WHERE id=%s",
+            (content, self.id))
 
     @property
     def user_defined_fields(self):

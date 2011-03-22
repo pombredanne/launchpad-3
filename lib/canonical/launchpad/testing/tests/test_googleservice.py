@@ -12,7 +12,7 @@ import errno
 import os
 import unittest
 
-from lp.services.search import googletestservice
+from lp.services.googlesearch import googletestservice
 from canonical.lazr.pidfile import pidfile_path
 
 

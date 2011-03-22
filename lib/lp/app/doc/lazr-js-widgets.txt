@@ -47,7 +47,8 @@ link into an AJAX control when JS is available:
     <h1 id="edit-title"><span class="yui3-editable_text-text">Widgets &gt;
         important</span>
         <a class="yui3-editable_text-trigger sprite edit"
-           href="http://launchpad.dev/widget/+edit"></a>
+           href="http://launchpad.dev/widget/+edit"
+           title=""></a>
     </h1>
     <script>
     ...
@@ -77,14 +78,24 @@ edit page if javascript is disabled.  This link defaults to the '+edit' view
 of the object being edited.  This can be overridden in two ways:
   * change the 'edit_view' parameter to be a different view
   * provide an 'edit_url' to use instead
+  * provide an 'edit_title' to set the title attribute of the anchor
 
     >>> print widget.edit_url
     http://launchpad.dev/widget/+edit
 
     >>> diff_view = TextLineEditorWidget(
-    ...     product, title_field, title, 'h1', edit_view='+edit-people')
+    ...     product, title_field, title, 'h1', edit_view='+edit-people',
+    ...     edit_title='Change the product title')
     >>> print diff_view.edit_url
     http://launchpad.dev/widget/+edit-people
+    >>> print diff_view.edit_title
+    Change the product title
+    >>> login_person(product.owner)
+    >>> print diff_view()
+    <h1...
+    <a class="yui3-editable_text-trigger sprite edit"
+       href="http://launchpad.dev/widget/+edit-people"
+       title="Change the product title">...
 
     >>> diff_url = TextLineEditorWidget(
     ...     product, title_field, title, 'h1', edit_url='http://example.com/')
@@ -129,6 +140,7 @@ over.
 
 With no-one logged in, there are no edit buttons.
 
+    >>> login(ANONYMOUS)
     >>> print widget()
     <div id="edit-description" class="lazr-multiline-edit">
       <div class="clearfix">
@@ -152,7 +164,8 @@ editor.
         <div class="edit-controls">
           &nbsp;
           <a class="yui3-editable_text-trigger sprite edit"
-             href="http://launchpad.dev/~eric/+archive/ppa/+edit"></a>
+             href="http://launchpad.dev/~eric/+archive/ppa/+edit"
+             title=""></a>
         </div>
         <h3>A title</h3>
       </div>
@@ -312,8 +325,68 @@ rendered to hook up the widget.
       <span>
         &nbsp;
         <a class="editicon sprite edit"
-           href="http://launchpad.dev/~eric/+edit"></a>
+           href="http://launchpad.dev/~eric/+edit"
+           title=""></a>
       </span>
+    </span>
+    <script>
+    LPS.use('lp.app.choice', function(Y) {
+    ...
+    </script>
+
+
+Changing the edit link
+**********************
+
+The edit link can be changed in exactly the same way as for the
+TextLineEditorWidget above.
+
+
+EnumChoiceWidget
+----------------
+
+This widget is primarily there allow setting of enum fields easily
+using the popup chooser.
+
+    >>> from lp.app.browser.lazrjs import EnumChoiceWidget
+
+As with the other widgets, this one requires a context object and a Choice type
+field.  The rendering of the widget hooks up to the lazr ChoiceSource with the
+standard patch plugin.
+
+One of the different things about this widget is the styles that are added.
+Many enums have specific colour styles.  Generally these are the names of
+the enum values (the upper-case bit) with a defined prefix.  This prefix
+is passed in to the constructor of the widget.
+
+A list of items is generated from the vocabulary.
+
+If the user does not have edit rights, the widget just renders the text based
+on the current value of the field on the object:
+
+    >>> login(ANONYMOUS)
+    >>> from lp.code.interfaces.branch import IBranch
+    >>> branch = factory.makeAnyBranch()
+    >>> widget = EnumChoiceWidget(
+    ...     branch, IBranch['lifecycle_status'],
+    ...     header='Change status to', css_class_prefix='branchstatus')
+    >>> print widget()
+    <span id="edit-lifecycle_status">
+       <span class="value branchstatusDEVELOPMENT">Development</span>
+    </span>
+
+If the user has edit rights, an edit icon is rendered and some javascript is
+rendered to hook up the widget.
+
+    >>> login_person(branch.owner)
+    >>> print widget()
+    <span id="edit-lifecycle_status">
+        <span class="value branchstatusDEVELOPMENT">Development</span>
+        <span>&nbsp;
+          <a class="editicon sprite edit"
+             href="http://.../+edit"
+             title=""></a>
+        </span>
     </span>
     <script>
     LPS.use('lp.app.choice', function(Y) {

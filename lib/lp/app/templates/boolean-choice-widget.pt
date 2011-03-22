@@ -2,7 +2,8 @@
 <tal:prefix replace="view/prefix"/><span class="value" tal:content="view/value">Unset</span>
     <span tal:condition="view/can_write">
       &nbsp;
-      <a tal:attributes="href view/edit_url"
+      <a tal:attributes="href view/edit_url;
+                         title view/edit_title"
          class="editicon sprite edit"></a>
     </span>
 <tal:close-tag replace="structure view/close_tag"/>

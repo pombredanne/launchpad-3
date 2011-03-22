@@ -10,7 +10,9 @@ from datetime import (
     datetime,
     timedelta,
     )
-import operator
+from fixtures import TempDir
+import os
+import subprocess
 import time
 
 from pytz import UTC
@@ -35,6 +37,7 @@ from canonical.launchpad.database.message import Message
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.scripts.tests import run_script
 from canonical.launchpad.webapp.interfaces import (
@@ -48,6 +51,7 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
+from lp.archiveuploader.dscfile import findFile
 from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
@@ -64,6 +68,7 @@ from lp.code.model.branchjob import (
     )
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
@@ -76,6 +81,8 @@ from lp.scripts.garbo import (
     )
 from lp.services.job.model.job import Job
 from lp.services.log.logger import BufferLogger
+from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
@@ -95,6 +102,13 @@ class TestGarboScript(TestCase):
 
     def test_hourly_script(self):
         """Ensure garbo-hourly.py actually runs."""
+        # Our sampledata doesn't contain anything that PopulateSPRChangelogs
+        # can process without errors, so it's easier to just set all of the
+        # changelogs to a random LFA. We can't just expire every LFA, since
+        # a bunch of SPRs have no SPRFs at all.
+        IMasterStore(SourcePackageRelease).find(SourcePackageRelease).set(
+            changelogID=1)
+        transaction.commit() # run_script() is a different process.
         rv, out, err = run_script(
             "cronscripts/garbo-hourly.py", ["-q"], expect_returncode=0)
         self.failIf(out.strip(), "Output to stdout: %s" % out)
@@ -513,7 +527,7 @@ class TestGarbo(TestCaseWithFactory):
         # them will have the present day as its date created, and so will not
         # be deleted, whereas the other will have a creation date far in the
         # past, so it will be deleted.
-        person = self.factory.makePerson(name='test-unlinked-person-new')
+        self.factory.makePerson(name='test-unlinked-person-new')
         person_old = self.factory.makePerson(name='test-unlinked-person-old')
         removeSecurityProxy(person_old).datecreated = datetime(
             2008, 01, 01, tzinfo=UTC)
@@ -541,7 +555,7 @@ class TestGarbo(TestCaseWithFactory):
             bugID=1,
             is_comment=True,
             date_emailed=None)
-        recipient = BugNotificationRecipient(
+        BugNotificationRecipient(
             bug_notification=notification,
             personID=1,
             reason_header='Whatever',
@@ -555,7 +569,7 @@ class TestGarbo(TestCaseWithFactory):
                 bugID=1,
                 is_comment=True,
                 date_emailed=UTC_NOW + SQL("interval '%d days'" % delta))
-            recipient = BugNotificationRecipient(
+            BugNotificationRecipient(
                 bug_notification=notification,
                 personID=1,
                 reason_header='Whatever',
@@ -609,7 +623,6 @@ class TestGarbo(TestCaseWithFactory):
         Store.of(db_branch).flush()
         branch_job = BranchUpgradeJob.create(db_branch)
         branch_job.job.date_finished = THIRTY_DAYS_AGO
-        job_id = branch_job.job.id
 
         self.assertEqual(
             store.find(
@@ -617,7 +630,7 @@ class TestGarbo(TestCaseWithFactory):
                 BranchJob.branch == db_branch.id).count(),
                 1)
 
-        collector = self.runDaily()
+        self.runDaily()
 
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         self.assertEqual(
@@ -638,21 +651,16 @@ class TestGarbo(TestCaseWithFactory):
 
         branch_job = BranchUpgradeJob.create(db_branch)
         branch_job.job.date_finished = THIRTY_DAYS_AGO
-        job_id = branch_job.job.id
 
         db_branch2 = self.factory.makeAnyBranch(
             branch_format=BranchFormat.BZR_BRANCH_5,
             repository_format=RepositoryFormat.BZR_KNIT_1)
-        branch_job2 = BranchUpgradeJob.create(db_branch2)
-        job_id_newer = branch_job2.job.id
+        BranchUpgradeJob.create(db_branch2)
 
-        collector = self.runDaily()
+        self.runDaily()
 
         LaunchpadZopelessLayer.switchDbUser('testadmin')
-        self.assertEqual(
-            store.find(
-                BranchJob).count(),
-            1)
+        self.assertEqual(store.find(BranchJob).count(), 1)
 
     def test_ObsoleteBugAttachmentDeleter(self):
         # Bug attachments without a LibraryFileContent record are removed.
@@ -710,3 +718,60 @@ class TestGarbo(TestCaseWithFactory):
             """ % sqlbase.quote(template.id)).get_one()
 
         self.assertEqual(1, count)
+
+    def upload_to_debian(self, restricted=False):
+        sid = getUtility(IDistributionSet)['debian']['sid']
+        spn = self.factory.makeSourcePackageName('9wm')
+        spr = self.factory.makeSourcePackageRelease(
+            sourcepackagename=spn, version='1.2-7', distroseries=sid)
+        archive = sid.main_archive
+        if restricted:
+            archive = self.factory.makeArchive(
+                distribution=sid.distribution, private=True)
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr, archive=archive,
+            status=PackagePublishingStatus.PUBLISHED)
+        for name in (
+            '9wm_1.2-7.diff.gz', '9wm_1.2.orig.tar.gz', '9wm_1.2-7.dsc'):
+            path = os.path.join(
+                'lib/lp/soyuz/scripts/tests/gina_test_archive/pool/main/9',
+                '9wm', name)
+            lfa = getUtility(ILibraryFileAliasSet).create(
+                name, os.stat(path).st_size, open(path, 'r'),
+                'application/octet-stream', restricted=restricted)
+            spr.addFile(lfa)
+        with TempDir() as tmp_dir:
+            fnull = open('/dev/null', 'w')
+            ret = subprocess.call(
+                ['dpkg-source', '-x', path, os.path.join(
+                    tmp_dir.path, 'extracted')],
+                    stdout=fnull, stderr=fnull)
+            fnull.close()
+            self.assertEqual(0, ret)
+            changelog_path = findFile(tmp_dir.path, 'debian/changelog')
+            changelog = open(changelog_path, 'r').read()
+        transaction.commit() # .runHourly() switches dbuser.
+        return (spr, changelog)
+
+    def test_populateSPRChangelogs(self):
+        # We set SPR.changelog for imported records from Debian.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        spr, changelog = self.upload_to_debian()
+        collector = self.runHourly()
+        log = collector.logger.getLogBuffer()
+        self.assertTrue(
+            'SPR %d (9wm 1.2-7) changelog imported.' % spr.id in log)
+        self.assertFalse(spr.changelog == None)
+        self.assertFalse(spr.changelog.restricted)
+        self.assertEqual(changelog, spr.changelog.read())
+
+    def test_populateSPRChangelogs_restricted_sprf(self):
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        spr, changelog = self.upload_to_debian(restricted=True)
+        collector = self.runHourly()
+        log = collector.logger.getLogBuffer()
+        self.assertTrue(
+            'SPR %d (9wm 1.2-7) changelog imported.' % spr.id in log)
+        self.assertFalse(spr.changelog == None)
+        self.assertTrue(spr.changelog.restricted)
+        self.assertEqual(changelog, spr.changelog.read())

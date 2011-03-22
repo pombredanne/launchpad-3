@@ -14,7 +14,7 @@ The GoogleSearchService implements the ISearchService interface.
 
     >>> from zope.component import getUtility
     >>> from zope.interface.verify import verifyObject
-    >>> from lp.services.search.interfaces import (
+    >>> from lp.services.googlesearch.interfaces import (
     ...     ISearchService)
 
     >>> google_search = getUtility(ISearchService)
@@ -32,7 +32,7 @@ The search method accepts a string argument of terms and an optional int
 argument of start. The terms are the same as the text that would be
 entered in Google search form; the terms should not be escaped.
 
-    >>> from lp.services.search.interfaces import (
+    >>> from lp.services.googlesearch.interfaces import (
     ...     ISearchResults)
 
     >>> first_page_matches = google_search.search(terms='bug')
@@ -121,8 +121,8 @@ The PageMatch object represents a single result from a search result
 set. It is created by passing a title, url, and a summary. It is
 an implementation of ISearchResult.
 
-    >>> from lp.services.search.interfaces import ISearchResult
-    >>> from lp.services.search.google import PageMatch
+    >>> from lp.services.googlesearch.interfaces import ISearchResult
+    >>> from lp.services.googlesearch import PageMatch
 
     >>> page_match = PageMatch(
     ...     u'Unicode Titles in Launchpad',
@@ -155,8 +155,7 @@ lazr.config. All requests are made to Google's site, but the
 configuration may set a testing site.
 
     >>> from canonical.config import config
-    >>> from lp.services.search.google import (
-    ...     GoogleSearchService)
+    >>> from lp.services.googlesearch import GoogleSearchService
 
     >>> google_search = GoogleSearchService()
     >>> config.google.site == google_search.site
@@ -612,7 +611,7 @@ cases a TimeoutError is issued.
     >>> google_search.search(terms='bug')
     Traceback (most recent call last):
      ...
-    TimeoutError: ...
+    GoogleResponseError: ... timeout exceeded.
 
     # Restore the configuration and the timeout state.
     >>> timeout_data = config.pop('timeout_data')

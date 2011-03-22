@@ -393,7 +393,6 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
                          cgi.escape(target.displayname),
                          confirm_button))))
             return None
-
         # Create the task.
         return super(DistroBugTaskCreationStep, self).main_action(data)
 

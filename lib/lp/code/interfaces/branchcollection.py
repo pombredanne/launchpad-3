@@ -102,12 +102,16 @@ class IBranchCollection(Interface):
             are returned.
         """
 
-    def getExtendedRevisionDetails(revisions):
+    def getExtendedRevisionDetails(user, revisions):
         """Return information about the specified revisions on a branch.
 
         For each revision, see if the revision resulted from merging in a
         merge proposal, and if so package up the merge proposal and any linked
-        bugs on the merge proposal's source branch.
+        bug tasks on the merge proposal's source branch.
+
+        :param user: The user who is making the request. Only bug tasks
+            visible to this user are returned.
+        :param revisions: The revisions we want details for.
         """
 
     def getTeamsWithBranches(person):
@@ -147,6 +151,11 @@ class IBranchCollection(Interface):
 
     def ownedBy(person):
         """Restrict the collection to branches owned by 'person'."""
+
+    def ownedByTeamMember(person):
+        """Restrict the collection to branches owned by 'person' or a team
+        of which person is a member.
+        """
 
     def registeredBy(person):
         """Restrict the collection to branches registered by 'person'."""

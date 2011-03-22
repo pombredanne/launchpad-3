@@ -142,7 +142,7 @@ password is changed too.
     >>> print user.preferredemail
     None
 
-An admin can reactive a disabled user's account too. Unlike the act of
+An admin can reactivate a disabled user's account too. Unlike the act of
 suspension, reactivation does not change the user's password or email
 addresses; the user must use the reset password feature to restore these.
 

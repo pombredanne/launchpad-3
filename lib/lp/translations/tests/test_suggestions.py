@@ -63,9 +63,9 @@ class TestTranslationSuggestions(TestCaseWithFactory):
             potmsgset.getExternallyUsedTranslationMessages(self.nl), [])
         self.assertEquals(
             potmsgset.getExternallySuggestedTranslationMessages(self.nl), [])
-        self.assertEqual(
-            potmsgset.getExternallySuggestedOrUsedTranslationMessages(self.nl),
-            ([], []))
+        self.assertEqual({},
+            potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                suggested_languages=[self.nl], used_languages=[self.nl]))
 
     def test_SimpleExternallyUsedSuggestion(self):
         # If foo wants to translate "error message 936" and bar happens
@@ -89,7 +89,9 @@ class TestTranslationSuggestions(TestCaseWithFactory):
             self.nl)
         check_used_suggested()
         other_suggestions, used_suggestions = \
-            foomsg.getExternallySuggestedOrUsedTranslationMessages(self.nl)
+            foomsg.getExternallySuggestedOrUsedTranslationMessages(
+                suggested_languages=[self.nl],
+                used_languages=[self.nl])[self.nl]
         check_used_suggested()
 
     def test_DisabledExternallyUsedSuggestions(self):
@@ -110,7 +112,7 @@ class TestTranslationSuggestions(TestCaseWithFactory):
             self.nl)
         self.assertEquals(len(used_suggestions), 1)
         used_suggestions = foomsg.getExternallySuggestedOrUsedTranslationMessages(
-            self.nl)[1]
+            used_languages=[self.nl], suggested_languages=[self.nl])[self.nl].used
         self.assertEquals(len(used_suggestions), 1)
 
         # Override the config option to disable global suggestions.
@@ -123,7 +125,9 @@ class TestTranslationSuggestions(TestCaseWithFactory):
             foomsg.getExternallyUsedTranslationMessages(self.nl))
         self.assertEquals(len(disabled_used_suggestions), 0)
         disabled_used_suggestions = (
-            foomsg.getExternallySuggestedOrUsedTranslationMessages(self.nl))[1]
+            foomsg.getExternallySuggestedOrUsedTranslationMessages(
+                used_languages=[self.nl],
+                suggested_languages=[self.nl]))[self.nl].used
         self.assertEquals(len(disabled_used_suggestions), 0)
         # Restore the old configuration.
         config.pop('disabled_suggestions')
@@ -148,7 +152,9 @@ class TestTranslationSuggestions(TestCaseWithFactory):
             self.nl)
         check_used_suggested()
         other_suggestions, used_suggestions = \
-            foomsg.getExternallySuggestedOrUsedTranslationMessages(self.nl)
+            foomsg.getExternallySuggestedOrUsedTranslationMessages(
+                used_languages=[self.nl],
+                suggested_languages=[self.nl])[self.nl]
         check_used_suggested()
 
     def test_IdenticalSuggestions(self):
@@ -184,7 +190,7 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         self.assertEquals(len(suggestions), 1)
         self.assertEquals(suggestions[0], suggestion1)
         suggestions = oof_potmsgset.getExternallySuggestedOrUsedTranslationMessages(
-            self.nl)[1]
+            suggested_languages=[self.nl], used_languages=[self.nl])[self.nl].used
         self.assertEquals(len(suggestions), 1)
         self.assertEquals(suggestions[0], suggestion1)
 

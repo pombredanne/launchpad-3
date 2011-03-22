@@ -33,7 +33,7 @@ from canonical.testing.layers import (
     AppServerLayer,
     LaunchpadFunctionalLayer,
     )
-from lazr.restfulclient.errors import Unauthorized as RestfulUnauthorized
+from lazr.restfulclient.errors import NotFound as RestfulNotFound
 from lp.bugs.browser.bugattachment import BugAttachmentFileNavigation
 import lp.services.features
 from lp.services.features.flags import NullFeatureController
@@ -108,9 +108,9 @@ class TestAccessToBugAttachmentFiles(TestCaseWithFactory):
         view = navigation.publishTraverse(request, '+files')
         # XXX Ensure the feature will be off - everything is off with
         # NullFeatureController. bug=631884
-        lp.services.features.per_thread.features = NullFeatureController()
-        self.addCleanup(
-            setattr, lp.services.features.per_thread, 'features', None)
+        lp.services.features.install_feature_controller(
+            NullFeatureController())
+        self.addCleanup(lp.services.features.install_feature_controller, None)
         next_view, traversal_path = view.browserDefault(request)
         self.assertEqual(view, next_view)
         file_ = next_view()
@@ -152,9 +152,9 @@ class TestAccessToBugAttachmentFiles(TestCaseWithFactory):
         view = navigation.publishTraverse(request, '+files')
         # XXX Ensure the feature will be off - everything is off with
         # NullFeatureController. bug=631884
-        lp.services.features.per_thread.features = NullFeatureController()
-        self.addCleanup(
-            setattr, lp.services.features.per_thread, 'features', None)
+        lp.services.features.install_feature_controller(
+            NullFeatureController())
+        self.addCleanup(lp.services.features.install_feature_controller, None)
         next_view, traversal_path = view.browserDefault(request)
         self.assertIsInstance(
             next_view, SafeStreamOrRedirectLibraryFileAliasView)
@@ -226,9 +226,9 @@ class TestWebserviceAccessToBugAttachmentFiles(TestCaseWithFactory):
         self.assertEqual(['token'], params.keys())
 
         # If a user which cannot access the private bug itself tries to
-        # to access the attachment, an Unauthorized error is raised.
+        # to access the attachment, an NotFound error is raised.
         other_launchpad = launchpadlib_for(
             'test_unauthenticated', other_user, version='devel')
         self.assertRaises(
-            RestfulUnauthorized, other_launchpad._browser.get,
+            RestfulNotFound, other_launchpad._browser.get,
             ws_bugattachment.data._wadl_resource._url)

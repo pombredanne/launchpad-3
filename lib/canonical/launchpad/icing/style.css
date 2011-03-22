@@ -513,7 +513,7 @@ dl.reviews dd {
 #affected-software tr.highlight {background-color: #ff9;}
 
 /* Bug report page subscribe/unsubscribe spinner */
-div#sub-unsub-spinner {
+div#sub-unsub-spinner, div#mute-unmute-spinner {
   background: url(/@@/spinner) center left no-repeat;
   color:#999;
   display:none;

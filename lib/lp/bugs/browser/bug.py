@@ -201,7 +201,8 @@ class BugContextMenu(ContextMenu):
         'editdescription', 'markduplicate', 'visibility', 'addupstream',
         'adddistro', 'subscription', 'addsubscriber', 'addcomment',
         'nominate', 'addbranch', 'linktocve', 'unlinkcve',
-        'createquestion', 'removequestion', 'activitylog', 'affectsmetoo']
+        'createquestion', 'mute_subscription', 'removequestion',
+        'activitylog', 'affectsmetoo']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -248,8 +249,12 @@ class BugContextMenu(ContextMenu):
             self.context.bug.isSubscribed(user) or
             self.context.bug.isSubscribedToDupes(user)):
             if self._use_advanced_features:
-                text = 'Edit subscription'
-                icon = 'edit'
+                if self.context.bug.isMuted(user):
+                    text = 'Subscribe'
+                    icon = 'add'
+                else:
+                    text = 'Edit subscription'
+                    icon = 'edit'
             else:
                 text = 'Unsubscribe'
                 icon = 'remove'
@@ -267,6 +272,21 @@ class BugContextMenu(ContextMenu):
             '+addsubscriber', text, icon='add', summary=(
                 'Launchpad will email that person whenever this bugs '
                 'changes'))
+
+    def mute_subscription(self):
+        """Return the 'Mute subscription' Link."""
+        user = getUtility(ILaunchBag).user
+        if self.context.bug.isMuted(user):
+            text = "Unmute bug mail"
+            link = "+subscribe"
+        else:
+            text = "Mute bug mail"
+            link = "+mute"
+
+        return Link(
+            link, text, icon='remove', summary=(
+                "Mute this bug so that you will never receive emails "
+                "about it."))
 
     def nominate(self):
         """Return the 'Target/Nominate for series' Link."""
@@ -486,10 +506,20 @@ class BugViewMixin:
         else:
             dup_class = 'dup-subscribed-false'
 
-        if bug.personIsDirectSubscriber(self.user):
+        if (bug.personIsDirectSubscriber(self.user) and not
+            bug.isMuted(self.user)):
             return 'subscribed-true %s' % dup_class
         else:
             return 'subscribed-false %s' % dup_class
+
+    @property
+    def current_user_mute_class(self):
+        bug = self.context
+        subscription_class = self.current_user_subscription_class
+        if bug.isMuted(self.user):
+            return 'muted-true %s' % subscription_class
+        else:
+            return 'muted-false %s' % subscription_class
 
     @cachedproperty
     def _bug_attachments(self):

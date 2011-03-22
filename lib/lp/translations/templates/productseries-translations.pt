@@ -1,3 +1,4 @@
+
 <html
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
@@ -90,6 +91,9 @@
             tal:attributes="href package/fmt:url"
             tal:content="package/displayname">apache in ubuntu hoary</a>.
             </p>
+            <a tal:replace="structure view/sharing_details">
+              View sharing details
+            </a>
           </div>
         </div>
 

@@ -32,6 +32,7 @@ from lazr.restful.declarations import (
     export_write_operation,
     exported,
     mutator_for,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
@@ -482,6 +483,29 @@ class IBug(IPrivacy, IHasLinkedBranches):
         duplicate of this bug, otherwise False.
         """
 
+    def isMuted(person):
+        """Does person have a muted subscription on this bug?
+
+        :returns: True if the user has a direct subscription to this bug
+            with a BugNotificationLevel of NOTHING.
+        """
+
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=False))
+    @call_with(muted_by=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def mute(person, muted_by):
+        """Add a muted subscription for `person`."""
+
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=False))
+    @call_with(unmuted_by=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def unmute(person, unmuted_by):
+        """Remove a muted subscription for `person`."""
+
     def getDirectSubscriptions():
         """A sequence of IBugSubscriptions directly linked to this bug."""
 
@@ -499,7 +523,7 @@ class IBug(IPrivacy, IHasLinkedBranches):
         dupes, etc.
         """
 
-    def getAlsoNotifiedSubscribers():
+    def getAlsoNotifiedSubscribers(recipients=None, level=None):
         """Return IPersons in the "Also notified" subscriber list.
 
         This includes bug contacts and assignees, but not subscribers
@@ -526,6 +550,12 @@ class IBug(IPrivacy, IHasLinkedBranches):
         If no such `BugSubscription` exists, return None.
         """
 
+    def getStructuralSubscriptionsForPerson(person):
+        """Return the `StructuralSubscription`s for a `Person` to this `Bug`.
+
+        This disregards filters.
+        """
+
     def getSubscriptionInfo(level):
         """Return a `BugSubscriptionInfo` at the given `level`.
 
@@ -548,7 +578,7 @@ class IBug(IPrivacy, IHasLinkedBranches):
 
     def addCommentNotification(message, recipients=None, activity=None):
         """Add a bug comment notification.
-        
+
         If a BugActivity instance is provided as an `activity`, it is linked
         to the notification."""
 
@@ -707,11 +737,6 @@ class IBug(IPrivacy, IHasLinkedBranches):
         :param slice_info: Either None or a list of slices to constraint the
             returned rows. The step parameter in each slice is ignored.
         """
-
-    def getNullBugTask(product=None, productseries=None,
-                    sourcepackagename=None, distribution=None,
-                    distroseries=None):
-        """Create an INullBugTask and return it for the given parameters."""
 
     @operation_parameters(
         target=Reference(schema=Interface, title=_('Target')))
@@ -1155,6 +1180,9 @@ class IBugSet(Interface):
         """
 
     def dangerousGetAllBugs():
+        # XXX 2010-01-08 gmb bug=505850:
+        #     Note, this method should go away when we have a proper
+        #     permissions system for scripts.
         """DO NOT CALL THIS METHOD.
 
         This method exists solely to allow the bug heat script to grab
@@ -1163,9 +1191,6 @@ class IBugSet(Interface):
         DOING. AND IF YOU KNOW WHAT YOU'RE DOING YOU KNOW BETTER THAN TO
         USE THIS ANYWAY.
         """
-        # XXX 2010-01-08 gmb bug=505850:
-        #     Note, this method should go away when we have a proper
-        #     permissions system for scripts.
 
     def getBugsWithOutdatedHeat(max_heat_age):
         """Return the set of bugs whose heat is out of date.

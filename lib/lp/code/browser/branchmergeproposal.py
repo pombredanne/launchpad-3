@@ -94,10 +94,7 @@ from lp.app.browser.lazrjs import (
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
-from lp.code.browser.decorations import (
-    DecoratedBranch,
-    DecoratedBug,
-    )
+from lp.code.browser.decorations import DecoratedBranch
 from lp.code.enums import (
     BranchMergeProposalStatus,
     BranchType,
@@ -681,18 +678,12 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         """Return whether or not the merge proposal has a linked bug or spec.
         """
         branch = self.context.source_branch
-        return branch.linked_bugs or branch.spec_links
-
-    @cachedproperty
-    def linked_bugs(self):
-        """Return DecoratedBugs linked to the source branch."""
-        return [DecoratedBug(bug, self.context.source_branch)
-                for bug in self.context.related_bugs]
+        return self.linked_bugtasks or branch.spec_links
 
     @cachedproperty
     def linked_bugtasks(self):
-        """Return DecoratedBugs linked to the source branch."""
-        return [bug.bugtask for bug in self.linked_bugs]
+        """Return BugTasks linked to the source branch."""
+        return self.context.getRelatedBugTasks(self.user)
 
     @property
     def edit_description_link_class(self):

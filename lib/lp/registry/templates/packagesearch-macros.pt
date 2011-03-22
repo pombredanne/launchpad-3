@@ -53,4 +53,33 @@
 
   </div>
 </metal:search_results>
+<metal:distroseries_localdiff_search_form
+       define-macro="distroseries-localdiff-search-form">
+  <tal:comment replace="nothing">
+    Present the filtering form used on a few archive pages.
+  </tal:comment>
+  <form
+    id="distroseries-localdiff-search-filter"
+    class="distroseries-localdiff-search-filter"
+    action="" method="GET">
+    <div style="float:left; margin-right:1px;">
+      <label for="field.name_filter">Show packages with names matching:</label>
+    </div>
+    <div style="float:left;">
+      <input
+        id="field.name_filter" title="Package Name" size="20"
+        type="text" name="field.name_filter"
+        tal:attributes="value request/field.name_filter|nothing"/>
+      <input type="submit" value="Filter" />
+      <br />
+      <input
+        id="field.include_blacklisted_filter"
+        type="checkbox" name="field.include_blacklisted_filter"
+        tal:attributes="checked request/field.include_blacklisted_filter|nothing"/>
+      <label for="field.include_blacklisted_filter">include blacklisted packages</label>
+    </div>
+    <div class="clearfix"></div>
+  </form>
+
+</metal:distroseries_localdiff_search_form>
 </tal:root>
