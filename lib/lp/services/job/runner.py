@@ -172,9 +172,18 @@ class BaseJobRunner(object):
         job.start()
         transaction.commit()
 
+        fd = open('/home/jml/Desktop/log.txt', 'a')
+        fd.write("    runJob: %s\n" % (job,))
+        fd.close()
+
         try:
             job.run()
         except Exception:
+
+            fd = open('/home/jml/Desktop/log.txt', 'a')
+            fd.write("      Job execution raised an exception: %s\n" % (job,))
+            fd.close()
+
             self.logger.exception("Job execution raised an exception.")
             transaction.abort()
             job.fail()
@@ -183,6 +192,9 @@ class BaseJobRunner(object):
             self.incomplete_jobs.append(job)
             raise
         else:
+            fd = open('/home/jml/Desktop/log.txt', 'a')
+            fd.write("      Job succeeded: %s\n" % (job,))
+            fd.close()
             # Commit transaction to update the DB time.
             transaction.commit()
             job.complete()
@@ -197,16 +209,28 @@ class BaseJobRunner(object):
         The list of complete or incomplete jobs will be updated.
         """
         job = IRunnableJob(job)
+        fd = open('/home/jml/Desktop/log.txt', 'a')
+        fd.write("  runJobHandleError: %s\n" % (job,))
+        fd.close()
         with self.error_utility.oopsMessage(
             dict(job.getOopsVars())):
             try:
                 try:
                     self.logger.debug('Running %r', job)
                     self.runJob(job)
+                    fd = open('/home/jml/Desktop/log.txt', 'a')
+                    fd.write("    Job run successfully\n")
+                    fd.close()
                 except job.user_error_types, e:
+                    fd = open('/home/jml/Desktop/log.txt', 'a')
+                    fd.write("    user error: %s\n" % (e,))
+                    fd.close()
                     job.notifyUserError(e)
                 except Exception:
                     info = sys.exc_info()
+                    fd = open('/home/jml/Desktop/log.txt', 'a')
+                    fd.write("    unexpected error, doing oops: %s\n" % (info,))
+                    fd.close()
                     return self._doOops(job, info)
             except Exception:
                 # This only happens if sending attempting to notify users
@@ -215,6 +239,9 @@ class BaseJobRunner(object):
                 self.logger.exception(
                     "Failed to notify users about a failure.")
                 info = sys.exc_info()
+                fd = open('/home/jml/Desktop/log.txt', 'a')
+                fd.write("    failed to notify: %s\n" % (info,))
+                fd.close()
                 # Returning the oops says something went wrong.
                 return self.error_utility.raising(info)
 
@@ -303,8 +330,19 @@ class JobRunnerProcess(child.AMPChild):
 
     @classmethod
     def __enter__(cls):
-
+        fd = open('/home/jml/Desktop/log.txt', 'a')
+        fd.write("__enter__\n")
+        fd.close()
         def handler(signum, frame):
+            try:
+                raise TimeoutError
+            except TimeoutError:
+                BaseJobRunner().error_utility.raising(sys.exc_info())
+                os._exit(0)
+            fd = open('/home/jml/Desktop/log.txt', 'a')
+            fd.write("Got signal: %s\n" % (signum,))
+            fd.close()
+            os._exit(2)
             raise TimeoutError
         scripts.execute_zcml_for_scripts(use_web_security=False)
         signal(SIGHUP, handler)
@@ -312,6 +350,9 @@ class JobRunnerProcess(child.AMPChild):
 
     @staticmethod
     def __exit__(exc_type, exc_val, exc_tb):
+        fd = open('/home/jml/Desktop/log.txt', 'a')
+        fd.write("__exit__\n")
+        fd.close()
         pass
 
     def makeConnection(self, transport):
@@ -327,6 +368,9 @@ class JobRunnerProcess(child.AMPChild):
     @RunJobCommand.responder
     def runJobCommand(self, job_id):
         """Run a job from this job_source according to its job id."""
+        fd = open('/home/jml/Desktop/log.txt', 'a')
+        fd.write("runJobCommand: %s\n" % (job_id,))
+        fd.close()
         runner = BaseJobRunner()
         job = self.job_source.get(job_id)
         oops = runner.runJobHandleError(job)
@@ -334,6 +378,9 @@ class JobRunnerProcess(child.AMPChild):
             oops_id = ''
         else:
             oops_id = oops.id
+        fd = open('/home/jml/Desktop/log.txt', 'a')
+        fd.write("runJobCommand completed: %s\n" % (job_id,))
+        fd.close()
         return {'success': len(runner.completed_jobs), 'oops_id': oops_id}
 
 
@@ -372,6 +419,7 @@ class TwistedJobRunner(BaseJobRunner):
         deadline = timegm(job.lease_expires.timetuple())
         self.logger.debug(
             'Running %r, lease expires %s', job, job.lease_expires)
+        print "Work sent to ampoule"
         deferred = self.pool.doWork(
             RunJobCommand, job_id = job_id, _deadline=deadline)
 
@@ -407,9 +455,6 @@ class TwistedJobRunner(BaseJobRunner):
 
     def doConsumer(self):
         """Create a ParallelLimitedTaskConsumer for this job type."""
-        logger = logging.getLogger('gloop')
-        logger.addHandler(logging.StreamHandler(sys.stdout))
-        logger.setLevel(logging.DEBUG)
         consumer = ParallelLimitedTaskConsumer(1, logger=None)
         return consumer.consume(self.getTaskSource())
 

@@ -352,7 +352,7 @@ class StuckJob(BaseRunnableJob):
         # and so we soak up the ZCML loading time.  For the second job, have a
         # short lease so we hit the timeout.
         if self.id == 2:
-            lease_length = 0.01
+            lease_length = 0.05
         else:
             lease_length = 10000
         return self.job.acquireLease(lease_length)
@@ -386,6 +386,7 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         machinery to start up, so we run a job that will not time out first,
         followed by a job that is sure to time out.
         """
+        print
         logger = BufferLogger()
         logger.setLevel(logging.INFO)
         # StuckJob is actually a source of two jobs. The first is fast, the
