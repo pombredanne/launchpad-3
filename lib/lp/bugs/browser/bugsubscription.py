@@ -13,16 +13,10 @@ __all__ = [
     'BugSubscriptionListView',
     ]
 
-from operator import attrgetter
 import cgi
 
 from lazr.delegates import delegates
-from lazr.restful.interfaces import (
-    IJSONRequestCache,
-    IWebServiceClientRequest,
-    )
 from simplejson import dumps
-from storm.store import EmptyResultSet
 from zope import formlib
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import RadioWidget
@@ -31,7 +25,6 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
-from zope.traversing.browser import absoluteURL
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
