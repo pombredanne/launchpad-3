@@ -10,8 +10,10 @@ from lp.services.features import (
     get_relevant_feature_controller,
     install_feature_controller,
     )
-from lp.services.features.flags import NullFeatureController
-from lp.services.features.testing import FeatureFixture
+from lp.services.features.flags import (
+    FeatureController,
+    NullFeatureController,
+    )
 from lp.services.scripts.base import LaunchpadScript
 from lp.testing import TestCase
 from lp.testing.fakemethod import FakeMethod
@@ -48,10 +50,12 @@ class TestScriptFeatureController(TestCase):
 
     def test_script_installs_script_feature_controller(self):
         script = FakeScript(name="bongo")
-        script_feature_controller = get_relevant_feature_controller()
+        script.run()
         self.assertNotEqual(
             self.original_controller, script.observed_feature_controller)
         self.assertNotEqual(None, script.observed_feature_controller)
+        self.assertIsInstance(
+            script.observed_feature_controller, FeatureController)
 
     def test_script_restores_feature_controller(self):
         previous_controller = NullFeatureController()
