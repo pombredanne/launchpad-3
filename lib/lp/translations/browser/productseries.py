@@ -459,8 +459,7 @@ class ProductSeriesView(LaunchpadView,
         sourcepackage = self.context.getUbuntuTranslationFocusPackage()
         if sourcepackage is None:
             return False
-        collection = sourcepackage.getTemplatesCollection().restrictCurrent()
-        return bool(collection.select().any())
+        return sourcepackage.has_current_translation_templates
 
     @property
     def sharing_sourcepackage(self):

@@ -550,9 +550,7 @@ class POTemplate(SQLBase, RosettaStats):
                 self.productseries.getUbuntuTranslationFocusPackage())
         if other_side_object is None:
             return None
-        collection = (
-            other_side_object.getTemplatesCollection().restrictCurrent())
-        return collection.restrictName(self.name).select().one()
+        return other_side_object.getTranslationTemplateByName(self.name)
 
     def messageCount(self):
         """See `IRosettaStats`."""

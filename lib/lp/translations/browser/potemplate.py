@@ -347,19 +347,8 @@ class POTemplateView(LaunchpadView,
         return self.context.translation_side == TranslationSide.UPSTREAM
 
     def is_sharing(self):
-        if self.is_upstream_pofile:
-            productseries = self.context.productseries
-            other_side_object = (
-                productseries.getUbuntuTranslationFocusPackage())
-        else:
-            sourcepackage = self.potemplate.sourcepackage
-            other_side_object = sourcepackage.productseries
-        if other_side_object is None:
-            return False
-        collection = other_side_object.getTemplatesCollection()
-        name = self.context.name
-        return bool(
-            collection.restrictCurrent().restrictName(name).select().any())
+        potemplate =  self.context.getOtherSidePOTemplate()
+        return potemplate is not None
 
     @property
     def sharing_template(self):

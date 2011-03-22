@@ -447,8 +447,7 @@ class FileImporter(object):
         productseries = sourcepackage.productseries
         if productseries is None:
             return True
-        collection = productseries.getTemplatesCollection().restrictCurrent()
-        return not bool(collection.select().any())
+        return not productseries.has_current_translation_templates
 
     @cachedproperty
     def translations_are_msgids(self):

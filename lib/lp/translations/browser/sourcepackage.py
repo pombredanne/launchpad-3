@@ -58,8 +58,7 @@ class SourcePackageTranslationsView(TranslationsMixin,
         productseries = self.context.productseries
         if productseries is None:
             return False
-        collection = productseries.getTemplatesCollection().restrictCurrent()
-        return bool(collection.select().any())
+        return productseries.has_current_translation_templates
 
     @property
     def sharing_productseries(self):
@@ -123,8 +122,7 @@ class SourcePackageTranslationSharingDetailsView(
         productseries = self.context.productseries
         if productseries is None:
             return False
-        collection = productseries.getTemplatesCollection().restrictCurrent()
-        return bool(collection.select().any())
+        return producteries.has_current_translation_templates
 
     def initialize(self):
         if not getFeatureFlag('translations.sharing_information.enabled'):

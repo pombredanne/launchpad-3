@@ -992,19 +992,8 @@ class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
         return potemplate.translation_side == TranslationSide.UPSTREAM
 
     def is_sharing(self):
-        if self.is_upstream_pofile:
-            productseries = self.context.potemplate.productseries
-            other_side_object = (
-                productseries.getUbuntuTranslationFocusPackage())
-        else:
-            sourcepackage = self.context.potemplate.sourcepackage
-            other_side_object = sourcepackage.productseries
-        if other_side_object is None:
-            return False
-        collection = other_side_object.getTemplatesCollection()
-        name = self.context.potemplate.name
-        return bool(
-            collection.restrictCurrent().restrictName(name).select().any())
+        potemplate = self.context.potemplate.getOtherSidePOTemplate()
+        return potemplate is not None
 
     @property
     def sharing_pofile(self):
