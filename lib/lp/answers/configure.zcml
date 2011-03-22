@@ -5,6 +5,7 @@
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:i18n="http://namespaces.zope.org/i18n"
+  xmlns:webservice="http://namespaces.canonical.com/webservice"
   xmlns:lp="http://namespaces.canonical.com/lp"
   i18n_domain="launchpad">
 
@@ -256,4 +257,6 @@
       for="lp.registry.interfaces.person.IPerson"
       factory="lp.answers.browser.questiontarget.AnswersVHostBreadcrumb"
       permission="zope.Public"/>
+
+  <webservice:register module="lp.answers.interfaces.webservice" />
 </configure>
