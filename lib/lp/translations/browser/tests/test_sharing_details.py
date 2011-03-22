@@ -347,9 +347,9 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         distroseries = self.factory.makeUbuntuDistroSeries()
         return self.factory.makeSourcePackage(distroseries=distroseries)
 
-    def _getSharingDetailsViewBrowser(self, sourcepackage):
+    def _getSharingDetailsViewBrowser(self, sourcepackage, login=False):
         return self.getViewBrowser(
-            sourcepackage, no_login=True, rootsite="translations",
+            sourcepackage, no_login=not login, rootsite="translations",
             view_name="+sharing-details")
 
     def assertUnseen(self, browser, html_id):
@@ -404,10 +404,13 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             Automatic synchronization of translations is enabled.""",
             extract_text(checklist))
 
-    def test_cache_javascript (self):
+    def test_cache_javascript(self):
         # Cache object entries propagate into the javascript.
         sourcepackage = self.makeFullyConfiguredSharing()[0]
-        browser = self._getSharingDetailsViewBrowser(sourcepackage)
+        anon_browser = self._getSharingDetailsViewBrowser(sourcepackage)
+        # Anonymous users don't get cached objects due to bug #740208
+        self.assertNotIn("LP.cache['productseries'] =", anon_browser.contents)
+        browser = self._getSharingDetailsViewBrowser(sourcepackage, login=True)
         self.assertIn("LP.cache['productseries'] =", browser.contents)
 
     def test_potlist_only_ubuntu(self):
