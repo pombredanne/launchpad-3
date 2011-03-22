@@ -75,6 +75,7 @@ from lp.blueprints.browser.specificationtarget import (
     )
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
@@ -186,7 +187,7 @@ class DistroSeriesOverviewMenu(
     facet = 'overview'
     links = ['edit', 'reassign', 'driver', 'answers',
              'packaging', 'needs_packaging', 'builds', 'queue',
-             'add_port', 'create_milestone', 'subscribe', 'admin']
+             'add_port', 'create_milestone', 'subscribe_to_bug_mail', 'admin']
 
     @enabled_with_permission('launchpad.Admin')
     def edit(self):
@@ -253,7 +254,7 @@ class DistroSeriesBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
     links = (
         'cve',
         'nominations',
-        'subscribe',
+        'subscribe_to_bug_mail',
         )
 
     def cve(self):
@@ -325,12 +326,14 @@ class SeriesStatusMixin:
             self.context.datereleased = UTC_NOW
 
 
-class DistroSeriesView(MilestoneOverlayMixin):
+class DistroSeriesView(LaunchpadView, MilestoneOverlayMixin):
 
     def initialize(self):
         self.displayname = '%s %s' % (
             self.context.distribution.displayname,
             self.context.version)
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user)
 
     @property
     def page_title(self):

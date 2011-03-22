@@ -99,6 +99,7 @@ from lp.app.widgets.product import (
 from lp.bugs.browser.bugrole import BugRoleMixin
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
     expose_enum_to_js,
     expose_user_administered_teams_to_js,
     expose_user_subscriptions_to_js,
@@ -1315,6 +1316,8 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         bug_statuses_to_show = list(UNRESOLVED_BUGTASK_STATUSES)
         if IDistroSeries.providedBy(self.context):
             bug_statuses_to_show.append(BugTaskStatus.FIXRELEASED)
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user)
 
     @property
     def can_have_external_bugtracker(self):

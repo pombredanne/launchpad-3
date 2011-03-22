@@ -5,6 +5,7 @@ __metaclass__ = type
 
 __all__ = [
     'expose_enum_to_js',
+    'expose_structural_subscription_data_to_js',
     'expose_user_administered_teams_to_js',
     'expose_user_subscription_status_to_js',
     'expose_user_subscriptions_to_js',
@@ -31,10 +32,12 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 from zope.traversing.browser import absoluteURL
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.menu import Link
+from canonical.launchpad.webapp.menu import (
+    enabled_with_permission,
+    Link,
+    )
 from canonical.launchpad.webapp.publisher import (
     canonical_url,
     LaunchpadView,
@@ -47,7 +50,10 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
-from lp.bugs.interfaces.bugtask import IBugTaskSet
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscription,
     IStructuralSubscriptionForm,
@@ -56,11 +62,8 @@ from lp.bugs.interfaces.structuralsubscription import (
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
-from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.propertycache import cachedproperty
 
 
@@ -360,6 +363,20 @@ class StructuralSubscriptionMenuMixin:
             return Link('+subscribe', text, icon=icon, enabled=False)
         else:
             return Link('+subscribe', text, icon=icon, enabled=enabled)
+
+    @enabled_with_permission('launchpad.AnyPerson')
+    def subscribe_to_bug_mail(self):
+        text = 'Subscribe to bug mail'
+        return Link('#', text, icon='add', hidden=True)
+
+
+def expose_structural_subscription_data_to_js(context, request, user):
+    """Expose all of the data for a structural subscription to JavaScript."""
+    expose_user_administered_teams_to_js(request, user)
+    expose_user_subscription_status_to_js(
+        context, request, user)
+    expose_enum_to_js(request, BugTaskImportance, 'importances')
+    expose_enum_to_js(request, BugTaskStatus, 'statuses')
 
 
 def expose_enum_to_js(request, enum, name):
