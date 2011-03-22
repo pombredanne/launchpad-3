@@ -80,7 +80,7 @@ class BaseExportView(LaunchpadView):
         templates = self.context.getCurrentTranslationTemplates()
         if not bool(templates.any()):
             return None
-        formats = self.context.getTranslationTemplateFormats()
+        formats = list(self.context.getTranslationTemplateFormats())
         format = formats[0]
         if len(formats) > 1:
             self.request.response.addInfoNotification(
