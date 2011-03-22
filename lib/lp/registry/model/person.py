@@ -1417,8 +1417,15 @@ class Person(
         """See `IPerson`."""
         assert self.is_team
         to_addrs = set()
-        for person in self.getDirectAdministrators():
-            to_addrs.update(get_contact_email_addresses(person))
+        team_or_person = self
+        # Recurse through team ownership until an email address is found.
+        while len(to_addrs) == 0:
+            if team_or_person.is_team:
+                for admin in team_or_person.getDirectAdministrators():
+                    to_addrs.update(get_contact_email_addresses(admin))
+                team_or_person = team_or_person.teamowner
+            else:
+                to_addrs.update(get_contact_email_addresses(team_or_person))
         return sorted(to_addrs)
 
     def addMember(self, person, reviewer, comment=None, force_team_add=False,

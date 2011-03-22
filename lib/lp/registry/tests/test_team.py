@@ -30,6 +30,7 @@ from lp.registry.interfaces.person import (
     TeamMembershipRenewalPolicy,
     TeamSubscriptionPolicy,
     )
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.model.persontransferjob import PersonTransferJob
 from lp.soyuz.enums import ArchiveStatus
 from lp.testing import (
@@ -122,6 +123,72 @@ class TestTeamContactAddress(TestCaseWithFactory):
         self.team.setContactAddress(None)
         self.assertEqual(None, self.team.preferredemail)
         self.assertEqual([], self.getAllEmailAddresses())
+
+
+class TestTeamGetTeamAdminsEmailAddresses(TestCaseWithFactory):
+    """Test the rules of IPerson.getTeamAdminsEmailAddresses()."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestTeamGetTeamAdminsEmailAddresses, self).setUp()
+        self.team = self.factory.makeTeam(name='finch')
+        self.address = self.factory.makeEmail('team@eg.dom', self.team)
+        login_celebrity('admin')
+
+    def test_team_direct_owner(self):
+        # The team owner's email address is only email address.
+        email = self.team.teamowner.preferredemail.email
+        self.assertEqual([email], self.team.getTeamAdminsEmailAddresses())
+
+    def test_team_direct_owner_not_member(self):
+        # The team owner's email address is only email address, even when
+        # the owner is not a team member.
+        email = self.team.teamowner.preferredemail.email
+        self.team.teamowner.leave(self.team)
+        self.assertEqual([email], self.team.getTeamAdminsEmailAddresses())
+
+    def test_team_direct_admin(self):
+        # The team's owner and direct admins provide the email addresses.
+        admin = self.factory.makePerson()
+        self.team.addMember(admin, self.team.teamowner)
+        for membership in self.team.member_memberships:
+            membership.setStatus(
+                TeamMembershipStatus.ADMIN, self.team.teamowner)
+        email_1 = self.team.teamowner.preferredemail.email
+        email_2 = admin.preferredemail.email
+        self.assertEqual(
+            [email_1, email_2], self.team.getTeamAdminsEmailAddresses())
+
+    def test_team_indirect_owner(self):
+        # The team owner's of the owning team is only email address.
+        owning_team = self.factory.makeTeam()
+        member = self.team.teamowner
+        self.team.teamowner = owning_team
+        for membership in self.team.member_memberships:
+            membership.setStatus(
+                TeamMembershipStatus.APPROVED, owning_team.teamowner)
+        email = owning_team.teamowner.preferredemail.email
+        self.assertEqual([email], self.team.getTeamAdminsEmailAddresses())
+
+    def test_team_indirect_admin(self):
+        # The team owner and admin of the owning team provide the
+        # email addresses.
+        owning_team = self.factory.makeTeam()
+        member = self.team.teamowner
+        self.team.teamowner = owning_team
+        for membership in self.team.member_memberships:
+            membership.setStatus(
+                TeamMembershipStatus.APPROVED, owning_team.teamowner)
+        admin = self.factory.makePerson()
+        owning_team.addMember(admin, owning_team.teamowner)
+        for membership in owning_team.member_memberships:
+            membership.setStatus(
+                TeamMembershipStatus.ADMIN, owning_team.teamowner)
+        email_1 = owning_team.teamowner.preferredemail.email
+        email_2 = admin.preferredemail.email
+        self.assertEqual(
+            [email_1, email_2], self.team.getTeamAdminsEmailAddresses())
 
 
 class TestDefaultRenewalPeriodIsRequiredForSomeTeams(TestCaseWithFactory):
