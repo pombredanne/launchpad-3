@@ -60,11 +60,11 @@ class IBugLinkTarget(Interface):
 
     Examples include an ISpecification.
     """
-    export_as_webservice_entry()
+    export_as_webservice_entry(as_of="beta")
 
     bugs = exported(CollectionField(title=_("Bugs related to this object."),
                 value_type=Reference(schema=IBug), readonly=True),
-                ('devel', dict(exported=True)), exported=False)
+                    as_of="devel")
     bug_links = List(title=_("The links between bugs and this object."),
                      value_type=Object(schema=IBugLink), readonly=True)
 

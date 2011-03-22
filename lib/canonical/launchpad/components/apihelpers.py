@@ -24,6 +24,9 @@ __all__ = [
     'patch_reference_property',
     ]
 
+
+from zope.schema import getFields
+
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
 
 
@@ -132,7 +135,36 @@ def patch_entry_explicit_version(interface, version):
     """Make it look as though an entry definition used as_of.
 
     This function should be phased out in favor of actually using as_of.
+    This function patches the entry's fields as well as the entry itself.
     """
     tagged = interface.getTaggedValue(LAZR_WEBSERVICE_EXPORTED)
     versioned = tagged.dict_for_name(version) or tagged.dict_for_name(None)
+    if versioned is None:
+        import pdb; pdb.set_trace()
     versioned['_as_of_was_used'] = True
+
+    # Now tag the fields.
+    for name, field in getFields(interface).items():
+        tagged = field.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
+        if tagged is None:
+            continue
+        versioned = tagged.dict_for_name(version) or tagged.dict_for_name(None)
+        if versioned is None:
+            # This field is first published in some other version.
+            continue
+        else:
+            versioned['_as_of_was_used'] = True
+
+
+def patch_operation_explicit_version(interface, method_name, version):
+    """Make it look like operation's first tag was @operation_for_version.
+
+    This function should be phased out in favor of actually using
+    @operation_for_version.
+    """
+    tagged = interface[method_name].getTaggedValue(LAZR_WEBSERVICE_EXPORTED)
+    try:
+        tagged.rename_version(None, version)
+    except Exception, e:
+        # i guess it's ok?
+        pass

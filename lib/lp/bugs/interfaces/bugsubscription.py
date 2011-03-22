@@ -39,15 +39,15 @@ from lp.services.fields import PersonChoice
 class IBugSubscription(Interface):
     """The relationship between a person and a bug."""
 
-    export_as_webservice_entry(publish_web_link=False)
+    export_as_webservice_entry(publish_web_link=False, as_of="beta")
 
     id = Int(title=_('ID'), readonly=True, required=True)
     person = exported(PersonChoice(
         title=_('Person'), required=True, vocabulary='ValidPersonOrTeam',
         readonly=True, description=_("The person's Launchpad ID or "
-        "e-mail address.")))
+        "e-mail address.")), as_of="beta")
     bug = exported(Reference(
-        IBug, title=_("Bug"), required=True, readonly=True))
+        IBug, title=_("Bug"), required=True, readonly=True), as_of="beta")
     # We mark this as doNotSnapshot() because it's a magically-generated
     # Storm attribute and it causes Snapshot to break.
     bugID = doNotSnapshot(Int(title=u"The bug id.", readonly=True))
@@ -60,15 +60,15 @@ class IBugSubscription(Interface):
                 "The volume and type of bug notifications "
                 "this subscription will generate."),
             ),
-        # We want this field to be exported in the devel version of the
-        # API only.
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
     date_created = exported(
-        Datetime(title=_('Date subscribed'), required=True, readonly=True))
+        Datetime(title=_('Date subscribed'), required=True, readonly=True),
+        as_of="beta")
     subscribed_by = exported(PersonChoice(
         title=_('Subscribed by'), required=True,
         vocabulary='ValidPersonOrTeam', readonly=True,
-        description=_("The person who created this subscription.")))
+        description=_("The person who created this subscription.")),
+                             as_of="beta")
 
     display_subscribed_by = Attribute(
         "`subscribed_by` formatted for display.")

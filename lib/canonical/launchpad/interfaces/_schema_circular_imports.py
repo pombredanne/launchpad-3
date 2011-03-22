@@ -26,6 +26,7 @@ from canonical.launchpad.components.apihelpers import (
     patch_entry_explicit_version,
     patch_entry_return_type,
     patch_list_parameter_type,
+    patch_operation_explicit_version,
     patch_plain_parameter_type,
     patch_reference_property,
     )
@@ -574,6 +575,10 @@ patch_collection_property(
 
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.message import IMessage
+from canonical.launchpad.interfaces.temporaryblobstorage import (
+    ITemporaryBlobStorage,
+    ITemporaryStorageManager,
+    )
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.specificationtarget import ISpecificationTarget
@@ -584,17 +589,30 @@ from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
-from lp.bugs.interfaces.bugtarget import IBugTarget
+from lp.bugs.interfaces.bugtarget import (
+    IBugTarget,
+    IHasBugs,
+    )
 from lp.bugs.interfaces.bugtask import IBugTask
-from lp.bugs.interfaces.bugtracker import IBugTracker
-from lp.bugs.interfaces.bugtracker import IBugTrackerComponent
-from lp.bugs.interfaces.bugtracker import IBugTrackerComponentGroup
+from lp.bugs.interfaces.bugtracker import (
+    IBugTracker,
+    IBugTrackerComponent,
+    IBugTrackerComponentGroup,
+    IBugTrackerSet,
+    )
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from lp.bugs.interfaces.cve import ICve
+from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.bugs.interfaces.structuralsubscription import IStructuralSubscription
 from lp.bugs.interfaces.structuralsubscription import IStructuralSubscriptionTarget
-from lp.buildmaster.interfaces.builder import IBuilder
-from lp.code.interfaces.branch import IBranch
+from lp.buildmaster.interfaces.builder import (
+    IBuilder,
+    IBuilderSet,
+    )
+from lp.code.interfaces.branch import (
+    IBranch,
+    IBranchSet,
+    )
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.interfaces.branchsubscription import IBranchSubscription
@@ -604,45 +622,78 @@ from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.code.interfaces.sourcepackagerecipebuild import ISourcePackageRecipeBuild
 from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
-from lp.hardwaredb.interfaces.hwdb import IHWDevice
-from lp.hardwaredb.interfaces.hwdb import IHWDeviceClass
-from lp.hardwaredb.interfaces.hwdb import IHWDriver
-from lp.hardwaredb.interfaces.hwdb import IHWDriverName
-from lp.hardwaredb.interfaces.hwdb import IHWDriverPackageName
-from lp.hardwaredb.interfaces.hwdb import IHWSubmission
-from lp.hardwaredb.interfaces.hwdb import IHWSubmissionDevice
-from lp.hardwaredb.interfaces.hwdb import IHWVendorID
+from lp.hardwaredb.interfaces.hwdb import (
+    IHWDBApplication,
+    IHWDevice,
+    IHWDeviceClass,
+    IHWDriver,
+    IHWDriverName,
+    IHWDriverPackageName,
+    IHWSubmission,
+    IHWSubmissionDevice,
+    IHWVendorID,
+    )
 from lp.registry.interfaces.commercialsubscription import ICommercialSubscription
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
 from lp.registry.interfaces.distributionsourcepackage import IDistributionSourcePackage
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifference,
+    )
+from lp.registry.interfaces.distroseriesdifferencecomment import (
+    IDistroSeriesDifferenceComment,
+    )
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
 from lp.registry.interfaces.milestone import IHasMilestones
 from lp.registry.interfaces.milestone import IMilestone
-from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.person import ITeam
-from lp.registry.interfaces.pillar import IPillar
-from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    ITeam,
+    )
+from lp.registry.interfaces.pillar import (
+    IPillar,
+    IPillarNameSet,
+    )
+from lp.registry.interfaces.product import (
+    IProduct,
+    IProductSet,
+    )
 from lp.registry.interfaces.productrelease import IProductRelease
 from lp.registry.interfaces.productrelease import IProductReleaseFile
-from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.interfaces.productseries import (
+    IProductSeries,
+    ITimelineProductSeries,
+    )
+from lp.registry.interfaces.projectgroup import (
+    IProjectGroup,
+    IProjectGroupSet,
+    )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.ssh import ISSHKey
 from lp.registry.interfaces.teammembership import ITeamMembership
 from lp.registry.interfaces.wikiname import IWikiName
-from lp.services.worlddata.interfaces.country import ICountry
-from lp.services.worlddata.interfaces.language import ILanguage
+from lp.services.worlddata.interfaces.country import (
+    ICountry,
+    ICountrySet,
+    )
+from lp.services.worlddata.interfaces.language import (
+    ILanguage,
+    ILanguageSet,
+    )
 from lp.soyuz.interfaces.archivedependency import IArchiveDependency
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.archivepermission import IArchivePermission
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageReleaseDownloadCount
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
-from lp.soyuz.interfaces.packageset import IPackageset
+from lp.soyuz.interfaces.packageset import (
+    IPackageset,
+    IPackagesetSet,
+    )
 from lp.soyuz.interfaces.publishing import IBinaryPackagePublishingHistory
 from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 from lp.soyuz.interfaces.queue import IPackageUpload
@@ -650,7 +701,10 @@ from lp.translations.interfaces.hastranslationimports import IHasTranslationImpo
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.translationgroup import ITranslationGroup
-from lp.translations.interfaces.translationimportqueue import ITranslationImportQueueEntry
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue,
+    ITranslationImportQueueEntry,
+    )
 
 patch_entry_explicit_version(IArchive, 'beta')
 patch_entry_explicit_version(IArchiveDependency, 'beta')
@@ -667,7 +721,6 @@ patch_entry_explicit_version(IBugAttachment, 'beta')
 patch_entry_explicit_version(IBug, 'beta')
 patch_entry_explicit_version(IBugBranch, 'beta')
 patch_entry_explicit_version(IBugNomination, 'beta')
-patch_entry_explicit_version(IBugSubscription, 'beta')
 patch_entry_explicit_version(IBugSubscriptionFilter, 'beta')
 patch_entry_explicit_version(IBugTarget, 'beta')
 patch_entry_explicit_version(IBugTask, 'beta')
@@ -682,15 +735,18 @@ patch_entry_explicit_version(ICodeReviewVoteReference, 'beta')
 patch_entry_explicit_version(ICommercialSubscription, 'beta')
 patch_entry_explicit_version(ICountry, 'beta')
 patch_entry_explicit_version(ICve, 'beta')
-patch_entry_explicit_version(IDistribution, 'beta')
+patch_entry_explicit_version(IDistroSeries, 'beta')
+patch_entry_explicit_version(IDistroSeriesDifference, 'beta')
+patch_entry_explicit_version(IDistroSeriesDifferenceComment, 'beta')
 patch_entry_explicit_version(IDistributionMirror, 'beta')
 patch_entry_explicit_version(IDistributionSourcePackage, 'beta')
 patch_entry_explicit_version(IDistroArchSeries, 'beta')
-patch_entry_explicit_version(IDistroSeries, 'beta')
 patch_entry_explicit_version(IEmailAddress, 'beta')
 patch_entry_explicit_version(IGPGKey, 'beta')
+patch_entry_explicit_version(IHasBugs, 'beta')
 patch_entry_explicit_version(IHasMilestones, 'beta')
 patch_entry_explicit_version(IHasTranslationImports, 'beta')
+patch_entry_explicit_version(IHWDBApplication, 'beta')
 patch_entry_explicit_version(IHWDevice, 'beta')
 patch_entry_explicit_version(IHWDeviceClass, 'beta')
 patch_entry_explicit_version(IHWDriver, 'beta')
@@ -708,6 +764,7 @@ patch_entry_explicit_version(IPackageset, 'beta')
 patch_entry_explicit_version(IPackageUpload, 'beta')
 patch_entry_explicit_version(IPerson, 'beta')
 patch_entry_explicit_version(IPillar, 'beta')
+patch_entry_explicit_version(IPillarNameSet, 'beta')
 patch_entry_explicit_version(IPOFile, 'beta')
 patch_entry_explicit_version(IPOTemplate, 'beta')
 patch_entry_explicit_version(IPreviewDiff, 'beta')
@@ -720,14 +777,343 @@ patch_entry_explicit_version(ISourcePackage, 'beta')
 patch_entry_explicit_version(ISourcePackagePublishingHistory, 'beta')
 patch_entry_explicit_version(ISourcePackageRecipe, 'beta')
 patch_entry_explicit_version(ISourcePackageRecipeBuild, 'beta')
-patch_entry_explicit_version(ISpecification, 'beta')
 patch_entry_explicit_version(ISpecificationBranch, 'beta')
-patch_entry_explicit_version(ISpecificationTarget, 'beta')
 patch_entry_explicit_version(ISSHKey, 'beta')
 patch_entry_explicit_version(IStructuralSubscription, 'beta')
 patch_entry_explicit_version(IStructuralSubscriptionTarget, 'beta')
 patch_entry_explicit_version(ITeam, 'beta')
 patch_entry_explicit_version(ITeamMembership, 'beta')
+patch_entry_explicit_version(ITimelineProductSeries, 'beta')
 patch_entry_explicit_version(ITranslationGroup, 'beta')
 patch_entry_explicit_version(ITranslationImportQueueEntry, 'beta')
 patch_entry_explicit_version(IWikiName, 'beta')
+
+patch_operation_explicit_version(IArchive, "_checkUpload", "beta")
+patch_operation_explicit_version(IArchive, "deleteComponentUploader", "beta")
+patch_operation_explicit_version(IArchive, "deletePackagesetUploader", "beta")
+patch_operation_explicit_version(IArchive, "deletePackageUploader", "beta")
+patch_operation_explicit_version(IArchive, "deleteQueueAdmin", "beta")
+patch_operation_explicit_version(IArchive, "getAllPublishedBinaries", "beta")
+patch_operation_explicit_version(IArchive, "getArchiveDependency", "beta")
+patch_operation_explicit_version(IArchive, "getBuildCounters", "beta")
+patch_operation_explicit_version(IArchive, "getBuildRecords", "beta")
+patch_operation_explicit_version(IArchive, "getBuildSummariesForSourceIds", "beta")
+patch_operation_explicit_version(IArchive, "getComponentsForQueueAdmin", "beta")
+patch_operation_explicit_version(IArchive, "getPackagesetsForSource", "beta")
+patch_operation_explicit_version(IArchive, "getPackagesetsForSourceUploader", "beta")
+patch_operation_explicit_version(IArchive, "getPackagesetsForUploader", "beta")
+patch_operation_explicit_version(IArchive, "getPermissionsForPerson", "beta")
+patch_operation_explicit_version(IArchive, "getPublishedSources", "beta")
+patch_operation_explicit_version(IArchive, "getQueueAdminsForComponent", "beta")
+patch_operation_explicit_version(IArchive, "getUploadersForComponent", "beta")
+patch_operation_explicit_version(IArchive, "getUploadersForPackage", "beta")
+patch_operation_explicit_version(IArchive, "getUploadersForPackageset", "beta")
+patch_operation_explicit_version(IArchive, "isSourceUploadAllowed", "beta")
+patch_operation_explicit_version(IArchive, "newComponentUploader", "beta")
+patch_operation_explicit_version(IArchive, "newPackagesetUploader", "beta")
+patch_operation_explicit_version(IArchive, "newPackageUploader", "beta")
+patch_operation_explicit_version(IArchive, "newQueueAdmin", "beta")
+patch_operation_explicit_version(IArchive, "newSubscription", "beta")
+patch_operation_explicit_version(IArchive, "syncSource", "beta")
+patch_operation_explicit_version(IArchive, "syncSources", "beta")
+patch_operation_explicit_version(IBinaryPackageBuild, "rescore", "beta")
+patch_operation_explicit_version(IBinaryPackageBuild, "retry", "beta")
+patch_operation_explicit_version(IBinaryPackagePublishingHistory, "api_requestDeletion", "beta")
+patch_operation_explicit_version(IBinaryPackagePublishingHistory, "getDailyDownloadTotals", "beta")
+patch_operation_explicit_version(IBinaryPackagePublishingHistory, "getDownloadCount", "beta")
+patch_operation_explicit_version(IBinaryPackagePublishingHistory, "getDownloadCounts", "beta")
+patch_operation_explicit_version(IBranch, "addToQueue", "beta")
+patch_operation_explicit_version(IBranch, "canBeDeleted", "beta")
+patch_operation_explicit_version(IBranch, "composePublicURL", "beta")
+patch_operation_explicit_version(IBranch, "_createMergeProposal", "beta")
+patch_operation_explicit_version(IBranch, "destroySelfBreakReferences", "beta")
+patch_operation_explicit_version(IBranch, "getMergeProposals", "beta")
+patch_operation_explicit_version(IBranch, "getSubscription", "beta")
+patch_operation_explicit_version(IBranch, "isPersonTrustedReviewer", "beta")
+patch_operation_explicit_version(IBranch, "linkBug", "beta")
+patch_operation_explicit_version(IBranch, "linkSpecification", "beta")
+patch_operation_explicit_version(IBranchMergeProposal, "createComment", "beta")
+patch_operation_explicit_version(IBranchMergeProposal, "getComment", "beta")
+patch_operation_explicit_version(IBranchMergeProposal, "nominateReviewer", "beta")
+patch_operation_explicit_version(IBranchMergeProposal, "setStatus", "beta")
+patch_operation_explicit_version(IBranchMergeProposal, "updatePreviewDiff", "beta")
+patch_operation_explicit_version(IBranchMergeQueue, "setMergeQueueConfig", "beta")
+patch_operation_explicit_version(IBranch, "requestMirror", "beta")
+patch_operation_explicit_version(IBranchSet, "getByUniqueName", "beta")
+patch_operation_explicit_version(IBranchSet, "getByUrl", "beta")
+patch_operation_explicit_version(IBranchSet, "getByUrls", "beta")
+patch_operation_explicit_version(IBranch, "setMergeQueueConfig", "beta")
+patch_operation_explicit_version(IBranch, "setOwner", "beta")
+patch_operation_explicit_version(IBranch, "setPrivate", "beta")
+patch_operation_explicit_version(IBranch, "setTarget", "beta")
+patch_operation_explicit_version(IBranch, "subscribe", "beta")
+patch_operation_explicit_version(IBranchSubscription, "canBeUnsubscribedByUser", "beta")
+patch_operation_explicit_version(IBranch, "unlinkBug", "beta")
+patch_operation_explicit_version(IBranch, "unlinkSpecification", "beta")
+patch_operation_explicit_version(IBranch, "unsubscribe", "beta")
+patch_operation_explicit_version(IBug, "addAttachment", "beta")
+patch_operation_explicit_version(IBug, "addNomination", "beta")
+patch_operation_explicit_version(IBug, "addTask", "beta")
+patch_operation_explicit_version(IBug, "addWatch", "beta")
+patch_operation_explicit_version(IBugAttachment, "removeFromBug", "beta")
+patch_operation_explicit_version(IBug, "canBeNominatedFor", "beta")
+patch_operation_explicit_version(IBug, "getHWSubmissions", "beta")
+patch_operation_explicit_version(IBug, "getNominationFor", "beta")
+patch_operation_explicit_version(IBug, "getNominations", "beta")
+patch_operation_explicit_version(IBug, "isExpirable", "beta")
+patch_operation_explicit_version(IBug, "isUserAffected", "beta")
+patch_operation_explicit_version(IBug, "linkBranch", "beta")
+patch_operation_explicit_version(IBug, "linkCVEAndReturnNothing", "beta")
+patch_operation_explicit_version(IBug, "linkHWSubmission", "beta")
+patch_operation_explicit_version(IBug, "markAsDuplicate", "beta")
+patch_operation_explicit_version(IBug, "markUserAffected", "beta")
+patch_operation_explicit_version(IBug, "newMessage", "beta")
+patch_operation_explicit_version(IBugNomination, "approve", "beta")
+patch_operation_explicit_version(IBugNomination, "canApprove", "beta")
+patch_operation_explicit_version(IBugNomination, "decline", "beta")
+patch_operation_explicit_version(IBug, "setCommentVisibility", "beta")
+patch_operation_explicit_version(IBug, "setPrivate", "beta")
+patch_operation_explicit_version(IBug, "setSecurityRelated", "beta")
+patch_operation_explicit_version(IBug, "subscribe", "beta")
+patch_operation_explicit_version(IBugSubscription, "canBeUnsubscribedByUser", "beta")
+patch_operation_explicit_version(IBugSubscriptionFilter, "delete", "beta")
+patch_operation_explicit_version(IBugTarget, "searchTasks", "beta")
+patch_operation_explicit_version(IBugTask, "findSimilarBugs", "beta")
+patch_operation_explicit_version(IBugTask, "transitionToAssignee", "beta")
+patch_operation_explicit_version(IBugTask, "transitionToImportance", "beta")
+patch_operation_explicit_version(IBugTask, "transitionToMilestone", "beta")
+patch_operation_explicit_version(IBugTask, "transitionToStatus", "beta")
+patch_operation_explicit_version(IBugTask, "transitionToTarget", "beta")
+patch_operation_explicit_version(IBugTracker, "addRemoteComponentGroup", "beta")
+patch_operation_explicit_version(IBugTrackerComponentGroup, "addComponent", "beta")
+patch_operation_explicit_version(IBugTracker, "getAllRemoteComponentGroups", "beta")
+patch_operation_explicit_version(IBugTracker, "getRemoteComponentGroup", "beta")
+patch_operation_explicit_version(IBugTrackerSet, "ensureBugTracker", "beta")
+patch_operation_explicit_version(IBugTrackerSet, "getByName", "beta")
+patch_operation_explicit_version(IBugTrackerSet, "queryByBaseURL", "beta")
+patch_operation_explicit_version(IBug, "unlinkBranch", "beta")
+patch_operation_explicit_version(IBug, "unlinkCVE", "beta")
+patch_operation_explicit_version(IBug, "unlinkHWSubmission", "beta")
+patch_operation_explicit_version(IBug, "unsubscribe", "beta")
+patch_operation_explicit_version(IBug, "unsubscribeFromDupes", "beta")
+patch_operation_explicit_version(IBuilderSet, "getByName", "beta")
+patch_operation_explicit_version(ICodeImport, "requestImport", "beta")
+patch_operation_explicit_version(ICodeReviewVoteReference, "claimReview", "beta")
+patch_operation_explicit_version(ICodeReviewVoteReference, "delete", "beta")
+patch_operation_explicit_version(ICodeReviewVoteReference, "reassignReview", "beta")
+patch_operation_explicit_version(ICountrySet, "getByCode", "beta")
+patch_operation_explicit_version(ICountrySet, "getByName", "beta")
+patch_operation_explicit_version(IDistribution, "addBugSubscription", "beta")
+patch_operation_explicit_version(IDistribution, "addOfficialBugTag", "beta")
+patch_operation_explicit_version(IDistribution, "getArchive", "beta")
+patch_operation_explicit_version(IDistribution, "getBuildRecords", "beta")
+patch_operation_explicit_version(IDistribution, "getCommercialPPAs", "beta")
+patch_operation_explicit_version(IDistribution, "getCountryMirror", "beta")
+patch_operation_explicit_version(IDistribution, "getDevelopmentSeries", "beta")
+patch_operation_explicit_version(IDistribution, "getMilestone", "beta")
+patch_operation_explicit_version(IDistribution, "getMirrorByName", "beta")
+patch_operation_explicit_version(IDistribution, "getSeries", "beta")
+patch_operation_explicit_version(IDistribution, "getSourcePackage", "beta")
+patch_operation_explicit_version(IDistribution, "getSubscription", "beta")
+patch_operation_explicit_version(IDistribution, "getSubscriptions", "beta")
+patch_operation_explicit_version(IDistribution, "getTranslationImportQueueEntries", "beta")
+patch_operation_explicit_version(IDistributionMirror, "canTransitionToCountryMirror", "beta")
+patch_operation_explicit_version(IDistributionMirror, "getOverallFreshness", "beta")
+patch_operation_explicit_version(IDistributionMirror, "isOfficial", "beta")
+patch_operation_explicit_version(IDistributionMirror, "transitionToCountryMirror", "beta")
+patch_operation_explicit_version(IDistribution, "removeBugSubscription", "beta")
+patch_operation_explicit_version(IDistribution, "removeOfficialBugTag", "beta")
+patch_operation_explicit_version(IDistribution, "searchSourcePackages", "beta")
+patch_operation_explicit_version(IDistribution, "searchTasks", "beta")
+patch_operation_explicit_version(IDistribution, "setBugSupervisor", "beta")
+patch_operation_explicit_version(IDistributionSourcePackage, "addBugSubscription", "beta")
+patch_operation_explicit_version(IDistributionSourcePackage, "bugtasks", "beta")
+patch_operation_explicit_version(IDistributionSourcePackage, "getBranches", "beta")
+patch_operation_explicit_version(IDistributionSourcePackage, "getMergeProposals", "beta")
+patch_operation_explicit_version(IDistributionSourcePackage, "getSubscription", "beta")
+patch_operation_explicit_version(IDistributionSourcePackage, "getSubscriptions", "beta")
+patch_operation_explicit_version(IDistributionSourcePackage, "removeBugSubscription", "beta")
+patch_operation_explicit_version(IDistributionSourcePackage, "searchTasks", "beta")
+patch_operation_explicit_version(IDistroSeries, "addBugSubscription", "beta")
+patch_operation_explicit_version(IDistroSeries, "deriveDistroSeries", "beta")
+patch_operation_explicit_version(IDistroSeriesDifference, "addComment", "beta")
+patch_operation_explicit_version(IDistroSeriesDifference, "blacklist", "beta")
+patch_operation_explicit_version(IDistroSeriesDifference, "requestPackageDiffs", "beta")
+patch_operation_explicit_version(IDistroSeriesDifference, "unblacklist", "beta")
+patch_operation_explicit_version(IDistroSeries, "getBuildRecords", "beta")
+patch_operation_explicit_version(IDistroSeries, "getDerivedSeries", "beta")
+patch_operation_explicit_version(IDistroSeries, "getDistroArchSeries", "beta")
+patch_operation_explicit_version(IDistroSeries, "getPackageUploads", "beta")
+patch_operation_explicit_version(IDistroSeries, "getSourcePackage", "beta")
+patch_operation_explicit_version(IDistroSeries, "getSubscription", "beta")
+patch_operation_explicit_version(IDistroSeries, "getSubscriptions", "beta")
+patch_operation_explicit_version(IDistroSeries, "getTranslationImportQueueEntries", "beta")
+patch_operation_explicit_version(IDistroSeries, "getTranslationTemplates", "beta")
+patch_operation_explicit_version(IDistroSeries, "newMilestone", "beta")
+patch_operation_explicit_version(IDistroSeries, "removeBugSubscription", "beta")
+patch_operation_explicit_version(IDistroSeries, "searchTasks", "beta")
+patch_operation_explicit_version(IHasBugs, "searchTasks", "beta")
+patch_operation_explicit_version(IHasTranslationImports, "getTranslationImportQueueEntries", "beta")
+patch_operation_explicit_version(IHWDBApplication, "deviceDriverOwnersAffectedByBugs", "beta")
+patch_operation_explicit_version(IHWDBApplication, "devices", "beta")
+patch_operation_explicit_version(IHWDBApplication, "drivers", "beta")
+patch_operation_explicit_version(IHWDBApplication, "hwInfoByBugRelatedUsers", "beta")
+patch_operation_explicit_version(IHWDBApplication, "numDevicesInSubmissions", "beta")
+patch_operation_explicit_version(IHWDBApplication, "numOwnersOfDevice", "beta")
+patch_operation_explicit_version(IHWDBApplication, "numSubmissionsWithDevice", "beta")
+patch_operation_explicit_version(IHWDBApplication, "vendorIDs", "beta")
+patch_operation_explicit_version(IHWDeviceClass, "delete", "beta")
+patch_operation_explicit_version(IHWDevice, "getOrCreateDeviceClass", "beta")
+patch_operation_explicit_version(IHWDevice, "getSubmissions", "beta")
+patch_operation_explicit_version(IHWDevice, "removeDeviceClass", "beta")
+patch_operation_explicit_version(IHWDriver, "getSubmissions", "beta")
+patch_operation_explicit_version(ILanguageSet, "getAllLanguages", "beta")
+patch_operation_explicit_version(IMaloneApplication, "createBug", "beta")
+patch_operation_explicit_version(IMilestone, "addBugSubscription", "beta")
+patch_operation_explicit_version(IMilestone, "createProductRelease", "beta")
+patch_operation_explicit_version(IMilestone, "destroySelf", "beta")
+patch_operation_explicit_version(IMilestone, "getSubscription", "beta")
+patch_operation_explicit_version(IMilestone, "getSubscriptions", "beta")
+patch_operation_explicit_version(IMilestone, "removeBugSubscription", "beta")
+patch_operation_explicit_version(IMilestone, "searchTasks", "beta")
+patch_operation_explicit_version(IPackageset, "addSources", "beta")
+patch_operation_explicit_version(IPackageset, "addSubsets", "beta")
+patch_operation_explicit_version(IPackageset, "getSourcesIncluded", "beta")
+patch_operation_explicit_version(IPackageset, "getSourcesNotSharedBy", "beta")
+patch_operation_explicit_version(IPackageset, "getSourcesSharedBy", "beta")
+patch_operation_explicit_version(IPackageset, "relatedSets", "beta")
+patch_operation_explicit_version(IPackageset, "removeSources", "beta")
+patch_operation_explicit_version(IPackageset, "removeSubsets", "beta")
+patch_operation_explicit_version(IPackagesetSet, "getByName", "beta")
+patch_operation_explicit_version(IPackagesetSet, "new", "beta")
+patch_operation_explicit_version(IPackagesetSet, "setsIncludingSource", "beta")
+patch_operation_explicit_version(IPackageset, "setsIncluded", "beta")
+patch_operation_explicit_version(IPackageset, "setsIncludedBy", "beta")
+patch_operation_explicit_version(IPerson, "acceptInvitationToBeMemberOf", "beta")
+patch_operation_explicit_version(IPerson, "addMember", "beta")
+patch_operation_explicit_version(IPerson, "createPPA", "beta")
+patch_operation_explicit_version(IPerson, "createRecipe", "beta")
+patch_operation_explicit_version(IPerson, "declineInvitationToBeMemberOf", "beta")
+patch_operation_explicit_version(IPerson, "getArchiveSubscriptionURL", "beta")
+patch_operation_explicit_version(IPerson, "getArchiveSubscriptionURLs", "beta")
+patch_operation_explicit_version(IPerson, "getBranches", "beta")
+patch_operation_explicit_version(IPerson, "getBugSubscriberPackages", "beta")
+patch_operation_explicit_version(IPerson, "getMembersByStatus", "beta")
+patch_operation_explicit_version(IPerson, "getMergeProposals", "beta")
+patch_operation_explicit_version(IPerson, "getPPAByName", "beta")
+patch_operation_explicit_version(IPerson, "getRecipe", "beta")
+patch_operation_explicit_version(IPerson, "getRequestedReviews", "beta")
+patch_operation_explicit_version(IPerson, "getTranslationImportQueueEntries", "beta")
+patch_operation_explicit_version(IPerson, "join", "beta")
+patch_operation_explicit_version(IPerson, "leave", "beta")
+patch_operation_explicit_version(IPerson, "retractTeamMembership", "beta")
+patch_operation_explicit_version(IPerson, "searchTasks", "beta")
+patch_operation_explicit_version(IPerson, "searchTasks", "beta")
+patch_operation_explicit_version(IPersonSet, "find", "beta")
+patch_operation_explicit_version(IPersonSet, "findPerson", "beta")
+patch_operation_explicit_version(IPersonSet, "findTeam", "beta")
+patch_operation_explicit_version(IPersonSet, "getByEmail", "beta")
+patch_operation_explicit_version(IPerson, "setLocation", "beta")
+patch_operation_explicit_version(IPerson, "setLocationVisibility", "beta")
+patch_operation_explicit_version(IPersonSet, "newTeam", "beta")
+patch_operation_explicit_version(IPillarNameSet, "search", "beta")
+patch_operation_explicit_version(IProduct, "addBugSubscription", "beta")
+patch_operation_explicit_version(IProduct, "addOfficialBugTag", "beta")
+patch_operation_explicit_version(IProduct, "getBranches", "beta")
+patch_operation_explicit_version(IProduct, "getMergeProposals", "beta")
+patch_operation_explicit_version(IProduct, "getMilestone", "beta")
+patch_operation_explicit_version(IProduct, "getRelease", "beta")
+patch_operation_explicit_version(IProduct, "getSeries", "beta")
+patch_operation_explicit_version(IProduct, "getSubscription", "beta")
+patch_operation_explicit_version(IProduct, "getSubscriptions", "beta")
+patch_operation_explicit_version(IProduct, "getTimeline", "beta")
+patch_operation_explicit_version(IProduct, "getTranslationImportQueueEntries", "beta")
+patch_operation_explicit_version(IProduct, "newCodeImport", "beta")
+patch_operation_explicit_version(IProduct, "newSeries", "beta")
+patch_operation_explicit_version(IProductRelease, "addReleaseFile", "beta")
+patch_operation_explicit_version(IProductRelease, "destroySelf", "beta")
+patch_operation_explicit_version(IProductReleaseFile, "destroySelf", "beta")
+patch_operation_explicit_version(IProduct, "removeBugSubscription", "beta")
+patch_operation_explicit_version(IProduct, "removeOfficialBugTag", "beta")
+patch_operation_explicit_version(IProduct, "searchTasks", "beta")
+patch_operation_explicit_version(IProductSeries, "addBugSubscription", "beta")
+patch_operation_explicit_version(IProductSeries, "getSubscription", "beta")
+patch_operation_explicit_version(IProductSeries, "getSubscriptions", "beta")
+patch_operation_explicit_version(IProductSeries, "getTimeline", "beta")
+patch_operation_explicit_version(IProductSeries, "getTranslationImportQueueEntries", "beta")
+patch_operation_explicit_version(IProductSeries, "getTranslationTemplates", "beta")
+patch_operation_explicit_version(IProductSeries, "newMilestone", "beta")
+patch_operation_explicit_version(IProductSeries, "removeBugSubscription", "beta")
+patch_operation_explicit_version(IProductSeries, "searchTasks", "beta")
+patch_operation_explicit_version(IProduct, "setBugSupervisor", "beta")
+patch_operation_explicit_version(IProductSet, "createProduct", "beta")
+patch_operation_explicit_version(IProductSet, "forReview", "beta")
+patch_operation_explicit_version(IProductSet, "latest", "beta")
+patch_operation_explicit_version(IProductSet, "search", "beta")
+patch_operation_explicit_version(IProjectGroup, "addBugSubscription", "beta")
+patch_operation_explicit_version(IProjectGroup, "getBranches", "beta")
+patch_operation_explicit_version(IProjectGroup, "getMergeProposals", "beta")
+patch_operation_explicit_version(IProjectGroup, "getMilestone", "beta")
+patch_operation_explicit_version(IProjectGroup, "getSubscription", "beta")
+patch_operation_explicit_version(IProjectGroup, "getSubscriptions", "beta")
+patch_operation_explicit_version(IProjectGroup, "removeBugSubscription", "beta")
+patch_operation_explicit_version(IProjectGroup, "searchTasks", "beta")
+patch_operation_explicit_version(IProjectGroupSet, "search", "beta")
+patch_operation_explicit_version(ISourcePackage, "getBranch", "beta")
+patch_operation_explicit_version(ISourcePackage, "getBranches", "beta")
+patch_operation_explicit_version(ISourcePackage, "getMergeProposals", "beta")
+patch_operation_explicit_version(ISourcePackage, "getTranslationImportQueueEntries", "beta")
+patch_operation_explicit_version(ISourcePackage, "getTranslationTemplates", "beta")
+patch_operation_explicit_version(ISourcePackage, "linkedBranches", "beta")
+patch_operation_explicit_version(ISourcePackage, "newCodeImport", "beta")
+patch_operation_explicit_version(ISourcePackagePublishingHistory, "api_requestDeletion", "beta")
+patch_operation_explicit_version(ISourcePackagePublishingHistory, "binaryFileUrls", "beta")
+patch_operation_explicit_version(ISourcePackagePublishingHistory, "changesFileUrl", "beta")
+patch_operation_explicit_version(ISourcePackagePublishingHistory, "getBuilds", "beta")
+patch_operation_explicit_version(ISourcePackagePublishingHistory, "getPublishedBinaries", "beta")
+patch_operation_explicit_version(ISourcePackagePublishingHistory, "packageDiffUrl", "beta")
+patch_operation_explicit_version(ISourcePackagePublishingHistory, "sourceFileUrls", "beta")
+patch_operation_explicit_version(ISourcePackageRecipe, "performDailyBuild", "beta")
+patch_operation_explicit_version(ISourcePackageRecipe, "requestBuild", "beta")
+patch_operation_explicit_version(ISourcePackageRecipe, "setRecipeText", "beta")
+patch_operation_explicit_version(ISourcePackage, "searchTasks", "beta")
+patch_operation_explicit_version(ISourcePackage, "setBranch", "beta")
+patch_operation_explicit_version(ISpecificationBranch, "destroySelf", "beta")
+patch_operation_explicit_version(ISpecification, "linkBranch", "beta")
+patch_operation_explicit_version(ISpecification, "unlinkBranch", "beta")
+patch_operation_explicit_version(IStructuralSubscription, "delete", "beta")
+patch_operation_explicit_version(IStructuralSubscription, "newBugFilter", "beta")
+patch_operation_explicit_version(IStructuralSubscriptionTarget, "addBugSubscription", "beta")
+patch_operation_explicit_version(IStructuralSubscriptionTarget, "getSubscription", "beta")
+patch_operation_explicit_version(IStructuralSubscriptionTarget, "getSubscriptions", "beta")
+patch_operation_explicit_version(IStructuralSubscriptionTarget, "removeBugSubscription", "beta")
+patch_operation_explicit_version(ITeam, "acceptInvitationToBeMemberOf", "beta")
+patch_operation_explicit_version(ITeam, "addMember", "beta")
+patch_operation_explicit_version(ITeam, "createPPA", "beta")
+patch_operation_explicit_version(ITeam, "createRecipe", "beta")
+patch_operation_explicit_version(ITeam, "declineInvitationToBeMemberOf", "beta")
+patch_operation_explicit_version(ITeam, "getArchiveSubscriptionURL", "beta")
+patch_operation_explicit_version(ITeam, "getArchiveSubscriptionURLs", "beta")
+patch_operation_explicit_version(ITeam, "getBranches", "beta")
+patch_operation_explicit_version(ITeam, "getBugSubscriberPackages", "beta")
+patch_operation_explicit_version(ITeam, "getMembersByStatus", "beta")
+patch_operation_explicit_version(ITeam, "getMergeProposals", "beta")
+patch_operation_explicit_version(ITeam, "getPPAByName", "beta")
+patch_operation_explicit_version(ITeam, "getRecipe", "beta")
+patch_operation_explicit_version(ITeam, "getRequestedReviews", "beta")
+patch_operation_explicit_version(ITeam, "getTranslationImportQueueEntries", "beta")
+patch_operation_explicit_version(ITeam, "join", "beta")
+patch_operation_explicit_version(ITeam, "leave", "beta")
+patch_operation_explicit_version(ITeamMembership, "setExpirationDate", "beta")
+patch_operation_explicit_version(ITeamMembership, "setStatus", "beta")
+patch_operation_explicit_version(ITeam, "retractTeamMembership", "beta")
+patch_operation_explicit_version(ITeam, "searchTasks", "beta")
+patch_operation_explicit_version(ITeam, "setLocation", "beta")
+patch_operation_explicit_version(ITeam, "setLocationVisibility", "beta")
+patch_operation_explicit_version(ITemporaryBlobStorage, "getProcessedData", "beta")
+patch_operation_explicit_version(ITemporaryBlobStorage, "hasBeenProcessed", "beta")
+patch_operation_explicit_version(ITemporaryStorageManager, "fetch", "beta")
+patch_operation_explicit_version(ITranslationImportQueueEntry, "setStatus", "beta")
+patch_operation_explicit_version(ITranslationImportQueue, "getAllEntries", "beta")
+patch_operation_explicit_version(ITranslationImportQueue, "getFirstEntryToImport", "beta")
+patch_operation_explicit_version(ITranslationImportQueue, "getRequestTargets", "beta")
