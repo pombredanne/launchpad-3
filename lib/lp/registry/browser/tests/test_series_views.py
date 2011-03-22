@@ -353,7 +353,7 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
             'derived': '1.0derived1',
             'parent': '1.0-1',
         }
-        parent_series = self.factory.makeDistroSeries(name='lucid')
+        parent_series = self.factory.makeDistroSeries(name='warty')
         derived_series = self.factory.makeDistroSeries(
             name='derilucid', parent_series=parent_series)
         difference = self.factory.makeDistroSeriesDifference(
@@ -383,7 +383,7 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
             name='my-src-name', version=versions['parent'],
             distroseries=derived_series).one()
         self.assertIsNot(None, pub)
-        self.assertEqual(versions['parent'], pub.version)
+        self.assertEqual(versions['parent'], pub.sourcepackagerelease.version)
 
         # The view should show no errors, and the notification should
         # confirm the sync worked.
@@ -391,8 +391,7 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
         self.assertEqual(
-            "The following sources would have been synced if this wasn't "
-            "just a stub operation: my-src-name",
+            "The following sources were synchronized: my-src-name",
             notifications[0].message)
         # 302 is a redirect back to the same page.
         self.assertEqual(302, view.request.response.getStatus())
