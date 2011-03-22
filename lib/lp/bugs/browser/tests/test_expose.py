@@ -23,7 +23,6 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.browser.structuralsubscription import (
     expose_enum_to_js,
     expose_user_administered_teams_to_js,
-    expose_user_subscription_status_to_js,
     expose_user_subscriptions_to_js,
     )
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
@@ -119,19 +118,6 @@ class TestStructuralSubscriptionHelpers(TestCase):
         request = FakeRequest()
         expose_enum_to_js(request, DemoEnum, 'demo')
         self.assertEqual(request.objects['demo'], ['One', 'Two', 'Three'])
-
-    def test_expose_user_subscription_status_to_js(self):
-        # This simply reports back whether
-        # context.userHasBugSubscriptions(user) returns True.
-        request = FakeRequest()
-        user = FakeUser()
-        context = DemoContext(user)
-        context.return_value = True
-        expose_user_subscription_status_to_js(context, request, user)
-        self.failUnless(request.objects['userHasBugSubscriptions'])
-        context.return_value = False
-        expose_user_subscription_status_to_js(context, request, user)
-        self.failIf(request.objects['userHasBugSubscriptions'])
 
     def test_empty_expose_user_subscriptions_to_js(self):
         # This function is tested in integration more fully below, but we
