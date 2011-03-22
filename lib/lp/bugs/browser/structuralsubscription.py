@@ -6,7 +6,6 @@ __metaclass__ = type
 __all__ = [
     'expose_enum_to_js',
     'expose_user_administered_teams_to_js',
-    'expose_user_subscription_status_to_js',
     'expose_user_subscriptions_to_js',
     'StructuralSubscriptionMenuMixin',
     'StructuralSubscriptionTargetTraversalMixin',
@@ -377,12 +376,6 @@ def expose_user_administered_teams_to_js(request, user,
                 'title': team.title,
             })
     IJSONRequestCache(request).objects['administratedTeams'] = info
-
-
-def expose_user_subscription_status_to_js(context, request, user):
-    """Make the user's subscription state available to JavaScript."""
-    IJSONRequestCache(request).objects['userHasBugSubscriptions'] = (
-        context.userHasBugSubscriptions(user))
 
 
 def person_is_team_admin(person, team):
