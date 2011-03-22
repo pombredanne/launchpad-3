@@ -46,12 +46,14 @@ class FakeRequest:
 
 class FakeTeam:
     """A faux team that just implements enough for the test."""
+
     def __init__(self, title):
         self.title = title
 
 
 class FakeUser:
     """A faux user that has a hard-coded set of administered teams."""
+
     def getAdministratedTeams(self):
         return [FakeTeam('Team One'), FakeTeam('Team Two')]
 

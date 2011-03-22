@@ -447,7 +447,6 @@ patch_reference_property(
 patch_entry_return_type(
     IStructuralSubscriptionTarget, 'addBugSubscriptionFilter',
     IBugSubscriptionFilter)
-    
 
 # ISourcePackageRelease
 patch_reference_property(
