@@ -87,8 +87,7 @@ style attribute is used.
     <BLANKLINE>
     <BLANKLINE>
         <li>
-            <a style="..."
-               href="http://launchpad.dev/~beaker/+edit-people"
+            <a href="http://launchpad.dev/~beaker/+edit-people"
                class="menu-link-edit_people">Edit people related to thing</a>
         </li>
         ...
@@ -145,11 +144,10 @@ The generated markup is for a portlet with the global-actions id.
       <ul>
         <li>
           <span class="menu-link-edit_thing nolink
-                      sprite modify edit">Edit thing</span>
+              sprite modify edit">Edit thing</span>
         </li>
         <li>
-          <a style="..."
-             href="http://launchpad.dev/~beaker/+edit-people"
+          <a href="http://launchpad.dev/~beaker/+edit-people"
              class="menu-link-edit_people">Edit people related to thing</a>
         </li>
       </ul>

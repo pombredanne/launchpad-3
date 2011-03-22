@@ -33,6 +33,7 @@ from lp.translations.browser.translationsharing import (
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
+from lp.translations.model.translationpackagingjob import TranslationMergeJob
 from lp.translations.utilities.translationsharinginfo import (
     has_upstream_template,
     get_upstream_sharing_info,
@@ -140,6 +141,11 @@ class SourcePackageTranslationSharingDetailsView(
                 canonical_url(
                     self.context.productseries, rootsite='translations',
                     view_name="+imports"))))
+        if self.is_merge_job_running:
+            self.request.response.addInfoNotification(
+                'Translations are currently being linked by a background '
+                'job. When that job has finished, translations will be '
+                'shared with the upstream project.')
 
     @property
     def is_packaging_configured(self):
@@ -191,6 +197,14 @@ class SourcePackageTranslationSharingDetailsView(
             self.is_upstream_translations_enabled and
             self.is_upstream_synchronization_enabled)
 
+    @property
+    def is_merge_job_running(self):
+        """Is a merge job running for this source package?"""
+        if not self.is_packaging_configured:
+            return False
+        return TranslationMergeJob.getNextJobStatus(
+            self.context.direct_packaging) is not None
+
     def template_info(self):
         """Details about translation templates.
 
@@ -212,13 +226,16 @@ class SourcePackageTranslationSharingDetailsView(
                 'upstream_template': None,
                 'status': 'only in Ubuntu',
                 }
-        if self.is_configuration_complete:
+        if self.is_packaging_configured:
             upstream_templates = (
                 self.context.productseries.getCurrentTranslationTemplates())
             for template in upstream_templates:
                 if template.name in info:
                     info[template.name]['upstream_template'] = template
-                    info[template.name]['status'] = 'shared'
+                    if self.is_merge_job_running:
+                        info[template.name]['status'] = 'linking'
+                    else:
+                        info[template.name]['status'] = 'shared'
                 else:
                     info[template.name] = {
                         'name': template.name,

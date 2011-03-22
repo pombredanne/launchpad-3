@@ -177,7 +177,7 @@ in the footer of the email with the bug title and URL.
     ...     bug_one_in_ubuntu_firefox.bug.initial_message.rfc822msgid)
     True
     >>> msg['X-Launchpad-Message-Rationale']
-    'Subscriber (pmount in ubuntu)'
+    'Subscriber (pmount in Ubuntu)'
     >>> msg['Subject']
     '[Bug 1] [NEW] Firefox does not support SVG'
     >>> print msg.get_payload(decode=True)
@@ -209,7 +209,7 @@ in the footer of the email with the bug title and URL.
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you
-    are subscribed to pmount in ubuntu.
+    are subscribed to pmount in Ubuntu.
 
 Since the reporter didn't do anything to trigger this change, the bug
 address is used as the From address.
