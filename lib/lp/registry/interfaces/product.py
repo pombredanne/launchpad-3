@@ -938,14 +938,14 @@ class IProductSet(Interface):
     @operation_parameters(text=TextLine(title=_("Search text")))
     @operation_returns_collection_of(IProduct)
     @export_read_operation()
-    def search(text=None, soyuz=None,
-               rosetta=None, malone=None,
-               bazaar=None):
+    def search(text=None):
         """Search through the Registry database for products that match the
         query terms. text is a piece of text in the title / summary /
-        description fields of product. soyuz, bazaar, malone etc are
-        hints as to whether the search should be limited to products
-        that are active in those Launchpad applications."""
+        description fields of product.
+
+        This call eager loads data appropriate for web API; caution may be
+        needed for other callers.
+        """
 
     @operation_returns_collection_of(IProduct)
     @call_with(quantity=None)

@@ -1575,38 +1575,17 @@ class ProductSet:
                     Product.datecreated, Product.displayname)
         return result
 
-    def search(self, text=None, soyuz=None,
-               rosetta=None, malone=None,
-               bazaar=None,
-               show_inactive=False):
+    def search(self, text=None):
         """See lp.registry.interfaces.product.IProductSet."""
-        # XXX: kiko 2006-03-22: The soyuz argument is unused.
-        clauseTables = set()
-        clauseTables.add('Product')
-        queries = []
+        conditions = []
+        conditions = [Product.active]
         if text:
-            queries.append("Product.fti @@ ftq(%s) " % sqlvalues(text))
-        if rosetta:
-            clauseTables.add('POTemplate')
-            clauseTables.add('ProductRelease')
-            clauseTables.add('ProductSeries')
-            queries.append("POTemplate.productrelease=ProductRelease.id")
-            queries.append("ProductRelease.productseries=ProductSeries.id")
-            queries.append("ProductSeries.product=product.id")
-        if malone:
-            clauseTables.add('BugTask')
-            queries.append('BugTask.product=Product.id')
-        if bazaar:
-            clauseTables.add('ProductSeries')
-            queries.append('(ProductSeries.branch IS NOT NULL)')
-        if 'ProductSeries' in clauseTables:
-            queries.append('ProductSeries.product=Product.id')
-        if not show_inactive:
-            queries.append('Product.active IS TRUE')
-        query = " AND ".join(queries)
-        return Product.select(query, distinct=True,
-                              prejoins=["_owner"],
-                              clauseTables=clauseTables)
+            conditions.append(
+                SQL("Product.fti @@ ftq(%s) " % sqlvalues(text)))
+        result = IStore(Product).find(Product, *conditions)
+        def eager_load(rows):
+            pass
+        return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
     def getTranslatables(self):
         """See `IProductSet`"""
