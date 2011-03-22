@@ -352,7 +352,7 @@ class StuckJob(BaseRunnableJob):
         # and so we soak up the ZCML loading time.  For the second job, have a
         # short lease so we hit the timeout.
         if self.id == 2:
-            lease_length = 1
+            lease_length = 0.01
         else:
             lease_length = 10000
         return self.job.acquireLease(lease_length)
@@ -405,15 +405,14 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         # XXX: Maybe we can combine all of these assertions so that we get a
         # more informative error message.
         self.assertEqual(
-            (1, 1,
-             dedent("""\
+            (1, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
+        self.assertEqual(
+            (dedent("""\
              INFO Running through Twisted.
              INFO Job resulted in OOPS: %s
              """) % oops.id,
              'TimeoutError', 'Job ran too long.'),
-            (len(runner.completed_jobs), len(runner.incomplete_jobs),
-             logger.getLogBuffer(),
-             oops.type, oops.value))
+            (logger.getLogBuffer(), oops.type, oops.value))
 
 
 class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
