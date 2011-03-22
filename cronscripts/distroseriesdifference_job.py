@@ -26,7 +26,6 @@ class RunDistroSeriesDifferenceJob(JobCronScript):
     source_interface = IDistroSeriesDifferenceJobSource
 
     def main(self):
-        print getFeatureFlag(FEATURE_FLAG_ENABLE_MODULE)
         if not getFeatureFlag(FEATURE_FLAG_ENABLE_MODULE):
             self.logger.info("Feature flag is not enabled.")
             return

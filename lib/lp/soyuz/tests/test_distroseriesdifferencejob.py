@@ -191,7 +191,6 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
             'cronscripts/distroseriesdifference_job.py', ['-vvv'])
         # The cronscript ran how we expected it to.
         self.assertEqual(return_code, 0)
-        print stdout
         self.assertIn(
             'INFO    Ran 1 DistroSeriesDifferenceJob jobs.', stderr)
         # And it did what we expected.
