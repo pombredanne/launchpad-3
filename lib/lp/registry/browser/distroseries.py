@@ -538,9 +538,8 @@ DEFAULT_PACKAGE_TYPE = NON_BLACKLISTED
 
 def make_package_type_vocabulary(parent_name):
     return SimpleVocabulary((
-        SimpleTerm(NON_BLACKLISTED,
-                   NON_BLACKLISTED,
-                   'Non blacklisted packages'),
+        SimpleTerm(
+            NON_BLACKLISTED, NON_BLACKLISTED, 'Non blacklisted packages'),
         SimpleTerm(BLACKLISTED, BLACKLISTED, 'Blacklisted packages'),
         SimpleTerm(
             HIGHER_VERSION_THAN_PARENT,

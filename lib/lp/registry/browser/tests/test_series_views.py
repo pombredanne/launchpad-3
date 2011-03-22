@@ -33,7 +33,6 @@ from lp.registry.enum import (
 from lp.services.features import (
     getFeatureFlag,
     install_feature_controller,
-    per_thread,
     )
 from lp.services.features.flags import FeatureController
 from lp.services.features.model import (
@@ -276,10 +275,10 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
 
     def test_higher_radio_mentions_parent(self):
         set_derived_series_ui_feature_flag(self)
+        parent_series = self.factory.makeDistroSeries(
+            name='lucid', displayname='Lucid')
         derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=self.factory.makeDistroSeries(
-                name='lucid',
-                displayname='Lucid'))
+            name='derilucid', parent_series=parent_series)
         diff1 = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series,
             source_package_name_str="my-src-package")
