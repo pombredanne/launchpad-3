@@ -149,8 +149,11 @@ class SourcePackageTranslationSharingDetailsView(
                 'Translations are currently being linked by a background '
                 'job. When that job has finished, translations will be '
                 'shared with the upstream project.')
-        IJSONRequestCache(self.request).objects['productseries'] = (
-            self.context.productseries)
+        cache = IJSONRequestCache(self.request)
+        cache.objects.update({
+            'productseries': self.context.productseries,
+            'upstream_branch': self.upstream_branch,
+        })
 
     @property
     def branch_link(self):

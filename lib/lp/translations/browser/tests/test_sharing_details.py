@@ -323,12 +323,27 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             ]
         self.assertEqual(expected, self.view.template_info())
 
-    def test_cache_contents(self):
-        self.configureSharing()
+    def getCacheObjects(self):
         view = make_initialized_view(self.sourcepackage)
         view.initialize()
         cache = IJSONRequestCache(view.request)
-        self.assertEqual(self.productseries, cache.objects['productseries'])
+        return cache.objects
+
+    def test_cache_contents_no_productseries(self):
+        objects = self.getCacheObjects()
+        self.assertIs(None, objects['productseries'])
+
+    def test_cache_contents_no_branch(self):
+        self.configureSharing()
+        objects = self.getCacheObjects()
+        self.assertEqual(self.productseries, objects['productseries'])
+        self.assertIs(None, objects['upstream_branch'])
+
+    def test_cache_contents_branch(self):
+        self.configureSharing(set_upstream_branch=True)
+        objects = self.getCacheObjects()
+        self.assertEqual(
+            self.productseries.branch, objects['upstream_branch'])
 
 
 class TestSourcePackageSharingDetailsPage(BrowserTestCase,
