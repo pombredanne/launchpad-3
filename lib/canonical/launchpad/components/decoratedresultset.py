@@ -41,7 +41,8 @@ class DecoratedResultSet(object):
         :param result_decorator: The method with which individual results
             will be passed through before being returned.
         :param pre_iter_hook: The method to be called (with the 'result_set')
-            immediately before iteration starts.
+            immediately before iteration starts. The return value of the hook
+            is ignored.
         :param slice_info: If True pass information about the slice parameters
             to the result_decorator and pre_iter_hook. any() and similar
             methods will cause None to be supplied.
