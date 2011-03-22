@@ -158,11 +158,6 @@ class HasTranslationTemplatesTestMixin:
         second_template = self.createTranslationTemplate("second")
         self.assertTrue(self.container.has_current_translation_templates)
 
-        # A product or distribution that doesn't use Launchpad for
-        # translations has no current templates.
-        self.product_or_distro.translations_usage = ServiceUsage.EXTERNAL
-        self.assertFalse(self.container.has_current_translation_templates)
-
     def test_has_obsolete_translation_templates(self):
         # A series without templates has no obsolete templates.
         self.assertFalse(self.container.has_obsolete_translation_templates)
