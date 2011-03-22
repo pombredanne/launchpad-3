@@ -424,6 +424,14 @@ class IPackagesetSet(Interface):
         :return: A (potentially empty) sequence of `IPackageset` instances.
         """
 
+    def getBySeries(distroseries):
+        """Return the package sets associated with the given distroseries.
+
+        :param distroseries: A `DistroSeries`.
+
+        :return: An iterable collection of `IPackageset` instances.
+        """
+
     @operation_parameters(
         sourcepackagename=TextLine(
             title=_('Source package name'), required=True),
@@ -454,4 +462,3 @@ class IPackagesetSet(Interface):
 
     def __getitem__(name):
         """Retrieve a package set by name."""
-

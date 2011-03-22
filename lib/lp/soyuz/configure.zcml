@@ -806,6 +806,7 @@
                 get
                 getByName
                 getByOwner
+                getBySeries
                 setsIncludingSource"/>
         <require
             permission="launchpad.Edit"
