@@ -424,6 +424,14 @@ class IPackagesetSet(Interface):
         :return: A (potentially empty) sequence of `IPackageset` instances.
         """
 
+    @operation_parameters(
+        distroseries=Reference(
+            IDistroSeries, title=_("Distroseries"), required=True,
+            readonly=True, description=_(
+                "The distribution series to which the packagesets "
+                "are related.")))
+    @operation_returns_collection_of(IPackageset)
+    @export_read_operation()
     def getBySeries(distroseries):
         """Return the package sets associated with the given distroseries.
 

@@ -229,6 +229,18 @@ Every package set is associated with a distro series.
     >>> print mozilla['self_link']
     http://api.launchpad.dev/beta/package-sets/hoary/mozilla
 
+A collection of package sets belonging to a given distro series can be
+obtained via the `getBySeries` call.
+
+    >>> packagesets = webservice.named_get(
+    ...     '/package-sets', 'getBySeries', {},
+    ...     distroseries=mozilla['distroseries_link']).jsonBody()
+    >>> for entry in packagesets["entries"]:
+    ...     print "{entry[name]}: {entry[description]}".format(entry=entry)
+    gnome: Contains all gnome packages
+    mozilla: Contains all mozilla packages
+    umbrella: Contains all source packages
+
 
 === Related package sets ===
 
