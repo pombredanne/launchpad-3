@@ -370,6 +370,8 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
+    # XXX: this isn't many tests for what is actually a fair chunk of code.
+
     def setUp(self):
         super(TestTwistedJobRunner, self).setUp()
         # The test relies on _pythonpath being importable. Thus we need to add
