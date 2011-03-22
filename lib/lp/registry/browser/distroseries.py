@@ -621,11 +621,12 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
     @action(_("Sync Sources"), name="sync", validator='validate_sync',
             condition='canPerformSync')
     def sync_sources(self, action, data):
-        """Mark the diffs as syncing and request the sync.
+        """Synchronise packages from the parent series to this one."""
+        # XXX We're doing a direct copy sync here as an interim measure
+        # until we work out if it's fast enough to work reliable.  If it
+        # isn't, we need to implement a way of flagging sources 'to be
+        # synced' and write a job runner to do it in the background.
 
-        Currently this is a stub operation, the details of which will
-        be implemented later.
-        """
         selected_differences = data['selected_differences']
         diffs = [
             diff.source_package_name.name
