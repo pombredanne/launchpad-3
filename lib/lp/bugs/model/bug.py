@@ -781,7 +781,6 @@ BugMessage""" % sqlvalues(self.id))
         # Ensure the unsubscriber is in the _known_viewer cache for the bug so
         # that the permissions are such that the operation can succeed.
         get_property_cache(self)._known_viewers = set([unsubscribed_by.id])
-        clear_property_cache(self)
         if person is None:
             person = unsubscribed_by
 
