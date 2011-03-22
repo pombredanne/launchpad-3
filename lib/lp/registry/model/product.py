@@ -1054,7 +1054,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IProduct`."""
         obsolete_product_series = set(
             product_series for product_series in self.series
-            if len(product_series.getObsoleteTranslationTemplates()) > 0)
+            if product_series.has_obsolete_translation_templates)
         return sorted(obsolete_product_series, key=lambda s: s.datecreated)
 
     @property

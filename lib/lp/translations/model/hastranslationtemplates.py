@@ -98,13 +98,6 @@ class HasTranslationTemplatesMixin:
         return bool(
             self.getCurrentTranslationFiles(just_ids=True).any())
 
-    def getObsoleteTranslationTemplates(self):
-        """See `IHasTranslationTemplates`."""
-        # XXX JeroenVermeulen 2010-07-15 bug=605924: This returns a list
-        # whereas the analogous method for current template returns a
-        # result set.  Clean up this mess.
-        return list(self.getCurrentTranslationTemplates(current_value=False))
-
     def getTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
         return self._orderTemplates(self.getTemplatesCollection().select())
