@@ -584,12 +584,7 @@ class ProductActionNavigationMenu(NavigationMenu, ProductEditLinksMixin):
     usedfor = IProductActionMenu
     facet = 'overview'
     title = 'Actions'
-    links = ('edit', 'review_license', 'administer', 'subscribe_to_bug_mail')
-
-    @enabled_with_permission('launchpad.AnyPerson')
-    def subscribe_to_bug_mail(self):
-        text = 'Subscribe to bug mail'
-        return Link('#', text, icon='add', hidden=True)
+    links = ('edit', 'review_license', 'administer', 'subscribe')
 
 
 class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
