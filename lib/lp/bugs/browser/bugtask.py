@@ -1068,6 +1068,13 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         else:
             return bugtask_heat_html(self.context)
 
+    @property
+    def privacy_notice_classes(self):
+        if not self.context.bug.private:
+            return 'hidden'
+        else:
+            return ''
+
 
 def calculate_heat_display(heat, max_bug_heat):
     """Calculate the number of heat 'flames' to display."""

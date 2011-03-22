@@ -1092,6 +1092,11 @@ span.see-all {
     left:-9999em;
     display:block;
     }
+.transparent {
+  opacity: 0;
+  filter: alpha(opacity=0);
+  -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
+}
 .rss-right {
     background: url(/@@/rss.png) right center no-repeat;
     }
