@@ -687,6 +687,7 @@ from lp.services.worlddata.interfaces.language import (
 from lp.soyuz.interfaces.archivedependency import IArchiveDependency
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.archivepermission import IArchivePermission
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriber
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageReleaseDownloadCount
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
@@ -709,6 +710,7 @@ from lp.translations.interfaces.translationimportqueue import (
 patch_entry_explicit_version(IArchive, 'beta')
 patch_entry_explicit_version(IArchiveDependency, 'beta')
 patch_entry_explicit_version(IArchivePermission, 'beta')
+patch_entry_explicit_version(IArchiveSubscriber, 'beta')
 patch_entry_explicit_version(IBinaryPackageBuild, 'beta')
 patch_entry_explicit_version(IBinaryPackagePublishingHistory, 'beta')
 patch_entry_explicit_version(IBinaryPackageReleaseDownloadCount, 'beta')
@@ -777,7 +779,6 @@ patch_entry_explicit_version(ISourcePackage, 'beta')
 patch_entry_explicit_version(ISourcePackagePublishingHistory, 'beta')
 patch_entry_explicit_version(ISourcePackageRecipe, 'beta')
 patch_entry_explicit_version(ISourcePackageRecipeBuild, 'beta')
-patch_entry_explicit_version(ISpecificationBranch, 'beta')
 patch_entry_explicit_version(ISSHKey, 'beta')
 patch_entry_explicit_version(IStructuralSubscription, 'beta')
 patch_entry_explicit_version(IStructuralSubscriptionTarget, 'beta')
@@ -1078,7 +1079,6 @@ patch_operation_explicit_version(ISourcePackageRecipe, "requestBuild", "beta")
 patch_operation_explicit_version(ISourcePackageRecipe, "setRecipeText", "beta")
 patch_operation_explicit_version(ISourcePackage, "searchTasks", "beta")
 patch_operation_explicit_version(ISourcePackage, "setBranch", "beta")
-patch_operation_explicit_version(ISpecificationBranch, "destroySelf", "beta")
 patch_operation_explicit_version(ISpecification, "linkBranch", "beta")
 patch_operation_explicit_version(ISpecification, "unlinkBranch", "beta")
 patch_operation_explicit_version(IStructuralSubscription, "delete", "beta")

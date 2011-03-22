@@ -61,8 +61,7 @@ class ITranslationGroup(IHasOwner):
             descriptive, because it will be used in URLs. Examples:
             gnome-translation-project, ubuntu-translators."""),
             constraint=name_validator),
-            ('devel', {'exported': True}),
-            exported=False,
+                    as_of="devel"
             )
     title = exported(Title(
             title=_('Title'), required=True,
@@ -72,8 +71,7 @@ class ITranslationGroup(IHasOwner):
             add "translation group" to this title, or it will be shown
             double.
             """),),
-            ('devel', {'exported': True}),
-            exported=False,
+                     as_of="devel"
             )
     summary = Summary(
             title=_('Summary'), required=True,

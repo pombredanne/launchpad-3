@@ -447,7 +447,8 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         CollectionField(
             title=_("Specification linked to this branch."),
             readonly=True,
-            value_type=Reference(Interface))) # Really ISpecificationBranch
+            value_type=Reference(Interface)), # Really ISpecificationBranch
+        as_of="devel")
 
     @call_with(registrant=REQUEST_USER)
     @operation_parameters(

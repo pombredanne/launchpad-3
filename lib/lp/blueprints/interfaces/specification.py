@@ -158,8 +158,9 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
             description=_(
                 "The URL of the specification. This is usually a wiki page."),
             constraint=valid_webref),
-        ('devel', dict(exported=True, exported_as='specification_url')),
-        exported=False)
+        exported_as="specification_url",
+        as_of="devel",
+        )
     summary = exported(
         Summary(
             title=_('Summary'), required=True, description=_(
@@ -208,8 +209,9 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
     datecreated = exported(
         Datetime(
             title=_('Date Created'), required=True, readonly=True),
-        ('devel', dict(exported=True, exported_as='date_created')),
-        exported=False)
+        as_of="devel",
+        exported_as="date_created",
+        )
     owner = exported(
         PublicPersonChoice(
             title=_('Owner'), required=True, readonly=True,
@@ -229,7 +231,9 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
             description=_(
                 "The project for which this proposal is being made."),
             schema=ISpecificationTarget),
-        ('devel', dict(exported=True, readonly=True)), exported=False)
+        as_of="devel",
+        readonly=True,
+        )
 
     productseries = Choice(
         title=_('Series Goal'), required=False,

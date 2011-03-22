@@ -17,6 +17,7 @@ from lazr.restful.declarations import (
     export_operation_as,
     export_write_operation,
     exported,
+    operation_for_version,
     )
 from lazr.restful.fields import (
     Reference,
@@ -35,28 +36,30 @@ from lp.registry.interfaces.person import IPerson
 class ISpecificationBranch(IHasDateCreated):
     """A branch linked to a specification."""
 
-    export_as_webservice_entry()
+    export_as_webservice_entry(as_of="devel")
 
     id = Int(title=_("Specification Branch #"))
     specification = exported(
         ReferenceChoice(
             title=_("Blueprint"), vocabulary="Specification",
             required=True,
-            readonly=True, schema=ISpecification))
+            readonly=True, schema=ISpecification), as_of="devel")
     branch = exported(
         ReferenceChoice(
             title=_("Branch"),
             vocabulary="Branch",
             required=True,
-            schema=IBranch))
+            schema=IBranch), as_of="devel")
 
     registrant = exported(
         Reference(
             schema=IPerson, readonly=True, required=True,
-            title=_("The person who linked the bug to the branch")))
+            title=_("The person who linked the bug to the branch")),
+        as_of="devel")
 
     @export_operation_as('delete')
     @export_write_operation()
+    @operation_for_version('devel')
     def destroySelf():
         """Destroy this specification branch link"""
 
