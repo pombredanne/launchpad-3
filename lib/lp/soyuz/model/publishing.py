@@ -336,9 +336,11 @@ class ArchivePublisherBase:
         self.datesuperseded = UTC_NOW
         self.removed_by = removed_by
         self.removal_comment = removal_comment
-        dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
-        dsd_job_source.createForPackagePublication(
-            self.distroseries, self.sourcepackagerelease.sourcepackagename)
+        if self.is_source is True:
+            dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
+            dsd_job_source.createForPackagePublication(
+                self.distroseries,
+                self.sourcepackagerelease.sourcepackagename)
 
     def requestObsolescence(self):
         """See `IArchivePublisher`."""
