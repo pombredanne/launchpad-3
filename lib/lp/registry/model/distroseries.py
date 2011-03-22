@@ -437,7 +437,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # NB: precaching objects like this method tries to do has a very poor
         # hit rate with storm - many queries will still be executed; consider
         # ripping this out and instead allowing explicit inclusion of things
-        # like Person._all_members does - returning a cached object graph.
+        # like Person._members does - returning a cached object graph.
         # -- RBC 20100810
         # Avoid circular import failures.
         from lp.registry.model.product import Product
