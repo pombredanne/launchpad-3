@@ -38,7 +38,7 @@ class PersonNotificationManager:
             '%d notification(s) to send.' % pending_notifications.count())
         for notification in pending_notifications:
             person = notification.person
-            if person.preferredemail is None:
+            if not notification.can_send:
                 unsent_notifications.append(notification)
                 self.logger.info(
                     "%s has no email address." % person.name)

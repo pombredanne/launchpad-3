@@ -27,6 +27,43 @@ from lp.registry.scripts.personnotification import PersonNotificationManager
 from lp.testing import TestCaseWithFactory
 
 
+class TestPersonNotification(TestCaseWithFactory):
+    """Tests for PersonNotification."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonNotificationManager, self).setUp()
+        self.notification_set = getUtility(IPersonNotificationSet)
+
+    def test_to_addresses_user(self):
+        # The to_addresses list is the user's preferred email address.
+        user = self.factory.makePerson()
+        notification = self.notification_set.addNotification(
+            user, 'subject', 'body')
+        self.assertEqual(
+            [user.preferredemail.email], notification.to_addresses)
+        self.assertTrue(notification.can_send)
+
+    def test_to_addresses_user_without_address(self):
+        # The to_addresses list is empty and the notification cannot be sent.
+        user = self.factory.makePerson()
+        user.setPreferredEmail(None)
+        notification = self.notification_set.addNotification(
+            user, 'subject', 'body')
+        self.assertEqual([], notification.to_addresses)
+        self.assertFalse(notification.can_send)
+
+    def test_to_addresses_team(self):
+        # The to_addresses list is the team admin addresses.
+        team = self.factory.makeTeam()
+        notification = self.notification_set.addNotification(
+            team, 'subject', 'body')
+        self.assertEqual(
+            [team.teamowner.preferredemail.email], notification.to_addresses)
+        self.assertTrue(notification.can_send)
+
+
 class TestPersonNotificationManager(TestCaseWithFactory):
     """Tests for the PersonNotificationManager use in scripts."""
 
