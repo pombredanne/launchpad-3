@@ -278,13 +278,13 @@ class BugContextMenu(ContextMenu):
         user = getUtility(ILaunchBag).user
         if self.context.bug.isMuted(user):
             text = "Unmute bug mail"
+            link = "+subscribe"
         else:
             text = "Mute bug mail"
+            link = "+mute"
 
-        # We link to '#' here because we don't yet have a view to handle
-        # this link.
         return Link(
-            '#', text, icon='remove', summary=(
+            link, text, icon='remove', summary=(
                 "Mute this bug so that you will never receive emails "
                 "about it."))
 
@@ -506,7 +506,8 @@ class BugViewMixin:
         else:
             dup_class = 'dup-subscribed-false'
 
-        if bug.personIsDirectSubscriber(self.user):
+        if (bug.personIsDirectSubscriber(self.user) and not
+            bug.isMuted(self.user)):
             return 'subscribed-true %s' % dup_class
         else:
             return 'subscribed-false %s' % dup_class

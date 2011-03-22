@@ -246,10 +246,7 @@ from lp.registry.interfaces.ssh import (
     SSHKeyCompromisedError,
     SSHKeyType,
     )
-from lp.registry.interfaces.teammembership import (
-    ACTIVE_STATES,
-    TeamMembershipStatus,
-    )
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.registry.interfaces.wikiname import (
     IWikiName,
     IWikiNameSet,
@@ -1215,7 +1212,7 @@ class Person(
     @cachedproperty
     def karma(self):
         """See `IPerson`."""
-        # May also be loaded from _all_members
+        # May also be loaded from _members
         cache = KarmaTotalCache.selectOneBy(person=self)
         if cache is None:
             # Newly created accounts may not be in the cache yet, meaning the
@@ -1547,89 +1544,6 @@ class Person(
         tm.dateexpires += timedelta(days=team.defaultrenewalperiod)
         tm.sendSelfRenewalNotification()
 
-    def deactivateAllMembers(self, comment, reviewer):
-        """Deactivate all members of this team.
-
-        This method circuments the TeamMembership.setStatus() method
-        to improve performance; therefore, it does not send out any
-        status change noticiations to the team admins.
-
-        :param comment: Explanation of the change.
-        :param reviewer: Person who made the change.
-        """
-        assert self.is_team, "This method is only available for teams."
-        now = datetime.now(pytz.timezone('UTC'))
-        store = Store.of(self)
-        cur = cursor()
-
-        # Deactivate the approved/admin team members.
-        # XXX: EdwinGrubbs 2009-07-08 bug=397072
-        # There are problems using storm to write an update
-        # statement using DBITems in the comparison.
-        cur.execute("""
-            UPDATE TeamMembership
-            SET status=%(status)s,
-                last_changed_by=%(last_changed_by)s,
-                last_change_comment=%(comment)s,
-                date_last_changed=%(date_last_changed)s
-            WHERE
-                TeamMembership.team = %(team)s
-                AND TeamMembership.status IN %(original_statuses)s
-            """,
-            dict(
-                status=TeamMembershipStatus.DEACTIVATED,
-                last_changed_by=reviewer.id,
-                comment=comment,
-                date_last_changed=now,
-                team=self.id,
-                original_statuses=(
-                    TeamMembershipStatus.ADMIN.value,
-                    TeamMembershipStatus.APPROVED.value)))
-
-        # Since we've updated the database behind Storm's back,
-        # flush its caches.
-        store.invalidate()
-
-        # Remove all indirect TeamParticipation entries resulting from this
-        # team. If this were just a select, it would be a complicated but
-        # feasible set of joins. Since it's a delete, we have to use
-        # some sub selects.
-        cur.execute('''
-            DELETE FROM TeamParticipation
-                WHERE
-                    -- The person needs to be a member of the team in question
-                    person IN
-                        (SELECT person from TeamParticipation WHERE
-                            team = %(team)s) AND
-
-                    -- The teams being deleted should be teams that this team
-                    -- is a member of.
-                    team IN
-                        (SELECT team from TeamMembership WHERE
-                            person = %(team)s) AND
-
-                    -- The person needs to not have direct membership in the
-                    -- team.
-                    NOT EXISTS
-                        (SELECT tm1.person from TeamMembership tm1
-                            WHERE
-                                tm1.person = TeamParticipation.person and
-                                tm1.team = TeamParticipation.team and
-                                tm1.status IN %(active_states)s);
-            ''', dict(team=self.id, active_states=ACTIVE_STATES))
-
-        # Since we've updated the database behind Storm's back yet again,
-        # we need to flush its caches, again.
-        store.invalidate()
-
-        # Remove all members from the TeamParticipation table
-        # except for the team, itself.
-        participants = store.find(
-            TeamParticipation,
-            TeamParticipation.teamID == self.id,
-            TeamParticipation.personID != self.id)
-        participants.remove()
-
     def setMembershipData(self, person, status, reviewer, expires=None,
                           comment=None):
         """See `IPerson`."""
@@ -1694,14 +1608,14 @@ class Person(
     @property
     def allmembers(self):
         """See `IPerson`."""
-        return self._all_members()
+        return self._members(direct=False)
 
     @property
     def all_members_prepopulated(self):
         """See `IPerson`."""
-        return self._all_members(need_karma=True, need_ubuntu_coc=True,
-            need_location=True, need_archive=True, need_preferred_email=True,
-            need_validity=True)
+        return self._members(direct=False, need_karma=True,
+            need_ubuntu_coc=True, need_location=True, need_archive=True,
+            need_preferred_email=True, need_validity=True)
 
     @staticmethod
     def _validity_queries(person_table=None):
@@ -1767,11 +1681,12 @@ class Person(
             tables=columns,
             decorators=decorators)
 
-    def _all_members(self, need_karma=False, need_ubuntu_coc=False,
+    def _members(self, direct, need_karma=False, need_ubuntu_coc=False,
         need_location=False, need_archive=False, need_preferred_email=False,
         need_validity=False):
         """Lookup all members of the team with optional precaching.
 
+        :param direct: If True only direct members are returned.
         :param need_karma: The karma attribute will be cached.
         :param need_ubuntu_coc: The is_ubuntu_coc_signer attribute will be
             cached.
@@ -1785,15 +1700,25 @@ class Person(
         #       The difference between the two is that
         #       getMembersWithPreferredEmails includes self, which is arguably
         #       wrong, but perhaps deliberate.
-        origin = [
-            Person,
-            Join(TeamParticipation, TeamParticipation.person == Person.id),
-            ]
-        conditions = And(
-            # Members of this team,
-            TeamParticipation.team == self.id,
-            # But not the team itself.
-            TeamParticipation.person != self.id)
+        origin = [Person]
+        if not direct:
+            origin.append(Join(
+                TeamParticipation, TeamParticipation.person == Person.id))
+            conditions = And(
+                # Members of this team,
+                TeamParticipation.team == self.id,
+                # But not the team itself.
+                TeamParticipation.person != self.id)
+        else:
+            origin.append(Join(
+                TeamMembership, TeamMembership.personID == Person.id))
+            conditions = And(
+                # Membership in this team,
+                TeamMembership.team == self.id,
+                # And approved or admin status
+                TeamMembership.status.is_in([
+                    TeamMembershipStatus.APPROVED,
+                    TeamMembershipStatus.ADMIN]))
         # Use a PersonSet object that is not security proxied to allow
         # manipulation of the object.
         person_set = PersonSet()
@@ -1898,6 +1823,13 @@ class Person(
         """See `IPerson`."""
         return self.approvedmembers.union(
             self.adminmembers, orderBy=self._sortingColumnsForSetOperations)
+
+    @property
+    def api_activemembers(self):
+        """See `IPerson`."""
+        return self._members(direct=True, need_karma=True,
+            need_ubuntu_coc=True, need_location=True, need_archive=True,
+            need_preferred_email=True, need_validity=True)
 
     @property
     def active_member_count(self):
@@ -2138,7 +2070,8 @@ class Person(
     def is_merge_pending(self):
         """See `IPublicPerson`."""
         return not getUtility(
-            IPersonMergeJobSource).find(from_person=self).is_empty()
+            IPersonMergeJobSource).find(
+                from_person=self, to_person=self, any_person=True).is_empty()
 
     def visibilityConsistencyWarning(self, new_value):
         """Warning used when changing the team's visibility.
@@ -2719,7 +2652,7 @@ class Person(
     @cachedproperty
     def is_ubuntu_coc_signer(self):
         """See `IPerson`."""
-        # Also assigned to by self._all_members.
+        # Also assigned to by self._members.
         store = Store.of(self)
         query = And(SignedCodeOfConduct.ownerID == self.id,
             Person._is_ubuntu_coc_signer_condition())

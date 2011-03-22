@@ -260,7 +260,7 @@ The language code is displayed.
 
     >>> tag = find_tag_by_id(translations_browser.contents, 'nonempty')
     >>> print extract_text(tag.renderContents())
-    bar in distro uses the following custom language codes:
+    bar in Distro uses the following custom language codes:
     Code...     ...maps to language
     pt-br       Portuguese (Brazil)
 
@@ -277,7 +277,7 @@ release series of the same distribution.
     >>> translations_browser.getLink("define custom language codes").click()
     >>> tag = find_tag_by_id(translations_browser.contents, 'nonempty')
     >>> print extract_text(tag.renderContents())
-    bar in distro uses the following custom language codes:
+    bar in Distro uses the following custom language codes:
     Code...     ...maps to language
     pt-br       Portuguese (Brazil)
 

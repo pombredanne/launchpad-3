@@ -69,13 +69,13 @@ list of emails to send:
     To: foo.bar@canonical.com
     From: Sample Person <1@bugs.launchpad.net>
     Subject: [Bug 1] subject
-    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in Ubuntu)
     <BLANKLINE>
     a comment.
     <BLANKLINE>
     ...
     You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu.
+    mozilla-firefox in Ubuntu.
     http://bugs.launchpad.dev/bugs/1
     <BLANKLINE>
     Title:
@@ -609,7 +609,7 @@ makes it write out the emails it sends.
     ...
     References: sdsdfsfd
     ...
-    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in Ubuntu)
     ...
     INFO    Notifying marilize@hbd.com about bug 1.
     ...
@@ -627,7 +627,7 @@ makes it write out the emails it sends.
     ...
     References: sdsdfsfd
     ...
-    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in Ubuntu)
     Errors-To: bounces@canonical.com
     Return-Path: bounces@canonical.com
     Precedence: bulk
@@ -642,7 +642,7 @@ makes it write out the emails it sends.
     -- =
     <BLANKLINE>
     You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu.
+    mozilla-firefox in Ubuntu.
     http://bugs.launchpad.dev/bugs/1
     <BLANKLINE>
     Title:
@@ -1200,7 +1200,7 @@ notifications.
     To: foo.bar@canonical.com
     ...
     You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu.
+    mozilla-firefox in Ubuntu.
     ...
     ----------------------------------------------------------------------
     To: marilize@hbd.com
@@ -1261,7 +1261,7 @@ COMMENTS, he also receives these notifications.
     To: foo.bar@canonical.com
     ...
     You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu.
+    mozilla-firefox in Ubuntu.
     ...
     ----------------------------------------------------------------------
     To: marilize@hbd.com
@@ -1320,7 +1320,7 @@ no comment notifications.
     To: foo.bar@canonical.com
     ...
     You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu.
+    mozilla-firefox in Ubuntu.
     ...
     ----------------------------------------------------------------------
     To: marilize@hbd.com
@@ -1371,7 +1371,7 @@ receives these notifications.
     To: foo.bar@canonical.com
     ...
     You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu.
+    mozilla-firefox in Ubuntu.
     http://bugs.launchpad.dev/bugs/1
     ...
     ----------------------------------------------------------------------
@@ -1435,7 +1435,7 @@ no notifications created by addChange().
     To: foo.bar@canonical.com
     ...
     You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu.
+    mozilla-firefox in Ubuntu.
     ...
     ----------------------------------------------------------------------
     To: marilize@hbd.com
@@ -1497,7 +1497,7 @@ after all.
     To: foo.bar@canonical.com
     ...
     You received this bug notification because you are subscribed to
-    mozilla-firefox in ubuntu.
+    mozilla-firefox in Ubuntu.
     http://bugs.launchpad.dev/bugs/1
     ...
     ----------------------------------------------------------------------
