@@ -122,7 +122,7 @@ class SourcePackageTranslationSharingDetailsView(
         productseries = self.context.productseries
         if productseries is None:
             return False
-        return producteries.has_current_translation_templates
+        return productseries.has_current_translation_templates
 
     def initialize(self):
         if not getFeatureFlag('translations.sharing_information.enabled'):
