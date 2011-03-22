@@ -947,6 +947,12 @@ class IProductSet(Interface):
         needed for other callers.
         """
 
+    def search_sqlobject(text):
+        """A compatible sqlobject search for bugalsoaffects.py.
+
+        DO NOT ADD USES.
+        """
+
     @operation_returns_collection_of(IProduct)
     @call_with(quantity=None)
     @export_read_operation()

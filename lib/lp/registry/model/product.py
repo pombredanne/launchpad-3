@@ -1616,6 +1616,15 @@ class ProductSet:
                  'security_contactID'])
         return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
+    def search_sqlobject(self, text):
+        """See `IProductSet`"""
+        clauseTables = ['Product']
+        queries = ["Product.fti @@ ftq(%s) " % sqlvalues(text)]
+        queries.append('Product.active IS TRUE')
+        query = "Product.active IS TRUE AND Product.fti @@ ftq(%s)" \
+            % sqlvalues(text)
+        return Product.select(query)
+
     def getTranslatables(self):
         """See `IProductSet`"""
         # XXX j.c.sackett 2010-11-19 bug=677532 It's less than ideal that
