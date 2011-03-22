@@ -38,6 +38,7 @@ from lazr.restful.declarations import (
     export_write_operation,
     exported,
     mutator_for,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
@@ -454,6 +455,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     @operation_parameters(
         spec=Reference(schema=Interface)) # Really ISpecification
     @export_write_operation()
+    @operation_for_version('devel')
     def linkSpecification(spec, registrant):
         """Link an ISpecification to a branch.
 
@@ -465,6 +467,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     @operation_parameters(
         spec=Reference(schema=Interface)) # Really ISpecification
     @export_write_operation()
+    @operation_for_version('devel')
     def unlinkSpecification(spec, user):
         """Unlink an ISpecification to a branch.
 
