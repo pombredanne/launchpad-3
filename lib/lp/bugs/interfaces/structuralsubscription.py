@@ -22,6 +22,7 @@ from lazr.restful.declarations import (
     export_read_operation,
     export_write_operation,
     exported,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
@@ -172,6 +173,7 @@ class IStructuralSubscriptionTargetWrite(Interface):
             required=False))
     @call_with(subscribed_by=REQUEST_USER)
     @export_factory_operation(IStructuralSubscription, [])
+    @operation_for_version('beta')
     def addBugSubscription(subscriber, subscribed_by):
         """Add a bug subscription for this structure.
 
@@ -194,6 +196,7 @@ class IStructuralSubscriptionTargetWrite(Interface):
             required=False))
     @call_with(unsubscribed_by=REQUEST_USER)
     @export_write_operation()
+    @operation_for_version('beta')
     def removeBugSubscription(subscriber, unsubscribed_by):
         """Remove a subscription to bugs from this structure.
 
