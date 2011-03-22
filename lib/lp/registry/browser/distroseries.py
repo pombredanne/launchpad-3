@@ -90,6 +90,9 @@ from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
+from lp.soyuz.interfaces.archive import (
+    CannotCopy,
+    )
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.translations.browser.distroseries import (
     check_distroseries_translations_viewable,
@@ -628,9 +631,16 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
             diff.source_package_name.name
                 for diff in selected_differences]
 
-        self.request.response.addNotification(
-            "The following sources would have been synced if this "
-            "wasn't just a stub operation: " + ", ".join(diffs))
+        try:
+            self.context.main_archive.syncSources(
+                diffs, from_archive=self.context.parent_series.main_archive,
+                to_pocket='Release', to_series=self.context.name)
+        except CannotCopy, e:
+            self.request.response.addErrorNotification("Cannot copy: %s" % e)
+        else:
+            self.request.response.addNotification(
+                "The following sources were synchronized: " +
+                ", ".join(diffs))
 
         self.next_url = self.request.URL
 
