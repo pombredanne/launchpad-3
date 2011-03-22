@@ -268,7 +268,7 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def test_batch_filtered(self):
-        # The name_filter parameter allows to filter packages by name.
+        # The name_filter parameter allows filtering of packages by name.
         set_derived_series_ui_feature_flag(self)
         derived_series = self.factory.makeDistroSeries(
             name='derilucid', parent_series=self.factory.makeDistroSeries(
@@ -346,19 +346,27 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
                 derived_series, '+localpackagediffs')
             self.assertTrue(view.canPerformSync())
 
-    # XXX 2010-10-29 michaeln bug=668334
-    # The following three tests pass locally but there is a bug with
-    # per-thread features when running with a larger subset of tests.
-    # These should be re-enabled once the above bug is fixed.
-    def disabled_test_sync_notification_on_success(self):
+    def test_sync_notification_on_success(self):
         # Syncing one or more diffs results in a stub notification.
+        versions = {
+            'base': '1.0',
+            'derived': '1.0derived1',
+            'parent': '1.0-1',
+        }
+        parent_series = self.factory.makeDistroSeries(name='lucid')
         derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=self.factory.makeDistroSeries(
-                name='lucid'))
+            name='derilucid', parent_series=parent_series)
         difference = self.factory.makeDistroSeriesDifference(
             source_package_name_str='my-src-name',
-            derived_series=derived_series)
+            derived_series=derived_series, versions=versions)
 
+        # The inital state is that 1.0-1 is not in the derived series.
+        pubs = derived_series.main_archive.getPublishedSources(
+            name='my-src-name', version=versions['parent'],
+            distroseries=derived_series).any()
+        self.assertIs(None, pubs)
+
+        # Now, sync the source from the parent using the form.
         set_derived_series_ui_feature_flag(self)
         with person_logged_in(derived_series.owner):
             view = create_initialized_view(
@@ -370,6 +378,15 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
                     'field.actions.sync': 'Sync',
                     })
 
+        # The parent's version should now be in the derived series:
+        pub = derived_series.main_archive.getPublishedSources(
+            name='my-src-name', version=versions['parent'],
+            distroseries=derived_series).one()
+        self.assertIsNot(None, pub)
+        self.assertEqual(versions['parent'], pub.version)
+
+        # The view should show no errors, and the notification should
+        # confirm the sync worked.
         self.assertEqual(0, len(view.errors))
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
@@ -377,9 +394,10 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
             "The following sources would have been synced if this wasn't "
             "just a stub operation: my-src-name",
             notifications[0].message)
+        # 302 is a redirect back to the same page.
         self.assertEqual(302, view.request.response.getStatus())
 
-    def disabled_test_sync_error_nothing_selected(self):
+    def test_sync_error_nothing_selected(self):
         # An error is raised when a sync is requested without any selection.
         derived_series = self.factory.makeDistroSeries(
             name='derilucid', parent_series=self.factory.makeDistroSeries(
@@ -401,7 +419,7 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
         self.assertEqual(
             'No differences selected.', view.errors[0])
 
-    def disabled_test_sync_error_invalid_selection(self):
+    def test_sync_error_invalid_selection(self):
         # An error is raised when an invalid difference is selected.
         derived_series = self.factory.makeDistroSeries(
             name='derilucid', parent_series=self.factory.makeDistroSeries(
