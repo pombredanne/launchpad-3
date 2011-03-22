@@ -1655,13 +1655,7 @@ class PackageUploadCustom(SQLBase):
             self.packageupload.distroseries.distribution.name,
             self.packageupload.distroseries.name))
 
-        name = "publish_" + self.customformat.name
-        method = getattr(self, name, None)
-        if method is not None:
-            method(logger)
-        else:
-            raise NotFoundError("Unable to find a publisher method for %s" % (
-                self.customformat.name))
+        self.publisher_dispatch[self.customformat](self, logger)
 
     def temp_filename(self):
         """See `IPackageUploadCustom`."""
@@ -1692,7 +1686,7 @@ class PackageUploadCustom(SQLBase):
         finally:
             shutil.rmtree(os.path.dirname(temp_filename))
 
-    def publish_DEBIAN_INSTALLER(self, logger=None):
+    def publishDebianInstaller(self, logger=None):
         """See `IPackageUploadCustom`."""
         # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
         # to instantiate the object in question and avoid circular imports
@@ -1701,7 +1695,7 @@ class PackageUploadCustom(SQLBase):
 
         self._publishCustom(process_debian_installer)
 
-    def publish_DIST_UPGRADER(self, logger=None):
+    def publishDistUpgrader(self, logger=None):
         """See `IPackageUploadCustom`."""
         # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
         # to instantiate the object in question and avoid circular imports
@@ -1710,7 +1704,7 @@ class PackageUploadCustom(SQLBase):
 
         self._publishCustom(process_dist_upgrader)
 
-    def publish_DDTP_TARBALL(self, logger=None):
+    def publishDdtpTarball(self, logger=None):
         """See `IPackageUploadCustom`."""
         # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
         # to instantiate the object in question and avoid circular imports
@@ -1719,7 +1713,7 @@ class PackageUploadCustom(SQLBase):
 
         self._publishCustom(process_ddtp_tarball)
 
-    def publish_ROSETTA_TRANSLATIONS(self, logger=None):
+    def publishRosettaTranslations(self, logger=None):
         """See `IPackageUploadCustom`."""
         sourcepackagerelease = self.packageupload.sourcepackagerelease
 
@@ -1756,7 +1750,7 @@ class PackageUploadCustom(SQLBase):
                 debug(logger, "Unable to fetch %s to import it into Rosetta" %
                     self.libraryfilealias.http_url)
 
-    def publish_STATIC_TRANSLATIONS(self, logger=None):
+    def publishStaticTranslations(self, logger=None):
         """See `IPackageUploadCustom`."""
         # Static translations are not published.  Currently, they're
         # only exposed via webservice methods so that third parties can
@@ -1764,7 +1758,7 @@ class PackageUploadCustom(SQLBase):
         debug(logger, "Skipping publishing of static translations.")
         return
 
-    def publish_META_DATA(self, logger=None):
+    def publishMetaData(self, logger=None):
         """See `IPackageUploadCustom`."""
         # In the future this could use the existing custom upload file
         # processing which deals with versioning, etc., but that's too
@@ -1786,6 +1780,21 @@ class PackageUploadCustom(SQLBase):
         file_obj = file(dest_file, "wb")
         self.libraryfilealias.open()
         copy_and_close(self.libraryfilealias, file_obj)
+
+    publisher_dispatch = {
+        PackageUploadCustomFormat.DEBIAN_INSTALLER: publishDebianInstaller,
+        PackageUploadCustomFormat.ROSETTA_TRANSLATIONS:
+            publishRosettaTranslations,
+        PackageUploadCustomFormat.DIST_UPGRADER: publishDistUpgrader,
+        PackageUploadCustomFormat.DDTP_TARBALL: publishDdtpTarball,
+        PackageUploadCustomFormat.STATIC_TRANSLATIONS:
+            publishStaticTranslations,
+        PackageUploadCustomFormat.META_DATA: publishMetaData,
+        }
+
+    # publisher_dispatch must have an entry for each value of
+    # PackageUploadCustomFormat.
+    assert len(publisher_dispatch) == len(PackageUploadCustomFormat)
 
 
 class PackageUploadSet:
