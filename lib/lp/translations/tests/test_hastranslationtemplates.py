@@ -163,12 +163,46 @@ class HasTranslationTemplatesTestMixin:
         self.product_or_distro.translations_usage = ServiceUsage.EXTERNAL
         self.assertFalse(self.container.has_current_translation_templates)
 
+    def test_has_obsolete_translation_templates(self):
+        # A series without templates has no obsolete templates.
+        self.assertFalse(self.container.has_obsolete_translation_templates)
+
+        # A series with a current template has no obsolete templates either.
+        first_template = self.createTranslationTemplate("first")
+        self.assertFalse(self.container.has_obsolete_translation_templates)
+
+        # A series with only non-current templates has obsolete templates.
+        first_template.iscurrent = False
+        self.assertTrue(self.container.has_obsolete_translation_templates)
+
+        # A series with current and non-current templates has obsolete
+        # templates.
+        self.createTranslationTemplate("second")
+        self.assertTrue(self.container.has_obsolete_translation_templates)
+
     def test_has_translation_files(self):
         # has_translations_files should only return true if the object has
         # pofiles.
         self.assertFalse(self.container.has_translation_files)
         self.createTranslationFile("one")
         self.assertTrue(self.container.has_translation_files)
+
+    def test_getTranslationTemplateByName(self):
+        template_name = self.factory.getUniqueString()
+        # A series without templates does not find the template.
+        self.assertEqual(
+            None, self.container.getTranslationTemplateByName(template_name))
+
+        # A template with a different name is not found.
+        self.createTranslationTemplate(self.factory.getUniqueString())
+        self.assertEqual(
+            None, self.container.getTranslationTemplateByName(template_name))
+
+        # Only the template with the correct name is returned.
+        template = self.createTranslationTemplate(template_name)
+        self.assertEqual(
+            template,
+            self.container.getTranslationTemplateByName(template_name))
 
     def test_getTranslationTemplateFormats(self):
         # Check that translation_template_formats works properly.

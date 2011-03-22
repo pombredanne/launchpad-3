@@ -75,6 +75,13 @@ class HasTranslationTemplatesMixin:
         return bool(
             self.getCurrentTranslationTemplates(just_ids=True).any())
 
+    @property
+    def has_obsolete_translation_templates(self):
+        """See `IHasTranslationTemplates`."""
+        return bool(
+            self.getCurrentTranslationTemplates(
+                just_ids=True, current_value=False).any())
+
     def getCurrentTranslationFiles(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
         if just_ids:
@@ -101,6 +108,10 @@ class HasTranslationTemplatesMixin:
     def getTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
         return self._orderTemplates(self.getTemplatesCollection().select())
+
+    def getTranslationTemplateByName(self, name):
+        """See `IHasTranslationTemplates`."""
+        return self.getTemplatesCollection().restrictName(name).select().one()
 
     def getTranslationTemplateFormats(self):
         """See `IHasTranslationTemplates`."""
