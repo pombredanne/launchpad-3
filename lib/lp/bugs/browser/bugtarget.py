@@ -1574,13 +1574,13 @@ class BugsPatchesView(LaunchpadView):
 class TargetSubscriptionView(LaunchpadView):
     """A view to show all a person's structural subscriptions to a target."""
 
-    def __init__(self, context, request):
-        # XXX initialize?
-        super(TargetSubscriptionView, self).__init__(context, request)
+    def initialize(self):
+        super(TargetSubscriptionView, self).initialize()
         expose_user_administered_teams_to_js(self.request, self.user)
         subscriptions = get_structural_subscriptions_for_target(
             self.context, self.user)
-        expose_user_subscriptions_to_js(self.user, subscriptions, request)
+        expose_user_subscriptions_to_js(
+            self.user, subscriptions, self.request)
         expose_enum_to_js(self.request, BugTaskImportance, 'importances')
         expose_enum_to_js(self.request, BugTaskStatus, 'statuses')
 

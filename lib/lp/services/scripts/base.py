@@ -39,6 +39,12 @@ from canonical.launchpad.webapp.interaction import (
     setupInteractionByEmail,
     )
 from canonical.lp import initZopeless
+from lp.services.features import (
+    getFeatureFlag,
+    get_relevant_feature_controller,
+    install_feature_controller,
+    make_script_feature_controller,
+    )
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 
 
@@ -294,6 +300,7 @@ class LaunchpadScript:
     @log_unhandled_exception_and_exit
     def run(self, use_web_security=False, isolation=None):
         """Actually run the script, executing zcml and initZopeless."""
+
         if isolation is None:
             isolation = ISOLATION_LEVEL_DEFAULT
         self._init_zca(use_web_security=use_web_security)
@@ -303,6 +310,9 @@ class LaunchpadScript:
         profiler = None
         if self.options.profile:
             profiler = Profile()
+
+        original_feature_controller = get_relevant_feature_controller()
+        install_feature_controller(make_script_feature_controller(self.name))
         try:
             if profiler:
                 profiler.runcall(self.main)
@@ -316,6 +326,8 @@ class LaunchpadScript:
         else:
             date_completed = datetime.datetime.now(UTC)
             self.record_activity(date_started, date_completed)
+        finally:
+            install_feature_controller(original_feature_controller)
         if profiler:
             profiler.dump_stats(self.options.profile)
 

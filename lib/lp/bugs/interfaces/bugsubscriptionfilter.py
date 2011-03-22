@@ -100,7 +100,7 @@ class IBugSubscriptionFilterMethods(Interface):
     @export_destructor_operation()
     def delete():
         """Delete this bug subscription filter.
-        
+
         If it is the last filter in the structural subscription, delete the
         structural subscription."""
 

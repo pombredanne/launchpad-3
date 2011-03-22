@@ -429,8 +429,8 @@ def expose_user_subscriptions_to_js(user, subscriptions, request):
                 target_title=target.title,
                 target_url=absoluteURL(target, request),
                 filters=[])
+        subscriber = subscription.subscriber
         for filter in subscription.bug_filters:
-            subscriber = subscription.subscriber
             is_team = subscriber.isTeam()
             user_is_team_admin = (is_team and
                                   person_is_team_admin(user, subscriber))

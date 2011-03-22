@@ -32,7 +32,9 @@
       </style>
     </noscript>
 
-    <script type="text/javascript">
+    <script type="text/javascript"
+        tal:condition="
+          request/features/advanced-structural-subscriptions.enabled">
         LPS.use('lp.registry.structural_subscription', function(Y) {
             module = Y.lp.registry.structural_subscription;
             Y.on('domready', function() {
