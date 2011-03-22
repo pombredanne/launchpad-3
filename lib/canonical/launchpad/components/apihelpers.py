@@ -166,5 +166,8 @@ def patch_operation_explicit_version(interface, method_name, version):
     try:
         tagged.rename_version(None, version)
     except Exception, e:
-        # i guess it's ok?
-        pass
+        s = "%s.%s.%s" % (interface.__module__, interface.__name__, method_name)
+        #raise Exception(s)
+        f = open("/home/leonardr/bad.txt", "a")
+        f.write(s + "\n")
+

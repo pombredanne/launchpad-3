@@ -28,6 +28,7 @@ from lazr.restful.declarations import (
     export_write_operation,
     exported,
     LAZR_WEBSERVICE_EXPORTED,
+    operation_for_version,
     operation_parameters,
     operation_removed_in_version,
     operation_returns_collection_of,
@@ -229,7 +230,7 @@ class IHasBugs(Interface):
     @operation_parameters(**search_tasks_params_for_api_default)
     @operation_returns_collection_of(IBugTask)
     @export_read_operation()
-
+    @operation_for_version('beta')
     def searchTasks(search_params, user=None,
                     order_by=None, search_text=None,
                     status=None, importance=None,

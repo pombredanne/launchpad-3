@@ -116,6 +116,7 @@ class IStructuralSubscriptionTargetRead(Interface):
 
     @operation_returns_collection_of(IStructuralSubscription)
     @export_read_operation()
+    @operation_for_version('beta')
     def getSubscriptions():
         """Return all the subscriptions with the specified levels.
 
@@ -137,6 +138,7 @@ class IStructuralSubscriptionTargetRead(Interface):
     @operation_parameters(person=Reference(schema=IPerson))
     @operation_returns_entry(IStructuralSubscription)
     @export_read_operation()
+    @operation_for_version('beta')
     def getSubscription(person):
         """Return the subscription for `person`, if it exists."""
 
