@@ -623,8 +623,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         :param end_date: Return revisions that were committed before the
             end_date
         :param oldest_first: Defines the ordering of the result set.
-        :returns: A resultset of tuples for
-            (BranchRevision, Revision, RevisionAuthor)
+        :returns: A resultset of tuples for (BranchRevision, Revision)
         """
 
     def getRevisionsSince(timestamp):
