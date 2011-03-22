@@ -30,6 +30,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
+    cursor,
     flush_database_updates,
     SQLBase,
     sqlvalues,
@@ -492,6 +493,33 @@ class TeamMembershipSet:
                 Person.renewal_policy !=
                     TeamMembershipRenewalPolicy.AUTOMATIC)
         return IStore(TeamMembership).find(TeamMembership, *conditions)
+
+    def deactivateActiveMemberships(self, team, comment, reviewer):
+        """See `ITeamMembershipSet`."""
+        now = datetime.now(pytz.timezone('UTC'))
+        store = Store.of(team)
+        cur = cursor()
+        all_members = list(team.activemembers)
+        cur.execute("""
+            UPDATE TeamMembership
+            SET status=%(status)s,
+                last_changed_by=%(last_changed_by)s,
+                last_change_comment=%(comment)s,
+                date_last_changed=%(date_last_changed)s
+            WHERE
+                TeamMembership.team = %(team)s
+                AND TeamMembership.status IN %(original_statuses)s
+            """,
+            dict(
+                status=TeamMembershipStatus.DEACTIVATED,
+                last_changed_by=reviewer.id,
+                comment=comment,
+                date_last_changed=now,
+                team=team.id,
+                original_statuses=ACTIVE_STATES))
+        for member in all_members:
+            # store.invalidate() is called for each iteration.
+            _cleanTeamParticipation(member, team)
 
 
 class TeamParticipation(SQLBase):

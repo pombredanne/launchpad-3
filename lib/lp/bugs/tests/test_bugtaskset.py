@@ -89,3 +89,40 @@ class TestStatusCountsForProductSeries(TestCaseWithFactory):
              (BugTaskStatus.NEW, 3),
             ],
             self.get_counts(None))
+
+
+class TestBugTaskMilestones(TestCaseWithFactory):
+    """Tests that appropriate milestones are returned for bugtasks."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugTaskMilestones, self).setUp()
+        self.product = self.factory.makeProduct()
+        self.product_bug = self.factory.makeBug(product=self.product)
+        self.product_milestone = self.factory.makeMilestone(
+            product=self.product)
+        self.distribution = self.factory.makeDistribution()
+        self.distribution_bug = self.factory.makeBug(
+            distribution=self.distribution)
+        self.distribution_milestone = self.factory.makeMilestone(
+            distribution=self.distribution)
+        self.bugtaskset = getUtility(IBugTaskSet)
+
+    def test_get_target_milestones_with_one_task(self):
+        milestones = list(self.bugtaskset.getBugTaskTargetMilestones(
+            [self.product_bug.default_bugtask]))
+        self.assertEqual(
+            [self.product_milestone],
+            milestones)
+
+    def test_get_target_milestones_multiple_tasks(self):
+        tasks = [
+            self.product_bug.default_bugtask,
+            self.distribution_bug.default_bugtask,
+            ]
+        milestones = sorted(
+            self.bugtaskset.getBugTaskTargetMilestones(tasks))
+        self.assertEqual(
+            sorted([self.product_milestone, self.distribution_milestone]),
+            milestones)
