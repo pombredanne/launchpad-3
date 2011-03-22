@@ -648,8 +648,9 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def setCommentVisibility(self, user, comment_number, visible):
         """See `IQuestion`."""
-        message = self.messages[comment_number] 
+        message = self.messages[comment_number]
         message.visible = visible
+
 
 class QuestionSet:
     """The set of questions in the Answer Tracker."""

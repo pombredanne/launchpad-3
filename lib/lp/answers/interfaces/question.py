@@ -25,7 +25,6 @@ from lazr.restful.declarations import (
     REQUEST_USER,
     )
 from lazr.restful.fields import (
-    CollectionField,
     Reference,
     )
 from zope.interface import (
@@ -483,6 +482,7 @@ class IQuestion(IHasOwner):
         to Launchpad admins, and will return a HTTP Error 401: Unauthorized
         error for non-admin callers.
         """
+
 
 # These schemas are only used by browser/question.py and should really live
 # there. See Bug #66950.
