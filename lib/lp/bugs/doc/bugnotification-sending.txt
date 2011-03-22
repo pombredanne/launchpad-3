@@ -22,7 +22,7 @@ easier.
     >>> def print_notification_headers(email_notification):
     ...     for header in ['To', 'From', 'Subject',
     ...                    'X-Launchpad-Message-Rationale',
-    ...                    'X-Launchpad-Subscription-Filter']:
+    ...                    'X-Launchpad-Subscription']:
     ...         if email_notification[header]:
     ...             print "%s: %s" % (header, email_notification[header])
 
@@ -1281,14 +1281,14 @@ COMMENTS, he also receives these notifications.
     From: Sample Person <...@bugs.launchpad.net>
     Subject: [Bug 1] subject
     X-Launchpad-Message-Rationale: Subscriber (Mozilla Firefox)
-    X-Launchpad-Subscription-Filter: Allow-comments filter
+    X-Launchpad-Subscription: Allow-comments filter
     <BLANKLINE>
     another comment.
     <BLANKLINE>
     --
     You received this bug notification because you are subscribed to Mozilla
     Firefox.
-    Matching filters: Allow-comments filter
+    Matching subscriptions: Allow-comments filter
     ...
     ----------------------------------------------------------------------
     To: support@ubuntu.com
@@ -1394,7 +1394,7 @@ receives these notifications.
     From: Sample Person <...@bugs.launchpad.net>
     Subject: [Bug 1] subject
     X-Launchpad-Message-Rationale: Subscriber (Mozilla Firefox)
-    X-Launchpad-Subscription-Filter: Allow-comments filter
+    X-Launchpad-Subscription: Allow-comments filter
     <BLANKLINE>
     no comment for no-priv.
     <BLANKLINE>
@@ -1405,7 +1405,7 @@ receives these notifications.
     --
     You received this bug notification because you are subscribed to Mozilla
     Firefox.
-    Matching filters: Allow-comments filter
+    Matching subscriptions: Allow-comments filter
     ...
     ----------------------------------------------------------------------
     To: support@ubuntu.com
