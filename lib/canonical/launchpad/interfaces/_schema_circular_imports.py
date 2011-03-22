@@ -23,6 +23,7 @@ from canonical.launchpad.components.apihelpers import (
     patch_choice_vocabulary,
     patch_collection_property,
     patch_collection_return_type,
+    patch_entry_explicit_version,
     patch_entry_return_type,
     patch_list_parameter_type,
     patch_plain_parameter_type,
@@ -650,7 +651,6 @@ from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.translationgroup import ITranslationGroup
 from lp.translations.interfaces.translationimportqueue import ITranslationImportQueueEntry
-
 
 patch_entry_explicit_version(IArchive, 'beta')
 patch_entry_explicit_version(IArchiveDependency, 'beta')

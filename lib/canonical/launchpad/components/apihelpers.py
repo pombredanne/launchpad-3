@@ -127,6 +127,7 @@ def patch_choice_vocabulary(exported_class, method_name, param_name,
         LAZR_WEBSERVICE_EXPORTED)[
             'params'][param_name].vocabulary = vocabulary
 
+
 def patch_entry_explicit_version(interface, version):
     """Make it look as though an entry definition used as_of.
 

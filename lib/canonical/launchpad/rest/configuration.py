@@ -27,7 +27,7 @@ class LaunchpadWebServiceConfiguration(BaseWebServiceConfiguration):
     last_version_with_mutator_named_operations = "beta"
     first_version_with_total_size_link = "devel"
     view_permission = "launchpad.View"
-    require_explicit_version = True
+    require_explicit_versions = True
     compensate_for_mod_compress_etag_modification = True
 
     service_description = """The Launchpad web service allows automated
