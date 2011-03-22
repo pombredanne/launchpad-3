@@ -128,7 +128,7 @@ class LinkData:
     implements(ILinkData)
 
     def __init__(self, target, text, summary=None, icon=None, enabled=True,
-                 site=None, menu=None):
+                 site=None, menu=None, hidden=False):
         """Create a new link to 'target' with 'text' as the link text.
 
         'target' is a relative path, an absolute path, or an absolute url.
@@ -158,6 +158,7 @@ class LinkData:
         self.enabled = enabled
         self.site = site
         self.menu = menu
+        self.hidden = hidden
 
 Link = LinkData
 

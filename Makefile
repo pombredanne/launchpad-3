@@ -154,9 +154,9 @@ build: compile apidoc jsbuild css_combine
 css_combine: sprite_css bin/combine-css
 	${SHHH} bin/combine-css
 
-sprite_css: ${LP_BUILT_JS_ROOT}/style-3-0.css
+sprite_css: ${LP_BUILT_JS_ROOT}/sprite.css
 
-${LP_BUILT_JS_ROOT}/style-3-0.css: bin/sprite-util ${ICING}/style-3-0.css.in ${ICING}/icon-sprites.positioning
+${LP_BUILT_JS_ROOT}/sprite.css: bin/sprite-util ${ICING}/sprite.css.in ${ICING}/icon-sprites.positioning
 	${SHHH} bin/sprite-util create-css
 
 sprite_image:
