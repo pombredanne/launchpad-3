@@ -5,16 +5,13 @@
 
 __metaclass__ = type
 
-import os
-import subprocess
-import sys
 import transaction
 from psycopg2 import ProgrammingError
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
-from canonical.config import config
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.scripts.tests import run_script
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
@@ -38,10 +35,7 @@ from lp.soyuz.model.distroseriesdifferencejob import (
     make_metadata,
     may_require_job,
     )
-from lp.testing import (
-    person_logged_in,
-    TestCaseWithFactory,
-    )
+from lp.testing import TestCaseWithFactory
 
 
 class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
@@ -193,14 +187,11 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         self.getJobSource().createForPackagePublication(
             derived_series, package)
         transaction.commit() # The cronscript is a different process.
-        script = os.path.join(
-            config.root, 'cronscripts', 'distroseriesdifference_job.py')
-        args = [sys.executable, script, '-v']
-        process = subprocess.Popen(
-            args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
+        return_code, stdout, stderr = run_script(
+            'cronscripts/distroseriesdifference_job.py', ['-vvv'])
         # The cronscript ran how we expected it to.
-        self.assertEqual(process.returncode, 0)
+        self.assertEqual(return_code, 0)
+        print stdout
         self.assertIn(
             'INFO    Ran 1 DistroSeriesDifferenceJob jobs.', stderr)
         # And it did what we expected.
