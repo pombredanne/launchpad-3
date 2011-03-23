@@ -24,15 +24,21 @@ from bzrlib.plugins.builder.recipe import (
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import use_template
+from lazr.restful.interfaces import (
+    IFieldHTMLRenderer,
+    IWebServiceClientRequest,
+    )
 import simplejson
 from storm.locals import Store
 from z3c.ptcompat import ViewPageTemplateFile
+from zope import component
 from zope.app.form.browser.widget import Widget
 from zope.app.form.interfaces import IView
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
 from zope.interface import (
+    implementer,
     implements,
     Interface,
     providedBy,
@@ -44,6 +50,7 @@ from zope.schema import (
     Text,
     TextLine,
     )
+from zope.schema.interfaces import ICollection
 from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
@@ -296,6 +303,43 @@ class SourcePackageRecipeView(LaunchpadView):
         title = "Edit the recipe name"
         return TextLineEditorWidget(self.context, name, title, 'h1')
 
+    @property
+    def distroseries_widget(self):
+        from lp.app.browser.lazrjs import InlineMultiCheckboxWidget
+        field = ISourcePackageEditSchema['distroseries']
+        return InlineMultiCheckboxWidget(
+            self.context,
+            field,
+            attribute_type="reference",
+            vocabulary='BuildableDistroSeries',
+            label="Distribution series:",
+            label_tag="dt",
+            header="Change default distribution series:",
+            empty_display_value="None",
+            selected_items=sorted(
+                self.context.distroseries, key=lambda ds: ds.displayname),
+            items_tag="dd",
+            )
+
+
+@component.adapter(ISourcePackageRecipe, ICollection,
+                   IWebServiceClientRequest)
+@implementer(IFieldHTMLRenderer)
+def distroseries_renderer(context, field, request):
+    """Render a distroseries collection as a set of links."""
+
+    def render(value):
+        distroseries = sorted(
+            context.distroseries, key=lambda ds: ds.displayname)
+        if not distroseries:
+            return 'None'
+        html = "<ul>"
+        html += ''.join(
+            ["<li>%s</li>" % format_link(series) for series in distroseries])
+        html += "</ul>"
+        return html
+    return render
+
 
 def builds_for_recipe(recipe):
         """A list of interesting builds.
@@ -337,7 +381,7 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
 
         The distroseries function as defaults for requesting a build.
         """
-        initial_values = {'distros': self.context.distroseries}
+        initial_values = {'distroseries': self.context.distroseries}
         build = self.context.last_build
         if build is not None:
             initial_values['archive'] = build.archive
@@ -346,26 +390,26 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
     class schema(Interface):
         """Schema for requesting a build."""
         archive = Choice(vocabulary='TargetPPAs', title=u'Archive')
-        distros = List(
+        distroseries = List(
             Choice(vocabulary='BuildableDistroSeries'),
             title=u'Distribution series')
 
-    custom_widget('distros', LabeledMultiCheckBoxWidget)
+    custom_widget('distroseries', LabeledMultiCheckBoxWidget)
 
     def validate(self, data):
-        distros = data.get('distros', [])
+        distros = data.get('distroseries', [])
         if not len(distros):
-            self.setFieldError('distros',
+            self.setFieldError('distroseries',
                 "You need to specify at least one distro series for which "
                 "to build.")
             return
         over_quota_distroseries = []
-        for distroseries in data['distros']:
+        for distroseries in data['distroseries']:
             if self.context.isOverQuota(self.user, distroseries):
                 over_quota_distroseries.append(str(distroseries))
         if len(over_quota_distroseries) > 0:
             self.setFieldError(
-                'distros',
+                'distroseries',
                 "You have exceeded today's quota for %s." %
                 ', '.join(over_quota_distroseries))
 
@@ -378,7 +422,7 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
         """
         informational = {}
         builds = []
-        for distroseries in data['distros']:
+        for distroseries in data['distroseries']:
             try:
                 build = self.context.requestBuild(
                     data['archive'], self.user, distroseries, manual=True)
@@ -512,18 +556,13 @@ class ISourcePackageEditSchema(Interface):
         'description',
         'owner',
         'build_daily',
+        'distroseries',
         ])
     daily_build_archive = Choice(vocabulary='TargetPPAs',
         title=u'Daily build archive',
         description=(
             u'If built daily, this is the archive where the package '
             u'will be uploaded.'))
-    distros = List(
-        Choice(vocabulary='BuildableDistroSeries'),
-        title=u'Default distribution series',
-        description=(
-            u'If built daily, these are the distribution versions that '
-            u'the recipe will be built for.'))
     recipe_text = has_structured_doc(
         Text(
             title=u'Recipe text', required=True,
@@ -577,9 +616,9 @@ class RecipeTextValidatorMixin:
 
     def validate(self, data):
         if data['build_daily']:
-            if len(data['distros']) == 0:
+            if len(data['distroseries']) == 0:
                 self.setFieldError(
-                    'distros',
+                    'distroseries',
                     'You must specify at least one series for daily builds.')
         try:
             parser = RecipeParser(data['recipe_text'])
@@ -673,7 +712,7 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
     title = label = 'Create a new source package recipe'
 
     schema = ISourcePackageAddSchema
-    custom_widget('distros', LabeledMultiCheckBoxWidget)
+    custom_widget('distroseries', LabeledMultiCheckBoxWidget)
     custom_widget('owner', RecipeOwnerWidget)
     custom_widget('use_ppa', LaunchpadRadioWidget)
 
@@ -695,6 +734,11 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
         # the input isn't listed as 'required' otherwise the validator gets
         # all confused when we want to create a new PPA.
         archive_widget._displayItemForMissingValue = False
+
+    def setUpFields(self):
+        super(SourcePackageRecipeAddView, self).setUpFields()
+        # Ensure distro series widget allows input
+        self.form_fields['distroseries'].for_input = True
 
     def getBranch(self):
         """The branch on which the recipe is built."""
@@ -729,7 +773,7 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
             'name': self._find_unused_name(self.user),
             'recipe_text': MINIMAL_RECIPE_TEXT % self.context.bzr_identity,
             'owner': self.user,
-            'distros': series,
+            'distroseries': series,
             'build_daily': True,
             'use_ppa': EXISTING_PPA,
             }
@@ -750,8 +794,8 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
             source_package_recipe = self.error_handler(
                 getUtility(ISourcePackageRecipeSource).new,
                 self.user, owner, data['name'],
-                data['recipe_text'], data['description'], data['distros'],
-                ppa, data['build_daily'])
+                data['recipe_text'], data['description'],
+                data['distroseries'], ppa, data['build_daily'])
             Store.of(source_package_recipe).flush()
         except ErrorHandled:
             return
@@ -795,10 +839,13 @@ class SourcePackageRecipeEditView(RecipeRelatedBranchesMixin,
     label = title
 
     schema = ISourcePackageEditSchema
-    custom_widget('distros', LabeledMultiCheckBoxWidget)
+    custom_widget('distroseries', LabeledMultiCheckBoxWidget)
 
     def setUpFields(self):
         super(SourcePackageRecipeEditView, self).setUpFields()
+
+        # Ensure distro series widget allows input
+        self.form_fields['distroseries'].for_input = True
 
         if check_permission('launchpad.Admin', self.context):
             # Exclude the PPA archive dropdown.
@@ -819,7 +866,7 @@ class SourcePackageRecipeEditView(RecipeRelatedBranchesMixin,
     @property
     def initial_values(self):
         return {
-            'distros': self.context.distroseries,
+            'distroseries': self.context.distroseries,
             'recipe_text': self.context.recipe_text,
             }
 
@@ -843,7 +890,7 @@ class SourcePackageRecipeEditView(RecipeRelatedBranchesMixin,
             except ErrorHandled:
                 return
 
-        distros = data.pop('distros')
+        distros = data.pop('distroseries')
         if distros != self.context.distroseries:
             self.context.distroseries.clear()
             for distroseries_item in distros:
