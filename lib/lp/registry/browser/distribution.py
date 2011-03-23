@@ -105,6 +105,7 @@ from lp.registry.interfaces.distributionmirror import (
     MirrorSpeed,
     )
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services import features
 from lp.services.geoip.helpers import (
     ipaddress_from_request,
     request_country,
@@ -284,7 +285,17 @@ class DistributionNavigationMenu(NavigationMenu, DistributionLinksMixin):
     """A menu of context actions."""
     usedfor = IDistribution
     facet = 'overview'
-    links = ['edit', 'subscribe_to_bug_mail']
+
+    @property
+    def links(self):
+        links = ['edit']
+        use_advanced_features = features.getFeatureFlag(
+            'malone.advanced-structural-subscriptions.enabled')
+        if use_advanced_features:
+            links.append('subscribe_to_bug_mail')
+        else:
+            links.append('subscribe')
+        return links
 
 
 class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
@@ -454,13 +465,21 @@ class DistributionBugsMenu(PillarBugsMenu):
 
     usedfor = IDistribution
     facet = 'bugs'
-    links = (
-        'bugsupervisor',
-        'securitycontact',
-        'cve',
-        'filebug',
-        'subscribe_to_bug_mail',
-        )
+    @property
+    def links(self):
+        links = [
+            'bugsupervisor',
+            'securitycontact',
+            'cve',
+            'filebug',
+            ]
+        use_advanced_features = features.getFeatureFlag(
+            'malone.advanced-structural-subscriptions.enabled')
+        if use_advanced_features:
+            links.append('subscribe_to_bug_mail')
+        else:
+            links.append('subscribe')
+        return links
 
 
 class DistributionSpecificationsMenu(NavigationMenu,

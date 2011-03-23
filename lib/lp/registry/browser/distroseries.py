@@ -185,9 +185,28 @@ class DistroSeriesOverviewMenu(
 
     usedfor = IDistroSeries
     facet = 'overview'
-    links = ['edit', 'reassign', 'driver', 'answers',
-             'packaging', 'needs_packaging', 'builds', 'queue',
-             'add_port', 'create_milestone', 'subscribe_to_bug_mail', 'admin']
+
+    @property
+    def links(self):
+        links = ['edit',
+                 'reassign',
+                 'driver',
+                 'answers',
+                 'packaging',
+                 'needs_packaging',
+                 'builds',
+                 'queue',
+                 'add_port',
+                 'create_milestone',
+                 ]
+        use_advanced_features = getFeatureFlag(
+            'malone.advanced-structural-subscriptions.enabled')
+        if use_advanced_features:
+            links.append('subscribe_to_bug_mail')
+        else:
+            links.append('subscribe')
+        links.append('admin')
+        return links
 
     @enabled_with_permission('launchpad.Admin')
     def edit(self):
@@ -251,11 +270,19 @@ class DistroSeriesBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
 
     usedfor = IDistroSeries
     facet = 'bugs'
-    links = (
-        'cve',
-        'nominations',
-        'subscribe_to_bug_mail',
-        )
+
+    @property
+    def links(self):
+        links = ['cve',
+                 'nominations',
+                 ]
+        use_advanced_features = getFeatureFlag(
+            'malone.advanced-structural-subscriptions.enabled')
+        if use_advanced_features:
+            links.append('subscribe_to_bug_mail')
+        else:
+            links.append('subscribe')
+        return links
 
     def cve(self):
         return Link('+cve', 'CVE reports', icon='cve')

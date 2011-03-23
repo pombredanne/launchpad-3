@@ -580,11 +580,11 @@ class ProductActionNavigationMenu(NavigationMenu, ProductEditLinksMixin):
     facet = 'overview'
     title = 'Actions'
 
-    @property
+    @cachedproperty
     def links(self):
         links = ['edit', 'review_license', 'administer']
         use_advanced_features = features.getFeatureFlag(
-            'advanced-structural-subscriptions.enabled')
+            'malone.advanced-structural-subscriptions.enabled')
         if use_advanced_features:
             links.append('subscribe_to_bug_mail')
         else:

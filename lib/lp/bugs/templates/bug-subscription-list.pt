@@ -12,7 +12,9 @@
 
 <head>
   <tal:head-epilogue metal:fill-slot="head_epilogue">
-    <script type="text/javascript">
+    <script type="text/javascript"
+        tal:condition="
+          request/features/malone.advanced-structural-subscriptions.enabled">
       LPS.use('lp.registry.structural_subscription', function(Y) {
           module = Y.lp.registry.structural_subscription;
           Y.on('domready', function() {
