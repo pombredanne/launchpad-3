@@ -15,20 +15,16 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.launchpad.testing.pages import (
     find_tag_by_id,
-    first_tag_by_class,
     )
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
 from lp.registry.browser.product import (
-    ProductActionNavigationMenu,
     ProductLicenseMixin,
     )
 from lp.registry.interfaces.product import (
     License,
     IProductSet,
     )
-from lp.services.features import getFeatureFlag
-from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     login_person,
     person_logged_in,
@@ -40,6 +36,7 @@ from lp.testing.views import (
     create_initialized_view,
     create_view,
     )
+
 
 class TestProductLicenseMixin(TestCaseWithFactory):
 
@@ -225,46 +222,3 @@ class TestProductView(TestCaseWithFactory):
         with person_logged_in(self.product.owner):
             self.product.licenses = [License.OTHER_PROPRIETARY]
         self.assertTrue(view.show_license_info)
-
-
-class TestProductViewStructuralSubscriptions(TestCaseWithFactory):
-    """Test structural subscriptions on the product view.
-
-    The link to structural subscriptions is controlled by the feature flag
-    'malone.advanced-structural-subscriptions.enabled'.  If it is false, the
-    old link leading to +subscribe is shown.  If it is true then the new
-    JavaScript control is used.
-    """
-
-    layer = DatabaseFunctionalLayer
-    feature_flag = 'malone.advanced-structural-subscriptions.enabled'
-
-    def setUp(self):
-        super(TestProductViewStructuralSubscriptions, self).setUp()
-        self.product = self.factory.makeProduct()
-
-    def test_subscribe_link_feature_flag_off(self):
-        # Test the old subscription link.
-        with FeatureFixture({self.feature_flag: None}):
-            self.assertEqual(None, getFeatureFlag(self.feature_flag))
-            view = create_initialized_view(
-                self.product, '+index', principal=self.product.owner)
-            html = view.render()
-            link = first_tag_by_class(html, 'menu-link-subscribe')
-            self.assertTrue(link is not None)
-            link = first_tag_by_class(
-                html, 'menu-link-subscribe_to_bug_mail')
-            self.assertEqual(None, link)
-
-    def test_subscribe_link_feature_flag_on(self):
-        # Test the new subscription link.
-        with FeatureFixture({self.feature_flag: 'on'}):
-            self.assertEqual('on', getFeatureFlag(self.feature_flag))
-            view = create_initialized_view(
-                self.product, '+index', principal=self.product.owner)
-            html = view.render()
-            link = first_tag_by_class(html, 'menu-link-subscribe')
-            self.assertEqual(None, link)
-            link = first_tag_by_class(
-                html, 'menu-link-subscribe_to_bug_mail')
-            self.assertTrue(link is not None)

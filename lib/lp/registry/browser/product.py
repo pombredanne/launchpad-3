@@ -591,11 +591,6 @@ class ProductActionNavigationMenu(NavigationMenu, ProductEditLinksMixin):
             links.append('subscribe')
         return links
 
-    @enabled_with_permission('launchpad.AnyPerson')
-    def subscribe_to_bug_mail(self):
-        text = 'Subscribe to bug mail'
-        return Link('#', text, icon='add', hidden=True)
-
 
 class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
                           HasRecipesMenuMixin):
@@ -689,15 +684,25 @@ class ProductBugsMenu(PillarBugsMenu,
 
     usedfor = IProduct
     facet = 'bugs'
-    links = (
-        'filebug',
-        'bugsupervisor',
-        'securitycontact',
-        'cve',
-        'subscribe_to_bug_mail',
-        'configure_bugtracker',
-        )
     configurable_bugtracker = True
+
+    @cachedproperty
+    def links(self):
+        links = [
+            'filebug',
+            'bugsupervisor',
+            'securitycontact',
+            'cve',
+            ]
+        use_advanced_features = features.getFeatureFlag(
+            'malone.advanced-structural-subscriptions.enabled')
+        if use_advanced_features:
+            links.append('subscribe_to_bug_mail')
+        else:
+            links.append('subscribe')
+        links.append('configure_bugtracker')
+
+        return links
 
 
 class ProductSpecificationsMenu(NavigationMenu, ProductEditLinksMixin,
