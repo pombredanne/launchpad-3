@@ -100,15 +100,15 @@
               </p>
             </div>
           </div>
-  
+
           <div class="yui-u first">
             <div class="portlet">
               <h3>Language packs</h3>
-  
+
               <div tal:replace="
                   structure
                   context/distribution/@@+language-pack-admin-info" />
-  
+
               <div>
                 <strong>Base pack:</strong>
                 <a class="sprite download"

@@ -347,7 +347,7 @@ class POTemplateView(LaunchpadView,
         return self.context.translation_side == TranslationSide.UPSTREAM
 
     def is_sharing(self):
-        potemplate =  self.context.getOtherSidePOTemplate()
+        potemplate = self.context.getOtherSidePOTemplate()
         return potemplate is not None
 
     @property

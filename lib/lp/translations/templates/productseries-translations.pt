@@ -1,4 +1,3 @@
-
 <html
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
@@ -97,7 +96,7 @@
               </a>
             </div>
           </div>
-  
+
           <div class="yui-u">
             <div class="portlet">
               <h3>Administration</h3>
@@ -199,12 +198,12 @@
             </div>
           </div>
         </div>
-  
+
         <tal:languages condition="view/productserieslanguages">
           <h2>Translation status</h2>
-  
+
           <div tal:replace="structure context/@@+languages" />
-  
+
           <div style="height:1em;"></div>
           <div tal:replace="structure context/@@+rosetta-status-legend" />
         </tal:languages>
