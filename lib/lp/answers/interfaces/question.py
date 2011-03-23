@@ -161,13 +161,13 @@ class IQuestion(IHasOwner):
         'The set of subscriptions to this question.')
     reopenings = Attribute(
         "Records of times when this question was reopened.")
-    messages = exported(List(
+    messages = List(
         title=_("Messages"),
         description=_(
             "The list of messages that were exchanged as part of this "
             "question , sorted from first to last."),
         value_type=Object(schema=IQuestionMessage),
-        required=True, default=[], readonly=True))
+        required=True, default=[], readonly=True)
 
     # Workflow methods
     def setStatus(user, new_status, comment, datecreated=None):
