@@ -17,7 +17,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import LaunchpadZopelessLayer
+from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
@@ -33,7 +33,7 @@ from lp.testing import TestCase
 class TestJob(TestCase):
     """Ensure Job behaves as intended."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def test_implements_IJob(self):
         """Job should implement IJob."""
@@ -210,7 +210,7 @@ class TestJob(TestCase):
 class TestReadiness(TestCase):
     """Test the implementation of readiness."""
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def _sampleData(self):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
