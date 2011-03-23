@@ -594,7 +594,7 @@ class ProductActionNavigationMenu(NavigationMenu, ProductEditLinksMixin):
     @enabled_with_permission('launchpad.AnyPerson')
     def subscribe_to_bug_mail(self):
         text = 'Subscribe to bug mail'
-        return Link('#', text, icon='add', hidden=True)
+        return Link('#', text, icon='add')
 
 
 class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,

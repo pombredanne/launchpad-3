@@ -245,26 +245,28 @@ class TestProductViewStructuralSubscriptions(TestCaseWithFactory):
 
     def test_subscribe_link_feature_flag_off(self):
         # Test the old subscription link.
-        with FeatureFixture({self.feature_flag: None}):
-            self.assertEqual(None, getFeatureFlag(self.feature_flag))
-            view = create_initialized_view(
-                self.product, '+index', principal=self.product.owner)
-            html = view.render()
-            link = first_tag_by_class(html, 'menu-link-subscribe')
-            self.assertTrue(link is not None)
-            link = first_tag_by_class(
-                html, 'menu-link-subscribe_to_bug_mail')
-            self.assertEqual(None, link)
+        with person_logged_in(self.product.owner):
+            with FeatureFixture({self.feature_flag: None}):
+                self.assertEqual(None, getFeatureFlag(self.feature_flag))
+                view = create_initialized_view(
+                    self.product, '+index', principal=self.product.owner)
+                html = view.render()
+                link = first_tag_by_class(html, 'menu-link-subscribe')
+                self.assertTrue(link is not None)
+                link = first_tag_by_class(
+                    html, 'menu-link-subscribe_to_bug_mail')
+                self.assertEqual(None, link)
 
     def test_subscribe_link_feature_flag_on(self):
         # Test the new subscription link.
-        with FeatureFixture({self.feature_flag: 'on'}):
-            self.assertEqual('on', getFeatureFlag(self.feature_flag))
-            view = create_initialized_view(
-                self.product, '+index', principal=self.product.owner)
-            html = view.render()
-            link = first_tag_by_class(html, 'menu-link-subscribe')
-            self.assertEqual(None, link)
-            link = first_tag_by_class(
-                html, 'menu-link-subscribe_to_bug_mail')
-            self.assertTrue(link is not None)
+        with person_logged_in(self.product.owner):
+            with FeatureFixture({self.feature_flag: 'on'}):
+                self.assertEqual('on', getFeatureFlag(self.feature_flag))
+                view = create_initialized_view(
+                    self.product, '+index', principal=self.product.owner)
+                html = view.render()
+                link = first_tag_by_class(html, 'menu-link-subscribe')
+                self.assertEqual(None, link)
+                link = first_tag_by_class(
+                    html, 'menu-link-subscribe_to_bug_mail')
+                self.assertTrue(link is not None)
