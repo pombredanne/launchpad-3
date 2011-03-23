@@ -2641,7 +2641,7 @@ class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
         new = add_revision_to_branch(
             self.factory, branch, epoch + timedelta(days=1))
         result = branch.getMainlineBranchRevisions(epoch)
-        branch_revisions = [br for br, rev, ra in result]
+        branch_revisions = [br for br, rev in result]
         self.assertEqual([new], branch_revisions)
 
     def test_end_date(self):
@@ -2655,7 +2655,7 @@ class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
         add_revision_to_branch(
             self.factory, branch, end_date + timedelta(days=1))
         result = branch.getMainlineBranchRevisions(epoch, end_date)
-        branch_revisions = [br for br, rev, ra in result]
+        branch_revisions = [br for br, rev in result]
         self.assertEqual([in_range], branch_revisions)
 
     def test_newest_first(self):
@@ -2667,7 +2667,7 @@ class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
         new = add_revision_to_branch(
             self.factory, branch, epoch + timedelta(days=2))
         result = branch.getMainlineBranchRevisions(epoch, oldest_first=False)
-        branch_revisions = [br for br, rev, ra in result]
+        branch_revisions = [br for br, rev in result]
         self.assertEqual([new, old], branch_revisions)
 
     def test_oldest_first(self):
@@ -2679,7 +2679,7 @@ class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
         new = add_revision_to_branch(
             self.factory, branch, epoch + timedelta(days=2))
         result = branch.getMainlineBranchRevisions(epoch, oldest_first=True)
-        branch_revisions = [br for br, rev, ra in result]
+        branch_revisions = [br for br, rev in result]
         self.assertEqual([old, new], branch_revisions)
 
     def test_only_mainline_revisions(self):
@@ -2694,7 +2694,7 @@ class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
         new = add_revision_to_branch(
             self.factory, branch, epoch + timedelta(days=3))
         result = branch.getMainlineBranchRevisions(epoch)
-        branch_revisions = [br for br, rev, ra in result]
+        branch_revisions = [br for br, rev in result]
         self.assertEqual([new, old], branch_revisions)
 
 
