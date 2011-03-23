@@ -14,6 +14,7 @@ from storm.expr import (
     )
 from zope.interface import implements
 
+from canonical.launchpad import helpers
 from lp.translations.interfaces.hastranslationtemplates import (
     IHasTranslationTemplates,
     )
@@ -99,7 +100,8 @@ class HasTranslationTemplatesMixin:
         """See `IHasTranslationTemplates`."""
         formats_query = self.getCurrentTranslationTemplates().order_by(
             'source_file_format').config(distinct=True)
-        return formats_query.values(POTemplate.source_file_format)
+        return helpers.shortlist(
+            formats_query.values(POTemplate.source_file_format), 10)
 
     def getTemplatesAndLanguageCounts(self):
         """See `IHasTranslationTemplates`."""

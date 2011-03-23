@@ -204,7 +204,7 @@ class HasTranslationTemplatesTestMixin:
 
         # With no templates, empty list is returned.
         all_formats = self.container.getTranslationTemplateFormats()
-        self.assertEquals([], list(all_formats))
+        self.assertEquals([], all_formats)
 
         # With one template, that template's format is returned.
         template1 = self.createTranslationTemplate("one")
@@ -212,7 +212,7 @@ class HasTranslationTemplatesTestMixin:
         all_formats = self.container.getTranslationTemplateFormats()
         self.assertEquals(
             [TranslationFileFormat.PO],
-            list(all_formats))
+            all_formats)
 
         # With multiple templates of the same format, that
         # format is still returned only once.
@@ -221,7 +221,7 @@ class HasTranslationTemplatesTestMixin:
         all_formats = self.container.getTranslationTemplateFormats()
         self.assertEquals(
             [TranslationFileFormat.PO],
-            list(all_formats))
+            all_formats)
 
         # With another template of a different format,
         # we get that format in a returned list.
@@ -232,7 +232,7 @@ class HasTranslationTemplatesTestMixin:
         # Items are sorted by the format values, PO==1 < XPI==3.
         self.assertEquals(
             [TranslationFileFormat.PO, TranslationFileFormat.XPI],
-            list(all_formats))
+            all_formats)
 
 
 class TestProductSeriesHasTranslationTemplates(

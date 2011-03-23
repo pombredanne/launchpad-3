@@ -94,7 +94,7 @@ This is the one obsolete template.
     False
 
 Also, we can see that the template has an Spanish translation that
-hoary_spanish.pofiles is hidding as expected.
+hoary_spanish.pofiles is hiding as expected.
 
     >>> print potemplate.getPOFileByLang('es').title
     Spanish (es) translation of disabled-template in Ubuntu Hoary package
