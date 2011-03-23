@@ -423,12 +423,12 @@ def expose_user_subscriptions_to_js(user, subscriptions, request):
 
 class StructuralSubscriptionJSMixin:
     """A mixin that exposes structural-subscription data in JS.
- 
+
     Descendants of this mixin must define a `subscriptions` property
     that returns a list of the subscriptions to cache in the JS of the
     page.
     """
- 
+
     def initialize(self):
         super(StructuralSubscriptionJSMixin, self).initialize()
         expose_user_administered_teams_to_js(self.request, self.user)
