@@ -21,8 +21,9 @@ ALTER INDEX distroseries__owner__idx
     RENAME TO distroseries__registrant__idx;
 
 -- Rename old misnamed indexes.
-ALTER INDEX distrorelease_pkey
-    RENAME TO distroseries_pkey;
+-- Don't rename primary key indexes though, as this causes Slony-I to explode.
+--ALTER INDEX distrorelease_pkey
+--    RENAME TO distroseries_pkey;
 ALTER INDEX distrorelease_distribution_key
     RENAME TO distrorelease__distribution__name__key;
 ALTER INDEX distrorelease_distro_release_unique
