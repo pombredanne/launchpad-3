@@ -1,11 +1,10 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from datetime import datetime
 import time
-from unittest import TestLoader
 
 import pytz
 from storm.locals import Store
@@ -296,7 +295,3 @@ class TestReadiness(TestCase):
         job = Job()
         job.acquireLease(-300)
         self.assertEqual(0, job.getTimeout())
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
