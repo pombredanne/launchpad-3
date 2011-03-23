@@ -10,6 +10,7 @@ __all__ = [
 
 from lazr.restful.declarations import (
     export_read_operation,
+    operation_for_version,
     operation_returns_collection_of,
     )
 from zope.interface import Interface
@@ -84,6 +85,7 @@ class IHasTranslationTemplates(Interface):
 
     @export_read_operation()
     @operation_returns_collection_of(Interface)
+    @operation_for_version('beta')
     def getTranslationTemplates():
         """Return an iterator over all its translation templates.
 

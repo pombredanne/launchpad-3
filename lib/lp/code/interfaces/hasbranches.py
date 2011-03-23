@@ -92,6 +92,7 @@ class IHasMergeProposals(Interface):
     @call_with(visible_by_user=REQUEST_USER)
     @operation_returns_collection_of(Interface) # Really IBranchMergeProposal.
     @export_read_operation()
+    @operation_for_version('beta')
     def getMergeProposals(status=None, visible_by_user=None):
         """Returns all merge proposals of a given status.
 

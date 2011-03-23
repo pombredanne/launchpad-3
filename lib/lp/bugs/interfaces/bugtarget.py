@@ -418,12 +418,14 @@ class IOfficialBugTagTargetRestricted(Interface):
     @operation_parameters(
         tag=Tag(title=u'The official bug tag', required=True))
     @export_write_operation()
+    @operation_for_version('beta')
     def addOfficialBugTag(tag):
         """Add tag to the official bug tags of this target."""
 
     @operation_parameters(
         tag=Tag(title=u'The official bug tag', required=True))
     @export_write_operation()
+    @operation_for_version('beta')
     def removeOfficialBugTag(tag):
         """Remove tag from the official bug tags of this target."""
 

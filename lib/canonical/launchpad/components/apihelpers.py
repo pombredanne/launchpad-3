@@ -134,8 +134,10 @@ def patch_choice_vocabulary(exported_class, method_name, param_name,
 def patch_entry_explicit_version(interface, version):
     """Make it look as though an entry definition used as_of.
 
-    This function should be phased out in favor of actually using as_of.
-    This function patches the entry's fields as well as the entry itself.
+    This function should be phased out in favor of actually using
+    as_of.  This function patches the entry's fields as well as the
+    entry itself. Fields that are explicitly published as of a given
+    version (even though the entry is not) are ignored.
     """
     tagged = interface.getTaggedValue(LAZR_WEBSERVICE_EXPORTED)
     versioned = tagged.dict_for_name(version) or tagged.dict_for_name(None)
@@ -150,7 +152,8 @@ def patch_entry_explicit_version(interface, version):
             continue
         versioned = tagged.dict_for_name(version) or tagged.dict_for_name(None)
         if versioned is None:
-            # This field is first published in some other version.
+            # This field is explicitly published in some other version.
+            # Just ignore it.
             continue
         else:
             versioned['_as_of_was_used'] = True
@@ -160,26 +163,21 @@ def patch_operation_explicit_version(interface, method_name, version):
     """Make it look like operation's first tag was @operation_for_version.
 
     This function should be phased out in favor of actually using
-    @operation_for_version.
+    @operation_for_version. everywhere.
     """
     tagged = interface[method_name].getTaggedValue(LAZR_WEBSERVICE_EXPORTED)
-    try:
-        if method_name == "isPersonTrustedReviewer":
-            import pdb; pdb.set_trace()
-        if (len(tagged.stack) > 1
-            and tagged.stack[0].version == None
-            and tagged.stack[1].version == version):
-            raise ValueError(
-                'Attempted to patch %s.%s to "%s", but it is already '
-                'published as of "%s".' % (
-                    interface.__name__, method_name, version, version))
-        tagged.rename_version(None, version)
-    except ValueError, e:
-        s = "%s.%s.%s" % (interface.__module__, interface.__name__, method_name)
-        f = open("/home/leonardr/unnecessary.txt", "a")
-        f.write(s + "\n")
-#    except Exception, e:
-#        s = "%s.%s.%s" % (interface.__module__, interface.__name__, method_name#)
-#        f = open("/home/leonardr/bad.txt", "a")
-#        f.write(s + "\n")
-
+    error_prefix = "%s.%s: Attempted to patch to version %s, but " % (
+        interface.__name__, method_name, version)
+    if (len(tagged.stack) > 1
+        and tagged.stack[0].version == None
+        and tagged.stack[1].version == version):
+        raise ValueError(
+            error_prefix + (
+                'it is already published in %s. Did you just change '
+                'it to be explicitly published?' % version))
+    if tagged.stack[0].version == version:
+        raise ValueError(
+            error_prefix + (
+                'it seems to have already been patched. Does this '
+                'method come from a mixin used in multiple interfaces?'))
+    tagged.rename_version(None, version)
