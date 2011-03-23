@@ -19,6 +19,10 @@ from lp.registry.browser.product import (
     ProductActionNavigationMenu,
     ProductBugsMenu,
     )
+from lp.registry.browser.productseries import (
+    ProductSeriesOverviewMenu,
+    ProductSeriesBugsMenu,
+    )
 from lp.registry.browser.project import (
     ProjectActionMenu,
     ProjectBugsMenu,
@@ -51,6 +55,10 @@ class _TestStructSubs(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
     feature_flag = 'malone.advanced-structural-subscriptions.enabled'
 
+    def setUp(self):
+        super(_TestStructSubs, self).setUp()
+        self.regular_user = self.factory.makePerson()
+
     def test_subscribe_link_feature_flag_off_owner(self):
         links, old_link, new_link = self._create_scenario(
             self.target.owner, None)
@@ -76,7 +84,6 @@ class _TestStructSubs(TestCaseWithFactory):
 
 
     def test_subscribe_link_feature_flag_on_user(self):
-        # Test the new subscription link.
         links, old_link, new_link = self._create_scenario(
             self.regular_user, 'on')
         self.assertTrue('subscribe_to_bug_mail' in links)
@@ -84,7 +91,6 @@ class _TestStructSubs(TestCaseWithFactory):
         self.assertEqual(None, old_link)
 
     def test_subscribe_link_feature_flag_off_anonymous(self):
-        # Test the old subscription link.
         links, old_link, new_link = self._create_scenario(
             ANONYMOUS, None)
         self.assertTrue('subscribe' in links)
@@ -94,7 +100,6 @@ class _TestStructSubs(TestCaseWithFactory):
         self.assertEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_on_anonymous(self):
-        # Test the new subscription link.
         links, old_link, new_link = self._create_scenario(
             ANONYMOUS, 'on')
         self.assertTrue('subscribe_to_bug_mail' in links)
@@ -109,7 +114,6 @@ class TestProductViewStructSubs(_TestStructSubs):
     def setUp(self):
         super(TestProductViewStructSubs, self).setUp()
         self.target = self.factory.makeProduct()
-        self.regular_user = self.factory.makePerson()
 
     def _create_scenario(self, user, flag):
         with person_logged_in(user):
@@ -117,7 +121,7 @@ class TestProductViewStructSubs(_TestStructSubs):
                 menu = ProductActionNavigationMenu(self.target)
                 view = create_initialized_view(
                     self.target, '+index', principal=user)
-                html = view.render()
+                html = view.render(); print html
                 old_link = first_tag_by_class(html, 'menu-link-subscribe')
                 new_link = first_tag_by_class(
                     html, 'menu-link-subscribe_to_bug_mail')
@@ -133,7 +137,7 @@ class TestProductBugsStructSubs(TestProductViewStructSubs):
                 menu = ProductBugsMenu(self.target)
                 view = create_initialized_view(
                     self.target, '+index', rootsite='bugs', principal=user)
-                html = view.render()
+                html = view.render(); print html
                 old_link = first_tag_by_class(html, 'menu-link-subscribe')
                 new_link = first_tag_by_class(
                     html, 'menu-link-subscribe_to_bug_mail')
@@ -146,7 +150,6 @@ class TestProjectGroupViewStructSubs(_TestStructSubs):
     def setUp(self):
         super(TestProjectGroupViewStructSubs, self).setUp()
         self.target = self.factory.makeProject()
-        self.regular_user = self.factory.makePerson()
 
     def _create_scenario(self, user, flag):
         with person_logged_in(user):
@@ -154,7 +157,7 @@ class TestProjectGroupViewStructSubs(_TestStructSubs):
                 menu = ProjectActionMenu(self.target)
                 view = create_initialized_view(
                     self.target, '+index', principal=user)
-                html = view.render()
+                html = view.render(); print html
                 old_link = first_tag_by_class(html, 'menu-link-subscribe')
                 new_link = first_tag_by_class(
                     html, 'menu-link-subscribe_to_bug_mail')
@@ -170,7 +173,43 @@ class TestProjectGroupBugsStructSubs(TestProjectGroupViewStructSubs):
                 menu = ProjectBugsMenu(self.target)
                 view = create_initialized_view(
                     self.target, '+index', rootsite='bugs', principal=user)
-                html = view.render()
+                html = view.render(); print html
+                old_link = first_tag_by_class(html, 'menu-link-subscribe')
+                new_link = first_tag_by_class(
+                    html, 'menu-link-subscribe_to_bug_mail')
+                return menu.links, old_link, new_link
+
+
+class TestProductSeriesViewStructSubs(_TestStructSubs):
+    """Test structural subscriptions on the product view."""
+
+    def setUp(self):
+        super(TestProductSeriesViewStructSubs, self).setUp()
+        self.target = self.factory.makeProductSeries()
+
+    def _create_scenario(self, user, flag):
+        with person_logged_in(user):
+            with FeatureFixture({self.feature_flag: flag}):
+                menu = ProductSeriesOverviewMenu(self.target)
+                view = create_initialized_view(
+                    self.target, '+index', principal=user)
+                html = view.render(); print html
+                old_link = first_tag_by_class(html, 'menu-link-subscribe')
+                new_link = first_tag_by_class(
+                    html, 'menu-link-subscribe_to_bug_mail')
+                return menu.links, old_link, new_link
+
+
+class TestProductSeriesBugsStructSubs(TestProductSeriesViewStructSubs):
+    """Test structural subscriptions on the product bugs view."""
+
+    def _create_scenario(self, user, flag):
+        with person_logged_in(user):
+            with FeatureFixture({self.feature_flag: flag}):
+                menu = ProductSeriesBugsMenu(self.target)
+                view = create_initialized_view(
+                    self.target, '+index', rootsite='bugs', principal=user)
+                html = view.render(); print html
                 old_link = first_tag_by_class(html, 'menu-link-subscribe')
                 new_link = first_tag_by_class(
                     html, 'menu-link-subscribe_to_bug_mail')
@@ -187,7 +226,6 @@ class TestDistroViewStructSubs(_TestStructSubs):
     def setUp(self):
         super(TestDistroViewStructSubs, self).setUp()
         self.target = self.factory.makeDistribution()
-        self.regular_user = self.factory.makePerson()
 
     def _create_scenario(self, user, flag):
         with person_logged_in(user):
@@ -195,7 +233,7 @@ class TestDistroViewStructSubs(_TestStructSubs):
                 menu = DistributionNavigationMenu(self.target)
                 view = create_initialized_view(
                     self.target, '+index', principal=user)
-                html = view.render()
+                html = view.render(); print html
                 old_link = first_tag_by_class(html, 'menu-link-subscribe')
                 new_link = first_tag_by_class(
                     html, 'menu-link-subscribe_to_bug_mail')
@@ -283,7 +321,7 @@ class TestDistroBugsStructSubs(TestDistroViewStructSubs):
                 menu = DistributionBugsMenu(self.target)
                 view = create_initialized_view(
                     self.target, '+index', rootsite='bugs', principal=user)
-                html = view.render()
+                html = view.render(); print html
                 old_link = first_tag_by_class(html, 'menu-link-subscribe')
                 new_link = first_tag_by_class(
                     html, 'menu-link-subscribe_to_bug_mail')
@@ -317,6 +355,8 @@ def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestProductViewStructSubs))
     suite.addTest(unittest.makeSuite(TestProductBugsStructSubs))
+    suite.addTest(unittest.makeSuite(TestProductSeriesViewStructSubs))
+    suite.addTest(unittest.makeSuite(TestProductSeriesBugsStructSubs))
     suite.addTest(unittest.makeSuite(TestProjectGroupViewStructSubs))
     suite.addTest(unittest.makeSuite(TestProjectGroupBugsStructSubs))
     suite.addTest(unittest.makeSuite(TestDistroViewStructSubs))

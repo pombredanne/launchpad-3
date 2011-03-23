@@ -128,6 +128,7 @@ from lp.registry.browser.pillar import (
     PillarView,
     )
 from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
@@ -137,6 +138,7 @@ from lp.registry.interfaces.packaging import (
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.features import getFeatureFlag
 from lp.services.fields import URIField
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountry
@@ -279,19 +281,28 @@ class ProductSeriesOverviewMenu(
     """The overview menu."""
     usedfor = IProductSeries
     facet = 'overview'
-    links = [
-        'configure_bugtracker',
-        'create_milestone',
-        'create_release',
-        'delete',
-        'driver',
-        'edit',
-        'link_branch',
-        'rdf',
-        'set_branch',
-        'subscribe',
-        'ubuntupkg',
-        ]
+
+    @cachedproperty
+    def links(self):
+        links = [
+            'configure_bugtracker',
+            'create_milestone',
+            'create_release',
+            'delete',
+            'driver',
+            'edit',
+            'link_branch',
+            'rdf',
+            'set_branch',
+            ]
+        use_advanced_features = getFeatureFlag(
+            'malone.advanced-structural-subscriptions.enabled')
+        if use_advanced_features:
+            links.append('subscribe_to_bug_mail')
+        else:
+            links.append('subscribe')
+        links.append('ubuntupkg')
+        return links
 
     @enabled_with_permission('launchpad.Edit')
     def configure_bugtracker(self):
@@ -380,11 +391,17 @@ class ProductSeriesBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
     """The bugs menu."""
     usedfor = IProductSeries
     facet = 'bugs'
-    links = (
-        'new',
-        'nominations',
-        'subscribe',
-        )
+
+    @cachedproperty
+    def links(self):
+        links = ['new', 'nominations']
+        use_advanced_features = getFeatureFlag(
+            'malone.advanced-structural-subscriptions.enabled')
+        if use_advanced_features:
+            links.append('subscribe_to_bug_mail')
+        else:
+            links.append('subscribe')
+        return links
 
     def new(self):
         """Return a link to report a bug in this series."""
@@ -438,6 +455,10 @@ def get_series_branch_error(product, branch):
 
 class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
     """A view to show a series with translations."""
+
+    def initialize(self):
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user)
 
     @property
     def page_title(self):
