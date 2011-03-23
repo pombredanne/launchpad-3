@@ -7,6 +7,7 @@ __all__ = [
     'expose_enum_to_js',
     'expose_user_administered_teams_to_js',
     'expose_user_subscriptions_to_js',
+    'StructuralSubscriptionJSMixin',
     'StructuralSubscriptionMenuMixin',
     'StructuralSubscriptionTargetTraversalMixin',
     'StructuralSubscriptionView',
@@ -45,6 +46,10 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscription,
     IStructuralSubscriptionForm,
@@ -396,10 +401,10 @@ def expose_user_subscriptions_to_js(user, subscriptions, request):
         target = subscription.target
         record = info.get(target)
         if record is None:
-            record = info[target] = dict(
-                target_title=target.title,
-                target_url=canonical_url(target, rootsite='mainsite'),
-                filters=[])
+            record = dict(target_title=target.title,
+                          target_url=canonical_url(target, rootsite='mainsite'),
+                          filters=[])
+            info[target] = record
         subscriber = subscription.subscriber
         for filter in subscription.bug_filters:
             is_team = subscriber.isTeam()
@@ -416,6 +421,25 @@ def expose_user_subscriptions_to_js(user, subscriptions, request):
     info = info.values()
     info.sort(key=lambda item: item['target_url'])
     IJSONRequestCache(request).objects['subscription_info'] = info
+
+
+class StructuralSubscriptionJSMixin:
+    """A mixin that exposes structural-subscription data in JS.
+ 
+    Descendants of this mixin must define a `subscriptions` property
+    that returns a list of the subscriptions to cache in the JS of the
+    page.
+    """
+ 
+    def initialize(self):
+        super(StructuralSubscriptionJSMixin, self).initialize()
+        expose_user_administered_teams_to_js(self.request, self.user)
+        expose_user_subscriptions_to_js(
+            self.user, self.subscriptions, self.request)
+        expose_enum_to_js(self.request, BugTaskImportance, 'importances')
+        expose_enum_to_js(self.request, BugTaskStatus, 'statuses')
+
+    subscriptions = None # Override this.
 
 
 class StructuralSubscribersPortletView(LaunchpadView):
