@@ -304,12 +304,6 @@ class JobRunnerProcess(child.AMPChild):
     @classmethod
     def __enter__(cls):
         def handler(signum, frame):
-            try:
-                raise TimeoutError
-            except TimeoutError:
-                BaseJobRunner().error_utility.raising(sys.exc_info())
-                os._exit(0)
-            os._exit(2)
             raise TimeoutError
         scripts.execute_zcml_for_scripts(use_web_security=False)
         signal(SIGHUP, handler)

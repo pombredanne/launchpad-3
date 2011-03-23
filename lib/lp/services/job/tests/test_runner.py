@@ -352,7 +352,7 @@ class StuckJob(BaseRunnableJob):
         # and so we soak up the ZCML loading time.  For the second job, have a
         # short lease so we hit the timeout.
         if self.id == 2:
-            lease_length = 0.05
+            lease_length = 1
         else:
             lease_length = 10000
         return self.job.acquireLease(lease_length)
