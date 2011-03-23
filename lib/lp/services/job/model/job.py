@@ -180,14 +180,18 @@ class InMemoryJobSource:
             determine their "id" for the purposes of
             `InMemoryJobSource.get`. The first job will have an id of 1, the
             second 2, and so forth.
+        :param context_manager_factory: A nullary callable that returns a
+            context manager.  If not provided,
+            `InMemoryJobSource.contextManager` will return a trivial context
+            manager.
         """
         self._jobs = list(jobs)
         if context_manager_factory is None:
-            context_manager_factory = self._defaultContextManager
+            context_manager_factory = self._trivialContextManager
         self._context_manager_factory = context_manager_factory
 
     @contextlib.contextmanager
-    def _defaultContextManager(self):
+    def _trivialContextManager(self):
         yield
 
     def contextManager(self):
