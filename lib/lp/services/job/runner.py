@@ -410,10 +410,11 @@ class TwistedJobRunner(BaseJobRunner):
 
         def producer():
             while True:
-                # XXX: If we're getting all of the jobs at the start anyway,
-                # we can use a DeferredSemaphore, instead of the more complex
-                # PollingTaskSource, which is better suited to cases where we
-                # don't know how much work there will be.
+                # XXX: JonathanLange bug=741204: If we're getting all of the
+                # jobs at the start anyway, we can use a DeferredSemaphore,
+                # instead of the more complex PollingTaskSource, which is
+                # better suited to cases where we don't know how much work
+                # there will be.
                 jobs = list(self.job_source.iterReady())
                 if len(jobs) == 0:
                     yield None
