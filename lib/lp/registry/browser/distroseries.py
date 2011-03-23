@@ -623,7 +623,7 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
     def sync_sources(self, action, data):
         """Synchronise packages from the parent series to this one."""
         # XXX We're doing a direct copy sync here as an interim measure
-        # until we work out if it's fast enough to work reliable.  If it
+        # until we work out if it's fast enough to work reliably.  If it
         # isn't, we need to implement a way of flagging sources 'to be
         # synced' and write a job runner to do it in the background.
 
