@@ -188,7 +188,7 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.services import features
+from lp.services.features import getFeatureFlag
 from lp.services.fields import (
     PillarAliases,
     PublicPersonChoice,
@@ -583,7 +583,7 @@ class ProductActionNavigationMenu(NavigationMenu, ProductEditLinksMixin):
     @cachedproperty
     def links(self):
         links = ['edit', 'review_license', 'administer']
-        use_advanced_features = features.getFeatureFlag(
+        use_advanced_features = getFeatureFlag(
             'malone.advanced-structural-subscriptions.enabled')
         if use_advanced_features:
             links.append('subscribe_to_bug_mail')
@@ -694,7 +694,7 @@ class ProductBugsMenu(PillarBugsMenu,
             'securitycontact',
             'cve',
             ]
-        use_advanced_features = features.getFeatureFlag(
+        use_advanced_features = getFeatureFlag(
             'malone.advanced-structural-subscriptions.enabled')
         if use_advanced_features:
             links.append('subscribe_to_bug_mail')
