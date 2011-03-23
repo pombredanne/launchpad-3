@@ -479,9 +479,10 @@ class IQuestion(IHasOwner):
     @call_with(user=REQUEST_USER)
     @export_write_operation()
     def setCommentVisibility(user, comment_number, visible):
-        """Set the visible attribute on a bug comment.  This is restricted
-        to Launchpad admins, and will return a HTTP Error 401: Unauthorized
-        error for non-admin callers.
+        """Set the visible attribute on a question message.
+        
+        This is restricted to Launchpad admins and registry members, and will
+        return a HTTP Error 401: Unauthorized error for non-admin callers.
         """
 
 
