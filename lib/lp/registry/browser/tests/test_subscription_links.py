@@ -27,6 +27,10 @@ from lp.registry.browser.distribution import (
     DistributionBugsMenu,
     DistributionNavigationMenu,
     )
+from lp.registry.browser.distributionsourcepackage import (
+    DistributionSourcePackageActionMenu,
+    DistributionSourcePackageBugsMenu,
+    )
 
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
@@ -312,6 +316,50 @@ class TestDistroBugsStructSubs(TestDistroViewStructSubs):
         self.assertEqual(None, old_link)
 
 
+class TestDistributionSourcePackageViewStructSubs(_TestStructSubs):
+    """Test structural subscriptions on the product view."""
+
+    def setUp(self):
+        super(TestDistributionSourcePackageViewStructSubs, self).setUp()
+        self.target = self.factory.makeDistributionSourcePackage()
+        self.regular_user = self.factory.makePerson()
+
+    def _create_scenario(self, user, flag):
+        with person_logged_in(user):
+            with FeatureFixture({self.feature_flag: flag}):
+                menu = DistributionSourcePackageActionMenu(self.target)
+                view = create_initialized_view(
+                    self.target, '+index', principal=user)
+                html = view.render()
+                old_link = first_tag_by_class(html, 'menu-link-subscribe')
+                new_link = first_tag_by_class(
+                    html, 'menu-link-subscribe_to_bug_mail')
+                return menu.links, old_link, new_link
+
+    # DistributionSourcePackages do not have owners.
+    test_subscribe_link_feature_flag_off_owner = None
+    test_subscribe_link_feature_flag_on_owner = None
+
+
+class TestDistributionSourcePackageBugsStructSubs(
+    TestDistributionSourcePackageViewStructSubs):
+    """Test structural subscriptions on the product bugs view."""
+
+    def _create_scenario(self, user, flag):
+        with person_logged_in(user):
+            with FeatureFixture({self.feature_flag: flag}):
+                menu = DistributionSourcePackageBugsMenu(self.target)
+                view = create_initialized_view(
+                    self.target, '+index', rootsite='bugs', principal=user)
+                html = view.render()
+                old_link = first_tag_by_class(html, 'menu-link-subscribe')
+                new_link = first_tag_by_class(
+                    html, 'menu-link-subscribe_to_bug_mail')
+                return menu.links, old_link, new_link
+
+
+
+
 def test_suite():
     """Return the `IStructuralSubscriptionTarget` TestSuite."""
     suite = unittest.TestSuite()
@@ -321,4 +369,8 @@ def test_suite():
     suite.addTest(unittest.makeSuite(TestProjectGroupBugsStructSubs))
     suite.addTest(unittest.makeSuite(TestDistroViewStructSubs))
     suite.addTest(unittest.makeSuite(TestDistroBugsStructSubs))
+    suite.addTest(unittest.makeSuite(
+        TestDistributionSourcePackageViewStructSubs))
+    suite.addTest(unittest.makeSuite(
+        TestDistributionSourcePackageBugsStructSubs))
     return suite
