@@ -8,24 +8,28 @@ __all__ = [
     'DistroSeriesDifferenceJob',
     ]
 
+from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
     )
 
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifferenceSource,
+    )
+from lp.registry.model.distroseriesdifference import DistroSeriesDifference
+from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.features import getFeatureFlag
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.distributionjob import (
     DistributionJobType,
-    IDistributionJob,
+    IDistroSeriesDifferenceJob,
+    IDistroSeriesDifferenceJobSource,
     )
 from lp.soyuz.model.distributionjob import (
     DistributionJob,
     DistributionJobDerived,
-    )
-from lp.soyuz.interfaces.distroseriesdifferencejob import (
-    IDistroSeriesDifferenceJobSource,
     )
 
 
@@ -98,7 +102,7 @@ def may_require_job(distroseries, sourcepackagename):
 class DistroSeriesDifferenceJob(DistributionJobDerived):
     """A `Job` type for creating/updating `DistroSeriesDifference`s."""
 
-    implements(IDistributionJob)
+    implements(IDistroSeriesDifferenceJob)
     classProvides(IDistroSeriesDifferenceJobSource)
 
     class_job_type = DistributionJobType.DISTROSERIESDIFFERENCE
@@ -108,12 +112,27 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
         """See `IDistroSeriesDifferenceJobSource`."""
         if not getFeatureFlag(FEATURE_FLAG_ENABLE_MODULE):
             return
-        children = distroseries.getDerivedSeries()
-        parent = distroseries.parent_series
-        for relative in list(children) + [parent]:
+        jobs = []
+        children = list(distroseries.getDerivedSeries())
+        for relative in children + [distroseries]:
             if may_require_job(relative, sourcepackagename):
-                create_job(relative, sourcepackagename)
+                jobs.append(create_job(relative, sourcepackagename))
+        return jobs
+
+    @property
+    def sourcepackagename(self):
+        return SourcePackageName.get(self.metadata['sourcepackagename'])
 
     def run(self):
         """See `IRunnableJob`."""
-# TODO: Implement the business end.
+        store = IMasterStore(DistroSeriesDifference)
+        ds_diff = store.find(
+            DistroSeriesDifference, 
+            DistroSeriesDifference.derived_series == self.distroseries,
+            DistroSeriesDifference.source_package_name == 
+            self.sourcepackagename).one()
+        if ds_diff is None:
+            ds_diff = getUtility(IDistroSeriesDifferenceSource).new(
+                self.distroseries, self.sourcepackagename)
+        else:
+            ds_diff.update()
