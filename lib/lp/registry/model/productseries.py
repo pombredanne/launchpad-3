@@ -45,7 +45,6 @@ from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
 from lp.app.errors import NotFoundError
 from lp.app.enums import (
-    ServiceUsage,
     service_uses_launchpad)
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.blueprints.enums import (
@@ -172,17 +171,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
     @property
     def translations_usage(self):
         """See `IServiceUsage.`"""
-        # If translations_usage is set for the Product, respect it.
-        usage = self.product.translations_usage
-        if usage != ServiceUsage.UNKNOWN:
-            return usage
-
-        # If not, usage is based on the presence of current translation
-        # templates for the series.
-        if self.potemplate_count > 0:
-            return ServiceUsage.LAUNCHPAD
-        else:
-            return ServiceUsage.UNKNOWN
+        return self.product.translations_usage
 
     @property
     def codehosting_usage(self):

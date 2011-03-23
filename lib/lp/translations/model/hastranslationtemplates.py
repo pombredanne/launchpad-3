@@ -14,7 +14,6 @@ from storm.expr import (
     )
 from zope.interface import implements
 
-from lp.app.enums import service_uses_launchpad
 from lp.translations.interfaces.hastranslationtemplates import (
     IHasTranslationTemplates,
     )
@@ -40,17 +39,7 @@ class HasTranslationTemplatesMixin:
 
     def getCurrentTemplatesCollection(self, current_value=True):
         """See `IHasTranslationTemplates`."""
-        collection = self.getTemplatesCollection()
-
-        # XXX JeroenVermeulen 2010-07-15 bug=605924: Move the
-        # translations_usage distinction into browser code.
-        pillar = collection.target_pillar
-        if service_uses_launchpad(pillar.translations_usage):
-            return collection.restrictCurrent(current_value)
-        else:
-            # Product/Distribution does not have translation enabled.
-            # Treat all templates as obsolete.
-            return collection.refine(not current_value)
+        return self.getTemplatesCollection().restrictCurrent(current_value)
 
     def getCurrentTranslationTemplates(self,
                                        just_ids=False,

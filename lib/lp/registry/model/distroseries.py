@@ -69,7 +69,6 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from lp.app.enums import (
     service_uses_launchpad,
-    ServiceUsage,
     )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import IServiceUsage
@@ -298,17 +297,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def translations_usage(self):
         """See `IServiceUsage.`"""
-        # If translations_usage is set for the Distribution, respect it.
-        usage = self.distribution.translations_usage
-        if usage != ServiceUsage.UNKNOWN:
-            return usage
-
-        # If not, usage is based on the presence of current translation
-        # templates for the series.
-        if self.getCurrentTranslationTemplates().count() > 0:
-            return ServiceUsage.LAUNCHPAD
-        else:
-            return ServiceUsage.UNKNOWN
+        return self.distribution.translations_usage
 
     @property
     def codehosting_usage(self):
