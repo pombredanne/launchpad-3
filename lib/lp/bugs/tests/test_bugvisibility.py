@@ -5,7 +5,6 @@
 
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.testing import (
-    celebrity_logged_in,
     person_logged_in,
     TestCaseWithFactory,
     )
