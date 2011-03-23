@@ -420,8 +420,6 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    # XXX: this isn't many tests for what is actually a fair chunk of code.
-
     def setUp(self):
         super(TestTwistedJobRunner, self).setUp()
         # The test relies on _pythonpath being importable. Thus we need to add
@@ -445,17 +443,10 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         runner = TwistedJobRunner.runFromSource(
             StuckJob, 'branchscanner', logger)
 
-        # XXX: JonathanLange 2011-03-18 bug=505913: Sometimes in tests this is
-        # reported as 2.
-
-        # XXX: Potential source of race condition. Another OOPS could be
-        # logged.
-
-        # XXX: Also confusing because it might be polluted by values from
-        # previous jobs.
+        # XXX: JonathanLange 2011-03-23 bug=740443: Potential source of race
+        # condition. Another OOPS could be logged.  Also confusing because it
+        # might be polluted by values from previous jobs.
         oops = errorlog.globalErrorUtility.getLastOopsReport()
-        # XXX: Maybe we can combine all of these assertions so that we get a
-        # more informative error message.
         self.assertEqual(
             (1, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
         self.assertEqual(
@@ -480,17 +471,10 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         runner = TwistedJobRunner.runFromSource(
             ShorterStuckJob, 'branchscanner', logger)
 
-        # XXX: JonathanLange 2011-03-18 bug=505913: Sometimes in tests this is
-        # reported as 2.
-
-        # XXX: Potential source of race condition. Another OOPS could be
-        # logged.
-
-        # XXX: Also confusing because it might be polluted by values from
-        # previous jobs.
+        # XXX: JonathanLange 2011-03-23 bug=740443: Potential source of race
+        # condition. Another OOPS could be logged.  Also confusing because it
+        # might be polluted by values from previous jobs.
         oops = errorlog.globalErrorUtility.getLastOopsReport()
-        # XXX: Maybe we can combine all of these assertions so that we get a
-        # more informative error message.
         self.assertEqual(
             (1, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
         self.assertEqual(

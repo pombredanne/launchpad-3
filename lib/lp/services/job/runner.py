@@ -423,9 +423,9 @@ class TwistedJobRunner(BaseJobRunner):
 
     def doConsumer(self):
         """Create a ParallelLimitedTaskConsumer for this job type."""
-        # XXX: 1 is hard-coded for now until we're sure we'd get gains by
-        # running more than one at a time.  Note that test_timeout sort of
-        # relies on this being 1.
+        # 1 is hard-coded for now until we're sure we'd get gains by running
+        # more than one at a time.  Note that test_timeout relies on this
+        # being 1.
         consumer = ParallelLimitedTaskConsumer(1, logger=None)
         return consumer.consume(self.getTaskSource())
 
