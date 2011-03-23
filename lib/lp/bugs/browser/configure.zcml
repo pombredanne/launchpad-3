@@ -713,6 +713,12 @@
             permission="launchpad.AnyPerson"
             template="../templates/bug-subscription.pt"/>
         <browser:page
+            for="lp.bugs.interfaces.bugtask.IBugTask"
+            name="+mute"
+            class="lp.bugs.browser.bugsubscription.BugMuteSelfView"
+            permission="launchpad.AnyPerson"
+            template="../templates/bug-mute.pt"/>
+        <browser:page
             name="+linkcve"
             for="lp.bugs.interfaces.bugtask.IBugTask"
             class="lp.bugs.browser.cve.CveLinkView"

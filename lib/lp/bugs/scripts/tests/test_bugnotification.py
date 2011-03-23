@@ -961,11 +961,11 @@ class TestEmailNotificationsWithFilters(TestCaseWithFactory):
         for message in messages:
             if by_person:
                 headers[message['to']] = message.get_all(
-                    "X-Launchpad-Subscription-Filter", [])
+                    "X-Launchpad-Subscription", [])
             else:
                 headers = headers.union(
                     set(message.get_all(
-                        "X-Launchpad-Subscription-Filter", [])))
+                        "X-Launchpad-Subscription", [])))
         return headers
 
     def getSubscriptionEmailBody(self, by_person=False):
@@ -978,7 +978,7 @@ class TestEmailNotificationsWithFilters(TestCaseWithFactory):
         for message in messages:
             filters_line = None
             for line in message.get_payload().splitlines():
-                if line.startswith("Matching filters: "):
+                if line.startswith("Matching subscriptions: "):
                     filters_line = line
                     break
             if filters_line is not None:
@@ -1040,7 +1040,7 @@ class TestEmailNotificationsWithFilters(TestCaseWithFactory):
         # include that particular filter description in the body.
         bug_filter = self.addFilter(u"Test filter")
 
-        self.assertContentEqual([u"Matching filters: Test filter"],
+        self.assertContentEqual([u"Matching subscriptions: Test filter"],
                                 self.getSubscriptionEmailBody())
 
     def test_body_multiple(self):
@@ -1050,5 +1050,5 @@ class TestEmailNotificationsWithFilters(TestCaseWithFactory):
         bug_filter = self.addFilter(u"Second filter")
 
         self.assertContentEqual(
-            [u"Matching filters: First filter, Second filter"],
+            [u"Matching subscriptions: First filter, Second filter"],
             self.getSubscriptionEmailBody())

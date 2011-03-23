@@ -767,10 +767,10 @@ class BugAlsoAffectsProductWithProductCreationView(LinkPackgingMixin,
             # Use a local import as we don't want removeSecurityProxy used
             # anywhere else.
             from zope.security.proxy import removeSecurityProxy
-            name_matches = getUtility(IProductSet).search(
-                self.request.form.get('field.name'))
-            products = bugtracker.products.intersect(
-                removeSecurityProxy(name_matches))
+            name_matches = removeSecurityProxy(
+                getUtility(IProductSet).search_sqlobject(
+                self.request.form.get('field.name')))
+            products = bugtracker.products.intersect(name_matches)
             self.existing_products = list(
                 products[:self.MAX_PRODUCTS_TO_DISPLAY])
         else:
