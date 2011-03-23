@@ -439,14 +439,6 @@ class CheckwatchesMaster(WorkingBase):
                     self.logger.info(
                         "'%s' error updating %s: %s" % (
                             error_type.title, bug_tracker.baseurl, error))
-                # This is retained to make tests happy. It will be
-                # removed later when the checkwatches OOPS
-                # infrastructure can be.
-                if isinstance(error, UnknownBugTrackerTypeError):
-                    message = (
-                        "ExternalBugtracker for BugTrackerType '%s' is not "
-                        "known." % (error.bugtrackertypename))
-                    self.warning(message)
             else:
                 for remotesystem, bug_watch_batch in trackers_and_watches:
                     self.updateBugWatches(
