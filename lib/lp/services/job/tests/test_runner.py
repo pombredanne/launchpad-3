@@ -343,6 +343,9 @@ class StuckJob(BaseRunnableJob):
     def get(id):
         return StuckJob(id)
 
+    def __repr__(self):
+        return '<StuckJob(%r)>' % (self.id,)
+
     def __init__(self, id):
         self.id = id
         self.job = Job()
@@ -388,6 +391,9 @@ class ShorterStuckJob(BaseRunnableJob):
     def __init__(self, id):
         self.id = id
         self.job = Job()
+
+    def __repr__(self):
+        return '<ShorterStuckJob(%r)>' % (self.id,)
 
     def acquireLease(self):
         # For the first job, have a very long lease, so that it doesn't expire
