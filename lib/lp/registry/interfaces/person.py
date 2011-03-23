@@ -1080,8 +1080,8 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         """
 
     @operation_returns_collection_of(Interface)
-    @operation_for_version("beta")
     @export_read_operation()
+    @operation_for_version("beta")
     def getBugSubscriberPackages():
         """Return the packages for which this person is a bug subscriber.
 

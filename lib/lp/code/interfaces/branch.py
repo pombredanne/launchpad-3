@@ -262,6 +262,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     @operation_parameters(
         scheme=TextLine(title=_("URL scheme"), default=u'http'))
     @export_read_operation()
+    @operation_for_version('beta')
     def composePublicURL(scheme='http'):
         """Return a public URL for the branch using the given protocol.
 
@@ -349,6 +350,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
             title=_("A person for which the reviewer status is in question."),
             schema=IPerson))
     @export_read_operation()
+    @operation_for_version('beta')
     def isPersonTrustedReviewer(reviewer):
         """Return true if the `reviewer` is a trusted reviewer.
 
@@ -425,6 +427,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     @operation_parameters(
         bug=Reference(schema=Interface)) # Really IBug
     @export_write_operation()
+    @operation_for_version('beta')
     def linkBug(bug, registrant):
         """Link a bug to this branch.
 
@@ -436,6 +439,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     @operation_parameters(
         bug=Reference(schema=Interface)) # Really IBug
     @export_write_operation()
+    @operation_for_version('beta')
     def unlinkBug(bug, user):
         """Unlink a bug to this branch.
 
@@ -561,6 +565,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     @call_with(registrant=REQUEST_USER)
     # IBranchMergeProposal supplied as Interface to avoid circular imports.
     @export_factory_operation(Interface, [])
+    @operation_for_version('beta')
     def _createMergeProposal(
         registrant, target_branch, prerequisite_branch=None,
         needs_review=True, initial_comment=None, commit_message=None,
@@ -608,6 +613,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     @call_with(visible_by_user=REQUEST_USER)
     @operation_returns_collection_of(Interface) # Really IBranchMergeProposal.
     @export_read_operation()
+    @operation_for_version('beta')
     def getMergeProposals(status=None, visible_by_user=None,
                           merged_revnos=None):
         """Return matching BranchMergeProposals."""
@@ -677,6 +683,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         """
 
     @export_read_operation()
+    @operation_for_version('beta')
     def canBeDeleted():
         """Can this branch be deleted in its current state.
 
@@ -765,6 +772,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     @operation_returns_entry(Interface) # Really IBranchSubscription
     @call_with(subscribed_by=REQUEST_USER)
     @export_write_operation()
+    @operation_for_version('beta')
     def subscribe(person, notification_level, max_diff_lines,
                   code_review_level, subscribed_by):
         """Subscribe this person to the branch.
@@ -786,6 +794,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
             schema=IPerson))
     @operation_returns_entry(Interface) # Really IBranchSubscription
     @export_read_operation()
+    @operation_for_version('beta')
     def getSubscription(person):
         """Return the BranchSubscription for this person."""
 
@@ -798,6 +807,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
             schema=IPerson))
     @call_with(unsubscribed_by=REQUEST_USER)
     @export_write_operation()
+    @operation_for_version('beta')
     def unsubscribe(person, unsubscribed_by):
         """Remove the person's subscription to this branch.
 
@@ -904,6 +914,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         """Return the URL used to pull the branch into the mirror area."""
 
     @export_write_operation()
+    @operation_for_version('beta')
     def requestMirror():
         """Request that this branch be mirrored on the next run of the branch
         puller.
@@ -1031,6 +1042,7 @@ class IBranchEdit(Interface):
             title=_("The new owner of the branch."),
             schema=IPerson))
     @export_write_operation()
+    @operation_for_version('beta')
     def setOwner(new_owner, user):
         """Set the owner of the branch to be `new_owner`."""
 
@@ -1043,6 +1055,7 @@ class IBranchEdit(Interface):
             title=_("The source package the branch belongs to."),
             schema=Interface, required=False)) # Really ISourcePackage
     @export_write_operation()
+    @operation_for_version('beta')
     def setTarget(user, project=None, source_package=None):
         """Set the target of the branch to be `project` or `source_package`.
 
@@ -1076,6 +1089,7 @@ class IBranchEdit(Interface):
         """
 
     @export_destructor_operation()
+    @operation_for_version('beta')
     def destroySelfBreakReferences():
         """Delete the specified branch.
 
@@ -1118,6 +1132,7 @@ class IMergeQueueable(Interface):
         queue=Reference(title=_('Branch Merge Queue'),
               schema=IBranchMergeQueue))
     @export_write_operation()
+    @operation_for_version('beta')
     def addToQueue(queue):
         """Add this branch to a specified queue.
 
@@ -1130,6 +1145,7 @@ class IMergeQueueable(Interface):
     @operation_parameters(
         config=TextLine(title=_("A JSON string of config values.")))
     @export_write_operation()
+    @operation_for_version('beta')
     def setMergeQueueConfig(config):
         """Set the merge_queue_config property.
 
@@ -1161,6 +1177,7 @@ class IBranch(IBranchPublic, IBranchView, IBranchEdit,
     @operation_parameters(
         private=Bool(title=_("Keep branch confidential")))
     @export_write_operation()
+    @operation_for_version('beta')
     def setPrivate(private, user):
         """Set the branch privacy for this branch."""
 
@@ -1244,6 +1261,7 @@ class IBranchSet(Interface):
         unique_name=TextLine(title=_('Branch unique name'), required=True))
     @operation_returns_entry(IBranch)
     @export_read_operation()
+    @operation_for_version('beta')
     def getByUniqueName(unique_name):
         """Find a branch by its ~owner/product/name unique name.
 
@@ -1254,6 +1272,7 @@ class IBranchSet(Interface):
         url=TextLine(title=_('Branch URL'), required=True))
     @operation_returns_entry(IBranch)
     @export_read_operation()
+    @operation_for_version('beta')
     def getByUrl(url):
         """Find a branch by URL.
 
@@ -1277,6 +1296,7 @@ class IBranchSet(Interface):
             value_type=TextLine(),
             required=True))
     @export_read_operation()
+    @operation_for_version('beta')
     def getByUrls(urls):
         """Finds branches by URL.
 

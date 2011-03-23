@@ -164,10 +164,22 @@ def patch_operation_explicit_version(interface, method_name, version):
     """
     tagged = interface[method_name].getTaggedValue(LAZR_WEBSERVICE_EXPORTED)
     try:
+        if method_name == "isPersonTrustedReviewer":
+            import pdb; pdb.set_trace()
+        if (len(tagged.stack) > 1
+            and tagged.stack[0].version == None
+            and tagged.stack[1].version == version):
+            raise ValueError(
+                'Attempted to patch %s.%s to "%s", but it is already '
+                'published as of "%s".' % (
+                    interface.__name__, method_name, version, version))
         tagged.rename_version(None, version)
-    except Exception, e:
+    except ValueError, e:
         s = "%s.%s.%s" % (interface.__module__, interface.__name__, method_name)
-        #raise Exception(s)
-        f = open("/home/leonardr/bad.txt", "a")
+        f = open("/home/leonardr/unnecessary.txt", "a")
         f.write(s + "\n")
+#    except Exception, e:
+#        s = "%s.%s.%s" % (interface.__module__, interface.__name__, method_name#)
+#        f = open("/home/leonardr/bad.txt", "a")
+#        f.write(s + "\n")
 
