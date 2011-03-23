@@ -9,16 +9,10 @@ from textwrap import dedent
 from time import sleep
 
 import transaction
-from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
 from canonical.launchpad.webapp import errorlog
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
