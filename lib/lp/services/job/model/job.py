@@ -4,10 +4,16 @@
 """ORM object representing jobs."""
 
 __metaclass__ = type
-__all__ = ['InvalidTransition', 'Job', 'JobStatus']
+__all__ = [
+    'InMemoryJobSource',
+    'InvalidTransition',
+    'Job',
+    'JobStatus',
+    ]
 
 
 from calendar import timegm
+import contextlib
 import datetime
 import time
 
@@ -29,6 +35,8 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from lp.services.job.interfaces.job import (
     IJob,
+    IJobSource,
+    ITwistedJobSource,
     JobStatus,
     LeaseHeld,
     )
@@ -154,3 +162,46 @@ Job.ready_jobs = Select(
         Or(Job.lease_expires == None, Job.lease_expires < UTC_NOW),
         Or(Job.scheduled_start == None, Job.scheduled_start <= UTC_NOW),
         ))
+
+
+class InMemoryJobSource:
+    """A job source where all of the jobs are already in memory.
+
+    Mostly useful for testing, or for plugging very trivial sets of work into
+    the job system.
+    """
+
+    implements(ITwistedJobSource)
+
+    def __init__(self, jobs):
+        """Construct an ``InMemoryJobSource``.
+
+        :param jobs: An iterable of `IJob`s. The order of the jobs will
+            determine their "id" for the purposes of
+            `InMemoryJobSource.get`. The first job will have an id of 1, the
+            second 2, and so forth.
+        """
+        self._jobs = list(jobs)
+
+    @contextlib.contextmanager
+    def contextManager(self):
+        yield
+
+    def get(self, id):
+        """Get the job with ``id``.
+
+        :param id: The id of the job you wish to get.
+        """
+        if id < 1:
+            raise ValueError("id must be at least 1: %s" % (id,))
+        try:
+            return self._jobs[id - 1]
+        except IndexError:
+            raise KeyError(id)
+
+    def iterReady(self):
+        """Iterate through the jobs.
+
+        All of the jobs given to the constructor are considered to be ready.
+        """
+        return iter(self._jobs)

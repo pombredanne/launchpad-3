@@ -20,9 +20,12 @@ from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.services.job.interfaces.job import (
     IJob,
+    IJobSource,
+    ITwistedJobSource,
     JobStatus,
     )
 from lp.services.job.model.job import (
+    InMemoryJobSource,
     InvalidTransition,
     Job,
     LeaseHeld,
@@ -295,3 +298,49 @@ class TestReadiness(TestCase):
         job = Job()
         job.acquireLease(-300)
         self.assertEqual(0, job.getTimeout())
+
+
+class TestInMemoryJobSource(TestCase):
+
+    def test_empty_job_source(self):
+        # Iterating over the ready jobs of an InMemoryJobSource with no jobs
+        # gives nothing.
+        job_source = InMemoryJobSource([])
+        self.assertEqual([], list(job_source.iterReady()))
+
+    def test_provides_job_source(self):
+        # Instances of InMemoryJobSource provide IJobSource.
+        job_source = InMemoryJobSource([])
+        self.assertProvides(job_source, IJobSource)
+
+    def test_provides_twisted_job_source(self):
+        # Instances of InMemoryJobSource provide ITwistedJobSource.
+        job_source = InMemoryJobSource([])
+        self.assertProvides(job_source, ITwistedJobSource)
+
+    def test_get_on_empty_job_source(self):
+        # get() on an empty InMemoryJobSource rasies KeyError.
+        job_source = InMemoryJobSource([])
+        self.assertRaises(KeyError, job_source.get, 1)
+
+    def test_iterReady_when_there_are_jobs(self):
+        # When InMemoryJobSource is given jobs, iterReady yields all of the
+        # jobs, as if they were all ready.
+        job_source = InMemoryJobSource(['a', 'b'])
+        self.assertEqual(['a', 'b'], list(job_source.iterReady()))
+
+    def test_get_when_there_are_jobs(self):
+        # When InMemoryJobSource is given jobs, get(id) will return the job
+        # with that id, where id is a 1-based index on the list of jobs
+        # InMemoryJobSource was given in the first place.
+        job_source = InMemoryJobSource(['a', 'b'])
+        self.assertEqual('a', job_source.get(1))
+        self.assertEqual('b', job_source.get(2))
+
+    def test_below_range_get(self):
+        job_source = InMemoryJobSource(['a', 'b'])
+        self.assertRaises(ValueError, job_source.get, 0)
+
+    def test_above_range_get(self):
+        job_source = InMemoryJobSource(['a', 'b'])
+        self.assertRaises(KeyError, job_source.get, 4)
