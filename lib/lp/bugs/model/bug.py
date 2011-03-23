@@ -778,6 +778,8 @@ BugMessage""" % sqlvalues(self.id))
 
     def unsubscribe(self, person, unsubscribed_by):
         """See `IBug`."""
+        # Drop cached subscription info.
+        clear_property_cache(self)
         # Ensure the unsubscriber is in the _known_viewer cache for the bug so
         # that the permissions are such that the operation can succeed.
         get_property_cache(self)._known_viewers = set([unsubscribed_by.id])
@@ -804,8 +806,6 @@ BugMessage""" % sqlvalues(self.id))
                 self.updateHeat()
                 del get_property_cache(self)._known_viewers
                 return
-        # Drop cached subscription info.
-        clear_property_cache(self)
 
     def unsubscribeFromDupes(self, person, unsubscribed_by):
         """See `IBug`."""
