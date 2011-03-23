@@ -35,6 +35,11 @@ from canonical.launchpad.interfaces.message import (
     IMessage,
     IUserToUserEmail,
     )
+from canonical.launchpad.interfaces.emailaddress import IEmailAddress
+from canonical.launchpad.interfaces.temporaryblobstorage import (
+    ITemporaryBlobStorage,
+    ITemporaryStorageManager,
+    )
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.blueprints.interfaces.specificationtarget import (
@@ -46,9 +51,12 @@ from lp.bugs.interfaces.bug import (
     IBug,
     IFrontPageBugAddForm,
     )
+from lp.bugs.interfaces.bugactivity import IBugActivity
+from lp.bugs.interfaces.bugattachment import IBugAttachment
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
+from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
     IHasBugs,
@@ -58,13 +66,28 @@ from lp.bugs.interfaces.bugtracker import (
     IBugTracker,
     IBugTrackerComponent,
     IBugTrackerComponentGroup,
+    IBugTrackerSet,
     )
 from lp.bugs.interfaces.bugwatch import IBugWatch
+from lp.bugs.interfaces.cve import ICve
+from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscription,
+    IStructuralSubscriptionTarget,
+    )
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.builder import (
+    IBuilder,
+    IBuilderSet,
+    )
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
-from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.branch import (
+    IBranch,
+    IBranchSet,
+    )
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
+from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
 from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
@@ -83,43 +106,91 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     )
 from lp.hardwaredb.interfaces.hwdb import (
     HWBus,
+    IHWDBApplication,
+    IHWDevice,
+    IHWDeviceClass,
+    IHWDriver,
+    IHWDriverName,
+    IHWDriverPackageName,
     IHWSubmission,
+    IHWSubmissionDevice,
+    IHWVendorID,
     )
+from lp.registry.interfaces.commercialsubscription import ICommercialSubscription
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionmirror import IDistributionMirror
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifference,
+    )
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceComment,
     )
+from lp.registry.interfaces.gpg import IGPGKey
+from lp.registry.interfaces.irc import IIrcID
+from lp.registry.interfaces.jabber import IJabberID
+from lp.registry.interfaces.milestone import IHasMilestones
+from lp.registry.interfaces.milestone import IMilestone
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonPublic,
+    IPersonSet,
+    ITeam,
+    )
+from lp.registry.interfaces.pillar import (
+    IPillar,
+    IPillarNameSet,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.bugs.interfaces.structuralsubscription import (
-    IStructuralSubscription,
-    IStructuralSubscriptionTarget,
+from lp.registry.interfaces.product import (
+    IProduct,
+    IProductSet,
     )
+from lp.registry.interfaces.productrelease import IProductRelease
+from lp.registry.interfaces.productrelease import IProductReleaseFile
+from lp.registry.interfaces.productseries import (
+    IProductSeries,
+    ITimelineProductSeries,
+    )
+from lp.registry.interfaces.projectgroup import (
+    IProjectGroup,
+    IProjectGroupSet,
+    )
+from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.ssh import ISSHKey
+from lp.registry.interfaces.teammembership import ITeamMembership
+from lp.registry.interfaces.wikiname import IWikiName
 from lp.services.comments.interfaces.conversation import IComment
+from lp.services.worlddata.interfaces.country import (
+    ICountry,
+    ICountrySet,
+    )
+from lp.services.worlddata.interfaces.language import (
+    ILanguage,
+    ILanguageSet,
+    )
 from lp.soyuz.enums import (
     PackagePublishingStatus,
     PackageUploadCustomFormat,
     PackageUploadStatus,
     )
-from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.archivedependency import IArchiveDependency
+from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.archivepermission import IArchivePermission
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriber
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
+from lp.soyuz.interfaces.binarypackagerelease import (
+    IBinaryPackageReleaseDownloadCount,
+    )
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
-from lp.soyuz.interfaces.packageset import IPackageset
+from lp.soyuz.interfaces.packageset import (
+    IPackageset,
+    IPackagesetSet,
+    )
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,
     ISourcePackagePublishingHistory,
@@ -129,8 +200,6 @@ from lp.soyuz.interfaces.queue import IPackageUpload
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
-    )
-from lp.translations.interfaces.hastranslationtemplates import (
     IHasTranslationTemplates,
     )
 from lp.translations.interfaces.pofile import IPOFile
@@ -139,10 +208,11 @@ from lp.translations.interfaces.potemplate import (
     IPOTemplateSharingSubset,
     IPOTemplateSubset,
     )
+from lp.translations.interfaces.translationgroup import ITranslationGroup
 from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue,
     ITranslationImportQueueEntry,
     )
-
 
 IBranch['bug_branches'].value_type.schema = IBugBranch
 IBranch['linked_bugs'].value_type.schema = IBug
@@ -571,141 +641,16 @@ patch_collection_property(
     IHasSpecifications, 'valid_specifications', ISpecification)
 
 
-########################
-
-from canonical.launchpad.interfaces.emailaddress import IEmailAddress
-from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.interfaces.temporaryblobstorage import (
-    ITemporaryBlobStorage,
-    ITemporaryStorageManager,
-    )
-from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
-from lp.blueprints.interfaces.specification import ISpecification
-from lp.blueprints.interfaces.specificationtarget import ISpecificationTarget
-from lp.bugs.interfaces.bugactivity import IBugActivity
-from lp.bugs.interfaces.bugattachment import IBugAttachment
-from lp.bugs.interfaces.bugbranch import IBugBranch
-from lp.bugs.interfaces.bug import IBug
-from lp.bugs.interfaces.bugnomination import IBugNomination
-from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
-from lp.bugs.interfaces.bugsubscription import IBugSubscription
-from lp.bugs.interfaces.bugtarget import (
-    IBugTarget,
-    IHasBugs,
-    )
-from lp.bugs.interfaces.bugtask import IBugTask
-from lp.bugs.interfaces.bugtracker import (
-    IBugTracker,
-    IBugTrackerComponent,
-    IBugTrackerComponentGroup,
-    IBugTrackerSet,
-    )
-from lp.bugs.interfaces.bugwatch import IBugWatch
-from lp.bugs.interfaces.cve import ICve
-from lp.bugs.interfaces.malone import IMaloneApplication
-from lp.bugs.interfaces.structuralsubscription import IStructuralSubscription
-from lp.bugs.interfaces.structuralsubscription import IStructuralSubscriptionTarget
-from lp.buildmaster.interfaces.builder import (
-    IBuilder,
-    IBuilderSet,
-    )
-from lp.code.interfaces.branch import (
-    IBranch,
-    IBranchSet,
-    )
-from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
-from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
-from lp.code.interfaces.branchsubscription import IBranchSubscription
-from lp.code.interfaces.codeimport import ICodeImport
-from lp.code.interfaces.codereviewcomment import ICodeReviewComment
-from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
-from lp.code.interfaces.diff import IPreviewDiff
-from lp.code.interfaces.sourcepackagerecipebuild import ISourcePackageRecipeBuild
-from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
-from lp.hardwaredb.interfaces.hwdb import (
-    IHWDBApplication,
-    IHWDevice,
-    IHWDeviceClass,
-    IHWDriver,
-    IHWDriverName,
-    IHWDriverPackageName,
-    IHWSubmission,
-    IHWSubmissionDevice,
-    IHWVendorID,
-    )
-from lp.registry.interfaces.commercialsubscription import ICommercialSubscription
-from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distributionmirror import IDistributionMirror
-from lp.registry.interfaces.distributionsourcepackage import IDistributionSourcePackage
-from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.distroseriesdifference import (
-    IDistroSeriesDifference,
-    )
-from lp.registry.interfaces.distroseriesdifferencecomment import (
-    IDistroSeriesDifferenceComment,
-    )
-from lp.registry.interfaces.gpg import IGPGKey
-from lp.registry.interfaces.irc import IIrcID
-from lp.registry.interfaces.jabber import IJabberID
-from lp.registry.interfaces.milestone import IHasMilestones
-from lp.registry.interfaces.milestone import IMilestone
-from lp.registry.interfaces.person import (
-    IPerson,
-    IPersonSet,
-    ITeam,
-    )
-from lp.registry.interfaces.pillar import (
-    IPillar,
-    IPillarNameSet,
-    )
-from lp.registry.interfaces.product import (
-    IProduct,
-    IProductSet,
-    )
-from lp.registry.interfaces.productrelease import IProductRelease
-from lp.registry.interfaces.productrelease import IProductReleaseFile
-from lp.registry.interfaces.productseries import (
-    IProductSeries,
-    ITimelineProductSeries,
-    )
-from lp.registry.interfaces.projectgroup import (
-    IProjectGroup,
-    IProjectGroupSet,
-    )
-from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.interfaces.ssh import ISSHKey
-from lp.registry.interfaces.teammembership import ITeamMembership
-from lp.registry.interfaces.wikiname import IWikiName
-from lp.services.worlddata.interfaces.country import (
-    ICountry,
-    ICountrySet,
-    )
-from lp.services.worlddata.interfaces.language import (
-    ILanguage,
-    ILanguageSet,
-    )
-from lp.soyuz.interfaces.archivedependency import IArchiveDependency
-from lp.soyuz.interfaces.archive import IArchive
-from lp.soyuz.interfaces.archivepermission import IArchivePermission
-from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriber
-from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
-from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageReleaseDownloadCount
-from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
-from lp.soyuz.interfaces.packageset import (
-    IPackageset,
-    IPackagesetSet,
-    )
-from lp.soyuz.interfaces.publishing import IBinaryPackagePublishingHistory
-from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
-from lp.soyuz.interfaces.queue import IPackageUpload
-from lp.translations.interfaces.hastranslationimports import IHasTranslationImports
-from lp.translations.interfaces.pofile import IPOFile
-from lp.translations.interfaces.potemplate import IPOTemplate
-from lp.translations.interfaces.translationgroup import ITranslationGroup
-from lp.translations.interfaces.translationimportqueue import (
-    ITranslationImportQueue,
-    ITranslationImportQueueEntry,
-    )
+###
+#
+# Our web service configuration requires that every entry, field, and
+# named operation explicitly name the version in which it first
+# appears. This code grandfathers in entries and named operations that
+# were defined before this rule came into effect. When you change an
+# interface in the future, you should add explicit entry statements to
+# its definition and get rid of the patch calls here.
+#
+###
 
 patch_entry_explicit_version(IArchive, 'beta')
 patch_entry_explicit_version(IArchiveDependency, 'beta')
