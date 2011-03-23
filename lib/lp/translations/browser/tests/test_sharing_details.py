@@ -337,6 +337,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         self.configureSharing()
         objects = self.getCacheObjects()
         self.assertEqual(self.productseries, objects['productseries'])
+        self.assertEqual(self.productseries.product, objects['product'])
         self.assertIs(None, objects['upstream_branch'])
 
     def test_cache_contents_branch(self):

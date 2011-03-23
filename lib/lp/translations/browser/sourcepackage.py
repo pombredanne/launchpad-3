@@ -153,6 +153,7 @@ class SourcePackageTranslationSharingDetailsView(
         cache.objects.update({
             'productseries': self.context.productseries,
             'upstream_branch': self.upstream_branch,
+            'product': self.product,
         })
 
     @property
@@ -202,6 +203,12 @@ class SourcePackageTranslationSharingDetailsView(
         if not self.is_packaging_configured:
             return None
         return self.context.direct_packaging.productseries.branch
+
+    @property
+    def product(self):
+        if self.context.productseries is None:
+            return None
+        return self.context.productseries.product
 
     @property
     def has_upstream_branch(self):
