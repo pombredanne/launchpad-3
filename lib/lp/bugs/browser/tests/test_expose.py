@@ -146,13 +146,6 @@ class TestIntegrationExposeUserSubscriptionsToJS(TestCaseWithFactory):
             sub = target.addBugSubscription(team, team.teamowner)
         expose_user_subscriptions_to_js(user, [sub], request)
         info = IJSONRequestCache(request).objects['subscription_info']
-        # [{'filters': [{'filter': <....BugSubscriptionFilter object at ...>,
-        #                'subscriber_is_team': True,
-        #                'subscriber_link': u'.../api/.../~team-name...',
-        #                'subscriber_title': u'Team Name...',
-        #                'user_is_team_admin': True}],
-        #   'target_title': u'title...',
-        #   'target_url': u'http://127.0.0.1/product-name...'}]
         self.assertEqual(len(info), 1) # One target.
         target_info = info[0]
         self.assertEqual(target_info['target_title'], target.title)

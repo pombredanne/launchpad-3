@@ -99,9 +99,7 @@ from lp.app.widgets.product import (
 from lp.bugs.browser.bugrole import BugRoleMixin
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from lp.bugs.browser.structuralsubscription import (
-    expose_enum_to_js,
-    expose_user_administered_teams_to_js,
-    expose_user_subscriptions_to_js,
+    StructuralSubscriptionJSMixin,
     )
 from lp.bugs.browser.widgets.bug import (
     BugTagsWidget,
@@ -122,7 +120,6 @@ from lp.bugs.interfaces.bugtarget import (
     IOfficialBugTagTargetRestricted,
     )
 from lp.bugs.interfaces.bugtask import (
-    BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
     IBugTaskSet,
@@ -1568,18 +1565,13 @@ class BugsPatchesView(LaunchpadView):
         return ProxiedLibraryFileAlias(patch.libraryfile, patch).http_url
 
 
-class TargetSubscriptionView(LaunchpadView):
+class TargetSubscriptionView(StructuralSubscriptionJSMixin, LaunchpadView):
     """A view to show all a person's structural subscriptions to a target."""
 
-    def initialize(self):
-        super(TargetSubscriptionView, self).initialize()
-        expose_user_administered_teams_to_js(self.request, self.user)
-        subscriptions = get_structural_subscriptions_for_target(
+    @property
+    def subscriptions(self):
+        return get_structural_subscriptions_for_target(
             self.context, self.user)
-        expose_user_subscriptions_to_js(
-            self.user, subscriptions, self.request)
-        expose_enum_to_js(self.request, BugTaskImportance, 'importances')
-        expose_enum_to_js(self.request, BugTaskStatus, 'statuses')
 
     @property
     def label(self):
