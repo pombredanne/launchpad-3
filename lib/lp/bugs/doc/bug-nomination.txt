@@ -258,6 +258,9 @@ bug #1 affects more than one Ubuntu package.
     >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
 
     >>> ubuntu_tbird = ubuntu.getSourcePackage("thunderbird")
+    >>> ignore = factory.makeSourcePackagePublishingHistory(
+    ...     distroseries=ubuntu.currentseries,
+    ...     sourcepackagename=ubuntu_tbird.sourcepackagename)
 
     >>> getUtility(IBugTaskSet).createTask(
     ...     bug=bug_one, owner=no_privs,

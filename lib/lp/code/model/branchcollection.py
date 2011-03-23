@@ -59,6 +59,7 @@ from lp.code.model.branch import (
     )
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.branchsubscription import BranchSubscription
+from lp.code.model.codeimport import CodeImport
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import CodeReviewVoteReference
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
@@ -71,6 +72,7 @@ from lp.registry.model.person import (
 from lp.registry.model.product import Product
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.bulk import load_related
 from lp.services.propertycache import get_property_cache
 
 
@@ -181,6 +183,8 @@ class GenericBranchCollection:
                     cache._associatedProductSeries = []
                 if not safe_hasattr(cache, '_associatedSuiteSourcePackages'):
                     cache._associatedSuiteSourcePackages = []
+                if not safe_hasattr(cache, 'code_import'):
+                    cache.code_import = None
             # associatedProductSeries
             # Imported here to avoid circular import.
             from lp.registry.model.productseries import ProductSeries
@@ -199,6 +203,15 @@ class GenericBranchCollection:
                 cache = caches[link.branchID]
                 cache._associatedSuiteSourcePackages.append(
                     link.suite_sourcepackage)
+            load_related(Product, rows, ['productID'])
+            # So far have only needed the persons for their canonical_url - no
+            # need for validity etc in the /branches API call.
+            load_related(Person, rows,
+                ['ownerID', 'registrantID', 'reviewerID'])
+            for code_import in IStore(CodeImport).find(
+                CodeImport, CodeImport.branchID.is_in(branch_ids)):
+                cache = caches[code_import.branchID]
+                cache.code_import = code_import
         return DecoratedResultSet(resultset, pre_iter_hook=do_eager_load)
 
     def getMergeProposals(self, statuses=None, for_branches=None,

@@ -55,12 +55,16 @@ class DistributionJob(StormBase):
 
     def __init__(self, distribution, distroseries, job_type, metadata):
         super(DistributionJob, self).__init__()
-        json_data = simplejson.dumps(metadata)
         self.job = Job()
         self.distribution = distribution
         self.distroseries = distroseries
         self.job_type = job_type
-        self._json_data = json_data.decode('utf-8')
+        self._json_data = self.serializeMetadata(metadata)
+
+    @classmethod
+    def serializeMetadata(cls, metadata_dict):
+        """Serialize a dict of metadata into a unicode string."""
+        return simplejson.dumps(metadata_dict).decode('utf-8')
 
     @property
     def metadata(self):

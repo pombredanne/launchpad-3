@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -227,8 +227,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     datereleased = UtcDateTimeCol(notNull=False, default=None)
     parent_series = ForeignKey(
         dbName='parent_series', foreignKey='DistroSeries', notNull=False)
-    owner = ForeignKey(
-        dbName='owner', foreignKey='Person',
+    registrant = ForeignKey(
+        dbName='registrant', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
@@ -406,6 +406,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return self.distribution
 
     @property
+    def owner(self):
+        """See `IDistroSeries`."""
+        return self.distribution.owner
+
+    @property
     def sortkey(self):
         """A string to be used for sorting distro seriess.
 
@@ -432,7 +437,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # NB: precaching objects like this method tries to do has a very poor
         # hit rate with storm - many queries will still be executed; consider
         # ripping this out and instead allowing explicit inclusion of things
-        # like Person._all_members does - returning a cached object graph.
+        # like Person._members does - returning a cached object graph.
         # -- RBC 20100810
         # Avoid circular import failures.
         from lp.registry.model.product import Product
@@ -739,10 +744,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def bugtargetname(self):
         """See IBugTarget."""
-        return self.fullseriesname
         # XXX mpt 2007-07-10 bugs 113258, 113262:
         # The distribution's and series' names should be used instead
         # of fullseriesname.
+        return self.fullseriesname
 
     @property
     def bugtargetdisplayname(self):
@@ -984,7 +989,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getCurrentSourceReleases(self, source_package_names):
         """See `IDistroSeries`."""
         return getUtility(IDistroSeriesSet).getCurrentSourceReleases(
-            {self:source_package_names})
+            {self: source_package_names})
 
     def getTranslatableSourcePackages(self):
         """See `IDistroSeries`."""
@@ -1886,10 +1891,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # or the child.parent's drivers.
         if not (user.inTeam('soyuz-team') or user.inTeam('admins')):
             raise Unauthorized
-        child = IStore(self).find(DistroSeries, name=name).one()
+        if distribution is None:
+            distribution = self.distribution
+        child = IStore(self).find(
+            DistroSeries, name=name, distribution=distribution).one()
         if child is None:
-            if distribution is None:
-                distribution = self.distribution
             if not displayname:
                 raise DerivationError(
                     "Display Name needs to be set when creating a "
@@ -1912,7 +1918,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             child = distribution.newSeries(
                 name=name, displayname=displayname, title=title,
                 summary=summary, description=description,
-                version=version, parent_series=self, owner=user)
+                version=version, parent_series=self, registrant=user)
             IStore(self).add(child)
         else:
             if child.parent_series is not self:
@@ -1926,6 +1932,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             raise DerivationError(e)
         getUtility(IInitialiseDistroSeriesJobSource).create(
             child, architectures, packagesets, rebuild)
+
+    def getDerivedSeries(self):
+        """See `IDistroSeriesPublic`."""
+        return Store.of(self).find(
+            DistroSeries, DistroSeries.parent_series == self)
 
 
 class DistroSeriesSet:

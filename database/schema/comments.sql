@@ -1098,7 +1098,7 @@ COMMENT ON COLUMN Distribution.bug_reporting_guidelines IS 'Guidelines to the en
 COMMENT ON COLUMN Distribution.reviewer_whiteboard IS 'A whiteboard for Launchpad admins, registry experts and the project owners to capture the state of current issues with the project.';
 COMMENT ON COLUMN Distribution.max_bug_heat IS 'The highest heat value across bugs for this distribution.';
 COMMENT ON COLUMN Distribution.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they\'ve reported a new bug.';
-
+COMMENT ON COLUMN Distribution.registrant IS 'The person in launchpad who registered this distribution.';
 
 -- DistroSeries
 
@@ -1352,7 +1352,6 @@ COMMENT ON TABLE ProjectBounty IS 'This table records a simple link between a bo
 COMMENT ON TABLE BugMessage IS 'This table maps a message to a bug. In other words, it shows that a particular message is associated with a particular bug.';
 COMMENT ON COLUMN BugMessage.bugwatch IS 'The external bug this bug comment was imported from.';
 COMMENT ON COLUMN BugMessage.remote_comment_id IS 'The id this bug comment has in the external bug tracker, if it is an imported comment. If it is NULL while having a bugwatch set, this comment was added in Launchpad and needs to be pushed to the external bug tracker.';
-COMMENT ON COLUMN BugMessage.visible IS 'If false, the bug comment is hidden and should not be shown in any UI.';
 COMMENT ON COLUMN BugMessage.index IS 'The index (used in urls) of the message in a particular bug.';
 
 -- Messaging subsytem
@@ -1361,6 +1360,7 @@ COMMENT ON COLUMN Message.parent IS 'A "parent message". This allows for some le
 COMMENT ON COLUMN Message.subject IS 'The title text of the message, or the subject if it was an email.';
 COMMENT ON COLUMN Message.distribution IS 'The distribution in which this message originated, if we know it.';
 COMMENT ON COLUMN Message.raw IS 'The original unadulterated message if it arrived via email. This is required to provide access to the original, undecoded message.';
+COMMENT ON COLUMN Message.visible IS 'If false, the message is hidden and should not be shown in any UI.';
 
 COMMENT ON TABLE MessageChunk IS 'This table stores a single chunk of a possibly multipart message. There will be at least one row in this table for each message. text/* parts are stored in the content column. All other parts are stored in the Librarian and referenced via the blob column. If both content and blob are NULL, then this chunk has been removed (eg. offensive, legal reasons, virus etc.)';
 COMMENT ON COLUMN MessageChunk.content IS 'Text content for this chunk of the message. This content is full text searchable.';
@@ -1621,7 +1621,7 @@ COMMENT ON COLUMN DistroSeries.version IS 'The version of the release. E.g. wart
 COMMENT ON COLUMN DistroSeries.releasestatus IS 'The current release status of this distroseries. E.g. "pre-release freeze" or "released"';
 COMMENT ON COLUMN DistroSeries.datereleased IS 'The date on which this distroseries was released. (obviously only valid for released distributions)';
 COMMENT ON COLUMN DistroSeries.parent_series IS 'The parent distroseries on which this distribution is based. This is related to the inheritance stuff.';
-COMMENT ON COLUMN DistroSeries.owner IS 'The ultimate owner of this distroseries.';
+COMMENT ON COLUMN DistroSeries.registrant IS 'The user who registered this distroseries.';
 COMMENT ON COLUMN DistroSeries.driver IS 'This is a person or team who can act as a driver for this specific release - note that the distribution drivers can also set goals for any release.';
 COMMENT ON COLUMN DistroSeries.changeslist IS 'The email address (name name) of the changes announcement list for this distroseries. If NULL, no announcement mail will be sent.';
 COMMENT ON COLUMN DistroSeries.defer_translation_imports IS 'Don''t accept PO imports for this release just now.';

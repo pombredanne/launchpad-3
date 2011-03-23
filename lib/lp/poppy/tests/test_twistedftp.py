@@ -10,6 +10,7 @@ import os
 from testtools.deferredruntest import (
     AsynchronousDeferredRunTest,
     )
+import transaction
 from twisted.protocols import ftp
 from zope.component import getUtility
 
@@ -22,6 +23,7 @@ from lp.poppy.twistedftp import PoppyFileWriter
 from lp.registry.interfaces.gpg import (
     GPGKeyAlgorithm,
     IGPGKeySet)
+from lp.services.database.isolation import check_no_transaction
 from lp.testing import TestCaseWithFactory
 from lp.testing.keyserver import KeyServerTac
 
@@ -56,6 +58,8 @@ class TestPoppyFileWriter(TestCaseWithFactory):
             algorithm=GPGKeyAlgorithm.items[key.algorithm],
             keysize=key.keysize, can_encrypt=key.can_encrypt,
             active=True)
+        # validateGPG runs in its own transaction.
+        transaction.commit()
 
         # Locate the directory with test files.
         self.test_files_dir = os.path.join(
@@ -91,4 +95,17 @@ class TestPoppyFileWriter(TestCaseWithFactory):
             file_writer = PoppyFileWriter(opened_file)
             d = file_writer.close()
             d.addCallbacks(success_callback, error_callback)
+            return d
+
+    def test_aborts_transaction(self):
+        valid_changes_file = os.path.join(
+            self.test_files_dir, "etherwake_1.08-1_source.changes")
+
+        def callback(result):
+            check_no_transaction()
+
+        with open(valid_changes_file) as opened_file:
+            file_writer = PoppyFileWriter(opened_file)
+            d = file_writer.close()
+            d.addBoth(callback)
             return d

@@ -21,7 +21,11 @@ from canonical.config import config
 from canonical.launchpad.webapp.errorlog import ErrorReport, ErrorReportEvent
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.testing.layers import DatabaseFunctionalLayer
-from launchpad_loggerhead.app import RootApp, oops_middleware
+from launchpad_loggerhead.app import (
+    _oops_html_template,
+    oops_middleware,
+    RootApp,
+    )
 from launchpad_loggerhead.session import SessionHandler
 from lp.testing import TestCase
 
@@ -152,6 +156,10 @@ class TestLogout(TestCase):
 
 class TestOopsMiddleware(TestCase):
 
+    def setUp(self):
+        super(TestOopsMiddleware, self).setUp()
+        self.start_response_called = False
+
     def assertContainsRe(self, haystack, needle_re, flags=0):
         """Assert that a contains something matching a regular expression."""
         # There is: self.assertTextMatchesExpressionIgnoreWhitespace
@@ -188,10 +196,12 @@ class TestOopsMiddleware(TestCase):
             yield None
         raise socket.error(errno.EPIPE, 'Connection closed')
 
-    def noop_start_response(self, status, response_headers, exc_info=None):
-        def noop_write(chunk):
-            pass
-        return noop_write
+    def logging_start_response(self, status, response_headers, exc_info=None):
+        self._response_chunks = []
+        def _write(chunk):
+            self._response_chunks.append(chunk)
+        self.start_response_called = True
+        return _write
 
     def success_app(self, environ, start_response):
         writer = start_response('200 OK', {})
@@ -201,23 +211,37 @@ class TestOopsMiddleware(TestCase):
     def failing_start_response(self, status, response_headers, exc_info=None):
         def fail_write(chunk):
             raise socket.error(errno.EPIPE, 'Connection closed')
+        self.start_response_called = True
         return fail_write
+
+    def multi_yielding_app(self, environ, start_response):
+        writer = start_response('200 OK', {})
+        yield 'content\n'
+        yield 'I want\n'
+        yield 'to give to the user\n'
+
+    def no_body_app(self, environ, start_response):
+        writer = start_response('200 OK', {})
+        return []
+
+    def _get_default_environ(self):
+        return {'wsgi.version': (1, 0),
+                'wsgi.url_scheme': 'http',
+                'PATH_INFO': '/test/path',
+                'REQUEST_METHOD': 'GET',
+                'SERVER_NAME': 'localhost',
+                'SERVER_PORT': '8080',
+               }
 
     def wrap_and_run(self, app, failing_write=False):
         app = oops_middleware(app)
         # Just random env data, rather than setting up a whole wsgi stack just
         # to pass in values for this dict
-        environ = {'wsgi.version': (1, 0),
-                   'wsgi.url_scheme': 'http',
-                   'PATH_INFO': '/test/path',
-                   'REQUEST_METHOD': 'GET',
-                   'SERVER_NAME': 'localhost',
-                   'SERVER_PORT': '8080',
-                  }
+        environ = self._get_default_environ()
         if failing_write:
             result = list(app(environ, self.failing_start_response))
         else:
-            result = list(app(environ, self.noop_start_response))
+            result = list(app(environ, self.logging_start_response))
         return result
 
     def test_exception_triggers_oops(self):
@@ -227,6 +251,11 @@ class TestOopsMiddleware(TestCase):
         self.assertEqual(1, len(self.oopses))
         oops = self.oopses[0]
         self.assertEqual('RuntimeError', oops.type)
+        # runtime_failing_app doesn't call start_response, but oops_middleware
+        # does because it tries to send the OOPS information to the user.
+        self.assertTrue(self.start_response_called)
+        self.assertEqual(_oops_html_template % {'oopsid': oops.id},
+                         ''.join(self._response_chunks))
 
     def test_ignores_socket_exceptions(self):
         self.catchLogEvents()
@@ -234,6 +263,9 @@ class TestOopsMiddleware(TestCase):
         self.assertEqual(0, len(self.oopses))
         self.assertContainsRe(self.log_stream.getvalue(),
             'Caught socket exception from <unknown>:.*Connection closed')
+        # start_response doesn't get called because the app fails first,
+        # and oops_middleware knows not to do anything with a closed socket.
+        self.assertFalse(self.start_response_called)
 
     def test_ignores_writer_failures(self):
         self.catchLogEvents()
@@ -241,6 +273,36 @@ class TestOopsMiddleware(TestCase):
         self.assertEqual(0, len(self.oopses))
         self.assertContainsRe(self.log_stream.getvalue(),
             'Caught socket exception from <unknown>:.*Connection closed')
+        # success_app calls start_response, so this should get passed on.
+        self.assertTrue(self.start_response_called)
+
+    def test_stopping_early_no_oops(self):
+        # See bug #726985.
+        # If content is being streamed, and the pipe closes, we'll get a
+        # 'GeneratorExit', because it is closed before finishing. This doesn't
+        # need to become an OOPS.
+        self.catchLogEvents()
+        app = oops_middleware(self.multi_yielding_app)
+        environ = self._get_default_environ()
+        result = app(environ, self.logging_start_response)
+        self.assertEqual('content\n', result.next())
+        # At this point, we intentionally kill the app and the response, so
+        # that they will get GeneratorExit
+        del app, result
+        self.assertEqual([], self.oopses)
+        self.assertContainsRe(self.log_stream.getvalue(),
+            'Caught GeneratorExit from <unknown>')
+        # Body content was yielded, we must have called start_response
+        self.assertTrue(self.start_response_called)
+
+    def test_no_body_calls_start_response(self):
+        # See bug #732481, even if we don't have a body, if we have headers to
+        # send, we must call start_response
+        result = self.wrap_and_run(self.no_body_app)
+        self.assertEqual([], result)
+        self.assertTrue(self.start_response_called)
+        # Output content is empty because of no_body_app
+        self.assertEqual('', ''.join(self._response_chunks))
 
 
 def test_suite():

@@ -13,6 +13,8 @@ __all__ = [
 
 from email.Utils import parseaddr
 import re
+from httplib import BadStatusLine
+from urllib2 import URLError
 from xml.dom import minidom
 import xml.parsers.expat
 import xmlrpclib
@@ -39,7 +41,6 @@ from lp.bugs.externalbugtracker.base import (
     UnparsableBugData,
     UnparsableBugTrackerVersion,
     )
-from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 from lp.bugs.externalbugtracker.xmlrpc import UrlLib2Transport
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
@@ -52,6 +53,7 @@ from lp.bugs.interfaces.externalbugtracker import (
     UNKNOWN_REMOTE_IMPORTANCE,
     )
 from lp.services import encoding
+from lp.services.database.isolation import ensure_no_transaction
 
 
 class Bugzilla(ExternalBugTracker):
@@ -156,12 +158,17 @@ class Bugzilla(ExternalBugTracker):
 
         See `IExternalBugTracker`.
         """
-        if self._remoteSystemHasPluginAPI():
-            return BugzillaLPPlugin(self.baseurl)
-        elif self._remoteSystemHasBugzillaAPI():
-            return BugzillaAPI(self.baseurl)
-        else:
-            return self
+        # checkwatches isn't set up to handle errors here, so we supress
+        # known connection issues. They'll be handled and logged later on when
+        # further requests are attempted.
+        try:
+            if self._remoteSystemHasPluginAPI():
+                return BugzillaLPPlugin(self.baseurl)
+            elif self._remoteSystemHasBugzillaAPI():
+                return BugzillaAPI(self.baseurl)
+        except (xmlrpclib.ProtocolError, URLError, BadStatusLine):
+            pass
+        return self
 
     def _parseDOMString(self, contents):
         """Return a minidom instance representing the XML contents supplied"""

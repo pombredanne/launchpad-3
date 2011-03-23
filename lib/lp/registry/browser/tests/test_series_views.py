@@ -1,39 +1,48 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
+import unittest
+
 from BeautifulSoup import BeautifulSoup
+import soupmatchers
 from storm.zope.interfaces import IResultSet
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-import unittest
-
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import (
-    LaunchpadZopelessLayer,
+    DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.registry.browser.distroseries import (
+    BLACKLISTED,
+    HIGHER_VERSION_THAN_PARENT,
+    NON_BLACKLISTED,
     )
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
+    )
+from lp.services.features import (
+    getFeatureFlag,
+    install_feature_controller,
     )
 from lp.services.features.flags import FeatureController
 from lp.services.features.model import (
     FeatureFlag,
     getFeatureStore,
     )
-from lp.services.features import (
-    getFeatureFlag,
-    per_thread,
-    )
 from lp.testing import (
-    TestCaseWithFactory,
+    login_person,
     person_logged_in,
+    TestCaseWithFactory,
     )
 from lp.testing.views import create_initialized_view
 
@@ -78,11 +87,54 @@ def set_derived_series_ui_feature_flag(test_case):
     # features.
     def in_scope(value):
         return True
-    per_thread.features = FeatureController(in_scope)
+    install_feature_controller(FeatureController(in_scope))
+    test_case.addCleanup(install_feature_controller, None)
 
-    def reset_per_thread_features():
-        per_thread.features = None
-    test_case.addCleanup(reset_per_thread_features)
+
+class DistroSeriesLocalPackageDiffsPageTestCase(TestCaseWithFactory):
+    """Test the distroseries +localpackagediffs page."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(DistroSeriesLocalPackageDiffsPageTestCase,
+              self).setUp('foo.bar@canonical.com')
+        set_derived_series_ui_feature_flag(self)
+        self.simple_user = self.factory.makePerson()
+
+    def test_filter_form_if_differences(self):
+        # Test that the page includes the filter form if differences
+        # are present
+        login_person(self.simple_user)
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
+        current_difference = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series)
+
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs', principal=self.simple_user)
+
+        self.assertIsNot(
+            None,
+            find_tag_by_id(view(), 'distroseries-localdiff-search-filter'),
+            "Form filter should be shown when there are differences.")
+
+    def test_filter_noform_if_nodifferences(self):
+        # Test that the page doesn't includes the filter form if no
+        # differences are present
+        login_person(self.simple_user)
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
+
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs', principal=self.simple_user)
+
+        self.assertIs(
+            None,
+            find_tag_by_id(view(), 'distroseries-localdiff-search-filter'),
+            "Form filter should not be shown when there are no differences.")
 
 
 class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
@@ -220,6 +272,137 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
 class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
+
+    def test_higher_radio_mentions_parent(self):
+        set_derived_series_ui_feature_flag(self)
+        parent_series = self.factory.makeDistroSeries(
+            name='lucid', displayname='Lucid')
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=parent_series)
+        diff1 = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            source_package_name_str="my-src-package")
+        view = create_initialized_view(
+            derived_series,
+            '+localpackagediffs')
+
+        radio_title = \
+            "&nbsp;Blacklisted packages with a higher version than in 'Lucid'"
+        radio_option_matches = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                "radio displays parent's name", 'label',
+                text=radio_title),
+            )
+        self.assertThat(view.render(), radio_option_matches)
+
+    def test_batch_filtered(self):
+        # The name_filter parameter allows to filter packages by name.
+        set_derived_series_ui_feature_flag(self)
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
+        diff1 = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            source_package_name_str="my-src-package")
+        diff2 = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            source_package_name_str="my-second-src-package")
+
+        filtered_view = create_initialized_view(
+            derived_series,
+            '+localpackagediffs',
+            query_string='field.name_filter=my-src-package')
+        unfiltered_view = create_initialized_view(
+            derived_series,
+            '+localpackagediffs')
+
+        self.assertContentEqual(
+            [diff1], filtered_view.cached_differences.batch)
+        self.assertContentEqual(
+            [diff2, diff1], unfiltered_view.cached_differences.batch)
+
+    def test_batch_non_blacklisted(self):
+        # The default filter is all non blacklisted differences.
+        set_derived_series_ui_feature_flag(self)
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
+        diff1 = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            source_package_name_str="my-src-package")
+        diff2 = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            source_package_name_str="my-second-src-package")
+        blacklisted_diff = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
+
+        filtered_view = create_initialized_view(
+            derived_series,
+            '+localpackagediffs',
+            query_string='field.package_type=%s' % NON_BLACKLISTED)
+        filtered_view2 = create_initialized_view(
+            derived_series,
+            '+localpackagediffs')
+
+        self.assertContentEqual(
+            [diff2, diff1], filtered_view.cached_differences.batch)
+        self.assertContentEqual(
+            [diff2, diff1], filtered_view2.cached_differences.batch)
+
+    def test_batch_differences_packages(self):
+        # field.package_type parameter allows to list only
+        # blacklisted differences.
+        set_derived_series_ui_feature_flag(self)
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
+        blacklisted_diff = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
+
+        blacklisted_view = create_initialized_view(
+            derived_series,
+            '+localpackagediffs',
+            query_string='field.package_type=%s' % BLACKLISTED)
+        unblacklisted_view = create_initialized_view(
+            derived_series,
+            '+localpackagediffs')
+
+        self.assertContentEqual(
+            [blacklisted_diff], blacklisted_view.cached_differences.batch)
+        self.assertContentEqual(
+            [], unblacklisted_view.cached_differences.batch)
+
+    def test_batch_blacklisted_differences_with_higher_version(self):
+        # field.package_type parameter allows to list only
+        # blacklisted differences with a child's version higher than parent's.
+        set_derived_series_ui_feature_flag(self)
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
+        blacklisted_diff_higher = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
+            versions={'base': '1.1', 'parent': '1.3', 'derived': '1.10'})
+        blacklisted_diff_not_higher = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
+            versions={'base': '1.1', 'parent': '1.12', 'derived': '1.10'})
+
+        blacklisted_view = create_initialized_view(
+            derived_series,
+            '+localpackagediffs',
+            query_string='field.package_type=%s' % HIGHER_VERSION_THAN_PARENT)
+        unblacklisted_view = create_initialized_view(
+            derived_series,
+            '+localpackagediffs')
+
+        self.assertContentEqual(
+            [blacklisted_diff_higher],
+            blacklisted_view.cached_differences.batch)
+        self.assertContentEqual(
+            [], unblacklisted_view.cached_differences.batch)
 
     def test_canPerformSync_non_editor(self):
         # Non-editors do not see options to sync.

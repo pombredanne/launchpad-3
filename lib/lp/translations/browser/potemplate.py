@@ -71,6 +71,9 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.translations import TranslationsMixin
+from lp.translations.browser.translationsharing import (
+    TranslationSharingDetailsMixin,
+    )
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import (
     IPOTemplate,
@@ -229,7 +232,8 @@ class POTemplateSubsetView:
         self.request.response.redirect('../+translations')
 
 
-class POTemplateView(LaunchpadView, TranslationsMixin):
+class POTemplateView(LaunchpadView,
+                     TranslationsMixin, TranslationSharingDetailsMixin):
 
     SHOW_RELATED_TEMPLATES = 4
 
@@ -372,6 +376,20 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
             return None
         obj, template = infos[0]
         return template
+
+    def getTranslationTarget(self):
+        """See `TranslationSharingDetailsMixin`."""
+        if self.is_upstream_template:
+            return self.context.productseries
+        else:
+            return self.context.sourcepackage
+
+    def can_edit_sharing_details(self):
+        if self.is_upstream_template:
+            obj = self.context.productseries
+        else:
+            obj = self.context.distroseries
+        return check_permission('launchpad.Edit', obj)
 
 
 class POTemplateUploadView(LaunchpadView, TranslationsMixin):

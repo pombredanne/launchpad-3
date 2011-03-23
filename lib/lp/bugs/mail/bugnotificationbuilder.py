@@ -195,6 +195,6 @@ class BugNotificationBuilder:
         if filters is not None:
             for filter in filters:
                 message.add_header(
-                    'X-Launchpad-Subscription-Filter', filter)
+                    'X-Launchpad-Subscription', filter)
 
         return message

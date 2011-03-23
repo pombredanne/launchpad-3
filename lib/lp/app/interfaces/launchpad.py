@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces for the Launchpad application.
@@ -13,6 +13,7 @@ __all__ = [
     'IServiceUsage',
     ]
 
+from lazr.restful.declarations import exported
 from zope.interface import Interface
 from zope.schema import (
     Bool,
@@ -45,11 +46,14 @@ class IServiceUsage(Interface):
         description=_("Where does this pillar host code?"),
         default=ServiceUsage.UNKNOWN,
         vocabulary=ServiceUsage)
-    translations_usage = Choice(
+    translations_usage = exported(Choice(
         title=_('Type of service for translations application'),
         description=_("Where does this pillar do translations?"),
         default=ServiceUsage.UNKNOWN,
-        vocabulary=ServiceUsage)
+        vocabulary=ServiceUsage),
+        ('devel', {'exported': True}),
+        exported=False,
+        )
     bug_tracking_usage = Choice(
         title=_('Type of service for tracking bugs'),
         description=_("Where does this pillar track bugs?"),

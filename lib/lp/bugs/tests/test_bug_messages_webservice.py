@@ -47,8 +47,7 @@ class TestSetCommentVisibility(TestCaseWithFactory):
         else:
             lp = launchpadlib_for("test")
 
-        bug_entry = lp.load(
-            'http://api.launchpad.dev/1.0/bugs/%s/' % self.bug.id)
+        bug_entry = lp.load('/bugs/%s/' % self.bug.id)
         return bug_entry
 
     def _set_visibility(self, bug):
@@ -62,7 +61,7 @@ class TestSetCommentVisibility(TestCaseWithFactory):
         with person_logged_in(self.admin):
             bug_message = bug_msg_set.getByBugAndMessage(
                 self.bug, self.message)
-            self.assertFalse(bug_message.visible)
+            self.assertFalse(bug_message.message.visible)
 
     def test_random_user_cannot_set_visible(self):
         # Logged in users without privs can't set bug comment

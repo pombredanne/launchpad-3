@@ -75,8 +75,9 @@ For distroseries we publish a subset of its attributes.
     main_archive_link: u'http://.../ubuntu/+archive/primary'
     name: u'hoary'
     official_bug_tags: []
-    owner_link: u'http://.../~mark'
+    owner_link: u'http://.../~ubuntu-team'
     parent_series_link: u'http://.../ubuntu/warty'
+    registrant_link: u'http://.../~mark'
     resource_type_link: ...
     self_link: u'http://.../ubuntu/hoary'
     status: u'Active Development'

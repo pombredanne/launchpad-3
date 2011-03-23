@@ -900,6 +900,16 @@
         <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
     </class>
 
+    <!-- DistroSeriesDifferenceJobSource -->
+    <class class="lp.soyuz.model.distroseriesdifferencejob.DistroSeriesDifferenceJob">
+        <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
+    </class>
+    <securedutility
+      component="lp.soyuz.model.distroseriesdifferencejob.DistroSeriesDifferenceJob"
+      provides="lp.soyuz.interfaces.distroseriesdifferencejob.IDistroSeriesDifferenceJobSource">
+        <allow interface="lp.soyuz.interfaces.distroseriesdifferencejob.IDistroSeriesDifferenceJobSource"/>
+    </securedutility>
+
     <!-- SyncPackageJobSource -->
     <securedutility
       component="lp.soyuz.model.syncpackagejob.SyncPackageJob"

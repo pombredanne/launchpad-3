@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -241,8 +241,13 @@ class IDistroSeriesPublic(
             description=_("The series from which this one was branched."),
             required=True, schema=Interface, # Really IDistroSeries, see below
             vocabulary='DistroSeries'))
-    owner = exported(
-        PublicPersonChoice(title=_("Owner"), vocabulary='ValidOwner'))
+    registrant = exported(
+        PublicPersonChoice(
+            title=_("Registrant"), vocabulary='ValidPersonOrTeam'))
+    owner = exported(Reference(
+        IPerson, title=_("Owning team of the derived series"), readonly=True,
+        description=_(
+            "This attribute mirrors the owner of the distribution.")))
     date_created = exported(
         Datetime(title=_("The date this series was registered.")))
     driver = exported(
@@ -862,6 +867,11 @@ class IDistroSeriesPublic(
             series. If it's true, they will not be, and if it's false, they
             will be.
         """
+
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getDerivedSeries():
+        """Get all `DistroSeries` derived from this one."""
 
 
 class IDistroSeries(IDistroSeriesEditRestricted, IDistroSeriesPublic,

@@ -39,12 +39,17 @@ from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
     IBugTracker,
     )
-from lp.bugs.model.bugtracker import BugTrackerSet
+from lp.bugs.model.bugtracker import (
+    BugTrackerSet,
+    make_bugtracker_name,
+    make_bugtracker_title,
+    )
 from lp.bugs.tests.externalbugtracker import UrlLib2TransportTestHandler
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
     login,
     login_person,
+    TestCase,
     TestCaseWithFactory,
     )
 from lp.testing.sampledata import ADMIN_EMAIL
@@ -344,6 +349,39 @@ class TestMantis(TestCaseWithFactory):
                 'Not Found', {}, None),
             'http://mantis.example.com/csv_export.php')
         self.assertRaises(BugTrackerConnectError, tracker._csv_data)
+
+
+class TestMakeBugtrackerName(TestCase):
+    """Tests for make_bugtracker_name."""
+
+    def test_url(self):
+        self.assertEquals(
+            'auto-bugs.example.com',
+            make_bugtracker_name('http://bugs.example.com/shrubbery'))
+
+    def test_email_address(self):
+        self.assertEquals(
+            'auto-foo.bar',
+            make_bugtracker_name('mailto:foo.bar@somewhere.com'))
+
+    def test_sanitises_forbidden_characters(self):
+        self.assertEquals(
+            'auto-foobar',
+            make_bugtracker_name('mailto:foo_bar@somewhere.com'))
+
+
+class TestMakeBugtrackerTitle(TestCase):
+    """Tests for make_bugtracker_title."""
+
+    def test_url(self):
+        self.assertEquals(
+            'bugs.example.com/shrubbery',
+            make_bugtracker_title('http://bugs.example.com/shrubbery'))
+
+    def test_email_address(self):
+        self.assertEquals(
+            'Email to foo.bar@somewhere',
+            make_bugtracker_title('mailto:foo.bar@somewhere.com'))
 
 
 def test_suite():

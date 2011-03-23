@@ -21,6 +21,8 @@ __all__ = [
     'DistributionPPASearchView',
     'DistributionPackageSearchView',
     'DistributionPendingReviewMirrorsView',
+    'DistributionPublisherConfigView',
+    'DistributionReassignmentView',
     'DistributionSeriesView',
     'DistributionSeriesMirrorsRSSView',
     'DistributionSeriesMirrorsView',
@@ -40,6 +42,7 @@ import datetime
 
 from zope.component import getUtility
 from zope.event import notify
+from zope.formlib import form
 from zope.interface import implements
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
@@ -78,6 +81,10 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.errors import NotFoundError
 from lp.app.widgets.image import ImageChangeWidget
+from lp.archivepublisher.interfaces.publisherconfig import (
+    IPublisherConfig,
+    IPublisherConfigSet,
+    )
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
@@ -92,6 +99,7 @@ from lp.registry.browser.menu import (
     RegistryCollectionActionMenuBase,
     )
 from lp.registry.browser.pillar import PillarBugsMenu
+from lp.registry.browser.objectreassignment import ObjectReassignmentView
 from lp.registry.interfaces.distribution import (
     IDerivativeDistribution,
     IDistribution,
@@ -278,7 +286,12 @@ class DistributionNavigationMenu(NavigationMenu, DistributionLinksMixin):
     """A menu of context actions."""
     usedfor = IDistribution
     facet = 'overview'
-    links = ['edit']
+    links = ['edit', 'pubconf']
+
+    @enabled_with_permission("launchpad.Admin")
+    def pubconf(self):
+        text = "Configure publisher"
+        return Link("+pubconf", text, icon="edit")
 
 
 class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
@@ -325,7 +338,7 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
 
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
-        text = 'Change registrant'
+        text = 'Change maintainer'
         return Link('+reassign', text, icon='edit')
 
     def newmirror(self):
@@ -714,7 +727,9 @@ class DistributionSetActionNavigationMenu(RegistryCollectionActionMenuBase):
     """Action menu for `DistributionSetView`."""
 
     usedfor = IDistributionSet
-    links = ['register_team', 'register_project', 'create_account']
+    links = [
+        'register_team', 'register_project', 'register_distribution',
+        'create_account']
 
 
 class DistributionSetView(LaunchpadView):
@@ -768,6 +783,7 @@ class DistributionAddView(LaunchpadFormView):
             domainname=data['domainname'],
             members=data['members'],
             owner=self.user,
+            registrant=self.user,
             )
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)
@@ -1079,3 +1095,62 @@ class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
     @cachedproperty
     def mirrors(self):
         return self.context.disabled_mirrors
+
+
+class DistributionReassignmentView(ObjectReassignmentView):
+    """View class for changing distribution maintainer."""
+    ownerOrMaintainerName = 'maintainer'
+
+
+class DistributionPublisherConfigView(LaunchpadFormView):
+    """View class for configuring publisher options for a DistroSeries.
+
+    It redirects to the main distroseries page after a successful edit.
+    """
+    schema = IPublisherConfig
+    field_names = ['root_dir', 'base_url', 'copy_base_url']
+
+    @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return 'Publisher configuration for %s' % self.context.title
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
+    @property
+    def initial_values(self):
+        """If the config already exists, set up the fields with data."""
+        config = getUtility(
+            IPublisherConfigSet).getByDistribution(self.context)
+        values = {}
+        if config is not None:
+            for name in self.field_names:
+                values[name] = getattr(config, name)
+
+        return values
+
+    @action("Save")
+    def save_action(self, action, data):
+        """Update the context and redirect to its overview page."""
+        config = getUtility(IPublisherConfigSet).getByDistribution(
+            self.context)
+        if config is None:
+            config = getUtility(IPublisherConfigSet).new(
+                distribution=self.context,
+                root_dir=data['root_dir'],
+                base_url=data['base_url'],
+                copy_base_url=data['copy_base_url'])
+        else:
+            form.applyChanges(config, self.form_fields, data, self.adapters)
+
+        self.request.response.addInfoNotification(
+            'Your changes have been applied.')
+        self.next_url = canonical_url(self.context)

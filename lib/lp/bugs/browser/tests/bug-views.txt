@@ -777,7 +777,7 @@ order, the comments and activity that have taken place on a bug.
     ...         'testproduct.actions.save': 'Save Changes',
     ...         })
     >>> view = getMultiAdapter(
-    ...     (bug.bugtasks[0], request), name="+editstatus-page")
+    ...     (bug.bugtasks[0], request), name="+editstatus")
     >>> view.initialize()
 
     >>> view = getMultiAdapter(
@@ -833,7 +833,7 @@ comments and activity together.
     ...         'testproduct.actions.save': 'Save Changes',
     ...         })
     >>> view = getMultiAdapter(
-    ...     (bug.bugtasks[0], request), name="+editstatus-page")
+    ...     (bug.bugtasks[0], request), name="+editstatus")
     >>> view.initialize()
 
     >>> view = getMultiAdapter(

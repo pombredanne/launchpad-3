@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -13,12 +13,10 @@ __all__ = [
 
 from operator import attrgetter
 
-from sqlobject.sqlbuilder import SQLConstant
 from storm.locals import (
     And,
     Desc,
     Select,
-    SQL,
     Store,
     )
 from zope.component import getUtility
@@ -529,22 +527,29 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             'BugTask.distroseries = %s AND BugTask.sourcepackagename = %s' %
                 sqlvalues(self.distroseries, self.sourcepackagename))
 
-    def setPackaging(self, productseries, user):
+    def setPackaging(self, productseries, owner):
+        """See `ISourcePackage`."""
         target = self.direct_packaging
         if target is not None:
             # we should update the current packaging
             target.productseries = productseries
-            target.owner = user
+            target.owner = owner
             target.datecreated = UTC_NOW
         else:
             # ok, we need to create a new one
             Packaging(
                 distroseries=self.distroseries,
                 sourcepackagename=self.sourcepackagename,
-                productseries=productseries, owner=user,
+                productseries=productseries, owner=owner,
                 packaging=PackagingType.PRIME)
         # and make sure this change is immediately available
         flush_database_updates()
+
+    def deletePackaging(self):
+        """See `ISourcePackage`."""
+        if self.direct_packaging is None:
+            return
+        self.direct_packaging.destroySelf()
 
     def __hash__(self):
         """See `ISourcePackage`."""

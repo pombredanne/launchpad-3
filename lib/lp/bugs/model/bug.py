@@ -14,6 +14,7 @@ __all__ = [
     'BugSet',
     'BugTag',
     'FileBugData',
+    'get_also_notified_subscribers',
     'get_bug_tags',
     'get_bug_tags_open_count',
     ]
@@ -70,7 +71,10 @@ from zope.interface import (
     implements,
     providedBy,
     )
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    ProxyFactory,
+    removeSecurityProxy,
+    )
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -144,6 +148,7 @@ from lp.bugs.interfaces.bugnomination import (
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
+    IBugTask,
     IBugTaskSet,
     UNRESOLVED_BUGTASK_STATUSES,
     )
@@ -163,11 +168,11 @@ from lp.bugs.model.bugtask import (
     BugTask,
     bugtask_sort_key,
     get_bug_privacy_filter,
-    NullBugTask,
     )
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (
     get_all_structural_subscriptions,
+    get_structural_subscribers,
     )
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from lp.registry.interfaces.distribution import IDistribution
@@ -831,6 +836,27 @@ BugMessage""" % sqlvalues(self.id))
                 BugNotificationLevel.NOTHING)
         return not subscriptions.is_empty()
 
+    def mute(self, person, muted_by):
+        """See `IBug`."""
+        # If there's an existing subscription, update it.
+        store = Store.of(self)
+        subscriptions = store.find(
+            BugSubscription,
+            BugSubscription.bug == self,
+            BugSubscription.person == person)
+        if subscriptions.is_empty():
+            return self.subscribe(
+                person, muted_by, level=BugNotificationLevel.NOTHING)
+        else:
+            subscription = subscriptions.one()
+            subscription.bug_notification_level = (
+                BugNotificationLevel.NOTHING)
+            return subscription
+
+    def unmute(self, person, unmuted_by):
+        """See `IBug`."""
+        self.unsubscribe(person, unmuted_by)
+
     @property
     def subscriptions(self):
         """The set of `BugSubscriptions` for this bug."""
@@ -976,56 +1002,17 @@ BugMessage""" % sqlvalues(self.id))
             BugSubscription.person == person,
             BugSubscription.bug == self).one()
 
+    def getStructuralSubscriptionsForPerson(self, person):
+        """See `IBug`."""
+        return get_all_structural_subscriptions(self.bugtasks, person)
+
     def getAlsoNotifiedSubscribers(self, recipients=None, level=None):
         """See `IBug`.
 
         See the comment in getDirectSubscribers for a description of the
         recipients argument.
         """
-        if self.private:
-            return []
-
-        also_notified_subscribers = set()
-
-        for bugtask in self.bugtasks:
-            if bugtask.assignee:
-                also_notified_subscribers.add(bugtask.assignee)
-                if recipients is not None:
-                    recipients.addAssignee(bugtask.assignee)
-
-            # If the target's bug supervisor isn't set,
-            # we add the owner as a subscriber.
-            pillar = bugtask.pillar
-            if pillar.bug_supervisor is None and pillar.official_malone:
-                    also_notified_subscribers.add(pillar.owner)
-                    if recipients is not None:
-                        recipients.addRegistrant(pillar.owner, pillar)
-
-        # Structural subscribers.
-        if recipients is None:
-            temp_recipients = None
-        else:
-            temp_recipients = BugNotificationRecipients(
-                duplicateof=recipients.duplicateof)
-        also_notified_subscribers.update(
-            getUtility(IBugTaskSet).getStructuralSubscribers(
-                self.bugtasks, recipients=temp_recipients, level=level))
-
-        # Direct subscriptions always take precedence over indirect
-        # subscriptions.
-        direct_subscribers = set(self.getDirectSubscribers())
-        if recipients is not None:
-            # A direct subscriber may have muted this notification.
-            # Therefore, we want to remove any direct subscribers from the
-            # structural subscription recipients before we merge.
-            temp_recipients.remove(direct_subscribers)
-            recipients.update(temp_recipients)
-
-        # Remove security proxy for the sort key, but return
-        # the regular proxied object.
-        return sorted(
-            (also_notified_subscribers - direct_subscribers),
-            key=lambda x: removeSecurityProxy(x).displayname)
+        return get_also_notified_subscribers(self, recipients, level)
 
     def getBugNotificationRecipients(self, duplicateof=None, old_bug=None,
                                      level=None,
@@ -1462,16 +1449,6 @@ BugMessage""" % sqlvalues(self.id))
                 need_validity=True))
         return DecoratedResultSet(result, pre_iter_hook=eager_load_owners)
 
-    def getNullBugTask(self, product=None, productseries=None,
-                    sourcepackagename=None, distribution=None,
-                    distroseries=None):
-        """See `IBug`."""
-        return NullBugTask(bug=self, product=product,
-                           productseries=productseries,
-                           sourcepackagename=sourcepackagename,
-                           distribution=distribution,
-                           distroseries=distroseries)
-
     def addNomination(self, owner, target):
         """See `IBug`."""
         if not self.canBeNominatedFor(target):
@@ -1814,7 +1791,7 @@ BugMessage""" % sqlvalues(self.id))
         bug_message_set = getUtility(IBugMessageSet)
         bug_message = bug_message_set.getByBugAndMessage(
             self, self.messages[comment_number])
-        bug_message.visible = visible
+        bug_message.message.visible = visible
 
     @cachedproperty
     def _known_viewers(self):
@@ -2009,6 +1986,66 @@ BugMessage""" % sqlvalues(self.id))
         return DecoratedResultSet(
             self._attachments_query(),
             operator.itemgetter(0))
+
+
+@ProxyFactory
+def get_also_notified_subscribers(
+    bug_or_bugtask, recipients=None, level=None):
+    """Return the indirect subscribers for a bug or bug task.
+
+    Return the list of people who should get notifications about changes
+    to the bug or task because of having an indirect subscription
+    relationship with it (by subscribing to a target, being an assignee
+    or owner, etc...)
+
+    If `recipients` is present, add the subscribers to the set of
+    bug notification recipients.
+    """
+    if IBug.providedBy(bug_or_bugtask):
+        bug = bug_or_bugtask
+        bugtasks = bug.bugtasks
+    elif IBugTask.providedBy(bug_or_bugtask):
+        bug = bug_or_bugtask.bug
+        bugtasks = [bug_or_bugtask]
+    else:
+        raise ValueError('First argument must be bug or bugtask')
+
+    if bug.private:
+        return []
+
+    # Direct subscriptions always take precedence over indirect
+    # subscriptions.
+    direct_subscribers = set(bug.getDirectSubscribers())
+
+    also_notified_subscribers = set()
+
+    for bugtask in bugtasks:
+        if (bugtask.assignee and
+            bugtask.assignee not in direct_subscribers):
+            # We have an assignee that is not a direct subscriber.
+            also_notified_subscribers.add(bugtask.assignee)
+            if recipients is not None:
+                recipients.addAssignee(bugtask.assignee)
+
+        # If the target's bug supervisor isn't set...
+        pillar = bugtask.pillar
+        if (pillar.bug_supervisor is None and
+            pillar.official_malone and
+            pillar.owner not in direct_subscribers):
+            # ...we add the owner as a subscriber.
+            also_notified_subscribers.add(pillar.owner)
+            if recipients is not None:
+                recipients.addRegistrant(pillar.owner, pillar)
+
+    # This structural subscribers code omits direct subscribers itself.
+    also_notified_subscribers.update(
+        get_structural_subscribers(
+            bug_or_bugtask, recipients, level, direct_subscribers))
+
+    # Remove security proxy for the sort key, but return
+    # the regular proxied object.
+    return sorted(also_notified_subscribers,
+                  key=lambda x: removeSecurityProxy(x).displayname)
 
 
 def load_people(*where):

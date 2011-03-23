@@ -6,6 +6,15 @@
   metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad">
   <body>
+
+    <metal:block fill-slot="head_epilogue">
+      <style type="text/css">
+        .distroseries-localdiff-search-filter input[type="radio"] {
+          margin-left: 0;
+        }
+      </style>
+    </metal:block>
+
     <tal:heading metal:fill-slot="heading">
       <h1 tal:content="view/label">Package differences between ...</h1>
     </tal:heading>
@@ -26,6 +35,13 @@
          (<a href="/+help/soyuz/derived-series-syncing.html" target="help">Read
              more about syncing from the parent series</a>).
       </p>
+
+      <tal:distroseries_localdiff_search_form
+        tal:condition="view/has_differences">
+        <metal:package_filter_form
+          use-macro="context/@@+macros/distroseries-localdiff-search-form" />
+      </tal:distroseries_localdiff_search_form>
+
 
       <div metal:use-macro="context/@@launchpad_form/form">
 
