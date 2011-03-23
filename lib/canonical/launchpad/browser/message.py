@@ -10,6 +10,15 @@ from zope.interface import implements
 from canonical.launchpad.interfaces.message import IIndexedMessage
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
+class QuestionMessageCanonicalUrlData:
+    """Question messages have a canonical_url within the question."""
+    implements(ICanonicalUrlData)
+    rootsite = 'answers'
+
+    def __init__(self, question, message):
+        self.inside = question
+        self.path = "messages/%d" % list(question.messages).index(message)
+
 
 class QuestionMessageCanonicalUrlData:
     """Question messages have a canonical_url within the question."""
@@ -50,14 +59,12 @@ def message_to_canonical_url_data(message):
     # Circular imports
     from lp.bugs.interfaces.bugmessage import IBugMessage
     from lp.answers.interfaces.questionmessage import IQuestionMessage
-
-    if IBugMessage.providedBy(message):
-        if IIndexedMessage.providedBy(message):
-            return IndexedBugMessageCanonicalUrlData(message)
-        else:
-            if message.bugs.count() == 0:
-                # Will result in a ComponentLookupError
-                return None
-        return BugMessageCanonicalUrlData(message.bugs[0], message)
-    if IQuestionMessage.providedBy(message):
+    if IIndexedMessage.providedBy(message):
+        return IndexedBugMessageCanonicalUrlData(message)
+    elif IQuestionMessage.providedBy(message):
         return QuestionMessageCanonicalUrlData(message.question, message)
+    else:
+        if message.bugs.count() == 0:
+        # Will result in a ComponentLookupError
+            return None
+        return BugMessageCanonicalUrlData(message.bugs[0], message)
