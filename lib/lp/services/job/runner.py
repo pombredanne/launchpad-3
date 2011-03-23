@@ -304,7 +304,7 @@ class JobRunnerProcess(child.AMPChild):
     @classmethod
     def __enter__(cls):
         def handler(signum, frame):
-            raise TimeoutError
+            os._exit(TwistedJobRunner.TIMEOUT_CODE)
         scripts.execute_zcml_for_scripts(use_web_security=False)
         signal(SIGHUP, handler)
         initZopeless(dbuser=cls.dbuser)
@@ -338,6 +338,8 @@ class JobRunnerProcess(child.AMPChild):
 
 class TwistedJobRunner(BaseJobRunner):
     """Run Jobs via twisted."""
+
+    TIMEOUT_CODE = 42
 
     def __init__(self, job_source, dbuser, logger=None, error_utility=None):
         env = {'PATH': os.environ['PATH']}
@@ -386,11 +388,22 @@ class TwistedJobRunner(BaseJobRunner):
 
         def job_raised(failure):
             self.incomplete_jobs.append(job)
-            info = (failure.type, failure.value, failure.tb)
-            oops = self._doOops(job, info)
-            self._logOopsId(oops.id)
+            exit_code = getattr(failure.value, 'exitCode', None)
+            if exit_code == self.TIMEOUT_CODE:
+                self._logTimeout(job)
+            else:
+                info = (failure.type, failure.value, failure.tb)
+                oops = self._doOops(job, info)
+                self._logOopsId(oops.id)
         deferred.addCallbacks(update, job_raised)
         return deferred
+
+    def _logTimeout(self, job):
+        try:
+            raise TimeoutError
+        except TimeoutError:
+            oops = self._doOops(job, sys.exc_info())
+            self._logOopsId(oops.id)
 
     def getTaskSource(self):
         """Return a task source for all jobs in job_source."""
