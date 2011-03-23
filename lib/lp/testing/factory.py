@@ -245,7 +245,6 @@ from lp.soyuz.enums import (
     PackagePublishingPriority,
     PackagePublishingStatus,
     PackageUploadStatus,
-    SourcePackageFormat,
     )
 from lp.soyuz.interfaces.archive import (
     default_name_by_purpose,
@@ -261,9 +260,6 @@ from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.files import (
     BinaryPackageFile,
     SourcePackageReleaseFile,
-    )
-from lp.soyuz.interfaces.sourcepackageformat import (
-    ISourcePackageFormatSelectionSet,
     )
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.model.processor import ProcessorFamilySet
@@ -2270,12 +2266,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             description=self.getUniqueString(),
             parent_series=parent_series, owner=distribution.owner)
         series.status = status
-
-        # Set up source package format selection so that copying will
-        # work with the default dsc_format used in
-        # makeSourcePackageRelease.
-        getUtility(ISourcePackageFormatSelectionSet).add(
-            series, SourcePackageFormat.FORMAT_1_0)
 
         return ProxyFactory(series)
 

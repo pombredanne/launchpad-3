@@ -33,6 +33,12 @@ from lp.services.features import (
     getFeatureFlag,
     install_feature_controller,
     )
+from lp.soyuz.interfaces.sourcepackageformat import (
+    ISourcePackageFormatSelectionSet,
+    )
+from lp.soyuz.enums import (
+    SourcePackageFormat,
+    )
 from lp.testing import (
     TestCaseWithFactory,
     login_person,
@@ -267,6 +273,13 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
+    def _set_source_selection(self, series):
+        # Set up source package format selection so that copying will
+        # work with the default dsc_format used in
+        # makeSourcePackageRelease.
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            series, SourcePackageFormat.FORMAT_1_0)
+
     def test_batch_filtered(self):
         # The name_filter parameter allows filtering of packages by name.
         set_derived_series_ui_feature_flag(self)
@@ -356,6 +369,7 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
         parent_series = self.factory.makeDistroSeries(name='warty')
         derived_series = self.factory.makeDistroSeries(
             name='derilucid', parent_series=parent_series)
+        self._set_source_selection(derived_series)
         difference = self.factory.makeDistroSeriesDifference(
             source_package_name_str='my-src-name',
             derived_series=derived_series, versions=versions)
@@ -423,6 +437,7 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
         derived_series = self.factory.makeDistroSeries(
             name='derilucid', parent_series=self.factory.makeDistroSeries(
                 name='lucid'))
+        self._set_source_selection(derived_series)
         difference = self.factory.makeDistroSeriesDifference(
             source_package_name_str='my-src-name',
             derived_series=derived_series)
