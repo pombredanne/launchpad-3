@@ -77,7 +77,7 @@ class BugSubscriptionFilter(StormBase):
 
         The statuses must be from the `BugTaskStatus` enum, but can be
         bundled in any iterable.
-        
+
         Setting all statuses is equivalent to setting no statuses, and
         is normalized that way.
         """
@@ -118,7 +118,7 @@ class BugSubscriptionFilter(StormBase):
 
         The importances must be from the `BugTaskImportance` enum, but can be
         bundled in any iterable.
-        
+
         Setting all importances is equivalent to setting no importances, and
         is normalized that way.
         """

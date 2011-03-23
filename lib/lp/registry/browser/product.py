@@ -175,7 +175,6 @@ from lp.registry.browser.productseries import get_series_branch_error
 from lp.bugs.browser.structuralsubscription import (
     expose_enum_to_js,
     expose_user_administered_teams_to_js,
-    expose_user_subscription_status_to_js,
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
@@ -194,6 +193,7 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services import features
 from lp.services.fields import (
     PillarAliases,
     PublicPersonChoice,
@@ -584,7 +584,17 @@ class ProductActionNavigationMenu(NavigationMenu, ProductEditLinksMixin):
     usedfor = IProductActionMenu
     facet = 'overview'
     title = 'Actions'
-    links = ('edit', 'review_license', 'administer', 'subscribe_to_bug_mail')
+
+    @property
+    def links(self):
+        links = ['edit', 'review_license', 'administer']
+        use_advanced_features = features.getFeatureFlag(
+            'advanced-structural-subscriptions.enabled')
+        if use_advanced_features:
+            links.append('subscribe_to_bug_mail')
+        else:
+            links.append('subscribe')
+        return links
 
     @enabled_with_permission('launchpad.AnyPerson')
     def subscribe_to_bug_mail(self):
@@ -1019,8 +1029,6 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             self.context.programminglang or
             check_permission('launchpad.Edit', self.context))
         expose_user_administered_teams_to_js(self.request, self.user)
-        expose_user_subscription_status_to_js(
-            self.context, self.request, self.user)
         expose_enum_to_js(self.request, BugTaskImportance, 'importances')
         expose_enum_to_js(self.request, BugTaskStatus, 'statuses')
 

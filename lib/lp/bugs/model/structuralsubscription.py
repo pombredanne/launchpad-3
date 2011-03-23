@@ -559,7 +559,7 @@ def _get_structural_subscriptions(find, targets, *conditions):
 @ProxyFactory
 def get_structural_subscriptions_for_bug(bug, person=None):
     """Find the structural subscriptions to the bug.
-    
+
     If `person` is provided, only subscriptions that affect the person,
     because of personal or team memberships, are included.
     """

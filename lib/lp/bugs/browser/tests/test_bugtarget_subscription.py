@@ -25,11 +25,11 @@ class TargetSubscriptionViewTestCase(TestCaseWithFactory):
             name='widgetsrus', displayname='Widgets R Us')
         self.subscriber = self.factory.makePerson()
 
-    def test_form_instantiates(self):
-        # This shows simply that the view class instantiates.  It's a start.
+    def test_form_initializes(self):
+        # It's a start.
         with person_logged_in(self.subscriber):
             sub = self.product.addBugSubscription(
                 self.subscriber, self.subscriber)
             harness = LaunchpadFormHarness(
                 self.product, TargetSubscriptionView)
-            # The view class instance is harness.view.
+            harness.view.initialize()

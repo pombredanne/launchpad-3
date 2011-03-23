@@ -6,7 +6,6 @@ __metaclass__ = type
 __all__ = [
     'expose_enum_to_js',
     'expose_user_administered_teams_to_js',
-    'expose_user_subscription_status_to_js',
     'expose_user_subscriptions_to_js',
     'StructuralSubscriptionMenuMixin',
     'StructuralSubscriptionTargetTraversalMixin',
@@ -31,7 +30,6 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 from zope.traversing.browser import absoluteURL
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import Link
@@ -47,7 +45,6 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
-from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscription,
     IStructuralSubscriptionForm,
@@ -56,11 +53,8 @@ from lp.bugs.interfaces.structuralsubscription import (
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
-from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import IProjectGroupMilestone
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.propertycache import cachedproperty
 
 
@@ -384,12 +378,6 @@ def expose_user_administered_teams_to_js(request, user,
     IJSONRequestCache(request).objects['administratedTeams'] = info
 
 
-def expose_user_subscription_status_to_js(context, request, user):
-    """Make the user's subscription state available to JavaScript."""
-    IJSONRequestCache(request).objects['userHasBugSubscriptions'] = (
-        context.userHasBugSubscriptions(user))
-
-
 def person_is_team_admin(person, team):
     answer = False
     admins = team.adminmembers
@@ -412,8 +400,8 @@ def expose_user_subscriptions_to_js(user, subscriptions, request):
                 target_title=target.title,
                 target_url=absoluteURL(target, request),
                 filters=[])
+        subscriber = subscription.subscriber
         for filter in subscription.bug_filters:
-            subscriber = subscription.subscriber
             is_team = subscriber.isTeam()
             user_is_team_admin = (is_team and
                                   person_is_team_admin(user, subscriber))
