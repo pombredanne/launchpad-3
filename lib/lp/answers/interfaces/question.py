@@ -25,6 +25,7 @@ from lazr.restful.declarations import (
     REQUEST_USER,
     )
 from lazr.restful.fields import (
+    CollectionField,
     Reference,
     )
 from zope.interface import (
@@ -81,9 +82,9 @@ class IQuestion(IHasOwner):
     status = exported(Choice(
         title=_('Status'), vocabulary=QuestionStatus,
         default=QuestionStatus.OPEN, readonly=True))
-    priority = exported(Choice(
+    priority = Choice(
         title=_('Priority'), vocabulary=QuestionPriority,
-        default=QuestionPriority.NORMAL))
+        default=QuestionPriority.NORMAL)
     # XXX flacoste 2006-10-28: It should be more precise to define a new
     # vocabulary that excludes the English variants.
     language = Choice(
