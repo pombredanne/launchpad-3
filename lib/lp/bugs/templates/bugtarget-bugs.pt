@@ -27,6 +27,7 @@
     </style>
 </metal:block>
   <body>
+
     <tal:side metal:fill-slot="side"
               condition="view/bug_tracking_usage/enumvalue:LAUNCHPAD">
       <div id="involvement" class="portlet">

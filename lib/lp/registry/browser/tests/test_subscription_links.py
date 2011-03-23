@@ -14,14 +14,20 @@ from canonical.launchpad.testing.pages import (
     first_tag_by_class,
     )
 from canonical.testing.layers import DatabaseFunctionalLayer
+
 from lp.registry.browser.product import (
     ProductActionNavigationMenu,
     ProductBugsMenu,
+    )
+from lp.registry.browser.project import (
+    ProjectActionMenu,
+    ProjectBugsMenu,
     )
 from lp.registry.browser.distribution import (
     DistributionBugsMenu,
     DistributionNavigationMenu,
     )
+
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     celebrity_logged_in,
@@ -121,13 +127,47 @@ class TestProductViewStructSubs(_TestStructSubs):
 class TestProductBugsStructSubs(TestProductViewStructSubs):
     """Test structural subscriptions on the product bugs view."""
 
-    def setUp(self):
-        super(TestProductBugsStructSubs, self).setUp()
-
     def _create_scenario(self, user, flag):
         with person_logged_in(user):
             with FeatureFixture({self.feature_flag: flag}):
                 menu = ProductBugsMenu(self.target)
+                view = create_initialized_view(
+                    self.target, '+index', rootsite='bugs', principal=user)
+                html = view.render()
+                old_link = first_tag_by_class(html, 'menu-link-subscribe')
+                new_link = first_tag_by_class(
+                    html, 'menu-link-subscribe_to_bug_mail')
+                return menu.links, old_link, new_link
+
+
+class TestProjectGroupViewStructSubs(_TestStructSubs):
+    """Test structural subscriptions on the product view."""
+
+    def setUp(self):
+        super(TestProjectGroupViewStructSubs, self).setUp()
+        self.target = self.factory.makeProject()
+        self.regular_user = self.factory.makePerson()
+
+    def _create_scenario(self, user, flag):
+        with person_logged_in(user):
+            with FeatureFixture({self.feature_flag: flag}):
+                menu = ProjectActionMenu(self.target)
+                view = create_initialized_view(
+                    self.target, '+index', principal=user)
+                html = view.render()
+                old_link = first_tag_by_class(html, 'menu-link-subscribe')
+                new_link = first_tag_by_class(
+                    html, 'menu-link-subscribe_to_bug_mail')
+                return menu.links, old_link, new_link
+
+
+class TestProjectGroupBugsStructSubs(TestProjectGroupViewStructSubs):
+    """Test structural subscriptions on the product bugs view."""
+
+    def _create_scenario(self, user, flag):
+        with person_logged_in(user):
+            with FeatureFixture({self.feature_flag: flag}):
+                menu = ProjectBugsMenu(self.target)
                 view = create_initialized_view(
                     self.target, '+index', rootsite='bugs', principal=user)
                 html = view.render()
@@ -237,11 +277,6 @@ class TestDistroBugsStructSubs(TestDistroViewStructSubs):
     IStructuralSubscriptionTargets but the functionality is not enabled.
     """
 
-    def setUp(self):
-        super(TestDistroBugsStructSubs, self).setUp()
-        self.target = self.factory.makeDistribution()
-        self.regular_user = self.factory.makePerson()
-
     def _create_scenario(self, user, flag):
         with person_logged_in(user):
             with FeatureFixture({self.feature_flag: flag}):
@@ -281,6 +316,9 @@ def test_suite():
     """Return the `IStructuralSubscriptionTarget` TestSuite."""
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestProductViewStructSubs))
+    suite.addTest(unittest.makeSuite(TestProductBugsStructSubs))
+    suite.addTest(unittest.makeSuite(TestProjectGroupViewStructSubs))
+    suite.addTest(unittest.makeSuite(TestProjectGroupBugsStructSubs))
     suite.addTest(unittest.makeSuite(TestDistroViewStructSubs))
     suite.addTest(unittest.makeSuite(TestDistroBugsStructSubs))
     return suite

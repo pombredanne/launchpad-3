@@ -49,7 +49,6 @@ from datetime import (
     timedelta,
     )
 from itertools import (
-    chain,
     groupby,
     )
 from math import (
@@ -192,6 +191,9 @@ from lp.bugs.browser.bug import (
     BugContextMenu,
     BugTextView,
     BugViewMixin,
+    )
+from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
     )
 from lp.bugs.browser.bugcomment import (
     build_comments_from_chunks,
@@ -2325,6 +2327,10 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         # needing validation is already available internally to self.
         self._validate(None, {})
 
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user)
+
+
     @property
     def columns_to_show(self):
         """Returns a sequence of column names to be shown in the listing."""
@@ -3174,7 +3180,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         # Hint to optimize when there are many bugtasks.
         view.many_bugtasks = self.many_bugtasks
         return view
-    
+
     def getBugTaskAndNominationViews(self):
         """Return the IBugTasks and IBugNominations views for this bug.
 

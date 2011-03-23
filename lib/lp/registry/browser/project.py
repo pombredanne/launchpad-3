@@ -88,6 +88,8 @@ from lp.registry.browser.product import (
     ProjectAddStepTwo,
     )
 from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
+    StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
 from lp.registry.interfaces.product import IProductSet
@@ -96,6 +98,7 @@ from lp.registry.interfaces.projectgroup import (
     IProjectGroupSeries,
     IProjectGroupSet,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.fields import (
     PillarAliases,
     PublicPersonChoice,
@@ -270,18 +273,30 @@ class IProjectGroupActionMenu(Interface):
     """Marker interface for views that use ProjectActionMenu."""
 
 
-class ProjectActionMenu(ProjectAdminMenuMixin, NavigationMenu):
+class ProjectActionMenu(ProjectAdminMenuMixin,
+                        StructuralSubscriptionMenuMixin,
+                        NavigationMenu):
 
     usedfor = IProjectGroupActionMenu
     facet = 'overview'
     title = 'Action menu'
-    links = ('subscribe', 'edit', 'administer')
+
+    @cachedproperty
+    def links(self):
+        use_advanced_features = getFeatureFlag(
+            'malone.advanced-structural-subscriptions.enabled')
+        if use_advanced_features:
+            links = ['subscribe_to_bug_mail']
+        else:
+            links = ['subscribe']
+        links.extend(['edit', 'administer'])
+        return links
 
     # XXX: salgado, bug=412178, 2009-08-10: This should be shown in the +index
     # page of the project's bugs facet, but that would require too much work
     # and I just want to convert this page to 3.0, so I'll leave it here for
     # now.
-    def subscribe(self):
+    def xsubscribe(self):
         text = 'Subscribe to bug mail'
         return Link('+subscribe', text, icon='edit')
 
@@ -323,23 +338,34 @@ class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
         return Link('+addquestion', text, icon='add')
 
 
-class ProjectBugsMenu(ApplicationMenu):
+class ProjectBugsMenu(StructuralSubscriptionMenuMixin,
+                      ApplicationMenu):
 
     usedfor = IProjectGroup
     facet = 'bugs'
-    links = ['new', 'subscribe']
+
+    @cachedproperty
+    def links(self):
+        links = ['new']
+        use_advanced_features = getFeatureFlag(
+            'malone.advanced-structural-subscriptions.enabled')
+        if use_advanced_features:
+            links.append('subscribe_to_bug_mail')
+        else:
+            links.append('subscribe')
+        return links
 
     def new(self):
         text = 'Report a Bug'
         return Link('+filebug', text, icon='add')
 
-    def subscribe(self):
-        text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
-
 
 class ProjectView(HasAnnouncementsView, FeedsMixin):
     implements(IProjectGroupActionMenu)
+
+    def initialize(self):
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user)
 
     @cachedproperty
     def has_many_projects(self):
