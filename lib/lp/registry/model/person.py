@@ -1212,7 +1212,7 @@ class Person(
     @cachedproperty
     def karma(self):
         """See `IPerson`."""
-        # May also be loaded from _all_members
+        # May also be loaded from _members
         cache = KarmaTotalCache.selectOneBy(person=self)
         if cache is None:
             # Newly created accounts may not be in the cache yet, meaning the
@@ -1615,14 +1615,14 @@ class Person(
     @property
     def allmembers(self):
         """See `IPerson`."""
-        return self._all_members()
+        return self._members(direct=False)
 
     @property
     def all_members_prepopulated(self):
         """See `IPerson`."""
-        return self._all_members(need_karma=True, need_ubuntu_coc=True,
-            need_location=True, need_archive=True, need_preferred_email=True,
-            need_validity=True)
+        return self._members(direct=False, need_karma=True,
+            need_ubuntu_coc=True, need_location=True, need_archive=True,
+            need_preferred_email=True, need_validity=True)
 
     @staticmethod
     def _validity_queries(person_table=None):
@@ -1688,11 +1688,12 @@ class Person(
             tables=columns,
             decorators=decorators)
 
-    def _all_members(self, need_karma=False, need_ubuntu_coc=False,
+    def _members(self, direct, need_karma=False, need_ubuntu_coc=False,
         need_location=False, need_archive=False, need_preferred_email=False,
         need_validity=False):
         """Lookup all members of the team with optional precaching.
 
+        :param direct: If True only direct members are returned.
         :param need_karma: The karma attribute will be cached.
         :param need_ubuntu_coc: The is_ubuntu_coc_signer attribute will be
             cached.
@@ -1706,15 +1707,25 @@ class Person(
         #       The difference between the two is that
         #       getMembersWithPreferredEmails includes self, which is arguably
         #       wrong, but perhaps deliberate.
-        origin = [
-            Person,
-            Join(TeamParticipation, TeamParticipation.person == Person.id),
-            ]
-        conditions = And(
-            # Members of this team,
-            TeamParticipation.team == self.id,
-            # But not the team itself.
-            TeamParticipation.person != self.id)
+        origin = [Person]
+        if not direct:
+            origin.append(Join(
+                TeamParticipation, TeamParticipation.person == Person.id))
+            conditions = And(
+                # Members of this team,
+                TeamParticipation.team == self.id,
+                # But not the team itself.
+                TeamParticipation.person != self.id)
+        else:
+            origin.append(Join(
+                TeamMembership, TeamMembership.personID == Person.id))
+            conditions = And(
+                # Membership in this team,
+                TeamMembership.team == self.id,
+                # And approved or admin status
+                TeamMembership.status.is_in([
+                    TeamMembershipStatus.APPROVED,
+                    TeamMembershipStatus.ADMIN]))
         # Use a PersonSet object that is not security proxied to allow
         # manipulation of the object.
         person_set = PersonSet()
@@ -1819,6 +1830,13 @@ class Person(
         """See `IPerson`."""
         return self.approvedmembers.union(
             self.adminmembers, orderBy=self._sortingColumnsForSetOperations)
+
+    @property
+    def api_activemembers(self):
+        """See `IPerson`."""
+        return self._members(direct=True, need_karma=True,
+            need_ubuntu_coc=True, need_location=True, need_archive=True,
+            need_preferred_email=True, need_validity=True)
 
     @property
     def active_member_count(self):
@@ -2641,7 +2659,7 @@ class Person(
     @cachedproperty
     def is_ubuntu_coc_signer(self):
         """See `IPerson`."""
-        # Also assigned to by self._all_members.
+        # Also assigned to by self._members.
         store = Store.of(self)
         query = And(SignedCodeOfConduct.ownerID == self.id,
             Person._is_ubuntu_coc_signer_condition())
