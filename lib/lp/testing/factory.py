@@ -262,7 +262,9 @@ from lp.soyuz.model.files import (
     BinaryPackageFile,
     SourcePackageReleaseFile,
     )
-from lp.soyuz.interfaces.sourcepackageformat import ISourcePackageFormatSelectionSet
+from lp.soyuz.interfaces.sourcepackageformat import (
+    ISourcePackageFormatSelectionSet,
+    )
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.testing import (
