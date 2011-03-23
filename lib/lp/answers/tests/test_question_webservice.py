@@ -20,6 +20,7 @@ from lp.testing import (
     celebrity_logged_in,
     launchpadlib_for,
     person_logged_in,
+    ws_object
     )
 
 
@@ -94,15 +95,8 @@ class TestSetCommentVisibility(TestCaseWithFactory):
     def _get_question_for_user(self, user=None):
         """Convenience function to get the api question reference."""
         endInteraction()
-        if user is not None:
-            lp = launchpadlib_for("test", user)
-        else:
-            lp = launchpadlib_for("test")
-
-        question_entry = lp.load(
-            '/%s/+question/%d/' % (
-                self.question.target.name, self.question.id))
-        return question_entry
+        lp = launchpadlib_for("test", user)
+        return ws_object(lp, self.question)
 
     def _set_visibility(self, question):
         """Method to set visibility; needed for assertRaises."""
