@@ -11,4 +11,4 @@ SET client_min_messages=ERROR;
 CREATE INDEX packageupload__id_distroseries__archive__idx ON
     packageupload(id, distroseries, archive) WHERE status IN (0,1);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 57, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 57, 1);
