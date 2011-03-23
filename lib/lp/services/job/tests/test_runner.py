@@ -352,7 +352,51 @@ class StuckJob(BaseRunnableJob):
         # and so we soak up the ZCML loading time.  For the second job, have a
         # short lease so we hit the timeout.
         if self.id == 2:
-            lease_length = 1
+            # This number has to be smaller than 30 (see below), but larger
+            # than the time it takes to send the message to the child process.
+            lease_length = 5
+        else:
+            lease_length = 10000
+        return self.job.acquireLease(lease_length)
+
+    def run(self):
+        if self.id == 2:
+            sleep(30)
+        else:
+            store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+            assert (
+                'user=branchscanner' in store._connection._raw_connection.dsn)
+
+
+class ShorterStuckJob(BaseRunnableJob):
+    """Simulation of a job that stalls."""
+    implements(IRunnableJob)
+
+    done = False
+
+    @classmethod
+    def iterReady(cls):
+        if not cls.done:
+            yield ShorterStuckJob(1)
+            yield ShorterStuckJob(2)
+        cls.done = True
+
+    @staticmethod
+    def get(id):
+        return ShorterStuckJob(id)
+
+    def __init__(self, id):
+        self.id = id
+        self.job = Job()
+
+    def acquireLease(self):
+        # For the first job, have a very long lease, so that it doesn't expire
+        # and so we soak up the ZCML loading time.  For the second job, have a
+        # short lease so we hit the timeout.
+        if self.id == 2:
+            # This number has to be smaller than the time it takes to send the
+            # message to the child process.
+            lease_length = 0.05
         else:
             lease_length = 10000
         return self.job.acquireLease(lease_length)
@@ -381,7 +425,7 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
             sys.path.append(config.root)
             self.addCleanup(sys.path.remove, config.root)
 
-    def test_timeout(self):
+    def test_timeout_long(self):
         """When a job exceeds its lease, an exception is raised.
 
         Unfortunately, timeouts include the time it takes for the zope
@@ -394,6 +438,41 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         # second slow.
         runner = TwistedJobRunner.runFromSource(
             StuckJob, 'branchscanner', logger)
+
+        # XXX: JonathanLange 2011-03-18 bug=505913: Sometimes in tests this is
+        # reported as 2.
+
+        # XXX: Potential source of race condition. Another OOPS could be
+        # logged.
+
+        # XXX: Also confusing because it might be polluted by values from
+        # previous jobs.
+        oops = errorlog.globalErrorUtility.getLastOopsReport()
+        # XXX: Maybe we can combine all of these assertions so that we get a
+        # more informative error message.
+        self.assertEqual(
+            (1, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
+        self.assertEqual(
+            (dedent("""\
+             INFO Running through Twisted.
+             INFO Job resulted in OOPS: %s
+             """) % oops.id,
+             'TimeoutError', 'Job ran too long.'),
+            (logger.getLogBuffer(), oops.type, oops.value))
+
+    def test_timeout_short(self):
+        """When a job exceeds its lease, an exception is raised.
+
+        Unfortunately, timeouts include the time it takes for the zope
+        machinery to start up, so we run a job that will not time out first,
+        followed by a job that is sure to time out.
+        """
+        logger = BufferLogger()
+        logger.setLevel(logging.INFO)
+        # StuckJob is actually a source of two jobs. The first is fast, the
+        # second slow.
+        runner = TwistedJobRunner.runFromSource(
+            ShorterStuckJob, 'branchscanner', logger)
 
         # XXX: JonathanLange 2011-03-18 bug=505913: Sometimes in tests this is
         # reported as 2.
