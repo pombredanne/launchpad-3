@@ -481,6 +481,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 CASE WHEN component = 1 THEN 1000 ELSE 0 END AS score"""),
             SQL("coalesce(bug_count, 0) AS bug_count"),
             SQL("coalesce(total_messages, 0) AS total_messages"))
+        # This does not use _current_sourcepackage_joins_and_conditions because
+        # the two queries are working on different data sets - +needs-packaging
+        # was timing out and +packaging wasn't, and destabilising things
+        # unnecessarily is not good.
         origin = SQL("""
             SourcePackageName, (SELECT
         spr.sourcepackagename,
@@ -586,7 +590,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def _current_sourcepackage_joins_and_conditions(self):
-        """The SQL joins and conditions to prioritize source packages."""
+        """The SQL joins and conditions to prioritize source packages.
+        
+        Used for getPrioritizedPackagings only.
+        """
         # Bugs and PO messages are heuristically scored. These queries
         # can easily timeout so filters and weights are used to create
         # an acceptable prioritization of packages that is fast to excecute.
