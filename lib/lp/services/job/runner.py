@@ -374,7 +374,7 @@ class TwistedJobRunner(BaseJobRunner):
         self.logger.debug(
             'Running %r, lease expires %s', job, job.lease_expires)
         deferred = self.pool.doWork(
-            RunJobCommand, job_id = job_id, _deadline=deadline)
+            RunJobCommand, job_id=job_id, _deadline=deadline)
 
         def update(response):
             if response['success']:

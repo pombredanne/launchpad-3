@@ -332,88 +332,52 @@ class StuckJob(BaseRunnableJob):
 
     done = False
 
+    # A list of jobs to run: id, lease_length, delay.
+    #
+    # For the first job, have a very long lease, so that it
+    # doesn't expire and so we soak up the ZCML loading time.  For the
+    # second job, have a short lease so we hit the timeout.
+    jobs = [
+        (0, 10000, 0),
+        (1, 5, 30),
+        ]
+
     @classmethod
     def iterReady(cls):
         if not cls.done:
-            yield StuckJob(1)
-            yield StuckJob(2)
+            for id, lease_length, delay in cls.jobs:
+                yield cls(id, lease_length, delay)
         cls.done = True
 
-    @staticmethod
-    def get(id):
-        return StuckJob(id)
+    @classmethod
+    def get(cls, id):
+        id, lease_length, delay = cls.jobs[id]
+        return cls(id, lease_length, delay)
 
-    def __repr__(self):
-        return '<StuckJob(%r)>' % (self.id,)
-
-    def __init__(self, id):
+    def __init__(self, id, lease_length, delay):
         self.id = id
+        self.lease_length = lease_length
+        self.delay = delay
         self.job = Job()
 
+    def __repr__(self):
+        return '<StuckJob(%r, lease_length=%s, delay=%s)>' % (
+            self.id, self.lease_length, self.delay)
+
     def acquireLease(self):
-        # For the first job, have a very long lease, so that it doesn't expire
-        # and so we soak up the ZCML loading time.  For the second job, have a
-        # short lease so we hit the timeout.
-        if self.id == 2:
-            # This number has to be smaller than 30 (see below), but larger
-            # than the time it takes to send the message to the child process.
-            lease_length = 5
-        else:
-            lease_length = 10000
-        return self.job.acquireLease(lease_length)
+        return self.job.acquireLease(self.lease_length)
 
     def run(self):
-        if self.id == 2:
-            sleep(30)
-        else:
-            store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-            assert (
-                'user=branchscanner' in store._connection._raw_connection.dsn)
+        sleep(self.delay)
 
 
-class ShorterStuckJob(BaseRunnableJob):
+class ShorterStuckJob(StuckJob):
     """Simulation of a job that stalls."""
-    implements(IRunnableJob)
 
-    done = False
-
-    @classmethod
-    def iterReady(cls):
-        if not cls.done:
-            yield ShorterStuckJob(1)
-            yield ShorterStuckJob(2)
-        cls.done = True
-
-    @staticmethod
-    def get(id):
-        return ShorterStuckJob(id)
-
-    def __init__(self, id):
-        self.id = id
-        self.job = Job()
-
-    def __repr__(self):
-        return '<ShorterStuckJob(%r)>' % (self.id,)
-
-    def acquireLease(self):
-        # For the first job, have a very long lease, so that it doesn't expire
-        # and so we soak up the ZCML loading time.  For the second job, have a
-        # short lease so we hit the timeout.
-        if self.id == 2:
-            # This number has to be smaller than the time it takes to send the
-            # message to the child process.
-            lease_length = 0.05
-        else:
-            lease_length = 10000
-        return self.job.acquireLease(lease_length)
-
-    def run(self):
-        if self.id == 2:
-            sleep(30)
-        else:
-            store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-            assert (
-                'user=branchscanner' in store._connection._raw_connection.dsn)
+    jobs = [
+        (0, 10000, 0),
+        (1, 0.05, 30),
+        ]
 
 
 class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
