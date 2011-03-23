@@ -388,7 +388,6 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         machinery to start up, so we run a job that will not time out first,
         followed by a job that is sure to time out.
         """
-        print
         logger = BufferLogger()
         logger.setLevel(logging.INFO)
         # StuckJob is actually a source of two jobs. The first is fast, the
