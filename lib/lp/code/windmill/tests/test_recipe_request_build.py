@@ -39,7 +39,7 @@ class TestRecipeBuild(WindmillTestCase):
         self.ppa = self.factory.makeArchive(
             displayname='Secret PPA', owner=self.chef, name='ppa')
         self.squirrel = self.factory.makeDistroSeries(
-            displayname='Secret Squirrel', name='secret', version='100.04',
+            displayname='Secret Squirrel <nutty>', name='secret', version='100.04',
             distribution=self.ppa.distribution)
         naked_squirrel = removeSecurityProxy(self.squirrel)
         naked_squirrel.nominatedarchindep = self.squirrel.newArch(
