@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 
+import contextlib
 from datetime import datetime
 import time
 
@@ -344,3 +345,26 @@ class TestInMemoryJobSource(TestCase):
     def test_above_range_get(self):
         job_source = InMemoryJobSource(['a', 'b'])
         self.assertRaises(KeyError, job_source.get, 4)
+
+    def test_default_context_manager(self):
+        # InMemoryJobSource has a trivial context manager by default.
+        job_source = InMemoryJobSource([])
+        # Here, we just care that nothing blows up.
+        with job_source.contextManager() as ctx:
+            self.assertIs(ctx, None)
+
+    def test_provided_context_manager(self):
+        # If InMemoryJobSource is provided with a context manager, we use
+        # that.
+        log = []
+        @contextlib.contextmanager
+        def ctxmgr():
+            log.append(1)
+            try:
+                yield 3
+            finally:
+                log.append(2)
+        job_source = InMemoryJobSource([], ctxmgr)
+        with job_source.contextManager() as ctx:
+            self.assertEqual(3, ctx)
+        self.assertEqual([1, 2], log)

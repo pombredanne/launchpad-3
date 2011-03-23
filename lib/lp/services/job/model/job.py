@@ -173,7 +173,7 @@ class InMemoryJobSource:
 
     implements(ITwistedJobSource)
 
-    def __init__(self, jobs):
+    def __init__(self, jobs, context_manager_factory=None):
         """Construct an ``InMemoryJobSource``.
 
         :param jobs: An iterable of `IJob`s. The order of the jobs will
@@ -182,10 +182,16 @@ class InMemoryJobSource:
             second 2, and so forth.
         """
         self._jobs = list(jobs)
+        if context_manager_factory is None:
+            context_manager_factory = self._defaultContextManager
+        self._context_manager_factory = context_manager_factory
 
     @contextlib.contextmanager
-    def contextManager(self):
+    def _defaultContextManager(self):
         yield
+
+    def contextManager(self):
+        return self._context_manager_factory()
 
     def get(self, id):
         """Get the job with ``id``.
