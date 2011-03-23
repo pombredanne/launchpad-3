@@ -10,7 +10,6 @@ from lazr.restfulclient.errors import HTTPError
 from simplejson import dumps
 import transaction
 from zope.component import getUtility
-from zope.security.management import endInteraction
 
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -19,6 +18,7 @@ from lp.testing import (
     TestCaseWithFactory,
     celebrity_logged_in,
     launchpadlib_for,
+    logout,
     person_logged_in,
     ws_object
     )
@@ -94,7 +94,16 @@ class TestSetCommentVisibility(TestCaseWithFactory):
 
     def _get_question_for_user(self, user=None):
         """Convenience function to get the api question reference."""
-        endInteraction()
+        # End any open lplib instance.
+        logout()
+        if user is not None:
+            lp = launchpadlib_for("test", user)
+        else:
+            lp = launchpadlib_for("test")
+
+        question_entry = lp.load(
+            '/%s/+question/%d/' % (
+                self.question.target.name, self.question.id))
         lp = launchpadlib_for("test", user)
         return ws_object(lp, self.question)
 
