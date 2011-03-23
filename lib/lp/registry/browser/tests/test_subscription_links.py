@@ -125,7 +125,7 @@ class TestProductViewStructSubs(_TestStructSubs):
                 menu = ProductActionNavigationMenu(self.target)
                 view = create_initialized_view(
                     self.target, '+index', principal=user)
-                html = view.render(); print html
+                html = view.render()
                 old_link = first_tag_by_class(html, 'menu-link-subscribe')
                 new_link = first_tag_by_class(
                     html, 'menu-link-subscribe_to_bug_mail')
@@ -141,7 +141,7 @@ class TestProductBugsStructSubs(TestProductViewStructSubs):
                 menu = ProductBugsMenu(self.target)
                 view = create_initialized_view(
                     self.target, '+index', rootsite='bugs', principal=user)
-                html = view.render(); print html
+                html = view.render()
                 old_link = first_tag_by_class(html, 'menu-link-subscribe')
                 new_link = first_tag_by_class(
                     html, 'menu-link-subscribe_to_bug_mail')
@@ -161,7 +161,7 @@ class TestProjectGroupViewStructSubs(_TestStructSubs):
                 menu = ProjectActionMenu(self.target)
                 view = create_initialized_view(
                     self.target, '+index', principal=user)
-                html = view.render(); print html
+                html = view.render()
                 old_link = first_tag_by_class(html, 'menu-link-subscribe')
                 new_link = first_tag_by_class(
                     html, 'menu-link-subscribe_to_bug_mail')
@@ -177,7 +177,7 @@ class TestProjectGroupBugsStructSubs(TestProjectGroupViewStructSubs):
                 menu = ProjectBugsMenu(self.target)
                 view = create_initialized_view(
                     self.target, '+index', rootsite='bugs', principal=user)
-                html = view.render(); print html
+                html = view.render()
                 old_link = first_tag_by_class(html, 'menu-link-subscribe')
                 new_link = first_tag_by_class(
                     html, 'menu-link-subscribe_to_bug_mail')
@@ -197,7 +197,7 @@ class TestProductSeriesViewStructSubs(_TestStructSubs):
                 menu = ProductSeriesOverviewMenu(self.target)
                 view = create_initialized_view(
                     self.target, '+index', principal=user)
-                html = view.render(); print html
+                html = view.render()
                 old_link = first_tag_by_class(html, 'menu-link-subscribe')
                 new_link = first_tag_by_class(
                     html, 'menu-link-subscribe_to_bug_mail')
@@ -213,7 +213,7 @@ class TestProductSeriesBugsStructSubs(TestProductSeriesViewStructSubs):
                 menu = ProductSeriesBugsMenu(self.target)
                 view = create_initialized_view(
                     self.target, '+index', rootsite='bugs', principal=user)
-                html = view.render(); print html
+                html = view.render()
                 old_link = first_tag_by_class(html, 'menu-link-subscribe')
                 new_link = first_tag_by_class(
                     html, 'menu-link-subscribe_to_bug_mail')
@@ -237,7 +237,7 @@ class TestDistroViewStructSubs(_TestStructSubs):
                 menu = DistributionNavigationMenu(self.target)
                 view = create_initialized_view(
                     self.target, '+index', principal=user)
-                html = view.render(); print html
+                html = view.render()
                 old_link = first_tag_by_class(html, 'menu-link-subscribe')
                 new_link = first_tag_by_class(
                     html, 'menu-link-subscribe_to_bug_mail')
@@ -325,7 +325,7 @@ class TestDistroBugsStructSubs(TestDistroViewStructSubs):
                 menu = DistributionBugsMenu(self.target)
                 view = create_initialized_view(
                     self.target, '+index', rootsite='bugs', principal=user)
-                html = view.render(); print html
+                html = view.render()
                 old_link = first_tag_by_class(html, 'menu-link-subscribe')
                 new_link = first_tag_by_class(
                     html, 'menu-link-subscribe_to_bug_mail')
@@ -394,8 +394,6 @@ class TestDistributionSourcePackageBugsStructSubs(
                 new_link = first_tag_by_class(
                     html, 'menu-link-subscribe_to_bug_mail')
                 return menu.links, old_link, new_link
-
-
 
 
 def test_suite():
