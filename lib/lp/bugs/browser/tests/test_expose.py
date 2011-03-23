@@ -18,6 +18,7 @@ from testtools.matchers import (
 from zope.interface import implements
 from zope.traversing.browser import absoluteURL
 
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.browser.structuralsubscription import (
@@ -150,6 +151,7 @@ class TestIntegrationExposeUserSubscriptionsToJS(TestCaseWithFactory):
         #                'subscriber_is_team': True,
         #                'subscriber_link': u'.../api/.../~team-name...',
         #                'subscriber_title': u'Team Name...',
+        #                'subscriber_url': ...,
         #                'user_is_team_admin': True}],
         #   'target_title': u'title...',
         #   'target_url': u'http://127.0.0.1/product-name...'}]
@@ -157,7 +159,8 @@ class TestIntegrationExposeUserSubscriptionsToJS(TestCaseWithFactory):
         target_info = info[0]
         self.assertEqual(target_info['target_title'], target.title)
         self.assertEqual(
-            target_info['target_url'], absoluteURL(target, request))
+            target_info['target_url'], canonical_url(
+                target, rootsite='mainsite'))
         self.assertEqual(len(target_info['filters']), 1) # One filter.
         filter_info = target_info['filters'][0]
         self.assertEqual(filter_info['filter'], sub.bug_filters[0])
@@ -167,6 +170,9 @@ class TestIntegrationExposeUserSubscriptionsToJS(TestCaseWithFactory):
         self.assertEqual(
             filter_info['subscriber_link'],
             absoluteURL(team, IWebServiceClientRequest(request)))
+        self.assertEqual(
+            filter_info['subscriber_url'],
+            canonical_url(team, rootsite='mainsite'))
 
     def test_team_member_subscription(self):
         # Make a team subscription where the user is not an admin, and
@@ -186,6 +192,9 @@ class TestIntegrationExposeUserSubscriptionsToJS(TestCaseWithFactory):
         self.assertEqual(
             filter_info['subscriber_link'],
             absoluteURL(team, IWebServiceClientRequest(request)))
+        self.assertEqual(
+            filter_info['subscriber_url'],
+            canonical_url(team, rootsite='mainsite'))
 
     def test_self_subscription(self):
         # Make a subscription directly for the user and see what we record.
@@ -202,3 +211,6 @@ class TestIntegrationExposeUserSubscriptionsToJS(TestCaseWithFactory):
         self.assertEqual(
             filter_info['subscriber_link'],
             absoluteURL(user, IWebServiceClientRequest(request)))
+        self.assertEqual(
+            filter_info['subscriber_url'],
+            canonical_url(user, rootsite='mainsite'))

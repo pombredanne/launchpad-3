@@ -398,7 +398,7 @@ def expose_user_subscriptions_to_js(user, subscriptions, request):
         if record is None:
             record = info[target] = dict(
                 target_title=target.title,
-                target_url=absoluteURL(target, request),
+                target_url=canonical_url(target, rootsite='mainsite'),
                 filters=[])
         subscriber = subscription.subscriber
         for filter in subscription.bug_filters:
@@ -408,6 +408,8 @@ def expose_user_subscriptions_to_js(user, subscriptions, request):
             record['filters'].append(dict(
                 filter=filter,
                 subscriber_link=absoluteURL(subscriber, api_request),
+                subscriber_url = canonical_url(
+                    subscriber, rootsite='mainsite'),
                 subscriber_title=subscriber.title,
                 subscriber_is_team=is_team,
                 user_is_team_admin=user_is_team_admin,))
