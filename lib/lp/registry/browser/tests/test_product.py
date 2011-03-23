@@ -246,8 +246,6 @@ class TestProductViewStructuralSubscriptions(TestCaseWithFactory):
     def test_subscribe_link_feature_flag_off(self):
         # Test the old subscription link.
         with FeatureFixture({self.feature_flag: None}):
-            import pdb; pdb.set_trace(); # DO NOT COMMIT
-            menu = ProductActionNavigationMenu(self.product)
             self.assertEqual(None, getFeatureFlag(self.feature_flag))
             view = create_initialized_view(
                 self.product, '+index', principal=self.product.owner)
@@ -261,8 +259,6 @@ class TestProductViewStructuralSubscriptions(TestCaseWithFactory):
     def test_subscribe_link_feature_flag_on(self):
         # Test the new subscription link.
         with FeatureFixture({self.feature_flag: 'on'}):
-            import pdb; pdb.set_trace(); # DO NOT COMMIT
-            menu = ProductActionNavigationMenu(self.product)
             self.assertEqual('on', getFeatureFlag(self.feature_flag))
             view = create_initialized_view(
                 self.product, '+index', principal=self.product.owner)
