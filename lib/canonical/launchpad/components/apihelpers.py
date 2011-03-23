@@ -135,14 +135,12 @@ def patch_entry_explicit_version(interface, version):
     """Make it look as though an entry definition used as_of.
 
     This function should be phased out in favor of actually using
-    as_of.  This function patches the entry's fields as well as the
+    as_of. This function patches the entry's fields as well as the
     entry itself. Fields that are explicitly published as of a given
     version (even though the entry is not) are ignored.
     """
     tagged = interface.getTaggedValue(LAZR_WEBSERVICE_EXPORTED)
     versioned = tagged.dict_for_name(version) or tagged.dict_for_name(None)
-    if versioned is None:
-        import pdb; pdb.set_trace()
     versioned['_as_of_was_used'] = True
 
     # Now tag the fields.
@@ -163,7 +161,7 @@ def patch_operation_explicit_version(interface, method_name, version):
     """Make it look like operation's first tag was @operation_for_version.
 
     This function should be phased out in favor of actually using
-    @operation_for_version. everywhere.
+    @operation_for_version, everywhere.
     """
     tagged = interface[method_name].getTaggedValue(LAZR_WEBSERVICE_EXPORTED)
     error_prefix = "%s.%s: Attempted to patch to version %s, but " % (
