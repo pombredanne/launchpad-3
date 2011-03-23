@@ -292,14 +292,6 @@ class ProjectActionMenu(ProjectAdminMenuMixin,
         links.extend(['edit', 'administer'])
         return links
 
-    # XXX: salgado, bug=412178, 2009-08-10: This should be shown in the +index
-    # page of the project's bugs facet, but that would require too much work
-    # and I just want to convert this page to 3.0, so I'll leave it here for
-    # now.
-    def xsubscribe(self):
-        text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
-
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Change details'
