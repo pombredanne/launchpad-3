@@ -1606,7 +1606,7 @@ def bugtask_assignee_changed(request, user, bugtask, new_assignee):
     if new_assignee is not None and new_assignee != user:
         is_contributor = new_assignee.isBugContributorInTarget(
             user=user, target=bugtask.pillar)
-        if True or not is_contributor:
+        if not is_contributor:
             # If we have a new assignee who isn't a bug
             # contributor in this pillar, we display a warning
             # to the user, in case they made a mistake.
