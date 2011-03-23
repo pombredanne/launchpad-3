@@ -26,12 +26,12 @@ class HasTranslationTemplatesTestMixin:
         # in different series ('devel' and 'stable').
         super(HasTranslationTemplatesTestMixin, self).setUp()
 
-    def createTranslationTemplate(self, name, priority=0):
+    def createTranslationTemplate(self, name=None, priority=0):
         """Attaches a template to appropriate container."""
         raise NotImplementedError(
             'This must be provided by an executable test.')
 
-    def createTranslationFile(self, name, priority=0):
+    def createTranslationFile(self, name=None, priority=0):
         """Attaches a pofile to appropriate container."""
         raise NotImplementedError(
             'This must be provided by an executable test.')
@@ -140,39 +140,51 @@ class HasTranslationTemplatesTestMixin:
             set([pofile_sr.id, pofile_es.id]),
             current_translations_ids)
 
-    def test_has_current_translation_templates(self):
+    def test_has_current_translation_templates__no_template(self):
         # A series without templates has no current templates.
         self.assertFalse(self.container.has_current_translation_templates)
 
+    def test_has_current_translation_templates__current_template(self):
         # A series with a current template has current templates.
-        first_template = self.createTranslationTemplate("first")
+        template = self.createTranslationTemplate()
         self.assertTrue(self.container.has_current_translation_templates)
 
+    def test_has_current_translation_templates__noncurrent_template(self):
         # A series with only non-current templates has no current
         # templates.
-        first_template.iscurrent = False
+        template = self.createTranslationTemplate()
+        template.iscurrent = False
         self.assertFalse(self.container.has_current_translation_templates)
 
+    def test_has_current_translation_templates__two_templates(self):
         # A series with current and non-current templates has current
         # templates.
-        second_template = self.createTranslationTemplate("second")
+        template = self.createTranslationTemplate()
+        template.iscurrent = False
+        self.createTranslationTemplate()
         self.assertTrue(self.container.has_current_translation_templates)
 
-    def test_has_obsolete_translation_templates(self):
+    def test_has_obsolete_translation_templates__no_templates(self):
         # A series without templates has no obsolete templates.
         self.assertFalse(self.container.has_obsolete_translation_templates)
 
+    def test_has_obsolete_translation_templates__current_template(self):
         # A series with a current template has no obsolete templates either.
-        first_template = self.createTranslationTemplate("first")
+        self.createTranslationTemplate()
         self.assertFalse(self.container.has_obsolete_translation_templates)
 
+    def test_has_obsolete_translation_templates__noncurrent_template(self):
         # A series with only non-current templates has obsolete templates.
-        first_template.iscurrent = False
+        template = self.createTranslationTemplate()
+        template.iscurrent = False
         self.assertTrue(self.container.has_obsolete_translation_templates)
 
+    def test_has_obsolete_translation_templates__two_templates(self):
         # A series with current and non-current templates has obsolete
         # templates.
-        self.createTranslationTemplate("second")
+        template = self.createTranslationTemplate()
+        template.iscurrent = False
+        self.createTranslationTemplate()
         self.assertTrue(self.container.has_obsolete_translation_templates)
 
     def test_has_translation_files(self):
@@ -239,7 +251,7 @@ class TestProductSeriesHasTranslationTemplates(
     HasTranslationTemplatesTestMixin, TestCaseWithFactory):
     """Test implementation of IHasTranslationTemplates on ProductSeries."""
 
-    def createTranslationTemplate(self, name, priority=0):
+    def createTranslationTemplate(self, name=None, priority=0):
         potemplate = self.factory.makePOTemplate(
             name=name, productseries=self.container)
         potemplate.priority = priority
@@ -263,7 +275,7 @@ class TestSourcePackageHasTranslationTemplates(
     HasTranslationTemplatesTestMixin, TestCaseWithFactory):
     """Test implementation of IHasTranslationTemplates on ProductSeries."""
 
-    def createTranslationTemplate(self, name, priority=0):
+    def createTranslationTemplate(self, name=None, priority=0):
         potemplate = self.factory.makePOTemplate(
             name=name, distroseries=self.container.distroseries,
             sourcepackagename=self.container.sourcepackagename)
@@ -288,7 +300,7 @@ class TestDistroSeriesHasTranslationTemplates(
     HasTranslationTemplatesTestMixin, TestCaseWithFactory):
     """Test implementation of IHasTranslationTemplates on ProductSeries."""
 
-    def createTranslationTemplate(self, name, priority=0):
+    def createTranslationTemplate(self, name=None, priority=0):
         sourcepackage = self.factory.makeSourcePackage(
             distroseries=self.container)
         potemplate = self.factory.makePOTemplate(
