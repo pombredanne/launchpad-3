@@ -15,7 +15,6 @@ from storm.expr import (
 from zope.interface import implements
 
 from canonical.launchpad import helpers
-from lp.app.enums import service_uses_launchpad
 from lp.translations.interfaces.hastranslationtemplates import (
     IHasTranslationTemplates,
     )
@@ -41,17 +40,7 @@ class HasTranslationTemplatesMixin:
 
     def getCurrentTemplatesCollection(self, current_value=True):
         """See `IHasTranslationTemplates`."""
-        collection = self.getTemplatesCollection()
-
-        # XXX JeroenVermeulen 2010-07-15 bug=605924: Move the
-        # translations_usage distinction into browser code.
-        pillar = collection.target_pillar
-        if service_uses_launchpad(pillar.translations_usage):
-            return collection.restrictCurrent(current_value)
-        else:
-            # Product/Distribution does not have translation enabled.
-            # Treat all templates as obsolete.
-            return collection.refine(not current_value)
+        return self.getTemplatesCollection().restrictCurrent(current_value)
 
     def getCurrentTranslationTemplates(self,
                                        just_ids=False,
@@ -76,6 +65,13 @@ class HasTranslationTemplatesMixin:
         return bool(
             self.getCurrentTranslationTemplates(just_ids=True).any())
 
+    @property
+    def has_obsolete_translation_templates(self):
+        """See `IHasTranslationTemplates`."""
+        return bool(
+            self.getCurrentTranslationTemplates(
+                just_ids=True, current_value=False).any())
+
     def getCurrentTranslationFiles(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
         if just_ids:
@@ -92,16 +88,13 @@ class HasTranslationTemplatesMixin:
         return bool(
             self.getCurrentTranslationFiles(just_ids=True).any())
 
-    def getObsoleteTranslationTemplates(self):
-        """See `IHasTranslationTemplates`."""
-        # XXX JeroenVermeulen 2010-07-15 bug=605924: This returns a list
-        # whereas the analogous method for current template returns a
-        # result set.  Clean up this mess.
-        return list(self.getCurrentTranslationTemplates(current_value=False))
-
     def getTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
         return self._orderTemplates(self.getTemplatesCollection().select())
+
+    def getTranslationTemplateByName(self, name):
+        """See `IHasTranslationTemplates`."""
+        return self.getTemplatesCollection().restrictName(name).select().one()
 
     def getTranslationTemplateFormats(self):
         """See `IHasTranslationTemplates`."""
