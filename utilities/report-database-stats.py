@@ -10,7 +10,10 @@ import _pythonpath
 
 from datetime import datetime
 from operator import attrgetter
-from textwrap import dedent
+from textwrap import (
+    dedent,
+    fill,
+    )
 
 from canonical.database.sqlbase import connect, sqlvalues
 from canonical.launchpad.scripts import db_options
@@ -169,6 +172,7 @@ def get_bloat_stats(cur, options, kind):
                 name,
                 sub_namespace,
                 sub_name,
+                count(*) OVER t AS num_samples,
                 last_value(table_len) OVER t AS table_len,
                 pg_size_pretty(last_value(table_len) OVER t) AS table_size,
                 pg_size_pretty(last_value(dead_tuple_len + free_space) OVER t)
@@ -285,59 +289,74 @@ def main():
 
     table_bloat_stats = get_bloat_stats(cur, options, 'r')
 
-    print
-    print "== Most Bloated Tables =="
-    print
-    for bloated_table in table_bloat_stats[:options.limit]:
-        print "%40s || %2d%% || %s of %s" % (
-            bloated_table.name,
-            bloated_table.end_bloat_percent,
-            bloated_table.bloat_size,
-            bloated_table.table_size)
+    if not table_bloat_stats:
+        print
+        print "(There is no bloat information available in this time range.)"
 
-    index_bloat_stats = get_bloat_stats(cur, options, 'i')
-
-    print
-    print "== Most Bloated Indexes =="
-    print
-    for bloated_index in index_bloat_stats[:options.limit]:
-        print "%40s || %2d%% || %s of %s" % (
-            bloated_index.sub_name,
-            bloated_index.end_bloat_percent,
-            bloated_index.bloat_size,
-            bloated_index.table_size)
-
-    # Order bloat delta report by size of bloat increase.
-    # We might want to change this to percentage bloat increase.
-    bloating_sort_key = lambda x: x.delta_bloat_len
-
-    print
-    print "== Most Bloating Tables =="
-    print
-    for bloated_table in sorted(
-        table_bloat_stats, key=bloating_sort_key,
-        reverse=True)[:options.limit]:
-        # Bloat decreases are uninteresting, and would need to be in
-        # a seperate table sorted in reverse anyway.
-        if bloated_table.delta_bloat_percent > 0:
-            print "%40s || +%4.2f%% || +%s" % (
+    else:
+        print
+        print "== Most Bloated Tables =="
+        print
+        for bloated_table in table_bloat_stats[:options.limit]:
+            print "%40s || %2d%% || %s of %s" % (
                 bloated_table.name,
-                bloated_table.delta_bloat_percent,
-                bloated_table.delta_bloat_size)
+                bloated_table.end_bloat_percent,
+                bloated_table.bloat_size,
+                bloated_table.table_size)
 
-    print
-    print "== Most Bloating Indexes =="
-    print
-    for bloated_index in sorted(
-        index_bloat_stats, key=bloating_sort_key,
-        reverse=True)[:options.limit]:
-        # Bloat decreases are uninteresting, and would need to be in
-        # a seperate table sorted in reverse anyway.
-        if bloated_index.delta_bloat_percent > 0:
-            print "%40s || +%4.2f%% || +%s" % (
+        index_bloat_stats = get_bloat_stats(cur, options, 'i')
+
+        print
+        print "== Most Bloated Indexes =="
+        print
+        for bloated_index in index_bloat_stats[:options.limit]:
+            print "%40s || %2d%% || %s of %s" % (
                 bloated_index.sub_name,
-                bloated_index.delta_bloat_percent,
-                bloated_index.delta_bloat_size)
+                bloated_index.end_bloat_percent,
+                bloated_index.bloat_size,
+                bloated_index.table_size)
+
+        # Order bloat delta report by size of bloat increase.
+        # We might want to change this to percentage bloat increase.
+        bloating_sort_key = lambda x: x.delta_bloat_len
+
+        table_bloating_stats = sorted(
+            table_bloat_stats, key=bloating_sort_key, reverse=True)
+
+        if table_bloating_stats[0].num_samples <= 1:
+            print
+            print fill(dedent("""\
+                (There are not enough samples in this time range to display
+                bloat change statistics)
+                """))
+        else:
+            print
+            print "== Most Bloating Tables =="
+            print
+
+            for bloated_table in table_bloating_stats[:options.limit]:
+                # Bloat decreases are uninteresting, and would need to be in
+                # a seperate table sorted in reverse anyway.
+                if bloated_table.delta_bloat_percent > 0:
+                    print "%40s || +%4.2f%% || +%s" % (
+                        bloated_table.name,
+                        bloated_table.delta_bloat_percent,
+                        bloated_table.delta_bloat_size)
+
+            index_bloating_stats = sorted(
+                index_bloat_stats, key=bloating_sort_key, reverse=True)
+
+            print
+            print "== Most Bloating Indexes =="
+            print
+            for bloated_index in index_bloating_stats[:options.limit]:
+                # Bloat decreases are uninteresting, and would need to be in
+                # a seperate table sorted in reverse anyway.
+                if bloated_index.delta_bloat_percent > 0:
+                    print "%40s || +%4.2f%% || +%s" % (
+                        bloated_index.sub_name,
+                        bloated_index.delta_bloat_percent,
+                        bloated_index.delta_bloat_size)
 
 
 if __name__ == '__main__':
