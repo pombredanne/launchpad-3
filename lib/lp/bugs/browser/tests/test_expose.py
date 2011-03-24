@@ -206,4 +206,3 @@ class TestIntegrationExposeUserSubscriptionsToJS(TestCaseWithFactory):
         self.assertEqual(
             filter_info['subscriber_url'],
             canonical_url(user, rootsite='mainsite'))
-
