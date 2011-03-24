@@ -192,7 +192,7 @@ def get_bloat_stats(cur, options, kind):
         """ % params)
     cur.execute(query, params)
     bloat_stats = named_fetchall(cur)
-    return bloat_stats
+    return list(bloat_stats)
 
 
 def main():
@@ -241,7 +241,27 @@ def main():
     arbitrary_table = tables[0]
     interval = arbitrary_table.date_end - arbitrary_table.date_start
     per_second = float(interval.days * 24 * 60 * 60 + interval.seconds)
+    if per_second == 0:
+        parser.error("Only one sample in that time range.")
 
+    user_cpu = get_cpu_stats(cur, options)
+    print "== Most Active Users =="
+    print
+    for cpu, username in sorted(user_cpu, reverse=True)[:options.limit]:
+        print "%40s || %10.2f%% CPU" % (username, float(cpu) / 10)
+
+    print
+    print "== Most Written Tables =="
+    print
+    tables_sort = [
+        'total_tup_written', 'n_tup_upd', 'n_tup_ins', 'n_tup_del', 'relname']
+    most_written_tables = sorted(
+        tables, key=attrgetter(*tables_sort), reverse=True)
+    for table in most_written_tables[:options.limit]:
+        print "%40s || %10.2f tuples/sec" % (
+            table.relname, table.total_tup_written / per_second)
+
+    print
     print "== Most Read Tables =="
     print
     # These match the pg_user_table_stats view. schemaname is the
@@ -254,28 +274,11 @@ def main():
     for table in most_read_tables[:options.limit]:
         print "%40s || %10.2f tuples/sec" % (
             table.relname, table.total_tup_read / per_second)
-    print
 
-    print "== Most Written Tables =="
     print
-    tables_sort = [
-        'total_tup_written', 'n_tup_upd', 'n_tup_ins', 'n_tup_del', 'relname']
-    most_written_tables = sorted(
-        tables, key=attrgetter(*tables_sort), reverse=True)
-    for table in most_written_tables[:options.limit]:
-        print "%40s || %10.2f tuples/sec" % (
-            table.relname, table.total_tup_written / per_second)
-    print
-
-    user_cpu = get_cpu_stats(cur, options)
-    print "== Most Active Users =="
-    print
-    for cpu, username in sorted(user_cpu, reverse=True)[:options.limit]:
-        print "%40s || %10.2f%% CPU" % (username, float(cpu) / 10)
-
     print "== Most Bloated Tables =="
     print
-    for bloated_table in get_bloat_stats(cur, options, 'r'):
+    for bloated_table in get_bloat_stats(cur, options, 'r')[:options.limit]:
         print "%s.%s %s%% (%s of %s +%s%%)" % (
             bloated_table.namespace,
             bloated_table.name,
@@ -285,9 +288,10 @@ def main():
             bloated_table.end_bloat_percent
                 - bloated_table.start_bloat_percent)
 
+    print
     print "== Most Bloated Indexes =="
     print
-    for bloated_index in get_bloat_stats(cur, options, 'i'):
+    for bloated_index in get_bloat_stats(cur, options, 'i')[:options.limit]:
         print "%s.%s %s%% (%s of %s +%s%%)" % (
             bloated_index.sub_namespace,
             bloated_index.sub_name,
