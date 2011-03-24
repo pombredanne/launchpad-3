@@ -45,7 +45,6 @@ from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
 from lp.app.errors import NotFoundError
 from lp.app.enums import (
-    ServiceUsage,
     service_uses_launchpad)
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.blueprints.enums import (
@@ -172,17 +171,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
     @property
     def translations_usage(self):
         """See `IServiceUsage.`"""
-        # If translations_usage is set for the Product, respect it.
-        usage = self.product.translations_usage
-        if usage != ServiceUsage.UNKNOWN:
-            return usage
-
-        # If not, usage is based on the presence of current translation
-        # templates for the series.
-        if self.potemplate_count > 0:
-            return ServiceUsage.LAUNCHPAD
-        else:
-            return ServiceUsage.UNKNOWN
+        return self.product.translations_usage
 
     @property
     def codehosting_usage(self):
@@ -480,6 +469,22 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         # XXX sabdfl 2005-06-23: This needs to search through the ancestry of
         # the distroseries to try to find a relevant packaging record
         raise NotFoundError(distroseries)
+
+    def getUbuntuTranslationFocusPackage(self):
+        """See `IProductSeries`."""
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        translation_focus = ubuntu.translation_focus
+        current_series = ubuntu.currentseries
+        candidate = None
+        for package in self.sourcepackages:
+            if package.distroseries == translation_focus:
+                return package
+            if package.distroseries == current_series:
+                candidate = package
+            elif package.distroseries.distribution == ubuntu:
+                if candidate is None:
+                    candidate = package
+        return candidate
 
     def setPackaging(self, distroseries, sourcepackagename, owner):
         """See IProductSeries."""

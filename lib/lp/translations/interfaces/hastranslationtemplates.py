@@ -33,6 +33,10 @@ class IHasTranslationTemplates(Interface):
         title=_("Does this object have current translation templates?"),
         readonly=True)
 
+    has_obsolete_translation_templates = Bool(
+        title=_("Does this object have obsolete translation templates?"),
+        readonly=True)
+
     has_translation_files = Bool(
         title=_("Does this object have translation files?"),
         readonly=True)
@@ -75,14 +79,6 @@ class IHasTranslationTemplates(Interface):
         active translation template.
         """
 
-    def getObsoleteTranslationTemplates():
-        """Return an iterator over its not active translation templates.
-
-        A translation template is considered not active when any of
-        `IPOTemplate`.iscurrent or `IDistribution`.official_rosetta flags
-        are set to False.
-        """
-
     @export_read_operation()
     @operation_returns_collection_of(Interface)
     @operation_for_version('beta')
@@ -93,6 +89,9 @@ class IHasTranslationTemplates(Interface):
 
         :return: A sequence of `IPOTemplate`.
         """
+
+    def getTranslationTemplateByName(name):
+        """Return the template with the given name or None."""
 
     def getTranslationTemplateFormats():
         """A list of native formats for all current translation templates.

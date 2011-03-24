@@ -153,7 +153,11 @@ from lp.bugs.browser.bugtask import (
     BugTargetTraversalMixin,
     get_buglisting_search_filter_url,
     )
-from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
+from lp.bugs.interfaces.bugtask import (
+    RESOLVED_BUGTASK_STATUSES,
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.code.browser.branchref import BranchRef
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.registry.browser import BaseRdfView
@@ -169,6 +173,8 @@ from lp.registry.browser.pillar import (
     )
 from lp.registry.browser.productseries import get_series_branch_error
 from lp.bugs.browser.structuralsubscription import (
+    expose_enum_to_js,
+    expose_user_administered_teams_to_js,
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
@@ -1006,6 +1012,9 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         self.show_programming_languages = bool(
             self.context.programminglang or
             check_permission('launchpad.Edit', self.context))
+        expose_user_administered_teams_to_js(self.request, self.user)
+        expose_enum_to_js(self.request, BugTaskImportance, 'importances')
+        expose_enum_to_js(self.request, BugTaskStatus, 'statuses')
 
     @property
     def show_license_status(self):

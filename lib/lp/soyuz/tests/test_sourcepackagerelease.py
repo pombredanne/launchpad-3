@@ -17,9 +17,13 @@ from lp.testing import (
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
-from lp.translations.utilities.translationsharinginfo import (
-    has_upstream_template,
-    )
+
+
+def has_upstream_template(sourcepackage):
+    productseries = sourcepackage.productseries
+    if productseries is None:
+        return False
+    return productseries.has_translation_templates
 
 
 class TestSourcePackageRelease(TestCaseWithFactory):
