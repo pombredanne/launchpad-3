@@ -23,6 +23,7 @@ __all__ = [
     'ArchiveView',
     'ArchiveViewBase',
     'make_archive_vocabulary',
+    'PackageCopyingMixin',
     'traverse_named_ppa',
     ]
 
@@ -1211,6 +1212,66 @@ class DestinationSeriesDropdownWidget(LaunchpadDropdownWidget):
     _messageNoValue = _("vocabulary-copy-to-same-series", "The same series")
 
 
+class PackageCopyingMixin:
+    """A mixin class that adds helpers for package copying."""
+
+    def do_copy(self, sources_field_name, source_pubs, dest_archive,
+                dest_series, dest_pocket, include_binaries):
+        try:
+            copies = do_copy(
+                source_pubs, dest_archive, dest_series,
+                dest_pocket, include_binaries)
+        except CannotCopy, error:
+            messages = []
+            error_lines = str(error).splitlines()
+            if len(error_lines) == 1:
+                messages.append(
+                    "<p>The following source cannot be copied:</p>")
+            else:
+                messages.append(
+                    "<p>The following sources cannot be copied:</p>")
+            messages.append('<ul>')
+            messages.append(
+                "\n".join('<li>%s</li>' % line for line in error_lines))
+            messages.append('</ul>')
+
+            self.setFieldError(
+                sources_field_name, structured('\n'.join(messages)))
+            return
+
+        # Preload BPNs to save queries when calculating display names.
+        needed_bpn_ids = set(
+            copy.binarypackagerelease.binarypackagenameID for copy in copies
+            if isinstance(copy, BinaryPackagePublishingHistory))
+        if needed_bpn_ids:
+            list(IStore(BinaryPackageName).find(
+                BinaryPackageName,
+                BinaryPackageName.id.is_in(needed_bpn_ids)))
+
+        # Present a page notification describing the action.
+        messages = []
+        destination_url = canonical_url(dest_archive) + '/+packages'
+        if len(copies) == 0:
+            messages.append(
+                '<p>All packages already copied to '
+                '<a href="%s">%s</a>.</p>' % (
+                    destination_url,
+                    dest_archive.displayname))
+        else:
+            messages.append(
+                '<p>Packages copied to <a href="%s">%s</a>:</p>' % (
+                    destination_url,
+                    dest_archive.displayname))
+            messages.append('<ul>')
+            messages.append(
+                "\n".join(['<li>%s</li>' % copy.displayname
+                           for copy in copies]))
+            messages.append('</ul>')
+
+        notification = "\n".join(messages)
+        self.request.response.addNotification(structured(notification))
+
+
 def make_archive_vocabulary(archives):
     terms = []
     for archive in archives:
@@ -1220,7 +1281,8 @@ def make_archive_vocabulary(archives):
     return SimpleVocabulary(terms)
 
 
-class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
+class ArchivePackageCopyingView(ArchiveSourceSelectionFormView,
+                                PackageCopyingMixin):
     """Archive package copying view class.
 
     This view presents a package selection slot in a POST form implementing
@@ -1371,59 +1433,11 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
             self.setFieldError('selected_sources', 'No sources selected.')
             return
 
-        try:
-            copies = do_copy(
-                selected_sources, destination_archive, destination_series,
-                destination_pocket, include_binaries)
-        except CannotCopy, error:
-            messages = []
-            error_lines = str(error).splitlines()
-            if len(error_lines) == 1:
-                messages.append(
-                    "<p>The following source cannot be copied:</p>")
-            else:
-                messages.append(
-                    "<p>The following sources cannot be copied:</p>")
-            messages.append('<ul>')
-            messages.append(
-                "\n".join('<li>%s</li>' % line for line in error_lines))
-            messages.append('</ul>')
-
-            self.setFieldError(
-                'selected_sources', structured('\n'.join(messages)))
-            return
-
-        # Preload BPNs to save queries when calculating display names.
-        needed_bpn_ids = set(
-            copy.binarypackagerelease.binarypackagenameID for copy in copies
-            if isinstance(copy, BinaryPackagePublishingHistory))
-        if needed_bpn_ids:
-            list(IStore(BinaryPackageName).find(
-                BinaryPackageName,
-                BinaryPackageName.id.is_in(needed_bpn_ids)))
-
-        # Present a page notification describing the action.
-        messages = []
-        destination_url = canonical_url(destination_archive) + '/+packages'
-        if len(copies) == 0:
-            messages.append(
-                '<p>All packages already copied to '
-                '<a href="%s">%s</a>.</p>' % (
-                    destination_url,
-                    destination_archive.displayname))
-        else:
-            messages.append(
-                '<p>Packages copied to <a href="%s">%s</a>:</p>' % (
-                    destination_url,
-                    destination_archive.displayname))
-            messages.append('<ul>')
-            messages.append(
-                "\n".join(['<li>%s</li>' % copy.displayname
-                           for copy in copies]))
-            messages.append('</ul>')
-
-        notification = "\n".join(messages)
-        self.request.response.addNotification(structured(notification))
+        # PackageCopyingMixin.do_copy() does the work of copying and
+        # setting up on-page notifications.
+        self.do_copy(
+            'selected_sources', selected_sources, destination_archive,
+            destination_series, destination_pocket, include_binaries)
 
         self.setNextURL()
 
