@@ -340,56 +340,164 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             view_name="+sharing-details")
 
     def assertUnseen(self, browser, html_id):
-        branch_complete_unseen = Tag(html_id, 'li', attrs={
+        unseen_matcher = Tag(html_id, 'li', attrs={
             'id': html_id,
             'class': lambda v: v and 'unseen' in v.split(' ')})
-        self.assertThat(browser.contents, HTMLContains(branch_complete_unseen))
+        self.assertThat(browser.contents, HTMLContains(unseen_matcher))
+
+    def assertSeen(self, browser, html_id, dimmed=False):
+        seen_matcher = Tag(html_id, 'li', attrs={
+            'id': html_id,
+            'class': lambda v: v and 'unseen' not in v.split(' ')})
+        self.assertThat(browser.contents, HTMLContains(seen_matcher))
+        if dimmed:
+            dimmed_matcher = Tag(html_id, 'li', attrs={
+            'id': html_id,
+            'class': lambda v: v and 'lowlight' in v.split(' ')})
+        else:
+            dimmed_matcher = Tag(html_id, 'li', attrs={
+            'id': html_id,
+            'class': lambda v: v and 'lowlight' not in v.split(' ')})
+        self.assertThat(browser.contents, HTMLContains(dimmed_matcher))
+
+    def assertElementText(self, browser, id, expected):
+        node = find_tag_by_id(browser.contents, id)
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            expected, extract_text(node))
+
+    def assertContentComplete(self, browser):
+        # The HTML data contains always all text variants.
+        checklist = find_tag_by_id(browser.contents, 'sharing-checklist')
+        self.assertIsNot(None, checklist)
+        self.assertTextMatchesExpressionIgnoreWhitespace("""
+            No upstream project series has been linked.
+            Change upstream link
+            Linked upstream series is .*
+            Change upstream link
+            Remove upstream link
+            No source branch exists for the upstream series.
+            Upstream source branch is .*
+            Translations are not enabled on the upstream project.
+            Translations are enabled on the upstream project.
+            Automatic synchronization of translations is not enabled.
+            Automatic synchronization of translations is enabled.""",
+            extract_text(checklist))
+        self.assertElementText(
+            browser, 'packaging-incomplete',
+            'No upstream project series has been linked.')
+        self.assertElementText(
+            browser, 'packaging-complete', 'Linked upstream series is .*')
+        self.assertElementText(
+            browser, 'packaging-complete', 'Linked upstream series is .*')
+        self.assertElementText(
+            browser, 'branch-incomplete',
+            'No source branch exists for the upstream series.')
+        self.assertElementText(
+            browser, 'branch-complete', 'Upstream source branch is .*')
+        self.assertElementText(
+            browser, 'translation-disabled',
+            'Translations are not enabled on the upstream project.')
+        self.assertElementText(
+            browser, 'translation-enabled',
+            'Translations are enabled on the upstream project.')
 
     def test_checklist_unconfigured(self):
         # Without a packaging link, sharing is completely unconfigured
         sourcepackage = self._makeSourcePackage()
         browser = self._getSharingDetailsViewBrowser(sourcepackage)
-        checklist = find_tag_by_id(browser.contents, 'sharing-checklist')
-        self.assertIsNot(None, checklist)
+        self.assertContentComplete(browser)
+        self.assertSeen(browser, 'packaging-incomplete')
+        self.assertUnseen(browser, 'packaging-complete')
+        self.assertSeen(browser, 'branch-incomplete', dimmed=True)
         self.assertUnseen(browser, 'branch-complete')
-        self.assertTextMatchesExpressionIgnoreWhitespace("""
-            Translation sharing configuration is incomplete.
-            .*
-            Translations are not enabled on the upstream series.
-            Automatic synchronization of translations is not enabled.""",
-            extract_text(checklist))
+        self.assertSeen(browser, 'translation-disabled', dimmed=True)
+        self.assertUnseen(browser, 'translation-enabled')
+        self.assertSeen(browser, 'upstream-sync-disabled', dimmed=True)
+        self.assertUnseen(browser, 'upstream-sync-enabled')
 
-    def test_checklist_partly_configured(self):
+    def test_checklist_packaging_configured(self):
         # Linking a source package takes care of one item.
+        # The other configuration elements are not dimmed.
         packaging = self.factory.makePackagingLink(in_ubuntu=True)
         browser = self._getSharingDetailsViewBrowser(packaging.sourcepackage)
-        checklist = find_tag_by_id(browser.contents, 'sharing-checklist')
-        self.assertIsNot(None, checklist)
+        self.assertContentComplete(browser)
+        self.assertUnseen(browser, 'packaging-incomplete')
+        self.assertSeen(browser, 'packaging-complete')
+        self.assertSeen(browser, 'branch-incomplete')
         self.assertUnseen(browser, 'branch-complete')
-        self.assertTextMatchesExpressionIgnoreWhitespace("""
-            Translation sharing configuration is incomplete.
-            Linked upstream series is .+ trunk series.
-                Change upstream link Remove upstream link
-            .*
-            Translations are not enabled on the upstream series.
-            Automatic synchronization of translations is not enabled.""",
-            extract_text(checklist))
+        self.assertSeen(browser, 'translation-disabled')
+        self.assertUnseen(browser, 'translation-enabled')
+        self.assertSeen(browser, 'upstream-sync-disabled')
+        self.assertUnseen(browser, 'upstream-sync-enabled')
+
+    def test_checklist_packaging_and_branch_configured(self):
+        # Linking a source package and and setting an upstream branch
+        # changes the text displayed for the branch configuration.
+        packaging = self.factory.makePackagingLink(in_ubuntu=True)
+        self.configureUpstreamProject(
+            productseries=packaging.productseries, set_upstream_branch=True)
+        browser = self._getSharingDetailsViewBrowser(packaging.sourcepackage)
+        self.assertContentComplete(browser)
+        self.assertUnseen(browser, 'packaging-incomplete')
+        self.assertSeen(browser, 'packaging-complete')
+        self.assertUnseen(browser, 'branch-incomplete')
+        self.assertSeen(browser, 'branch-complete')
+        self.assertSeen(browser, 'translation-disabled')
+        self.assertUnseen(browser, 'translation-enabled')
+        self.assertSeen(browser, 'upstream-sync-disabled')
+        self.assertUnseen(browser, 'upstream-sync-enabled')
+
+    def test_checklist_packaging_and_translations_enabled(self):
+        # Linking a source package and and setting an upstream branch
+        # changes the text displayed for the translation setting.
+        packaging = self.factory.makePackagingLink(in_ubuntu=True)
+        self.configureUpstreamProject(
+            productseries=packaging.productseries,
+            translations_usage=ServiceUsage.LAUNCHPAD)
+        browser = self._getSharingDetailsViewBrowser(packaging.sourcepackage)
+        self.assertContentComplete(browser)
+        self.assertUnseen(browser, 'packaging-incomplete')
+        self.assertSeen(browser, 'packaging-complete')
+        self.assertSeen(browser, 'branch-incomplete')
+        self.assertUnseen(browser, 'branch-complete')
+        self.assertUnseen(browser, 'translation-disabled')
+        self.assertSeen(browser, 'translation-enabled')
+        self.assertSeen(browser, 'upstream-sync-disabled')
+        self.assertUnseen(browser, 'upstream-sync-enabled')
+
+    def test_checklist_packaging_and_upstream_snyc_enabled(self):
+        # Linking a source package and enabling upstream translation
+        # synchronisation changes the text displayed for the
+        # translation sync setting.
+        packaging = self.factory.makePackagingLink(in_ubuntu=True)
+        self.configureUpstreamProject(
+            productseries=packaging.productseries,
+            translation_import_mode=(
+                TranslationsBranchImportMode.IMPORT_TRANSLATIONS))
+        browser = self._getSharingDetailsViewBrowser(packaging.sourcepackage)
+        self.assertContentComplete(browser)
+        self.assertUnseen(browser, 'packaging-incomplete')
+        self.assertSeen(browser, 'packaging-complete')
+        self.assertSeen(browser, 'branch-incomplete')
+        self.assertUnseen(browser, 'branch-complete')
+        self.assertSeen(browser, 'translation-disabled')
+        self.assertUnseen(browser, 'translation-enabled')
+        self.assertUnseen(browser, 'upstream-sync-disabled')
+        self.assertSeen(browser, 'upstream-sync-enabled')
 
     def test_checklist_fully_configured(self):
         # A fully configured sharing setup.
         sourcepackage = self.makeFullyConfiguredSharing()[0]
         browser = self._getSharingDetailsViewBrowser(sourcepackage)
-        checklist = find_tag_by_id(browser.contents, 'sharing-checklist')
-        self.assertIsNot(None, checklist)
+        self.assertContentComplete(browser)
+        self.assertUnseen(browser, 'packaging-incomplete')
+        self.assertSeen(browser, 'packaging-complete')
         self.assertUnseen(browser, 'branch-incomplete')
-        self.assertTextMatchesExpressionIgnoreWhitespace("""
-            Translation sharing with upstream is active.
-            Linked upstream series is .+ trunk series.
-                Change upstream link Remove upstream link
-            .*
-            Translations are enabled on the upstream project.
-            Automatic synchronization of translations is enabled.""",
-            extract_text(checklist))
+        self.assertSeen(browser, 'branch-complete')
+        self.assertUnseen(browser, 'translation-disabled')
+        self.assertSeen(browser, 'translation-enabled')
+        self.assertUnseen(browser, 'upstream-sync-disabled')
+        self.assertSeen(browser, 'upstream-sync-enabled')
 
     def test_potlist_only_ubuntu(self):
         # Without a packaging link, only Ubuntu templates are listed.

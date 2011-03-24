@@ -161,21 +161,65 @@ class SourcePackageTranslationSharingDetailsView(
             url = '#'
         return '<a class="sprite branch link" href="%s">%s</a>' % (url, title)
 
-    @property
-    def branch_incomplete_class(self):
-        classes = ['sprite', 'no']
-        if self.has_upstream_branch:
+    def makeConfigCompleteCSS(self, complete, disable, lowlight):
+        if complete:
+            classes = ['sprite', 'yes']
+        else:
+            classes = ['sprite', 'no']
+        if disable:
             classes.append('unseen')
-        if not self.is_packaging_configured:
+        if lowlight:
             classes.append("lowlight")
         return ' '.join(classes)
 
     @property
-    def branch_complete_class(self):
-        classes = ['sprite', 'yes']
-        if not self.has_upstream_branch:
+    def packaging_incomplete_class(self):
+        return self.makeConfigCompleteCSS(
+            False, self.is_packaging_configured, False)
+        classes = ['sprite', 'no']
+        if self.is_packaging_configured:
             classes.append('unseen')
         return ' '.join(classes)
+
+    @property
+    def packaging_complete_class(self):
+        return self.makeConfigCompleteCSS(
+            True, not self.is_packaging_configured, False)
+
+    @property
+    def branch_incomplete_class(self):
+        return self.makeConfigCompleteCSS(
+            False, self.has_upstream_branch, not self.is_packaging_configured)
+
+    @property
+    def branch_complete_class(self):
+        return self.makeConfigCompleteCSS(
+            True, not self.has_upstream_branch,
+            not self.is_packaging_configured)
+
+    @property
+    def translations_disabled_class(self):
+        return self.makeConfigCompleteCSS(
+            False, self.is_upstream_translations_enabled,
+            not self.is_packaging_configured)
+
+    @property
+    def translations_enabled_class(self):
+        return self.makeConfigCompleteCSS(
+            True, not self.is_upstream_translations_enabled,
+            not self.is_packaging_configured)
+
+    @property
+    def upstream_sync_disabled_class(self):
+        return self.makeConfigCompleteCSS(
+            False, self.is_upstream_synchronization_enabled,
+            not self.is_packaging_configured)
+
+    @property
+    def upstream_sync_enabled_class(self):
+        return self.makeConfigCompleteCSS(
+            True, not self.is_upstream_synchronization_enabled,
+            not self.is_packaging_configured)
 
     @property
     def is_packaging_configured(self):
