@@ -106,7 +106,7 @@ class DistributionJobDerived(BaseRunnableJob):
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
-        vars = BaseRunnableJob.getOopsVars(self)
+        vars = super(DistributionJobDerived, self).getOopsVars()
         vars.extend([
             ('distribution_id', self.context.distribution.id),
             ('distroseries_id', self.context.distroseries.id),

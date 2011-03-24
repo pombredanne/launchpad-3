@@ -33,15 +33,19 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def test_getOopsVars(self):
+        parent_distroseries = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries()
         job = getUtility(IInitialiseDistroSeriesJobSource).create(
-            distroseries)
+            parent_distroseries, distroseries)
         vars = job.getOopsVars()
         naked_job = removeSecurityProxy(job)
         self.assertIn(
             ('distribution_id', distroseries.distribution.id), vars)
         self.assertIn(('distroseries_id', distroseries.id), vars)
         self.assertIn(('distribution_job_id', naked_job.context.id), vars)
+        self.assertIn(
+            ('parent_distroseries_id', parent_distroseries.id),
+            vars)
 
     def _getJobs(self):
         """Return the pending InitialiseDistroSeriesJobs as a list."""
@@ -53,19 +57,20 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
         return len(self._getJobs())
 
     def test_create_only_creates_one(self):
+        parent_distroseries = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries()
         # If there's already a InitialiseDistroSeriesJob for a
         # DistroSeries, InitialiseDistroSeriesJob.create() won't create
         # a new one.
         getUtility(IInitialiseDistroSeriesJobSource).create(
-            distroseries)
+            parent_distroseries, distroseries)
         transaction.commit()
 
         # There will now be one job in the queue.
         self.assertEqual(1, self._getJobCount())
 
         getUtility(IInitialiseDistroSeriesJobSource).create(
-            distroseries)
+            parent_distroseries, distroseries)
 
         # This is less than ideal
         self.assertRaises(IntegrityError, self._getJobCount)
@@ -73,10 +78,11 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
     def test_run(self):
         """Test that InitialiseDistroSeriesJob.run() actually
         initialises builds and copies from the parent."""
+        parent_distroseries = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries()
 
         job = getUtility(IInitialiseDistroSeriesJobSource).create(
-            distroseries)
+            parent_distroseries, distroseries)
 
         # Since our new distroseries doesn't have a parent set, and the first
         # thing that run() will execute is checking the distroseries, if it
@@ -87,18 +93,22 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
     def test_arguments(self):
         """Test that InitialiseDistroSeriesJob specified with arguments can
         be gotten out again."""
+        parent_distroseries = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries()
         arches = (u'i386', u'amd64')
         packagesets = (u'foo', u'bar', u'baz')
 
         job = getUtility(IInitialiseDistroSeriesJobSource).create(
-            distroseries, arches, packagesets)
+            parent_distroseries, distroseries, arches, packagesets)
 
         naked_job = removeSecurityProxy(job)
         self.assertEqual(naked_job.distroseries, distroseries)
         self.assertEqual(naked_job.arches, arches)
         self.assertEqual(naked_job.packagesets, packagesets)
         self.assertEqual(naked_job.rebuild, False)
+        self.assertEqual(
+            naked_job.metadata["parent_distroseries"],
+            parent_distroseries.id)
 
     def _create_child(self):
         pf = self.factory.makeProcessorFamily()
@@ -134,7 +144,8 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
 
     def test_job(self):
         parent, child = self._create_child()
-        job = getUtility(IInitialiseDistroSeriesJobSource).create(child)
+        job = getUtility(IInitialiseDistroSeriesJobSource).create(
+            parent, child)
         self.layer.switchDbUser('initialisedistroseries')
 
         job.run()
@@ -146,7 +157,8 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
         parent, child = self._create_child()
         arch = parent.nominatedarchindep.architecturetag
         job = getUtility(IInitialiseDistroSeriesJobSource).create(
-            child, packagesets=('test1',), arches=(arch,), rebuild=True)
+            parent, child, packagesets=('test1',), arches=(arch,),
+            rebuild=True)
         self.layer.switchDbUser('initialisedistroseries')
 
         job.run()
