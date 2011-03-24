@@ -25,7 +25,7 @@ class Table:
     pass
 
 
-def get_where_clause(options):
+def get_where_clause(options, fuzz='0 seconds'):
     "Generate a WHERE clause referencing the date_created column."
     # We have two of the from timestamp, the until timestamp and an
     # interval. The interval is in a format unsuitable for processing in
@@ -59,7 +59,9 @@ def get_where_clause(options):
     else:
         until_sql = "CURRENT_TIMESTAMP AT TIME ZONE 'UTC'"
 
-    clause = "date_created BETWEEN (%s) AND (%s)" % (from_sql, until_sql)
+    fuzz_sql = "CAST(%s AS interval)" % sqlvalues(fuzz)
+    clause = "date_created BETWEEN (%s - %s) AND (%s + %s)" % (
+        from_sql, fuzz_sql, until_sql, fuzz_sql)
 
     return clause
 
@@ -160,7 +162,11 @@ def get_bloat_stats(cur, options, kind):
     # Return information on bloated tables and indexes, as of the end of
     # the requested time period.
     params = {
-        'where': get_where_clause(options),
+        # We only collect these statistics daily, so add some fuzz
+        # to ensure bloat information ends up on the daily reports;
+        # we cannot guarantee the disk utilization statistics occur
+        # exactly 24 hours apart.
+        'where': get_where_clause(options, fuzz='6 hours'),
         'bloat': options.bloat,
         'min_bloat': options.min_bloat,
         'kind': kind,
