@@ -315,8 +315,8 @@ def main():
     print "== Most Bloating Tables =="
     print
     for bloated_table in sorted(
-        table_bloat_stats, key=bloating_sort_key, reverse=True
-        )[:options.limit]:
+        table_bloat_stats, key=bloating_sort_key,
+        reverse=True)[:options.limit]:
         # Bloat decreases are uninteresting, and would need to be in
         # a seperate table sorted in reverse anyway.
         if bloated_table.delta_bloat_percent > 0:
@@ -329,8 +329,8 @@ def main():
     print "== Most Bloating Indexes =="
     print
     for bloated_index in sorted(
-        index_bloat_stats, key=bloating_sort_key, reverse=True
-        )[:options.limit]:
+        index_bloat_stats, key=bloating_sort_key,
+        reverse=True)[:options.limit]:
         # Bloat decreases are uninteresting, and would need to be in
         # a seperate table sorted in reverse anyway.
         if bloated_index.delta_bloat_percent > 0:
@@ -338,7 +338,6 @@ def main():
                 bloated_index.sub_name,
                 bloated_index.delta_bloat_percent,
                 bloated_index.delta_bloat_size)
-
 
 
 if __name__ == '__main__':
