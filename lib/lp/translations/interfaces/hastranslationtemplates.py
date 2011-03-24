@@ -36,6 +36,10 @@ class IHasTranslationTemplates(Interface):
         title=_("Does this object have obsolete translation templates?"),
         readonly=True)
 
+    has_sharing_translation_templates = Bool(
+        title=_("Does this object have sharing translation templates?"),
+        readonly=True)
+
     has_translation_files = Bool(
         title=_("Does this object have translation files?"),
         readonly=True)
@@ -45,6 +49,13 @@ class IHasTranslationTemplates(Interface):
 
         The collection selects all `POTemplate`s attached to the
         translation target that implements this interface.
+        """
+
+    def getSharingPartner():
+        """Return the object on the other side of the packaging link.
+
+        Return the object that is sharing translations with this one on the
+        other side of a packaging link.
         """
 
     def getCurrentTemplatesCollection():
