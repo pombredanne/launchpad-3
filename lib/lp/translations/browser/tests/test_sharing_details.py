@@ -405,7 +405,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             Translation sharing configuration is incomplete.
             Translation sharing with upstream is active.
             No upstream project series has been linked.
-            Change upstream link
+            Set upstream link
             Linked upstream series is .*
             Change upstream link
             Remove upstream link
@@ -429,10 +429,10 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         self.assertElementText(
             browser, 'branch-complete', 'Upstream source branch is .*')
         self.assertElementText(
-            browser, 'translation-disabled',
+            browser, 'translation-incomplete',
             'Translations are not enabled on the upstream project.')
         self.assertElementText(
-            browser, 'translation-enabled',
+            browser, 'translation-complete',
             'Translations are enabled on the upstream project.')
 
     def test_checklist_unconfigured(self):
@@ -444,10 +444,10 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         self.assertUnseen(browser, 'packaging-complete')
         self.assertSeen(browser, 'branch-incomplete', dimmed=True)
         self.assertUnseen(browser, 'branch-complete')
-        self.assertSeen(browser, 'translation-disabled', dimmed=True)
-        self.assertUnseen(browser, 'translation-enabled')
-        self.assertSeen(browser, 'upstream-sync-disabled', dimmed=True)
-        self.assertUnseen(browser, 'upstream-sync-enabled')
+        self.assertSeen(browser, 'translation-incomplete', dimmed=True)
+        self.assertUnseen(browser, 'translation-complete')
+        self.assertSeen(browser, 'upstream-sync-incomplete', dimmed=True)
+        self.assertUnseen(browser, 'upstream-sync-complete')
 
     def test_checklist_packaging_configured(self):
         # Linking a source package takes care of one item.
@@ -460,10 +460,10 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         self.assertSeen(browser, 'packaging-complete')
         self.assertSeen(browser, 'branch-incomplete')
         self.assertUnseen(browser, 'branch-complete')
-        self.assertSeen(browser, 'translation-disabled')
-        self.assertUnseen(browser, 'translation-enabled')
-        self.assertSeen(browser, 'upstream-sync-disabled')
-        self.assertUnseen(browser, 'upstream-sync-enabled')
+        self.assertSeen(browser, 'translation-incomplete')
+        self.assertUnseen(browser, 'translation-complete')
+        self.assertSeen(browser, 'upstream-sync-incomplete')
+        self.assertUnseen(browser, 'upstream-sync-complete')
 
     def test_checklist_packaging_and_branch_configured(self):
         # Linking a source package and and setting an upstream branch
@@ -478,10 +478,10 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         self.assertSeen(browser, 'packaging-complete')
         self.assertUnseen(browser, 'branch-incomplete')
         self.assertSeen(browser, 'branch-complete')
-        self.assertSeen(browser, 'translation-disabled')
-        self.assertUnseen(browser, 'translation-enabled')
-        self.assertSeen(browser, 'upstream-sync-disabled')
-        self.assertUnseen(browser, 'upstream-sync-enabled')
+        self.assertSeen(browser, 'translation-incomplete')
+        self.assertUnseen(browser, 'translation-complete')
+        self.assertSeen(browser, 'upstream-sync-incomplete')
+        self.assertUnseen(browser, 'upstream-sync-complete')
 
     def test_checklist_packaging_and_translations_enabled(self):
         # Linking a source package and and setting an upstream branch
@@ -497,12 +497,12 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         self.assertSeen(browser, 'packaging-complete')
         self.assertSeen(browser, 'branch-incomplete')
         self.assertUnseen(browser, 'branch-complete')
-        self.assertUnseen(browser, 'translation-disabled')
-        self.assertSeen(browser, 'translation-enabled')
-        self.assertSeen(browser, 'upstream-sync-disabled')
-        self.assertUnseen(browser, 'upstream-sync-enabled')
+        self.assertUnseen(browser, 'translation-incomplete')
+        self.assertSeen(browser, 'translation-complete')
+        self.assertSeen(browser, 'upstream-sync-incomplete')
+        self.assertUnseen(browser, 'upstream-sync-complete')
 
-    def test_checklist_packaging_and_upstream_snyc_enabled(self):
+    def test_checklist_packaging_and_upstream_sync_enabled(self):
         # Linking a source package and enabling upstream translation
         # synchronisation changes the text displayed for the
         # translation sync setting.
@@ -518,10 +518,10 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         self.assertSeen(browser, 'packaging-complete')
         self.assertSeen(browser, 'branch-incomplete')
         self.assertUnseen(browser, 'branch-complete')
-        self.assertSeen(browser, 'translation-disabled')
-        self.assertUnseen(browser, 'translation-enabled')
-        self.assertUnseen(browser, 'upstream-sync-disabled')
-        self.assertSeen(browser, 'upstream-sync-enabled')
+        self.assertSeen(browser, 'translation-incomplete')
+        self.assertUnseen(browser, 'translation-complete')
+        self.assertUnseen(browser, 'upstream-sync-incomplete')
+        self.assertSeen(browser, 'upstream-sync-complete')
 
     def test_checklist_fully_configured(self):
         # A fully configured sharing setup.
@@ -533,10 +533,10 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         self.assertSeen(browser, 'packaging-complete')
         self.assertUnseen(browser, 'branch-incomplete')
         self.assertSeen(browser, 'branch-complete')
-        self.assertUnseen(browser, 'translation-disabled')
-        self.assertSeen(browser, 'translation-enabled')
-        self.assertUnseen(browser, 'upstream-sync-disabled')
-        self.assertSeen(browser, 'upstream-sync-enabled')
+        self.assertUnseen(browser, 'translation-incomplete')
+        self.assertSeen(browser, 'translation-complete')
+        self.assertUnseen(browser, 'upstream-sync-incomplete')
+        self.assertSeen(browser, 'upstream-sync-complete')
 
     def test_potlist_only_ubuntu(self):
         # Without a packaging link, only Ubuntu templates are listed.

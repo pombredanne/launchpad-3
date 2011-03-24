@@ -188,10 +188,6 @@ class SourcePackageTranslationSharingDetailsView(
     def packaging_incomplete_class(self):
         return self.makeConfigCompleteCSS(
             False, self.is_packaging_configured, False)
-        classes = ['sprite', 'no']
-        if self.is_packaging_configured:
-            classes.append('unseen')
-        return ' '.join(classes)
 
     @property
     def packaging_complete_class(self):

@@ -64,25 +64,25 @@
               </span>
             </li>
             <li tal:attributes="class view/translations_disabled_class"
-                id="translation-disabled">
+                id="translation-incomplete">
               Translations are not enabled on the upstream project.
               <a tal:condition="view/is_packaging_configured"
                  tal:replace="structure context/productseries/product/menu:translations/settings/fmt:icon" />
             </li>
             <li tal:attributes="class view/translations_enabled_class"
-                id="translation-enabled">
+                id="translation-complete">
               Translations are enabled on the upstream project.
               <a tal:condition="view/is_packaging_configured"
                  tal:replace="structure context/productseries/product/menu:translations/settings/fmt:icon" />
             </li>
             <li tal:attributes="class view/upstream_sync_disabled_class"
-                id="upstream-sync-disabled">
+                id="upstream-sync-incomplete">
               Automatic synchronization of translations is not enabled.
               <a tal:condition="view/is_packaging_configured"
                  tal:replace="structure context/productseries/menu:translations/settings/fmt:icon" />
             </li>
             <li tal:attributes="class view/upstream_sync_enabled_class"
-                id="upstream-sync-enabled">
+                id="upstream-sync-complete">
               Automatic synchronization of translations is enabled.
               <a tal:condition="view/is_packaging_configured"
                  tal:replace="structure context/productseries/menu:translations/settings/fmt:icon" />
