@@ -1,11 +1,9 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Facilities for running Jobs."""
 
-
 __metaclass__ = type
-
 
 __all__ = [
     'BaseRunnableJob',
@@ -390,6 +388,9 @@ class TwistedJobRunner(BaseJobRunner):
             self.incomplete_jobs.append(job)
             exit_code = getattr(failure.value, 'exitCode', None)
             if exit_code == self.TIMEOUT_CODE:
+                # The process ended with the error code that we have
+                # arbitrarily chosen to indicate a timeout. Rather than log
+                # that error (ProcessDone), we log a TimeoutError instead.
                 self._logTimeout(job)
             else:
                 info = (failure.type, failure.value, failure.tb)
