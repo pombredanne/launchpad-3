@@ -1028,7 +1028,8 @@ class TranslationImportQueue:
 
     def addOrUpdateEntriesFromTarball(self, content, by_maintainer, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
-        potemplate=None, filename_filter=None, approver_factory=None):
+        potemplate=None, filename_filter=None, approver_factory=None,
+        only_templates=False):
         """See ITranslationImportQueue."""
         num_files = 0
         conflict_files = []
