@@ -2410,6 +2410,22 @@ ul.latest-ppa-updates li.BUILDING {
     background-image: url('/@@/processing');
     }
 
+.package-diff-status span.COMPLETED {
+    }
+.package-diff-status span.PENDING {
+    background-image: url('/@@/processing');
+    background-position: center right;
+    padding-right: 18px;
+    background-repeat: no-repeat;
+    }
+.package-diff-status span.FAILED {
+    background-image: url('/@@/build-failed');
+    background-position: center right;
+    padding-right: 18px;
+    background-repeat: no-repeat;
+    }
+
+
 
 /* ====
    Code
