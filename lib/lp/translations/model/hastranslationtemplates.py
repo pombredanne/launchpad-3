@@ -83,6 +83,10 @@ class HasTranslationTemplatesMixin:
     @property
     def has_sharing_translation_templates(self):
         """See `IHasTranslationTemplates`."""
+        other_side_obj = self.getSharingPartner()
+        if other_side_obj is None:
+            return False
+        return other_side_obj.has_current_translation_templates
 
     def getCurrentTranslationFiles(self, just_ids=False):
         """See `IHasTranslationTemplates`."""

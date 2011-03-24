@@ -55,7 +55,7 @@ class IHasTranslationTemplates(Interface):
         """Return the object on the other side of the packaging link.
 
         Return the object that is sharing translations with this one on the
-        other side of a packaging link.
+        other side of a packaging link. It must also implement this interface.
         """
 
     def getCurrentTemplatesCollection():
