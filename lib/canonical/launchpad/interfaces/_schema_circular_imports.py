@@ -56,7 +56,6 @@ from lp.bugs.interfaces.bugattachment import IBugAttachment
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
-from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget,
     IHasBugs,
@@ -649,7 +648,7 @@ patch_collection_property(
 # named operation explicitly name the version in which it first
 # appears. This code grandfathers in entries and named operations that
 # were defined before this rule came into effect. When you change an
-# interface in the future, you should add explicit entry statements to
+# interface in the future, you should add explicit version statements to
 # its definition and get rid of the patch calls here.
 #
 ###
@@ -802,7 +801,6 @@ patch_operation_explicit_version(IBugAttachment, "removeFromBug", "beta")
 patch_operation_explicit_version(IBugNomination, "approve", "beta")
 patch_operation_explicit_version(IBugNomination, "canApprove", "beta")
 patch_operation_explicit_version(IBugNomination, "decline", "beta")
-patch_operation_explicit_version(IBugSubscription, "canBeUnsubscribedByUser", "beta")
 patch_operation_explicit_version(IBugSubscriptionFilter, "delete", "beta")
 patch_operation_explicit_version(IBugTask, "findSimilarBugs", "beta")
 patch_operation_explicit_version(IBugTask, "transitionToAssignee", "beta")

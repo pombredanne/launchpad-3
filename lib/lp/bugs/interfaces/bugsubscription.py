@@ -17,6 +17,7 @@ from lazr.restful.declarations import (
     export_as_webservice_entry,
     export_read_operation,
     exported,
+    operation_for_version,
     REQUEST_USER,
     )
 from lazr.restful.fields import Reference
@@ -78,5 +79,6 @@ class IBugSubscription(Interface):
 
     @call_with(user=REQUEST_USER)
     @export_read_operation()
+    @operation_for_version("beta")
     def canBeUnsubscribedByUser(user):
         """Can the user unsubscribe the subscriber from the bug?"""
