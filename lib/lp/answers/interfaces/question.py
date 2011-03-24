@@ -19,7 +19,6 @@ __all__ = [
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
-    export_read_operation,
     exported,
     )
 from lazr.restful.fields import (
@@ -68,18 +67,22 @@ class IQuestion(IHasOwner):
 
     id = exported(Int(
         title=_('Question Number'), required=True, readonly=True,
-        description=_("The tracking number for this question.")))
+        description=_("The tracking number for this question.")),
+        as_of="devel")
     title = exported(TextLine(
         title=_('Summary'), required=True, description=_(
-        "A one-line summary of the issue or problem.")))
+        "A one-line summary of the issue or problem.")),
+        as_of="devel")
     description = exported(Text(
         title=_('Description'), required=True, description=_(
         "Include as much detail as possible: what "
         u"you\N{right single quotation mark}re trying to achieve, what steps "
-        "you take, what happens, and what you think should happen instead.")))
+        "you take, what happens, and what you think should happen instead.")),
+        as_of="devel")
     status = exported(Choice(
         title=_('Status'), vocabulary=QuestionStatus,
-        default=QuestionStatus.OPEN, readonly=True))
+        default=QuestionStatus.OPEN, readonly=True),
+        as_of="devel")
     priority = Choice(
         title=_('Priority'), vocabulary=QuestionPriority,
         default=QuestionPriority.NORMAL)
@@ -90,18 +93,20 @@ class IQuestion(IHasOwner):
         description=_('The language in which this question is written.'))
     owner = exported(PublicPersonChoice(
         title=_('Owner'), required=True, readonly=True,
-        vocabulary='ValidPersonOrTeam'))
+        vocabulary='ValidPersonOrTeam'),
+        as_of="devel")
     assignee = exported(PublicPersonChoice(
         title=_('Assignee'), required=False,
         description=_("The person responsible for helping to resolve the "
         "question."),
-        vocabulary='ValidPersonOrTeam'))
-    @export_read_operation
+        vocabulary='ValidPersonOrTeam'),
+        as_of="devel")
     answerer = exported(PublicPersonChoice(
         title=_('Answered By'), required=False,
         description=_("The person who last provided a response intended to "
         "resolve the question."),
-        vocabulary='ValidPersonOrTeam'))
+        vocabulary='ValidPersonOrTeam'),
+        as_of="devel")
     answer = Reference(
         title=_('Answer'), required=False,
         description=_("The IQuestionMessage that contains the answer "
