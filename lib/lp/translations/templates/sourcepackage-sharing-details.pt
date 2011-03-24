@@ -22,10 +22,12 @@
     </div>
     <div metal:fill-slot="main">
       <dl id="sharing-checklist">
-        <dt><span tal:condition="not:view/is_configuration_complete">
+        <dt><span tal:attributes="class view/configuration_incomplete_class"
+                  id="configuration-incomplete">
             Translation sharing configuration is incomplete.
           </span>
-          <span tal:condition="view/is_configuration_complete">
+          <span tal:attributes="class view/configuration_complete_class"
+                id="configuration-complete">
             Translation sharing with upstream is active.
           </span>
         </dt>

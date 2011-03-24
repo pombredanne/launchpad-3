@@ -173,6 +173,18 @@ class SourcePackageTranslationSharingDetailsView(
         return ' '.join(classes)
 
     @property
+    def configuration_complete_class(self):
+        if self.is_configuration_complete:
+            return ""
+        return "unseen"
+
+    @property
+    def configuration_incomplete_class(self):
+        if not self.is_configuration_complete:
+            return ""
+        return "unseen"
+
+    @property
     def packaging_incomplete_class(self):
         return self.makeConfigCompleteCSS(
             False, self.is_packaging_configured, False)

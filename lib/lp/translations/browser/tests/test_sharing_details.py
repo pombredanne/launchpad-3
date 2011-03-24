@@ -360,6 +360,38 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             'class': lambda v: v and 'lowlight' not in v.split(' ')})
         self.assertThat(browser.contents, HTMLContains(dimmed_matcher))
 
+    def assertStatusDisplayShowsIncomplete(self, browser):
+        seen_matcher = Tag(
+            'configuration-incomplete', 'span',
+            attrs={
+                'id': 'configuration-incomplete',
+                'class': '',
+                })
+        self.assertThat(browser.contents, HTMLContains(seen_matcher))
+        unseen_matcher = Tag(
+            'configuration-complete', 'span',
+            attrs={
+                'id': 'configuration-complete',
+                'class': 'unseen',
+                })
+        self.assertThat(browser.contents, HTMLContains(unseen_matcher))
+
+    def assertStatusDisplayShowsCompleted(self, browser):
+        seen_matcher = Tag(
+            'configuration-complete', 'span',
+            attrs={
+                'id': 'configuration-complete',
+                'class': '',
+                })
+        self.assertThat(browser.contents, HTMLContains(seen_matcher))
+        unseen_matcher = Tag(
+            'configuration-incomplete', 'span',
+            attrs={
+                'id': 'configuration-incomplete',
+                'class': 'unseen',
+                })
+        self.assertThat(browser.contents, HTMLContains(unseen_matcher))
+
     def assertElementText(self, browser, id, expected):
         node = find_tag_by_id(browser.contents, id)
         self.assertTextMatchesExpressionIgnoreWhitespace(
@@ -370,6 +402,8 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         checklist = find_tag_by_id(browser.contents, 'sharing-checklist')
         self.assertIsNot(None, checklist)
         self.assertTextMatchesExpressionIgnoreWhitespace("""
+            Translation sharing configuration is incomplete.
+            Translation sharing with upstream is active.
             No upstream project series has been linked.
             Change upstream link
             Linked upstream series is .*
@@ -406,7 +440,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         sourcepackage = self._makeSourcePackage()
         browser = self._getSharingDetailsViewBrowser(sourcepackage)
         self.assertContentComplete(browser)
-        self.assertSeen(browser, 'packaging-incomplete')
+        self.assertStatusDisplayShowsIncomplete(browser)
         self.assertUnseen(browser, 'packaging-complete')
         self.assertSeen(browser, 'branch-incomplete', dimmed=True)
         self.assertUnseen(browser, 'branch-complete')
@@ -421,6 +455,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         packaging = self.factory.makePackagingLink(in_ubuntu=True)
         browser = self._getSharingDetailsViewBrowser(packaging.sourcepackage)
         self.assertContentComplete(browser)
+        self.assertStatusDisplayShowsIncomplete(browser)
         self.assertUnseen(browser, 'packaging-incomplete')
         self.assertSeen(browser, 'packaging-complete')
         self.assertSeen(browser, 'branch-incomplete')
@@ -438,6 +473,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             productseries=packaging.productseries, set_upstream_branch=True)
         browser = self._getSharingDetailsViewBrowser(packaging.sourcepackage)
         self.assertContentComplete(browser)
+        self.assertStatusDisplayShowsIncomplete(browser)
         self.assertUnseen(browser, 'packaging-incomplete')
         self.assertSeen(browser, 'packaging-complete')
         self.assertUnseen(browser, 'branch-incomplete')
@@ -456,6 +492,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             translations_usage=ServiceUsage.LAUNCHPAD)
         browser = self._getSharingDetailsViewBrowser(packaging.sourcepackage)
         self.assertContentComplete(browser)
+        self.assertStatusDisplayShowsIncomplete(browser)
         self.assertUnseen(browser, 'packaging-incomplete')
         self.assertSeen(browser, 'packaging-complete')
         self.assertSeen(browser, 'branch-incomplete')
@@ -476,6 +513,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
                 TranslationsBranchImportMode.IMPORT_TRANSLATIONS))
         browser = self._getSharingDetailsViewBrowser(packaging.sourcepackage)
         self.assertContentComplete(browser)
+        self.assertStatusDisplayShowsIncomplete(browser)
         self.assertUnseen(browser, 'packaging-incomplete')
         self.assertSeen(browser, 'packaging-complete')
         self.assertSeen(browser, 'branch-incomplete')
@@ -490,6 +528,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         sourcepackage = self.makeFullyConfiguredSharing()[0]
         browser = self._getSharingDetailsViewBrowser(sourcepackage)
         self.assertContentComplete(browser)
+        self.assertStatusDisplayShowsCompleted(browser)
         self.assertUnseen(browser, 'packaging-incomplete')
         self.assertSeen(browser, 'packaging-complete')
         self.assertUnseen(browser, 'branch-incomplete')
