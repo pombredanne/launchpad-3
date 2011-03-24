@@ -183,6 +183,8 @@ class GenericBranchCollection:
                     cache._associatedProductSeries = []
                 if not safe_hasattr(cache, '_associatedSuiteSourcePackages'):
                     cache._associatedSuiteSourcePackages = []
+                if not safe_hasattr(cache, 'code_import'):
+                    cache.code_import = None
             # associatedProductSeries
             # Imported here to avoid circular import.
             from lp.registry.model.productseries import ProductSeries
@@ -206,10 +208,6 @@ class GenericBranchCollection:
             # need for validity etc in the /branches API call.
             load_related(Person, rows,
                 ['ownerID', 'registrantID', 'reviewerID'])
-            # Cache all branches as having no code imports to prevent fruitless
-            # lookups on the ones we don't find.
-            for cache in caches.values():
-                cache.code_import = None
             for code_import in IStore(CodeImport).find(
                 CodeImport, CodeImport.branchID.is_in(branch_ids)):
                 cache = caches[code_import.branchID]

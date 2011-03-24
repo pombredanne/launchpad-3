@@ -187,6 +187,12 @@ class SourcePackageRecipe(Storm):
     def recipe_text(self):
         return self.builder_recipe.get_recipe_text()
 
+    def updateSeries(self, distroseries):
+        if distroseries != self.distroseries:
+            self.distroseries.clear()
+            for distroseries_item in distroseries:
+                self.distroseries.add(distroseries_item)
+
     @staticmethod
     def new(registrant, owner, name, recipe, description,
             distroseries=None, daily_build_archive=None, build_daily=False,

@@ -5,8 +5,25 @@
 
 __metaclass__ = type
 
+import transaction
+from zope.component import getUtility
+
 from canonical.testing.layers import LaunchpadFunctionalLayer
-from lp.testing import TestCaseWithFactory
+from lp.services.tarfile_helpers import LaunchpadWriteTarFile
+from lp.testing import (
+    TestCaseWithFactory,
+    person_logged_in,
+    )
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue,
+    )
+
+
+def has_upstream_template(sourcepackage):
+    productseries = sourcepackage.productseries
+    if productseries is None:
+        return False
+    return productseries.has_translation_templates
 
 
 class TestSourcePackageRelease(TestCaseWithFactory):
@@ -54,3 +71,45 @@ class TestSourcePackageRelease(TestCaseWithFactory):
         # does not have to be valid.
         spr = self.factory.makeSourcePackageRelease(homepage="<invalid<url")
         self.assertEquals("<invalid<url", spr.homepage)
+
+    def makeTranslationsLFA(self):
+        """Create an LibraryFileAlias containing dummy translation data."""
+        test_tar_content = {
+            'source/po/foo.pot': 'Foo template',
+            }
+        tarfile_content = LaunchpadWriteTarFile.files_to_string(
+            test_tar_content)
+        return self.factory.makeLibraryFileAlias(content=tarfile_content)
+
+    def test_attachTranslationFiles__no_translation_sharing(self):
+        # If translation sharing is disabled,
+        # SourcePackageRelease.attachTranslationFiles() creates a job
+        # in the translation import queue.
+        spr = self.factory.makeSourcePackageRelease()
+        self.assertFalse(has_upstream_template(spr.sourcepackage))
+        lfa = self.makeTranslationsLFA()
+        transaction.commit()
+        spr.attachTranslationFiles(lfa, True, spr.maintainer)
+        translation_import_queue = getUtility(ITranslationImportQueue)
+        entries_in_queue = translation_import_queue.getAllEntries(
+                target=spr.sourcepackage).count()
+        self.assertEqual(1, entries_in_queue)
+
+    def test_attachTranslationFiles__translation_sharing(self):
+        # If translation sharing is enabled,
+        # SourcePackageRelease.attachTranslationFiles() does nothing.
+        spr = self.factory.makeSourcePackageRelease()
+        sourcepackage = spr.sourcepackage
+        productseries = self.factory.makeProductSeries()
+        self.factory.makePOTemplate(productseries=productseries)
+        with person_logged_in(sourcepackage.distroseries.owner):
+            sourcepackage.setPackaging(
+                productseries, sourcepackage.distroseries.owner)
+        self.assertTrue(has_upstream_template(sourcepackage))
+        lfa = self.makeTranslationsLFA()
+        transaction.commit()
+        spr.attachTranslationFiles(lfa, True, spr.maintainer)
+        translation_import_queue = getUtility(ITranslationImportQueue)
+        entries_in_queue = translation_import_queue.getAllEntries(
+                target=sourcepackage).count()
+        self.assertEqual(0, entries_in_queue)

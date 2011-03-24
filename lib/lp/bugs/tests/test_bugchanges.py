@@ -217,6 +217,22 @@ class TestBugChanges(TestCaseWithFactory):
             person=self.user)
         self.assertRecordedChange(expected_activity=unsubscribe_activity)
 
+    def test_unsubscribe_private_bug(self):
+        # Test that a person can unsubscribe themselves from a private bug
+        # that they are not assigned to.
+        subscriber = self.factory.makePerson(displayname='Mom')
+        # Create the private bug.
+        bug = self.factory.makeBug(
+            product=self.product, owner=self.user, private=True)
+        bug.subscribe(subscriber, self.user)
+        self.saveOldChanges(bug=bug)
+        bug.unsubscribe(subscriber, subscriber)
+        unsubscribe_activity = dict(
+            whatchanged=u'removed subscriber Mom',
+            person=subscriber)
+        self.assertRecordedChange(
+            expected_activity=unsubscribe_activity, bug=bug)
+
     def test_title_changed(self):
         # Changing the title of a Bug adds items to the activity log and
         # the Bug's notifications.
@@ -1131,40 +1147,35 @@ class TestBugChanges(TestCaseWithFactory):
             expected_activity=expected_activity,
             expected_notification=expected_notification)
 
-    def test_unassign_bugtask(self):
+    def _test_unassign_bugtask(self, bug_task, expected_recipients):
+        # A helper method used by tests for unassigning public and private bug
+        # tasks.
         # Unassigning a bug task assigned to someone adds entries to the
         # bug activity and notifications sets.
-        old_assignee = self.factory.makePerson()
-        self.bug_task.transitionToAssignee(old_assignee)
-        self.saveOldChanges()
 
+        old_assignee = bug_task.assignee
         bug_task_before_modification = Snapshot(
-            self.bug_task, providing=providedBy(self.bug_task))
+            bug_task, providing=providedBy(bug_task))
 
-        self.bug_task.transitionToAssignee(None)
+        bug_task.transitionToAssignee(None)
 
         notify(ObjectModifiedEvent(
-            self.bug_task, bug_task_before_modification,
+            bug_task, bug_task_before_modification,
             ['assignee'], user=self.user))
 
         expected_activity = {
             'person': self.user,
-            'whatchanged': '%s: assignee' % self.bug_task.bugtargetname,
+            'whatchanged': '%s: assignee' % bug_task.bugtargetname,
             'oldvalue': old_assignee.unique_displayname,
             'newvalue': None,
             'message': None,
             }
 
-        # The old assignee got notified about the change, in addition
-        # to the default recipients.
-        expected_recipients = [
-            self.user, self.product_metadata_subscriber, old_assignee]
-
         expected_notification = {
             'text': (
                 u'** Changed in: %s\n'
                 u'     Assignee: %s => (unassigned)' % (
-                    self.bug_task.bugtargetname,
+                    bug_task.bugtargetname,
                     old_assignee.unique_displayname)),
             'person': self.user,
             'recipients': expected_recipients,
@@ -1172,7 +1183,42 @@ class TestBugChanges(TestCaseWithFactory):
 
         self.assertRecordedChange(
             expected_activity=expected_activity,
-            expected_notification=expected_notification)
+            expected_notification=expected_notification,
+            bug=bug_task.bug)
+
+    def test_unassign_bugtask(self):
+        # Test that unassigning a public bug task adds entries to the
+        # bug activity and notifications sets.
+        old_assignee = self.factory.makePerson()
+        self.bug_task.transitionToAssignee(old_assignee)
+        self.saveOldChanges()
+        # The old assignee got notified about the change, in addition
+        # to the default recipients.
+        expected_recipients = [
+            self.user, self.product_metadata_subscriber, old_assignee]
+        self._test_unassign_bugtask(self.bug_task, expected_recipients)
+
+    def test_unassign_private_bugtask(self):
+        # Test that unassigning a private bug task adds entries to the
+        # bug activity and notifications sets. This test creates a private bug
+        # that the user can only see because they are assigned to it. The user
+        # then unassigns themselves.
+
+        # Create the private bug.
+        bug = self.factory.makeBug(
+            product=self.product, owner=self.user, private=True)
+        bug_task = bug.bugtasks[0]
+        # Create a test assignee.
+        old_assignee = self.factory.makePerson()
+        # As the bug owner, assign the test assignee..
+        with person_logged_in(self.user):
+            bug_task.transitionToAssignee(old_assignee)
+            self.saveOldChanges(bug=bug)
+
+        # Only the bug owner will get notified about the change.
+        expected_recipients = [self.user]
+        with person_logged_in(old_assignee):
+            self._test_unassign_bugtask(bug_task, expected_recipients)
 
     def test_target_bugtask_to_milestone(self):
         # When a bugtask is targetted to a milestone BugActivity and
