@@ -431,7 +431,6 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
         self.assertContentEqual(
             [resolved_diff], filtered_view.cached_differences.batch)
 
-
     def test_canPerformSync_non_editor(self):
         # Non-editors do not see options to sync.
         derived_series = self.factory.makeDistroSeries(
