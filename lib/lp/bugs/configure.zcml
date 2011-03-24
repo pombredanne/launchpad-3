@@ -739,7 +739,6 @@
                     getSubscriptionsFromDuplicates
                     getSubscribersForPerson
                     getSubscriptionForPerson
-                    getStructuralSubscriptionsForPerson
                     getSubscriptionInfo
                     indexed_messages
                     _indexed_messages
