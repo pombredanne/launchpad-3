@@ -71,8 +71,8 @@ class InitialiseDistroSeriesJob(DistributionJobDerived):
     def run(self):
         """See `IRunnableJob`."""
         ids = InitialiseDistroSeries(
-            self.distroseries, self.arches, self.packagesets,
-            self.rebuild)
+            self.parent, self.distroseries, self.arches,
+            self.packagesets, self.rebuild)
         ids.check()
         ids.initialise()
 

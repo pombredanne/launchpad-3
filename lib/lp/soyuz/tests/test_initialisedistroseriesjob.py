@@ -71,19 +71,16 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
         self.job_source.create(parent, distroseries)
         self.assertRaises(IntegrityError, flush_database_caches)
 
-    def test_run(self):
-        """Test that InitialiseDistroSeriesJob.run() actually
-        initialises builds and copies from the parent."""
+    def test_run_with_parent_series_already_set(self):
+        # InitialisationError is raised if the parent series is already set on
+        # the child.
         parent = self.factory.makeDistroSeries()
-        distroseries = self.factory.makeDistroSeries()
-
+        distroseries = self.factory.makeDistroSeries(parent_series=parent)
         job = self.job_source.create(parent, distroseries)
-
-        # Since our new distroseries doesn't have a parent set, and the first
-        # thing that run() will execute is checking the distroseries, if it
-        # returns an InitialisationError, then it's good.
         self.assertRaisesWithContent(
-            InitialisationError, "Parent series required.", job.run)
+            InitialisationError,
+            "Parent series has already been initialized.",
+            job.run)
 
     def test_arguments(self):
         """Test that InitialiseDistroSeriesJob specified with arguments can
@@ -145,10 +142,8 @@ class InitialiseDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
             distroseries=parent)
         test1.addSources('udev')
         parent.updatePackageCount()
-        child = self.factory.makeDistroSeries(parent_series=parent)
-
-        # Make sure everything hits the database, switching db users
-        # aborts.
+        child = self.factory.makeDistroSeries()
+        # Make sure everything hits the database, switching db users aborts.
         transaction.commit()
         return parent, child
 
