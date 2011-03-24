@@ -49,6 +49,14 @@ def add_custom_loglevels():
     # custom loglevels.
     logging.setLoggerClass(loglevels.LaunchpadLogger)
 
+    # Fix the root logger, replacing it with an instance of our
+    # customized Logger. The original one is instantiated on import of
+    # the logging module, so our override does not take effect without
+    # this manual effort.
+    logging.root = loglevels.LaunchpadLogger('root', loglevels.WARNING)
+    logging.Logger.root = logging.root
+    logging.Logger.manager = logging.Manager(logging.root)
+
 
 def silence_bzr_logger():
     """Install the NullHandler on the bzr logger to silence logs."""
