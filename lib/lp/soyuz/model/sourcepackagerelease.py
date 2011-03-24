@@ -626,9 +626,12 @@ class SourcePackageRelease(SQLBase):
         # We do not want to override upstream translations, if
         # translation sharing is enabled.
         # Avoid circular imports.
-        from lp.translations.utilities.translationsharinginfo import (
-            has_upstream_template)
-        if not has_upstream_template(self.sourcepackage):
+        productseries = self.sourcepackage.productseries
+        has_upstream_templates = (
+            productseries is not None and
+            productseries.has_translation_templates
+            )
+        if not has_upstream_templates:
             queue.addOrUpdateEntriesFromTarball(
                 tarball, by_maintainer, importer,
                 sourcepackagename=self.sourcepackagename,
