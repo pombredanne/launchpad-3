@@ -10,6 +10,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import ILaunchBag
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.testing.pages import (
     first_tag_by_class,
     )
@@ -36,6 +37,10 @@ from lp.registry.browser.distributionsourcepackage import (
     DistributionSourcePackageBugsMenu,
     )
 
+from lp.services.features import (
+    getFeatureFlag,
+    get_relevant_feature_controller,
+    )
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     celebrity_logged_in,
@@ -62,6 +67,14 @@ class _TestStructSubs(TestCaseWithFactory):
     def setUp(self):
         super(_TestStructSubs, self).setUp()
         self.regular_user = self.factory.makePerson()
+
+    def create_view(self, user, rootsite=None):
+        request = LaunchpadTestRequest(
+            PATH_INFO='/', HTTP_COOKIE='',QUERY_STRING='')
+        request.features = get_relevant_feature_controller()
+        return create_initialized_view(
+            self.target, '+index', principal=user, rootsite=rootsite,
+            request=request)
 
     def test_subscribe_link_feature_flag_off_owner(self):
         links, old_link, new_link = self._create_scenario(
@@ -123,8 +136,7 @@ class TestProductViewStructSubs(_TestStructSubs):
         with person_logged_in(user):
             with FeatureFixture({self.feature_flag: flag}):
                 menu = ProductActionNavigationMenu(self.target)
-                view = create_initialized_view(
-                    self.target, '+index', principal=user)
+                view = self.create_view(user)
                 html = view.render()
                 old_link = first_tag_by_class(html, 'menu-link-subscribe')
                 new_link = first_tag_by_class(
@@ -139,8 +151,7 @@ class TestProductBugsStructSubs(TestProductViewStructSubs):
         with person_logged_in(user):
             with FeatureFixture({self.feature_flag: flag}):
                 menu = ProductBugsMenu(self.target)
-                view = create_initialized_view(
-                    self.target, '+index', rootsite='bugs', principal=user)
+                view = self.create_view(user, rootsite='bugs')
                 html = view.render()
                 old_link = first_tag_by_class(html, 'menu-link-subscribe')
                 new_link = first_tag_by_class(
@@ -159,8 +170,7 @@ class TestProjectGroupViewStructSubs(_TestStructSubs):
         with person_logged_in(user):
             with FeatureFixture({self.feature_flag: flag}):
                 menu = ProjectActionMenu(self.target)
-                view = create_initialized_view(
-                    self.target, '+index', principal=user)
+                view = self.create_view(user)
                 html = view.render()
                 old_link = first_tag_by_class(html, 'menu-link-subscribe')
                 new_link = first_tag_by_class(
@@ -175,8 +185,7 @@ class TestProjectGroupBugsStructSubs(TestProjectGroupViewStructSubs):
         with person_logged_in(user):
             with FeatureFixture({self.feature_flag: flag}):
                 menu = ProjectBugsMenu(self.target)
-                view = create_initialized_view(
-                    self.target, '+index', rootsite='bugs', principal=user)
+                view = self.create_view(user, rootsite='bugs')
                 html = view.render()
                 old_link = first_tag_by_class(html, 'menu-link-subscribe')
                 new_link = first_tag_by_class(
@@ -194,9 +203,9 @@ class TestProductSeriesViewStructSubs(_TestStructSubs):
     def _create_scenario(self, user, flag):
         with person_logged_in(user):
             with FeatureFixture({self.feature_flag: flag}):
+                self.assertEqual(flag, getFeatureFlag(self.feature_flag))
                 menu = ProductSeriesOverviewMenu(self.target)
-                view = create_initialized_view(
-                    self.target, '+index', principal=user)
+                view = self.create_view(user)
                 html = view.render()
                 old_link = first_tag_by_class(html, 'menu-link-subscribe')
                 new_link = first_tag_by_class(
@@ -211,8 +220,7 @@ class TestProductSeriesBugsStructSubs(TestProductSeriesViewStructSubs):
         with person_logged_in(user):
             with FeatureFixture({self.feature_flag: flag}):
                 menu = ProductSeriesBugsMenu(self.target)
-                view = create_initialized_view(
-                    self.target, '+index', rootsite='bugs', principal=user)
+                view = self.create_view(user, rootsite='bugs')
                 html = view.render()
                 old_link = first_tag_by_class(html, 'menu-link-subscribe')
                 new_link = first_tag_by_class(
@@ -235,8 +243,7 @@ class TestDistroViewStructSubs(_TestStructSubs):
         with person_logged_in(user):
             with FeatureFixture({self.feature_flag: flag}):
                 menu = DistributionNavigationMenu(self.target)
-                view = create_initialized_view(
-                    self.target, '+index', principal=user)
+                view = self.create_view(user)
                 html = view.render()
                 old_link = first_tag_by_class(html, 'menu-link-subscribe')
                 new_link = first_tag_by_class(
@@ -323,8 +330,7 @@ class TestDistroBugsStructSubs(TestDistroViewStructSubs):
         with person_logged_in(user):
             with FeatureFixture({self.feature_flag: flag}):
                 menu = DistributionBugsMenu(self.target)
-                view = create_initialized_view(
-                    self.target, '+index', rootsite='bugs', principal=user)
+                view = self.create_view(user, rootsite='bugs')
                 html = view.render()
                 old_link = first_tag_by_class(html, 'menu-link-subscribe')
                 new_link = first_tag_by_class(
@@ -366,8 +372,7 @@ class TestDistributionSourcePackageViewStructSubs(_TestStructSubs):
         with person_logged_in(user):
             with FeatureFixture({self.feature_flag: flag}):
                 menu = DistributionSourcePackageActionMenu(self.target)
-                view = create_initialized_view(
-                    self.target, '+index', principal=user)
+                view = self.create_view(user)
                 html = view.render()
                 old_link = first_tag_by_class(html, 'menu-link-subscribe')
                 new_link = first_tag_by_class(
@@ -387,8 +392,7 @@ class TestDistributionSourcePackageBugsStructSubs(
         with person_logged_in(user):
             with FeatureFixture({self.feature_flag: flag}):
                 menu = DistributionSourcePackageBugsMenu(self.target)
-                view = create_initialized_view(
-                    self.target, '+index', rootsite='bugs', principal=user)
+                view = self.create_view(user, rootsite='bugs')
                 html = view.render()
                 old_link = first_tag_by_class(html, 'menu-link-subscribe')
                 new_link = first_tag_by_class(
