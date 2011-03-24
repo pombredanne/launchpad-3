@@ -146,6 +146,7 @@ class IStructuralSubscriptionTargetRead(Interface):
 
     @call_with(user=REQUEST_USER)
     @export_read_operation()
+    @operation_for_version('beta')
     def userHasBugSubscriptions(user):
         """Is `user` subscribed, directly or via a team, to bug mail?"""
 
@@ -200,6 +201,7 @@ class IStructuralSubscriptionTargetWrite(Interface):
             required=False))
     @call_with(subscribed_by=REQUEST_USER)
     @export_factory_operation(Interface, []) # Really IBugSubscriptionFilter
+    @operation_for_version('beta')
     def addBugSubscriptionFilter(subscriber, subscribed_by):
         """Add a bug subscription filter for this structure.
 
