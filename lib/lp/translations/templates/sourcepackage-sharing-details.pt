@@ -36,7 +36,7 @@
             <li tal:attributes="class view/packaging_incomplete_class"
                 id="packaging-incomplete">
                 No upstream project series has been linked.
-                <a tal:replace="structure context/menu:overview/edit_packaging/fmt:icon" />
+                <a tal:replace="structure context/menu:overview/set_upstream/fmt:icon" />
             </li>
             <li tal:attributes="class view/packaging_complete_class"
                 id="packaging-complete">
