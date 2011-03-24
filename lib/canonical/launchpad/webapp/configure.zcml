@@ -58,6 +58,11 @@
         provides="lazr.restful.interfaces.IWebBrowserOriginatingRequest"
         factory="canonical.launchpad.webapp.servers.web_service_request_to_browser_request"
         />
+    <adapter
+        for="canonical.launchpad.layers.WebServiceLayer"
+        provides="lazr.restful.interfaces.INotificationsProvider"
+        factory="canonical.launchpad.webapp.servers.web_service_request_to_notification_request"
+        />
 
     <!-- lazr.batchnavigator hook -->
     <adapter
