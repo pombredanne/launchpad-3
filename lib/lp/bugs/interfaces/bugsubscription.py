@@ -65,11 +65,12 @@ class IBugSubscription(Interface):
     date_created = exported(
         Datetime(title=_('Date subscribed'), required=True, readonly=True),
         as_of="beta")
-    subscribed_by = exported(PersonChoice(
-        title=_('Subscribed by'), required=True,
-        vocabulary='ValidPersonOrTeam', readonly=True,
-        description=_("The person who created this subscription.")),
-                             as_of="beta")
+    subscribed_by = exported(
+        PersonChoice(
+            title=_('Subscribed by'), required=True,
+            vocabulary='ValidPersonOrTeam', readonly=True,
+            description=_("The person who created this subscription.")),
+        as_of="beta")
 
     display_subscribed_by = Attribute(
         "`subscribed_by` formatted for display.")

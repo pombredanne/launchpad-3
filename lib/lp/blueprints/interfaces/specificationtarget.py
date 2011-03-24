@@ -66,7 +66,7 @@ class IHasSpecifications(Interface):
                 'All specifications that are not obsolete. When called from '
                 'an ISpecificationGoal it will also exclude the ones that '
                 'have not been accepted for that goal'))),
-        as_of="devel")
+                                    as_of="devel")
 
     latest_specifications = Attribute(
         "The latest 5 specifications registered for this context.")
