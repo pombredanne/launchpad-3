@@ -11,6 +11,9 @@ import os
 from lazr.js.build import ComboFile
 from lazr.js.combo import combine_files
 
+# This constant helps us meet maximum line-length goals.
+GALLERY_ACCORDION = 'yui3-gallery/gallery-accordion/assets/'
+
 
 root = os.path.abspath('.')
 root = os.path.normpath(${buildout:directory|path-repr})
@@ -34,8 +37,8 @@ names = [
     'lazr/build/picker/assets/skins/sam/picker.css',
     'lazr/build/activator/assets/skins/sam/activator.css',
     'lazr/build/choiceedit/assets/choiceedit-core.css',
-    'yui3-gallery/gallery-accordion/assets/gallery-accordion-core.css',
-    'yui3-gallery/gallery-accordion/assets/skins/sam/gallery-accordion-skin.css',
+    GALLERY_ACCORDION + 'gallery-accordion-core.css',
+    GALLERY_ACCORDION + 'skins/sam/gallery-accordion-skin.css',
     'build/sprite.css',
     # This one goes at the end because it's our main stylesheet and should
     # take precedence over the others.
