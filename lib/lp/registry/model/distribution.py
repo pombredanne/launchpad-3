@@ -207,9 +207,6 @@ from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
 from lp.translations.model.translationpolicy import TranslationPolicyMixin
-from lp.translations.utilities.translationsharinginfo import (
-    has_upstream_template,
-    )
 
 
 class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
@@ -478,8 +475,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             arch_mirrors = list(Store.of(self).find(
                 (MirrorDistroArchSeries.distribution_mirrorID,
                  Max(MirrorDistroArchSeries.freshness)),
-                MirrorDistroArchSeries.distribution_mirrorID.is_in(mirror_ids)
-            ).group_by(MirrorDistroArchSeries.distribution_mirrorID))
+                MirrorDistroArchSeries.distribution_mirrorID.is_in(
+                    mirror_ids)).group_by(
+                        MirrorDistroArchSeries.distribution_mirrorID))
             arch_mirror_freshness = {}
             arch_mirror_freshness.update(
                 [(mirror_id, MirrorFreshness.items[mirror_freshness]) for
@@ -778,7 +776,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def getCurrentSourceReleases(self, source_package_names):
         """See `IDistribution`."""
         return getUtility(IDistributionSet).getCurrentSourceReleases(
-            {self:source_package_names})
+            {self: source_package_names})
 
     @property
     def has_any_specifications(self):
@@ -1824,7 +1822,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         assert sourcepackage is not None, (
             "Translations sharing policy requires a SourcePackage.")
 
-        if not has_upstream_template(sourcepackage):
+        productseries = sourcepackage.productseries
+        has_upstream_translations = (
+            productseries is not None and
+            productseries.has_current_translation_templates)
+        if not has_upstream_translations:
             # There is no known upstream template or series.  Take the
             # uploader's word for whether these are upstream translations
             # (in which case they're shared) or not.
@@ -1839,8 +1841,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # translations for upstream.
             return purportedly_upstream
 
-        upstream_product = sourcepackage.productseries.product
-        return upstream_product.invitesTranslationEdits(person, language)
+        return productseries.product.invitesTranslationEdits(person, language)
 
 
 class DistributionSet:
