@@ -22,7 +22,6 @@ LEVEL_PREFIXES = dict(
     for debug_level in xrange(loglevels.DEBUG9, loglevels.DEBUG))
 
 LEVEL_PREFIXES.update({
-    None: 'log>',
     loglevels.DEBUG: 'DEBUG',
     loglevels.INFO: 'INFO',
     loglevels.WARNING: 'WARNING',
@@ -96,6 +95,30 @@ class FakeLogger:
 
     def debug(self, *stuff, **kw):
         self.message(loglevels.DEBUG, *stuff, **kw)
+
+    def debug2(self, *stuff, **kw):
+        self.message(loglevels.DEBUG2, *stuff, **kw)
+
+    def debug3(self, *stuff, **kw):
+        self.message(loglevels.DEBUG3, *stuff, **kw)
+
+    def debug4(self, *stuff, **kw):
+        self.message(loglevels.DEBUG4, *stuff, **kw)
+
+    def debug5(self, *stuff, **kw):
+        self.message(loglevels.DEBUG5, *stuff, **kw)
+
+    def debug6(self, *stuff, **kw):
+        self.message(loglevels.DEBUG6, *stuff, **kw)
+
+    def debug7(self, *stuff, **kw):
+        self.message(loglevels.DEBUG7, *stuff, **kw)
+
+    def debug8(self, *stuff, **kw):
+        self.message(loglevels.DEBUG8, *stuff, **kw)
+
+    def debug9(self, *stuff, **kw):
+        self.message(loglevels.DEBUG9, *stuff, **kw)
 
 
 class DevNullLogger(FakeLogger):
