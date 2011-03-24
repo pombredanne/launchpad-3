@@ -245,7 +245,10 @@ class TestDistroSeriesDifferenceJobEndToEnd(TestCaseWithFactory):
         return self.factory.makeDistroSeries(
             parent_series=self.factory.makeDistroSeries())
 
-    def createPublication(self, source_package_name, versions, distroseries):
+    def createPublication(self, source_package_name, versions, distroseries,
+                          archive=None):
+        if archive is None:
+            archive = distroseries.main_archive
         changelog_lfa = self.factory.makeChangelog(
             source_package_name.name, versions)
         transaction.commit() # Yay, librarian.
@@ -253,7 +256,7 @@ class TestDistroSeriesDifferenceJobEndToEnd(TestCaseWithFactory):
             sourcepackagename=source_package_name, version=versions[0],
             changelog=changelog_lfa)
         return self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagerelease=spr, archive=distroseries.main_archive,
+            sourcepackagerelease=spr, archive=archive,
             distroseries=distroseries,
             status=PackagePublishingStatus.PUBLISHED)
 
@@ -417,6 +420,27 @@ class TestDistroSeriesDifferenceJobEndToEnd(TestCaseWithFactory):
             DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES,
             ds_diff[0].difference_type)
 
+    def test_no_job_for_PPA(self):
+        # If a source package is uploaded to a PPA, a job is not created.
+        derived_series = self.makeDerivedDistroSeries()
+        source_package_name = self.factory.makeSourcePackageName()
+        ppa = self.factory.makeArchive()
+        self.createPublication(
+            source_package_name, ['1.0-1'], derived_series, ppa)
+        jobs = find_waiting_jobs(derived_series, source_package_name)
+        self.assertEqual(0, jobs.count())
+
+    def test_no_job_for_PPA_with_deleted_source(self):
+        # If a source package is deleted from a PPA, no job is created.
+        derived_series = self.makeDerivedDistroSeries()
+        source_package_name = self.factory.makeSourcePackageName()
+        ppa = self.factory.makeArchive()
+        spph = self.createPublication(
+            source_package_name, ['1.0-1'], derived_series, ppa)
+        spph.requestDeletion(ppa.owner)
+        jobs = find_waiting_jobs(derived_series, source_package_name)
+        self.assertEqual(0, jobs.count())
+
 
 class TestDistroSeriesDifferenceJobPermissions(TestCaseWithFactory):
     """Database permissions test for `DistroSeriesDifferenceJob`."""
@@ -426,6 +450,7 @@ class TestDistroSeriesDifferenceJobPermissions(TestCaseWithFactory):
     def test_permissions(self):
         script_users = [
             'archivepublisher',
+            'gina',
             'queued',
             'uploader',
             ]

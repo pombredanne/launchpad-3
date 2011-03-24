@@ -90,6 +90,9 @@ from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
+from lp.soyuz.interfaces.archive import (
+    CannotCopy,
+    )
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.translations.browser.distroseries import (
     check_distroseries_translations_viewable,
@@ -532,6 +535,7 @@ class DistroSeriesPackagesView(LaunchpadView):
 NON_BLACKLISTED = 'non-blacklisted'
 BLACKLISTED = 'blacklisted'
 HIGHER_VERSION_THAN_PARENT = 'higher-than-parent'
+RESOLVED = 'resolved'
 
 DEFAULT_PACKAGE_TYPE = NON_BLACKLISTED
 
@@ -545,7 +549,11 @@ def make_package_type_vocabulary(parent_name):
             HIGHER_VERSION_THAN_PARENT,
             HIGHER_VERSION_THAN_PARENT,
             "Blacklisted packages with a higher version than in '%s'"
-                % parent_name)))
+                % parent_name),
+        SimpleTerm(
+            RESOLVED,
+            RESOLVED,
+            "Resolved packages")))
 
 
 class DistroSeriesNeedsPackagesView(LaunchpadView):
@@ -644,19 +652,27 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
     @action(_("Sync Sources"), name="sync", validator='validate_sync',
             condition='canPerformSync')
     def sync_sources(self, action, data):
-        """Mark the diffs as syncing and request the sync.
+        """Synchronise packages from the parent series to this one."""
+        # We're doing a direct copy sync here as an interim measure
+        # until we work out if it's fast enough to work reliably.  If it
+        # isn't, we need to implement a way of flagging sources 'to be
+        # synced' and write a job runner to do it in the background.
 
-        Currently this is a stub operation, the details of which will
-        be implemented later.
-        """
         selected_differences = data['selected_differences']
         diffs = [
             diff.source_package_name.name
                 for diff in selected_differences]
 
-        self.request.response.addNotification(
-            "The following sources would have been synced if this "
-            "wasn't just a stub operation: " + ", ".join(diffs))
+        try:
+            self.context.main_archive.syncSources(
+                diffs, from_archive=self.context.parent_series.main_archive,
+                to_pocket='Release', to_series=self.context.name)
+        except CannotCopy, e:
+            self.request.response.addErrorNotification("Cannot copy: %s" % e)
+        else:
+            self.request.response.addNotification(
+                "The following sources were synchronized: " +
+                ", ".join(diffs))
 
         self.next_url = self.request.URL
 
@@ -714,6 +730,9 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
             status=(
                 DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
             child_version_higher = True
+        elif self.specified_package_type == RESOLVED:
+            status=DistroSeriesDifferenceStatus.RESOLVED
+            child_version_higher = False
         else:
             raise AssertionError('specified_package_type unknown')
 
