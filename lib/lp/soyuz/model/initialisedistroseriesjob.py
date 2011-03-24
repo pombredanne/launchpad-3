@@ -16,6 +16,7 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
+from lp.registry.model.distroseries import DistroSeries
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.interfaces.distributionjob import (
     DistributionJobType,
@@ -26,7 +27,6 @@ from lp.soyuz.model.distributionjob import (
     DistributionJob,
     DistributionJobDerived,
     )
-from lp.registry.model.distroseries import DistroSeries
 from lp.soyuz.scripts.initialise_distroseries import InitialiseDistroSeries
 
 
@@ -41,7 +41,7 @@ class InitialiseDistroSeriesJob(DistributionJobDerived):
     def create(cls, parent, child, arches=(), packagesets=(), rebuild=False):
         """See `IInitialiseDistroSeriesJob`."""
         metadata = {
-            'parent_distroseries': parent.id,
+            'parent': parent.id,
             'arches': arches,
             'packagesets': packagesets,
             'rebuild': rebuild,
@@ -53,9 +53,9 @@ class InitialiseDistroSeriesJob(DistributionJobDerived):
         return cls(job)
 
     @cachedproperty
-    def parent_distroseries(self):
-        IStore(DistroSeries).get(
-            DistroSeries, self.metadata["parent_distroseries"])
+    def parent(self):
+        return IStore(DistroSeries).get(
+            DistroSeries, self.metadata["parent"])
 
     @property
     def arches(self):
@@ -80,7 +80,5 @@ class InitialiseDistroSeriesJob(DistributionJobDerived):
     def getOopsVars(self):
         """See `IRunnableJob`."""
         vars = super(InitialiseDistroSeriesJob, self).getOopsVars()
-        vars.append(
-            ('parent_distroseries_id',
-             self.metadata.get("parent_distroseries")))
+        vars.append(('parent_distroseries_id', self.metadata.get("parent")))
         return vars
