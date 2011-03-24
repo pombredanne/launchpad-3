@@ -25,13 +25,11 @@ class TargetSubscriptionViewTestCase(TestCaseWithFactory):
             name='widgetsrus', displayname='Widgets R Us')
         self.subscriber = self.factory.makePerson()
 
-    def test_identify_structural_subscriptions(self):
-        # This shows simply that we can identify the structural
-        # subscriptions for the page.  The content will come later.
+    def test_form_initializes(self):
+        # It's a start.
         with person_logged_in(self.subscriber):
             sub = self.product.addBugSubscription(
                 self.subscriber, self.subscriber)
             harness = LaunchpadFormHarness(
                 self.product, TargetSubscriptionView)
-            self.assertEqual(
-                list(harness.view.structural_subscriptions), [sub])
+            harness.view.initialize()

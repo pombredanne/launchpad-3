@@ -39,8 +39,14 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.bugs.browser.bug import BugViewMixin
+from lp.bugs.browser.structuralsubscription import (
+    StructuralSubscriptionJSMixin,
+    )
 from lp.bugs.enum import BugNotificationLevel, HIDDEN_BUG_NOTIFICATION_LEVELS
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
+from lp.bugs.model.structuralsubscription import (
+    get_structural_subscriptions_for_bug,
+    )
 from lp.services import features
 from lp.services.propertycache import cachedproperty
 
@@ -572,8 +578,13 @@ class SubscriptionAttrDecorator:
         return 'subscriber-%s' % self.subscription.person.id
 
 
-class BugSubscriptionListView(LaunchpadView):
+class BugSubscriptionListView(StructuralSubscriptionJSMixin, LaunchpadView):
     """A view to show all a person's subscriptions to a bug."""
+
+    @property
+    def subscriptions(self):
+        return get_structural_subscriptions_for_bug(
+            self.context.bug, self.user)
 
     @property
     def label(self):
@@ -581,10 +592,6 @@ class BugSubscriptionListView(LaunchpadView):
             self.user.displayname, self.context.bug.id)
 
     page_title = label
-
-    @property
-    def structural_subscriptions(self):
-        return self.context.bug.getStructuralSubscriptionsForPerson(self.user)
 
 
 class BugMuteSelfView(LaunchpadFormView):
