@@ -302,6 +302,16 @@ class ITeamMembershipSet(Interface):
         TeamMembership and I'll return None.
         """
 
+    def deactivateActiveMemberships(team, comment, reviewer):
+        """Deactivate all team members in ACTIVE_STATES.
+
+        This is a convenience method used before teams are deleted.
+
+        :param team: The team to deactivate.
+        :param comment: An explanation for the deactivation.
+        :param reviewer: The user doing the deactivation.
+        """
+
 
 class ITeamParticipation(Interface):
     """A TeamParticipation.

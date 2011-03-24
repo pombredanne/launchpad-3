@@ -4,6 +4,7 @@
 """Returns rules defining which features are active"""
 
 __all__ = [
+    'DuplicatePriorityError',
     'FeatureRuleSource',
     'NullFeatureRuleSource',
     'StormFeatureRuleSource',

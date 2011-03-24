@@ -36,6 +36,7 @@ from lazr.restful.declarations import (
 from lazr.restful.fields import (
     CollectionField,
     Reference,
+    ReferenceChoice,
     )
 from lazr.restful.interface import copy_field
 from zope.interface import (
@@ -47,6 +48,7 @@ from zope.schema import (
     Choice,
     Datetime,
     Int,
+    List,
     Text,
     TextLine,
     )
@@ -181,26 +183,6 @@ class ISourcePackageRecipeView(Interface):
         """
 
 
-class ISourcePackageRecipeEdit(Interface):
-    """ISourcePackageRecipe methods that require launchpad.Edit permission."""
-
-    @mutator_for(ISourcePackageRecipeView['recipe_text'])
-    @operation_for_version("devel")
-    @operation_parameters(
-        recipe_text=copy_field(
-            ISourcePackageRecipeView['recipe_text']))
-    @export_write_operation()
-    def setRecipeText(recipe_text):
-        """Set the text of the recipe."""
-
-    def destroySelf():
-        """Remove this SourcePackageRecipe from the database.
-
-        This requires deleting any rows with non-nullable foreign key
-        references to this object.
-        """
-
-
 class ISourcePackageRecipeEditableAttributes(IHasOwner):
     """ISourcePackageRecipe attributes that can be edited.
 
@@ -219,10 +201,13 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
             vocabulary='UserTeamsParticipationPlusSelf',
             description=_("The person or team who can edit this recipe.")))
 
-    distroseries = CollectionField(
-        Reference(IDistroSeries), title=_("The distroseries this recipe will"
-            " build a source package for"),
-        readonly=False)
+    distroseries = exported(List(
+        ReferenceChoice(schema=IDistroSeries,
+            vocabulary='BuildableDistroSeries'),
+        title=_("Default distribution series"),
+        description=_("If built daily, these are the distribution "
+            "versions that the recipe will be built for."),
+        readonly=True))
     build_daily = exported(Bool(
         title=_("Built daily"),
         description=_(
@@ -245,6 +230,34 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
     is_stale = Bool(title=_('Recipe is stale.'))
 
 
+class ISourcePackageRecipeEdit(Interface):
+    """ISourcePackageRecipe methods that require launchpad.Edit permission."""
+
+    @mutator_for(ISourcePackageRecipeView['recipe_text'])
+    @operation_for_version("devel")
+    @operation_parameters(
+        recipe_text=copy_field(
+            ISourcePackageRecipeView['recipe_text']))
+    @export_write_operation()
+    def setRecipeText(recipe_text):
+        """Set the text of the recipe."""
+
+    @mutator_for(ISourcePackageRecipeEditableAttributes['distroseries'])
+    @operation_parameters(distroseries=copy_field(
+        ISourcePackageRecipeEditableAttributes['distroseries']))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def updateSeries(distroseries):
+        """Replace this recipe's distro series."""
+
+    def destroySelf():
+        """Remove this SourcePackageRecipe from the database.
+
+        This requires deleting any rows with non-nullable foreign key
+        references to this object.
+        """
+
+
 class ISourcePackageRecipe(ISourcePackageRecipeData,
     ISourcePackageRecipeEdit, ISourcePackageRecipeEditableAttributes,
     ISourcePackageRecipeView):
@@ -261,7 +274,7 @@ class ISourcePackageRecipeSource(Interface):
     """
 
     def new(registrant, owner, distroseries, name,
-            builder_recipe, description):
+            builder_recipe, description, date_created):
         """Create an `ISourcePackageRecipe`."""
 
     def exists(owner, name):

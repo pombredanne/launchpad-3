@@ -380,4 +380,4 @@ the user to select the package.
     ...     name='field.distributionsourcepackage').value = ['pmount']
     >>> user_browser.getControl('Set Ubuntu Package Information').click()
     >>> print_feedback_messages(user_browser.contents)
-    This project was linked to the source package "pmount in ubuntu"
+    This project was linked to the source package "pmount in Ubuntu"

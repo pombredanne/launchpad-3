@@ -98,6 +98,9 @@ from lp.app.widgets.product import (
     )
 from lp.bugs.browser.bugrole import BugRoleMixin
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
+from lp.bugs.browser.structuralsubscription import (
+    StructuralSubscriptionJSMixin,
+    )
 from lp.bugs.browser.widgets.bug import (
     BugTagsWidget,
     LargeBugTagsWidget,
@@ -127,7 +130,7 @@ from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.structuralsubscription import (
-    get_all_structural_subscriptions_for_target,
+    get_structural_subscriptions_for_target,
     )
 from lp.bugs.utilities.filebugdataparser import FileBugData
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
@@ -1562,16 +1565,16 @@ class BugsPatchesView(LaunchpadView):
         return ProxiedLibraryFileAlias(patch.libraryfile, patch).http_url
 
 
-class TargetSubscriptionView(LaunchpadView):
+class TargetSubscriptionView(StructuralSubscriptionJSMixin, LaunchpadView):
     """A view to show all a person's structural subscriptions to a target."""
+
+    @property
+    def subscriptions(self):
+        return get_structural_subscriptions_for_target(
+            self.context, self.user)
 
     @property
     def label(self):
         return "Your subscriptions to %s" % (self.context.displayname,)
 
     page_title = label
-
-    @property
-    def structural_subscriptions(self):
-        return get_all_structural_subscriptions_for_target(
-            self.context, self.user)
