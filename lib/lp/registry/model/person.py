@@ -216,6 +216,7 @@ from lp.registry.interfaces.mailinglist import (
     IMailingListSet,
     MailingListStatus,
     PostedMessageStatus,
+    PURGE_STATES,
     )
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
@@ -3801,23 +3802,25 @@ class PersonSet:
             ''' % vars())
 
     def _purgeUnmergableTeamArtifacts(self, team):
-        """Remove team artifacts that cannot be merged."""
+        """Purge team artifacts that cannot be merged, but can be removed."""
+        # A team cannot have more than one mailing list.
         mailing_list = getUtility(IMailingListSet).get(team.name)
-        assert (mailing_list is None or
-                mailing_list.status == MailingListStatus.PURGED), (
-            "Can't merge teams which have mailing lists into other teams.")
-        if getUtility(IArchiveSet).getPPAOwnedByPerson(
-            team, statuses=[ArchiveStatus.ACTIVE,
-                                   ArchiveStatus.DELETING]) is not None:
+        if mailing_list is not None and mailing_list.status in PURGE_STATES:
+            team.mailing_list.purge()
+        elif mailing_list is not None:
             raise AssertionError(
-                'from_person has a ppa in ACTIVE or DELETING status')
+                "Teams with active mailing lists cannot be merged.")
+        # Team email addresses are not transferable.
+        team.setContactAddress(None)
+        # Memberships in the team are not transferable
         if team.allmembers.count() > 0:
             raise AssertionError(
-                "Only teams without active members can be merged")
+                "Teams with active members cannot be merged.")
+        # Memberships in other teams are not transferable.
         if team.super_teams.count() > 0:
             raise AssertionError(
-                "Only teams without super teams can be merged.")
-
+                "Teams with super teams cannot be merged.")
+        IStore(team).flush()
 
     def mergeAsync(self, from_person, to_person):
         """See `IPersonSet`."""
@@ -3831,10 +3834,15 @@ class PersonSet:
             raise TypeError('from_person is not a person.')
         if not IPerson.providedBy(to_person):
             raise TypeError('to_person is not a person.')
-        if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
-            raise AssertionError('from_person still has email addresses.')
+        if getUtility(IArchiveSet).getPPAOwnedByPerson(
+            from_person, statuses=[ArchiveStatus.ACTIVE,
+                                   ArchiveStatus.DELETING]) is not None:
+            raise AssertionError(
+                'from_person has a ppa in ACTIVE or DELETING status')
         if from_person.is_team:
             self._purgeUnmergableTeamArtifacts(from_person)
+        if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
+            raise AssertionError('from_person still has email addresses.')
 
         # since we are doing direct SQL manipulation, make sure all
         # changes have been flushed to the database

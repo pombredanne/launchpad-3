@@ -46,6 +46,7 @@ from lp.registry.errors import (
     PrivatePersonLinkageError,
     )
 from lp.registry.interfaces.karma import IKarmaCacheManager
+from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.nameblacklist import INameBlacklistSet
 from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
@@ -702,10 +703,24 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
     def test_team_with_active_mailing_list_raises_error(self):
         # A team with an active mailing list cannot be merged.
         master_team = self.factory.makeTeam()
-        dupe_team, mailing_list = self.factory.makeTeamAndMailingList(
-            'dupe-team', 'budgie')
+        dupe_team = self.factory.makeTeam()
+        mailing_list = self.factory.makeMailingList(
+            dupe_team, dupe_team.teamowner)
         self.assertRaises(
             AssertionError, self.person_set.merge, dupe_team, master_team)
+
+    def test_team_with_inactive_mailing_list(self):
+        # A team with an inactive mailing list can be merged.
+        master_team = self.factory.makeTeam()
+        dupe_team = self.factory.makeTeam()
+        mailing_list = self.factory.makeMailingList(
+            dupe_team, dupe_team.teamowner)
+        mailing_list.deactivate()
+        mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
+        self._doMerge(dupe_team, master_team)
+        self.assertEqual(master_team, dupe_team.merged)
+        self.assertEqual(MailingListStatus.PURGED, mailing_list.status)
+        self.assertEqual([], list(dupe_team.unvalidatedemails))
 
     def test_team_without_super_teams_is_fine(self):
         # A team with no members and no super teams
