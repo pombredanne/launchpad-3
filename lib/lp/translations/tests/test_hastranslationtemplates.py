@@ -291,7 +291,7 @@ class TestProductSeriesHasTranslationTemplates(
 
     def createPackaging(self):
         self.packaging = self.factory.makePackagingLink(
-            productseries=self.container)
+            productseries=self.container, in_ubuntu=True)
         return self.packaging
 
     def createSharingTranslationTemplate(self):
