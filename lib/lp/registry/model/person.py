@@ -3800,6 +3800,25 @@ class PersonSet:
             WHERE id = %(to_id)d
             ''' % vars())
 
+    def _purgeUnmergableTeamArtifacts(self, team):
+        """Remove team artifacts that cannot be merged."""
+        mailing_list = getUtility(IMailingListSet).get(team.name)
+        assert (mailing_list is None or
+                mailing_list.status == MailingListStatus.PURGED), (
+            "Can't merge teams which have mailing lists into other teams.")
+        if getUtility(IArchiveSet).getPPAOwnedByPerson(
+            team, statuses=[ArchiveStatus.ACTIVE,
+                                   ArchiveStatus.DELETING]) is not None:
+            raise AssertionError(
+                'from_person has a ppa in ACTIVE or DELETING status')
+        if team.allmembers.count() > 0:
+            raise AssertionError(
+                "Only teams without active members can be merged")
+        if team.super_teams.count() > 0:
+            raise AssertionError(
+                "Only teams without super teams can be merged.")
+
+
     def mergeAsync(self, from_person, to_person):
         """See `IPersonSet`."""
         return getUtility(IPersonMergeJobSource).create(
@@ -3812,32 +3831,10 @@ class PersonSet:
             raise TypeError('from_person is not a person.')
         if not IPerson.providedBy(to_person):
             raise TypeError('to_person is not a person.')
-
-
-        # If the team has a mailing list, the mailing list better be in the
-        # purged state, otherwise the team can't be merged.
-        mailing_list = getUtility(IMailingListSet).get(from_person.name)
-        assert (mailing_list is None or
-                mailing_list.status == MailingListStatus.PURGED), (
-            "Can't merge teams which have mailing lists into other teams.")
-
         if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
             raise AssertionError('from_person still has email addresses.')
-
-        if getUtility(IArchiveSet).getPPAOwnedByPerson(
-            from_person, statuses=[ArchiveStatus.ACTIVE,
-                                   ArchiveStatus.DELETING]) is not None:
-            raise AssertionError(
-                'from_person has a ppa in ACTIVE or DELETING status')
-
-        if from_person.is_team and from_person.allmembers.count() > 0:
-            raise AssertionError(
-                "Only teams without active members can be merged")
-
-        if from_person.is_team and from_person.super_teams.count() > 0:
-            raise AssertionError(
-                "Only teams without super teams can be merged.")
-
+        if from_person.is_team:
+            self._purgeUnmergableTeamArtifacts(from_person)
 
         # since we are doing direct SQL manipulation, make sure all
         # changes have been flushed to the database
