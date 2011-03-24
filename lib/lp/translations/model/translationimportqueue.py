@@ -1009,7 +1009,7 @@ class TranslationImportQueue:
             path = path_filter(path)
         return path
 
-    def _isTranslationFile(self, path):
+    def _isTranslationFile(self, path, only_templates):
         """Is this a translation file that should be uploaded?"""
         if path is None or path == '':
             return False
@@ -1022,6 +1022,9 @@ class TranslationImportQueue:
         base, ext = posixpath.splitext(path)
         if ext not in translation_importer.supported_file_extensions:
             # Doesn't look like a supported translation file type.
+            return False
+
+        if only_templates and not translation_importer.isTemplateName(path):
             return False
 
         return True
@@ -1046,7 +1049,7 @@ class TranslationImportQueue:
         upload_files = {}
         for name in self._iterTarballFiles(tarball):
             path = self._makePath(name, filename_filter)
-            if self._isTranslationFile(path):
+            if self._isTranslationFile(path, only_templates):
                 upload_files[name] = path
         tarball.close()
 

@@ -1195,8 +1195,8 @@ And those new entries in the queue appear in the list.
     evolution       | None               | po/sr.po
     hoary evolution | None               | po/evolution-2.2.pot
     warty evolution | None               | po/sr.po
-    evolution       | evolution-2.2-test | es.po
     evolution       | evolution-2.2-test | foo.pot
+    evolution       | evolution-2.2-test | es.po
     evolution       | evolution-2.2-test | fr.po
 
 It is possible to update the content of an entry in the queue.
@@ -1269,8 +1269,8 @@ the extra three entries.
     >>> print_queue_entries(queue)
     hoary ...
     ...
-    evolution       | evolution-2.2-test | es.po
     evolution       | evolution-2.2-test | foo.pot
+    evolution       | evolution-2.2-test | es.po
     evolution       | evolution-2.2-test | fr.po
     evolution       | evolution-2.2      | es.po
     evolution       | evolution-2.2      | foo.pot
