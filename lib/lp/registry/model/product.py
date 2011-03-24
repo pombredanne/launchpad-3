@@ -78,6 +78,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
+from canonical.lazr.utils import safe_hasattr
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH,
@@ -91,7 +92,10 @@ from lp.answers.model.question import (
     QuestionTargetMixin,
     QuestionTargetSearch,
     )
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    service_uses_launchpad,
+    ServiceUsage,
+    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
@@ -165,6 +169,7 @@ from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.series import ACTIVE_STATUSES
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database import bulk
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -459,7 +464,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     bug_reporting_guidelines = StringCol(default=None)
     bug_reported_acknowledgement = StringCol(default=None)
     enable_bugfiling_duplicate_search = BoolCol(notNull=True, default=True)
-    _cached_licenses = None
 
     def _validate_active(self, attr, value):
         # Validate deactivation.
@@ -639,11 +643,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         self.license_reviewed = False
         self.license_approved = False
 
-    def __storm_invalidated__(self):
-        """Clear cached non-storm attributes when the transaction ends."""
-        super(Product, self).__storm_invalidated__()
-        self._cached_licenses = None
-
     def _get_answers_usage(self):
         if self._answers_usage != ServiceUsage.UNKNOWN:
             # If someone has set something with the enum, use it.
@@ -704,14 +703,16 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         _set_translations_usage,
         doc="Indicates if the product uses the translations service.")
 
-    def _getLicenses(self):
+    @cachedproperty
+    def _cached_licenses(self):
         """Get the licenses as a tuple."""
-        if self._cached_licenses is None:
-            product_licenses = ProductLicense.selectBy(
-                product=self, orderBy='license')
-            self._cached_licenses = tuple(
-                product_license.license
-                for product_license in product_licenses)
+        product_licenses = ProductLicense.selectBy(
+            product=self, orderBy='license')
+        return tuple(
+            product_license.license
+            for product_license in product_licenses)
+
+    def _getLicenses(self):
         return self._cached_licenses
 
     def _setLicenses(self, licenses, reset_license_reviewed=True):
@@ -746,7 +747,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
         for license in licenses.difference(old_licenses):
             ProductLicense(product=self, license=license)
-        self._cached_licenses = tuple(sorted(licenses))
+        get_property_cache(self)._cached_licenses = tuple(sorted(licenses))
 
     licenses = property(_getLicenses, _setLicenses)
 
@@ -1014,6 +1015,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def translatable_series(self):
         """See `IProduct`."""
+        if not service_uses_launchpad(self.translations_usage):
+            return []
         translatable_product_series = set(
             product_series
             for product_series in self.series
@@ -1054,7 +1057,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IProduct`."""
         obsolete_product_series = set(
             product_series for product_series in self.series
-            if len(product_series.getObsoleteTranslationTemplates()) > 0)
+            if product_series.has_obsolete_translation_templates)
         return sorted(obsolete_product_series, key=lambda s: s.datecreated)
 
     @property
@@ -1575,38 +1578,58 @@ class ProductSet:
                     Product.datecreated, Product.displayname)
         return result
 
-    def search(self, text=None, soyuz=None,
-               rosetta=None, malone=None,
-               bazaar=None,
-               show_inactive=False):
+    def search(self, text=None):
         """See lp.registry.interfaces.product.IProductSet."""
-        # XXX: kiko 2006-03-22: The soyuz argument is unused.
-        clauseTables = set()
-        clauseTables.add('Product')
-        queries = []
+        # Circular...
+        from lp.registry.model.projectgroup import ProjectGroup
+        conditions = []
+        conditions = [Product.active]
         if text:
-            queries.append("Product.fti @@ ftq(%s) " % sqlvalues(text))
-        if rosetta:
-            clauseTables.add('POTemplate')
-            clauseTables.add('ProductRelease')
-            clauseTables.add('ProductSeries')
-            queries.append("POTemplate.productrelease=ProductRelease.id")
-            queries.append("ProductRelease.productseries=ProductSeries.id")
-            queries.append("ProductSeries.product=product.id")
-        if malone:
-            clauseTables.add('BugTask')
-            queries.append('BugTask.product=Product.id')
-        if bazaar:
-            clauseTables.add('ProductSeries')
-            queries.append('(ProductSeries.branch IS NOT NULL)')
-        if 'ProductSeries' in clauseTables:
-            queries.append('ProductSeries.product=Product.id')
-        if not show_inactive:
-            queries.append('Product.active IS TRUE')
-        query = " AND ".join(queries)
-        return Product.select(query, distinct=True,
-                              prejoins=["_owner"],
-                              clauseTables=clauseTables)
+            conditions.append(
+                SQL("Product.fti @@ ftq(%s) " % sqlvalues(text)))
+        result = IStore(Product).find(Product, *conditions)
+
+        def eager_load(rows):
+            product_ids = set(obj.id for obj in rows)
+            if not product_ids:
+                return
+            products = dict((product.id, product) for product in rows)
+            caches = dict((product.id, get_property_cache(product))
+                for product in rows)
+            for cache in caches.values():
+                if not safe_hasattr(cache, 'commercial_subscription'):
+                    cache.commercial_subscription = None
+                if not safe_hasattr(cache, '_cached_licenses'):
+                    cache._cached_licenses = []
+            for subscription in IStore(CommercialSubscription).find(
+                CommercialSubscription,
+                CommercialSubscription.productID.is_in(product_ids)):
+                cache = caches[subscription.productID]
+                cache.commercial_subscription = subscription
+            for license in IStore(ProductLicense).find(
+                ProductLicense,
+                ProductLicense.productID.is_in(product_ids)):
+                cache = caches[license.productID]
+                cache._cached_licenses.append(license.license)
+            for cache in caches.values():
+                cache._cached_licenses = tuple(sorted(cache._cached_licenses))
+            bulk.load_related(ProjectGroup, products.values(), ['projectID'])
+            bulk.load_related(ProductSeries, products.values(),
+                ['development_focusID'])
+            # Only need the objects for canonical_url, no need for validity.
+            bulk.load_related(Person, products.values(),
+                ['_ownerID', 'registrantID', 'bug_supervisorID', 'driverID',
+                 'security_contactID'])
+        return DecoratedResultSet(result, pre_iter_hook=eager_load)
+
+    def search_sqlobject(self, text):
+        """See `IProductSet`"""
+        clauseTables = ['Product']
+        queries = ["Product.fti @@ ftq(%s) " % sqlvalues(text)]
+        queries.append('Product.active IS TRUE')
+        query = "Product.active IS TRUE AND Product.fti @@ ftq(%s)" \
+            % sqlvalues(text)
+        return Product.select(query)
 
     def getTranslatables(self):
         """See `IProductSet`"""

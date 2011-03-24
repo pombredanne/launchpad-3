@@ -211,13 +211,15 @@ def getFeatureFlag(flag):
 
 
 def make_script_feature_controller(script_name):
-    """Create and install a `FeatureController` for the named script."""
+    """Create a `FeatureController` for the named script.
+
+    You can then install this feature controller using
+    `install_feature_controller`.
+    """
     # Avoid circular import.
     from lp.services.features.flags import FeatureController
     from lp.services.features.rulesource import StormFeatureRuleSource
     from lp.services.features.scopes import ScopesForScript
 
-    install_feature_controller(
-        FeatureController(
-            ScopesForScript(script_name).lookup,
-            StormFeatureRuleSource()))
+    return FeatureController(
+        ScopesForScript(script_name).lookup, StormFeatureRuleSource())
