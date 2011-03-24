@@ -17,7 +17,6 @@ from canonical.launchpad.interfaces.lpstorm import (
     IStore,
     )
 from lp.registry.model.distroseries import DistroSeries
-from lp.services.propertycache import cachedproperty
 from lp.soyuz.interfaces.distributionjob import (
     DistributionJobType,
     IInitialiseDistroSeriesJob,
@@ -52,7 +51,7 @@ class InitialiseDistroSeriesJob(DistributionJobDerived):
         IMasterStore(DistributionJob).add(job)
         return cls(job)
 
-    @cachedproperty
+    @property
     def parent(self):
         return IStore(DistroSeries).get(
             DistroSeries, self.metadata["parent"])
