@@ -1967,12 +1967,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             child = distribution.newSeries(
                 name=name, displayname=displayname, title=title,
                 summary=summary, description=description,
-                version=version, parent_series=self, owner=user)
+                version=version, parent_series=None, owner=user)
             IStore(self).add(child)
         else:
-            if child.parent_series is not self:
+            if child.parent_series is not None:
                 raise DerivationError(
-                    "DistroSeries %s parent series isn't %s" % (
+                    "DistroSeries %s parent series is %s, "
+                    "but it must not be set" % (
                         child.name, self.name))
         initialise_series = InitialiseDistroSeries(child)
         try:
