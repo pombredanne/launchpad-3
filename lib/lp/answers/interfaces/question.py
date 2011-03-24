@@ -19,6 +19,7 @@ __all__ = [
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
+    export_read_operation,
     exported,
     )
 from lazr.restful.fields import (
@@ -95,6 +96,7 @@ class IQuestion(IHasOwner):
         description=_("The person responsible for helping to resolve the "
         "question."),
         vocabulary='ValidPersonOrTeam'))
+    @export_read_operation
     answerer = exported(PublicPersonChoice(
         title=_('Answered By'), required=False,
         description=_("The person who last provided a response intended to "
@@ -158,13 +160,13 @@ class IQuestion(IHasOwner):
         'The set of subscriptions to this question.')
     reopenings = Attribute(
         "Records of times when this question was reopened.")
-    messages = exported(List(
+    messages = List(
         title=_("Messages"),
         description=_(
             "The list of messages that were exchanged as part of this "
             "question , sorted from first to last."),
         value_type=Object(schema=IQuestionMessage),
-        required=True, default=[], readonly=True))
+        required=True, default=[], readonly=True)
 
     # Workflow methods
     def setStatus(user, new_status, comment, datecreated=None):
