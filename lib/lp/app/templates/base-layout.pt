@@ -200,5 +200,48 @@
   });
 &lt;/script&gt;' />
 
+<tal:comment
+    tal:condition="request/features/visible_render_time"
+    replace='structure string:&lt;script type="text/javascript"&gt;
+  /* Log time taken for AJAX requests */
+  LPS.use("node", function(Y) {
+    Y.on("domready", function() {
+      var node = Y.one("#ajax-time-list");
+      var ajax_request_times = {};
+      var ajax_menu_animating = false;
+      var flash_menu = Y.lazr.anim.green_flash({node:"#ajax-time"});
+      flash_menu.on("end", function() {
+          ajax_menu_animating = false;
+      });
+      Y.on("io:start", function(transactionid) {
+          var now = new Date();
+          ajax_request_times[transactionid] = now;
+      });
+      Y.on("io:complete", function(transactionid) {
+          var now = new Date();
+          if (ajax_request_times[transactionid]) {
+            var time = (now - ajax_request_times[transactionid])/1000;
+            node.prepend("<li class=\"transaction-"+transactionid+"\">"+time.toFixed(2)+" seconds</li>");
+            Y.lazr.anim.green_flash({node:"#ajax-time-list li.transaction-"+transactionid}).run();
+            if (ajax_menu_animating == false) {
+              flash_menu.run();
+              ajax_menu_animating = true;
+            }
+          }
+      });
+      Y.on("click", function(e) {
+        e.halt();
+        var list_node = Y.one("#ajax-time-list");
+        if (list_node.hasClass("hidden")){
+          list_node.removeClass("hidden");
+        }
+        else {
+          list_node.addClass("hidden");
+        }
+      }, "#ajax-time a");
+    });
+  });
+&lt;/script&gt;' />
+
 </html>
 </metal:page>
