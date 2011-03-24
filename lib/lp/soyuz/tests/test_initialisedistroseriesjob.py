@@ -122,6 +122,10 @@ class InitialiseDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
+    @property
+    def job_source(self):
+        return getUtility(IInitialiseDistroSeriesJobSource)
+
     def _create_child(self):
         pf = self.factory.makeProcessorFamily()
         pf.addProcessor('x86', '', '')
