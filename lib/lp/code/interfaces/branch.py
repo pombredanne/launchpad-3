@@ -453,13 +453,13 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
             title=_("Specification linked to this branch."),
             readonly=True,
             value_type=Reference(Interface)), # Really ISpecificationBranch
-        as_of="devel")
+        as_of="beta")
 
     @call_with(registrant=REQUEST_USER)
     @operation_parameters(
         spec=Reference(schema=Interface)) # Really ISpecification
     @export_write_operation()
-    @operation_for_version('devel')
+    @operation_for_version('beta')
     def linkSpecification(spec, registrant):
         """Link an ISpecification to a branch.
 
@@ -471,7 +471,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     @operation_parameters(
         spec=Reference(schema=Interface)) # Really ISpecification
     @export_write_operation()
-    @operation_for_version('devel')
+    @operation_for_version('beta')
     def unlinkSpecification(spec, user):
         """Unlink an ISpecification to a branch.
 

@@ -36,30 +36,30 @@ from lp.registry.interfaces.person import IPerson
 class ISpecificationBranch(IHasDateCreated):
     """A branch linked to a specification."""
 
-    export_as_webservice_entry(as_of="devel")
+    export_as_webservice_entry(as_of="beta")
 
     id = Int(title=_("Specification Branch #"))
     specification = exported(
         ReferenceChoice(
             title=_("Blueprint"), vocabulary="Specification",
             required=True,
-            readonly=True, schema=ISpecification), as_of="devel")
+            readonly=True, schema=ISpecification), as_of="beta")
     branch = exported(
         ReferenceChoice(
             title=_("Branch"),
             vocabulary="Branch",
             required=True,
-            schema=IBranch), as_of="devel")
+            schema=IBranch), as_of="beta")
 
     registrant = exported(
         Reference(
             schema=IPerson, readonly=True, required=True,
             title=_("The person who linked the bug to the branch")),
-        as_of="devel")
+        as_of="beta")
 
     @export_operation_as('delete')
     @export_write_operation()
-    @operation_for_version('devel')
+    @operation_for_version('beta')
     def destroySelf():
         """Destroy this specification branch link"""
 
