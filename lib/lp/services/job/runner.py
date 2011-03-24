@@ -302,7 +302,23 @@ class JobRunnerProcess(child.AMPChild):
     @classmethod
     def __enter__(cls):
         def handler(signum, frame):
-            os._exit(TwistedJobRunner.TIMEOUT_CODE)
+            # We raise an exception **and** schedule a call to exit the
+            # process hard.  This is because we cannot rely on the exception
+            # being raised during useful code.  Sometimes, it will be raised
+            # while the reactor is looping, which means that it will be
+            # ignored.
+            #
+            # If the exception is raised during the actual job, then we'll get
+            # a nice traceback indicating what timed out, and that will be
+            # logged as an OOPS.
+            #
+            # Regardless of where the exception is raised, we'll hard exit the
+            # process and have a TimeoutError OOPS logged, although that will
+            # have a crappy traceback. See the job_raised callback in
+            # TwistedJobRunner.runJobInSubprocess for the other half of that.
+            reactor.callFromThread(
+                reactor.callLater, 0, os._exit, TwistedJobRunner.TIMEOUT_CODE)
+            raise TimeoutError
         scripts.execute_zcml_for_scripts(use_web_security=False)
         signal(SIGHUP, handler)
         initZopeless(dbuser=cls.dbuser)
