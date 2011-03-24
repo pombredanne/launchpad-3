@@ -537,6 +537,10 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         """See `IHasTranslationTemplates`."""
         return TranslationTemplatesCollection().restrictProductSeries(self)
 
+    def getSharingPartner(self):
+        """See `IHasTranslationTemplates`."""
+        return self.getUbuntuTranslationFocusPackage()
+
     @property
     def potemplate_count(self):
         """See `IProductSeries`."""

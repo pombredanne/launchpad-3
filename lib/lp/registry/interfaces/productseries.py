@@ -275,7 +275,7 @@ class IProductSeriesPublic(
         it will also work through the ancestry of the distroseries to try
         to find a Packaging entry that may be relevant."""
 
-    def getUbuntuTranslationFocusPackage(self):
+    def getUbuntuTranslationFocusPackage():
         """Return the SourcePackage that packages this project in Ubuntu's
         translation focus or current series or any series, in that order."""
 
