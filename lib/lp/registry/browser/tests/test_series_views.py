@@ -25,6 +25,7 @@ from lp.registry.browser.distroseries import (
     BLACKLISTED,
     HIGHER_VERSION_THAN_PARENT,
     NON_BLACKLISTED,
+    RESOLVED,
     )
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
@@ -403,6 +404,32 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
             blacklisted_view.cached_differences.batch)
         self.assertContentEqual(
             [], unblacklisted_view.cached_differences.batch)
+
+    def test_batch_resolved_differences(self):
+        # Test that we can search for differences that we marked
+        # resolved.
+        set_derived_series_ui_feature_flag(self)
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
+
+        diff1 = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            source_package_name_str="my-src-package")
+        diff2 = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            source_package_name_str="my-second-src-package")
+        resolved_diff = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            status=DistroSeriesDifferenceStatus.RESOLVED)
+
+        filtered_view = create_initialized_view(
+            derived_series,
+            '+localpackagediffs',
+            query_string='field.package_type=%s' % RESOLVED)
+
+        self.assertContentEqual(
+            [resolved_diff], filtered_view.cached_differences.batch)
 
     def test_canPerformSync_non_editor(self):
         # Non-editors do not see options to sync.

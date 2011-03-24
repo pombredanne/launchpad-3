@@ -532,6 +532,7 @@ class DistroSeriesPackagesView(LaunchpadView):
 NON_BLACKLISTED = 'non-blacklisted'
 BLACKLISTED = 'blacklisted'
 HIGHER_VERSION_THAN_PARENT = 'higher-than-parent'
+RESOLVED = 'resolved'
 
 DEFAULT_PACKAGE_TYPE = NON_BLACKLISTED
 
@@ -545,7 +546,11 @@ def make_package_type_vocabulary(parent_name):
             HIGHER_VERSION_THAN_PARENT,
             HIGHER_VERSION_THAN_PARENT,
             "Blacklisted packages with a higher version than in '%s'"
-                % parent_name)))
+                % parent_name),
+        SimpleTerm(
+            RESOLVED,
+            RESOLVED,
+            "Resolved packages")))
 
 
 class DistroSeriesNeedsPackagesView(LaunchpadView):
@@ -714,6 +719,9 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
             status=(
                 DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
             child_version_higher = True
+        elif self.specified_package_type == RESOLVED:
+            status=DistroSeriesDifferenceStatus.RESOLVED
+            child_version_higher = False
         else:
             raise AssertionError('specified_package_type unknown')
 
