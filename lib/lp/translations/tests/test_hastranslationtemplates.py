@@ -6,7 +6,6 @@ __metaclass__ = type
 from zope.interface.verify import verifyObject
 
 from canonical.testing.layers import ZopelessDatabaseLayer
-from lp.app.enums import ServiceUsage
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.hastranslationtemplates import (
     IHasTranslationTemplates,
@@ -200,7 +199,7 @@ class HasTranslationTemplatesTestMixin:
     def test_has_sharing_translation_templates__no_link(self):
         # Without a packaging link, no sharing templates are found.
         self.assertFalse(self.container.has_sharing_translation_templates)
-        
+
     def test_has_sharing_translation_templates__no_templates(self):
         # Without templates on the other side, no sharing templates are found.
         self.createPackaging()

@@ -1588,6 +1588,7 @@ class ProductSet:
             conditions.append(
                 SQL("Product.fti @@ ftq(%s) " % sqlvalues(text)))
         result = IStore(Product).find(Product, *conditions)
+
         def eager_load(rows):
             product_ids = set(obj.id for obj in rows)
             if not product_ids:
@@ -1601,7 +1602,7 @@ class ProductSet:
                 if not safe_hasattr(cache, '_cached_licenses'):
                     cache._cached_licenses = []
             for subscription in IStore(CommercialSubscription).find(
-                CommercialSubscription, 
+                CommercialSubscription,
                 CommercialSubscription.productID.is_in(product_ids)):
                 cache = caches[subscription.productID]
                 cache.commercial_subscription = subscription

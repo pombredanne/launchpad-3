@@ -65,8 +65,6 @@ class IHasTranslationTemplates(Interface):
         `IPOTemplate`.iscurrent and the `official_rosetta` flag for its
         containing `Product` or `Distribution` are set to True.
         """
-        # XXX JeroenVermeulen 2010-07-16 bug=605924: Move the
-        # official_rosetta distinction into browser code.
 
     def getCurrentTranslationTemplates(just_ids=False):
         """Return an iterator over all active translation templates.
@@ -79,8 +77,6 @@ class IHasTranslationTemplates(Interface):
         `IPOTemplate`.iscurrent and the `official_rosetta` flag for its
         containing `Product` or `Distribution` are set to True.
         """
-        # XXX JeroenVermeulen 2010-07-16 bug=605924: Move the
-        # official_rosetta distinction into browser code.
 
     def getCurrentTranslationFiles(just_ids=False):
         """Return an iterator over all active translation files.
