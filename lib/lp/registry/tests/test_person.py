@@ -278,6 +278,17 @@ class TestPerson(TestCaseWithFactory):
             user.getOwnedOrDrivenPillars()]
         self.assertEqual(expected_pillars, received_pillars)
 
+    def test_selfgenerated_bugnotifications_none_by_default(self):
+        # Default for new accounts is to not get any
+        # self-generated bug notifications by default.
+        user = self.factory.makePerson()
+        self.assertFalse(user.selfgenerated_bugnotifications)
+
+
+class TestPersonMerge(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
     def test_no_merge_pending(self):
         # is_merge_pending returns False when this person is not the "from"
         # person of an active merge job.
@@ -300,12 +311,6 @@ class TestPerson(TestCaseWithFactory):
         job = getUtility(IPersonSet).mergeAsync(from_person, to_person)
         self.assertEqual(from_person, job.from_person)
         self.assertEqual(to_person, job.to_person)
-
-    def test_selfgenerated_bugnotifications_none_by_default(self):
-        # Default for new accounts is to not get any
-        # self-generated bug notifications by default.
-        user = self.factory.makePerson()
-        self.assertFalse(user.selfgenerated_bugnotifications)
 
 
 class TestPersonStates(TestCaseWithFactory):
