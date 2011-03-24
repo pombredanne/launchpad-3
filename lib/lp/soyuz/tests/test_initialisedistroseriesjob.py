@@ -13,6 +13,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.database.sqlbase import flush_database_caches
 from canonical.testing import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -67,15 +68,8 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
         # DistroSeries, InitialiseDistroSeriesJob.create() won't create
         # a new one.
         self.job_source.create(parent, distroseries)
-        transaction.commit()
-
-        # There will now be one job in the queue.
-        self.assertEqual(1, self._getJobCount())
-
         self.job_source.create(parent, distroseries)
-
-        # This is less than ideal
-        self.assertRaises(IntegrityError, self._getJobCount)
+        self.assertRaises(IntegrityError, flush_database_caches)
 
     def test_run(self):
         """Test that InitialiseDistroSeriesJob.run() actually
