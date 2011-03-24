@@ -25,9 +25,9 @@ __all__ = [
     ]
 
 
-from zope.schema import getFields
-
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
+
+from zope.schema import getFields
 
 
 def patch_entry_return_type(exported_class, method_name, return_type):
