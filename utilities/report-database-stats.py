@@ -176,7 +176,15 @@ def get_bloat_stats(cur, options, kind):
                 first_value(dead_tuple_percent + free_percent) OVER t
                     AS start_bloat_percent,
                 last_value(dead_tuple_percent + free_percent) OVER t
-                    AS end_bloat_percent
+                    AS end_bloat_percent,
+                (last_value(dead_tuple_percent + free_percent) OVER t
+                    - first_value(dead_tuple_percent + free_percent) OVER t
+                    ) AS delta_bloat_percent,
+                (last_value(table_len) OVER t
+                    - first_value(table_len) OVER t) AS delta_bloat_len,
+                pg_size_pretty(
+                    last_value(table_len) OVER t
+                    - first_value(table_len) OVER t) AS delta_bloat_size
             FROM DatabaseDiskUtilization
             WHERE
                 %(where)s
@@ -275,31 +283,62 @@ def main():
         print "%40s || %10.2f tuples/sec" % (
             table.relname, table.total_tup_read / per_second)
 
+    table_bloat_stats = get_bloat_stats(cur, options, 'r')
+
     print
     print "== Most Bloated Tables =="
     print
-    for bloated_table in get_bloat_stats(cur, options, 'r')[:options.limit]:
-        print "%s.%s %s%% (%s of %s +%s%%)" % (
-            bloated_table.namespace,
+    for bloated_table in table_bloat_stats[:options.limit]:
+        print "%40s || %2d%% || %s of %s" % (
             bloated_table.name,
             bloated_table.end_bloat_percent,
             bloated_table.bloat_size,
-            bloated_table.table_size,
-            bloated_table.end_bloat_percent
-                - bloated_table.start_bloat_percent)
+            bloated_table.table_size)
+
+    index_bloat_stats = get_bloat_stats(cur, options, 'i')
 
     print
     print "== Most Bloated Indexes =="
     print
-    for bloated_index in get_bloat_stats(cur, options, 'i')[:options.limit]:
-        print "%s.%s %s%% (%s of %s +%s%%)" % (
-            bloated_index.sub_namespace,
+    for bloated_index in index_bloat_stats[:options.limit]:
+        print "%40s || %2d%% || %s of %s" % (
             bloated_index.sub_name,
             bloated_index.end_bloat_percent,
             bloated_index.bloat_size,
-            bloated_index.table_size,
-            bloated_index.end_bloat_percent
-                - bloated_index.start_bloat_percent)
+            bloated_index.table_size)
+
+    # Order bloat delta report by size of bloat increase.
+    # We might want to change this to percentage bloat increase.
+    bloating_sort_key = lambda x: x.delta_bloat_len
+
+    print
+    print "== Most Bloating Tables =="
+    print
+    for bloated_table in sorted(
+        table_bloat_stats, key=bloating_sort_key, reverse=True
+        )[:options.limit]:
+        # Bloat decreases are uninteresting, and would need to be in
+        # a seperate table sorted in reverse anyway.
+        if bloated_table.delta_bloat_percent > 0:
+            print "%40s || +%4.2f%% || +%s" % (
+                bloated_table.name,
+                bloated_table.delta_bloat_percent,
+                bloated_table.delta_bloat_size)
+
+    print
+    print "== Most Bloating Indexes =="
+    print
+    for bloated_index in sorted(
+        index_bloat_stats, key=bloating_sort_key, reverse=True
+        )[:options.limit]:
+        # Bloat decreases are uninteresting, and would need to be in
+        # a seperate table sorted in reverse anyway.
+        if bloated_index.delta_bloat_percent > 0:
+            print "%40s || +%4.2f%% || +%s" % (
+                bloated_index.sub_name,
+                bloated_index.delta_bloat_percent,
+                bloated_index.delta_bloat_size)
+
 
 
 if __name__ == '__main__':
