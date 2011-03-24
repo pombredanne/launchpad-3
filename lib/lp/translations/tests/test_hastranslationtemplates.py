@@ -369,3 +369,9 @@ class TestDistroSeriesHasTranslationTemplates(
     def setUp(self):
         super(TestDistroSeriesHasTranslationTemplates, self).setUp()
         self.container = self.factory.makeDistroRelease()
+
+    def test_has_sharing_translation_templates__templates(self):
+        # This attribute is always False for DistroSeries
+        self.createPackaging()
+        self.createSharingTranslationTemplate()
+        self.assertFalse(self.container.has_sharing_translation_templates)

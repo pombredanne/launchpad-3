@@ -1907,6 +1907,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasTranslationTemplates`."""
         return TranslationTemplatesCollection().restrictDistroSeries(self)
 
+    def getSharingPartner(self):
+        """See `IHasTranslationTemplates`."""
+        # No sharing partner is defined for DistroSeries.
+        return None
+
     def getSuite(self, pocket):
         """See `IDistroSeries`."""
         if pocket == PackagePublishingPocket.RELEASE:
