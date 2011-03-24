@@ -55,10 +55,7 @@ class SourcePackageTranslationsView(TranslationsMixin,
         return "Translations for %s" % self.context.displayname
 
     def is_sharing(self):
-        productseries = self.context.productseries
-        if productseries is None:
-            return False
-        return productseries.has_current_translation_templates
+        return self.context.has_sharing_translation_templates
 
     @property
     def sharing_productseries(self):
@@ -119,10 +116,7 @@ class SourcePackageTranslationSharingDetailsView(
     page_title = "Sharing details"
 
     def is_sharing(self):
-        productseries = self.context.productseries
-        if productseries is None:
-            return False
-        return productseries.has_current_translation_templates
+        return self.context.has_sharing_translation_templates
 
     def initialize(self):
         if not getFeatureFlag('translations.sharing_information.enabled'):
