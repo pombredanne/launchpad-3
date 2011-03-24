@@ -9,18 +9,27 @@ import email
 import time
 
 import transaction
+from zope.component import getUtility
+from zope.security.management import (
+    getSecurityPolicy,
+    setSecurityPolicy,
+    )
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import import_secret_test_key
 from canonical.launchpad.mail.commands import BugEmailCommand
+from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.mail.handler import MaloneHandler
 from lp.services.mail import stub
 from lp.testing import (
+    celebrity_logged_in,
     login,
     person_logged_in,
     TestCaseWithFactory,
@@ -32,7 +41,19 @@ from lp.testing.mail_helpers import pop_notifications
 class TestMaloneHandler(TestCaseWithFactory):
     """Test that the Malone/bugs handler works."""
 
+    # LaunchpadFunctionalLayer has the LaunchpadSecurityPolicy that we
+    # need, but we need to be able to switch DB users. So we have to use
+    # LaunchpadZopelessLayer and set security up manually.
     layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestMaloneHandler, self).setUp()
+        self._old_policy = getSecurityPolicy()
+        setSecurityPolicy(LaunchpadSecurityPolicy)
+
+    def tearDown(self):
+        super(TestMaloneHandler, self).tearDown()
+        setSecurityPolicy(self._old_policy)
 
     def test_getCommandsEmpty(self):
         """getCommands returns an empty list for messages with no command."""
@@ -115,11 +136,9 @@ class TestMaloneHandler(TestCaseWithFactory):
         transaction.commit()
         LaunchpadZopelessLayer.switchDbUser(user)
 
-    def test_new_bug_big_body(self):
-        # If a bug email is sent with an excessively large body, we email the
-        # user back and ask that they use attachments instead.
-        big_body_text = 'This is really big.' * 10000
-        mail = self.factory.makeSignedMessage(body=big_body_text)
+    def getFailureForMessage(self, to_address, from_address=None, body=None):
+        mail = self.factory.makeSignedMessage(
+            body=body, email_address=from_address)
         self.switchDbUser(config.processmail.dbuser)
         # Rejection email goes to the preferred email of the current user.
         # The current user is extracted from the current interaction, which is
@@ -127,16 +146,53 @@ class TestMaloneHandler(TestCaseWithFactory):
         # real GPG signed emails, which we are faking here.
         login(mail['from'])
         handler = MaloneHandler()
-        self.assertTrue(handler.process(mail,
-            'new@bugs.launchpad.dev', None))
-        notification = pop_notifications()[0]
+        self.assertTrue(handler.process(mail, to_address, None))
+        notifications = pop_notifications()
+        if not notifications:
+            return None
+        notification = notifications[0]
         self.assertEqual('Submit Request Failure', notification['subject'])
         # The returned message is a multipart message, the first part is
         # the message, and the second is the original message.
         message, original = notification.get_payload()
+        return message.get_payload(decode=True)
+
+    def test_new_bug_big_body(self):
+        # If a bug email is sent with an excessively large body, we email the
+        # user back and ask that they use attachments instead.
+        big_body_text = 'This is really big.' * 10000
+        message = self.getFailureForMessage(
+            'new@bugs.launchpad.dev', body=big_body_text)
+        self.assertIn("The description is too long.", message)
+
+    def test_bug_not_found(self):
+        # Non-existent bug numbers result in an informative error.
+        message = self.getFailureForMessage('1234@bugs.launchpad.dev')
         self.assertIn(
-            "The description is too long.",
-            message.get_payload(decode=True))
+            "There is no such bug in Launchpad: 1234", message)
+
+    def test_accessible_private_bug(self):
+        # Private bugs are accessible by their subscribers.
+        person = self.factory.makePerson()
+        with celebrity_logged_in('admin'):
+            bug = getUtility(IBugSet).get(1)
+            bug.setPrivate(True, person)
+            bug.subscribe(person, person)
+        # Drop the notifications from celebrity_logged_in.
+        pop_notifications()
+        message = self.getFailureForMessage(
+            '1@bugs.launchpad.dev',
+            from_address=removeSecurityProxy(person.preferredemail).email)
+        self.assertIs(None, message)
+
+    def test_inaccessible_private_bug_not_found(self):
+        # Private bugs don't acknowledge their existence to non-subscribers.
+        with celebrity_logged_in('admin'):
+            getUtility(IBugSet).get(1).setPrivate(
+                True, self.factory.makePerson())
+        message = self.getFailureForMessage('1@bugs.launchpad.dev')
+        self.assertIn(
+            "There is no such bug in Launchpad: 1", message)
 
 
 class FakeSignature:

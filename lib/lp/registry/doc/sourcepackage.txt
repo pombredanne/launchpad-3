@@ -233,7 +233,7 @@ method on a distribution:
     \u201cmozilla-firefox\u201d package in Ubuntu
 
     >>> print ubuntu_firefox.displayname
-    mozilla-firefox in ubuntu
+    mozilla-firefox in Ubuntu
 
     >>> ubuntu_firefox.distribution == ubuntu
     True

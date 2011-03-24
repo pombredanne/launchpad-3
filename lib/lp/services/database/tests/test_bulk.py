@@ -21,6 +21,7 @@ from canonical.launchpad.interfaces.lpstorm import (
     )
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.model.bug import BugAffectsPerson
+from lp.registry.model.person import Person
 from lp.services.database import bulk
 from lp.soyuz.model.component import Component
 from lp.testing import (
@@ -191,3 +192,14 @@ class TestLoaders(TestCaseWithFactory):
             Component, [db_object.id], store=slave_store)
         self.assertEqual(
             Store.of(db_object_from_slave), slave_store)
+
+    def test_load_related(self):
+        owning_objects = [
+            self.factory.makeBug(),
+            self.factory.makeBug(),
+            ]
+        expected = set(bug.owner for bug in owning_objects)
+        self.assertEqual(expected,
+            set(bulk.load_related(Person, owning_objects, ['ownerID'])))
+
+

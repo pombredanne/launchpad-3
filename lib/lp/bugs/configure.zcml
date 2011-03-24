@@ -309,6 +309,11 @@
                 attributes="
                     setTarget
                     "/>
+            <require
+                permission="zope.Public"
+                set_attributes="
+                    resolved_upstream
+                    "/>
         </class>
 
         <!-- BugTaskSet -->
@@ -734,7 +739,6 @@
                     getSubscriptionsFromDuplicates
                     getSubscribersForPerson
                     getSubscriptionForPerson
-                    getStructuralSubscriptionsForPerson
                     getSubscriptionInfo
                     indexed_messages
                     _indexed_messages
@@ -782,6 +786,7 @@
                     linkMessage
                     markAsDuplicate
                     markUserAffected
+                    mute
                     newMessage
                     removeWatch
                     setPrivate
@@ -791,6 +796,7 @@
                     unlinkBranch
                     unlinkCVE
                     unlinkHWSubmission
+                    unmute
                     unsubscribe
                     unsubscribeFromDupes
                     updateHeat"
