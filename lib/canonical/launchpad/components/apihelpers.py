@@ -157,8 +157,18 @@ def patch_entry_explicit_version(interface, version):
             versioned['_as_of_was_used'] = True
 
 
-def patch_operation_explicit_version(interface, method_name, version):
-    """Make it look like operation's first tag was @operation_for_version.
+def patch_operations_explicit_version(interface, version, *method_names):
+    """Make it look like operations' first tags were @operation_for_version.
+
+    This function should be phased out in favor of actually using
+    @operation_for_version, everywhere.
+    """
+    for method in method_names:
+        patch_operation_explicit_version(interface, version, method)
+
+
+def patch_operation_explicit_version(interface, version, method_name):
+    """Make it look like an operation's first tag was @operation_for_version.
 
     This function should be phased out in favor of actually using
     @operation_for_version, everywhere.

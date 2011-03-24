@@ -552,7 +552,7 @@ class ISpecification(ISpecificationPublic, ISpecificationEditRestricted,
                      IBugLinkTarget):
     """A Specification."""
 
-    export_as_webservice_entry(as_of="devel")
+    export_as_webservice_entry(as_of="beta")
 
 
 class ISpecificationSet(IHasSpecifications):
