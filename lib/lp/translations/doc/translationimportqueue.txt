@@ -1151,7 +1151,32 @@ Current entries in the queue are:
     warty evolution | None               | po/sr.po
 
 Attach the sample tarball to the 'evolution-2.2-test' template in evolution
-product. There will be three new entries from the tarball.
+product. We can ask to only upload the template from the tarball and ignore
+the other files.
+
+    >>> translationimportqueue.addOrUpdateEntriesFromTarball(
+    ...     tarfile_content, by_maintainer, rosetta_experts,
+    ...     productseries=evolution_productseries,
+    ...     potemplate=evolution_22_test_template,
+    ...     only_templates=True)
+    (1, [])
+
+And this new entry in the queue appears in the list.
+
+    >>> print_queue_entries(queue)
+    hoary evolution | evolution          | po/sr.po
+    firefox         | firefox            | foo/bar.pot
+    evolution       | evolution-2.2-test | po/evolution-2.2-test.pot
+    evolution       | evolution-2.2-test | po/pt_BR.po
+    firefox         | None               | foo/bar.po
+    evolution       | None               | po/sr.po
+    hoary evolution | None               | po/evolution-2.2.pot
+    warty evolution | None               | po/sr.po
+    evolution       | evolution-2.2-test | foo.pot
+
+
+But we really want all files from the tarball, so we upload them all.
+There will be three new entries from the tarball.
 
     >>> translationimportqueue.addOrUpdateEntriesFromTarball(
     ...     tarfile_content, by_maintainer, rosetta_experts,
@@ -1170,8 +1195,8 @@ And those new entries in the queue appear in the list.
     evolution       | None               | po/sr.po
     hoary evolution | None               | po/evolution-2.2.pot
     warty evolution | None               | po/sr.po
-    evolution       | evolution-2.2-test | es.po
     evolution       | evolution-2.2-test | foo.pot
+    evolution       | evolution-2.2-test | es.po
     evolution       | evolution-2.2-test | fr.po
 
 It is possible to update the content of an entry in the queue.
@@ -1244,8 +1269,8 @@ the extra three entries.
     >>> print_queue_entries(queue)
     hoary ...
     ...
-    evolution       | evolution-2.2-test | es.po
     evolution       | evolution-2.2-test | foo.pot
+    evolution       | evolution-2.2-test | es.po
     evolution       | evolution-2.2-test | fr.po
     evolution       | evolution-2.2      | es.po
     evolution       | evolution-2.2      | foo.pot

@@ -34,6 +34,14 @@ class HasTranslationTemplatesMixin:
         raise NotImplementedError(
             "Child class must provide getTemplatesCollection.")
 
+    def getSharingPartner(self):
+        """See `IHasTranslationTemplates`.
+
+        To be provided by derived classes.
+        """
+        raise NotImplementedError(
+            "Child class must provide getSharingPartner.")
+
     def _orderTemplates(self, result):
         """Apply the conventional ordering to a result set of templates."""
         return result.order_by(Desc(POTemplate.priority), POTemplate.name)
@@ -71,6 +79,14 @@ class HasTranslationTemplatesMixin:
         return bool(
             self.getCurrentTranslationTemplates(
                 just_ids=True, current_value=False).any())
+
+    @property
+    def has_sharing_translation_templates(self):
+        """See `IHasTranslationTemplates`."""
+        other_side_obj = self.getSharingPartner()
+        if other_side_obj is None:
+            return False
+        return other_side_obj.has_current_translation_templates
 
     def getCurrentTranslationFiles(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
