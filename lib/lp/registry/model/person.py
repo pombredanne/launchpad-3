@@ -3812,6 +3812,8 @@ class PersonSet:
             raise TypeError('from_person is not a person.')
         if not IPerson.providedBy(to_person):
             raise TypeError('to_person is not a person.')
+
+
         # If the team has a mailing list, the mailing list better be in the
         # purged state, otherwise the team can't be merged.
         mailing_list = getUtility(IMailingListSet).get(from_person.name)
@@ -3835,6 +3837,8 @@ class PersonSet:
         if from_person.is_team and from_person.super_teams.count() > 0:
             raise AssertionError(
                 "Only teams without super teams can be merged.")
+
+
         # since we are doing direct SQL manipulation, make sure all
         # changes have been flushed to the database
         store = Store.of(from_person)

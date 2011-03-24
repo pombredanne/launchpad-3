@@ -703,8 +703,8 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         # A team with an active mailing list cannot be merged.
         master_team = self.factory.makeTeam()
         dupe_team, mailing_list = self.factory.makeTeamAndMailingList(
-            'dupe_team', 'budgie')
-        self.assertRasies(
+            'dupe-team', 'budgie')
+        self.assertRaises(
             AssertionError, self.person_set.merge, dupe_team, master_team)
 
     def test_team_without_super_teams_is_fine(self):
