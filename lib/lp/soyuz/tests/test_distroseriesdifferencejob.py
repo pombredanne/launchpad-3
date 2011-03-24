@@ -450,6 +450,7 @@ class TestDistroSeriesDifferenceJobPermissions(TestCaseWithFactory):
     def test_permissions(self):
         script_users = [
             'archivepublisher',
+            'gina',
             'queued',
             'uploader',
             ]
