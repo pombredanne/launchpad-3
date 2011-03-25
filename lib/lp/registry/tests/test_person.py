@@ -56,7 +56,6 @@ from lp.registry.interfaces.person import (
     PersonVisibility,
     )
 from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.teammembership import ITeamMembershipSet
 from lp.registry.model.karma import (
     KarmaCategory,
     KarmaTotalCache,
@@ -693,13 +692,6 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self.person_set.merge(duplicate, person)
         self.assertEqual(oldest_date, person.datecreated)
 
-    def _doMerge(self, test_team, target_team):
-        membershipset = getUtility(ITeamMembershipSet)
-        membershipset.deactivateActiveMemberships(
-            test_team, comment='',
-            reviewer=test_team.teamowner)
-        self.person_set.merge(test_team, target_team, test_team.teamowner)
-
     def test_team_with_active_mailing_list_raises_error(self):
         # A team with an active mailing list cannot be merged.
         master_team = self.factory.makeTeam()
@@ -717,7 +709,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
             dupe_team, dupe_team.teamowner)
         mailing_list.deactivate()
         mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
-        self._doMerge(dupe_team, master_team)
+        self.person_set.merge(dupe_team, master_team, dupe_team.teamowner)
         self.assertEqual(master_team, dupe_team.merged)
         self.assertEqual(MailingListStatus.PURGED, mailing_list.status)
         self.assertEqual([], list(dupe_team.unvalidatedemails))
@@ -740,7 +732,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         target_team = self.factory.makeTeam()
 
         login_person(test_team.teamowner)
-        self._doMerge(test_team, target_team)
+        self.person_set.merge(test_team, target_team, test_team.teamowner)
 
     def test_team_with_super_teams_raises_error(self):
         # A team with no members but with superteams
@@ -753,7 +745,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         test_team.join(super_team, test_team.teamowner)
         self.assertRaises(
             AssertionError,
-            self._doMerge,
+            self.person_set.merge,
             test_team,
             target_team)
 
