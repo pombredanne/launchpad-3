@@ -4,8 +4,24 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   i18n:domain="launchpad">
 
+  <metal:macros tal:replace="nothing">
+    <metal:macro-derived metal:define-macro="base-to-derived">
+      <span tal:replace="context/base_version">1.1.1</span> to
+      <span tal:replace="context/derived_series/displayname">
+        Derilucid</span> version: 
+      <span tal:replace="context/source_version">1.2.3</span>
+    </metal:macro-derived>
+
+    <metal:macro-parent metal:define-macro="base-to-parent">
+      <span tal:replace="context/base_version">1.1.1</span> to
+      <span tal:replace="context/derived_series/parent_series/displayname">
+        Lucid</span> version: 
+      <span tal:replace="context/parent_source_version">1.2.4</span>
+    </metal:macro-parent>
+  </metal:macros>
+
   <tal:show_options condition="view/show_edit_options">
-  <div class="blacklist-options" style="float:right">
+    <div class="blacklist-options" style="float:right">
       <dl>
         <dt>Blacklisted:</dt>
         <dd>
@@ -33,36 +49,26 @@
           <li tal:condition="context/package_diff">
             <span tal:condition="context/package_diff/status/enumvalue:PENDING"
               class="PENDING">
-              <span
-                tal:replace="context/derived_series/displayname">
-                Derilucid</span> version: <span
-                tal:replace="context/source_version">1.2.3</span>
+              <span tal:replace="context/base_version">1.1.1</span> to
+                <span metal:use-macro="template/macros/base-to-derived" />
             </span>
 
             <span tal:condition="context/package_diff/status/enumvalue:FAILED"
               class="FAILED">
-              <span
-                tal:replace="context/derived_series/displayname">
-                Derilucid</span> version: <span
-                tal:replace="context/source_version">1.2.3</span>
+              <span tal:replace="context/base_version">1.1.1</span> to
+                <span metal:use-macro="template/macros/base-to-derived" />
             </span>
 
             <span tal:condition="context/package_diff/status/enumvalue:COMPLETED"
               class="COMPLETED">
               <a tal:attributes="href context/package_diff_url">
-                <span
-                  tal:replace="context/derived_series/displayname">
-                  Derilucid</span> version: <span
-                  tal:replace="context/source_version">1.2.3</span>
+                <span metal:use-macro="template/macros/base-to-derived" />
               </a>
             </span>
           </li>
           <li tal:condition="not: context/package_diff">
             <span class="request-derived-diff derived">
-            <span
-              tal:replace="context/derived_series/displayname">
-              Derilucid</span> version: <span
-              tal:replace="context/source_version">1.2.3</span>
+              <span metal:use-macro="template/macros/base-to-derived" />
             </span>
           </li>
         </tal:source-diff-option>
@@ -71,36 +77,26 @@
           <li tal:condition="context/parent_package_diff">
             <span tal:condition="context/parent_package_diff/status/enumvalue:PENDING"
               class="PENDING parent">
-              <span
-                tal:replace="context/derived_series/parent_series/displayname">
-                Derilucid</span> version: <span
-                tal:replace="context/parent_source_version">1.2.3</span>
+              <span tal:replace="context/base_version">1.1.1</span> to
+                <span metal:use-macro="template/macros/base-to-parent" />
             </span>
 
             <span tal:condition="context/parent_package_diff/status/enumvalue:FAILED"
               class="FAILED">
-              <span
-                tal:replace="context/derived_series/parent_series/displayname">
-                Derilucid</span> version: <span
-                tal:replace="context/parent_source_version">1.2.3</span>
+              <span tal:replace="context/base_version">1.1.1</span> to
+                <span metal:use-macro="template/macros/base-to-parent" />
             </span>
 
             <span tal:condition="context/parent_package_diff/status/enumvalue:COMPLETED"
               class="COMPLETED">
               <a tal:attributes="href context/parent_package_diff_url">
-                <span
-                  tal:replace="context/derived_series/parent_series/displayname">
-                  Derilucid</span> version: <span
-                  tal:replace="context/parent_source_version">1.2.3</span>
+                <span metal:use-macro="template/macros/base-to-parent" />
               </a>
             </span>
           </li>
           <li tal:condition="not: context/parent_package_diff">
             <span class="request-derived-diff parent">
-            <span
-              tal:replace="context/derived_series/parent_series/displayname">
-              Derilucid</span> version: <span
-              tal:replace="context/parent_source_version">1.2.3</span>
+              <span metal:use-macro="template/macros/base-to-parent" />
             </span>
           </li>
         </tal:parent-diff-option>
