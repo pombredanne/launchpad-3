@@ -22,6 +22,7 @@ from lazr.restful.declarations import (
     export_read_operation,
     export_write_operation,
     exported,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
@@ -115,6 +116,7 @@ class IStructuralSubscriptionTargetRead(Interface):
 
     @operation_returns_collection_of(IStructuralSubscription)
     @export_read_operation()
+    @operation_for_version('beta')
     def getSubscriptions():
         """Return all the subscriptions with the specified levels.
 
@@ -136,6 +138,7 @@ class IStructuralSubscriptionTargetRead(Interface):
     @operation_parameters(person=Reference(schema=IPerson))
     @operation_returns_entry(IStructuralSubscription)
     @export_read_operation()
+    @operation_for_version('beta')
     def getSubscription(person):
         """Return the subscription for `person`, if it exists."""
 
@@ -143,6 +146,7 @@ class IStructuralSubscriptionTargetRead(Interface):
 
     @call_with(user=REQUEST_USER)
     @export_read_operation()
+    @operation_for_version('beta')
     def userHasBugSubscriptions(user):
         """Is `user` subscribed, directly or via a team, to bug mail?"""
 
@@ -174,6 +178,7 @@ class IStructuralSubscriptionTargetWrite(Interface):
             required=False))
     @call_with(subscribed_by=REQUEST_USER)
     @export_factory_operation(IStructuralSubscription, [])
+    @operation_for_version('beta')
     def addBugSubscription(subscriber, subscribed_by):
         """Add a bug subscription for this structure.
 
@@ -196,6 +201,7 @@ class IStructuralSubscriptionTargetWrite(Interface):
             required=False))
     @call_with(subscribed_by=REQUEST_USER)
     @export_factory_operation(Interface, []) # Really IBugSubscriptionFilter
+    @operation_for_version('beta')
     def addBugSubscriptionFilter(subscriber, subscribed_by):
         """Add a bug subscription filter for this structure.
 
@@ -217,6 +223,7 @@ class IStructuralSubscriptionTargetWrite(Interface):
             required=False))
     @call_with(unsubscribed_by=REQUEST_USER)
     @export_write_operation()
+    @operation_for_version('beta')
     def removeBugSubscription(subscriber, unsubscribed_by):
         """Remove a subscription to bugs from this structure.
 

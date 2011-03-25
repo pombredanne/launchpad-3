@@ -337,10 +337,11 @@ class ArchivePublisherBase:
         self.removed_by = removed_by
         self.removal_comment = removal_comment
         if ISourcePackagePublishingHistory.providedBy(self):
-            dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
-            dsd_job_source.createForPackagePublication(
-                self.distroseries,
-                self.sourcepackagerelease.sourcepackagename)
+            if self.archive == self.distroseries.main_archive:
+                dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
+                dsd_job_source.createForPackagePublication(
+                    self.distroseries,
+                    self.sourcepackagerelease.sourcepackagename)
 
     def requestObsolescence(self):
         """See `IArchivePublisher`."""
@@ -1431,9 +1432,10 @@ class PublishingSet:
             ancestor=ancestor)
         DistributionSourcePackage.ensure(pub)
 
-        dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
-        dsd_job_source.createForPackagePublication(
-            distroseries, sourcepackagerelease.sourcepackagename)
+        if archive == distroseries.main_archive:
+            dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
+            dsd_job_source.createForPackagePublication(
+                distroseries, sourcepackagerelease.sourcepackagename)
         return pub
 
     def getBuildsForSourceIds(

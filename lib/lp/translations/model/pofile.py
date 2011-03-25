@@ -66,7 +66,6 @@ from canonical.launchpad.webapp.interfaces import (
     MASTER_FLAVOR,
     )
 from canonical.launchpad.webapp.publisher import canonical_url
-from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.propertycache import cachedproperty
 from lp.translations.enums import RosettaImportStatus
@@ -74,7 +73,6 @@ from lp.translations.interfaces.pofile import (
     IPOFile,
     IPOFileSet,
     )
-from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.potmsgset import TranslationCreditsType
 from lp.translations.interfaces.side import (
     ITranslationSideTraitsSet,
@@ -401,30 +399,7 @@ class POFile(SQLBase, POFileMixIn):
 
     def getOtherSidePOFile(self):
         """See `IPOFile`."""
-        potemplateset = getUtility(IPOTemplateSet)
-        if self.potemplate.translation_side == TranslationSide.UBUNTU:
-            from lp.registry.model.sourcepackage import SourcePackage
-            productseries = SourcePackage(
-                self.potemplate.sourcepackagename,
-                self.potemplate.distroseries).productseries
-            if productseries is None:
-                return None
-            subset = potemplateset.getSubset(productseries=productseries)
-        else:
-            ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-            distroseries = ubuntu.translation_focus
-            if distroseries is None:
-                distroseries = ubuntu.currentseries
-            try:
-                sourcepackage = self.potemplate.productseries.getPackage(
-                    distroseries)
-            except NotFoundError:
-                return None
-            subset = potemplateset.getSubset(
-                distroseries=distroseries,
-                sourcepackagename=sourcepackage.sourcepackagename)
-
-        other_potemplate = subset.getPOTemplateByName(self.potemplate.name)
+        other_potemplate = self.potemplate.getOtherSidePOTemplate()
         if other_potemplate is None:
             return None
         return other_potemplate.getPOFileByLang(self.language.code)

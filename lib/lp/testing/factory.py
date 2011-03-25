@@ -2264,6 +2264,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             description=self.getUniqueString(),
             parent_series=parent_series, owner=distribution.owner)
         series.status = status
+
         return ProxyFactory(series)
 
     def makeUbuntuDistroRelease(self, version=None,
