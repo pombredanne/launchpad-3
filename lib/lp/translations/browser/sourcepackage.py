@@ -34,10 +34,6 @@ from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
 from lp.translations.model.translationpackagingjob import TranslationMergeJob
-from lp.translations.utilities.translationsharinginfo import (
-    has_upstream_template,
-    get_upstream_sharing_info,
-    )
 
 
 class SharingDetailsPermissionsMixin:
@@ -59,16 +55,11 @@ class SourcePackageTranslationsView(TranslationsMixin,
         return "Translations for %s" % self.context.displayname
 
     def is_sharing(self):
-        return has_upstream_template(self.context)
+        return self.context.has_sharing_translation_templates
 
     @property
     def sharing_productseries(self):
-        infos = get_upstream_sharing_info(self.context)
-        if len(infos) == 0:
-            return None
-
-        productseries, template = infos[0]
-        return productseries
+        return self.context.productseries
 
     def getTranslationTarget(self):
         """See `TranslationSharingDetailsMixin`."""
@@ -124,14 +115,14 @@ class SourcePackageTranslationSharingDetailsView(
 
     page_title = "Sharing details"
 
+    def is_sharing(self):
+        return self.context.has_sharing_translation_templates
+
     def initialize(self):
         if not getFeatureFlag('translations.sharing_information.enabled'):
             raise NotFound(self.context, '+sharing-details')
         super(SourcePackageTranslationSharingDetailsView, self).initialize()
-        has_no_upstream_templates = (
-            self.is_configuration_complete and
-            not has_upstream_template(self.context))
-        if has_no_upstream_templates:
+        if self.is_configuration_complete and not self.is_sharing():
             self.request.response.addInfoNotification(
                 structured(
                 'No upstream templates have been found yet. Please follow '

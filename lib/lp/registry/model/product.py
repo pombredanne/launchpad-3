@@ -92,7 +92,10 @@ from lp.answers.model.question import (
     QuestionTargetMixin,
     QuestionTargetSearch,
     )
-from lp.app.enums import ServiceUsage
+from lp.app.enums import (
+    service_uses_launchpad,
+    ServiceUsage,
+    )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
@@ -1012,6 +1015,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     @property
     def translatable_series(self):
         """See `IProduct`."""
+        if not service_uses_launchpad(self.translations_usage):
+            return []
         translatable_product_series = set(
             product_series
             for product_series in self.series
@@ -1052,7 +1057,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IProduct`."""
         obsolete_product_series = set(
             product_series for product_series in self.series
-            if len(product_series.getObsoleteTranslationTemplates()) > 0)
+            if product_series.has_obsolete_translation_templates)
         return sorted(obsolete_product_series, key=lambda s: s.datecreated)
 
     @property
@@ -1583,6 +1588,7 @@ class ProductSet:
             conditions.append(
                 SQL("Product.fti @@ ftq(%s) " % sqlvalues(text)))
         result = IStore(Product).find(Product, *conditions)
+
         def eager_load(rows):
             product_ids = set(obj.id for obj in rows)
             if not product_ids:
@@ -1596,7 +1602,7 @@ class ProductSet:
                 if not safe_hasattr(cache, '_cached_licenses'):
                     cache._cached_licenses = []
             for subscription in IStore(CommercialSubscription).find(
-                CommercialSubscription, 
+                CommercialSubscription,
                 CommercialSubscription.productID.is_in(product_ids)):
                 cache = caches[subscription.productID]
                 cache.commercial_subscription = subscription
