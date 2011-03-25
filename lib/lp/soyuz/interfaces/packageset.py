@@ -22,6 +22,7 @@ from lazr.restful.declarations import (
     export_read_operation,
     export_write_operation,
     exported,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
@@ -425,13 +426,13 @@ class IPackagesetSet(Interface):
         """
 
     @operation_parameters(
-        distroseries=Reference(
-            IDistroSeries, title=_("Distroseries"), required=True,
-            readonly=True, description=_(
+        distroseries=copy_field(
+            IPackageset['distroseries'], description=_(
                 "The distribution series to which the packagesets "
                 "are related.")))
     @operation_returns_collection_of(IPackageset)
     @export_read_operation()
+    @operation_for_version("beta")
     def getBySeries(distroseries):
         """Return the package sets associated with the given distroseries.
 
