@@ -1947,7 +1947,7 @@ ul.latest-ppa-updates li.BUILDING {
     background-repeat: no-repeat;
      }
 .package-diff-status span.PENDING {
-    background-image: url('/@@/processing');
+    background-image: url('/@@/spinner');
     background-position: 0 0;
     background-repeat: no-repeat;
     }
@@ -1957,7 +1957,7 @@ ul.latest-ppa-updates li.BUILDING {
     background-repeat: no-repeat;
     }
 .package-diff-status span.request-derived-diff {
-    background-image: url('/@@/build-needed');
+    background-image: url('/@@/arrowRight-inactive');
     background-position: 0 0;
     background-repeat: no-repeat;
     }
