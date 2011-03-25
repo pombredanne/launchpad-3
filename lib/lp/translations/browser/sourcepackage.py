@@ -13,6 +13,7 @@ __all__ = [
 
 import cgi
 
+from lazr.restful.interfaces import IJSONRequestCache
 from zope.publisher.interfaces import NotFound
 
 from canonical.launchpad.webapp import (
@@ -148,6 +149,12 @@ class SourcePackageTranslationSharingDetailsView(
                 'Translations are currently being linked by a background '
                 'job. When that job has finished, translations will be '
                 'shared with the upstream project.')
+        cache = IJSONRequestCache(self.request)
+        cache.objects.update({
+            'productseries': self.context.productseries,
+            'upstream_branch': self.upstream_branch,
+            'product': self.product,
+        })
 
     @property
     def branch_link(self):
@@ -248,6 +255,12 @@ class SourcePackageTranslationSharingDetailsView(
         if not self.is_packaging_configured:
             return None
         return self.context.direct_packaging.productseries.branch
+
+    @property
+    def product(self):
+        if self.context.productseries is None:
+            return None
+        return self.context.productseries.product
 
     @property
     def has_upstream_branch(self):

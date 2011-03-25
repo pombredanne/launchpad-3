@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 
+from lazr.restful.interfaces import IJSONRequestCache
 from soupmatchers import (
     HTMLContains,
     Tag,
@@ -32,6 +33,13 @@ from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
 from lp.translations.model.translationpackagingjob import TranslationMergeJob
+
+
+def make_initialized_view(sourcepackage):
+    view = SourcePackageTranslationSharingDetailsView(
+        sourcepackage, LaunchpadTestRequest())
+    view.initialize()
+    return view
 
 
 class ConfigureScenarioMixin:
@@ -99,9 +107,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             productseries=self.productseries, name='shared-template')
         self.upstream_only_template = self.factory.makePOTemplate(
             productseries=self.productseries, name='upstream-only')
-        self.view = SourcePackageTranslationSharingDetailsView(
-            self.sourcepackage, LaunchpadTestRequest())
-        self.view.initialize()
+        self.view = make_initialized_view(self.sourcepackage)
 
     def configureSharing(self,
             set_upstream_branch=False,
@@ -317,6 +323,29 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
             ]
         self.assertEqual(expected, self.view.template_info())
 
+    def getCacheObjects(self):
+        view = make_initialized_view(self.sourcepackage)
+        view.initialize()
+        cache = IJSONRequestCache(view.request)
+        return cache.objects
+
+    def test_cache_contents_no_productseries(self):
+        objects = self.getCacheObjects()
+        self.assertIs(None, objects['productseries'])
+
+    def test_cache_contents_no_branch(self):
+        self.configureSharing()
+        objects = self.getCacheObjects()
+        self.assertEqual(self.productseries, objects['productseries'])
+        self.assertEqual(self.productseries.product, objects['product'])
+        self.assertIs(None, objects['upstream_branch'])
+
+    def test_cache_contents_branch(self):
+        self.configureSharing(set_upstream_branch=True)
+        objects = self.getCacheObjects()
+        self.assertEqual(
+            self.productseries.branch, objects['upstream_branch'])
+
 
 class TestSourcePackageSharingDetailsPage(BrowserTestCase,
                                           ConfigureScenarioMixin):
@@ -334,9 +363,9 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         distroseries = self.factory.makeUbuntuDistroSeries()
         return self.factory.makeSourcePackage(distroseries=distroseries)
 
-    def _getSharingDetailsViewBrowser(self, sourcepackage):
+    def _getSharingDetailsViewBrowser(self, sourcepackage, login=False):
         return self.getViewBrowser(
-            sourcepackage, no_login=True, rootsite="translations",
+            sourcepackage, no_login=not login, rootsite="translations",
             view_name="+sharing-details")
 
     def assertUnseen(self, browser, html_id):
@@ -538,6 +567,15 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         self.assertUnseen(browser, 'upstream-sync-incomplete')
         self.assertSeen(browser, 'upstream-sync-complete')
 
+    def test_cache_javascript(self):
+        # Cache object entries propagate into the javascript.
+        sourcepackage = self.makeFullyConfiguredSharing()[0]
+        anon_browser = self._getSharingDetailsViewBrowser(sourcepackage)
+        # Anonymous users don't get cached objects due to bug #740208
+        self.assertNotIn("LP.cache['productseries'] =", anon_browser.contents)
+        browser = self._getSharingDetailsViewBrowser(sourcepackage, login=True)
+        self.assertIn("LP.cache['productseries'] =", browser.contents)
+
     def test_potlist_only_ubuntu(self):
         # Without a packaging link, only Ubuntu templates are listed.
         sourcepackage = self._makeSourcePackage()
@@ -612,12 +650,6 @@ class TestTranslationSharingDetailsViewNotifications(TestCaseWithFactory,
         self.useFixture(FeatureFixture(
             {'translations.sharing_information.enabled': 'on'}))
 
-    def _makeInitializedView(self, sourcepackage):
-        view = SourcePackageTranslationSharingDetailsView(
-            sourcepackage, LaunchpadTestRequest())
-        view.initialize()
-        return view
-
     def _getNotifications(self, view):
         notifications = view.request.response.notifications
         return [extract_text(notification.message)
@@ -632,7 +664,7 @@ class TestTranslationSharingDetailsViewNotifications(TestCaseWithFactory,
         # When sharing is fully configured but no upstream templates are
         # found, a message is displayed.
         sourcepackage = self.makeFullyConfiguredSharing()[0]
-        view = self._makeInitializedView(sourcepackage)
+        view = make_initialized_view(sourcepackage)
         self.assertIn(
             self.no_templates_message, self._getNotifications(view))
 
@@ -641,7 +673,7 @@ class TestTranslationSharingDetailsViewNotifications(TestCaseWithFactory,
         # message should be displayed.
         sourcepackage, productseries = self.makeFullyConfiguredSharing()
         self.factory.makePOTemplate(productseries=productseries)
-        view = self._makeInitializedView(sourcepackage)
+        view = make_initialized_view(sourcepackage)
         self.assertNotIn(
             self.no_templates_message, self._getNotifications(view))
 
@@ -652,7 +684,7 @@ class TestTranslationSharingDetailsViewNotifications(TestCaseWithFactory,
         productseries = packaging.productseries
         sourcepackage = packaging.sourcepackage
         self.factory.makePOTemplate(productseries=productseries)
-        view = self._makeInitializedView(sourcepackage)
+        view = make_initialized_view(sourcepackage)
         self.assertNotIn(
             self.no_templates_message, self._getNotifications(view))
 
@@ -665,7 +697,7 @@ class TestTranslationSharingDetailsViewNotifications(TestCaseWithFactory,
         # When a merge job is running, a message is displayed.
         sourcepackage = self.makeFullyConfiguredSharing(
             suppress_merge_job=False)[0]
-        view = self._makeInitializedView(sourcepackage)
+        view = make_initialized_view(sourcepackage)
         self.assertIn(
             self.job_running_message, self._getNotifications(view))
 
@@ -674,6 +706,6 @@ class TestTranslationSharingDetailsViewNotifications(TestCaseWithFactory,
         sourcepackage = self.makeFullyConfiguredSharing(
             suppress_merge_job=False)[0]
         self.endMergeJob(sourcepackage)
-        view = self._makeInitializedView(sourcepackage)
+        view = make_initialized_view(sourcepackage)
         self.assertNotIn(
             self.job_running_message, self._getNotifications(view))
