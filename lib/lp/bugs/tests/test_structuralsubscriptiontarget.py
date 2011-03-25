@@ -34,7 +34,7 @@ from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTargetHelper,
     )
 from lp.bugs.model.structuralsubscription import (
-    get_all_structural_subscriptions_for_target,
+    get_structural_subscriptions_for_target,
     StructuralSubscription,
     )
 from lp.bugs.tests.test_bugtarget import bugtarget_filebug
@@ -445,7 +445,7 @@ class TestGetAllStructuralSubscriptionsForTarget(TestCaseWithFactory):
         self.milestone = self.factory.makeMilestone(product=self.product)
 
     def getSubscriptions(self):
-        subscriptions = get_all_structural_subscriptions_for_target(
+        subscriptions = get_structural_subscriptions_for_target(
             self.product, self.subscriber)
         self.assertTrue(is_security_proxied_or_harmless(subscriptions))
         return subscriptions

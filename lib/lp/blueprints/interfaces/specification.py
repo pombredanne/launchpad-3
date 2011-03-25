@@ -144,28 +144,29 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
                 "May contain lower-case letters, numbers, and dashes. "
                 "It will be used in the specification url. "
                 "Examples: mozilla-type-ahead-find, postgres-smart-serial.")),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
     title = exported(
         Title(
             title=_('Title'), required=True, description=_(
                 "Describe the feature as clearly as possible in up to 70 "
                 "characters. This title is displayed in every feature "
                 "list or report.")),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
     specurl = exported(
         SpecURLField(
             title=_('Specification URL'), required=False,
             description=_(
                 "The URL of the specification. This is usually a wiki page."),
             constraint=valid_webref),
-        ('devel', dict(exported=True, exported_as='specification_url')),
-        exported=False)
+        exported_as="specification_url",
+        as_of="devel",
+        )
     summary = exported(
         Summary(
             title=_('Summary'), required=True, description=_(
                 "A single-paragraph description of the feature. "
                 "This will also be displayed in most feature listings.")),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
 
     definition_status = exported(
         Choice(
@@ -175,7 +176,7 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
             description=_(
                 "The current status of the process to define the "
                 "feature and get approval for the implementation plan.")),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
 
     assignee = exported(
         PublicPersonChoice(
@@ -183,14 +184,14 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
             description=_(
                 "The person responsible for implementing the feature."),
             vocabulary='ValidPersonOrTeam'),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
     drafter = exported(
         PublicPersonChoice(
             title=_('Drafter'), required=False,
             description=_(
                     "The person responsible for drafting the specification."),
                 vocabulary='ValidPersonOrTeam'),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
     approver = exported(
         PublicPersonChoice(
             title=_('Approver'), required=False,
@@ -198,23 +199,24 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
                 "The person responsible for approving the specification, "
                 "and for reviewing the code when it's ready to be landed."),
             vocabulary='ValidPersonOrTeam'),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
 
     priority = exported(
         Choice(
             title=_('Priority'), vocabulary=SpecificationPriority,
             default=SpecificationPriority.UNDEFINED, required=True),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
     datecreated = exported(
         Datetime(
             title=_('Date Created'), required=True, readonly=True),
-        ('devel', dict(exported=True, exported_as='date_created')),
-        exported=False)
+        as_of="devel",
+        exported_as="date_created",
+        )
     owner = exported(
         PublicPersonChoice(
             title=_('Owner'), required=True, readonly=True,
             vocabulary='ValidPersonOrTeam'),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
 
     product = Choice(title=_('Project'), required=False,
                      vocabulary='Product')
@@ -229,7 +231,9 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
             description=_(
                 "The project for which this proposal is being made."),
             schema=ISpecificationTarget),
-        ('devel', dict(exported=True, readonly=True)), exported=False)
+        as_of="devel",
+        readonly=True,
+        )
 
     productseries = Choice(
         title=_('Series Goal'), required=False,
@@ -252,7 +256,7 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
                 "The milestone in which we would like this feature to be "
                 "delivered."),
             schema=IMilestone),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
 
     # nomination to a series for release management
     # XXX: It'd be nice to export goal as read-only, but it's tricky because
@@ -277,7 +281,7 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
              description=_(
                 "Any notes on the status of this spec you would like to "
                 "make. Your changes will override the current text.")),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
     direction_approved = exported(
         Bool(title=_('Basic direction approved?'),
              required=True, default=False,
@@ -285,7 +289,7 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
                 "Check this to indicate that the drafter and assignee "
                 "have satisfied the approver that they are headed in "
                 "the right basic direction with this specification.")),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
     man_days = Int(title=_("Estimated Developer Days"),
         required=False, default=None, description=_("An estimate of the "
         "number of developer days it will take to implement this feature. "
@@ -299,7 +303,7 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
             description=_(
                 "The state of progress being made on the actual "
                 "implementation or delivery of this feature.")),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
     superseded_by = Choice(title=_("Superseded by"),
         required=False, default=None,
         vocabulary='Specification', description=_("The specification "
@@ -315,12 +319,12 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
                 'The person who first set the state of the '
                 'spec to the values that we consider mark it as started.'),
             vocabulary='ValidPersonOrTeam'),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
     date_started = exported(
         Datetime(
             title=_('Date Started'), required=False, readonly=True,
             description=_('The date when this spec was marked started.')),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
 
     completer = exported(
         PublicPersonChoice(
@@ -329,7 +333,7 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
             'The person who finally set the state of the '
             'spec to the values that we consider mark it as complete.'),
             vocabulary='ValidPersonOrTeam'),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
 
     date_completed = exported(
         Datetime(
@@ -339,7 +343,7 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
                 'complete. Note that complete also includes "obsolete" and '
                 'superseded. Essentially, it is the state where no more work '
                 'will be done on the feature.')),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
 
     # joins
     subscriptions = Attribute('The set of subscriptions to this spec.')
@@ -352,7 +356,7 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
             title=_('Specs on which this one depends.'),
             value_type=Reference(schema=Interface),  # ISpecification, really.
             readonly=True),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
     blocked_specs = Attribute('Specs for which this spec is a dependency.')
     all_deps = Attribute(
         "All the dependencies, including dependencies of dependencies.")
@@ -364,7 +368,7 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
             "branches on which this spec is being implemented."),
             value_type=Reference(schema=Interface), # ISpecificationBranch
             readonly=True),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
 
     # emergent properties
     informational = Attribute('Is True if this spec is purely informational '
@@ -379,7 +383,7 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
                 'code to be written. It is also true of obsolete and '
                 'superseded specs, since there is no longer any need '
                 'to schedule work for them.')),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
 
     is_incomplete = Attribute('Is True if this work still needs to '
         'be done. Is in fact always the opposite of is_complete.')
@@ -393,7 +397,7 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
                 'we consider to be "started". This looks at the delivery '
                 'attribute, and also considers informational specs to be '
                 'started when they are approved.')),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
 
     lifecycle_status = exported(
         Choice(
@@ -401,7 +405,7 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
             vocabulary=SpecificationLifecycleStatus,
             default=SpecificationLifecycleStatus.NOTSTARTED,
             readonly=True),
-        ('devel', dict(exported=True)), exported=False)
+        as_of="devel")
 
     def validateMove(target):
         """Check that the specification can be moved to the target."""
@@ -548,7 +552,7 @@ class ISpecification(ISpecificationPublic, ISpecificationEditRestricted,
                      IBugLinkTarget):
     """A Specification."""
 
-    export_as_webservice_entry()
+    export_as_webservice_entry(as_of="beta")
 
 
 class ISpecificationSet(IHasSpecifications):

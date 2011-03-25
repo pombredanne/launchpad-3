@@ -69,7 +69,6 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from lp.app.enums import (
     service_uses_launchpad,
-    ServiceUsage,
     )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import IServiceUsage
@@ -298,17 +297,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def translations_usage(self):
         """See `IServiceUsage.`"""
-        # If translations_usage is set for the Distribution, respect it.
-        usage = self.distribution.translations_usage
-        if usage != ServiceUsage.UNKNOWN:
-            return usage
-
-        # If not, usage is based on the presence of current translation
-        # templates for the series.
-        if self.getCurrentTranslationTemplates().count() > 0:
-            return ServiceUsage.LAUNCHPAD
-        else:
-            return ServiceUsage.UNKNOWN
+        return self.distribution.translations_usage
 
     @property
     def codehosting_usage(self):
@@ -474,17 +463,18 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         translatable messages, and the source package release's component.
         """
         find_spec = (
-            SQL("DISTINCT ON (score, sourcepackagename.name) TRUE as _ignored"),
+            SQL("DISTINCT ON (score, sourcepackagename.name) "
+                "TRUE as _ignored"),
             SourcePackageName,
             SQL("""
                 coalesce(total_bug_heat, 0) + coalesce(po_messages, 0) +
                 CASE WHEN component = 1 THEN 1000 ELSE 0 END AS score"""),
             SQL("coalesce(bug_count, 0) AS bug_count"),
             SQL("coalesce(total_messages, 0) AS total_messages"))
-        # This does not use _current_sourcepackage_joins_and_conditions because
-        # the two queries are working on different data sets - +needs-packaging
-        # was timing out and +packaging wasn't, and destabilising things
-        # unnecessarily is not good.
+        # This does not use _current_sourcepackage_joins_and_conditions
+        # because the two queries are working on different data sets -
+        # +needs-packaging was timing out and +packaging wasn't, and
+        # destabilising things unnecessarily is not good.
         origin = SQL("""
             SourcePackageName, (SELECT
         spr.sourcepackagename,
@@ -526,7 +516,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             distroseries=self,
             active_status=active_publishing_status,
             primary=ArchivePurpose.PRIMARY))
-        condition = SQL("""sourcepackagename.id = spn_info.sourcepackagename""")
+        condition = SQL("sourcepackagename.id = spn_info.sourcepackagename")
         results = IStore(self).using(origin).find(find_spec, condition)
         results = results.order_by('score DESC', SourcePackageName.name)
 
@@ -582,7 +572,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def _current_sourcepackage_po_weight(self):
-        """See getPrioritized*.""" 
+        """See getPrioritized*."""
         # Bugs and PO messages are heuristically scored. These queries
         # can easily timeout so filters and weights are used to create
         # an acceptable prioritization of packages that is fast to excecute.
@@ -591,7 +581,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def _current_sourcepackage_joins_and_conditions(self):
         """The SQL joins and conditions to prioritize source packages.
-        
+
         Used for getPrioritizedPackagings only.
         """
         # Bugs and PO messages are heuristically scored. These queries
@@ -1917,6 +1907,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getTemplatesCollection(self):
         """See `IHasTranslationTemplates`."""
         return TranslationTemplatesCollection().restrictDistroSeries(self)
+
+    def getSharingPartner(self):
+        """See `IHasTranslationTemplates`."""
+        # No sharing partner is defined for DistroSeries.
+        return None
 
     def getSuite(self, pocket):
         """See `IDistroSeries`."""
