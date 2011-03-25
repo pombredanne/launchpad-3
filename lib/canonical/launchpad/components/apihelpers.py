@@ -151,7 +151,9 @@ def patch_entry_explicit_version(interface, version):
         tagged = field.queryTaggedValue(LAZR_WEBSERVICE_EXPORTED)
         if tagged is None:
             continue
-        versioned = tagged.dict_for_name(version) or tagged.dict_for_name(None)
+        versioned = (
+            tagged.dict_for_name(version) or
+            tagged.dict_for_name(None))
         if versioned is None:
             # This field is explicitly published in some other version.
             # Just ignore it.
