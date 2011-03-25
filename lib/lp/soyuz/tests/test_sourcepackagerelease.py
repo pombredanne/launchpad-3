@@ -70,7 +70,7 @@ class TestSourcePackageRelease(TestCaseWithFactory):
         self.assertEquals("<invalid<url", spr.homepage)
 
 
-class TestSourcePackageReleaseTranslationFeiles(TestCaseWithFactory):
+class TestSourcePackageReleaseTranslationFiles(TestCaseWithFactory):
     """Tests for attachTranslationFiles on a different layer."""
 
     layer = LaunchpadZopelessLayer
