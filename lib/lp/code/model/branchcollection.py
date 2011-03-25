@@ -21,6 +21,7 @@ from storm.expr import (
     Select,
     Union,
     )
+from storm.info import ClassAlias
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -161,7 +162,12 @@ class GenericBranchCollection:
 
     def _getBranchExpressions(self):
         """Return the where expressions for this collection."""
-        return self._branch_filter_expressions
+        return (self._branch_filter_expressions
+            + self._getBranchVisibilityExpression())
+
+    def _getBranchVisibilityExpression(self, branch_class=None):
+        """Return the where clauses for visibility."""
+        return []
 
     def getBranches(self, eager_load=False):
         """See `IBranchCollection`."""
@@ -217,10 +223,20 @@ class GenericBranchCollection:
     def getMergeProposals(self, statuses=None, for_branches=None,
                           target_branch=None, merged_revnos=None):
         """See `IBranchCollection`."""
-        expressions = [
-            BranchMergeProposal.source_branchID.is_in(
-                self._getBranchIdQuery()),
+        Target = ClassAlias(Branch, "target")
+        tables = [Branch] + self._tables.values() + [
+            Join(BranchMergeProposal, And(
+                Branch.id==BranchMergeProposal.source_branchID,
+                *self._branch_filter_expressions)),
+            Join(Target, Target.id==BranchMergeProposal.target_branchID)
             ]
+        expressions = []
+        source_visible = self._getBranchVisibilityExpression()
+        if source_visible:
+            expressions.append(BranchMergeProposal.source_branchID.is_in(
+                Select(Branch.id, source_visible)))
+            expressions.append(BranchMergeProposal.target_branchID.is_in(
+                Select(Target.id, self._getBranchVisibilityExpression(Target))))
         if for_branches is not None:
             branch_ids = [branch.id for branch in for_branches]
             expressions.append(
@@ -231,18 +247,10 @@ class GenericBranchCollection:
         if merged_revnos is not None:
             expressions.append(
                 BranchMergeProposal.merged_revno.is_in(merged_revnos))
-        expressions.extend(self._getExtraMergeProposalExpressions())
         if statuses is not None:
             expressions.append(
                 BranchMergeProposal.queue_status.is_in(statuses))
-        return self.store.find(BranchMergeProposal, expressions)
-
-    def _getExtraMergeProposalExpressions(self):
-        """Extra storm expressions needed for merge proposal queries.
-
-        Used primarily by the visibility check for target branches.
-        """
-        return []
+        return self.store.using(*tables).find(BranchMergeProposal, expressions)
 
     def getMergeProposalsForPerson(self, person, status=None):
         """See `IBranchCollection`."""
@@ -266,7 +274,10 @@ class GenericBranchCollection:
             CodeReviewVoteReference.reviewer == reviewer,
             BranchMergeProposal.source_branchID.is_in(
                 self._getBranchIdQuery())]
-        expressions.extend(self._getExtraMergeProposalExpressions())
+        visibility = self._getBranchVisibilityExpression()
+        if visibility:
+            expressions.append(BranchMergeProposal.target_branchID.is_in(
+                Select(Branch.id, visibility)))
         if status is not None:
             expressions.append(
                 BranchMergeProposal.queue_status.is_in(status))
@@ -557,16 +568,10 @@ class AnonymousBranchCollection(GenericBranchCollection):
             store=store,
             branch_filter_expressions=list(branch_filter_expressions),
             tables=tables, exclude_from_search=exclude_from_search)
-        self._branch_filter_expressions.append(Branch.private == False)
 
-    def _getExtraMergeProposalExpressions(self):
-        """Extra storm expressions needed for merge proposal queries.
-
-        Used primarily by the visibility check for target branches.
-        """
-        return [
-            BranchMergeProposal.target_branchID.is_in(
-                Select(Branch.id, Branch.private == False))]
+    def _getBranchVisibilityExpression(self, branch_class=Branch):
+        """Return the where clauses for visibility."""
+        return [branch_class.private == False]
 
 
 class VisibleBranchCollection(GenericBranchCollection):
@@ -635,17 +640,21 @@ class VisibleBranchCollection(GenericBranchCollection):
                        Branch.private == True)))
         return private_branches
 
-    def _getBranchExpressions(self):
-        """Return the where expressions for this collection."""
-        public_branches = Branch.private == False
+    def _getBranchVisibilityExpression(self, branch_class=Branch):
+        """Return the where clauses for visibility.
+        
+        :param branch_class: The Branch class to use - permits using
+            ClassAliases.
+        """
+        public_branches = branch_class.private == False
         if self._private_branch_ids is None:
             # Public only.
-            return self._branch_filter_expressions + [public_branches]
+            return [public_branches]
         else:
             public_or_private = Or(
                 public_branches,
-                Branch.id.is_in(self._private_branch_ids))
-            return self._branch_filter_expressions + [public_or_private]
+                branch_class.id.is_in(self._private_branch_ids))
+            return [public_or_private]
 
     def visibleByUser(self, person):
         """See `IBranchCollection`."""
@@ -654,19 +663,3 @@ class VisibleBranchCollection(GenericBranchCollection):
         raise InvalidFilter(
             "Cannot filter for branches visible by user %r, already "
             "filtering for %r" % (person, self._user))
-
-    def _getExtraMergeProposalExpressions(self):
-        """Extra storm expressions needed for merge proposal queries.
-
-        Used primarily by the visibility check for target branches.
-        """
-        if self._private_branch_ids is None:
-            # Public only.
-            visible_branches = Select(Branch.id, Branch.private == False)
-        else:
-            visible_branches = Select(
-                Branch.id,
-                Or(Branch.private == False,
-                   Branch.id.is_in(self._private_branch_ids)))
-        return [
-            BranchMergeProposal.target_branchID.is_in(visible_branches)]
