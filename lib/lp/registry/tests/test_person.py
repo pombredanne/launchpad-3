@@ -695,36 +695,36 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
 
     def test_team_with_active_mailing_list_raises_error(self):
         # A team with an active mailing list cannot be merged.
-        master_team = self.factory.makeTeam()
-        dupe_team = self.factory.makeTeam()
+        target_team = self.factory.makeTeam()
+        test_team = self.factory.makeTeam()
         mailing_list = self.factory.makeMailingList(
-            dupe_team, dupe_team.teamowner)
+            test_team, test_team.teamowner)
         self.assertRaises(
-            AssertionError, self.person_set.merge, dupe_team, master_team)
+            AssertionError, self.person_set.merge, test_team, target_team)
 
     def test_team_with_inactive_mailing_list(self):
         # A team with an inactive mailing list can be merged.
-        master_team = self.factory.makeTeam()
-        dupe_team = self.factory.makeTeam()
+        target_team = self.factory.makeTeam()
+        test_team = self.factory.makeTeam()
         mailing_list = self.factory.makeMailingList(
-            dupe_team, dupe_team.teamowner)
+            test_team, test_team.teamowner)
         mailing_list.deactivate()
         mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
-        self.person_set.merge(dupe_team, master_team, dupe_team.teamowner)
-        self.assertEqual(master_team, dupe_team.merged)
+        self.person_set.merge(test_team, target_team, test_team.teamowner)
+        self.assertEqual(target_team, test_team.merged)
         self.assertEqual(MailingListStatus.PURGED, mailing_list.status)
-        emails = getUtility(IEmailAddressSet).getByPerson(master_team).count()
+        emails = getUtility(IEmailAddressSet).getByPerson(target_team).count()
         self.assertEqual(0, emails)
 
     def test_team_with_members(self):
         # Team members are removed before merging.
-        master_team = self.factory.makeTeam()
-        dupe_team = self.factory.makeTeam()
+        target_team = self.factory.makeTeam()
+        test_team = self.factory.makeTeam()
         former_member = self.factory.makePerson()
-        with person_logged_in(dupe_team.teamowner):
-            dupe_team.addMember(former_member, dupe_team.teamowner)
-        self.person_set.merge(dupe_team, master_team, dupe_team.teamowner)
-        self.assertEqual(master_team, dupe_team.merged)
+        with person_logged_in(test_team.teamowner):
+            test_team.addMember(former_member, test_team.teamowner)
+        self.person_set.merge(test_team, target_team, test_team.teamowner)
+        self.assertEqual(target_team, test_team.merged)
         self.assertEqual([], list(former_member.super_teams))
 
     def test_team_without_super_teams_is_fine(self):

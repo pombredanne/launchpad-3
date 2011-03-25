@@ -3830,7 +3830,6 @@ class PersonSet:
         naked_from_team = removeSecurityProxy(from_team)
         for team in super_teams:
             naked_from_team.retractTeamMembership(team, reviewer)
-        del naked_from_team
         IStore(from_team).flush()
 
     def mergeAsync(self, from_person, to_person):

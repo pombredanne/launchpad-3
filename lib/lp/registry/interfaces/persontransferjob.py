@@ -103,10 +103,10 @@ class IPersonMergeJobSource(IJobSource):
         """Create a new IMembershipNotificationJob.
 
         None is returned if either the from_person or to_person are already
-        in a pending merge. The review keywrod argument is required if
+        in a pending merge. The review keyword argument is required if
         the from_person and to_person are teams.
 
-        :param from_person: An IPerson or ITeam that is a duplocate.
+        :param from_person: An IPerson or ITeam that is a duplicate.
         :param to_person: An IPerson or ITeam that is a master.
         :param review: An IPerson who approved ITeam merger.
         """
