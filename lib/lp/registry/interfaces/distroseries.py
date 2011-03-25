@@ -241,7 +241,8 @@ class IDistroSeriesPublic(
             title=_("Parent series"),
             description=_("The series from which this one was branched."),
             required=True, schema=Interface, # Really IDistroSeries, see below
-            vocabulary='DistroSeries'))
+            vocabulary='DistroSeries'),
+        readonly=True)
     owner = exported(
         PublicPersonChoice(title=_("Owner"), vocabulary='ValidOwner'))
     date_created = exported(
