@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'AdvancedSubscriptionMixin',
+    'BugMuteSelfView',
     'BugPortletDuplicateSubcribersContents',
     'BugPortletSubcribersContents',
     'BugSubscriptionAddView',
@@ -38,8 +39,14 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.bugs.browser.bug import BugViewMixin
+from lp.bugs.browser.structuralsubscription import (
+    StructuralSubscriptionJSMixin,
+    )
 from lp.bugs.enum import BugNotificationLevel, HIDDEN_BUG_NOTIFICATION_LEVELS
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
+from lp.bugs.model.structuralsubscription import (
+    get_structural_subscriptions_for_bug,
+    )
 from lp.services import features
 from lp.services.propertycache import cachedproperty
 
@@ -222,9 +229,20 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
 
     @cachedproperty
     def _update_subscription_term(self):
+        if self.user_is_muted:
+            label = "Unmute bug mail from this bug and subscribe me to it"
+        else:
+            label = "Update my current subscription"
         return SimpleTerm(
-            'update-subscription', 'update-subscription',
-            'Update my current subscription')
+            'update-subscription', 'update-subscription', label)
+
+    @cachedproperty
+    def _unsubscribe_current_user_term(self):
+        if self._use_advanced_features and self.user_is_muted:
+            label = "Unmute bug mail from this bug"
+        else:
+            label = 'Unsubscribe me from this bug'
+        return SimpleTerm(self.user, self.user.name, label)
 
     @cachedproperty
     def _subscription_field(self):
@@ -233,12 +251,12 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         for person in self._subscribers_for_current_user:
             if person.id == self.user.id:
                 if (self._use_advanced_features and
-                    self.user_is_subscribed_directly):
-                    subscription_terms.append(self._update_subscription_term)
+                    (self.user_is_subscribed_directly or
+                    self.user_is_muted)):
+                        subscription_terms.append(
+                            self._update_subscription_term)
                 subscription_terms.insert(
-                    0, SimpleTerm(
-                        person, person.name,
-                        'Unsubscribe me from this bug'))
+                    0, self._unsubscribe_current_user_term)
                 self_subscribed = True
             else:
                 subscription_terms.append(
@@ -279,6 +297,8 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         """See `LaunchpadFormView`."""
         super(BugSubscriptionSubscribeSelfView, self).setUpWidgets()
         if self._use_advanced_features:
+            self.widgets['bug_notification_level'].widget_class = (
+                'bug-notification-level-field')
             if self._subscriber_count_for_current_user == 0:
                 # We hide the subscription widget if the user isn't
                 # subscribed, since we know who the subscriber is and we
@@ -298,14 +318,22 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
                 self.widgets['bug_notification_level'].visible = False
 
     @cachedproperty
+    def user_is_muted(self):
+        return self.context.bug.isMuted(self.user)
+
+    @cachedproperty
     def user_is_subscribed_directly(self):
         """Is the user subscribed directly to this bug?"""
-        return self.context.bug.isSubscribed(self.user)
+        return (
+            self.context.bug.isSubscribed(self.user) and not
+            self.user_is_muted)
 
     @cachedproperty
     def user_is_subscribed_to_dupes(self):
         """Is the user subscribed to dupes of this bug?"""
-        return self.context.bug.isSubscribedToDupes(self.user)
+        return (
+            self.context.bug.isSubscribedToDupes(self.user) and not
+            self.user_is_muted)
 
     @property
     def user_is_subscribed(self):
@@ -347,8 +375,10 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
             bug_notification_level = None
 
         if (subscription_person == self._update_subscription_term.value and
-            self.user_is_subscribed):
+            (self.user_is_subscribed or self.user_is_muted)):
             self._handleUpdateSubscription(level=bug_notification_level)
+        elif self.user_is_muted and subscription_person == self.user:
+            self._handleUnsubscribeCurrentUser()
         elif (not self.user_is_subscribed and
             (subscription_person == self.user)):
             self._handleSubscribe(bug_notification_level)
@@ -497,6 +527,9 @@ class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
         for subscription in direct_subscriptions:
             if not check_permission('launchpad.View', subscription.person):
                 continue
+            if (subscription.bug_notification_level ==
+                BugNotificationLevel.NOTHING):
+                continue
             if subscription.person == self.user:
                 can_unsubscribe = [subscription] + can_unsubscribe
             elif subscription.canBeUnsubscribedByUser(self.user):
@@ -545,8 +578,13 @@ class SubscriptionAttrDecorator:
         return 'subscriber-%s' % self.subscription.person.id
 
 
-class BugSubscriptionListView(LaunchpadView):
+class BugSubscriptionListView(StructuralSubscriptionJSMixin, LaunchpadView):
     """A view to show all a person's subscriptions to a bug."""
+
+    @property
+    def subscriptions(self):
+        return get_structural_subscriptions_for_bug(
+            self.context.bug, self.user)
 
     @property
     def label(self):
@@ -555,6 +593,35 @@ class BugSubscriptionListView(LaunchpadView):
 
     page_title = label
 
+
+class BugMuteSelfView(LaunchpadFormView):
+    """A view to mute a user's bug mail for a given bug."""
+
+    schema = IBugSubscription
+    field_names = []
+
     @property
-    def structural_subscriptions(self):
-        return self.context.bug.getStructuralSubscriptionsForPerson(self.user)
+    def label(self):
+        return "Mute bug mail for bug %s" % self.context.bug.id
+
+    page_title = label
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
+
+    def initialize(self):
+        super(BugMuteSelfView, self).initialize()
+        # If the user is already muted, redirect them to the +subscribe
+        # page, since there's no point doing its work twice.
+        if self.context.bug.isMuted(self.user):
+            self.request.response.redirect(
+                canonical_url(self.context, view_name="+subscribe"))
+
+    @action('Mute bug mail', name='mute')
+    def mute_action(self, action, data):
+        self.context.bug.mute(self.user, self.user)
+        self.request.response.addInfoNotification(
+            "Mail for bug #%s has been muted." % self.context.bug.id)

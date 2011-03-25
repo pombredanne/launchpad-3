@@ -2587,3 +2587,34 @@ class PackageDiffFormatterAPI(ObjectFormatterAPI):
             return '<a href="%s">%s</a> (%s)' % (
                 cgi.escape(diff.diff_content.http_url),
                 cgi.escape(diff.title), file_size)
+
+
+class CSSFormatter:
+    """A tales path adapter used for CSS rules.
+
+    Using an expression like this:
+        value/css:select/visible/unseen
+    You will get "visible" if value evaluates to true, and "unseen" if the
+    value evaluates to false.
+    """
+
+    implements(ITraversable)
+
+    def __init__(self, context):
+        self.context = context
+
+    def select(self, furtherPath):
+        if len(furtherPath) < 2:
+            raise TraversalError('select needs two subsequent path elements.')
+        true_value = furtherPath.pop()
+        false_value = furtherPath.pop()
+        if self.context:
+            return true_value
+        else:
+            return false_value
+
+    def traverse(self, name, furtherPath):
+        try:
+            return getattr(self, name)(furtherPath)
+        except AttributeError:
+            raise TraversalError(name)

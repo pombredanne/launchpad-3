@@ -6,7 +6,9 @@
 __metaclass__ = type
 __all__ = [
     'BooleanChoiceWidget',
+    'EnumChoiceWidget',
     'InlineEditPickerWidget',
+    'InlineMultiCheckboxWidget',
     'standard_text_html_representation',
     'TextAreaEditorWidget',
     'TextLineEditorWidget',
@@ -18,9 +20,13 @@ import simplejson
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.security.checker import canAccess, canWrite
-from zope.schema.interfaces import IVocabulary
+from zope.schema.interfaces import (
+    ICollection,
+    IVocabulary,
+    )
 from zope.schema.vocabulary import getVocabularyRegistry
 
+from lazr.enum import IEnumeratedType
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
 from canonical.lazr.utils import get_current_browser_request
 from canonical.lazr.utils import safe_hasattr
@@ -35,7 +41,8 @@ from lp.services.propertycache import cachedproperty
 class WidgetBase:
     """Useful methods for all widgets."""
 
-    def __init__(self, context, exported_field, content_box_id):
+    def __init__(self, context, exported_field, content_box_id,
+                 edit_view, edit_url, edit_title):
         self.context = context
         self.exported_field = exported_field
 
@@ -46,6 +53,13 @@ class WidgetBase:
         if content_box_id is None:
             content_box_id = "edit-%s" % self.attribute_name
         self.content_box_id = content_box_id
+
+        if edit_url is None:
+            edit_url = canonical_url(self.context, view_name=edit_view)
+        self.edit_url = edit_url
+        if edit_title is None:
+            edit_title = ''
+        self.edit_title = edit_title
 
         # The mutator method name is used to determine whether or not the
         # current user has permission to alter the attribute if the attribute
@@ -92,25 +106,14 @@ class WidgetBase:
             return False
 
 
-class EditableWidgetBase(WidgetBase):
-    """Adds an edit_url property to WidgetBase."""
-
-    def __init__(self, context, exported_field, content_box_id,
-                 edit_view, edit_url):
-        super(EditableWidgetBase, self).__init__(
-            context, exported_field, content_box_id)
-        if edit_url is None:
-            edit_url = canonical_url(self.context, view_name=edit_view)
-        self.edit_url = edit_url
-
-
-class TextWidgetBase(EditableWidgetBase):
+class TextWidgetBase(WidgetBase):
     """Abstract base for the single and multiline text editor widgets."""
 
     def __init__(self, context, exported_field, title, content_box_id,
-                 edit_view, edit_url):
+                 edit_view, edit_url, edit_title):
         super(TextWidgetBase, self).__init__(
-            context, exported_field, content_box_id, edit_view, edit_url)
+            context, exported_field, content_box_id,
+            edit_view, edit_url, edit_title)
         self.accept_empty = simplejson.dumps(self.optional_field)
         self.title = title
         self.widget_css_selector = simplejson.dumps('#' + self.content_box_id)
@@ -139,6 +142,7 @@ class TextLineEditorWidget(TextWidgetBase, DefinedTagMixin):
 
     def __init__(self, context, exported_field, title, tag,
                  content_box_id=None, edit_view="+edit", edit_url=None,
+                 edit_title='',
                  default_text=None, initial_value_override=None, width=None):
         """Create a widget wrapper.
 
@@ -153,6 +157,7 @@ class TextLineEditorWidget(TextWidgetBase, DefinedTagMixin):
             one is not specified.
         :param edit_url: The URL to use for editing when the user isn't logged
             in and when JS is off.  Defaults to the edit_view on the context.
+        :param edit_title: Used to set the title attribute of the anchor.
         :param default_text: Text to show in the unedited field, if the
             parameter value is missing or None.
         :param initial_value_override: Use this text for the initial edited
@@ -161,7 +166,7 @@ class TextLineEditorWidget(TextWidgetBase, DefinedTagMixin):
         """
         super(TextLineEditorWidget, self).__init__(
             context, exported_field, title, content_box_id,
-            edit_view, edit_url)
+            edit_view, edit_url, edit_title)
         self.tag = tag
         self.default_text = default_text
         self.initial_value_override = simplejson.dumps(initial_value_override)
@@ -181,7 +186,7 @@ class TextAreaEditorWidget(TextWidgetBase):
     __call__ = ViewPageTemplateFile('../templates/text-area-editor.pt')
 
     def __init__(self, context, exported_field, title, content_box_id=None,
-                 edit_view="+edit", edit_url=None,
+                 edit_view="+edit", edit_url=None, edit_title='',
                  hide_empty=True, linkify_text=True):
         """Create the widget wrapper.
 
@@ -195,6 +200,7 @@ class TextAreaEditorWidget(TextWidgetBase):
             one is not specified.
         :param edit_url: The URL to use for editing when the user isn't logged
             in and when JS is off.  Defaults to the edit_view on the context.
+        :param edit_title: Used to set the title attribute of the anchor.
         :param hide_empty: If the attribute has no value, or is empty, then
             hide the editor by adding the "unseen" CSS class.
         :param linkify_text: If True the HTML version of the text will have
@@ -202,7 +208,7 @@ class TextAreaEditorWidget(TextWidgetBase):
         """
         super(TextAreaEditorWidget, self).__init__(
             context, exported_field, title, content_box_id,
-            edit_view, edit_url)
+            edit_view, edit_url, edit_title)
         self.hide_empty = hide_empty
         self.linkify_text = linkify_text
 
@@ -232,7 +238,8 @@ class InlineEditPickerWidget(WidgetBase):
     def __init__(self, context, exported_field, default_html,
                  content_box_id=None, header='Select an item',
                  step_title='Search', remove_button_text='Remove',
-                 null_display_value='None'):
+                 null_display_value='None',
+                 edit_view="+edit", edit_url=None, edit_title=''):
         """Create a widget wrapper.
 
         :param context: The object that is being edited.
@@ -245,9 +252,15 @@ class InlineEditPickerWidget(WidgetBase):
         :param step_title: Smaller line of text below the header.
         :param remove_button_text: Override default button text: "Remove"
         :param null_display_value: This will be shown for a missing value
+        :param edit_view: The view name to use to generate the edit_url if
+            one is not specified.
+        :param edit_url: The URL to use for editing when the user isn't logged
+            in and when JS is off.  Defaults to the edit_view on the context.
+        :param edit_title: Used to set the title attribute of the anchor.
         """
         super(InlineEditPickerWidget, self).__init__(
-            context, exported_field, content_box_id)
+            context, exported_field, content_box_id,
+            edit_view, edit_url, edit_title)
         self.default_html = default_html
         self.header = header
         self.step_title = step_title
@@ -290,6 +303,114 @@ class InlineEditPickerWidget(WidgetBase):
         vocabulary = self.vocabulary
         user = getUtility(ILaunchBag).user
         return user and user in vocabulary
+
+
+class InlineMultiCheckboxWidget(WidgetBase):
+    """Wrapper for the lazr-js multicheckbox widget."""
+
+    __call__ = ViewPageTemplateFile(
+                        '../templates/inline-multicheckbox-widget.pt')
+
+    def __init__(self, context, exported_field,
+                 label, label_tag="span", attribute_type="default",
+                 vocabulary=None, header=None,
+                 empty_display_value="None", selected_items=list(),
+                 items_tag="span", items_style='',
+                 content_box_id=None, edit_view="+edit", edit_url=None,
+                 edit_title=''):
+        """Create a widget wrapper.
+
+        :param context: The object that is being edited.
+        :param exported_field: The attribute being edited. This should be
+            a field from an interface of the form ISomeInterface['fieldname']
+        :param label: The label text to display above the checkboxes
+        :param label_tag: The tag in which to wrap the label text.
+        :param attribute_type: The attribute type. Currently only "reference"
+            is supported. Used to determine whether to linkify the selected
+            checkbox item values. So ubuntu/hoary becomes
+            http://launchpad.net/devel/api/ubuntu/hoary
+        :param vocabulary: The name of the vocabulary which provides the
+            items or a vocabulary instance.
+        :param header: The text to display as the title of the popup form.
+        :param empty_display_value: The text to display if no items are
+            selected.
+        :param selected_items: The currently selected items.
+        :param items_tag: The tag in which to wrap the items checkboxes.
+        :param items_style: The css style to use for each item checkbox.
+        :param content_box_id: The HTML id to use for this widget.
+            Automatically generated if this is not provided.
+        :param edit_view: The view name to use to generate the edit_url if
+            one is not specified.
+        :param edit_url: The URL to use for editing when the user isn't logged
+            in and when JS is off.  Defaults to the edit_view on the context.
+        :param edit_title: Used to set the title attribute of the anchor.
+
+        """
+        super(InlineMultiCheckboxWidget, self).__init__(
+            context, exported_field, content_box_id,
+            edit_view, edit_url, edit_title)
+
+        linkify_items = attribute_type == "reference"
+
+        if header is None:
+            header = self.exported_field.title+":"
+        self.header = header,
+        self.empty_display_value = empty_display_value
+        self.label = label
+        self.label_open_tag = "<%s>" % label_tag
+        self.label_close_tag = "</%s>" % label_tag
+        self.items = selected_items
+        self.items_open_tag = ("<%s id='%s'>" %
+            (items_tag, self.content_box_id+"-items"))
+        self.items_close_tag = "</%s>" % items_tag
+        self.linkify_items = linkify_items
+
+        if vocabulary is None:
+            if ICollection.providedBy(exported_field):
+                vocabulary = exported_field.value_type.vocabularyName
+            else:
+                vocabulary = exported_field.vocabularyName
+
+
+        if isinstance(vocabulary, basestring):
+            vocabulary = getVocabularyRegistry().get(context, vocabulary)
+
+        # Construct checkbox data dict for each item in the vocabulary.
+        items = []
+        style = ';'.join(['font-weight: normal', items_style])
+        for item in vocabulary:
+            item_value = item.value if safe_hasattr(item, 'value') else item
+            checked = item_value in selected_items
+            if linkify_items:
+                save_value = canonical_url(item_value, force_local_path=True)
+            else:
+                save_value = item_value.name
+            new_item = {
+                'name': item.title,
+                'token': item.token,
+                'style': style,
+                'checked': checked,
+                'value': save_value}
+            items.append(new_item)
+        self.has_choices = len(items)
+
+        # JSON encoded attributes.
+        self.json_content_box_id = simplejson.dumps(self.content_box_id)
+        self.json_attribute = simplejson.dumps(self.api_attribute)
+        self.json_attribute_type = simplejson.dumps(attribute_type)
+        self.json_items = simplejson.dumps(items)
+        self.json_description = simplejson.dumps(
+            self.exported_field.description)
+
+    @property
+    def config(self):
+        return dict(
+            header=self.header,
+            )
+
+    @property
+    def json_config(self):
+        return simplejson.dumps(self.config)
 
 
 def vocabulary_to_choice_edit_items(
@@ -349,14 +470,14 @@ def standard_text_html_representation(value, linkify_text=True):
     return FormattersAPI(nomail).text_to_html(linkify_text=linkify_text)
 
 
-class BooleanChoiceWidget(EditableWidgetBase, DefinedTagMixin):
+class BooleanChoiceWidget(WidgetBase, DefinedTagMixin):
     """A ChoiceEdit for a boolean field."""
 
     __call__ = ViewPageTemplateFile('../templates/boolean-choice-widget.pt')
 
     def __init__(self, context, exported_field,
                  tag, false_text, true_text, prefix=None,
-                 edit_view="+edit", edit_url=None,
+                 edit_view="+edit", edit_url=None, edit_title='',
                  content_box_id=None, header='Select an item'):
         """Create a widget wrapper.
 
@@ -371,12 +492,14 @@ class BooleanChoiceWidget(EditableWidgetBase, DefinedTagMixin):
             one is not specified.
         :param edit_url: The URL to use for editing when the user isn't logged
             in and when JS is off.  Defaults to the edit_view on the context.
+        :param edit_title: Used to set the title attribute of the anchor.
         :param content_box_id: The HTML id to use for this widget. Automatically
             generated if this is not provided.
         :param header: The large text at the top of the choice popup.
         """
         super(BooleanChoiceWidget, self).__init__(
-            context, exported_field, content_box_id, edit_view, edit_url)
+            context, exported_field, content_box_id,
+            edit_view, edit_url, edit_title)
         self.header = header
         self.tag = tag
         self.prefix = prefix
@@ -402,6 +525,58 @@ class BooleanChoiceWidget(EditableWidgetBase, DefinedTagMixin):
                      disabled=False),
                 dict(name=self.false_text, value=False, style='', help='',
                      disabled=False)])
+
+    @property
+    def json_config(self):
+        return simplejson.dumps(self.config)
+
+
+class EnumChoiceWidget(WidgetBase):
+    """A popup choice widget."""
+
+    __call__ = ViewPageTemplateFile('../templates/enum-choice-widget.pt')
+
+    def __init__(self, context, exported_field, header,
+                 content_box_id=None, enum=None,
+                 edit_view="+edit", edit_url=None, edit_title='',
+                 css_class_prefix=''):
+        """Create a widget wrapper.
+
+        :param context: The object that is being edited.
+        :param exported_field: The attribute being edited. This should be
+            a field from an interface of the form ISomeInterface['fieldname']
+        :param header: The large text at the top of the picker.
+        :param content_box_id: The HTML id to use for this widget. Automatically
+            generated if this is not provided.
+        :param enum: The enumerated type used to generate the widget items.
+        :param edit_view: The view name to use to generate the edit_url if
+            one is not specified.
+        :param edit_url: The URL to use for editing when the user isn't logged
+            in and when JS is off.  Defaults to the edit_view on the context.
+        :param edit_title: Used to set the title attribute of the anchor.
+        :param css_class_prefix: Added to the start of the enum titles.
+        """
+        super(EnumChoiceWidget, self).__init__(
+            context, exported_field, content_box_id,
+            edit_view, edit_url, edit_title)
+        self.header = header
+        value = getattr(self.context, self.attribute_name)
+        self.css_class = "value %s%s" % (css_class_prefix, value.name)
+        self.value = value.title
+        if enum is None:
+            # Get the enum from the exported field.
+            enum = exported_field.vocabulary
+        if IEnumeratedType(enum, None) is None:
+            raise ValueError('%r does not provide IEnumeratedType' % enum)
+        self.items = vocabulary_to_choice_edit_items(enum, css_class_prefix)
+
+    @property
+    def config(self):
+        return dict(
+            contentBox='#'+self.content_box_id,
+            value=self.value,
+            title=self.header,
+            items=self.items)
 
     @property
     def json_config(self):

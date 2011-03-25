@@ -47,7 +47,8 @@ link into an AJAX control when JS is available:
     <h1 id="edit-title"><span class="yui3-editable_text-text">Widgets &gt;
         important</span>
         <a class="yui3-editable_text-trigger sprite edit"
-           href="http://launchpad.dev/widget/+edit"></a>
+           href="http://launchpad.dev/widget/+edit"
+           title=""></a>
     </h1>
     <script>
     ...
@@ -77,14 +78,24 @@ edit page if javascript is disabled.  This link defaults to the '+edit' view
 of the object being edited.  This can be overridden in two ways:
   * change the 'edit_view' parameter to be a different view
   * provide an 'edit_url' to use instead
+  * provide an 'edit_title' to set the title attribute of the anchor
 
     >>> print widget.edit_url
     http://launchpad.dev/widget/+edit
 
     >>> diff_view = TextLineEditorWidget(
-    ...     product, title_field, title, 'h1', edit_view='+edit-people')
+    ...     product, title_field, title, 'h1', edit_view='+edit-people',
+    ...     edit_title='Change the product title')
     >>> print diff_view.edit_url
     http://launchpad.dev/widget/+edit-people
+    >>> print diff_view.edit_title
+    Change the product title
+    >>> login_person(product.owner)
+    >>> print diff_view()
+    <h1...
+    <a class="yui3-editable_text-trigger sprite edit"
+       href="http://launchpad.dev/widget/+edit-people"
+       title="Change the product title">...
 
     >>> diff_url = TextLineEditorWidget(
     ...     product, title_field, title, 'h1', edit_url='http://example.com/')
@@ -129,6 +140,7 @@ over.
 
 With no-one logged in, there are no edit buttons.
 
+    >>> login(ANONYMOUS)
     >>> print widget()
     <div id="edit-description" class="lazr-multiline-edit">
       <div class="clearfix">
@@ -152,7 +164,8 @@ editor.
         <div class="edit-controls">
           &nbsp;
           <a class="yui3-editable_text-trigger sprite edit"
-             href="http://launchpad.dev/~eric/+archive/ppa/+edit"></a>
+             href="http://launchpad.dev/~eric/+archive/ppa/+edit"
+             title=""></a>
         </div>
         <h3>A title</h3>
       </div>
@@ -206,7 +219,8 @@ good idea as some spammers can create PPAs and link to other sites in the
 descriptions.  since the barrier to create a PPA is relatively low, we
 restrict the linkability of some fields.  The constructor provides a
 "linkify_text" parameter that defaults to True.  Set this to False to avoid
-the linkification of text.  See the IArchive['description'] editor for an example.
+the linkification of text.  See the IArchive['description'] editor for an
+example.
 
 
 InlineEditPickerWidget
@@ -312,13 +326,161 @@ rendered to hook up the widget.
       <span>
         &nbsp;
         <a class="editicon sprite edit"
-           href="http://launchpad.dev/~eric/+edit"></a>
+           href="http://launchpad.dev/~eric/+edit"
+           title=""></a>
       </span>
     </span>
     <script>
     LPS.use('lp.app.choice', function(Y) {
     ...
     </script>
+
+
+Changing the edit link
+**********************
+
+The edit link can be changed in exactly the same way as for the
+TextLineEditorWidget above.
+
+
+EnumChoiceWidget
+----------------
+
+This widget is primarily there allow setting of enum fields easily
+using the popup chooser.
+
+    >>> from lp.app.browser.lazrjs import EnumChoiceWidget
+
+As with the other widgets, this one requires a context object and a Choice
+type field.  The rendering of the widget hooks up to the lazr ChoiceSource
+with the standard patch plugin.
+
+One of the different things about this widget is the styles that are added.
+Many enums have specific colour styles.  Generally these are the names of
+the enum values (the upper-case bit) with a defined prefix.  This prefix
+is passed in to the constructor of the widget.
+
+A list of items is generated from the vocabulary.
+
+If the user does not have edit rights, the widget just renders the text based
+on the current value of the field on the object:
+
+    >>> login(ANONYMOUS)
+    >>> from lp.code.interfaces.branch import IBranch
+    >>> branch = factory.makeAnyBranch()
+    >>> widget = EnumChoiceWidget(
+    ...     branch, IBranch['lifecycle_status'],
+    ...     header='Change status to', css_class_prefix='branchstatus')
+    >>> print widget()
+    <span id="edit-lifecycle_status">
+       <span class="value branchstatusDEVELOPMENT">Development</span>
+    </span>
+
+If the user has edit rights, an edit icon is rendered and some javascript is
+rendered to hook up the widget.
+
+    >>> login_person(branch.owner)
+    >>> print widget()
+    <span id="edit-lifecycle_status">
+        <span class="value branchstatusDEVELOPMENT">Development</span>
+        <span>&nbsp;
+          <a class="editicon sprite edit"
+             href="http://.../+edit"
+             title=""></a>
+        </span>
+    </span>
+    <script>
+    LPS.use('lp.app.choice', function(Y) {
+    ...
+    </script>
+
+
+Changing the edit link
+**********************
+
+The edit link can be changed in exactly the same way as for the
+TextLineEditorWidget above.
+
+
+InlineMultiCheckboxWidget
+-------------------
+
+This widget is used to edit fields which are Lists or Sets. It displays the
+current items in the collection when the page is rendered and provides the
+ability to edit the selected items via a popup overlay. The popup has a set of
+checkboxes for selecting one or more items from a vocabulary. The vocabulary
+defaults to that associated with the field being edited but can be user
+defined.
+
+    >>> from lp.app.browser.lazrjs import InlineMultiCheckboxWidget
+
+The bare minimum that you need to provide the widget is the object that you
+are editing, and the exported field that is being edited, and the label to
+display for the set of checkboxes.
+
+The surrounding tag for the label and set of checkboxes are both customisable,
+and a prefix may be given.  The prefix is rendered as part of the widget, but
+isn't updated when the value changes.
+
+Other customisable parameters include the popup header text (defaults to the
+field title suffixed by ":"), the string to render when the field contains no
+selected items (defaults to "None"), and a CSS style to add to each checkbox
+node (defaults to '').
+
+If the user does not have edit rights, the widget just renders the text based
+on the current value of the field on the object:
+
+    >>> login(ANONYMOUS)
+    >>> from lp.code.interfaces.sourcepackagerecipe import (
+    ...     ISourcePackageRecipe,
+    ...     )
+    >>> distroseries = ISourcePackageRecipe['distroseries']
+    >>> recipe = factory.makeSourcePackageRecipe(
+    ...     owner=eric, name=u'cake_recipe', description=u'Yummy.')
+    >>> widget = InlineMultiCheckboxWidget(
+    ...     recipe, distroseries, 'Recipe distro series',
+    ...     header='Select distroseries:', vocabulary='BuildableDistroSeries',
+    ...     label_tag='dt', items_tag='dl',
+    ...     selected_items=recipe.distroseries)
+    >>> print widget()
+    <span id="edit-distroseries">
+      <dt>
+        Recipe distro series
+      </dt>
+      <span class="yui3-activator-data-box">
+        <dl id='edit-distroseries-items'>
+    ...
+      </span>
+      <div class="yui3-activator-message-box yui3-activator-hidden" />
+    </span>
+
+If the user has edit rights, an edit icon is rendered and some javascript is
+rendered to hook up the widget.
+
+    >>> login_person(eric)
+    >>> print widget()
+    <span id="edit-distroseries">
+      <dt>
+        Recipe distro series
+          <button class="lazr-btn yui3-activator-act yui3-activator-hidden"
+                  id="edit-distroseries-btn">
+            Edit
+          </button>
+        <noscript>
+          <a class="sprite edit"
+             href="http://code.launchpad.dev/~eric/+recipe/cake_recipe/+edit"
+             title=""></a>
+        </noscript>
+      </dt>
+      <span class="yui3-activator-data-box">
+        <dl id='edit-distroseries-items'>
+    ...
+      <div class="yui3-activator-message-box yui3-activator-hidden" />
+      </span>
+      <script>
+      LPS.use('lp.app.multicheckbox', function(Y) {
+      ...
+      </script>
 
 
 Changing the edit link

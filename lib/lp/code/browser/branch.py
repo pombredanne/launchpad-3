@@ -107,6 +107,7 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.errors import NotFoundError
+from lp.app.browser.lazrjs import EnumChoiceWidget
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.widgets.suggestion import TargetBranchWidget
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
@@ -668,17 +669,11 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
         return list(self.context.getProductSeriesPushingTranslations())
 
     @property
-    def status_config(self):
+    def status_widget(self):
         """The config to configure the ChoiceSource JS widget."""
-        return simplejson.dumps({
-            'status_widget_items': vocabulary_to_choice_edit_items(
-                BranchLifecycleStatus,
-                css_class_prefix='branchstatus'),
-            'status_value': self.context.lifecycle_status.title,
-            'user_can_edit_status': check_permission(
-                'launchpad.Edit', self.context),
-            'branch_path': '/' + self.context.unique_name,
-            })
+        return EnumChoiceWidget(
+            self.context.branch, IBranch['lifecycle_status'],
+            header='Change status to', css_class_prefix='branchstatus')
 
 
 class BranchInProductView(BranchView):

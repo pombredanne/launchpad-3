@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -131,9 +131,6 @@ class IProductSeriesPublic(
     ISpecificationGoal, IHasMilestones, IHasOfficialBugTags,
     IHasTranslationImports, IHasTranslationTemplates, IServiceUsage):
     """Public IProductSeries properties."""
-    # XXX Mark Shuttleworth 2004-10-14: Would like to get rid of id in
-    # interfaces, as soon as SQLobject allows using the object directly
-    # instead of using object.id.
     id = Int(title=_('ID'))
 
     product = exported(
@@ -237,12 +234,12 @@ class IProductSeriesPublic(
             description=_("The Bazaar branch for this series.  Leave blank "
                           "if this series is not maintained in Bazaar.")))
 
-    translations_autoimport_mode = Choice(
+    translations_autoimport_mode = exported(Choice(
         title=_('Import settings'),
         vocabulary=TranslationsBranchImportMode,
         required=True,
         description=_("Specify which files will be imported from the "
-                      "source code branch."))
+                      "source code branch.")), as_of="devel")
 
     potemplate_count = Int(
         title=_("The total number of POTemplates in this series."),
@@ -275,6 +272,10 @@ class IProductSeriesPublic(
         distroseries. This will use a Packaging record if one exists, but
         it will also work through the ancestry of the distroseries to try
         to find a Packaging entry that may be relevant."""
+
+    def getUbuntuTranslationFocusPackage():
+        """Return the SourcePackage that packages this project in Ubuntu's
+        translation focus or current series or any series, in that order."""
 
     def setPackaging(distroseries, sourcepackagename, owner):
         """Create or update a Packaging record for this product series,

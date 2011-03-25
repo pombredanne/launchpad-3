@@ -32,16 +32,6 @@
       </style>
     </noscript>
 
-        <script type="text/javascript"
-                tal:content="string:
-          LPS.use('lp.registry.pillar', function(Y) {
-              Y.on('load',
-                  function(e) {
-                      Y.lp.registry.pillar.activate_collapsible_div();
-                  },
-                  window);
-          });
-        "></script>
   </tal:head-epilogue>
 </head>
 

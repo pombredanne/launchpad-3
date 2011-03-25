@@ -12,12 +12,11 @@ __all__ = [
 
 from datetime import datetime
 import operator
-import simplejson
 
 from bzrlib import urlutils
 from bzrlib.revision import NULL_REVISION
-from lazr.restful.error import expose
 import pytz
+import simplejson
 from sqlobject import (
     BoolCol,
     ForeignKey,
@@ -73,8 +72,8 @@ from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp import urlappend
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.bugs.interfaces.bugtask import (
-    IBugTaskSet,
     BugTaskSearchParams,
+    IBugTaskSet,
     )
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.bzr import (
@@ -140,6 +139,7 @@ from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
     )
+from lp.services.database.bulk import load_related
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
@@ -580,17 +580,19 @@ class Branch(SQLBase, BzrIdentityMixin):
         if end_date is not None:
             date_clause = And(date_clause, Revision.revision_date <= end_date)
         result = Store.of(self).find(
-            (BranchRevision, Revision, RevisionAuthor),
+            (BranchRevision, Revision),
             BranchRevision.branch == self,
             BranchRevision.sequence != None,
             BranchRevision.revision == Revision.id,
-            Revision.revision_author == RevisionAuthor.id,
             date_clause)
         if oldest_first:
             result = result.order_by(BranchRevision.sequence)
         else:
             result = result.order_by(Desc(BranchRevision.sequence))
-        return result
+        def eager_load(rows):
+            revisions = map(operator.itemgetter(1), rows)
+            load_related(RevisionAuthor, revisions, ['revision_author_id'])
+        return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
     def getRevisionsSince(self, timestamp):
         """See `IBranch`."""
@@ -613,7 +615,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         else:
             return True
 
-    @property
+    @cachedproperty
     def code_import(self):
         from lp.code.model.codeimport import CodeImportSet
         return CodeImportSet().getByBranch(self)
@@ -1049,7 +1051,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         except CannotDeleteBranch, e:
             # Reraise and expose exception here so that the webservice_error
             # is propogated.
-            raise expose(CannotDeleteBranch(e.message))
+            raise CannotDeleteBranch(e.message)
 
     def _deleteBranchSubscriptions(self):
         """Delete subscriptions for this branch prior to deleting branch."""

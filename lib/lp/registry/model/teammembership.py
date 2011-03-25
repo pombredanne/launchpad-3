@@ -30,6 +30,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
+    cursor,
     flush_database_updates,
     SQLBase,
     sqlvalues,
@@ -139,7 +140,8 @@ class TeamMembership(SQLBase):
                         'team_url': canonical_url(team),
                         'dateexpires': self.dateexpires.strftime('%Y-%m-%d')}
         subject = '%s extended their membership' % member.name
-        template = get_email_template('membership-member-renewed.txt')
+        template = get_email_template(
+            'membership-member-renewed.txt', app='registry')
         admins_addrs = self.team.getTeamAdminsEmailAddresses()
         for address in admins_addrs:
             recipient = getUtility(IPersonSet).getByEmail(address)
@@ -168,7 +170,7 @@ class TeamMembership(SQLBase):
         else:
             template_name = 'membership-auto-renewed-personal.txt'
             member_addrs = get_contact_email_addresses(member)
-        template = get_email_template(template_name)
+        template = get_email_template(template_name, app='registry')
         for address in member_addrs:
             recipient = getUtility(IPersonSet).getByEmail(address)
             replacements['recipient_name'] = recipient.displayname
@@ -179,7 +181,7 @@ class TeamMembership(SQLBase):
         template_name = 'membership-auto-renewed-bulk.txt'
         admins_addrs = self.team.getTeamAdminsEmailAddresses()
         admins_addrs = set(admins_addrs).difference(member_addrs)
-        template = get_email_template(template_name)
+        template = get_email_template(template_name, app='registry')
         for address in admins_addrs:
             recipient = getUtility(IPersonSet).getByEmail(address)
             replacements['recipient_name'] = recipient.displayname
@@ -303,7 +305,7 @@ class TeamMembership(SQLBase):
             'expiration_date': self.dateexpires.strftime('%Y-%m-%d'),
             'approximate_duration': formatter.approximateduration()}
 
-        msg = get_email_template(templatename) % replacements
+        msg = get_email_template(templatename, app='registry') % replacements
         from_addr = format_address(
             team.displayname, config.canonical.noreply_from_address)
         simple_sendmail(from_addr, to_addrs, subject, msg)
@@ -491,6 +493,33 @@ class TeamMembershipSet:
                 Person.renewal_policy !=
                     TeamMembershipRenewalPolicy.AUTOMATIC)
         return IStore(TeamMembership).find(TeamMembership, *conditions)
+
+    def deactivateActiveMemberships(self, team, comment, reviewer):
+        """See `ITeamMembershipSet`."""
+        now = datetime.now(pytz.timezone('UTC'))
+        store = Store.of(team)
+        cur = cursor()
+        all_members = list(team.activemembers)
+        cur.execute("""
+            UPDATE TeamMembership
+            SET status=%(status)s,
+                last_changed_by=%(last_changed_by)s,
+                last_change_comment=%(comment)s,
+                date_last_changed=%(date_last_changed)s
+            WHERE
+                TeamMembership.team = %(team)s
+                AND TeamMembership.status IN %(original_statuses)s
+            """,
+            dict(
+                status=TeamMembershipStatus.DEACTIVATED,
+                last_changed_by=reviewer.id,
+                comment=comment,
+                date_last_changed=now,
+                team=team.id,
+                original_statuses=ACTIVE_STATES))
+        for member in all_members:
+            # store.invalidate() is called for each iteration.
+            _cleanTeamParticipation(member, team)
 
 
 class TeamParticipation(SQLBase):

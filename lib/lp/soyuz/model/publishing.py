@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -84,6 +84,9 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,
     IBinaryPackageBuildSet,
+    )
+from lp.soyuz.interfaces.distributionjob import (
+    IDistroSeriesDifferenceJobSource,
     )
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
@@ -333,6 +336,12 @@ class ArchivePublisherBase:
         self.datesuperseded = UTC_NOW
         self.removed_by = removed_by
         self.removal_comment = removal_comment
+        if ISourcePackagePublishingHistory.providedBy(self):
+            if self.archive == self.distroseries.main_archive:
+                dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
+                dsd_job_source.createForPackagePublication(
+                    self.distroseries,
+                    self.sourcepackagerelease.sourcepackagename)
 
     def requestObsolescence(self):
         """See `IArchivePublisher`."""
@@ -783,11 +792,9 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 "Overriding component to '%s' failed because it would "
                 "require a new archive." % new_component.name)
 
-        return SourcePackagePublishingHistory(
+        return getUtility(IPublishingSet).newSourcePublication(
             distroseries=current.distroseries,
             sourcepackagerelease=current.sourcepackagerelease,
-            status=PackagePublishingStatus.PENDING,
-            datecreated=UTC_NOW,
             pocket=current.pocket,
             component=new_component,
             section=new_section,
@@ -1409,6 +1416,10 @@ class PublishingSet:
                              distroseries, component, section, pocket,
                              ancestor=None):
         """See `IPublishingSet`."""
+        # Avoid circular import.
+        from lp.registry.model.distributionsourcepackage import (
+            DistributionSourcePackage)
+
         pub = SourcePackagePublishingHistory(
             distroseries=distroseries,
             pocket=pocket,
@@ -1419,10 +1430,12 @@ class PublishingSet:
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
             ancestor=ancestor)
-        # Import here to prevent import loop.
-        from lp.registry.model.distributionsourcepackage import (
-            DistributionSourcePackage)
         DistributionSourcePackage.ensure(pub)
+
+        if archive == distroseries.main_archive:
+            dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
+            dsd_job_source.createForPackagePublication(
+                distroseries, sourcepackagerelease.sourcepackagename)
         return pub
 
     def getBuildsForSourceIds(

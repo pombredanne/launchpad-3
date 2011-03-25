@@ -6,6 +6,8 @@
 __metaclass__ = type
 __all__ = [
     'HasSpecificationsMixin',
+    'recursive_blocked_query',
+    'recursive_dependent_query',
     'Specification',
     'SpecificationSet',
     ]
@@ -48,7 +50,6 @@ from canonical.launchpad.components.decoratedresultset import (
     )
 from canonical.launchpad.helpers import (
     get_contact_email_addresses,
-    shortlist,
     )
 from lp.blueprints.adapters import SpecificationDelta
 from lp.blueprints.enums import (
@@ -82,6 +83,28 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.product import IProduct
+
+
+def recursive_blocked_query(spec):
+    return """
+        RECURSIVE blocked(id) AS (
+            SELECT %s
+        UNION
+            SELECT sd.specification
+            FROM specificationdependency sd, blocked b
+            WHERE sd.dependency = b.id
+        )""" % spec.id
+
+
+def recursive_dependent_query(spec):
+    return """
+        RECURSIVE dependencies(id) AS (
+            SELECT %s
+        UNION
+            SELECT sd.dependency
+            FROM specificationdependency sd, dependencies d
+            WHERE sd.specification = d.id
+        )""" % spec.id
 
 
 class Specification(SQLBase, BugLinkTargetMixin):
@@ -399,6 +422,14 @@ class Specification(SQLBase, BugLinkTargetMixin):
         else:
             return SpecificationLifecycleStatus.NOTSTARTED
 
+    def setDefinitionStatus(self, definition_status, user):
+        self.definition_status = definition_status
+        self.updateLifecycleStatus(user)
+
+    def setImplementationStatus(self, implementation_status, user):
+        self.implementation_status = implementation_status
+        self.updateLifecycleStatus(user)
+
     def updateLifecycleStatus(self, user):
         """See ISpecification."""
         newstatus = None
@@ -601,42 +632,24 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 SpecificationDependency.delete(deplink.id)
                 return deplink
 
-    def _find_all_deps(self, deps):
-        """This adds all dependencies of this spec (and their deps) to
-        deps.
-
-        The function is called recursively, as part of self.all_deps.
-        """
-        for dep in self.dependencies:
-            if dep not in deps:
-                deps.add(dep)
-                dep._find_all_deps(deps)
-
     @property
     def all_deps(self):
-        deps = set()
-        self._find_all_deps(deps)
-        return sorted(shortlist(deps),
-                    key=lambda s: (s.definition_status, s.priority, s.title))
-
-    def _find_all_blocked(self, blocked):
-        """This adds all blockers of this spec (and their blockers) to
-        blocked.
-
-        The function is called recursively, as part of self.all_blocked.
-        """
-        for blocker in self.blocked_specs:
-            if blocker not in blocked:
-                blocked.add(blocker)
-                blocker._find_all_blocked(blocked)
+        return Store.of(self).with_(
+            SQL(recursive_dependent_query(self))).find(
+            Specification,
+            Specification.id != self.id,
+            SQL('Specification.id in (select id from dependencies)')
+            ).order_by(Specification.name, Specification.id)
 
     @property
     def all_blocked(self):
         """See `ISpecification`."""
-        blocked = set()
-        self._find_all_blocked(blocked)
-        return sorted(blocked, key=lambda s: (s.definition_status,
-                                              s.priority, s.title))
+        return Store.of(self).with_(
+            SQL(recursive_blocked_query(self))).find(
+            Specification,
+            Specification.id != self.id,
+            SQL('Specification.id in (select id from blocked)')
+            ).order_by(Specification.name, Specification.id)
 
     # branches
     def getBranchLink(self, branch):
@@ -655,6 +668,10 @@ class Specification(SQLBase, BugLinkTargetMixin):
     def unlinkBranch(self, branch, user):
         spec_branch = self.getBranchLink(branch)
         spec_branch.destroySelf()
+
+    def __repr__(self):
+        return '<Specification %s %r for %r>' % (
+            self.id, self.name, self.target.name)
 
 
 class HasSpecificationsMixin:

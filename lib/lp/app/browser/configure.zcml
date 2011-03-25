@@ -233,6 +233,12 @@
       name="badges"
       />
 
+  <adapter
+      for="*"
+      provides="zope.traversing.interfaces.IPathAdapter"
+      factory="lp.app.browser.tales.CSSFormatter"
+      name="css"
+      />
   <!-- TALES fmt: namespace -->
 
   <!-- The next directive is registered for all dicts, but we really only

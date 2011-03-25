@@ -15,14 +15,13 @@ __all__ = [
 
 import datetime
 
-from lazr.restful.error import expose
+from lazr.restful.declarations import webservice_error
 from sqlobject import (
     AND,
     BoolCol,
     DateCol,
     ForeignKey,
     SQLMultipleJoin,
-    SQLObjectNotFound,
     StringCol,
     )
 from storm.locals import (
@@ -122,6 +121,7 @@ class HasMilestonesMixin:
 
 class MultipleProductReleases(Exception):
     """Raised when a second ProductRelease is created for a milestone."""
+    webservice_error(400)
 
     def __init__(self, msg='A milestone can only have one ProductRelease.'):
         super(MultipleProductReleases, self).__init__(msg)
@@ -212,7 +212,7 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
                              changelog=None, release_notes=None):
         """See `IMilestone`."""
         if self.product_release is not None:
-            raise expose(MultipleProductReleases())
+            raise MultipleProductReleases()
         release = ProductRelease(
             owner=owner,
             changelog=changelog,

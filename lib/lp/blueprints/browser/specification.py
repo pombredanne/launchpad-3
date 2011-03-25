@@ -45,17 +45,29 @@ from subprocess import (
     Popen,
     )
 
+from lazr.restful.interface import use_template
+from lazr.restful.interfaces import (
+    IFieldHTMLRenderer,
+    IWebServiceClientRequest,
+    )
 from zope.app.form.browser import (
     TextAreaWidget,
     TextWidget,
     )
 from zope.app.form.browser.itemswidgets import DropdownWidget
+from zope import component
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 from zope.formlib import form
 from zope.formlib.form import Fields
-from zope.interface import Interface
-from zope.schema import Choice
+from zope.interface import (
+    implementer,
+    Interface,
+    )
+from zope.schema import (
+    Bool,
+    Choice,
+    )
 from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
@@ -85,14 +97,24 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     safe_action,
     )
+from lp.app.browser.lazrjs import (
+    BooleanChoiceWidget,
+    EnumChoiceWidget,
+    InlineEditPickerWidget,
+    TextAreaEditorWidget,
+    TextLineEditorWidget,
+    )
+from lp.app.browser.tales import (
+    DateTimeFormatterAPI,
+    format_link,
+    )
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
-from lp.blueprints.enums import SpecificationDefinitionStatus
+from lp.blueprints.enums import (
+    NewSpecificationDefinitionStatus,
+    SpecificationDefinitionStatus,
+    SpecificationImplementationStatus,
+    )
 from lp.blueprints.interfaces.specification import (
-    INewSpecification,
-    INewSpecificationProjectTarget,
-    INewSpecificationSeriesGoal,
-    INewSpecificationSprint,
-    INewSpecificationTarget,
     ISpecification,
     ISpecificationSet,
     )
@@ -103,6 +125,69 @@ from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.services.propertycache import cachedproperty
+
+
+class INewSpecification(Interface):
+    """A schema for a new specification."""
+
+    use_template(ISpecification, include=[
+        'name',
+        'title',
+        'specurl',
+        'summary',
+        'assignee',
+        'drafter',
+        'approver',
+        ])
+
+    definition_status = Choice(
+        title=_('Definition Status'),
+        vocabulary=NewSpecificationDefinitionStatus,
+        default=NewSpecificationDefinitionStatus.NEW,
+        description=_(
+            "The current status of the process to define the "
+            "feature and get approval for the implementation plan."))
+
+
+class INewSpecificationProjectTarget(Interface):
+    """A mixin schema for a new specification.
+
+    Requires the user to specify a product from a given project.
+    """
+    target = Choice(
+        title=_("For"),
+        description=_("The project for which this proposal is being made."),
+        required=True, vocabulary='ProjectProducts')
+
+
+class INewSpecificationSeriesGoal(Interface):
+    """A mixin schema for a new specification.
+
+    Allows the user to propose the specification as a series goal.
+    """
+    goal = Bool(title=_('Propose for series goal'),
+                description=_("Check this to indicate that you wish to "
+                              "propose this blueprint as a series goal."),
+                required=True, default=False)
+
+
+class INewSpecificationSprint(Interface):
+    """A mixin schema for a new specification.
+
+    Allows the user to propose the specification for discussion at a sprint.
+    """
+    sprint = Choice(title=_("Propose for sprint"),
+                    description=_("The sprint to which agenda this "
+                                  "blueprint is being suggested."),
+                    required=False, vocabulary='FutureSprint')
+
+
+class INewSpecificationTarget(Interface):
+    """A mixin schema for a new specification.
+
+    Requires the user to specify a distribution or a product as a target.
+    """
+    use_template(ISpecification, include=['target'])
 
 
 class NewSpecificationView(LaunchpadFormView):
@@ -518,6 +603,83 @@ class SpecificationView(SpecificationSimpleView):
             msg %= len(self.feedbackrequests)
             self.notices.append(msg)
 
+    @property
+    def approver_widget(self):
+        return InlineEditPickerWidget(
+            self.context, ISpecification['approver'],
+            format_link(self.context.approver),
+            header='Change approver', edit_view='+people',
+            step_title='Select a new approver')
+
+    @property
+    def drafter_widget(self):
+        return InlineEditPickerWidget(
+            self.context, ISpecification['drafter'],
+            format_link(self.context.drafter),
+            header='Change drafter', edit_view='+people',
+            step_title='Select a new drafter')
+
+    @property
+    def assignee_widget(self):
+        return InlineEditPickerWidget(
+            self.context, ISpecification['assignee'],
+            format_link(self.context.assignee),
+            header='Change assignee', edit_view='+people',
+            step_title='Select a new assignee')
+
+    @property
+    def definition_status_widget(self):
+        return EnumChoiceWidget(
+            self.context, ISpecification['definition_status'],
+            header='Change definition status to', edit_view='+status',
+            edit_title='Change definition status',
+            css_class_prefix='specstatus')
+
+    @property
+    def implementation_status_widget(self):
+        return EnumChoiceWidget(
+            self.context, ISpecification['implementation_status'],
+            header='Change implementation status to', edit_view='+status',
+            edit_title='Change implementation status',
+            css_class_prefix='specdelivery')
+
+    @property
+    def priority_widget(self):
+        return EnumChoiceWidget(
+            self.context, ISpecification['priority'],
+            header='Change priority to', edit_view='+priority',
+            edit_title='Change priority',
+            css_class_prefix='specpriority')
+
+    @property
+    def title_widget(self):
+        field = ISpecification['title']
+        title = "Edit the blueprint title"
+        return TextLineEditorWidget(self.context, field, title, 'h1')
+
+    @property
+    def summary_widget(self):
+        """The summary as a widget."""
+        return TextAreaEditorWidget(
+            self.context, ISpecification['summary'], title="")
+
+    @property
+    def whiteboard_widget(self):
+        """The description as a widget."""
+        return TextAreaEditorWidget(
+            self.context, ISpecification['whiteboard'], title="Whiteboard",
+            edit_view='+whiteboard', edit_title='Edit whiteboard',
+            hide_empty=False)
+
+    @property
+    def direction_widget(self):
+        return BooleanChoiceWidget(
+            self.context, ISpecification['direction_approved'],
+            tag='span',
+            false_text='Needs approval',
+            true_text='Approved',
+            header='Change approval of basic direction')
+
 
 class SpecificationSubscriptionView(SpecificationView):
 
@@ -528,14 +690,39 @@ class SpecificationSubscriptionView(SpecificationView):
         return "Subscribe to blueprint"
 
 
+class SpecificationEditSchema(ISpecification):
+    """Provide overrides for the implementaion and definition status."""
+
+    definition_status = Choice(
+        title=_('Definition Status'), required=True,
+        vocabulary=SpecificationDefinitionStatus,
+        default=SpecificationDefinitionStatus.NEW,
+        description=_(
+            "The current status of the process to define the "
+            "feature and get approval for the implementation plan."))
+
+    implementation_status = Choice(
+        title=_("Implementation Status"), required=True,
+        default=SpecificationImplementationStatus.UNKNOWN,
+        vocabulary=SpecificationImplementationStatus,
+        description=_(
+            "The state of progress being made on the actual "
+            "implementation or delivery of this feature."))
+
+
 class SpecificationEditView(LaunchpadEditFormView):
 
-    schema = ISpecification
+    schema = SpecificationEditSchema
     field_names = ['name', 'title', 'specurl', 'summary', 'whiteboard']
     label = 'Edit specification'
     custom_widget('summary', TextAreaWidget, height=5)
     custom_widget('whiteboard', TextAreaWidget, height=10)
     custom_widget('specurl', TextWidget, width=60)
+
+    @property
+    def adapters(self):
+        """See `LaunchpadFormView`"""
+        return {SpecificationEditSchema: self.context}
 
     @action(_('Change'), name='change')
     def change_action(self, action, data):
@@ -1237,3 +1424,34 @@ class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
         if search_text is not None:
             url += '?searchtext=' + search_text
         self.next_url = url
+
+
+@component.adapter(ISpecification, Interface, IWebServiceClientRequest)
+@implementer(IFieldHTMLRenderer)
+def starter_xhtml_representation(context, field, request):
+    """Render the starter as XHTML to populate the page using AJAX."""
+    def render(value=None):
+        # The value is a webservice link to the object, we want field value.
+        starter = context.starter
+        if starter is None:
+            return ''
+        date_formatter = DateTimeFormatterAPI(context.date_started)
+        return "%s %s" % (
+            format_link(starter), date_formatter.displaydate())
+    return render
+
+
+@component.adapter(ISpecification, Interface, IWebServiceClientRequest)
+@implementer(IFieldHTMLRenderer)
+def completer_xhtml_representation(context, field, request):
+    """Render the completer as XHTML to populate the page using AJAX."""
+    def render(value=None):
+        # The value is a webservice link to the object, we want field value.
+        completer = context.completer
+        if completer is None:
+            return ''
+        date_formatter = DateTimeFormatterAPI(context.date_completed)
+        return "%s %s" % (
+            format_link(completer), date_formatter.displaydate())
+    return render
+

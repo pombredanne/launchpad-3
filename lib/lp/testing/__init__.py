@@ -1,4 +1,4 @@
-# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0401,C0301,F0401
@@ -9,9 +9,9 @@ __metaclass__ = type
 __all__ = [
     'ANONYMOUS',
     'anonymous_logged_in',
+    'api_url',
     'build_yui_unittest_suite',
     'BrowserTestCase',
-    'capture_events',
     'celebrity_logged_in',
     'FakeTime',
     'get_lsb_information',
@@ -28,7 +28,7 @@ __all__ = [
     'normalize_whitespace',
     'oauth_access_token_for',
     'person_logged_in',
-    'quote_jquery_expression'
+    'quote_jquery_expression',
     'record_statements',
     'run_with_login',
     'run_with_storm_debug',
@@ -71,11 +71,11 @@ import tempfile
 import time
 import unittest
 
+from bzrlib import trace
 from bzrlib.bzrdir import (
     BzrDir,
     format_registry,
     )
-from bzrlib import trace
 from bzrlib.transport import get_transport
 import fixtures
 import pytz
@@ -152,6 +152,7 @@ from lp.testing._login import (
 # XXX: JonathanLange 2010-01-01: Why?!
 from lp.testing._tales import test_tales
 from lp.testing._webservice import (
+    api_url,
     launchpadlib_credentials_for,
     launchpadlib_for,
     oauth_access_token_for,
@@ -159,7 +160,10 @@ from lp.testing._webservice import (
 from lp.testing.fixture import ZopeEventHandlerFixture
 from lp.testing.karma import KarmaRecorder
 from lp.testing.matchers import Provides
-from lp.testing.windmill import constants, lpuser
+from lp.testing.windmill import (
+    constants,
+    lpuser,
+    )
 
 
 class FakeTime:
@@ -790,6 +794,38 @@ class WindmillTestCase(TestCaseWithFactory):
         return client, obj_url
 
 
+class WebServiceTestCase(TestCaseWithFactory):
+    """Test case optimized for testing the web service using launchpadlib."""
+
+    @property
+    def layer(self):
+        # XXX wgrant 2011-03-09 bug=505913:
+        # TestTwistedJobRunner.test_timeout fails if this is at the
+        # module level. There is probably some hidden circular import.
+        from canonical.testing.layers import AppServerLayer
+        return AppServerLayer
+
+    def setUp(self):
+        super(WebServiceTestCase, self).setUp()
+        self.ws_version = 'devel'
+        self.service = self.factory.makeLaunchpadService(
+            version=self.ws_version)
+
+    def wsObject(self, obj, user=None):
+        """Return the launchpadlib version of the supplied object.
+
+        :param obj: The object to find the launchpadlib equivalent of.
+        :param user: The user to use for accessing the object over
+            lauchpadlib.  Defaults to an arbitrary logged-in user.
+        """
+        if user is not None:
+            service = self.factory.makeLaunchpadService(
+                user, version=self.ws_version)
+        else:
+            service = self.service
+        return ws_object(service, obj)
+
+
 def quote_jquery_expression(expression):
     """jquery requires meta chars used in literals escaped with \\"""
     return re.sub(
@@ -803,8 +839,20 @@ class YUIUnitTestCase(WindmillTestCase):
 
     _yui_results = None
 
+    def __init__(self):
+        """Create a new test case without a choice of test method name.
+
+        Preventing the choice of test method ensures that we can safely
+        provide a test ID based on the file path.
+        """
+        super(YUIUnitTestCase, self).__init__("checkResults")
+
     def initialize(self, test_path):
         self.test_path = test_path
+
+    def id(self):
+        """Return an ID for this test based on the file path."""
+        return self.test_path
 
     def setUp(self):
         super(YUIUnitTestCase, self).setUp()
@@ -837,7 +885,12 @@ class YUIUnitTestCase(WindmillTestCase):
             self._yui_results[test_name] = dict(
                 result=result, message=message)
 
-    def runTest(self):
+    def checkResults(self):
+        """Check the results.
+
+        The tests are run during `setUp()`, but failures need to be reported
+        from here.
+        """
         if self._yui_results is None or len(self._yui_results) == 0:
             self.fail("Test harness or js failed.")
         for test_name in self._yui_results:
@@ -931,6 +984,7 @@ class EventRecorder:
     This prevents the events from propagating to their normal subscribers.
     The recorded events can be accessed via the 'events' list.
     """
+
     def __init__(self):
         self.events = []
         self.old_subscribers = None
@@ -950,13 +1004,13 @@ class EventRecorder:
 def feature_flags():
     """Provide a context in which feature flags work."""
     empty_request = LaunchpadTestRequest()
-    old_features = getattr(features.per_thread, 'features', None)
-    features.per_thread.features = FeatureController(
-        ScopesFromRequest(empty_request).lookup)
+    old_features = features.get_relevant_feature_controller()
+    features.install_feature_controller(FeatureController(
+        ScopesFromRequest(empty_request).lookup))
     try:
         yield
     finally:
-        features.per_thread.features = old_features
+        features.install_feature_controller(old_features)
 
 
 def get_lsb_information():
@@ -1065,12 +1119,12 @@ def set_feature_flag(name, value, scope=u'default', priority=1):
     """Set a feature flag to the specified value.
 
     In order to access the flag, use the feature_flags context manager or
-    populate features.per_thread.features some other way.
+    set the feature controller in some other way.
     :param name: The name of the flag.
     :param value: The value of the flag.
     :param scope: The scope in which the specified value applies.
     """
-    assert getattr(features.per_thread, 'features', None) is not None
+    assert features.get_relevant_feature_controller() is not None
     flag = FeatureFlag(
         scope=scope, flag=name, value=value, priority=priority)
     store = getFeatureStore()
@@ -1159,11 +1213,8 @@ def ws_object(launchpad, obj):
     :param obj: The object to convert.
     :return: A launchpadlib Entry object.
     """
-    api_request = WebServiceTestRequest()
-    obj_url = canonical_url(obj, request=api_request)
-    return launchpad.load(
-        obj_url.replace('http://api.launchpad.dev/',
-        str(launchpad._root_uri)))
+    api_request = WebServiceTestRequest(SERVER_URL=str(launchpad._root_uri))
+    return launchpad.load(canonical_url(obj, request=api_request))
 
 
 @contextmanager

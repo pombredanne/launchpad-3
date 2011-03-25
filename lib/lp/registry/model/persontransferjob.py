@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Job classes related to PersonTransferJob."""
@@ -11,7 +11,10 @@ __all__ = [
 
 from lazr.delegates import delegates
 import simplejson
-from storm.expr import And
+from storm.expr import (
+    And,
+    Or,
+    )
 from storm.locals import (
     Int,
     Reference,
@@ -294,7 +297,7 @@ class MembershipNotificationJob(PersonTransferJobDerived):
 
         if len(admin_emails) != 0:
             admin_template = get_email_template(
-                "%s-bulk.txt" % template_name)
+                "%s-bulk.txt" % template_name, app='registry')
             for address in admin_emails:
                 recipient = getUtility(IPersonSet).getByEmail(address)
                 replacements['recipient_name'] = recipient.displayname
@@ -310,7 +313,8 @@ class MembershipNotificationJob(PersonTransferJobDerived):
                 template = '%s-bulk.txt' % template_name
             else:
                 template = '%s-personal.txt' % template_name
-            self.member_template = get_email_template(template)
+            self.member_template = get_email_template(
+                template, app='registry')
             for address in self.member_email:
                 recipient = getUtility(IPersonSet).getByEmail(address)
                 replacements['recipient_name'] = recipient.displayname
@@ -337,22 +341,28 @@ class PersonMergeJob(PersonTransferJobDerived):
     @classmethod
     def create(cls, from_person, to_person):
         """See `IPersonMergeJobSource`."""
+        if from_person.is_merge_pending or to_person.is_merge_pending:
+            return None
         return super(PersonMergeJob, cls).create(
             minor_person=from_person, major_person=to_person, metadata={})
 
     @classmethod
-    def find(cls, from_person=None, to_person=None):
+    def find(cls, from_person=None, to_person=None, any_person=False):
         """See `IPersonMergeJobSource`."""
         conditions = [
             PersonTransferJob.job_type == cls.class_job_type,
             PersonTransferJob.job_id == Job.id,
             Job._status.is_in(Job.PENDING_STATUSES)]
+        arg_conditions = []
         if from_person is not None:
-            conditions.append(
+            arg_conditions.append(
                 PersonTransferJob.minor_person == from_person)
         if to_person is not None:
-            conditions.append(
+            arg_conditions.append(
                 PersonTransferJob.major_person == to_person)
+        if any_person and from_person is not None and to_person is not None:
+            arg_conditions = [Or(*arg_conditions)]
+        conditions.extend(arg_conditions)
         return DecoratedResultSet(
             IStore(PersonTransferJob).find(
                 PersonTransferJob, *conditions), cls)

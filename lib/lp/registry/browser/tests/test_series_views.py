@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -12,9 +12,11 @@ import unittest
 
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     LaunchpadFunctionalLayer,
     )
@@ -29,10 +31,17 @@ from lp.services.features.model import (
     )
 from lp.services.features import (
     getFeatureFlag,
-    per_thread,
+    install_feature_controller,
+    )
+from lp.soyuz.interfaces.sourcepackageformat import (
+    ISourcePackageFormatSelectionSet,
+    )
+from lp.soyuz.enums import (
+    SourcePackageFormat,
     )
 from lp.testing import (
     TestCaseWithFactory,
+    login_person,
     person_logged_in,
     )
 from lp.testing.views import create_initialized_view
@@ -78,11 +87,54 @@ def set_derived_series_ui_feature_flag(test_case):
     # features.
     def in_scope(value):
         return True
-    per_thread.features = FeatureController(in_scope)
+    install_feature_controller(FeatureController(in_scope))
+    test_case.addCleanup(install_feature_controller, None)
 
-    def reset_per_thread_features():
-        per_thread.features = None
-    test_case.addCleanup(reset_per_thread_features)
+
+class DistroSeriesLocalPackageDiffsPageTestCase(TestCaseWithFactory):
+    """Test the distroseries +localpackagediffs page."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(DistroSeriesLocalPackageDiffsPageTestCase,
+              self).setUp('foo.bar@canonical.com')
+        set_derived_series_ui_feature_flag(self)
+        self.simple_user = self.factory.makePerson()
+
+    def test_filter_form_if_differences(self):
+        # Test that the page includes the filter form if differences
+        # are present
+        login_person(self.simple_user)
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
+        current_difference = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series)
+
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs', principal=self.simple_user)
+
+        self.assertIsNot(
+            None,
+            find_tag_by_id(view(), 'distroseries-localdiff-search-filter'),
+            "Form filter should be shown when there are differences.")
+
+    def test_filter_noform_if_nodifferences(self):
+        # Test that the page doesn't includes the filter form if no
+        # differences are present
+        login_person(self.simple_user)
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
+
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs', principal=self.simple_user)
+
+        self.assertIs(
+            None,
+            find_tag_by_id(view(), 'distroseries-localdiff-search-filter'),
+            "Form filter should not be shown when there are no differences.")
 
 
 class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
@@ -221,6 +273,63 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
+    def _set_source_selection(self, series):
+        # Set up source package format selection so that copying will
+        # work with the default dsc_format used in
+        # makeSourcePackageRelease.
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            series, SourcePackageFormat.FORMAT_1_0)
+
+    def test_batch_filtered(self):
+        # The name_filter parameter allows filtering of packages by name.
+        set_derived_series_ui_feature_flag(self)
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
+        diff1 = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            source_package_name_str="my-src-package")
+        diff2 = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            source_package_name_str="my-second-src-package")
+
+        filtered_view = create_initialized_view(
+            derived_series,
+            '+localpackagediffs',
+            query_string='field.name_filter=my-src-package')
+        unfiltered_view = create_initialized_view(
+            derived_series,
+            '+localpackagediffs')
+
+        self.assertContentEqual(
+            [diff1], filtered_view.cached_differences.batch)
+        self.assertContentEqual(
+            [diff2, diff1], unfiltered_view.cached_differences.batch)
+
+    def test_batch_blacklisted(self):
+        # The include_blacklisted_filter parameter allows to list
+        # blacklisted packages.
+        set_derived_series_ui_feature_flag(self)
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
+        blacklisted_diff = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
+
+        blacklisted_view = create_initialized_view(
+            derived_series,
+            '+localpackagediffs',
+            query_string='field.include_blacklisted_filter=on')
+        unblacklisted_view = create_initialized_view(
+            derived_series,
+            '+localpackagediffs')
+
+        self.assertContentEqual(
+            [blacklisted_diff], blacklisted_view.cached_differences.batch)
+        self.assertContentEqual(
+            [], unblacklisted_view.cached_differences.batch)
+
     def test_canPerformSync_non_editor(self):
         # Non-editors do not see options to sync.
         derived_series = self.factory.makeDistroSeries(
@@ -250,19 +359,28 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
                 derived_series, '+localpackagediffs')
             self.assertTrue(view.canPerformSync())
 
-    # XXX 2010-10-29 michaeln bug=668334
-    # The following three tests pass locally but there is a bug with
-    # per-thread features when running with a larger subset of tests.
-    # These should be re-enabled once the above bug is fixed.
-    def disabled_test_sync_notification_on_success(self):
+    def test_sync_notification_on_success(self):
         # Syncing one or more diffs results in a stub notification.
+        versions = {
+            'base': '1.0',
+            'derived': '1.0derived1',
+            'parent': '1.0-1',
+        }
+        parent_series = self.factory.makeDistroSeries(name='warty')
         derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=self.factory.makeDistroSeries(
-                name='lucid'))
+            name='derilucid', parent_series=parent_series)
+        self._set_source_selection(derived_series)
         difference = self.factory.makeDistroSeriesDifference(
             source_package_name_str='my-src-name',
-            derived_series=derived_series)
+            derived_series=derived_series, versions=versions)
 
+        # The inital state is that 1.0-1 is not in the derived series.
+        pubs = derived_series.main_archive.getPublishedSources(
+            name='my-src-name', version=versions['parent'],
+            distroseries=derived_series).any()
+        self.assertIs(None, pubs)
+
+        # Now, sync the source from the parent using the form.
         set_derived_series_ui_feature_flag(self)
         with person_logged_in(derived_series.owner):
             view = create_initialized_view(
@@ -274,16 +392,25 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
                     'field.actions.sync': 'Sync',
                     })
 
+        # The parent's version should now be in the derived series:
+        pub = derived_series.main_archive.getPublishedSources(
+            name='my-src-name', version=versions['parent'],
+            distroseries=derived_series).one()
+        self.assertIsNot(None, pub)
+        self.assertEqual(versions['parent'], pub.sourcepackagerelease.version)
+
+        # The view should show no errors, and the notification should
+        # confirm the sync worked.
         self.assertEqual(0, len(view.errors))
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
         self.assertEqual(
-            "The following sources would have been synced if this wasn't "
-            "just a stub operation: my-src-name",
+            "The following sources were synchronized: my-src-name",
             notifications[0].message)
+        # 302 is a redirect back to the same page.
         self.assertEqual(302, view.request.response.getStatus())
 
-    def disabled_test_sync_error_nothing_selected(self):
+    def test_sync_error_nothing_selected(self):
         # An error is raised when a sync is requested without any selection.
         derived_series = self.factory.makeDistroSeries(
             name='derilucid', parent_series=self.factory.makeDistroSeries(
@@ -305,11 +432,12 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
         self.assertEqual(
             'No differences selected.', view.errors[0])
 
-    def disabled_test_sync_error_invalid_selection(self):
+    def test_sync_error_invalid_selection(self):
         # An error is raised when an invalid difference is selected.
         derived_series = self.factory.makeDistroSeries(
             name='derilucid', parent_series=self.factory.makeDistroSeries(
                 name='lucid'))
+        self._set_source_selection(derived_series)
         difference = self.factory.makeDistroSeriesDifference(
             source_package_name_str='my-src-name',
             derived_series=derived_series)
