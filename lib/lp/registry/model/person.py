@@ -3823,9 +3823,14 @@ class PersonSet:
         membershipset.deactivateActiveMemberships(
             from_team, comment, reviewer)
         # Memberships in other teams are not transferable.
-        if from_team.super_teams.count() > 0:
-            raise AssertionError(
-                "Teams with super teams cannot be merged.")
+        all_super_teams = set(from_team.teams_participated_in)
+        indirect_super_teams = set(
+            from_team.teams_indirectly_participated_in)
+        super_teams = all_super_teams - indirect_super_teams
+        naked_from_team = removeSecurityProxy(from_team)
+        for team in super_teams:
+            naked_from_team.retractTeamMembership(team, reviewer)
+        del naked_from_team
         IStore(from_team).flush()
 
     def mergeAsync(self, from_person, to_person):

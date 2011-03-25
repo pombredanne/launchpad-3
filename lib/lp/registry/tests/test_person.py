@@ -730,24 +730,20 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         # merges without errors.
         test_team = self.factory.makeTeam()
         target_team = self.factory.makeTeam()
-
         login_person(test_team.teamowner)
         self.person_set.merge(test_team, target_team, test_team.teamowner)
 
-    def test_team_with_super_teams_raises_error(self):
-        # A team with no members but with superteams
-        # raises an assertion error.
+    def test_team_with_super_teams(self):
+        # A team with with superteams can be merged, but the memberships
+        # are not transferred.
         test_team = self.factory.makeTeam()
         super_team = self.factory.makeTeam()
         target_team = self.factory.makeTeam()
-
         login_person(test_team.teamowner)
         test_team.join(super_team, test_team.teamowner)
-        self.assertRaises(
-            AssertionError,
-            self.person_set.merge,
-            test_team,
-            target_team)
+        self.person_set.merge(test_team, target_team, test_team.teamowner)
+        self.assertEqual(target_team, test_team.merged)
+        self.assertEqual([], list(target_team.super_teams))
 
     def test_merge_moves_branches(self):
         # When person/teams are merged, branches owned by the from person
