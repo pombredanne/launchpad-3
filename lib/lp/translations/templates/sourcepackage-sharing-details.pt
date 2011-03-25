@@ -12,7 +12,7 @@
         LPS.use('lp.translations.sourcepackage_sharing_details', function(Y) {
           Y.on('domready', function() {
               Y.lp.translations.sourcepackage_sharing_details.prepare(
-                LP.cache['context'], LP.cache);
+                LP.cache);
           });
         });
       </script>
