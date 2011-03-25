@@ -105,6 +105,17 @@ Our review request is listed in the votes collection.
     reviewer_link: u'http://api.launchpad.dev/devel/~person-name...'
     self_link: u'http://api.launchpad.dev/devel/~...'
 
+The `reviewers` and `review_types` arguments to `createMergeProposal`
+must have the same length. Otherwise, the webservice will return a Bad
+Request error.
+
+    >>> print registrant_webservice.named_post(
+    ...     source_url, 'createMergeProposal', target_branch=target_url,
+    ...     initial_comment='Merge\nit!', needs_review=True,
+    ...     commit_message='It was merged!\n', reviewers=[reviewer_url])
+    HTTP/1.1 400 Bad Request
+    ...
+    reviewers and review_types must be equal length.
 
 == Get an existing merge proposal ==
 

@@ -109,6 +109,7 @@ from lp.code.interfaces.branch import (
     IBranchNavigationMenu,
     IBranchSet,
     user_has_special_branch_access,
+    WrongNumberOfReviewTypeArguments,
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchlookup import IBranchLookup
@@ -472,7 +473,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         if review_types is None:
             review_types = []
         if len(reviewers) != len(review_types):
-            raise ValueError(
+            raise WrongNumberOfReviewTypeArguments(
                 'reviewers and review_types must be equal length.')
         review_requests = zip(reviewers, review_types)
         return self.addLandingTarget(
