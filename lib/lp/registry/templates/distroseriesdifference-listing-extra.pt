@@ -8,14 +8,14 @@
     <metal:macro-derived metal:define-macro="base-to-derived">
       <span tal:replace="context/base_version">1.1.1</span> to
       <span tal:replace="context/derived_series/displayname">
-        Derilucid</span> version: 
+        Derilucid</span> version:
       <span tal:replace="context/source_version">1.2.3</span>
     </metal:macro-derived>
 
     <metal:macro-parent metal:define-macro="base-to-parent">
       <span tal:replace="context/base_version">1.1.1</span> to
       <span tal:replace="context/derived_series/parent_series/displayname">
-        Lucid</span> version: 
+        Lucid</span> version:
       <span tal:replace="context/parent_source_version">1.2.4</span>
     </metal:macro-parent>
   </metal:macros>
@@ -39,35 +39,40 @@
       </ul></dd>
     <dt>Last common version:</dt>
     <dd tal:content="context/base_version">1.2.1</dd>
-    <span
+    <dt
       tal:condition="python: not(context.package_diff) or not(context.parent_package_diff)"
-      class="package-diff-button"></span>
-    <dt>Differences from last common version:</dt>
+      class="package-diff-placeholder">
+        <a class="js-action sprite add" href="#">Compute differences from last common version</a>:
+    </dt>
+    <dt
+      tal:condition="python: context.package_diff and context.parent_package_diff">
+      Differences from last common version:
+    </dt>
     <dd>
       <ul class="package-diff-status">
         <tal:source-diff-option condition="context/source_pub">
           <li tal:condition="context/package_diff">
             <span tal:condition="context/package_diff/status/enumvalue:PENDING"
-              class="PENDING">
-              <span tal:replace="context/base_version">1.1.1</span> to
-                <span metal:use-macro="template/macros/base-to-derived" />
+              class="sprite PENDING">
+              <span metal:use-macro="template/macros/base-to-derived" />
+              <span class="greyed-out note">(Pending)</span>
             </span>
 
             <span tal:condition="context/package_diff/status/enumvalue:FAILED"
-              class="FAILED">
-              <span tal:replace="context/base_version">1.1.1</span> to
-                <span metal:use-macro="template/macros/base-to-derived" />
+              class="sprite FAILED">
+              <span metal:use-macro="template/macros/base-to-derived" />
+              <span class="greyed-out note">(Failed)</span>
             </span>
 
             <span tal:condition="context/package_diff/status/enumvalue:COMPLETED"
-              class="COMPLETED">
+              class="sprite COMPLETED">
               <a tal:attributes="href context/package_diff_url">
                 <span metal:use-macro="template/macros/base-to-derived" />
               </a>
             </span>
           </li>
           <li tal:condition="not: context/package_diff">
-            <span class="request-derived-diff derived">
+            <span class="sprite request-derived-diff derived">
               <span metal:use-macro="template/macros/base-to-derived" />
             </span>
           </li>
@@ -76,26 +81,26 @@
         <tal:parent-diff-option condition="context/parent_source_pub">
           <li tal:condition="context/parent_package_diff">
             <span tal:condition="context/parent_package_diff/status/enumvalue:PENDING"
-              class="PENDING parent">
-              <span tal:replace="context/base_version">1.1.1</span> to
-                <span metal:use-macro="template/macros/base-to-parent" />
+              class="sprite PENDING parent">
+              <span metal:use-macro="template/macros/base-to-parent" />
+              <span class="greyed-out note">(Pending)</span>
             </span>
 
             <span tal:condition="context/parent_package_diff/status/enumvalue:FAILED"
-              class="FAILED">
-              <span tal:replace="context/base_version">1.1.1</span> to
-                <span metal:use-macro="template/macros/base-to-parent" />
+              class="sprite FAILED">
+              <span metal:use-macro="template/macros/base-to-parent" />
+              <span class="greyed-out note">(Failed)</span>
             </span>
 
             <span tal:condition="context/parent_package_diff/status/enumvalue:COMPLETED"
-              class="COMPLETED">
+              class="sprite COMPLETED">
               <a tal:attributes="href context/parent_package_diff_url">
                 <span metal:use-macro="template/macros/base-to-parent" />
               </a>
             </span>
           </li>
           <li tal:condition="not: context/parent_package_diff">
-            <span class="request-derived-diff parent">
+            <span class="sprite request-derived-diff parent">
               <span metal:use-macro="template/macros/base-to-parent" />
             </span>
           </li>
