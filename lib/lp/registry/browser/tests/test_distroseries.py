@@ -26,18 +26,18 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
         view = create_initialized_view(distroseries, "+initseries")
         self.assertTrue(view)
 
-    def test_feature_enabled(self):
+    def test_is_derived_series_feature_enabled(self):
         # The feature is disabled by default, but can be enabled by setting
         # the soyuz.derived-series-ui.enabled flag.
         distroseries = self.factory.makeDistroSeries()
         view = create_initialized_view(distroseries, "+initseries")
         with feature_flags():
-            self.assertFalse(view.is_feature_enabled)
+            self.assertFalse(view.is_derived_series_feature_enabled)
         with feature_flags():
             set_feature_flag(u"soyuz.derived-series-ui.enabled", u"true")
-            self.assertTrue(view.is_feature_enabled)
+            self.assertTrue(view.is_derived_series_feature_enabled)
 
-    def test_form_hidden_when_feature_disabled(self):
+    def test_form_hidden_when_derived_series_feature_disabled(self):
         # The form is hidden when the feature flag is not set.
         distroseries = self.factory.makeDistroSeries()
         view = create_initialized_view(distroseries, "+initseries")
@@ -51,7 +51,7 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
                 u"The Derivative Distributions feature is under development",
                 message.text)
 
-    def test_form_shown_when_feature_enabled(self):
+    def test_form_shown_when_derived_series_feature_enabled(self):
         # The form is shown when the feature flag is set.
         distroseries = self.factory.makeDistroSeries()
         view = create_initialized_view(distroseries, "+initseries")

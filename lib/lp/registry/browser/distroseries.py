@@ -545,7 +545,7 @@ class DistroSeriesInitializeView(LaunchpadFormView):
     page_title = label
 
     @property
-    def is_feature_enabled(self):
+    def is_derived_series_feature_enabled(self):
         return getFeatureFlag("soyuz.derived-series-ui.enabled") is not None
 
     @property

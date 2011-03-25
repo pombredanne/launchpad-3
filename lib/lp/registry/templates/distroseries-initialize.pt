@@ -12,7 +12,7 @@
   </metal:head-epilogue>
   <body>
     <div metal:fill-slot="main">
-      <tal:enabled condition="view/is_feature_enabled">
+      <tal:enabled condition="view/is_derived_series_feature_enabled">
       <div class="top-portlet">
         This page allows you to initialize a distribution series.
       </div>
@@ -31,7 +31,7 @@
         });
       </script>
       </tal:enabled>
-      <tal:disabled condition="not:view/is_feature_enabled">
+      <tal:disabled condition="not:view/is_derived_series_feature_enabled">
       <p class="error message">
         The Derivative Distributions feature is under development
         and is not yet generally available. You can read more about
