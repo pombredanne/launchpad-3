@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+from lxml import html
+
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
     feature_flags,
@@ -34,3 +36,36 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
         with feature_flags():
             set_feature_flag(u"soyuz.derived-series-ui.enabled", u"true")
             self.assertTrue(view.is_feature_enabled)
+
+    def test_form_hidden_when_feature_disabled(self):
+        # The form is hidden when the feature flag is not set.
+        distroseries = self.factory.makeDistroSeries()
+        view = create_initialized_view(distroseries, "+initseries")
+        with feature_flags():
+            root = html.fromstring(view())
+            self.assertEqual(
+                [], root.cssselect("#init-series-form-container"))
+            # Instead an explanatory message is shown.
+            [message] = root.cssselect("p.error.message")
+            self.assertIn(
+                u"The Derivative Distributions feature is under development",
+                message.text)
+
+    def test_form_shown_when_feature_enabled(self):
+        # The form is shown when the feature flag is set.
+        distroseries = self.factory.makeDistroSeries()
+        view = create_initialized_view(distroseries, "+initseries")
+        with feature_flags():
+            set_feature_flag(u"soyuz.derived-series-ui.enabled", u"true")
+            root = html.fromstring(view())
+            self.assertNotEqual(
+                [], root.cssselect("#init-series-form-container"))
+            # A different explanatory message is shown for clients that don't
+            # process Javascript.
+            [message] = root.cssselect("p.error.message")
+            self.assertIn(
+                u"Javascript is required to use this page",
+                message.text)
+            self.assertIn(
+                u"javascript-disabled",
+                message.get("class").split())
