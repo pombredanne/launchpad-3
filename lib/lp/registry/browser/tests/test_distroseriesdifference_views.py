@@ -1,9 +1,11 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for the DistroSeriesDifference views."""
 
 __metaclass__ = type
+
+import re
 
 from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
@@ -22,12 +24,16 @@ from lp.registry.enum import (
     DistroSeriesDifferenceType,
     )
 from lp.registry.interfaces.distroseriesdifference import (
-    IDistroSeriesDifferenceSource)
+    IDistroSeriesDifferenceSource,
+    )
 from lp.services.comments.interfaces.conversation import (
     IComment,
     IConversation,
     )
-from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.enums import (
+    PackageDiffStatus,
+    PackagePublishingStatus,
+    )
 from lp.testing import (
     celebrity_logged_in,
     person_logged_in,
@@ -164,9 +170,10 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def number_of_request_diff_texts(self, html):
-        """Check that the html doesn't include the request diff text."""
+        """Returns the number of request diff text."""
         soup = BeautifulSoup(html)
-        return len(soup.findAll('li', 'request-derived-diff'))
+        class_dict = {'class': re.compile('request-derived-diff')}
+        return len(soup.findAll('span', class_dict))
 
     def contains_one_link_to_diff(self, html, package_diff):
         """Return whether the html contains a link to the diff content."""
@@ -197,6 +204,52 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
         self.assertEqual(1, self.number_of_request_diff_texts(view()))
         self.assertTrue(
             self.contains_one_link_to_diff(view(), ds_diff.package_diff))
+
+    def test_source_diff_rendering_diff_no_link(self):
+        # The status of the package is shown if the package diff is in a
+        # PENDING or FAILED state.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+
+        statuses_and_classes = [
+            (PackageDiffStatus.PENDING, 'PENDING'),
+            (PackageDiffStatus.FAILED, 'FAILED')]
+        for status, css_class in statuses_and_classes:
+            with person_logged_in(ds_diff.derived_series.owner):
+                ds_diff.package_diff = self.factory.makePackageDiff(
+                     status=status)
+
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra')
+            soup = BeautifulSoup(view())
+            # Only one link since the other package diff is not COMPLETED.
+            self.assertEqual(1, self.number_of_request_diff_texts(view()))
+            # The diff has a css_class class.
+            self.assertEqual(
+                1,
+                len(soup.findAll('span', {'class': re.compile(css_class)})))
+
+    def test_parent_source_diff_rendering_diff_no_link(self):
+        # The status of the package is shown if the package diff is in a
+        # PENDING or FAILED state.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+
+        statuses_and_classes = [
+            (PackageDiffStatus.PENDING, 'PENDING'),
+            (PackageDiffStatus.FAILED, 'FAILED')]
+        for status, css_class in statuses_and_classes:
+            with person_logged_in(ds_diff.derived_series.owner):
+                ds_diff.parent_package_diff = self.factory.makePackageDiff(
+                     status=status)
+
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra')
+            soup = BeautifulSoup(view())
+            # Only one link since the other package diff is not COMPLETED.
+            self.assertEqual(1, self.number_of_request_diff_texts(view()))
+            # The diff has a css_class class.
+            self.assertEqual(
+                1,
+                len(soup.findAll('span', {'class': re.compile(css_class)})))
 
     def test_source_diff_rendering_no_source(self):
         # If there is no source pub for this difference, then we don't
