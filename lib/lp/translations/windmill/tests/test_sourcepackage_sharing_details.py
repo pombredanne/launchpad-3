@@ -52,7 +52,7 @@ class TestSharingDetails(WindmillTestCase):
         self.client.click(xpath='//*[@id="branch-incomplete-picker"]/a')
         search_and_select_picker_widget(self.client, 'product-branch', 1)
         self.client.waits.forElementProperty(
-            classname="unseen", option='id|branch-incomplete',
+            id='branch-incomplete', option='className|sprite no unseen',
             timeout=FOR_ELEMENT)
         transaction.commit()
         self.assertEqual(branch, packaging.productseries.branch)
