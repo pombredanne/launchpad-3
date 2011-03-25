@@ -589,7 +589,8 @@ class MailingList(SQLBase):
         if self.status in PURGE_STATES:
             self.status = MailingListStatus.PURGED
             email = getUtility(IEmailAddressSet).getByEmail(self.address)
-            removeSecurityProxy(email).destroySelf()
+            if email is not None:
+                removeSecurityProxy(email).destroySelf()
         else:
             assert self.status != MailingListStatus.PURGED, 'Already purged'
             raise UnsafeToPurge(self)
