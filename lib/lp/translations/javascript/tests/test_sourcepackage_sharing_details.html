@@ -25,9 +25,42 @@
 
     <!-- The example markup required by the script to run -->
     <div id="expected-id">
+      <div id="configuration-incomplete">
+        Translation sharing configuration is incomplete.
+      </div>
+      <div id="configuration-complete">
+        Translation sharing with upstream is active.
+      </div>
+      <div id="packaging-incomplete">
+        No upstream project series has been linked.
+        <a href="#picker" />
+      </div>
+      <div id="packaging-complete">
+          Linked upstream series is
+          <a href="#upstream-link" class="link">
+            Gimp trunk</a>.
+          <a href="#edit-link" ></a>
+          <a href="#remove-link" ></a>
+      </div>
       <div id="branch-complete">Branch selected: <a href="#" class="link"></a>
       </div>
       <div id="branch-incomplete">No branch selected.</div>
+      <div id="translation-incomplete">
+        Translations are not enabled on the upstream project.
+        <a href="#enable-translations"></a>
+      </div>
+      <div id="translation-complete">
+        Translations are enabled on the upstream project.
+        <a href="#enable-translations"></a>
+      </div>
+      <div  id="upstream-sync-incomplete">
+        Automatic synchronization of translations is not enabled.
+        <a href="#enable-sync"></a>
+      </div>
+      <div  id="upstream-sync-complete">
+        Automatic synchronization of translations is enabled.
+        <a href="#enable-sync"></a>
+      </div>
     </div>
     <!-- The test output -->
     <div id="log"></div>
