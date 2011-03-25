@@ -247,7 +247,10 @@ from lp.registry.interfaces.ssh import (
     SSHKeyCompromisedError,
     SSHKeyType,
     )
-from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.registry.interfaces.teammembership import (
+    ITeamMembershipSet,
+    TeamMembershipStatus,
+    )
 from lp.registry.interfaces.wikiname import (
     IWikiName,
     IWikiNameSet,
@@ -3801,33 +3804,36 @@ class PersonSet:
             WHERE id = %(to_id)d
             ''' % vars())
 
-    def _purgeUnmergableTeamArtifacts(self, team):
+    def _purgeUnmergableTeamArtifacts(self, from_team, to_team, reviewer):
         """Purge team artifacts that cannot be merged, but can be removed."""
         # A team cannot have more than one mailing list.
-        mailing_list = getUtility(IMailingListSet).get(team.name)
+        mailing_list = getUtility(IMailingListSet).get(from_team.name)
         if mailing_list is not None and mailing_list.status in PURGE_STATES:
-            team.mailing_list.purge()
+            from_team.mailing_list.purge()
         elif mailing_list is not None:
             raise AssertionError(
                 "Teams with active mailing lists cannot be merged.")
         # Team email addresses are not transferable.
-        team.setContactAddress(None)
+        from_team.setContactAddress(None)
         # Memberships in the team are not transferable
-        if team.allmembers.count() > 0:
-            raise AssertionError(
-                "Teams with active members cannot be merged.")
+        comment = (
+            'Deactivating all members as this team is being merged into %s.'
+            % to_team.name)
+        membershipset = getUtility(ITeamMembershipSet)
+        membershipset.deactivateActiveMemberships(
+            from_team, comment, reviewer)
         # Memberships in other teams are not transferable.
-        if team.super_teams.count() > 0:
+        if from_team.super_teams.count() > 0:
             raise AssertionError(
                 "Teams with super teams cannot be merged.")
-        IStore(team).flush()
+        IStore(from_team).flush()
 
     def mergeAsync(self, from_person, to_person):
         """See `IPersonSet`."""
         return getUtility(IPersonMergeJobSource).create(
             from_person=from_person, to_person=to_person)
 
-    def merge(self, from_person, to_person):
+    def merge(self, from_person, to_person, reviewer=None):
         """See `IPersonSet`."""
         # Sanity checks
         if not IPerson.providedBy(from_person):
@@ -3840,7 +3846,8 @@ class PersonSet:
             raise AssertionError(
                 'from_person has a ppa in ACTIVE or DELETING status')
         if from_person.is_team:
-            self._purgeUnmergableTeamArtifacts(from_person)
+            self._purgeUnmergableTeamArtifacts(
+                from_person, to_person, reviewer)
         if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
             raise AssertionError('from_person still has email addresses.')
 

@@ -698,7 +698,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         membershipset.deactivateActiveMemberships(
             test_team, comment='',
             reviewer=test_team.teamowner)
-        self.person_set.merge(test_team, target_team)
+        self.person_set.merge(test_team, target_team, test_team.teamowner)
 
     def test_team_with_active_mailing_list_raises_error(self):
         # A team with an active mailing list cannot be merged.
@@ -721,6 +721,17 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self.assertEqual(master_team, dupe_team.merged)
         self.assertEqual(MailingListStatus.PURGED, mailing_list.status)
         self.assertEqual([], list(dupe_team.unvalidatedemails))
+
+    def test_team_with_members(self):
+        # Team members are removed before merging.
+        master_team = self.factory.makeTeam()
+        dupe_team = self.factory.makeTeam()
+        former_member = self.factory.makePerson()
+        with person_logged_in(dupe_team.teamowner):
+            dupe_team.addMember(former_member, dupe_team.teamowner)
+        self.person_set.merge(dupe_team, master_team, dupe_team.teamowner)
+        self.assertEqual(master_team, dupe_team.merged)
+        self.assertEqual([], list(former_member.super_teams))
 
     def test_team_without_super_teams_is_fine(self):
         # A team with no members and no super teams
