@@ -139,6 +139,7 @@ from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
     )
+from lp.services.database.bulk import load_related
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
@@ -579,17 +580,19 @@ class Branch(SQLBase, BzrIdentityMixin):
         if end_date is not None:
             date_clause = And(date_clause, Revision.revision_date <= end_date)
         result = Store.of(self).find(
-            (BranchRevision, Revision, RevisionAuthor),
+            (BranchRevision, Revision),
             BranchRevision.branch == self,
             BranchRevision.sequence != None,
             BranchRevision.revision == Revision.id,
-            Revision.revision_author == RevisionAuthor.id,
             date_clause)
         if oldest_first:
             result = result.order_by(BranchRevision.sequence)
         else:
             result = result.order_by(Desc(BranchRevision.sequence))
-        return result
+        def eager_load(rows):
+            revisions = map(operator.itemgetter(1), rows)
+            load_related(RevisionAuthor, revisions, ['revision_author_id'])
+        return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
     def getRevisionsSince(self, timestamp):
         """See `IBranch`."""
