@@ -3840,6 +3840,10 @@ class PersonSet:
 
     def merge(self, from_person, to_person, reviewer=None):
         """See `IPersonSet`."""
+        # since we are doing direct SQL manipulation, make sure all
+        # changes have been flushed to the database
+        store = Store.of(from_person)
+        store.flush()
         # Sanity checks
         if not IPerson.providedBy(from_person):
             raise TypeError('from_person is not a person.')
@@ -3855,10 +3859,6 @@ class PersonSet:
                 from_person, to_person, reviewer)
         if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
             raise AssertionError('from_person still has email addresses.')
-
-        # since we are doing direct SQL manipulation, make sure all
-        # changes have been flushed to the database
-        store = Store.of(from_person)
 
         # Get a database cursor.
         cur = cursor()

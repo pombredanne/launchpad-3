@@ -24,6 +24,7 @@ from canonical.launchpad.interfaces.account import (
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressAlreadyTaken,
     EmailAddressStatus,
+    IEmailAddressSet,
     InvalidEmailAddress,
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -712,7 +713,8 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self.person_set.merge(dupe_team, master_team, dupe_team.teamowner)
         self.assertEqual(master_team, dupe_team.merged)
         self.assertEqual(MailingListStatus.PURGED, mailing_list.status)
-        self.assertEqual([], list(dupe_team.unvalidatedemails))
+        emails = getUtility(IEmailAddressSet).getByPerson(master_team)
+        self.assertEqual(0, emails)
 
     def test_team_with_members(self):
         # Team members are removed before merging.
