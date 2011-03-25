@@ -676,6 +676,10 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         collection = collection.restrictDistroSeries(self.distroseries)
         return collection.restrictSourcePackageName(self.sourcepackagename)
 
+    def getSharingPartner(self):
+        """See `IHasTranslationTemplates`."""
+        return self.productseries
+
     def getBranch(self, pocket):
         """See `ISourcePackage`."""
         store = Store.of(self.sourcepackagename)
