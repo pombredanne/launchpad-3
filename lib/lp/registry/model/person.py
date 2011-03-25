@@ -3844,11 +3844,11 @@ class PersonSet:
         # changes have been flushed to the database
         store = Store.of(from_person)
         store.flush()
-        # Sanity checks
-        if not IPerson.providedBy(from_person):
-            raise TypeError('from_person is not a person.')
-        if not IPerson.providedBy(to_person):
-            raise TypeError('to_person is not a person.')
+        if (from_person.is_team and not to_person.is_team
+            or not from_person.is_team and to_person.is_team):
+            raise AssertionError("Users cannot be merged with teams.")
+        if from_person.is_team and reviewer is None:
+            raise AssertionError("Team merged require a reviewer.")
         if getUtility(IArchiveSet).getPPAOwnedByPerson(
             from_person, statuses=[ArchiveStatus.ACTIVE,
                                    ArchiveStatus.DELETING]) is not None:

@@ -713,7 +713,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self.person_set.merge(dupe_team, master_team, dupe_team.teamowner)
         self.assertEqual(master_team, dupe_team.merged)
         self.assertEqual(MailingListStatus.PURGED, mailing_list.status)
-        emails = getUtility(IEmailAddressSet).getByPerson(master_team)
+        emails = getUtility(IEmailAddressSet).getByPerson(master_team).count()
         self.assertEqual(0, emails)
 
     def test_team_with_members(self):
