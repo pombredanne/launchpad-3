@@ -8,12 +8,16 @@ __metaclass__ = type
 import transaction
 from zope.component import getUtility
 
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.testing.layers import (
+    LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.testing import (
     TestCaseWithFactory,
     person_logged_in,
     )
+from lp.testing.dbuser import dbuser
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
@@ -65,6 +69,12 @@ class TestSourcePackageRelease(TestCaseWithFactory):
         spr = self.factory.makeSourcePackageRelease(homepage="<invalid<url")
         self.assertEquals("<invalid<url", spr.homepage)
 
+
+class TestSourcePackageReleaseTranslationFeiles(TestCaseWithFactory):
+    """Tests for attachTranslationFiles on a different layer."""
+
+    layer = LaunchpadZopelessLayer
+
     def makeTranslationsLFA(self):
         """Create an LibraryFileAlias containing dummy translation data."""
         test_tar_content = {
@@ -83,7 +93,8 @@ class TestSourcePackageRelease(TestCaseWithFactory):
         self.assertFalse(spr.sourcepackage.has_sharing_translation_templates)
         lfa = self.makeTranslationsLFA()
         transaction.commit()
-        spr.attachTranslationFiles(lfa, True, spr.maintainer)
+        with dbuser('queued'):
+            spr.attachTranslationFiles(lfa, True, spr.maintainer)
         translation_import_queue = getUtility(ITranslationImportQueue)
         entries_in_queue = translation_import_queue.getAllEntries(
                 target=spr.sourcepackage).count()
@@ -103,7 +114,8 @@ class TestSourcePackageRelease(TestCaseWithFactory):
         self.assertTrue(sourcepackage.has_sharing_translation_templates)
         lfa = self.makeTranslationsLFA()
         transaction.commit()
-        spr.attachTranslationFiles(lfa, True, spr.maintainer)
+        with dbuser('queued'):
+            spr.attachTranslationFiles(lfa, True, spr.maintainer)
         translation_import_queue = getUtility(ITranslationImportQueue)
         entries = translation_import_queue.getAllEntries(
                 target=sourcepackage)
