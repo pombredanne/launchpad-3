@@ -6,7 +6,11 @@
 __metaclass__ = type
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    feature_flags,
+    set_feature_flag,
+    TestCaseWithFactory,
+    )
 from lp.testing.views import create_initialized_view
 
 
@@ -19,3 +23,14 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         view = create_initialized_view(distroseries, "+initseries")
         self.assertTrue(view)
+
+    def test_feature_enabled(self):
+        # The feature is disabled by default, but can be enabled by setting
+        # the soyuz.derived-series-ui.enabled flag.
+        distroseries = self.factory.makeDistroSeries()
+        view = create_initialized_view(distroseries, "+initseries")
+        with feature_flags():
+            self.assertFalse(view.is_feature_enabled)
+        with feature_flags():
+            set_feature_flag(u"soyuz.derived-series-ui.enabled", u"true")
+            self.assertTrue(view.is_feature_enabled)

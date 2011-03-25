@@ -91,9 +91,7 @@ from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
-from lp.soyuz.interfaces.archive import (
-    CannotCopy,
-    )
+from lp.soyuz.interfaces.archive import CannotCopy
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.translations.browser.distroseries import (
     check_distroseries_translations_viewable,
@@ -545,6 +543,10 @@ class DistroSeriesInitializeView(LaunchpadFormView):
 
     label = 'Initialize series'
     page_title = label
+
+    @property
+    def is_feature_enabled(self):
+        return getFeatureFlag("soyuz.derived-series-ui.enabled") is not None
 
     @property
     def next_url(self):
