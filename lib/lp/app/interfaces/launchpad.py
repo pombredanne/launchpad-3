@@ -50,10 +50,7 @@ class IServiceUsage(Interface):
         title=_('Type of service for translations application'),
         description=_("Where does this pillar do translations?"),
         default=ServiceUsage.UNKNOWN,
-        vocabulary=ServiceUsage),
-        ('devel', {'exported': True}),
-        exported=False,
-        )
+        vocabulary=ServiceUsage), as_of="devel")
     bug_tracking_usage = Choice(
         title=_('Type of service for tracking bugs'),
         description=_("Where does this pillar track bugs?"),
