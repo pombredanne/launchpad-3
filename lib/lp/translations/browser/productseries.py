@@ -456,10 +456,7 @@ class ProductSeriesView(LaunchpadView,
         return check_permission("launchpad.TranslationsAdmin", self.context)
 
     def is_sharing(self):
-        sourcepackage = self.context.getUbuntuTranslationFocusPackage()
-        if sourcepackage is None:
-            return False
-        return sourcepackage.has_current_translation_templates
+        return self.context.has_sharing_translation_templates
 
     @property
     def sharing_sourcepackage(self):

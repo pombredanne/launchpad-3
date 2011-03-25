@@ -649,7 +649,7 @@ class IDistribution(
             source_name="apport",
             distro_series=series)[0].source_package_version
     """
-    export_as_webservice_entry()
+    export_as_webservice_entry(as_of="beta")
 
 
 class IBaseDistribution(IDistribution):

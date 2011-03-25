@@ -6,7 +6,6 @@ __metaclass__ = type
 from zope.interface.verify import verifyObject
 
 from canonical.testing.layers import ZopelessDatabaseLayer
-from lp.app.enums import ServiceUsage
 from lp.testing import TestCaseWithFactory
 from lp.translations.interfaces.hastranslationtemplates import (
     IHasTranslationTemplates,
@@ -33,6 +32,16 @@ class HasTranslationTemplatesTestMixin:
 
     def createTranslationFile(self, name=None, priority=0):
         """Attaches a pofile to appropriate container."""
+        raise NotImplementedError(
+            'This must be provided by an executable test.')
+
+    def createPackaging(self):
+        """Creates a packaging link for the container."""
+        raise NotImplementedError(
+            'This must be provided by an executable test.')
+
+    def createSharingTranslationTemplate(self):
+        """Attaches a template to the sharing partner of the container."""
         raise NotImplementedError(
             'This must be provided by an executable test.')
 
@@ -187,6 +196,21 @@ class HasTranslationTemplatesTestMixin:
         self.createTranslationTemplate()
         self.assertTrue(self.container.has_obsolete_translation_templates)
 
+    def test_has_sharing_translation_templates__no_link(self):
+        # Without a packaging link, no sharing templates are found.
+        self.assertFalse(self.container.has_sharing_translation_templates)
+
+    def test_has_sharing_translation_templates__no_templates(self):
+        # Without templates on the other side, no sharing templates are found.
+        self.createPackaging()
+        self.assertFalse(self.container.has_sharing_translation_templates)
+
+    def test_has_sharing_translation_templates__templates(self):
+        # Without templates on the other side, no sharing templates are found.
+        self.createPackaging()
+        self.createSharingTranslationTemplate()
+        self.assertTrue(self.container.has_sharing_translation_templates)
+
     def test_has_translation_files(self):
         # has_translations_files should only return true if the object has
         # pofiles.
@@ -264,11 +288,18 @@ class TestProductSeriesHasTranslationTemplates(
             potemplate=potemplate)
         return pofile
 
+    def createPackaging(self):
+        self.packaging = self.factory.makePackagingLink(
+            productseries=self.container, in_ubuntu=True)
+        return self.packaging
+
+    def createSharingTranslationTemplate(self):
+        return self.factory.makePOTemplate(
+            sourcepackage=self.packaging.sourcepackage)
+
     def setUp(self):
         super(TestProductSeriesHasTranslationTemplates, self).setUp()
         self.container = self.factory.makeProductSeries()
-        self.product_or_distro = self.container.product
-        self.product_or_distro.translations_usage = ServiceUsage.LAUNCHPAD
 
 
 class TestSourcePackageHasTranslationTemplates(
@@ -289,11 +320,18 @@ class TestSourcePackageHasTranslationTemplates(
             potemplate=potemplate)
         return pofile
 
+    def createPackaging(self):
+        self.packaging = self.factory.makePackagingLink(
+            sourcepackage=self.container)
+        return self.packaging
+
+    def createSharingTranslationTemplate(self):
+        return self.factory.makePOTemplate(
+            productseries=self.packaging.productseries)
+
     def setUp(self):
         super(TestSourcePackageHasTranslationTemplates, self).setUp()
         self.container = self.factory.makeSourcePackage()
-        self.product_or_distro = self.container.distroseries.distribution
-        self.product_or_distro.translations_usage = ServiceUsage.LAUNCHPAD
 
 
 class TestDistroSeriesHasTranslationTemplates(
@@ -316,8 +354,23 @@ class TestDistroSeriesHasTranslationTemplates(
             potemplate=potemplate)
         return pofile
 
+    def createPackaging(self):
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=self.container)
+        self.packaging = self.factory.makePackagingLink(
+            sourcepackage=sourcepackage)
+        return self.packaging
+
+    def createSharingTranslationTemplate(self):
+        return self.factory.makePOTemplate(
+            productseries=self.packaging.productseries)
+
     def setUp(self):
         super(TestDistroSeriesHasTranslationTemplates, self).setUp()
         self.container = self.factory.makeDistroRelease()
-        self.product_or_distro = self.container.distribution
-        self.product_or_distro.translations_usage = ServiceUsage.LAUNCHPAD
+
+    def test_has_sharing_translation_templates__templates(self):
+        # This attribute is always False for DistroSeries
+        self.createPackaging()
+        self.createSharingTranslationTemplate()
+        self.assertFalse(self.container.has_sharing_translation_templates)
