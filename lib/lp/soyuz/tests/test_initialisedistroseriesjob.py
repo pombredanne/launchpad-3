@@ -77,10 +77,12 @@ class InitialiseDistroSeriesJobTests(TestCaseWithFactory):
         parent = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries(parent_series=parent)
         job = self.job_source.create(parent, distroseries)
+        expected_message = (
+            "DistroSeries {child.name} has been initialized; it already "
+            "derives from {parent.distribution.name}/{parent.name}.").format(
+            parent=parent, child=distroseries)
         self.assertRaisesWithContent(
-            InitialisationError,
-            "Parent series has already been initialized.",
-            job.run)
+            InitialisationError, expected_message, job.run)
 
     def test_arguments(self):
         """Test that InitialiseDistroSeriesJob specified with arguments can

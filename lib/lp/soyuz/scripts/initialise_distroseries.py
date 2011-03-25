@@ -75,7 +75,10 @@ class InitialiseDistroSeries:
     def check(self):
         if self.distroseries.parent_series is not None:
             raise InitialisationError(
-                "Parent series has already been initialized.")
+                ("DistroSeries {child.name} has been initialized; it already "
+                 "derives from {child.parent_series.distribution.name}/"
+                 "{child.parent_series.name}.").format(
+                    child=self.distroseries))
         self._checkBuilds()
         self._checkQueue()
         self._checkSeries()
