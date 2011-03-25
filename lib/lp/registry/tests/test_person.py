@@ -736,7 +736,7 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self.person_set.merge(test_team, target_team, test_team.teamowner)
 
     def test_team_with_super_teams(self):
-        # A team with with superteams can be merged, but the memberships
+        # A team with superteams can be merged, but the memberships
         # are not transferred.
         test_team = self.factory.makeTeam()
         super_team = self.factory.makeTeam()

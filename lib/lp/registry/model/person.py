@@ -3815,14 +3815,16 @@ class PersonSet:
                 "Teams with active mailing lists cannot be merged.")
         # Team email addresses are not transferable.
         from_team.setContactAddress(None)
-        # Memberships in the team are not transferable
+        # Memberships in the team are not transferable because there
+        # is a high probablity there will be a CyclicTeamMembershipError.
         comment = (
             'Deactivating all members as this team is being merged into %s.'
             % to_team.name)
         membershipset = getUtility(ITeamMembershipSet)
         membershipset.deactivateActiveMemberships(
             from_team, comment, reviewer)
-        # Memberships in other teams are not transferable.
+        # Memberships in other teams are not transferable because there
+        # is a high probablity there will be a CyclicTeamMembershipError.
         all_super_teams = set(from_team.teams_participated_in)
         indirect_super_teams = set(
             from_team.teams_indirectly_participated_in)

@@ -100,7 +100,7 @@ class IPersonMergeJobSource(IJobSource):
     """An interface for acquiring IPersonMergeJobs."""
 
     def create(from_person, to_person, review=None):
-        """Create a new IMembershipNotificationJob.
+        """Create a new IPersonMergeJob.
 
         None is returned if either the from_person or to_person are already
         in a pending merge. The review keyword argument is required if
