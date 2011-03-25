@@ -14,13 +14,16 @@ The helper functions in this file make that easy.
 __metaclass__ = type
 
 __all__ = [
-    'patch_entry_return_type',
     'patch_choice_parameter_type',
     'patch_choice_vocabulary',
     'patch_collection_property',
     'patch_collection_return_type',
-    'patch_plain_parameter_type',
+    'patch_entry_explicit_version',
+    'patch_entry_return_type',
     'patch_list_parameter_type',
+    'patch_operation_explicit_version',
+    'patch_operations_explicit_version',
+    'patch_plain_parameter_type',
     'patch_reference_property',
     ]
 
