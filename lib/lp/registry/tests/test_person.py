@@ -24,6 +24,7 @@ from canonical.launchpad.interfaces.account import (
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressAlreadyTaken,
     EmailAddressStatus,
+    IEmailAddressSet,
     InvalidEmailAddress,
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -46,6 +47,7 @@ from lp.registry.errors import (
     PrivatePersonLinkageError,
     )
 from lp.registry.interfaces.karma import IKarmaCacheManager
+from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.nameblacklist import INameBlacklistSet
 from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
@@ -55,7 +57,6 @@ from lp.registry.interfaces.person import (
     PersonVisibility,
     )
 from lp.registry.interfaces.product import IProductSet
-from lp.registry.interfaces.teammembership import ITeamMembershipSet
 from lp.registry.model.karma import (
     KarmaCategory,
     KarmaTotalCache,
@@ -692,36 +693,59 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self.person_set.merge(duplicate, person)
         self.assertEqual(oldest_date, person.datecreated)
 
-    def _doMerge(self, test_team, target_team):
-        membershipset = getUtility(ITeamMembershipSet)
-        membershipset.deactivateActiveMemberships(
-            test_team, comment='',
-            reviewer=test_team.teamowner)
-        self.person_set.merge(test_team, target_team)
+    def test_team_with_active_mailing_list_raises_error(self):
+        # A team with an active mailing list cannot be merged.
+        target_team = self.factory.makeTeam()
+        test_team = self.factory.makeTeam()
+        mailing_list = self.factory.makeMailingList(
+            test_team, test_team.teamowner)
+        self.assertRaises(
+            AssertionError, self.person_set.merge, test_team, target_team)
+
+    def test_team_with_inactive_mailing_list(self):
+        # A team with an inactive mailing list can be merged.
+        target_team = self.factory.makeTeam()
+        test_team = self.factory.makeTeam()
+        mailing_list = self.factory.makeMailingList(
+            test_team, test_team.teamowner)
+        mailing_list.deactivate()
+        mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
+        self.person_set.merge(test_team, target_team, test_team.teamowner)
+        self.assertEqual(target_team, test_team.merged)
+        self.assertEqual(MailingListStatus.PURGED, mailing_list.status)
+        emails = getUtility(IEmailAddressSet).getByPerson(target_team).count()
+        self.assertEqual(0, emails)
+
+    def test_team_with_members(self):
+        # Team members are removed before merging.
+        target_team = self.factory.makeTeam()
+        test_team = self.factory.makeTeam()
+        former_member = self.factory.makePerson()
+        with person_logged_in(test_team.teamowner):
+            test_team.addMember(former_member, test_team.teamowner)
+        self.person_set.merge(test_team, target_team, test_team.teamowner)
+        self.assertEqual(target_team, test_team.merged)
+        self.assertEqual([], list(former_member.super_teams))
 
     def test_team_without_super_teams_is_fine(self):
         # A team with no members and no super teams
         # merges without errors.
         test_team = self.factory.makeTeam()
         target_team = self.factory.makeTeam()
-
         login_person(test_team.teamowner)
-        self._doMerge(test_team, target_team)
+        self.person_set.merge(test_team, target_team, test_team.teamowner)
 
-    def test_team_with_super_teams_raises_error(self):
-        # A team with no members but with superteams
-        # raises an assertion error.
+    def test_team_with_super_teams(self):
+        # A team with superteams can be merged, but the memberships
+        # are not transferred.
         test_team = self.factory.makeTeam()
         super_team = self.factory.makeTeam()
         target_team = self.factory.makeTeam()
-
         login_person(test_team.teamowner)
         test_team.join(super_team, test_team.teamowner)
-        self.assertRaises(
-            AssertionError,
-            self._doMerge,
-            test_team,
-            target_team)
+        self.person_set.merge(test_team, target_team, test_team.teamowner)
+        self.assertEqual(target_team, test_team.merged)
+        self.assertEqual([], list(target_team.super_teams))
 
     def test_merge_moves_branches(self):
         # When person/teams are merged, branches owned by the from person
