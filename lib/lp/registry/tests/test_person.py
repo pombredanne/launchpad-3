@@ -716,6 +716,18 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         emails = getUtility(IEmailAddressSet).getByPerson(target_team).count()
         self.assertEqual(0, emails)
 
+    def test_team_with_purged_mailing_list(self):
+        # A team with a purges mailing list can be merged.
+        target_team = self.factory.makeTeam()
+        test_team = self.factory.makeTeam()
+        mailing_list = self.factory.makeMailingList(
+            test_team, test_team.teamowner)
+        mailing_list.deactivate()
+        mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
+        mailing_list.purge()
+        self.person_set.merge(test_team, target_team, test_team.teamowner)
+        self.assertEqual(target_team, test_team.merged)
+
     def test_team_with_members(self):
         # Team members are removed before merging.
         target_team = self.factory.makeTeam()
