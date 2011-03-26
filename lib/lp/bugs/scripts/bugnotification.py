@@ -16,6 +16,7 @@ from itertools import groupby
 from operator import itemgetter
 
 import transaction
+from zope.component import getUtility
 
 from canonical.launchpad.helpers import (
     emailPeople,
@@ -28,6 +29,7 @@ from lp.bugs.mail.bugnotificationbuilder import (
     get_bugmail_from_address,
     )
 from lp.bugs.mail.newbug import generate_bug_add_email
+from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.services.mail.mailwrapper import MailWrapper
 
 
@@ -107,13 +109,19 @@ def construct_email_notifications(bug_notifications):
             filtered_notifications.append(notification)
             for recipient in notification.recipients:
                 email_people = emailPeople(recipient.person)
-                if (not actor.selfgenerated_bugnotifications and
-                    actor in email_people):
-                    email_people.remove(actor)
                 for email_person in email_people:
-                    recipients[email_person] = recipient
+                    recipients_for_person = recipients.get(email_person)
+                    if recipients_for_person is None:
+                        recipients_for_person = []
+                        recipients[email_person] = recipients_for_person
+                    recipients_for_person.append(recipient)
         else:
             omitted_notifications.append(notification)
+
+    # If the actor does not want self-generated bug notifications, remove the
+    # actor now.
+    if not actor.selfgenerated_bugnotifications:
+        recipients.pop(actor, None)
 
     if bug.duplicateof is not None:
         text_notifications.append(
@@ -158,18 +166,38 @@ def construct_email_notifications(bug_notifications):
     bug_notification_builder = BugNotificationBuilder(bug, actor)
     sorted_recipients = sorted(
         recipients.items(), key=lambda t: t[0].preferredemail.email)
-    for email_person, recipient in sorted_recipients:
-        address = str(email_person.preferredemail.email)
-        reason = recipient.reason_body
-        rationale = recipient.reason_header
+    cached_filters = {}
 
-        filters = set()
-        for notification in filtered_notifications:
-            notification_filters = notification.getFiltersByRecipient(
-                email_person)
-            for notification_filter in notification_filters:
-                if notification_filter.description is not None:
-                    filters.add(notification_filter.description)
+    bug_notification_set = getUtility(IBugNotificationSet)
+    def get_filter_descriptions(recipients):
+        "Given a list of recipients, return the filter descriptions for them."
+        descriptions = set()
+        people_seen = set()
+        for recipient in recipients:
+            person = recipient.person
+            if person in people_seen:
+                continue
+            people_seen.add(person)
+            recipient_filters = cached_filters.get(person)
+            if recipient_filters is None:
+                recipient_filters = set(
+                    filter.description for filter
+                    in bug_notification_set.getFiltersByRecipient(
+                        filtered_notifications, person)
+                    if filter.description)
+                cached_filters[recipient] = recipient_filters
+            descriptions.update(recipient_filters)
+        return descriptions
+
+    for email_person, recipients in sorted_recipients:
+        address = str(email_person.preferredemail.email)
+        # Choosing the first recipient is a bit arbitrary, but it
+        # is simple for the user to understand.  We may want to reconsider
+        # this in the future, in the face of subscription filters.
+        reason = recipients[0].reason_body
+        rationale = recipients[0].reason_header
+
+        filters = get_filter_descriptions(recipients)
         if filters:
             # There are some filters as well, add it to the email body.
             filters_text = u"\nMatching subscriptions: %s" % ", ".join(
