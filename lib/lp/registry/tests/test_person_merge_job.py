@@ -117,7 +117,9 @@ class TestPersonMergeJob(TestCaseWithFactory):
         from_team = self.factory.makeTeam(name='null')
         with person_logged_in(from_team.teamowner):
             from_team.teamowner.leave(from_team)
-        self.job_source.create(from_person=from_team, to_person=to_team)
+        self.job_source.create(
+            from_person=from_team, to_person=to_team,
+            reviewer=from_team.teamowner)
         transaction.commit()
 
         out, err, exit_code = run_script(

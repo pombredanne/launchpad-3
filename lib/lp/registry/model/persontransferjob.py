@@ -340,12 +340,17 @@ class PersonMergeJob(PersonTransferJobDerived):
     class_job_type = PersonTransferJobType.MERGE
 
     @classmethod
-    def create(cls, from_person, to_person):
+    def create(cls, from_person, to_person, reviewer=None):
         """See `IPersonMergeJobSource`."""
         if from_person.is_merge_pending or to_person.is_merge_pending:
             return None
+        if from_person.is_team:
+            metadata = {'reviewer': reviewer.id}
+        else:
+            metadata = {}
         return super(PersonMergeJob, cls).create(
-            minor_person=from_person, major_person=to_person, metadata={})
+            minor_person=from_person, major_person=to_person,
+            metadata=metadata)
 
     @classmethod
     def find(cls, from_person=None, to_person=None, any_person=False):
@@ -379,6 +384,13 @@ class PersonMergeJob(PersonTransferJobDerived):
         return self.major_person
 
     @property
+    def reviewer(self):
+        if 'reviewer' in self.metadata:
+            return getUtility(IPersonSet).get(self.metadata['reviewer'])
+        else:
+            return None
+
+    @property
     def log_name(self):
         return self.__class__.__name__
 
@@ -399,7 +411,8 @@ class PersonMergeJob(PersonTransferJobDerived):
             "%s is about to merge ~%s into ~%s", self.log_name,
             from_person_name, to_person_name)
         getUtility(IPersonSet).merge(
-            from_person=self.from_person, to_person=self.to_person)
+            from_person=self.from_person, to_person=self.to_person,
+            reviewer=self.reviewer)
 
         log.debug(
             "%s has merged ~%s into ~%s", self.log_name,
