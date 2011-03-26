@@ -250,7 +250,7 @@ class GenericBranchCollection:
         if statuses is not None:
             expressions.append(
                 BranchMergeProposal.queue_status.is_in(statuses))
-        return self.store.using(*tables).find(BranchMergeProposal, expressions)
+        return self.store.using(*tables).find(BranchMergeProposal, *expressions)
 
     def getMergeProposalsForPerson(self, person, status=None):
         """See `IBranchCollection`."""
@@ -282,7 +282,7 @@ class GenericBranchCollection:
             expressions.append(
                 BranchMergeProposal.queue_status.is_in(status))
         proposals = self.store.using(*tables).find(
-            BranchMergeProposal, expressions)
+            BranchMergeProposal, *expressions)
         # Apply sorting here as we can't do it in the browser code.  We need
         # to think carefully about the best places to do this, but not here
         # nor now.
