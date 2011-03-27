@@ -106,7 +106,8 @@ class IQuestion(IHasOwner):
         description=_("The person who last provided a response intended to "
         "resolve the question."),
         vocabulary='ValidPersonOrTeam'),
-        as_of="devel")
+        as_of="devel",
+        readonly=True)
     answer = Reference(
         title=_('Answer'), required=False,
         description=_("The IQuestionMessage that contains the answer "
