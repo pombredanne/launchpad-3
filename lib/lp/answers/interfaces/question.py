@@ -78,12 +78,6 @@ class IQuestion(IHasOwner):
         "Include as much detail as possible: what "
         u"you\N{right single quotation mark}re trying to achieve, what steps "
         "you take, what happens, and what you think should happen instead."))
-#    description = exported(Text(
-#        title=_('Description'), required=True, description=_(
-#        "Include as much detail as possible: what "
-#        u"you\N{right single quotation mark}re trying to achieve, what steps "
-#        "you take, what happens, and what you think should happen instead.")),
-#        as_of="devel")
     status = exported(Choice(
         title=_('Status'), vocabulary=QuestionStatus,
         default=QuestionStatus.OPEN, readonly=True),
