@@ -63,7 +63,7 @@ class InvalidQuestionStateError(Exception):
 class IQuestion(IHasOwner):
     """A single question, often a support request."""
 
-    export_as_webservice_entry()
+    export_as_webservice_entry(as_of="devel")
 
     id = exported(Int(
         title=_('Question Number'), required=True, readonly=True,
@@ -73,12 +73,17 @@ class IQuestion(IHasOwner):
         title=_('Summary'), required=True, description=_(
         "A one-line summary of the issue or problem.")),
         as_of="devel")
-    description = exported(Text(
+    description = Text(
         title=_('Description'), required=True, description=_(
         "Include as much detail as possible: what "
         u"you\N{right single quotation mark}re trying to achieve, what steps "
-        "you take, what happens, and what you think should happen instead.")),
-        as_of="devel")
+        "you take, what happens, and what you think should happen instead."))
+#    description = exported(Text(
+#        title=_('Description'), required=True, description=_(
+#        "Include as much detail as possible: what "
+#        u"you\N{right single quotation mark}re trying to achieve, what steps "
+#        "you take, what happens, and what you think should happen instead.")),
+#        as_of="devel")
     status = exported(Choice(
         title=_('Status'), vocabulary=QuestionStatus,
         default=QuestionStatus.OPEN, readonly=True),
@@ -108,7 +113,7 @@ class IQuestion(IHasOwner):
         vocabulary='ValidPersonOrTeam'),
         as_of="devel",
         readonly=True)
-    answer = Reference(
+    answer = Object(
         title=_('Answer'), required=False,
         description=_("The IQuestionMessage that contains the answer "
             "confirmed by the owner as providing a solution to his problem."),

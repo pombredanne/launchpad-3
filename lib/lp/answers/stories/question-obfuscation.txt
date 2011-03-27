@@ -1,4 +1,4 @@
-= Question obfuscation =
+e Question obfuscation =
 
 Launchpad obfuscates email addresses when pages are viewed by
 anonymous users to prevent address harvesting by spammers. Logged
@@ -129,7 +129,9 @@ He cannot see the address reading the question either.
       link ...'
 
     >>> anon_browser.getLink('mailto: problem in webpage').click()
-    >>> 'user@domain.com' in anon_browser.contents
+    >>> contents = anon_browser.contents
+    >>> file('/home/jc/contents.html', 'w').write(contents)
+    >>> 'user@domain.com' in contents #anon_browser.contents
     False
 
     >>> description = find_main_content(anon_browser.contents).p

@@ -20,16 +20,6 @@ class QuestionMessageCanonicalUrlData:
         self.path = "messages/%d" % list(question.messages).index(message)
 
 
-class QuestionMessageCanonicalUrlData:
-    """Question messages have a canonical_url within the question."""
-    implements(ICanonicalUrlData)
-    rootsite = 'answers'
-
-    def __init__(self, question, message):
-        self.inside = question
-        self.path = "messages/%d" % list(question.messages).index(message)
-
-
 class BugMessageCanonicalUrlData:
     """Bug messages have a canonical_url within the primary bugtask."""
     implements(ICanonicalUrlData)
