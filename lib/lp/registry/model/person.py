@@ -3808,11 +3808,12 @@ class PersonSet:
         """Purge team artifacts that cannot be merged, but can be removed."""
         # A team cannot have more than one mailing list.
         mailing_list = getUtility(IMailingListSet).get(from_team.name)
-        if mailing_list is not None and mailing_list.status in PURGE_STATES:
-            from_team.mailing_list.purge()
-        elif mailing_list is not None:
-            raise AssertionError(
-                "Teams with active mailing lists cannot be merged.")
+        if mailing_list is not None:
+            if mailing_list.status in PURGE_STATES:
+                from_team.mailing_list.purge()
+            elif mailing_list.status != MailingListStatus.PURGED:
+                raise AssertionError(
+                    "Teams with active mailing lists cannot be merged.")
         # Team email addresses are not transferable.
         from_team.setContactAddress(None)
         # Memberships in the team are not transferable because there

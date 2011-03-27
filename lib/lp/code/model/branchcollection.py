@@ -230,13 +230,8 @@ class GenericBranchCollection:
                 *self._branch_filter_expressions)),
             Join(Target, Target.id==BranchMergeProposal.target_branchID)
             ]
-        expressions = []
-        source_visible = self._getBranchVisibilityExpression()
-        if source_visible:
-            expressions.append(BranchMergeProposal.source_branchID.is_in(
-                Select(Branch.id, source_visible)))
-            expressions.append(BranchMergeProposal.target_branchID.is_in(
-                Select(Target.id, self._getBranchVisibilityExpression(Target))))
+        expressions = self._getBranchVisibilityExpression()
+        expressions.extend(self._getBranchVisibilityExpression(Target))
         if for_branches is not None:
             branch_ids = [branch.id for branch in for_branches]
             expressions.append(
