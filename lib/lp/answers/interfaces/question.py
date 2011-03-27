@@ -21,6 +21,7 @@ from lazr.restful.declarations import (
     export_as_webservice_entry,
     exported,
     export_write_operation,
+    operation_for_version,
     operation_parameters,
     REQUEST_USER,
     )
@@ -485,6 +486,7 @@ class IQuestion(IHasOwner):
         visible=Bool(title=_('Show this comment?'), required=True))
     @call_with(user=REQUEST_USER)
     @export_write_operation()
+    @operation_for_version('devel')
     def setCommentVisibility(user, comment_number, visible):
         """Set the visible attribute on a question message.
         
