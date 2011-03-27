@@ -39,26 +39,9 @@ The old team is now renamed but the target team remains.
     >>> print person_set.getByName('ubuntu-team').displayname
     Ubuntu Team
 
-Teams which have superteams cannot be merged into other teams. This
-restriction was added as a fix to https://bugs.launchpad.net/bugs/290681.
-
-    >>> parent_team = factory.makeTeam()
-    >>> child_team = factory.makeTeam(name='child-team')
-    >>> random_team = factory.makeTeam()
-    >>> transaction.commit()
-    >>> login('foo.bar@canonical.com')
-    >>> ignored = parent_team.addMember(
-    ...     child_team, reviewer=parent_team.teamowner, force_team_add=True)
-    >>> form = {'field.dupe_person': child_team.name,
-    ...         'field.target_person': random_team.name,
-    ...         'field.actions.deactivate_members_and_merge': 'Merge'}
-    >>> view = create_initialized_view(
-    ...     person_set, '+adminteammerge', form=form)
-    >>> view.errors
-    [u"child-team has super teams, so it can't be merged."]
-
 Attempting to merge a non-existent team results in an error.
 
+    >>> transaction.commit()
     >>> form = {'field.dupe_person': 'not-a-real-team',
     ...         'field.target_person': 'another-fake-team',
     ...         'field.actions.merge': 'Merge'}

@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Simple loggers."""
@@ -11,16 +11,30 @@ __all__ = [
     ]
 
 from StringIO import StringIO
-import logging
 import sys
 import traceback
+
+from lp.services.log import loglevels
+
+
+LEVEL_PREFIXES = dict(
+    (debug_level, "DEBUG%d" % (1 + debug_level - loglevels.DEBUG))
+    for debug_level in xrange(loglevels.DEBUG9, loglevels.DEBUG))
+
+LEVEL_PREFIXES.update({
+    loglevels.DEBUG: 'DEBUG',
+    loglevels.INFO: 'INFO',
+    loglevels.WARNING: 'WARNING',
+    loglevels.ERROR: 'ERROR',
+    loglevels.CRITICAL: 'CRITICAL',
+})
 
 
 class FakeLogger:
     """Emulates a proper logger, just printing everything out the given file.
     """
 
-    loglevel = logging.DEBUG
+    loglevel = loglevels.DEBUG
 
     def __init__(self, output_file=None):
         """The default output_file is sys.stdout."""
@@ -41,7 +55,10 @@ class FakeLogger:
             msg %= args
         return msg
 
-    def message(self, prefix, msg, *stuff, **kw):
+    def message(self, level, msg, *stuff, **kw):
+        if level < self.loglevel:
+            return
+
         # We handle the default output file here because sys.stdout
         # might have been reassigned. Between now and when this object
         # was instantiated.
@@ -49,38 +66,59 @@ class FakeLogger:
             output_file = sys.stdout
         else:
             output_file = self.output_file
+        prefix = LEVEL_PREFIXES.get(level, "%d>" % level)
         print >> output_file, prefix, self._format_message(msg, *stuff)
 
         if 'exc_info' in kw:
             traceback.print_exc(file=output_file)
 
-    def log(self, *stuff, **kw):
-        self.message('log>', *stuff, **kw)
+    def log(self, level, *stuff, **kw):
+        self.message(level, *stuff, **kw)
 
     def warning(self, *stuff, **kw):
-        if self.loglevel <= logging.WARN:
-            self.message('WARNING', *stuff, **kw)
+        self.message(loglevels.WARNING, *stuff, **kw)
 
     warn = warning
 
     def error(self, *stuff, **kw):
-        if self.loglevel <= logging.ERROR:
-            self.message('ERROR', *stuff, **kw)
+        self.message(loglevels.ERROR, *stuff, **kw)
 
     exception = error
 
     def critical(self, *stuff, **kw):
-        self.message('CRITICAL', *stuff, **kw)
+        self.message(loglevels.CRITICAL, *stuff, **kw)
 
     fatal = critical
 
     def info(self, *stuff, **kw):
-        if self.loglevel <= logging.INFO:
-            self.message('INFO', *stuff, **kw)
+        self.message(loglevels.INFO, *stuff, **kw)
 
     def debug(self, *stuff, **kw):
-        if self.loglevel <= logging.DEBUG:
-            self.message('DEBUG', *stuff, **kw)
+        self.message(loglevels.DEBUG, *stuff, **kw)
+
+    def debug2(self, *stuff, **kw):
+        self.message(loglevels.DEBUG2, *stuff, **kw)
+
+    def debug3(self, *stuff, **kw):
+        self.message(loglevels.DEBUG3, *stuff, **kw)
+
+    def debug4(self, *stuff, **kw):
+        self.message(loglevels.DEBUG4, *stuff, **kw)
+
+    def debug5(self, *stuff, **kw):
+        self.message(loglevels.DEBUG5, *stuff, **kw)
+
+    def debug6(self, *stuff, **kw):
+        self.message(loglevels.DEBUG6, *stuff, **kw)
+
+    def debug7(self, *stuff, **kw):
+        self.message(loglevels.DEBUG7, *stuff, **kw)
+
+    def debug8(self, *stuff, **kw):
+        self.message(loglevels.DEBUG8, *stuff, **kw)
+
+    def debug9(self, *stuff, **kw):
+        self.message(loglevels.DEBUG9, *stuff, **kw)
 
 
 class DevNullLogger(FakeLogger):
@@ -95,7 +133,6 @@ class BufferLogger(FakeLogger):
 
     def __init__(self):
         super(BufferLogger, self).__init__(StringIO())
-        # self.buffer = StringIO()
 
     def getLogBuffer(self):
         """Return the existing log messages."""
