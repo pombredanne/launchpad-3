@@ -66,22 +66,25 @@ class InvalidQuestionStateError(Exception):
 class IQuestion(IHasOwner):
     """A single question, often a support request."""
 
-    export_as_webservice_entry()
+    export_as_webservice_entry(as_of="devel")
 
     id = exported(Int(
         title=_('Question Number'), required=True, readonly=True,
-        description=_("The tracking number for this question.")))
+        description=_("The tracking number for this question.")),
+        as_of="devel")
     title = exported(TextLine(
         title=_('Summary'), required=True, description=_(
-        "A one-line summary of the issue or problem.")))
-    description = exported(Text(
+        "A one-line summary of the issue or problem.")),
+        as_of="devel")
+    description = Text(
         title=_('Description'), required=True, description=_(
         "Include as much detail as possible: what "
         u"you\N{right single quotation mark}re trying to achieve, what steps "
-        "you take, what happens, and what you think should happen instead.")))
+        "you take, what happens, and what you think should happen instead."))
     status = exported(Choice(
         title=_('Status'), vocabulary=QuestionStatus,
-        default=QuestionStatus.OPEN, readonly=True))
+        default=QuestionStatus.OPEN, readonly=True),
+        as_of="devel")
     priority = Choice(
         title=_('Priority'), vocabulary=QuestionPriority,
         default=QuestionPriority.NORMAL)
@@ -92,18 +95,22 @@ class IQuestion(IHasOwner):
         description=_('The language in which this question is written.'))
     owner = exported(PublicPersonChoice(
         title=_('Owner'), required=True, readonly=True,
-        vocabulary='ValidPersonOrTeam'))
+        vocabulary='ValidPersonOrTeam'),
+        as_of="devel")
     assignee = exported(PublicPersonChoice(
         title=_('Assignee'), required=False,
         description=_("The person responsible for helping to resolve the "
         "question."),
-        vocabulary='ValidPersonOrTeam'))
+        vocabulary='ValidPersonOrTeam'),
+        as_of="devel")
     answerer = exported(PublicPersonChoice(
         title=_('Answered By'), required=False,
         description=_("The person who last provided a response intended to "
         "resolve the question."),
-        vocabulary='ValidPersonOrTeam'))
-    answer = Reference(
+        vocabulary='ValidPersonOrTeam'),
+        as_of="devel",
+        readonly=True)
+    answer = Object(
         title=_('Answer'), required=False,
         description=_("The IQuestionMessage that contains the answer "
             "confirmed by the owner as providing a solution to his problem."),

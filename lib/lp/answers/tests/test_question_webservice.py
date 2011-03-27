@@ -37,6 +37,7 @@ class TestQuestionRepresentation(TestCaseWithFactory):
 
         self.webservice = LaunchpadWebServiceCaller(
             'launchpad-library', 'salgado-change-anything')
+        self.webservice.default_api_version = 'devel'
 
     def findQuestionTitle(self, response):
         """Find the question title field in an XHTML document fragment."""

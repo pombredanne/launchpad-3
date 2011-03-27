@@ -1,4 +1,4 @@
-= Question obfuscation =
+e Question obfuscation =
 
 Launchpad obfuscates email addresses when pages are viewed by
 anonymous users to prevent address harvesting by spammers. Logged
