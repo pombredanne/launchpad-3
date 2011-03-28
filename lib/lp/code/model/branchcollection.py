@@ -752,8 +752,8 @@ class VisibleBranchCollection(GenericBranchCollection):
                     SQL("select id from scope_branches where not private"))
                 ]
         return [
-            With("teams", self.store.find(TeamParticipation.team,
-                TeamParticipation.personID == person)._get_select()),
+            With("teams", self.store.find(TeamParticipation.teamID,
+                TeamParticipation.personID == person.id)._get_select()),
             With("private_branches", SQL("""
                 SELECT scope_branches.id FROM scope_branches WHERE
                 scope_branches.private AND ((scope_branches.owner in (select team from teams) OR
