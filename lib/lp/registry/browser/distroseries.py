@@ -633,12 +633,13 @@ class DistroSeriesLocalDifferences(LaunchpadFormView, PackageCopyingMixin):
 
         # PackageCopyingMixin.do_copy() does the work of copying and
         # setting up on-page notifications.
-        self.do_copy(
+        if self.do_copy(
             'selected_differences', sources, self.context.main_archive,
             self.context, PackagePublishingPocket.RELEASE,
-            include_binaries=False)
-
-        self.next_url = self.request.URL
+            include_binaries=False):
+            # The copy worked so we can redirect back to the page to
+            # show the results.
+            self.next_url = self.request.URL
 
     def validate_sync(self, action, data):
         """Validate selected differences."""

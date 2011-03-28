@@ -1237,7 +1237,7 @@ class PackageCopyingMixin:
 
             self.setFieldError(
                 sources_field_name, structured('\n'.join(messages)))
-            return
+            return False
 
         # Preload BPNs to save queries when calculating display names.
         needed_bpn_ids = set(
@@ -1270,6 +1270,7 @@ class PackageCopyingMixin:
 
         notification = "\n".join(messages)
         self.request.response.addNotification(structured(notification))
+        return True
 
 
 def make_archive_vocabulary(archives):
@@ -1435,11 +1436,12 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView,
 
         # PackageCopyingMixin.do_copy() does the work of copying and
         # setting up on-page notifications.
-        self.do_copy(
+        if self.do_copy(
             'selected_sources', selected_sources, destination_archive,
-            destination_series, destination_pocket, include_binaries)
-
-        self.setNextURL()
+            destination_series, destination_pocket, include_binaries):
+            # The copy worked so we can redirect back to the page to
+            # show the result.
+            self.setNextURL()
 
 
 class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
