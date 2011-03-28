@@ -340,7 +340,7 @@ them what happened.
     ... Date: Fri Jun 17 10:10:23 BST 2005
     ... Subject: Not important
     ...
-    ...     summary "Nicer summary" 
+    ...     summary "Even nicer summary" 
     ... """
 
     >>> process_email(edit_mail)
@@ -367,13 +367,15 @@ And the person sending the email has received an error message.
     ...     print
     ...     print error_mail.get_payload(decode=True)
 
-    >>> print_lates_email()
+    >>> print_latest_email()
     Subject: Submit Request Failure
     To: test@canonical.com
     <BLANKLINE>
     ...
-    The message you sent included commands to modify a bug report, but
-    no bug was specified.
+    The message you sent included commands to modify a bug,
+    but no bug was specified. Please supply a bug before the command
+    to modify it.
+    <BLANKLINE>
     ...
 
 GPG signing and adding comments
