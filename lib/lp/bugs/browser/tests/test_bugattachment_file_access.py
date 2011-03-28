@@ -112,10 +112,10 @@ class TestAccessToBugAttachmentFiles(TestCaseWithFactory):
             NullFeatureController())
         self.addCleanup(lp.services.features.install_feature_controller, None)
         next_view, traversal_path = view.browserDefault(request)
-        self.assertEqual(view, next_view)
-        file_ = next_view()
-        file_.seek(0)
-        self.assertEqual('file content', file_.read())
+        self.assertIsInstance(next_view, RedirectionView)
+        mo = re.match(
+            '^https://.*.restricted.*/\d+/foo.txt\?token=.*$', next_view.target)
+        self.assertIsNot(None, mo)
 
     def test_access_to_restricted_file_unauthorized(self):
         # If a user cannot access the bug attachment itself, he can neither
@@ -134,33 +134,6 @@ class TestAccessToBugAttachmentFiles(TestCaseWithFactory):
         navigation = BugAttachmentFileNavigation(self.bugattachment, request)
         self.assertRaises(
             Unauthorized, navigation.publishTraverse, request, '+files')
-
-    def test_content_disposition_of_restricted_file(self):
-        # The content of restricted Librarian files for bug attachments
-        # is served by instances of SafeStreamOrRedirectLibraryFileAliasView
-        # which set the content disposition header of the HTTP response for
-        # to "attachment".
-        lfa_with_parent = getMultiAdapter(
-            (self.bugattachment.libraryfile, self.bugattachment),
-            ILibraryFileAliasWithParent)
-        lfa_with_parent.restricted = True
-        self.bug.setPrivate(True, self.bug_owner)
-        transaction.commit()
-        request = LaunchpadTestRequest()
-        request.setTraversalStack(['foo.txt'])
-        navigation = BugAttachmentFileNavigation(self.bugattachment, request)
-        view = navigation.publishTraverse(request, '+files')
-        # XXX Ensure the feature will be off - everything is off with
-        # NullFeatureController. bug=631884
-        lp.services.features.install_feature_controller(
-            NullFeatureController())
-        self.addCleanup(lp.services.features.install_feature_controller, None)
-        next_view, traversal_path = view.browserDefault(request)
-        self.assertIsInstance(
-            next_view, SafeStreamOrRedirectLibraryFileAliasView)
-        next_view()
-        self.assertEqual(
-            'attachment', request.response.getHeader('Content-Disposition'))
 
 
 class TestWebserviceAccessToBugAttachmentFiles(TestCaseWithFactory):

@@ -179,11 +179,6 @@ class MixedFileAliasView(LaunchpadView):
         if not self.context.restricted:
             # Public file, just point the client at the right place.
             return RedirectionView(self.context.http_url, self.request), ()
-        if not getFeatureFlag(u'publicrestrictedlibrarian'):
-            # Restricted file and we have not enabled the public
-            # restricted librarian yet :- deliver inline.
-            self._when_streaming()
-            return self, ()
         # Avoids a circular import seen in
         # scripts/ftests/librarianformatter.txt
         from canonical.launchpad.database.librarian import TimeLimitedToken
@@ -236,7 +231,7 @@ class FileNavigationMixin:
     extended in order to allow traversing to multiple files potentially
     with the same filename (product files or bug attachments).
     """
-    view_class = StreamOrRedirectLibraryFileAliasView
+    view_class = RedirectPerhapsWithTokenLibraryFileAliasView
 
     @stepthrough('+files')
     def traverse_files(self, filename):
