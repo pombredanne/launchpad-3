@@ -84,6 +84,7 @@ from lp.blueprints.model.specification import (
     Specification,
     )
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
+from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
     get_bug_tags,
     get_bug_tags_open_count,
@@ -1932,6 +1933,25 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeriesPublic`."""
         return Store.of(self).find(
             DistroSeries, DistroSeries.parent_series == self)
+
+    def getBugTaskWeightFunction(self):
+        """Provide a weight function to determine optimal bug task.
+
+        Full weight is given to tasks for this distro series.
+
+        If the series isn't found, the distribution task is better than
+        others.
+        """
+        seriesID = self.id
+        distributionID = self.distributionID
+        def weight_function(bugtask):
+            if bugtask.distroseriesID == seriesID:
+                return OrderedBugTask(1, bugtask.id, bugtask)
+            elif bugtask.distributionID == distributionID:
+                return OrderedBugTask(2, bugtask.id, bugtask)
+            else:
+                return OrderedBugTask(3, bugtask.id, bugtask)
+        return weight_function
 
 
 class DistroSeriesSet:

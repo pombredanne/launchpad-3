@@ -109,6 +109,7 @@ from lp.blueprints.model.specification import (
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
+from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
     BugSet,
     get_bug_tags,
@@ -1327,6 +1328,22 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 SourcePackageRecipeData.sourcepackage_recipe_id,
             SourcePackageRecipeData.base_branch == Branch.id,
             Branch.product == self)
+
+    def getBugTaskWeightFunction(self):
+        """Provide a weight function to determine optimal bug task.
+
+        Full weight is given to tasks for this product.
+
+        Given that there must be a product task for a series of that product
+        to have a task, we give no more weighting to a productseries task than
+        any other.
+        """
+        productID = self.id
+        def weight_function(bugtask):
+            if bugtask.productID == productID:
+                return OrderedBugTask(1, bugtask.id, bugtask)
+            return OrderedBugTask(2, bugtask.id, bugtask)
+        return weight_function
 
 
 class ProductSet:

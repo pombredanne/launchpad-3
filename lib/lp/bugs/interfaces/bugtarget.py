@@ -20,6 +20,7 @@ __all__ = [
     'IOfficialBugTagTargetRestricted',
     ]
 
+
 from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
     call_with,
@@ -276,6 +277,16 @@ class IHasBugs(Interface):
                    counted.
             :statuses: Only bugs with these statuses will be counted. If
                        None, all statuses will be included.
+        """
+
+    def getBugTaskWeightFunction():
+        """Return a function that is used to weight the bug tasks.
+
+        The function should take a bug task as a parameter and return
+        an OrderedBugTask.
+
+        The ordered bug tasks are used to choose the most relevant bug task
+        for any particular context.
         """
 
 

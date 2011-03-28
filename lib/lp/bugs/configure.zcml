@@ -168,6 +168,10 @@
     <facet
         facet="bugs">
 
+      <class class="lp.bugs.interfaces.bugtaskfilter.OrderedBugTask">
+        <allow attributes="rank id task"/>
+      </class>
+
         <!-- IBugTask -->
 
         <class
