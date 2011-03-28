@@ -52,14 +52,7 @@
     class="canonical.launchpad.browser.LibraryFileAliasMD5View"
     />
 
-  <!-- StreamOrRedirectLibraryFileAliasView -->
-  <class class="canonical.launchpad.browser.librarian.StreamOrRedirectLibraryFileAliasView">
-    <allow attributes="__call__" />
-    <allow interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
-  </class>
-
-  <class class="canonical.launchpad.browser.librarian.SafeStreamOrRedirectLibraryFileAliasView">
-    <allow attributes="__call__" />
+  <class class="canonical.launchpad.browser.librarian.RedirectPerhapsWithTokenLibraryFileAliasView">
     <allow interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
   </class>
 
