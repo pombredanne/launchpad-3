@@ -14,10 +14,6 @@ __all__ = [
     'RedirectPerhapsWithTokenLibraryFileAliasView',
     ]
 
-import os
-import tempfile
-import urllib2
-
 from lazr.delegates import delegates
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
@@ -37,11 +33,6 @@ from canonical.launchpad.webapp.publisher import (
 from canonical.launchpad.webapp.url import urlappend
 from canonical.lazr.utils import get_current_browser_request
 from canonical.librarian.client import url_path_quote
-from canonical.librarian.interfaces import LibrarianServerError
-from canonical.librarian.utils import (
-    filechunks,
-    guess_librarian_encoding,
-    )
 
 
 class LibraryFileAliasView(LaunchpadView):
@@ -78,81 +69,11 @@ class LibraryFileAliasMD5View(LaunchpadView):
 class RedirectPerhapsWithTokenLibraryFileAliasView(LaunchpadView):
     """Stream or redirects to `ILibraryFileAlias`.
 
-    If the file is public, it will redirect to the files http url.
-
-    Otherwise if the feature flag publicrestrictedlibrarian is true this will
-    allocate a token and redirect to the aliases private url.
-
-    Otherwise it will proxy the file in the appserver.
-
-    Once we no longer have any proxy code at all it should be possible to
-    consolidate this with LibraryFileAliasView.
-
-    Note that streaming restricted files is a security concern - they show up
-    in the launchpad.net domain rather than launchpadlibrarian.net and thus
-    we have to take special care about their origin.
-    SafeStreamOrRedirectLibraryFileAliasView is used when we do not trust the
-    content, otherwise StreamOrRedirectLibraryFileAliasView. We are working
-    to remove both of these views entirely, but some transition will be
-    needed.
-
-    The context provides a file-like interface - it can be opened and closed
-    and read from.
+    If the file is public, it will redirect to the file's HTTP URL. Otherwise
+    it will allocate a token and redirect to the file's public HTTPS URL with
+    that token.
     """
     implements(IBrowserPublisher)
-
-    def getFileContents(self):
-        # Reset system proxy setting if it exists. The urllib2 default
-        # opener is cached that's why it has to be re-installed after
-        # the shell environment changes. Download the library file
-        # content into a local temporary file. Finally, restore original
-        # proxy-settings and refresh the urllib2 opener.
-        # XXX: This is not threadsafe, so two calls at once will collide and
-        # can then corrupt the variable. bug=395960
-        original_proxy = os.getenv('http_proxy')
-        try:
-            if original_proxy is not None:
-                del os.environ['http_proxy']
-                urllib2.install_opener(urllib2.build_opener())
-            tmp_file = tempfile.TemporaryFile()
-            self.context.open()
-            for chunk in filechunks(self.context):
-                tmp_file.write(chunk)
-            self.context.close()
-        finally:
-            if original_proxy is not None:
-                os.environ['http_proxy'] = original_proxy
-                urllib2.install_opener(urllib2.build_opener())
-        return tmp_file
-
-    def __call__(self):
-        """Streams the contents of the context `ILibraryFileAlias`.
-
-        The file content is downloaded in chunks directly to a
-        `tempfile.TemporaryFile` avoiding using large amount of memory.
-
-        The temporary file is returned to the zope publishing machinery as
-        documented in lib/zope/publisher/httpresults.txt, after adjusting
-        the response 'Content-Type' appropriately.
-
-        This method explicit ignores the local 'http_proxy' settings.
-        """
-        try:
-            tmp_file = self.getFileContents()
-        except LibrarianServerError:
-            self.request.response.setHeader('Content-Type', 'text/plain')
-            self.request.response.setStatus(503)
-            return (u'There was a problem fetching the contents of this '
-                     'file. Please try again in a few minutes.')
-
-        # XXX: Brad Crittenden 2007-12-05 bug=174204: When encodings are
-        # stored as part of a file's metadata this logic will be replaced.
-        encoding, mimetype = guess_librarian_encoding(
-            self.context.filename, self.context.mimetype)
-
-        self.request.response.setHeader('Content-Encoding', encoding)
-        self.request.response.setHeader('Content-Type', mimetype)
-        return tmp_file
 
     def browserDefault(self, request):
         """Decides how to deliver the file.
@@ -188,9 +109,6 @@ class RedirectPerhapsWithTokenLibraryFileAliasView(LaunchpadView):
     def publishTraverse(self, request, name):
         """See `IBrowserPublisher` - can't traverse below a file."""
         raise NotFound(name, self.context)
-
-    def _when_streaming(self):
-        """Hook for SafeStreamOrRedirectLibraryFileAliasView."""
 
 
 class DeletedProxiedLibraryFileAlias(NotFound):
