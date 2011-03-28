@@ -86,10 +86,8 @@ class TestAccessToBugAttachmentFiles(TestCaseWithFactory):
         self.assertIsNot(None, mo)
 
     def test_access_to_restricted_file(self):
-        # Requests of restricted files are handled by ProxiedLibraryFileAlias
-        # until we enable the publicrestrictedlibrarian (at which point
-        # this test should check the view like
-        # test_access_to_unrestricted_file.
+        # Requests of restricted files are redirected to librarian URLs
+        # with tokens.
         lfa_with_parent = getMultiAdapter(
             (self.bugattachment.libraryfile, self.bugattachment),
             ILibraryFileAliasWithParent)
