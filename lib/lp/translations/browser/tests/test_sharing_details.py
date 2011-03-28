@@ -5,6 +5,7 @@ __metaclass__ = type
 
 
 from lazr.restful.interfaces import IJSONRequestCache
+import re
 from soupmatchers import (
     HTMLContains,
     Tag,
@@ -363,10 +364,14 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         distroseries = self.factory.makeUbuntuDistroSeries()
         return self.factory.makeSourcePackage(distroseries=distroseries)
 
-    def _getSharingDetailsViewBrowser(self, sourcepackage, login=False):
+    def _getSharingDetailsViewBrowser(self, sourcepackage, user=None):
+        if user is None:
+            no_login = True
+        else:
+            no_login = False
         return self.getViewBrowser(
-            sourcepackage, no_login=not login, rootsite="translations",
-            view_name="+sharing-details")
+            sourcepackage, no_login=no_login, rootsite="translations",
+            view_name="+sharing-details", user=user)
 
     def assertUnseen(self, browser, html_id):
         unseen_matcher = Tag(html_id, 'li', attrs={
@@ -439,7 +444,9 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             Change upstream link
             Remove upstream link
             No source branch exists for the upstream series.
-            Upstream source branch is .*
+            Link to branch
+            Upstream source branch is.*
+            Change branch
             Translations are not enabled on the upstream project.
             Translations are enabled on the upstream project.
             Automatic synchronization of translations is not enabled.
@@ -573,7 +580,8 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         anon_browser = self._getSharingDetailsViewBrowser(sourcepackage)
         # Anonymous users don't get cached objects due to bug #740208
         self.assertNotIn("LP.cache['productseries'] =", anon_browser.contents)
-        browser = self._getSharingDetailsViewBrowser(sourcepackage, login=True)
+        browser = self._getSharingDetailsViewBrowser(
+            sourcepackage, user=self.user)
         self.assertIn("LP.cache['productseries'] =", browser.contents)
 
     def test_potlist_only_ubuntu(self):
@@ -637,6 +645,78 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         self.assertTextMatchesExpressionIgnoreWhitespace("""
             foo-template  linking""",
             extract_text(tbody))
+
+    def assertBranchLinks(self, contents, real_links, enabled):
+        if real_links:
+            match = (
+                r'^http://translations.launchpad.dev/.*/trunk/\+linkbranch$')
+            def link_matcher(url):
+                return re.search(match, url)
+        else:
+            link_matcher = '#'
+        if enabled:
+            css_class = 'sprite add'
+        else:
+            css_class = 'sprite add unseen'
+        matcher = Tag('add-branch', 'a', attrs={
+            'id': 'add-branch',
+            'href': link_matcher,
+            'class': css_class})
+        self.assertThat(contents, HTMLContains(matcher))
+        if enabled:
+            css_class = 'sprite edit'
+        else:
+            css_class = 'sprite edit unseen'
+        matcher = Tag('change-branch', 'a', attrs={
+            'id': 'change-branch',
+            'href': link_matcher,
+            'class': css_class})
+        self.assertThat(contents, HTMLContains(matcher))
+
+    def test_edit_branch_links__no_packaging_link(self):
+        # If no packaging link exists, new_branch_link and edit_branch_link
+        # return hidden dummy links.
+        sourcepackage = self._makeSourcePackage()
+        browser = self._getSharingDetailsViewBrowser(sourcepackage)
+        self.assertBranchLinks(
+            browser.contents, real_links=False, enabled=False)
+
+    def test_edit_branch_links__with_packaging_link__anon_user(self):
+        # If a packaging link exists, new_branch_link and edit_branch_link
+        # return hidden links which point to the product series
+        # branch configuration page for anonymous users.
+        packaging = self.factory.makePackagingLink(in_ubuntu=True)
+        self.configureUpstreamProject(
+            productseries=packaging.productseries)
+        browser = self._getSharingDetailsViewBrowser(packaging.sourcepackage)
+        self.assertBranchLinks(
+            browser.contents, real_links=True, enabled=False)
+
+    def test_edit_branch_links__with_packaging_link__unprivileged_user(self):
+        # If a packaging link exists, new_branch_link and edit_branch_link
+        # return hidden links which point to the product series
+        # branch configuration page for users which cannot change the
+        # branch of the product series.
+        packaging = self.factory.makePackagingLink(in_ubuntu=True)
+        self.configureUpstreamProject(
+            productseries=packaging.productseries)
+        browser = self._getSharingDetailsViewBrowser(
+            packaging.sourcepackage, user=self.factory.makePerson())
+        self.assertBranchLinks(
+            browser.contents, real_links=True, enabled=False)
+
+    def test_edit_branch_links__with_packaging_link__privileged_user(self):
+        # If a packaging link exists, new_branch_link and edit_branch_link
+        # return links which point to the product series
+        # branch configuration page for users which can change the
+        # branch of the product series.
+        packaging = self.factory.makePackagingLink(in_ubuntu=True)
+        self.configureUpstreamProject(
+            productseries=packaging.productseries)
+        browser = self._getSharingDetailsViewBrowser(
+            packaging.sourcepackage, user=packaging.productseries.owner)
+        self.assertBranchLinks(
+            browser.contents, real_links=True, enabled=True)
 
 
 class TestTranslationSharingDetailsViewNotifications(TestCaseWithFactory,
