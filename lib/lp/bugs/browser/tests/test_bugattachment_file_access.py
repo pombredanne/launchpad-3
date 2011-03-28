@@ -19,8 +19,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.management import endInteraction
 
 from canonical.launchpad.browser.librarian import (
-    SafeStreamOrRedirectLibraryFileAliasView,
-    StreamOrRedirectLibraryFileAliasView,
+    RedirectPerhapsWithTokenLibraryFileAliasView,
     )
 from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAliasWithParent,
@@ -35,8 +34,6 @@ from canonical.testing.layers import (
     )
 from lazr.restfulclient.errors import NotFound as RestfulNotFound
 from lp.bugs.browser.bugattachment import BugAttachmentFileNavigation
-import lp.services.features
-from lp.services.features.flags import NullFeatureController
 from lp.testing import (
     launchpadlib_for,
     login_person,
@@ -61,13 +58,15 @@ class TestAccessToBugAttachmentFiles(TestCaseWithFactory):
 
     def test_traversal_to_lfa_of_bug_attachment(self):
         # Traversing to the URL provided by a ProxiedLibraryFileAlias of a
-        # bug attachament returns a StreamOrRedirectLibraryFileAliasView.
+        # bug attachament returns a
+        # RedirectPerhapsWithTokenLibraryFileAliasView.
         request = LaunchpadTestRequest()
         request.setTraversalStack(['foo.txt'])
         navigation = BugAttachmentFileNavigation(
             self.bugattachment, request)
         view = navigation.publishTraverse(request, '+files')
-        self.assertIsInstance(view, StreamOrRedirectLibraryFileAliasView)
+        self.assertIsInstance(
+            view, RedirectPerhapsWithTokenLibraryFileAliasView)
 
     def test_traversal_to_lfa_of_bug_attachment_wrong_filename(self):
         # If the filename provided in the URL does not match the
@@ -106,15 +105,11 @@ class TestAccessToBugAttachmentFiles(TestCaseWithFactory):
         request.setTraversalStack(['foo.txt'])
         navigation = BugAttachmentFileNavigation(self.bugattachment, request)
         view = navigation.publishTraverse(request, '+files')
-        # XXX Ensure the feature will be off - everything is off with
-        # NullFeatureController. bug=631884
-        lp.services.features.install_feature_controller(
-            NullFeatureController())
-        self.addCleanup(lp.services.features.install_feature_controller, None)
         next_view, traversal_path = view.browserDefault(request)
         self.assertIsInstance(next_view, RedirectionView)
         mo = re.match(
-            '^https://.*.restricted.*/\d+/foo.txt\?token=.*$', next_view.target)
+            '^https://.*.restricted.*/\d+/foo.txt\?token=.*$',
+            next_view.target)
         self.assertIsNot(None, mo)
 
     def test_access_to_restricted_file_unauthorized(self):
