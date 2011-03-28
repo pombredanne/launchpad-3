@@ -212,7 +212,9 @@ class GenericBranchCollection:
 
     def getBranches(self, eager_load=False):
         """See `IBranchCollection`."""
-        tables = [Branch] + self._tables.values()
+        all_tables = set(
+            self._tables.values() + self._asymmetric_tables.values())
+        tables = [Branch] + list(all_tables)
         expressions = self._getBranchExpressions()
         resultset = self.store.using(*tables).find(Branch, *expressions)
         if not eager_load:
