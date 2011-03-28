@@ -11,8 +11,6 @@ __all__ = [
     'LibraryFileAliasMD5View',
     'LibraryFileAliasView',
     'ProxiedLibraryFileAlias',
-    'SafeStreamOrRedirectLibraryFileAliasView',
-    'StreamOrRedirectLibraryFileAliasView',
     'RedirectPerhapsWithTokenLibraryFileAliasView',
     ]
 
@@ -195,21 +193,9 @@ class MixedFileAliasView(LaunchpadView):
         """Hook for SafeStreamOrRedirectLibraryFileAliasView."""
 
 
-class SafeStreamOrRedirectLibraryFileAliasView(MixedFileAliasView):
-    """A view for Librarian files that sets the content disposition header."""
-
-    def _when_streaming(self):
-        super(
-            SafeStreamOrRedirectLibraryFileAliasView, self)._when_streaming()
-        self.request.response.setHeader(
-            'Content-Disposition', 'attachment')
-
-
 # The eventual name of MixedFileAliasView once the proxy code
 # is ripped out.
 RedirectPerhapsWithTokenLibraryFileAliasView = MixedFileAliasView
-# The name for the old behaviour being removed:
-StreamOrRedirectLibraryFileAliasView = MixedFileAliasView
 
 
 class DeletedProxiedLibraryFileAlias(NotFound):
