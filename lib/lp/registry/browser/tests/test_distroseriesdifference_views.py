@@ -205,11 +205,12 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
             ds_diff.package_diff = self.factory.makePackageDiff()
 
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+        html = view()
         # The text for the parent diff remains, but the source package
         # diff is now a link.
-        self.assertEqual(1, self.number_of_request_diff_texts(view()))
+        self.assertEqual(1, self.number_of_request_diff_texts(html))
         self.assertTrue(
-            self.contains_one_link_to_diff(view(), ds_diff.package_diff))
+            self.contains_one_link_to_diff(html, ds_diff.package_diff))
 
     def test_source_diff_rendering_diff_no_link(self):
         # The status of the package is shown if the package diff is in a
