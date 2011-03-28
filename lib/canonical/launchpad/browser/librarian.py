@@ -44,7 +44,6 @@ from canonical.librarian.utils import (
     filechunks,
     guess_librarian_encoding,
     )
-from lp.services.features import getFeatureFlag
 
 
 class LibraryFileAliasView(LaunchpadView):
