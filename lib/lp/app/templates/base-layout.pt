@@ -204,7 +204,7 @@
     tal:condition="request/features/visible_render_time"
     replace='structure string:&lt;script type="text/javascript"&gt;
   /* Log time taken for AJAX requests */
-  LPS.use("node", function(Y) {
+  LPS.use("node", "lazr.anim", function(Y) {
     Y.on("domready", function() {
       var node = Y.one("#ajax-time-list");
       var ajax_request_times = {};
@@ -217,12 +217,26 @@
           var now = new Date();
           ajax_request_times[transactionid] = now;
       });
-      Y.on("io:complete", function(transactionid) {
+      Y.on("io:complete", function(transactionid, arguments) {
+          var no_events = Y.one("#ajax-time-list .no-events");
+          if (no_events) {
+            no_events.remove();
+          }
           var now = new Date();
           if (ajax_request_times[transactionid]) {
             var time = (now - ajax_request_times[transactionid])/1000;
-            node.prepend("<li class=\"transaction-"+transactionid+"\">"+time.toFixed(2)+" seconds</li>");
-            Y.lazr.anim.green_flash({node:"#ajax-time-list li.transaction-"+transactionid}).run();
+            var warning = "";
+            if (time > 1) {
+              warning = " class=\"warning\""
+            }
+            node.prepend("<li class=\"transaction-"+transactionid+"\">"+
+              "Time: <strong"+warning+">"+time.toFixed(2)+" seconds</strong><br />"+
+              "<span>ID: "+transactionid+", status: "+arguments.status+
+              " ("+arguments.statusText+")</span></li>");
+            
+            Y.lazr.anim.green_flash({
+                node:"#ajax-time-list li.transaction-"+transactionid
+                }).run();
             if (ajax_menu_animating == false) {
               flash_menu.run();
               ajax_menu_animating = true;

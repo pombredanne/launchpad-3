@@ -1183,12 +1183,12 @@ span.see-all {
     z-index: 10;
     top: 20px;
     right: 0;
-    width: 100px;
+    width: 200px;
     background-color: #f2f2f2;
     border: 2px solid #fff;
-    -moz-box-shadow: 0 0 5px #ccc;
-    -webkit-box-shadow: 0 0 5px #ccc;
-    box-shadow: 0 0 5px #ccc;
+    -moz-box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+    -webkit-box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
     -webkit-border-radius: 4px;
     -moz-border-radius: 4px;
     border-radius: 4px;
@@ -1199,6 +1199,14 @@ span.see-all {
     }
 #ajax-time-list li:last-child {
     border-bottom: none;
+    }
+#ajax-time-list li span {
+    color: #999;
+    font-size: 11px;
+    }
+#ajax-time-list strong.warning {
+    color: #f00;
+    background-color: transparent;
     }
 div.watermark-apps-portlet {
     clear: both;
