@@ -314,17 +314,45 @@ attribute set.
     >>> file_alias.restricted
     True
 
+    >>> transaction.commit()
+    >>> file_alias.open()
+    >>> print file_alias.read()
+    This is private data.
+    >>> file_alias.close()
+
+Restricted files are accessible with HTTP on a private domain.
+
     >>> print file_alias.http_url
     http://.../private.txt
     >>> file_alias.http_url.startswith(
     ...     config.librarian.restricted_download_url)
     True
 
-    >>> transaction.commit()
-    >>> file_alias.open()
-    >>> print file_alias.read()
-    This is private data.
-    >>> file_alias.close()
+They can also be accessed externally using a time-limited token appended
+to their private_url. Possession of a token is sufficient to grant access
+to a file, regardless of who is logged in. getURL can be asked to provide
+such a token.
+
+    >>> token_url = file_alias.getURL(include_token=True)
+    >>> print token_url
+    https://i...restricted.../private.txt?token=...
+    >>> token_url.startswith('https://i%d.restricted.' % file_alias.id)
+    True
+    >>> private_path = TimeLimitedToken.url_to_token_path(
+    ...     file_alias.private_url)
+    >>> token_url.endswith(session_store().find(TimeLimitedToken,
+    ...     path=private_path).any().token)
+    True
+
+LibraryFileAliasView doesn't work on restricted files. This is a temporary
+measure until we're sure no restricted files leak into the traversal
+hierarchy.
+
+    >>> view = getMultiAdapter((file_alias, request), name='+index')
+    >>> view.initialize()
+    Traceback (most recent call last):
+    ...
+    AssertionError
 
 If you try to retrieve this file through the standard ILibrarianClient,
 you'll get a DownloadFailed error.
@@ -513,11 +541,9 @@ A librarian file has a default view that should redirect to the download URL.
     ...     'text2.txt', len(data), StringIO(data), 'text/plain',
     ...     NEVER_EXPIRES)
     >>> transaction.commit()
-    >>> lfa_view = getMultiAdapter((alias,req), name='+index')
+    >>> lfa_view = getMultiAdapter((alias, req), name='+index')
     >>> lfa_view.initialize()
-    >>> lfa_url = lfa_view.context.getURL()
-    >>> url = alias.getURL()
-    >>> lfa_url == url
+    >>> req.response.getHeader("Location") == alias.getURL()
     True
 
 
@@ -561,53 +587,6 @@ Commit the just-created files.
 Clear out existing tokens.
 
     >>> _ = session_store().find(TimeLimitedToken).remove()
-
-== LibraryFileAliasView ==
-
-This special view allows granting access to restricted `LibraryFileAlias`
-objects on the launchpadlibrarian. All requests get redirected, restricted
-files have an access token allocated.
-
-When the context file is a restricted `LibraryFileAlias`, traversal causes an
-access token to be allocated and a redirection to https on a unique domain to
-be issued.
-
-    >>> restricted_view = getMultiAdapter(
-    ...     (restricted_file, request), name='+index')
-    >>> restricted_view.initialize()
-    >>> target = request.response.getHeader('Location')
-    >>> print target
-    https://...restricted.txt?token=...
-    >>> private_path = TimeLimitedToken.url_to_token_path(
-    ...     restricted_file.private_url)
-    >>> target.endswith(session_store().find(TimeLimitedToken,
-    ...     path=private_path).any().token)
-    True
-
-The domain for the target starts with the id of the LibraryFileAlias.
-
-    >>> target.startswith('https://i%d.restricted.' % restricted_file.id)
-    True
-
-Otherwise, no token is allocated and a redirection is issued to the http url.
-
-    >>> public_view = getMultiAdapter((public_file, request), name='+index')
-    >>> public_view.initialize()
-    >>> target = request.response.getHeader('Location')
-    >>> target == public_file.http_url
-    True
-    >>> target
-    'http://.../public.txt'
-
-Deleted files cannot be handled by the view and it raises an appropriate
-AssertionError when it gets traversed.
-
-    >>> deleted_view = getMultiAdapter((deleted_file, request), name='+index')
-    >>> view, extra = deleted_view.initialize()
-    Traceback (most recent call last):
-    ...
-    AssertionError: MixedFileAliasView can not operate on deleted librarian
-    files, since their URL is undefined.
 
 
 == LibraryFileAliasMD5View ==
