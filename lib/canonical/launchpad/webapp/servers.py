@@ -703,11 +703,6 @@ def web_service_request_to_browser_request(webservice_request):
     return LaunchpadBrowserRequest(body, environ)
 
 
-def web_service_request_to_notification_request(request):
-    """Convert a given webservice request into one providing notifications."""
-    return INotificationRequest(request)
-
-
 class Zope3WidgetsUseIBrowserFormNGMonkeyPatch:
     """Make Zope3 widgets use IBrowserFormNG.
 

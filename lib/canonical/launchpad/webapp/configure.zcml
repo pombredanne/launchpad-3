@@ -61,7 +61,7 @@
     <adapter
         for="canonical.launchpad.layers.WebServiceLayer"
         provides="lazr.restful.interfaces.INotificationsProvider"
-        factory="canonical.launchpad.webapp.servers.web_service_request_to_notification_request"
+        factory="canonical.launchpad.webapp.interfaces.INotificationRequest"
         />
 
     <!-- lazr.batchnavigator hook -->
