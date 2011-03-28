@@ -6,15 +6,10 @@
 __metaclass__ = type
 
 from storm.locals import Store
-from testtools.matchers import LessThan
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.testing import (
-    StormStatementRecorder,
-    TestCaseWithFactory,
-    )
-from lp.testing.matchers import HasQueryCount
-from lp.testing.views import create_initialized_view
+from lp.testing import TestCaseWithFactory
+from lp.testing.matchers import BrowsesWithQueryLimit
 
 
 class TestSprintIndex(TestCaseWithFactory):
@@ -31,7 +26,4 @@ class TestSprintIndex(TestCaseWithFactory):
                 True)
         Store.of(sprint).flush()
         Store.of(sprint).invalidate()
-        view = create_initialized_view(sprint, '+index')
-        with StormStatementRecorder() as recorder:
-            view.render()
-        self.assertThat(recorder, HasQueryCount(LessThan(10)))
+        self.assertThat(sprint, BrowsesWithQueryLimit(15, sprint.owner))
