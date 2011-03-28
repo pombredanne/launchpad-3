@@ -18,9 +18,6 @@ from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 from zope.security.management import endInteraction
 
-from canonical.launchpad.browser.librarian import (
-    LibraryFileAliasView,
-    )
 from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAliasWithParent,
     )
