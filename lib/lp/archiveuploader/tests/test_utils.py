@@ -47,6 +47,9 @@ class TestUtilities(TestCase):
         self.assertEquals(
             determine_source_file_type('foo_1.0.orig.tar.bz2'),
             SourcePackageFileType.ORIG_TARBALL)
+        self.assertEquals(
+            determine_source_file_type('foo_1.0.orig.tar.xz'),
+            SourcePackageFileType.ORIG_TARBALL)
 
         # Component original tarballs too.
         self.assertEquals(
@@ -54,6 +57,9 @@ class TestUtilities(TestCase):
             SourcePackageFileType.COMPONENT_ORIG_TARBALL)
         self.assertEquals(
             determine_source_file_type('foo_1.0.orig-bar.tar.bz2'),
+            SourcePackageFileType.COMPONENT_ORIG_TARBALL)
+        self.assertEquals(
+            determine_source_file_type('foo_1.0.orig-bar.tar.xz'),
             SourcePackageFileType.COMPONENT_ORIG_TARBALL)
 
         # And Debian tarballs...
@@ -63,6 +69,9 @@ class TestUtilities(TestCase):
         self.assertEquals(
             determine_source_file_type('foo_1.0-2.debian.tar.bz2'),
             SourcePackageFileType.DEBIAN_TARBALL)
+        self.assertEquals(
+            determine_source_file_type('foo_1.0-2.debian.tar.xz'),
+            SourcePackageFileType.DEBIAN_TARBALL)
 
         # And even native tarballs!
         self.assertEquals(
@@ -70,6 +79,9 @@ class TestUtilities(TestCase):
             SourcePackageFileType.NATIVE_TARBALL)
         self.assertEquals(
             determine_source_file_type('foo_1.0.tar.bz2'),
+            SourcePackageFileType.NATIVE_TARBALL)
+        self.assertEquals(
+            determine_source_file_type('foo_1.0.tar.xz'),
             SourcePackageFileType.NATIVE_TARBALL)
 
         self.assertEquals(None, determine_source_file_type('foo_1.0'))
@@ -235,9 +247,11 @@ class TestFilenameRegularExpressions(TestCase):
     def test_re_issource(self):
         # Verify that various source extensions match the regexp.
         extensions = (
-            'dsc', 'tar.gz', 'tar.bz2', 'diff.gz', 'orig.tar.gz',
-            'orig.tar.bz2', 'orig-bar.tar.gz', 'orig-bar.tar.bz2',
-            'orig-foo_bar.tar.gz', 'debian.tar.gz', 'debian.tar.bz2')
+            'dsc', 'tar.gz', 'tar.bz2', 'tar.xz', 'diff.gz',
+            'orig.tar.gz', 'orig.tar.bz2', 'orig.tar.xz',
+            'orig-bar.tar.gz', 'orig-bar.tar.bz2', 'orig-bar.tar.xz',
+            'orig-foo_bar.tar.gz',
+            'debian.tar.gz', 'debian.tar.bz2', 'debian.tar.xz')
         for extension in extensions:
             self.assertEquals(
                 ('foo-bar', '1.0', extension),
@@ -255,8 +269,9 @@ class TestFilenameRegularExpressions(TestCase):
         # A badly formatted name also doesn't match.
         self.assertIs(None, re_issource.match('foo-bar.dsc'))
 
-        # bzip2 compression for files which must be gzipped is invalid.
+        # bzip2/xz compression for files which must be gzipped is invalid.
         self.assertIs(None, re_issource.match('foo-bar_1.0.diff.bz2'))
+        self.assertIs(None, re_issource.match('foo-bar_1.0.diff.xz'))
 
 
 class DdpkgExtractSourceTests(TestCase):
