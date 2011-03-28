@@ -1361,10 +1361,14 @@ class ProductSet:
 
     @property
     def all_active(self):
-        results = Product.selectBy(
-            active=True, orderBy="-Product.datecreated")
-        # The main product listings include owner, so we prejoin it.
-        return results.prejoin(["_owner"])
+        result = IStore(Product).find(Product, Product.active
+            ).order_by(Desc(Product.datecreated))
+        def eager_load(rows):
+            owner_ids = set(map(operator.attrgetter('_ownerID'), rows))
+            # +detailed-listing renders the person with team branding.
+            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                owner_ids, need_validity=True, need_icon=True))
+        return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
     def get(self, productid):
         """See `IProductSet`."""
