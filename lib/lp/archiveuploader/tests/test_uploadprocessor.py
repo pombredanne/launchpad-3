@@ -1688,6 +1688,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
               SourcePackageFileType.COMPONENT_ORIG_TARBALL),
              ('bar_1.0.orig-comp2.tar.bz2',
               SourcePackageFileType.COMPONENT_ORIG_TARBALL),
+             ('bar_1.0.orig-comp3.tar.xz',
+              SourcePackageFileType.COMPONENT_ORIG_TARBALL),
              ('bar_1.0.orig.tar.gz',
               SourcePackageFileType.ORIG_TARBALL)])
 
