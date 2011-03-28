@@ -73,6 +73,7 @@ from lp.registry.interfaces.milestone import (
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 
 
@@ -140,14 +141,35 @@ class MilestoneLinkMixin(StructuralSubscriptionMenuMixin):
 class MilestoneContextMenu(ContextMenu, MilestoneLinkMixin):
     """The menu for this milestone."""
     usedfor = IMilestone
-    links = ['edit', 'subscribe', 'create_release']
+
+    @cachedproperty
+    def links(self):
+        links = ['edit']
+        use_advanced_features = getFeatureFlag(
+            'malone.advanced-structural-subscriptions.enabled')
+        if use_advanced_features:
+            links.append('subscribe_to_bug_mail')
+        else:
+            links.append('subscribe')
+        links.append('create_release')
+        return links
 
 
 class MilestoneOverviewNavigationMenu(NavigationMenu, MilestoneLinkMixin):
     """Overview navigation menu for `IMilestone` objects."""
     usedfor = IMilestone
     facet = 'overview'
-    links = ('edit', 'delete', 'subscribe')
+
+    @cachedproperty
+    def links(self):
+        links = ['edit', 'delete']
+        use_advanced_features = getFeatureFlag(
+            'malone.advanced-structural-subscriptions.enabled')
+        if use_advanced_features:
+            links.append('subscribe_to_bug_mail')
+        else:
+            links.append('subscribe')
+        return links
 
 
 class MilestoneOverviewMenu(ApplicationMenu, MilestoneLinkMixin):
