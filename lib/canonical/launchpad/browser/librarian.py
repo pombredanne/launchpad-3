@@ -20,16 +20,16 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.publisher import RedirectionView
-from lazr.restful.interfaces import IWebBrowserOriginatingRequest
 from canonical.launchpad.webapp.publisher import (
     canonical_url,
     LaunchpadView,
+    RedirectionView,
     stepthrough,
     )
 from canonical.launchpad.webapp.url import urlappend
 from canonical.lazr.utils import get_current_browser_request
 from canonical.librarian.client import url_path_quote
+from lazr.restful.interfaces import IWebBrowserOriginatingRequest
 
 
 class LibraryFileAliasView(LaunchpadView):
