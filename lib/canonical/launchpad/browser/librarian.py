@@ -67,7 +67,7 @@ class LibraryFileAliasMD5View(LaunchpadView):
 
 
 class RedirectPerhapsWithTokenLibraryFileAliasView(LaunchpadView):
-    """Stream or redirects to `ILibraryFileAlias`.
+    """Redirects to `ILibraryFileAlias`.
 
     If the file is public, it will redirect to the file's HTTP URL. Otherwise
     it will allocate a token and redirect to the file's public HTTPS URL with
@@ -76,17 +76,7 @@ class RedirectPerhapsWithTokenLibraryFileAliasView(LaunchpadView):
     implements(IBrowserPublisher)
 
     def browserDefault(self, request):
-        """Decides how to deliver the file.
-
-        The options are:
-         - redirect to the contexts http url
-         - redirect to a time limited secure url
-         - stream the file content.
-
-        Only restricted file contents are streamed, finishing the traversal
-        chain with this view. If the context file is public return the
-        appropriate `RedirectionView` for its HTTP url.
-        """
+        """Redirect to a public URL for the file."""
         # Perhaps we should give a 404 at this point rather than asserting?
         # If someone has a page open with an attachment link, then someone
         # else deletes the attachment, this is a normal situation, not an
@@ -121,8 +111,9 @@ class FileNavigationMixin:
     The navigation goes through +files/<filename> where file reference is
     provided by context `getFileByName(filename)`.
 
-    The requested file is proxied via `StreamOrRedirectLibraryFileAliasView`,
-    making it possible to serve both, public and restricted, files.
+    The requested file is proxied via
+    `RedirectPerhapsWithTokenLibraryFileAliasView`,
+    making it possible to serve both public and restricted files.
 
     This navigation approach only supports domains with unique filenames,
     which is the case of IArchive and IBuild. It will probably have to be
