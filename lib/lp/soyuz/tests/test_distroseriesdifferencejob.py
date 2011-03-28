@@ -461,13 +461,15 @@ class TestDistroSeriesDifferenceJobEndToEnd(TestCaseWithFactory):
         self.runJob(jobs[0])
         ds_diff = self.findDSD(derived_series, source_package_name)
         ds_diff[0].requestPackageDiffs(self.factory.makePerson())
-        self.assertFalse(ds_diff[0].package_diff is None)
+        self.assertIsNot(None, ds_diff[0].package_diff)
+        self.assertIsNot(None, ds_diff[0].parent_package_diff)
         self.createPublication(
             source_package_name, ['1.0-3', '1.0-2', '1.0-1'],
             derived_series.parent_series)
         jobs = find_waiting_jobs(derived_series, source_package_name)
         self.runJob(jobs[0])
-        self.assertTrue(ds_diff[0].package_diff is None)
+        self.assertIs(None, ds_diff[0].package_diff)
+        self.assertIs(None, ds_diff[0].parent_package_diff)
 
 
 class TestDistroSeriesDifferenceJobPermissions(TestCaseWithFactory):
