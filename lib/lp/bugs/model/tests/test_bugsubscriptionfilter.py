@@ -79,8 +79,6 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
     def test_description_xss_safeguard(self):
         """description property disallows a few HTML characters."""
         bug_subscription_filter = BugSubscriptionFilter()
-        def set_description(filter, value):
-            filter.description = value
         self.assertRaises(ValueError,
                           setattr, bug_subscription_filter, 'description',
                           u'<script>')
