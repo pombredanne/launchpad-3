@@ -1217,6 +1217,19 @@ class PackageCopyingMixin:
 
     def do_copy(self, sources_field_name, source_pubs, dest_archive,
                 dest_series, dest_pocket, include_binaries):
+        """Copy packages and add appropriate feedback to the browser page.
+
+        :param sources_field_name: The name of the form field to set errors
+            on when the copy fails
+        :param source_pubs: A list of SourcePackagePublishingHistory to copy
+        :param dest_archive: The destination IArchive
+        :param dest_series: The destination IDistroSeries
+        :param dest_pocket: The destination PackagePublishingPocket
+        :param include_binaries: Boolean, whether to copy binaries with the
+            sources
+
+        :return: True if the copying worked, False otherwise.
+        """
         try:
             copies = do_copy(
                 source_pubs, dest_archive, dest_series,
