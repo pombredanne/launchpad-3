@@ -20,6 +20,7 @@ from lp.services.scripts.base import (
     LaunchpadCronScript,
     LaunchpadScriptFailure,
     )
+from lp.services.utils import file_exists
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.scripts import publishdistro
 from lp.soyuz.scripts.ftpmaster import LpQueryDistro
@@ -36,11 +37,6 @@ ARCHIVE_SUFFIXES = {
     ArchivePurpose.PRIMARY: "",
     ArchivePurpose.PARTNER: "-partner",
 }
-
-
-def file_exists(path):
-    """Does `path` represent an existing file?"""
-    return os.access(path, os.F_OK)
 
 
 def run_command(args):
@@ -135,22 +131,15 @@ class PublishFTPMaster(LaunchpadCronScript):
         suites = self.getDirtySuites()
         return [suite for suite in suites if suite.endswith('-security')]
 
-    def rsync(self, source_dir, dest_dir, archive_purpose):
-        """Update the contents of `dest_dir` based on those of `source_dir`.
+    def rsyncNewDists(self, archive_purpose):
+        """Populate dists.new with a copy of distsroot.
 
-        Uses "rsync -aH --delete".
+        Uses "rsync -aH --delete" so that any obsolete files that may
+        still be in dists.new are cleaned up (bug 58835).
 
-        :param source_dir: Source directory.  Its contents will be
-            copied, but not the directory itself.
-        :param dest_dir: Destiantion directory.  Its contents will be
-            updated.
-        :param archive_purpose: The `ArchivePurpose` of the archive
-            whose contents are being synchronized.
+        :param archive_purpose: The (purpose of the) archive to copy.
         """
         archive_config = self.configs[archive_purpose]
-
-        # The --delete is needed to ensure that we don't accidentally
-        # resurrect files that were meant to be deleted (bug 58835).
         retval, stdout, stderr = run_command([
             "rsync",
             "-aH",
@@ -193,7 +182,7 @@ class PublishFTPMaster(LaunchpadCronScript):
             if not file_exists(dists):
                 os.makedirs(dists)
             os.rename(dists, dists_new)
-            self.rsync(archive_config.distsroot, dists_new, purpose)
+            self.rsyncNewDists(purpose)
 
     def publishDistroArchive(self, archive, security_suites=None):
         """Publish the results for an archive.

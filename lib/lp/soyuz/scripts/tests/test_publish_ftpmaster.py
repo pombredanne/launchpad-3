@@ -17,6 +17,7 @@ from lp.registry.interfaces.pocket import (
     pocketsuffix,
     )
 from lp.services.log.logger import DevNullLogger
+from lp.services.utils import file_exists
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -81,11 +82,10 @@ class TestPublishFTPMaster(TestCaseWithFactory):
     def test_produces_listings(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         rootdir = self.setUpForScriptRun(ubuntu)
-        transaction.commit()
         self.makeScript(ubuntu).main()
 
         listing = os.path.join(rootdir, 'ubuntu', 'ls-lR.gz')
-        self.assertTrue(os.access(listing, os.F_OK))
+        self.assertTrue(file_exists(listing))
 
     def test_publishes_package(self):
         test_publisher = SoyuzTestPublisher()
@@ -98,7 +98,6 @@ class TestPublishFTPMaster(TestCaseWithFactory):
         test_publisher.getPubSource()
 
         rootdir = self.setUpForScriptRun(distro)
-        transaction.commit()
         self.makeScript(distro).main()
 
         dsc = os.path.join(
@@ -111,11 +110,11 @@ class TestPublishFTPMaster(TestCaseWithFactory):
         sources = os.path.join(
             rootdir, distro.name, 'dists', distroseries.name, 'main',
             'source', 'Sources.gz')
-        self.assertTrue(os.access(sources, os.F_OK))
+        self.assertTrue(file_exists(sources))
         sources = os.path.join(
             rootdir, distro.name, 'dists', distroseries.name, 'main',
             'source', 'Sources.bz2')
-        self.assertTrue(os.access(sources, os.F_OK))
+        self.assertTrue(file_exists(sources))
 
         distcopyseries = os.path.join(
             rootdir, distro.name, 'dists', distroseries.name)
@@ -219,11 +218,47 @@ class TestPublishFTPMaster(TestCaseWithFactory):
             [name_spph_suite(spph) for spph in spphs],
             script.gatherSecuritySuites())
 
+    def test_gatherSecuritySuites_ignores_non_security_suites(self):
+        distroseries = self.factory.makeDistroSeries()
+        spphs = [
+            self.factory.makeSourcePackagePublishingHistory(
+                distroseries=distroseries, pocket=pocket)
+            for pocket in [
+                PackagePublishingPocket.RELEASE,
+                PackagePublishingPocket.UPDATES,
+                PackagePublishingPocket.PROPOSED,
+                PackagePublishingPocket.BACKPORTS,
+                ]]
+        script = self.makeScript(distroseries.distribution)
+        script.setUp()
+        self.assertEqual([], script.gatherSecuritySuites())
+
     def test_rsync_copies_files(self):
-        pass
+        distro = self.factory.makeDistribution()
+        root_dir = self.setUpForScriptRun(distro)
+        script = self.makeScript(distro)
+        script.setUp()
+        dists_root = os.path.join(root_dir, distro.name, "dists")
+        os.makedirs(dists_root)
+        os.makedirs(dists_root + ".new")
+        file(os.path.join(dists_root, "new-file"), "w").write("New file")
+        script.rsyncNewDists(ArchivePurpose.PRIMARY)
+        self.assertEqual(
+            "New file",
+            file(os.path.join(dists_root + ".new", "new-file")).read())
 
     def test_rsync_cleans_up_obsolete_files(self):
-        pass
+        distro = self.factory.makeDistribution()
+        root_dir = self.setUpForScriptRun(distro)
+        script = self.makeScript(distro)
+        script.setUp()
+        dists_root = os.path.join(root_dir, distro.name, "dists")
+        os.makedirs(dists_root)
+        os.makedirs(dists_root + ".new")
+        old_file = os.path.join(dists_root + ".new", "old-file")
+        file(old_file, "w").write("Old file")
+        script.rsyncNewDists(ArchivePurpose.PRIMARY)
+        self.assertFalse(file_exists(old_file))
 
     def test_setUpDirs_XXX(self):
         pass
