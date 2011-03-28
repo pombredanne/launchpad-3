@@ -28,6 +28,7 @@ from lp.testing import (
     run_script,
     TestCaseWithFactory,
     )
+from lp.testing.fakemethod import FakeMethod
 
 
 def name_spph_suite(spph):
@@ -65,6 +66,24 @@ class TestPublishFTPMaster(TestCaseWithFactory):
         return dict(
             (key, value.strip())
             for key, value in [line.split(':', 1) for line in lines])
+
+    def writeMarkerFile(self, path, contents):
+        """Write a marker file for checking direction movements.
+
+        :param path: A list of path components.
+        :param contents: Text to write into the file.
+        """
+        marker = file(os.path.join(*path), "w")
+        marker.write(contents)
+        marker.flush()
+        marker.close()
+
+    def readMarkerFile(self, path):
+        """Read the contents of a marker file.
+
+        :param return: Contents of the marker file.
+        """
+        return file(os.path.join(*path)).read()
 
     def test_script_runs_successfully(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -147,7 +166,7 @@ class TestPublishFTPMaster(TestCaseWithFactory):
         archive_root = os.path.join(root_dir, distro.name)
         new_distsroot = os.path.join(archive_root, "dists.new")
         os.makedirs(new_distsroot)
-        file(os.path.join(new_distsroot, "marker"), 'w').write("dists.new")
+        self.writeMarkerFile([new_distsroot, "marker"], "dists.new")
         distscopyroot = archive_root + "-distscopy"
         os.makedirs(distscopyroot)
 
@@ -156,7 +175,7 @@ class TestPublishFTPMaster(TestCaseWithFactory):
         script.cleanUp()
         self.assertEqual(
             "dists.new",
-            file(os.path.join(distscopyroot, "dists", "marker")).read())
+            self.readMarkerFile([distscopyroot, "dists", "marker"]))
 
     def test_cleanup_moves_dists_to_old_if_published(self):
         distro = self.factory.makeDistribution()
@@ -164,7 +183,7 @@ class TestPublishFTPMaster(TestCaseWithFactory):
         archive_root = os.path.join(root_dir, distro.name)
         old_distsroot = os.path.join(archive_root, "dists.old")
         os.makedirs(old_distsroot)
-        file(os.path.join(old_distsroot, "marker"), 'w').write("dists.old")
+        self.writeMarkerFile([old_distsroot, "marker"], "dists.old")
         distscopyroot = archive_root + "-distscopy"
         os.makedirs(distscopyroot)
 
@@ -174,7 +193,7 @@ class TestPublishFTPMaster(TestCaseWithFactory):
         script.cleanUp()
         self.assertEqual(
             "dists.old",
-            file(os.path.join(distscopyroot, "dists", "marker")).read())
+            self.readMarkerFile([distscopyroot, "dists", "marker"]))
 
     def test_getDirtySuites_returns_suite_with_pending_publication(self):
         spph = self.factory.makeSourcePackagePublishingHistory()
@@ -241,11 +260,11 @@ class TestPublishFTPMaster(TestCaseWithFactory):
         dists_root = os.path.join(root_dir, distro.name, "dists")
         os.makedirs(dists_root)
         os.makedirs(dists_root + ".new")
-        file(os.path.join(dists_root, "new-file"), "w").write("New file")
+        self.writeMarkerFile([dists_root, "new-file"], "New file")
         script.rsyncNewDists(ArchivePurpose.PRIMARY)
         self.assertEqual(
             "New file",
-            file(os.path.join(dists_root + ".new", "new-file")).read())
+            self.readMarkerFile([dists_root + ".new", "new-file"]))
 
     def test_rsync_cleans_up_obsolete_files(self):
         distro = self.factory.makeDistribution()
@@ -256,31 +275,100 @@ class TestPublishFTPMaster(TestCaseWithFactory):
         os.makedirs(dists_root)
         os.makedirs(dists_root + ".new")
         old_file = os.path.join(dists_root + ".new", "old-file")
-        file(old_file, "w").write("Old file")
+        self.writeMarkerFile([old_file], "old-file")
         script.rsyncNewDists(ArchivePurpose.PRIMARY)
         self.assertFalse(file_exists(old_file))
 
-    def test_setUpDirs_XXX(self):
-        pass
-    def test_setUpDirs_XXX(self):
-        pass
-    def test_setUpDirs_XXX(self):
-        pass
+    def test_setUpDirs_creates_directory_structure(self):
+        distro = self.factory.makeDistribution()
+        root_dir = self.setUpForScriptRun(distro)
+        archive_root = os.path.join(root_dir, distro.name)
+        script = self.makeScript(distro)
+        script.setUp()
 
-    def test_publishDistroArchive_runs_publish_distro(self):
-        pass
+        self.assertFalse(file_exists(archive_root))
+
+        script.setUpDirs()
+
+        self.assertTrue(file_exists(archive_root))
+        self.assertTrue(file_exists(os.path.join(archive_root, "dists")))
+        self.assertTrue(file_exists(os.path.join(archive_root, "dists.new")))
+
+    def test_setUpDirs_does_not_mind_if_directories_already_exist(self):
+        distro = self.factory.makeDistribution()
+        root_dir = self.setUpForScriptRun(distro)
+        archive_root = os.path.join(root_dir, distro.name)
+        script = self.makeScript(distro)
+        script.setUp()
+        script.setUpDirs()
+        script.setUpDirs()
+        self.assertTrue(file_exists(archive_root))
+
+    def test_setUpDirs_moves_dists_to_dists_new(self):
+        distro = self.factory.makeDistribution()
+        root_dir = self.setUpForScriptRun(distro)
+        archive_root = os.path.join(root_dir, distro.name)
+        script = self.makeScript(distro)
+        script.setUp()
+        script.setUpDirs()
+        self.writeMarkerFile([archive_root, "dists", "marker"], "X")
+        script.setUpDirs()
+        self.assertEqual(
+            "X", self.readMarkerFile([archive_root, "dists.new", "marker"]))
 
     def test_publishDistroArchive_runs_parts(self):
-        pass
+        distro = self.factory.makeDistribution()
+        script = self.makeScript(distro)
+        script.setUp()
+        script.setUpDirs()
+        script.runParts = FakeMethod()
+        script.publishDistroArchive(distro.main_archive)
+        self.assertEqual(1, script.runParts.call_count)
+        args, kwargs = script.runParts.calls[0]
+        parts_dir, env = args
+        self.assertEqual("publish-distro.d", parts_dir)
 
     def test_runPublishDistroParts_passes_parameters(self):
-        pass
+        distro = self.factory.makeDistribution()
+        script = self.makeScript(distro)
+        script.setUp()
+        script.setUpDirs()
+        script.runParts = FakeMethod()
+        script.runPublishDistroParts(distro.main_archive)
+        args, kwargs = script.runParts.calls[0]
+        parts_dir, env = args
+        required_parameters = set(["DISTSROOT", "ARCHIVEROOT"])
+        missing_parameters = set(env.keys()).difference(required_parameters)
+        self.assertEqual(set(), missing_parameters)
 
-    def test_installDists_XXX(self):
-        pass
-    def test_installDists_XXX(self):
-        pass
-    def test_installDists_XXX(self):
+    def test_installDists_sets_done_pub(self):
+        distro = self.factory.makeDistribution()
+        script = self.makeScript(distro)
+        script.setUp()
+        script.setUpDirs()
+        self.assertFalse(script.done_pub)
+        script.installDists()
+        self.assertTrue(script.done_pub)
+
+    def test_installDists_replaces_distsroot(self):
+        distro = self.factory.makeDistribution()
+        root_dir = self.setUpForScriptRun(distro)
+        script = self.makeScript(distro)
+        script.setUp()
+        script.setUpDirs()
+        archive_root = os.path.join(root_dir, distro.name)
+        distsroot = os.path.join(archive_root, "dists")
+
+        self.writeMarkerFile([distsroot, "marker"], "old")
+        self.writeMarkerFile([distsroot + ".new", "marker"], "new")
+
+        script.installDists()
+
+        self.assertEqual("new", self.readMarkerFile([distsroot, "marker"]))
+        self.assertEqual( "old", self.readMarkerFile(
+            [archive_root + "-distscopy", "dists", "marker"]))
+
+    def test_installDists_replaces_distscopyroot(self):
         pass
 
     def test_runCommercialCompat_runs_commercial_compat_script(self):
