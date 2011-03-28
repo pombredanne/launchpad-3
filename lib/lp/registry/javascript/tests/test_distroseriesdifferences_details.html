@@ -29,7 +29,40 @@
   <h2>Errors</h2>
   <div id="errors"></div>
 
-  <div id="placeholder"></div>
+  <div id="placeholder" class="display:none;">
+  </div>
+
+  <div id="placeholder_base" class="display:none;">
+    <table class="listing">
+      <tbody><tr><td>
+        <div class="diff-extra-container">
+          <input name="field.selected_differences" type="checkbox" />
+          <a class="toggle-extra"
+            href="/deribuntu/deriwarty/+difference/evolution">
+            evolution</a>
+          <span class="package-diff-button"></span>
+          <dt class="package-diff-placeholder">
+          <a class="js-action sprite add" href="#">
+            Compute differences from last common version:
+          </a></dt>
+          <dd>
+            <ul class="package-diff-status">
+              <li>
+                <span id="derived" class="PENDING">
+                1.2.1 to Derilucid version: 1.2.4
+                </span>
+              </li>
+              <li>
+                <span id="parent" class="request-derived-diff">
+                  1.2.1 to Lucid version: 1.2.3
+                </span>
+              </li>
+            </ul>
+          </dd>
+        </div>
+      </td></tr></tbody>
+    </table>
+  </div>
 
   <div id="log"></div>
 </body>
