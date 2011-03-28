@@ -127,7 +127,7 @@
 
     <tal:side metal:fill-slot="side"
       define="overview_menu context/menu:overview"
-      condition="overview_menu/subscribe_to_bug_mail/enabled">
+      condition="overview_menu/subscribe_to_bug_mail/enabled|nothing">
       <div id="global-actions" class="portlet">
         <ul>
           <li tal:condition="overview_menu/edit/enabled">

@@ -333,6 +333,14 @@ class StructuralSubscriptionTargetTraversalMixin:
 class StructuralSubscriptionMenuMixin:
     """Mix-in class providing the subscription add/edit menu link."""
 
+    def _getSST(self):
+        if IStructuralSubscriptionTarget.providedBy(self.context):
+            sst = self.context
+        else:
+            # self.context is a view, and the target is its context
+            sst = self.context.context
+        return sst
+
     def subscribe(self):
         """The subscribe menu link.
 
@@ -341,11 +349,7 @@ class StructuralSubscriptionMenuMixin:
         and displays the edit icon. Otherwise, the link offers to subscribe
         and displays the add icon.
         """
-        if IStructuralSubscriptionTarget.providedBy(self.context):
-            sst = self.context
-        else:
-            # self.context is a view, and the target is its context
-            sst = self.context.context
+        sst = self._getSST()
 
         # ProjectGroup milestones aren't really structural subscription
         # targets as they're not real milestones, so you can't subscribe to
@@ -366,8 +370,10 @@ class StructuralSubscriptionMenuMixin:
 
     @enabled_with_permission('launchpad.AnyPerson')
     def subscribe_to_bug_mail(self):
+        sst = self._getSST()
+        enabled = sst.userCanAlterBugSubscription(self.user, self.user)
         text = 'Subscribe to bug mail'
-        return Link('#', text, icon='add', hidden=True)
+        return Link('#', text, icon='add', hidden=True, enabled=enabled)
 
 
 def expose_structural_subscription_data_to_js(context, request, user):

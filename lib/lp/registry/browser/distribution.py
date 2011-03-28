@@ -84,6 +84,7 @@ from lp.blueprints.browser.specificationtarget import (
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.bugs.browser.structuralsubscription import (
     expose_structural_subscription_data_to_js,
+    StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
 from lp.registry.browser import RegistryEditFormView
@@ -267,7 +268,7 @@ class DistributionMirrorsNavigationMenu(NavigationMenu):
         return Link('+unofficialmirrors', text, enabled=enabled, icon='info')
 
 
-class DistributionLinksMixin:
+class DistributionLinksMixin(StructuralSubscriptionMenuMixin):
     """A mixin to provide common links to menus."""
 
     @enabled_with_permission('launchpad.Edit')
@@ -275,26 +276,19 @@ class DistributionLinksMixin:
         text = 'Change details'
         return Link('+edit', text, icon='edit')
 
-    @enabled_with_permission('launchpad.AnyPerson')
-    def subscribe_to_bug_mail(self):
-        text = 'Subscribe to bug mail'
-        return Link('#', text, icon='add', hidden=True)
-
 
 class DistributionNavigationMenu(NavigationMenu, DistributionLinksMixin):
     """A menu of context actions."""
     usedfor = IDistribution
     facet = 'overview'
 
-    @property
+    @cachedproperty
     def links(self):
         links = ['edit']
         use_advanced_features = features.getFeatureFlag(
             'malone.advanced-structural-subscriptions.enabled')
         if use_advanced_features:
             links.append('subscribe_to_bug_mail')
-        else:
-            links.append('subscribe')
         return links
 
 

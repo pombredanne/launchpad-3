@@ -235,7 +235,6 @@ class DistributionSourcePackageActionMenu(
     facet = 'overview'
     title = 'Actions'
     links = []
-    
 
     @cachedproperty
     def links(self):
