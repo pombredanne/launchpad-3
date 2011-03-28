@@ -12,15 +12,26 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket,
+    pocketsuffix,
+    )
 from lp.services.log.logger import DevNullLogger
-from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.scripts.publish_ftpmaster import PublishFTPMaster
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     run_script,
     TestCaseWithFactory,
     )
-from lp.testing.fakemethod import FakeMethod
+
+
+def name_spph_suite(spph):
+    """Return name of `spph`'s suite."""
+    return spph.distroseries.name + pocketsuffix[spph.pocket]
 
 
 class TestPublishFTPMaster(TestCaseWithFactory):
@@ -61,6 +72,11 @@ class TestPublishFTPMaster(TestCaseWithFactory):
         stdout, stderr, retval = run_script(
             self.SCRIPT_PATH + " -d ubuntu")
         self.assertEqual(0, retval, "Script failure:\n" + stderr)
+
+    def test_script_is_happy_with_no_publications(self):
+        distro = self.factory.makeDistribution()
+        self.setUpForScriptRun(distro)
+        self.makeScript(distro).main()
 
     def test_produces_listings(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -132,27 +148,76 @@ class TestPublishFTPMaster(TestCaseWithFactory):
         archive_root = os.path.join(root_dir, distro.name)
         new_distsroot = os.path.join(archive_root, "dists.new")
         os.makedirs(new_distsroot)
+        file(os.path.join(new_distsroot, "marker"), 'w').write("dists.new")
         distscopyroot = archive_root + "-distscopy"
         os.makedirs(distscopyroot)
 
         script = self.makeScript(distro)
-        script.processAccepted = FakeMethod(failure=ValueError("Boom"))
-        try:
-            script.main()
-        except ValueError:
-            pass
-
-        self.assertTrue(
-            os.access(os.path.join(distscopyroot, "dists"), os.F_OK))
+        script.setUp()
+        script.cleanUp()
+        self.assertEqual(
+            "dists.new",
+            file(os.path.join(distscopyroot, "dists", "marker")).read())
 
     def test_cleanup_moves_dists_to_old_if_published(self):
-        pass
+        distro = self.factory.makeDistribution()
+        root_dir = self.setUpForScriptRun(distro)
+        archive_root = os.path.join(root_dir, distro.name)
+        old_distsroot = os.path.join(archive_root, "dists.old")
+        os.makedirs(old_distsroot)
+        file(os.path.join(old_distsroot, "marker"), 'w').write("dists.old")
+        distscopyroot = archive_root + "-distscopy"
+        os.makedirs(distscopyroot)
+
+        script = self.makeScript(distro)
+        script.setUp()
+        script.done_pub = True
+        script.cleanUp()
+        self.assertEqual(
+            "dists.old",
+            file(os.path.join(distscopyroot, "dists", "marker")).read())
+
+    def test_getDirtySuites_returns_suite_with_pending_publication(self):
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        script = self.makeScript(spph.distroseries.distribution)
+        script.setUp()
+        self.assertEqual([name_spph_suite(spph)], script.getDirtySuites())
 
     def test_getDirtySuites_returns_suites_with_pending_publications(self):
-        pass
+        distro = self.factory.makeDistribution()
+        spphs = [
+            self.factory.makeSourcePackagePublishingHistory(
+                distroseries=self.factory.makeDistroSeries(
+                    distribution=distro))
+            for counter in xrange(2)]
+
+        script = self.makeScript(distro)
+        script.setUp()
+        self.assertContentEqual(
+            [name_spph_suite(spph) for spph in spphs],
+            script.getDirtySuites())
+
+    def test_getDirtySuites_ignores_suites_without_pending_publications(self):
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            status=PackagePublishingStatus.PUBLISHED)
+        script = self.makeScript(spph.distroseries.distribution)
+        script.setUp()
+        self.assertEqual([], script.getDirtySuites())
 
     def test_gatherSecuritySuites_returns_security_suites(self):
-        pass
+        distro = self.factory.makeDistribution()
+        spphs = [
+            self.factory.makeSourcePackagePublishingHistory(
+                distroseries=self.factory.makeDistroSeries(
+                    distribution=distro),
+                pocket=PackagePublishingPocket.SECURITY)
+            for counter in xrange(2)]
+
+        script = self.makeScript(distro)
+        script.setUp()
+        self.assertContentEqual(
+            [name_spph_suite(spph) for spph in spphs],
+            script.gatherSecuritySuites())
 
     def test_rsync_copies_files(self):
         pass
@@ -182,7 +247,7 @@ class TestPublishFTPMaster(TestCaseWithFactory):
         pass
     def test_installDists_XXX(self):
         pass
-    
+
     def test_runCommercialCompat_runs_commercial_compat_script(self):
         pass
 

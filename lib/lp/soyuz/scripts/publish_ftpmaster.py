@@ -128,7 +128,7 @@ class PublishFTPMaster(LaunchpadCronScript):
             test_args=['-d', self.distribution.name, "pending_suites"])
         receiver = StoreArgument()
         query_distro.runAction(presenter=receiver)
-        return receiver.argument
+        return receiver.argument.split()
 
     def gatherSecuritySuites(self):
         """List security suites."""
@@ -365,11 +365,15 @@ class PublishFTPMaster(LaunchpadCronScript):
         self.clearEmptyDirs()
         self.runFinalizeParts()
 
-    def main(self):
+    def setUp(self):
+        """Process options, and set up internal state."""
         self.processOptions()
         self.archives = self.getArchives()
         self.configs = self.makeConfigs()
 
+    def main(self):
+        """See `LaunchpadScript`."""
+        self.setUp()
         try:
             self.processAccepted()
             # XXX: Repeat setUpDirs for security/full upload?
