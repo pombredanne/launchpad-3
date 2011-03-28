@@ -225,10 +225,10 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         self.breezy = self.ubuntu.newSeries(
             name, 'Breezy Badger',
             'The Breezy Badger', 'Black and White', 'Someone',
-            '5.10', bat, bat.owner)
+            '5.10', None, bat.owner)
 
         self.breezy.changeslist = 'breezy-changes@ubuntu.com'
-        ids = InitialiseDistroSeries(self.breezy)
+        ids = InitialiseDistroSeries(bat, self.breezy)
         ids.initialise()
 
         fake_chroot = self.addMockFile('fake_chroot.tar.gz')
@@ -1168,7 +1168,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertTrue(
             expect_msg in raw_msg,
             "Expected email with %s, got:\n%s" % (expect_msg, raw_msg))
-
 
         # And an oops should be filed for the error.
         error_utility = ErrorReportingUtility()

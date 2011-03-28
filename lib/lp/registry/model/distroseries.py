@@ -1970,13 +1970,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                     "DistroSeries %s parent series is %s, "
                     "but it must not be set" % (
                         child.name, self.name))
-        initialise_series = InitialiseDistroSeries(child)
+        initialise_series = InitialiseDistroSeries(self, child)
         try:
             initialise_series.check()
         except InitialisationError, e:
             raise DerivationError(e)
         getUtility(IInitialiseDistroSeriesJobSource).create(
-            child, architectures, packagesets, rebuild)
+            self, child, architectures, packagesets, rebuild)
 
     def getDerivedSeries(self):
         """See `IDistroSeriesPublic`."""
