@@ -254,6 +254,11 @@ class DistroSeriesDifference(Storm):
         clear_property_cache(self)
         self._updateType()
         updated = self._updateVersionsAndStatus()
+        # If the DSD has changed, we want to invalidate the diffs. The GC
+        # process for the Librarian will clean up after us.
+        if updated is True:
+            self.package_diff = None
+            self.parent_package_diff = None
         return updated
 
     def _updateType(self):

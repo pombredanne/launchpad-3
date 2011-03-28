@@ -1436,9 +1436,6 @@
         <browser:page
             name="+listing-for-review"
             template="../templates/product-listing-for-review.pt"/>
-        <browser:page
-            name="+listing-detailed"
-            template="../templates/product-listing-detailed.pt"/>
 
         <!-- Products Portlets -->
 
@@ -1475,6 +1472,12 @@
         name="+packages"
         facet="overview"
         template="../templates/product-packages.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        permission="zope.Public"
+        class="canonical.launchpad.webapp.LaunchpadView"
+        name="+listing-detailed"
+        template="../templates/product-listing-detailed.pt"/>
     <browser:renamed-page
         name="+distributions"
         for="lp.registry.interfaces.product.IProduct"
