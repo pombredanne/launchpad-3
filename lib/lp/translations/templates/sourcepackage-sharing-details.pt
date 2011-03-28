@@ -43,8 +43,11 @@
             <li tal:attributes="class view/packaging_complete_class"
                 id="packaging-complete">
               Linked upstream series is
-              <span class="link"><a tal:replace="structure context/productseries/fmt:link">
-                  Gimp trunk</a></span>.
+              <span class="link">
+                  <a tal:replace="structure context/productseries/fmt:link">
+                      Gimp trunk</a>
+                  <a tal:condition="not:context/productseries" href="#"></a>
+              </span>.
               <span id="packaging-complete-picker">
                 <a tal:replace="structure context/menu:overview/edit_packaging/fmt:icon" />
               </span>
