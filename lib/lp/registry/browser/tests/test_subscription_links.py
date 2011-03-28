@@ -522,7 +522,7 @@ class TestProductMilestoneViewStructSubs(TestDistroViewStructSubs):
     """Test structural subscriptions on the product milestones."""
 
     def setUp(self):
-        super(TestDistroViewStructSubs, self).setUp()
+        super(TestProductMilestoneViewStructSubs, self).setUp()
         self.product = self.factory.makeProduct()
         with person_logged_in(self.product.owner):
             self.product.official_malone = True
@@ -585,6 +585,20 @@ class TestProductMilestoneViewStructSubs(TestDistroViewStructSubs):
         self.assertNotEqual(None, new_link, self.contents)
 
 
+class TestProductSeriesMilestoneViewStructSubs(
+    TestProductMilestoneViewStructSubs):
+    """Test structural subscriptions on the product series milestones."""
+
+    def setUp(self):
+        super(TestProductSeriesMilestoneViewStructSubs, self).setUp()
+        self.productseries = self.factory.makeProductSeries()
+        with person_logged_in(self.productseries.product.owner):
+            self.productseries.product.official_malone = True
+        self.regular_user = self.factory.makePerson()
+        self.target = self.factory.makeMilestone(
+            productseries=self.productseries)
+
+
 def test_suite():
     """Return the `IStructuralSubscriptionTarget` TestSuite."""
 
@@ -605,4 +619,5 @@ def test_suite():
     suite.addTest(unittest.makeSuite(TestDistroBugsStructSubs))
     suite.addTest(unittest.makeSuite(TestDistroMilestoneViewStructSubs))
     suite.addTest(unittest.makeSuite(TestProductMilestoneViewStructSubs))
+    suite.addTest(unittest.makeSuite(TestProductSeriesMilestoneViewStructSubs))
     return suite
