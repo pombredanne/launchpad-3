@@ -19,7 +19,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.management import endInteraction
 
 from canonical.launchpad.browser.librarian import (
-    RedirectPerhapsWithTokenLibraryFileAliasView,
+    LibraryFileAliasView,
     )
 from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAliasWithParent,
@@ -58,15 +58,13 @@ class TestAccessToBugAttachmentFiles(TestCaseWithFactory):
 
     def test_traversal_to_lfa_of_bug_attachment(self):
         # Traversing to the URL provided by a ProxiedLibraryFileAlias of a
-        # bug attachament returns a
-        # RedirectPerhapsWithTokenLibraryFileAliasView.
+        # bug attachament returns a LibraryFileAliasView.
         request = LaunchpadTestRequest()
         request.setTraversalStack(['foo.txt'])
         navigation = BugAttachmentFileNavigation(
             self.bugattachment, request)
         view = navigation.publishTraverse(request, '+files')
-        self.assertIsInstance(
-            view, RedirectPerhapsWithTokenLibraryFileAliasView)
+        self.assertIsInstance(view, LibraryFileAliasView)
 
     def test_traversal_to_lfa_of_bug_attachment_wrong_filename(self):
         # If the filename provided in the URL does not match the
@@ -84,10 +82,9 @@ class TestAccessToBugAttachmentFiles(TestCaseWithFactory):
         navigation = BugAttachmentFileNavigation(
             self.bugattachment, request)
         view = navigation.publishTraverse(request, '+files')
-        next_view, traversal_path = view.browserDefault(request)
-        self.assertIsInstance(next_view, RedirectionView)
+        view.initialize()
         mo = re.match(
-            '^http://.*/\d+/foo.txt$', next_view.target)
+            '^http://.*/\d+/foo.txt$', request.response.getHeader("Location"))
         self.assertIsNot(None, mo)
 
     def test_access_to_restricted_file(self):
@@ -105,11 +102,10 @@ class TestAccessToBugAttachmentFiles(TestCaseWithFactory):
         request.setTraversalStack(['foo.txt'])
         navigation = BugAttachmentFileNavigation(self.bugattachment, request)
         view = navigation.publishTraverse(request, '+files')
-        next_view, traversal_path = view.browserDefault(request)
-        self.assertIsInstance(next_view, RedirectionView)
+        view.initialize()
         mo = re.match(
             '^https://.*.restricted.*/\d+/foo.txt\?token=.*$',
-            next_view.target)
+            request.response.getHeader("Location"))
         self.assertIsNot(None, mo)
 
     def test_access_to_restricted_file_unauthorized(self):
