@@ -342,7 +342,7 @@ def main():
 
             for bloated_table in table_bloating_stats[:options.limit]:
                 # Bloat decreases are uninteresting, and would need to be in
-                # a seperate table sorted in reverse anyway.
+                # a separate table sorted in reverse anyway.
                 if bloated_table.delta_bloat_percent > 0:
                     print "%40s || +%4.2f%% || +%s" % (
                         bloated_table.name,
@@ -357,7 +357,7 @@ def main():
             print
             for bloated_index in index_bloating_stats[:options.limit]:
                 # Bloat decreases are uninteresting, and would need to be in
-                # a seperate table sorted in reverse anyway.
+                # a separate table sorted in reverse anyway.
                 if bloated_index.delta_bloat_percent > 0:
                     print "%40s || +%4.2f%% || +%s" % (
                         bloated_index.sub_name,
