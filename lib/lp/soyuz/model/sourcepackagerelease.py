@@ -623,17 +623,13 @@ class SourcePackageRelease(SQLBase):
 
         queue = getUtility(ITranslationImportQueue)
 
-        # We do not want to override upstream translations, if
-        # translation sharing is enabled.
-        # Avoid circular imports.
-        from lp.translations.utilities.translationsharinginfo import (
-            has_upstream_template)
-        if not has_upstream_template(self.sourcepackage):
-            queue.addOrUpdateEntriesFromTarball(
-                tarball, by_maintainer, importer,
-                sourcepackagename=self.sourcepackagename,
-                distroseries=self.upload_distroseries,
-                filename_filter=_filter_ubuntu_translation_file)
+        only_templates=self.sourcepackage.has_sharing_translation_templates
+        queue.addOrUpdateEntriesFromTarball(
+            tarball, by_maintainer, importer,
+            sourcepackagename=self.sourcepackagename,
+            distroseries=self.upload_distroseries,
+            filename_filter=_filter_ubuntu_translation_file,
+            only_templates=only_templates)
 
     def getDiffTo(self, to_sourcepackagerelease):
         """See ISourcePackageRelease."""
