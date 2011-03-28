@@ -75,7 +75,7 @@ class LibraryFileAliasMD5View(LaunchpadView):
         return '%s %s' % (self.context.content.md5, self.context.filename)
 
 
-class MixedFileAliasView(LaunchpadView):
+class RedirectPerhapsWithTokenLibraryFileAliasView(LaunchpadView):
     """Stream or redirects to `ILibraryFileAlias`.
 
     If the file is public, it will redirect to the files http url.
@@ -191,11 +191,6 @@ class MixedFileAliasView(LaunchpadView):
 
     def _when_streaming(self):
         """Hook for SafeStreamOrRedirectLibraryFileAliasView."""
-
-
-# The eventual name of MixedFileAliasView once the proxy code
-# is ripped out.
-RedirectPerhapsWithTokenLibraryFileAliasView = MixedFileAliasView
 
 
 class DeletedProxiedLibraryFileAlias(NotFound):
