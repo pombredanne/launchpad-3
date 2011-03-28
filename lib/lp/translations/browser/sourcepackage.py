@@ -13,6 +13,7 @@ __all__ = [
 
 import cgi
 
+from zope.component import getMultiAdapter
 from zope.publisher.interfaces import NotFound
 
 from canonical.launchpad.webapp import (
@@ -22,9 +23,11 @@ from canonical.launchpad.webapp import (
     NavigationMenu,
     )
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import ILink
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from lp.app.enums import ServiceUsage
+from lp.registry.browser.productseries import ProductSeriesOverviewMenu
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.features import getFeatureFlag
 from lp.translations.browser.poexportrequest import BaseExportView
@@ -331,3 +334,43 @@ class SourcePackageTranslationSharingDetailsView(
                         }
         info = info.values()
         return sorted(info, key=lambda template: template['name'])
+
+    def icon_link(self, id, icon, url, text, hidden):
+        """The HTML link to a configuration page."""
+        if hidden:
+            css_class = 'sprite %s unseen' % icon
+        else:
+            css_class = 'sprite %s' % icon
+        return (
+            '<a id="%s" class="%s" href="%s">'
+            '<span class="invisible-link">%s</span></a>'
+            % (id, css_class, url, text))
+
+    def edit_branch_link(self, id, icon, text):
+        """The HTML link to define or edit a product series branch.
+
+        If a product ls linked to the source package and if the current
+        user has the permission to define the branch, a real link is
+        returned, otherwise a hidden dummy link is returned.
+        """
+        packaging = self.context.direct_packaging
+        if packaging is not None:
+            productseries = self.context.direct_packaging.productseries
+            productseries_menu = ProductSeriesOverviewMenu(productseries)
+            branch_link = productseries_menu.link_branch()
+            url = '%s/%s' % (canonical_url(productseries), branch_link.target)
+            if branch_link.enabled:
+                return self.icon_link(id, icon, url, text, hidden=False)
+            else:
+                return self.icon_link(id, icon, url, text, hidden=True)
+        return self.icon_link(id, icon, '#', text, hidden=True)
+
+    @property
+    def new_branch_link(self):
+        """The HTML link to define a product series branch."""
+        return self.edit_branch_link('add-branch', 'add', 'Link to branch')
+
+    @property
+    def change_branch_link(self):
+        """The HTML link to change a product series branch."""
+        return self.edit_branch_link('change-branch', 'edit', 'Change branch')
