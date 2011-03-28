@@ -7,7 +7,6 @@ __all__ = [
     'expose_enum_to_js',
     'expose_structural_subscription_data_to_js',
     'expose_user_administered_teams_to_js',
-    'expose_user_subscription_status_to_js',
     'expose_user_subscriptions_to_js',
     'StructuralSubscriptionMenuMixin',
     'StructuralSubscriptionTargetTraversalMixin',
@@ -376,13 +375,16 @@ class StructuralSubscriptionMenuMixin:
         return Link('#', text, icon='add', hidden=True, enabled=enabled)
 
 
-def expose_structural_subscription_data_to_js(context, request, user):
+def expose_structural_subscription_data_to_js(context, request,
+                                              user, subscriptions=None):
     """Expose all of the data for a structural subscription to JavaScript."""
     expose_user_administered_teams_to_js(request, user)
-    expose_user_subscription_status_to_js(
-        context, request, user)
     expose_enum_to_js(request, BugTaskImportance, 'importances')
     expose_enum_to_js(request, BugTaskStatus, 'statuses')
+    if subscriptions is None:
+        subscriptions = []
+    expose_user_subscriptions_to_js(
+        user, subscriptions, request)
 
 
 def expose_enum_to_js(request, enum, name):
@@ -407,12 +409,6 @@ def expose_user_administered_teams_to_js(request, user,
     IJSONRequestCache(request).objects['administratedTeams'] = info
 
 
-def expose_user_subscription_status_to_js(context, request, user):
-    """Make the user's subscription state available to JavaScript."""
-    IJSONRequestCache(request).objects['userHasBugSubscriptions'] = (
-        context.userHasBugSubscriptions(user))
-
-
 def person_is_team_admin(person, team):
     answer = False
     admins = team.adminmembers
@@ -431,10 +427,11 @@ def expose_user_subscriptions_to_js(user, subscriptions, request):
         target = subscription.target
         record = info.get(target)
         if record is None:
-            record = info[target] = dict(
-                target_title=target.title,
-                target_url=absoluteURL(target, request),
-                filters=[])
+            record = dict(target_title=target.title,
+                          target_url=canonical_url(
+                            target, rootsite='mainsite'),
+                          filters=[])
+            info[target] = record
         subscriber = subscription.subscriber
         for filter in subscription.bug_filters:
             is_team = subscriber.isTeam()
@@ -443,6 +440,8 @@ def expose_user_subscriptions_to_js(user, subscriptions, request):
             record['filters'].append(dict(
                 filter=filter,
                 subscriber_link=absoluteURL(subscriber, api_request),
+                subscriber_url = canonical_url(
+                    subscriber, rootsite='mainsite'),
                 subscriber_title=subscriber.title,
                 subscriber_is_team=is_team,
                 user_is_team_admin=user_is_team_admin,))

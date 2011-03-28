@@ -1009,6 +1009,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         self.form = request.form_ng
 
     def initialize(self):
+        super(ProductView, self).initialize()
         self.status_message = None
         product = self.context
         title_field = IProduct['title']

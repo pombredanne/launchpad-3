@@ -614,6 +614,7 @@ class DistributionView(HasAnnouncementsView, FeedsMixin):
     """Default Distribution view class."""
 
     def initialize(self):
+        super(DistributionView, self).initialize()
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user)
 

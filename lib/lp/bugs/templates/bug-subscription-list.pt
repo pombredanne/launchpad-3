@@ -20,7 +20,7 @@
           Y.on('domready', function() {
               module.setup_bug_subscriptions(
                   {content_box: "#structural-subscription-content-box"})
-                  });
+          });
       });
     </script>
 

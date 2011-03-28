@@ -40,16 +40,10 @@ from lp.app.browser.launchpadform import (
     )
 from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.browser.structuralsubscription import (
-    expose_enum_to_js,
-    expose_user_administered_teams_to_js,
-    expose_user_subscriptions_to_js,
+    expose_structural_subscription_data_to_js,
     )
 from lp.bugs.enum import BugNotificationLevel, HIDDEN_BUG_NOTIFICATION_LEVELS
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
-from lp.bugs.interfaces.bugtask import (
-    BugTaskImportance,
-    BugTaskStatus,
-    )
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
@@ -589,13 +583,13 @@ class BugSubscriptionListView(LaunchpadView):
 
     def initialize(self):
         super(BugSubscriptionListView, self).initialize()
-        subscriptions = get_structural_subscriptions_for_bug(
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user, self.subscriptions)
+
+    @property
+    def subscriptions(self):
+        return get_structural_subscriptions_for_bug(
             self.context.bug, self.user)
-        expose_user_administered_teams_to_js(self.request, self.user)
-        expose_user_subscriptions_to_js(
-            self.user, subscriptions, self.request)
-        expose_enum_to_js(self.request, BugTaskImportance, 'importances')
-        expose_enum_to_js(self.request, BugTaskStatus, 'statuses')
 
     @property
     def label(self):

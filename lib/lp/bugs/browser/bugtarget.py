@@ -100,9 +100,6 @@ from lp.bugs.browser.bugrole import BugRoleMixin
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from lp.bugs.browser.structuralsubscription import (
     expose_structural_subscription_data_to_js,
-    expose_enum_to_js,
-    expose_user_administered_teams_to_js,
-    expose_user_subscriptions_to_js,
     )
 from lp.bugs.browser.widgets.bug import (
     BugTagsWidget,
@@ -123,7 +120,6 @@ from lp.bugs.interfaces.bugtarget import (
     IOfficialBugTagTargetRestricted,
     )
 from lp.bugs.interfaces.bugtask import (
-    BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
     IBugTaskSet,
@@ -1312,7 +1308,7 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         return 'Bugs in %s' % self.context.title
 
     def initialize(self):
-        BugTaskSearchListingView.initialize(self)
+        super(BugTargetBugsView, self).initialize()
         bug_statuses_to_show = list(UNRESOLVED_BUGTASK_STATUSES)
         if IDistroSeries.providedBy(self.context):
             bug_statuses_to_show.append(BugTaskStatus.FIXRELEASED)
@@ -1576,13 +1572,13 @@ class TargetSubscriptionView(LaunchpadView):
 
     def initialize(self):
         super(TargetSubscriptionView, self).initialize()
-        expose_user_administered_teams_to_js(self.request, self.user)
-        subscriptions = get_structural_subscriptions_for_target(
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user, self.subscriptions)
+
+    @property
+    def subscriptions(self):
+        return get_structural_subscriptions_for_target(
             self.context, self.user)
-        expose_user_subscriptions_to_js(
-            self.user, subscriptions, self.request)
-        expose_enum_to_js(self.request, BugTaskImportance, 'importances')
-        expose_enum_to_js(self.request, BugTaskStatus, 'statuses')
 
     @property
     def label(self):

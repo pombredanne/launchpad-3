@@ -457,6 +457,7 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
     """A view to show a series with translations."""
 
     def initialize(self):
+        super(ProductSeriesView, self).initialize()
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user)
 
