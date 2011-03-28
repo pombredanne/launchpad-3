@@ -6,14 +6,12 @@
 __metaclass__ = type
 
 import os
-import re
 import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
-from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.log.logger import DevNullLogger
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.scripts.publish_ftpmaster import PublishFTPMaster
@@ -22,6 +20,7 @@ from lp.testing import (
     run_script,
     TestCaseWithFactory,
     )
+from lp.testing.fakemethod import FakeMethod
 
 
 class TestPublishFTPMaster(TestCaseWithFactory):
@@ -47,14 +46,13 @@ class TestPublishFTPMaster(TestCaseWithFactory):
         """Read a Release file, return as a keyword/value dict."""
         lines = []
         for line in file(filename):
-            line = line.rstrip()
             if line.startswith(' '):
                 lines[-1] += line
             else:
                 lines.append(line)
         return dict(
-            line.split(': ', 1)
-            for line in lines if re.match("[^:]+: [^\s]+", line))
+            (key, value.strip())
+            for key, value in [line.split(':', 1) for line in lines])
 
     def test_script_runs_successfully(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -63,12 +61,6 @@ class TestPublishFTPMaster(TestCaseWithFactory):
         stdout, stderr, retval = run_script(
             self.SCRIPT_PATH + " -d ubuntu")
         self.assertEqual(0, retval, "Script failure:\n" + stderr)
-
-    def test_publishes_ubuntutest(self):
-        ubuntutest = getUtility(IDistributionSet).getByName("ubuntutest")
-        rootdir = self.setUpForScriptRun(ubuntutest)
-        transaction.commit()
-        self.makeScript(ubuntutest).main()
 
     def test_produces_listings(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -118,6 +110,7 @@ class TestPublishFTPMaster(TestCaseWithFactory):
         self.assertEqual(distroseries.name, release['Suite'])
         self.assertEqual(distroseries.name, release['Codename'])
         self.assertEqual("main", release['Components'])
+        self.assertEqual("", release["Architectures"])
         self.assertIn("Date", release)
         self.assertIn("Description", release)
         self.assertNotEqual("", release["MD5Sum"])
@@ -131,3 +124,108 @@ class TestPublishFTPMaster(TestCaseWithFactory):
         self.assertEqual(distro.displayname, main_release["Origin"])
         self.assertEqual(distro.displayname, main_release["Label"])
         self.assertEqual("source", main_release["Architecture"])
+
+    def test_cleanup_moves_dists_to_new_if_not_published(self):
+        distro = self.factory.makeDistribution()
+        root_dir = self.setUpForScriptRun(distro)
+
+        archive_root = os.path.join(root_dir, distro.name)
+        new_distsroot = os.path.join(archive_root, "dists.new")
+        os.makedirs(new_distsroot)
+        distscopyroot = archive_root + "-distscopy"
+        os.makedirs(distscopyroot)
+
+        script = self.makeScript(distro)
+        script.processAccepted = FakeMethod(failure=ValueError("Boom"))
+        try:
+            script.main()
+        except ValueError:
+            pass
+
+        self.assertTrue(
+            os.access(os.path.join(distscopyroot, "dists"), os.F_OK))
+
+    def test_cleanup_moves_dists_to_old_if_published(self):
+        pass
+
+    def test_getDirtySuites_returns_suites_with_pending_publications(self):
+        pass
+
+    def test_gatherSecuritySuites_returns_security_suites(self):
+        pass
+
+    def test_rsync_copies_files(self):
+        pass
+
+    def test_rsync_cleans_up_obsolete_files(self):
+        pass
+
+    def test_setUpDirs_XXX(self):
+        pass
+    def test_setUpDirs_XXX(self):
+        pass
+    def test_setUpDirs_XXX(self):
+        pass
+
+    def test_publishDistroArchive_runs_publish_distro(self):
+        pass
+
+    def test_publishDistroArchive_runs_parts(self):
+        pass
+
+    def test_runPublishDistroParts_passes_parameters(self):
+        pass
+
+    def test_installDists_XXX(self):
+        pass
+    def test_installDists_XXX(self):
+        pass
+    def test_installDists_XXX(self):
+        pass
+    
+    def test_runCommercialCompat_runs_commercial_compat_script(self):
+        pass
+
+    def test_runCommercialCompat_runs_only_for_ubuntu(self):
+        pass
+
+    def test_runCommercialCompat_runs_only_on_production_config(self):
+        pass
+
+    def test_generateListings_writes_ls_lR_gz(self):
+        pass
+
+    def test_clearEmptyDirs_cleans_up_empty_directories(self):
+        pass
+
+    def test_clearEmptyDirs_does_not_clean_up_nonempty_directories(self):
+        pass
+
+    def test_processOptions_finds_distribution(self):
+        pass
+
+    def test_processOptions_complains_about_unknown_distribution(self):
+        pass
+
+    def test_runParts_runs_parts(self):
+        pass
+
+    def test_runFinalizeParts_passes_parameters(self):
+        pass
+
+    def test_publishSecurityUploads_XXX(self):
+        pass
+    def test_publishSecurityUploads_XXX(self):
+        pass
+    def test_publishSecurityUploads_XXX(self):
+        pass
+
+    def test_publishAllUploads_publishes_all_distro_archives(self):
+        pass
+
+    def test_publishAllUploads_XXX(self):
+        pass
+    def test_publishAllUploads_XXX(self):
+        pass
+    def test_publishAllUploads_XXX(self):
+        pass
