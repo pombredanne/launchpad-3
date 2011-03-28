@@ -20,6 +20,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.publisher import RedirectionView
 from lazr.restful.interfaces import IWebBrowserOriginatingRequest
 from canonical.launchpad.webapp.publisher import (
     canonical_url,
@@ -37,43 +38,28 @@ class LibraryFileAliasView(LaunchpadView):
     Rather than reference downloadable files via the obscure Librarian
     URL, downloadable files can be referenced via the Product Release URL,
     e.g. http://launchpad.net/firefox/1.0./1.0.0/+download/firefox-1.0.0.tgz.
-
-    If the file is public, it will redirect to the file's HTTP URL. Otherwise
-    it will allocate a token and redirect to the file's public HTTPS URL with
-    that token.
     """
 
     def initialize(self):
         """Redirect the request to the URL of the file in the Librarian."""
+        # Refuse to serve restricted files. We're not sure that no
+        # restricted files are being leaked in the traversal hierarchy.
+        assert not self.context.restricted
         # Perhaps we should give a 404 at this point rather than asserting?
         # If someone has a page open with an attachment link, then someone
         # else deletes the attachment, this is a normal situation, not an
         # error. -- RBC 20100726.
         assert not self.context.deleted, (
-            "MixedFileAliasView can not operate on deleted librarian files, "
-            "since their URL is undefined.")
-        if not self.context.restricted:
-            # Public file, just point the client at the right place.
-            # Redirect based on the scheme of the request, as set by
-            # Apache in the 'X-SCHEME' environment variable, which is
-            # mapped to 'HTTP_X_SCHEME.  Note that only some requests
-            # for librarian files are allowed to come in via http as
-            # most are forced to https via Apache redirection.
-            request_scheme = self.request.get('HTTP_X_SCHEME')
-            if request_scheme == 'http':
-                redirect_to = self.context.http_url
-            else:
-                redirect_to = self.context.getURL()
-        else:
-            # Avoids a circular import seen in
-            # scripts/ftests/librarianformatter.txt
-            from canonical.launchpad.database.librarian import (
-               TimeLimitedToken)
-            # Allocate a token for the file to be accessed for a limited
-            # time and redirect the client to the file.
-            token = TimeLimitedToken.allocate(self.context.private_url)
-            redirect_to = self.context.private_url + '?token=%s' % token
-        self.request.response.redirect(redirect_to)
+            "LibraryFileAliasView can not operate on deleted librarian files,"
+            " since their URL is undefined.")
+        # Redirect based on the scheme of the request, as set by
+        # Apache in the 'X-SCHEME' environment variable, which is
+        # mapped to 'HTTP_X_SCHEME.  Note that only some requests
+        # for librarian files are allowed to come in via http as
+        # most are forced to https via Apache redirection.
+        self.request.response.redirect(
+            self.context.getURL(
+                secure=self.request.get('HTTP_X_SCHEME') != 'http'))
 
 
 class LibraryFileAliasMD5View(LaunchpadView):
@@ -103,7 +89,6 @@ class FileNavigationMixin:
     extended in order to allow traversing to multiple files potentially
     with the same filename (product files or bug attachments).
     """
-    view_class = LibraryFileAliasView
 
     @stepthrough('+files')
     def traverse_files(self, filename):
@@ -116,7 +101,9 @@ class FileNavigationMixin:
         if library_file.deleted:
             raise DeletedProxiedLibraryFileAlias(filename, self.context)
 
-        return self.view_class(library_file, self.request)
+        return RedirectionView(
+            library_file.getURL(include_token=True),
+            self.request)
 
 
 class ProxiedLibraryFileAlias:
