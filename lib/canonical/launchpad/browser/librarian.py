@@ -11,13 +11,10 @@ __all__ = [
     'LibraryFileAliasMD5View',
     'LibraryFileAliasView',
     'ProxiedLibraryFileAlias',
-    'RedirectPerhapsWithTokenLibraryFileAliasView',
     ]
 
 from lazr.delegates import delegates
-from zope.interface import implements
 from zope.publisher.interfaces import NotFound
-from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
@@ -27,7 +24,6 @@ from lazr.restful.interfaces import IWebBrowserOriginatingRequest
 from canonical.launchpad.webapp.publisher import (
     canonical_url,
     LaunchpadView,
-    RedirectionView,
     stepthrough,
     )
 from canonical.launchpad.webapp.url import urlappend
@@ -41,19 +37,42 @@ class LibraryFileAliasView(LaunchpadView):
     Rather than reference downloadable files via the obscure Librarian
     URL, downloadable files can be referenced via the Product Release URL,
     e.g. http://launchpad.net/firefox/1.0./1.0.0/+download/firefox-1.0.0.tgz.
+
+    If the file is public, it will redirect to the file's HTTP URL. Otherwise
+    it will allocate a token and redirect to the file's public HTTPS URL with
+    that token.
     """
 
     def initialize(self):
         """Redirect the request to the URL of the file in the Librarian."""
-        # Redirect based on the scheme of the request, as set by Apache in the
-        # 'X-SCHEME' environment variable, which is mapped to 'HTTP_X_SCHEME.
-        # Note that only some requests for librarian files are allowed to come
-        # in via http as most are forced to https via Apache redirection.
-        request_scheme = self.request.get('HTTP_X_SCHEME')
-        if request_scheme == 'http':
-            redirect_to = self.context.http_url
+        # Perhaps we should give a 404 at this point rather than asserting?
+        # If someone has a page open with an attachment link, then someone
+        # else deletes the attachment, this is a normal situation, not an
+        # error. -- RBC 20100726.
+        assert not self.context.deleted, (
+            "MixedFileAliasView can not operate on deleted librarian files, "
+            "since their URL is undefined.")
+        if not self.context.restricted:
+            # Public file, just point the client at the right place.
+            # Redirect based on the scheme of the request, as set by
+            # Apache in the 'X-SCHEME' environment variable, which is
+            # mapped to 'HTTP_X_SCHEME.  Note that only some requests
+            # for librarian files are allowed to come in via http as
+            # most are forced to https via Apache redirection.
+            request_scheme = self.request.get('HTTP_X_SCHEME')
+            if request_scheme == 'http':
+                redirect_to = self.context.http_url
+            else:
+                redirect_to = self.context.getURL()
         else:
-            redirect_to = self.context.getURL()
+            # Avoids a circular import seen in
+            # scripts/ftests/librarianformatter.txt
+            from canonical.launchpad.database.librarian import (
+               TimeLimitedToken)
+            # Allocate a token for the file to be accessed for a limited
+            # time and redirect the client to the file.
+            token = TimeLimitedToken.allocate(self.context.private_url)
+            redirect_to = self.context.private_url + '?token=%s' % token
         self.request.response.redirect(redirect_to)
 
 
@@ -66,41 +85,6 @@ class LibraryFileAliasMD5View(LaunchpadView):
         return '%s %s' % (self.context.content.md5, self.context.filename)
 
 
-class RedirectPerhapsWithTokenLibraryFileAliasView(LaunchpadView):
-    """Redirects to `ILibraryFileAlias`.
-
-    If the file is public, it will redirect to the file's HTTP URL. Otherwise
-    it will allocate a token and redirect to the file's public HTTPS URL with
-    that token.
-    """
-    implements(IBrowserPublisher)
-
-    def browserDefault(self, request):
-        """Redirect to a public URL for the file."""
-        # Perhaps we should give a 404 at this point rather than asserting?
-        # If someone has a page open with an attachment link, then someone
-        # else deletes the attachment, this is a normal situation, not an
-        # error. -- RBC 20100726.
-        assert not self.context.deleted, (
-            "MixedFileAliasView can not operate on deleted librarian files, "
-            "since their URL is undefined.")
-        if not self.context.restricted:
-            # Public file, just point the client at the right place.
-            return RedirectionView(self.context.http_url, self.request), ()
-        # Avoids a circular import seen in
-        # scripts/ftests/librarianformatter.txt
-        from canonical.launchpad.database.librarian import TimeLimitedToken
-        # Allocate a token for the file to be accessed for a limited time and
-        # redirect the client to the file.
-        token = TimeLimitedToken.allocate(self.context.private_url)
-        final_url = self.context.private_url + '?token=%s' % token
-        return RedirectionView(final_url, self.request), ()
-
-    def publishTraverse(self, request, name):
-        """See `IBrowserPublisher` - can't traverse below a file."""
-        raise NotFound(name, self.context)
-
-
 class DeletedProxiedLibraryFileAlias(NotFound):
     """Raised when a deleted `ProxiedLibraryFileAlias` is accessed."""
 
@@ -111,8 +95,7 @@ class FileNavigationMixin:
     The navigation goes through +files/<filename> where file reference is
     provided by context `getFileByName(filename)`.
 
-    The requested file is proxied via
-    `RedirectPerhapsWithTokenLibraryFileAliasView`,
+    The requested file is proxied via `LibraryFileAliasView`,
     making it possible to serve both public and restricted files.
 
     This navigation approach only supports domains with unique filenames,
@@ -120,7 +103,7 @@ class FileNavigationMixin:
     extended in order to allow traversing to multiple files potentially
     with the same filename (product files or bug attachments).
     """
-    view_class = RedirectPerhapsWithTokenLibraryFileAliasView
+    view_class = LibraryFileAliasView
 
     @stepthrough('+files')
     def traverse_files(self, filename):
