@@ -1,0 +1,16 @@
+#!/bin/sh -e
+
+RELEASE_FILES=`find "$DISTSROOT".new -maxdepth 2 -name Release`
+DIST_UPGRADER_TARBALLS=`
+	find "$DISTSROOT".new"/*/*/dist-upgrader* -name "*.tar.gz" || true`
+
+for CANDIDATE in $RELEASE_FILES $DIST_UPGRADER_TARBALLS
+do
+    if [ ! -f "$CANDIDATE.gpg" ] || [ "$CANDIDATE" -nt "$CANDIDATE.gpg" ]
+    then
+        echo "$(date -R): (re-)signing $CANDIDATE"
+        gpg --yes --detach-sign --armor -o "$CANDIDATE.gpg" --sign "$CANDIDATE"
+    else
+        echo "$(date -R): Not re-signing $CANDIDATE"
+    fi
+done

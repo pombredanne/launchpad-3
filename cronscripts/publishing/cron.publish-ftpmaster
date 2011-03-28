@@ -9,6 +9,15 @@ if [ -z $LPCONFIG ]; then
     echo LPCONFIG must be set to run this script.
     exit 1
 fi
+
+# Injection points for testability.
+DISTRONAME="${DISTRONAME:-ubuntu}"
+ARCHIVEPARENT="${ARCHIVEPARENT:-/srv/launchpad.net/$DISTRONAME-archive}"
+LOCKFILE_CMD="${LOCKFILE_CMD:-lockfile}"
+DSYNC_FLIST_CMD="${DSYNC_FLIST_CMD:-dsync-flist}"
+COMMERCIAL_COMPAT_CMD="${COMMERCIAL_COMPAT_CMD:-commercial-compat.sh}"
+INHIBIT_GPG_SIGNING="${INHIBIT_GPG_SIGNING:-no}"
+
 SECURITY_PUBLISHER="no"
 if [ "$1" = "security" ]; then
     # We are running a security publisher run, which skips some steps.
@@ -22,28 +31,27 @@ set -u
 # Launchpad cron.daily (currently just for Ubuntu).
 
 # Informational -- this *MUST* match the database.
-ARCHIVEROOT=/srv/launchpad.net/ubuntu-archive/ubuntu
+ARCHIVEROOT=$ARCHIVEPARENT/$DISTRONAME
 DISTSROOT=$ARCHIVEROOT/dists
-OVERRIDEROOT=$ARCHIVEROOT/../ubuntu-overrides
-CACHEROOT=$ARCHIVEROOT/../ubuntu-cache
-DISTSCOPYROOT=$ARCHIVEROOT/../ubuntu-distscopy
+OVERRIDEROOT=$ARCHIVEROOT-overrides
+CACHEROOT=$ARCHIVEROOT-cache
+DISTSCOPYROOT=$ARCHIVEROOT-distscopy
 INDICES=$ARCHIVEROOT/indices
 PRODUCTION_CONFIG=ftpmaster-publish
 
 if [ "$LPCONFIG" = "$PRODUCTION_CONFIG" ]; then
-    ARCHIVEROOT_PARTNER=/srv/launchpad.net/ubuntu-archive/ubuntu-partner
-    GNUPGHOME=/srv/launchpad.net/ubuntu-archive/gnupg-home
+    ARCHIVEROOT_PARTNER=$ARCHIVEROOT-partner
+    GNUPGHOME=$ARCHIVEROOT/gnupg-home
 else
     # GNUPGHOME does not need to be set, keys can come from ~/.gnupg.
-    ARCHIVEROOT_PARTNER=/srv/launchpad.net/ppa/ubuntu-partner
+    ARCHIVEROOT_PARTNER=$ARCHIVEPARENT/ppa/$DISTRONAME-partner
 fi
 DISTSROOT_PARTNER=$ARCHIVEROOT_PARTNER/dists
-DISTSCOPYROOT_PARTNER=$ARCHIVEROOT_PARTNER/../ubuntu-partner-distscopy
+DISTSCOPYROOT_PARTNER=$ARCHIVEROOT-partner-distscopy
 
 # Configuration options.
-LAUNCHPADROOT=/srv/launchpad.net/codelines/current
-LOCKFILE=/srv/launchpad.net/ubuntu-archive/cron.daily.lock
-DISTRONAME=ubuntu
+LAUNCHPADROOT=$ARCHIVEPARENT/codelines/current
+LOCKFILE=$ARCHIVEPARENT/cron.daily.lock
 TRACEFILE=$ARCHIVEROOT/project/trace/$(hostname --fqdn)
 DSYNCLIST=$CACHEROOT/dsync.list
 MD5LIST=$INDICES/md5sums.gz
@@ -56,7 +64,7 @@ export GNUPGHOME
 PATH=$PATH:$LAUNCHPADROOT/scripts:$LAUNCHPADROOT/cronscripts:$LAUNCHPADROOT/cronscripts/publishing:$LAUNCHPADROOT/scripts/ftpmaster-tools
 
 # Claim the lock.
-if ! lockfile -r1 $LOCKFILE; then
+if ! ${LOCKFILE_CMD} -r1 $LOCKFILE; then
   echo "Could not claim lock file."
   exit 1
 fi
@@ -153,30 +161,34 @@ echo "$(date -R): Publishing the $DISTRONAME archive..."
 publish-distro.py -v -v -d $DISTRONAME $SUITEOPTS -R ${DISTSROOT}.new
 
 set +x
-# Find all the Release files for which the Release.GPG is missing/too-old
-# We use -maxdepth 2 to only sign Release files for distroreleases,
-# not distroarchreleases/distrosourcereleases.
-# Also we sign the dist-upgrader tarballs because they're handy too.
-for CANDIDATE in $(find ${DISTSROOT}.new -maxdepth 2 -name Release) \
-       $(find ${DISTSROOT}.new/*/*/dist-upgrader* -name "*.tar.gz"); do
-  #  [ Release.gpg missing   ] or [ Release is newer than Release.gpg ]
-  if [ ! -f $CANDIDATE.gpg ] || [ $CANDIDATE -nt $CANDIDATE.gpg ]; then
-    echo "$(date -R): (re-)signing $CANDIDATE"
-    gpg --yes --detach-sign --armor -o $CANDIDATE.gpg --sign $CANDIDATE
-  else
-    echo "$(date -R): Not re-signing $CANDIDATE"
-  fi
-done
-SIGNLIST_PARTNER=$(find ${DISTSROOT_PARTNER}.new -maxdepth 2 -name Release)
-for CANDIDATE in $SIGNLIST_PARTNER; do
-  #  [ Release.gpg missing   ] or [ Release is newer than Release.gpg ].
-  if [ ! -f $CANDIDATE.gpg ] || [ $CANDIDATE -nt $CANDIDATE.gpg ]; then
-    echo "$(date -R): (re-)signing $CANDIDATE"
-    gpg --yes --detach-sign --armor -o $CANDIDATE.gpg --sign $CANDIDATE
-  else
-    echo "$(date -R): Not re-signing $CANDIDATE"
-  fi
-done
+if [ "${INHIBIT_GPG_SIGNING}" != yes ]; then
+  # Find all the Release files for which the Release.GPG is missing/too-old
+  # We use -maxdepth 2 to only sign Release files for distroreleases,
+  # not distroarchreleases/distrosourcereleases.
+  # Also we sign the dist-upgrader tarballs because they're handy too.
+  RELEASE_FILES=`find ${DISTSROOT}.new -maxdepth 2 -name Release`
+  DIST_UPGRADER_TARBALLS=`find ${DISTSROOT}.new/*/*/dist-upgrader* -name "*.tar.gz" || /bin/true`
+  for CANDIDATE in $RELEASE_FILES $DIST_UPGRADER_TARBALLS
+  do
+    #  [ Release.gpg missing   ] or [ Release is newer than Release.gpg ]
+    if [ ! -f $CANDIDATE.gpg ] || [ $CANDIDATE -nt $CANDIDATE.gpg ]; then
+      echo "$(date -R): (re-)signing $CANDIDATE"
+      gpg --yes --detach-sign --armor -o $CANDIDATE.gpg --sign $CANDIDATE
+    else
+      echo "$(date -R): Not re-signing $CANDIDATE"
+    fi
+  done
+  SIGNLIST_PARTNER=$(find ${DISTSROOT_PARTNER}.new -maxdepth 2 -name Release)
+  for CANDIDATE in $SIGNLIST_PARTNER; do
+    #  [ Release.gpg missing   ] or [ Release is newer than Release.gpg ].
+    if [ ! -f $CANDIDATE.gpg ] || [ $CANDIDATE -nt $CANDIDATE.gpg ]; then
+      echo "$(date -R): (re-)signing $CANDIDATE"
+      gpg --yes --detach-sign --armor -o $CANDIDATE.gpg --sign $CANDIDATE
+    else
+      echo "$(date -R): Not re-signing $CANDIDATE"
+    fi
+  done
+fi
 
 # The Packages and Sources files are very large and would cripple our
 # mirrors, so we remove them now that the uncompressed MD5SUMS are in the
@@ -207,7 +219,7 @@ mv ${DISTSROOT_PARTNER}.old ${DISTSCOPYROOT_PARTNER}/dists
 # dapper, edgy and feisty releases.  Don't fail the whole script if it
 # fails.
 echo "$(date -R): Generating -commerical pocket..."
-commercial-compat.sh || true
+${COMMERCIAL_COMPAT_CMD} || true
 
 # Timestamp our trace file to track when the last archive publisher run took
 # place.
@@ -234,9 +246,9 @@ if [ "$SECURITY_PUBLISHER" != "yes" ]; then
     # Run dsync over primary archive only.
     echo "$(date -R): Running dsync over primary archive..."
     ( cd $ARCHIVEROOT ; \
-      dsync-flist -q generate $DSYNCLIST -e 'Packages*' -e 'Sources*' -e 'Release*' --md5 ; \
-      (dsync-flist -q md5sums $DSYNCLIST; find dists '(' -name 'Packages*' -o -name 'Sources*' -o -name 'Release*' ')' -print | xargs -r md5sum) | gzip -9n > ${MD5LIST} ; \
-      dsync-flist -q link-dups $DSYNCLIST || true )
+      $DSYNC_FLIST_CMD -q generate $DSYNCLIST -e 'Packages*' -e 'Sources*' -e 'Release*' --md5 ; \
+      ($DSYNC_FLIST_CMD -q md5sums $DSYNCLIST; find dists '(' -name 'Packages*' -o -name 'Sources*' -o -name 'Release*' ')' -print | xargs -r md5sum) | gzip -9n > ${MD5LIST} ; \
+      $DSYNC_FLIST_CMD -q link-dups $DSYNCLIST || true )
 
     # Clear out empty and thus redundant dirs.
     echo "$(date -R): Clearing out empty directories..."
