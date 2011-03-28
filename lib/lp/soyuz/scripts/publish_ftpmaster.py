@@ -69,7 +69,7 @@ class StoreArgument:
 
 
 class PublishFTPMaster(LaunchpadCronScript):
-    """."""
+    """Publish a distro (update)."""
 
     done_pub = False
 
@@ -99,6 +99,7 @@ class PublishFTPMaster(LaunchpadCronScript):
             for archive in self.archives)
 
     def cleanUp(self):
+        """Post-publishing cleanup."""
         for purpose, archive_config in self.configs.iteritems():
             self.logger.debug(
                 "Moving %s dists backup to safe keeping for next time.",
@@ -194,7 +195,7 @@ class PublishFTPMaster(LaunchpadCronScript):
             os.rename(dists, dists_new)
             self.rsync(archive_config.distsroot, dists_new, purpose)
 
-    def publishDistro(self, archive, security_suites=None):
+    def publishDistroArchive(self, archive, security_suites=None):
         """Publish the results for an archive.
 
         :param archive: Archive to publish.
@@ -345,8 +346,8 @@ class PublishFTPMaster(LaunchpadCronScript):
             return
         partner_archive = self.distribution.getArchive("partner")
         if partner_archive is not None:
-            self.publishDistro(partner_archive)
-        self.publishDistro(
+            self.publishDistroArchive(partner_archive)
+        self.publishDistroArchive(
             self.distribution.main_archive, security_suites=security_suites)
         self.installDists()
         self.runCommercialCompat()
@@ -356,7 +357,7 @@ class PublishFTPMaster(LaunchpadCronScript):
         for archive in self.archives:
             # This, for the main archive, is where the script spends
             # most of its time.
-            self.publishDistro(archive)
+            self.publishDistroArchive(archive)
 
         self.installDists()
         self.runCommercialCompat()
