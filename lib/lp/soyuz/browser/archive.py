@@ -28,6 +28,7 @@ __all__ = [
     ]
 
 
+from cgi import escape
 from datetime import (
     datetime,
     timedelta,
@@ -62,7 +63,6 @@ from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.components.tokens import create_token
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp import (
     canonical_url,
     enabled_with_permission,
@@ -107,6 +107,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.browser_helpers import get_user_agent_distroseries
+from lp.services.database.bulk import load
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.adapters.archivedependencies import (
@@ -1216,7 +1217,8 @@ class PackageCopyingMixin:
     """A mixin class that adds helpers for package copying."""
 
     def do_copy(self, sources_field_name, source_pubs, dest_archive,
-                dest_series, dest_pocket, include_binaries):
+                dest_series, dest_pocket, include_binaries,
+                dest_url=None, dest_display_name=None):
         """Copy packages and add appropriate feedback to the browser page.
 
         :param sources_field_name: The name of the form field to set errors
@@ -1227,6 +1229,12 @@ class PackageCopyingMixin:
         :param dest_pocket: The destination PackagePublishingPocket
         :param include_binaries: Boolean, whether to copy binaries with the
             sources
+        :param dest_url: The URL of the destination to display in the
+            notification box.  Defaults to the target archive and will be
+            automatically escaped for inclusion in the output.
+        :param dest_display_name: The text to use for the dest_url link.
+            Defaults to the target archive's display name and will be
+            automatically escaped for inclusion in the output.
 
         :return: True if the copying worked, False otherwise.
         """
@@ -1245,7 +1253,8 @@ class PackageCopyingMixin:
                     "<p>The following sources cannot be copied:</p>")
             messages.append('<ul>')
             messages.append(
-                "\n".join('<li>%s</li>' % line for line in error_lines))
+                "\n".join('<li>%s</li>' % escape(line)
+                    for line in error_lines))
             messages.append('</ul>')
 
             self.setFieldError(
@@ -1253,31 +1262,32 @@ class PackageCopyingMixin:
             return False
 
         # Preload BPNs to save queries when calculating display names.
-        needed_bpn_ids = set(
+        load(BinaryPackageName, (
             copy.binarypackagerelease.binarypackagenameID for copy in copies
-            if isinstance(copy, BinaryPackagePublishingHistory))
-        if needed_bpn_ids:
-            list(IStore(BinaryPackageName).find(
-                BinaryPackageName,
-                BinaryPackageName.id.is_in(needed_bpn_ids)))
+            if isinstance(copy, BinaryPackagePublishingHistory)))
 
         # Present a page notification describing the action.
         messages = []
-        destination_url = canonical_url(dest_archive) + '/+packages'
+        if dest_url is None:
+            dest_url = escape(
+                canonical_url(dest_archive) + '/+packages',
+                quote=True)
+        if dest_display_name is None:
+            dest_display_name = escape(dest_archive.displayname)
         if len(copies) == 0:
             messages.append(
                 '<p>All packages already copied to '
                 '<a href="%s">%s</a>.</p>' % (
-                    destination_url,
-                    dest_archive.displayname))
+                    dest_url,
+                    dest_display_name))
         else:
             messages.append(
                 '<p>Packages copied to <a href="%s">%s</a>:</p>' % (
-                    destination_url,
-                    dest_archive.displayname))
+                    dest_url,
+                    dest_display_name))
             messages.append('<ul>')
             messages.append(
-                "\n".join(['<li>%s</li>' % copy.displayname
+                "\n".join(['<li>%s</li>' % escape(copy.displayname)
                            for copy in copies]))
             messages.append('</ul>')
 

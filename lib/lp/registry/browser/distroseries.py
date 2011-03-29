@@ -633,10 +633,13 @@ class DistroSeriesLocalDifferences(LaunchpadFormView, PackageCopyingMixin):
 
         # PackageCopyingMixin.do_copy() does the work of copying and
         # setting up on-page notifications.
+        series_url = canonical_url(self.context)
+        series_title = self.context.displayname
         if self.do_copy(
             'selected_differences', sources, self.context.main_archive,
             self.context, PackagePublishingPocket.RELEASE,
-            include_binaries=False):
+            include_binaries=False, dest_url=series_url,
+            dest_display_name=series_title):
             # The copy worked so we can redirect back to the page to
             # show the results.
             self.next_url = self.request.URL
