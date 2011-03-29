@@ -99,12 +99,12 @@ class TestSharingInfoMixin:
             self.assertTextMatchesExpressionIgnoreWhitespace(
                 expected_text, extract_text(sharing_info))
 
-    def test_not_sharing(self):
+    def test_not_sharing_info(self):
         self._test_sharing_information(
             self.makeNotSharingObject(),
             'sharing-information', self.NOT_SHARING_TEXT)
 
-    def test_sharing(self):
+    def test_sharing_info(self):
         self._test_sharing_information(
             self.makeSharingObject(),
             'sharing-information', self.SHARING_TEXT)
@@ -227,6 +227,7 @@ class TestUpstreamSharingInfo(BrowserTestCase,
 
     def makeSharingObject(self):
         packaging = self.factory.makePackagingLink(in_ubuntu=True)
+        set_translations_usage(packaging.productseries.product)
         return packaging.productseries
 
     SHARING_TEXT = """
