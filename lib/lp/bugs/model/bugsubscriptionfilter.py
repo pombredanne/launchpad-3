@@ -69,8 +69,10 @@ class BugSubscriptionFilter(StormBase):
         return self._description
 
     def _set_description(self, description):
-        if ('<' in description or '>' in description or
-            '"' in description or '&' in description):
+        has_html_chars = (
+            '<' in description or '>' in description or
+            '"' in description or '&' in description)
+        if has_html_chars:
             raise expose(ValueError(
                 'BugSubscriptionFilter description cannot contain '
                 'any of <, >, " or &.'))

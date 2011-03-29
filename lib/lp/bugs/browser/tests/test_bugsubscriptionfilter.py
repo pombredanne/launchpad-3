@@ -184,9 +184,8 @@ class TestBugSubscriptionFilterAPIModifications(
             u"It's late.", self.subscription_filter.description)
 
     def test_modify_description_xss_safeguard(self):
-        # The description can be modified.
-
-        # Modify, save, and start a new transaction.
+        # The description can be modified but raises an
+        # exception if you try potential XSS attack characters.
         self.ws_subscription_filter.description = u"&gt; <>"
         error = self.assertRaises(
             BadRequest, self.ws_subscription_filter.lp_save)
