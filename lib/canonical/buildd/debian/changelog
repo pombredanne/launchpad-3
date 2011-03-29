@@ -1,4 +1,4 @@
-launchpad-buildd (76~1) hardy-cat; urgency=low
+launchpad-buildd (76) hardy-cat; urgency=low
 
   [ various ]
   * ProjectGroup.products sort order and remove Author: comments.
