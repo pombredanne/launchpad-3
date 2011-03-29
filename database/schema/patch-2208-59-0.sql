@@ -35,4 +35,4 @@ CREATE INDEX bugtask__distroseries_sourcepackage__heat__idx ON bugtask USING btr
 -- heat).
 CREATE TRIGGER bug_to_bugtask_heat AFTER UPDATE ON bug FOR EACH ROW EXECUTE PROCEDURE bug_update_heat_copy_to_bugtask();
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 58, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 59, 0);
