@@ -107,6 +107,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     UNRESOLVED_BUGTASK_STATUSES,
     )
+from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
     BugSet,
     get_bug_tags,
@@ -1822,11 +1823,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         assert sourcepackage is not None, (
             "Translations sharing policy requires a SourcePackage.")
 
-        productseries = sourcepackage.productseries
-        has_upstream_translations = (
-            productseries is not None and
-            productseries.has_current_translation_templates)
-        if not has_upstream_translations:
+        if not sourcepackage.has_sharing_translation_templates:
             # There is no known upstream template or series.  Take the
             # uploader's word for whether these are upstream translations
             # (in which case they're shared) or not.
@@ -1841,7 +1838,24 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # translations for upstream.
             return purportedly_upstream
 
+        productseries = sourcepackage.productseries
         return productseries.product.invitesTranslationEdits(person, language)
+
+    def getBugTaskWeightFunction(self):
+        """Provide a weight function to determine optimal bug task.
+
+        Full weight is given to tasks for this distribution.
+
+        Given that there must be a distribution task for a series of that
+        distribution to have a task, we give no more weighting to a
+        distroseries task than any other.
+        """
+        distributionID = self.id
+        def weight_function(bugtask):
+            if bugtask.distributionID == distributionID:
+                return OrderedBugTask(1, bugtask.id, bugtask)
+            return OrderedBugTask(2, bugtask.id, bugtask)
+        return weight_function
 
 
 class DistributionSet:

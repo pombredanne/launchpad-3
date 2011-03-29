@@ -7,19 +7,16 @@ import logging
 import sys
 from textwrap import dedent
 from time import sleep
-from unittest import TestLoader
 
 import transaction
-from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.config import config
 from canonical.launchpad.webapp import errorlog
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
+from canonical.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
     )
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.interfaces.branchmergeproposal import IUpdatePreviewDiffJobSource
 from lp.services.job.interfaces.job import (
     IRunnableJob,
@@ -329,42 +326,68 @@ class StuckJob(BaseRunnableJob):
 
     done = False
 
+    # A list of jobs to run: id, lease_length, delay.
+    #
+    # For the first job, have a very long lease, so that it
+    # doesn't expire and so we soak up the ZCML loading time.  For the
+    # second job, have a short lease so we hit the timeout.
+    jobs = [
+        (0, 10000, 0),
+        (1, 5, 30),
+        ]
+
     @classmethod
     def iterReady(cls):
         if not cls.done:
-            yield StuckJob(1)
-            yield StuckJob(2)
+            for id, lease_length, delay in cls.jobs:
+                yield cls(id, lease_length, delay)
         cls.done = True
 
-    @staticmethod
-    def get(id):
-        return StuckJob(id)
+    @classmethod
+    def get(cls, id):
+        id, lease_length, delay = cls.jobs[id]
+        return cls(id, lease_length, delay)
 
-    def __init__(self, id):
+    def __init__(self, id, lease_length, delay):
         self.id = id
+        self.lease_length = lease_length
+        self.delay = delay
         self.job = Job()
 
+    def __repr__(self):
+        return '<StuckJob(%r, lease_length=%s, delay=%s)>' % (
+            self.id, self.lease_length, self.delay)
+
     def acquireLease(self):
-        if self.id == 2:
-            lease_length = 1
-        else:
-            lease_length = 10000
-        return self.job.acquireLease(lease_length)
+        return self.job.acquireLease(self.lease_length)
 
     def run(self):
-        if self.id == 2:
-            sleep(30)
-        else:
-            store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-            assert (
-                'user=branchscanner' in store._connection._raw_connection.dsn)
+        sleep(self.delay)
+
+
+class ShorterStuckJob(StuckJob):
+    """Simulation of a job that stalls."""
+
+    jobs = [
+        (0, 10000, 0),
+        (1, 0.05, 30),
+        ]
 
 
 class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
-    def test_timeout(self):
+    def setUp(self):
+        super(TestTwistedJobRunner, self).setUp()
+        # The test relies on _pythonpath being importable. Thus we need to add
+        # a directory that contains _pythonpath to the sys.path. We can rely
+        # on the root directory of the checkout containing _pythonpath.
+        if config.root not in sys.path:
+            sys.path.append(config.root)
+            self.addCleanup(sys.path.remove, config.root)
+
+    def test_timeout_long(self):
         """When a job exceeds its lease, an exception is raised.
 
         Unfortunately, timeouts include the time it takes for the zope
@@ -373,18 +396,52 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         """
         logger = BufferLogger()
         logger.setLevel(logging.INFO)
+        # StuckJob is actually a source of two jobs. The first is fast, the
+        # second slow.
         runner = TwistedJobRunner.runFromSource(
             StuckJob, 'branchscanner', logger)
 
-        self.assertEqual(1, len(runner.completed_jobs))
-        self.assertEqual(1, len(runner.incomplete_jobs))
+        # XXX: JonathanLange 2011-03-23 bug=740443: Potential source of race
+        # condition. Another OOPS could be logged.  Also confusing because it
+        # might be polluted by values from previous jobs.
         oops = errorlog.globalErrorUtility.getLastOopsReport()
-        self.assertEqual(dedent("""\
+        self.assertEqual(
+            (1, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
+        self.assertEqual(
+            (dedent("""\
              INFO Running through Twisted.
              INFO Job resulted in OOPS: %s
-             """) % oops.id, logger.getLogBuffer())
-        self.assertEqual('TimeoutError', oops.type)
-        self.assertIn('Job ran too long.', oops.value)
+             """) % oops.id,
+             'TimeoutError', 'Job ran too long.'),
+            (logger.getLogBuffer(), oops.type, oops.value))
+
+    def test_timeout_short(self):
+        """When a job exceeds its lease, an exception is raised.
+
+        Unfortunately, timeouts include the time it takes for the zope
+        machinery to start up, so we run a job that will not time out first,
+        followed by a job that is sure to time out.
+        """
+        logger = BufferLogger()
+        logger.setLevel(logging.INFO)
+        # StuckJob is actually a source of two jobs. The first is fast, the
+        # second slow.
+        runner = TwistedJobRunner.runFromSource(
+            ShorterStuckJob, 'branchscanner', logger)
+
+        # XXX: JonathanLange 2011-03-23 bug=740443: Potential source of race
+        # condition. Another OOPS could be logged.  Also confusing because it
+        # might be polluted by values from previous jobs.
+        oops = errorlog.globalErrorUtility.getLastOopsReport()
+        self.assertEqual(
+            (1, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
+        self.assertEqual(
+            (dedent("""\
+             INFO Running through Twisted.
+             INFO Job resulted in OOPS: %s
+             """) % oops.id,
+             'TimeoutError', 'Job ran too long.'),
+            (logger.getLogBuffer(), oops.type, oops.value))
 
 
 class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
@@ -425,7 +482,3 @@ class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
             cronscript.main()
         finally:
             errorlog.globalErrorUtility = old_errorlog
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

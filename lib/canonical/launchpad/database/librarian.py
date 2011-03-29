@@ -140,14 +140,19 @@ class LibraryFileAlias(SQLBase):
         """See ILibraryFileAlias.https_url"""
         return self.client.getURLForAlias(self.id, secure=True)
 
-    def getURL(self):
+    def getURL(self, secure=True, include_token=False):
         """See ILibraryFileAlias.getURL"""
-        if self.restricted:
-            return self.private_url
-        if config.librarian.use_https:
-            return self.https_url
+        if not self.restricted:
+            if config.librarian.use_https and secure:
+                return self.https_url
+            else:
+                return self.http_url
         else:
-            return self.http_url
+            url = self.private_url
+            if include_token:
+                token = TimeLimitedToken.allocate(url)
+                url += '?token=%s' % token
+            return url
 
     _datafile = None
 
