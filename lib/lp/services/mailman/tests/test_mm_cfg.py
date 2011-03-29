@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = []
 
+import os
 
 from Mailman import (
     mm_cfg,
@@ -154,6 +155,28 @@ class TestMMCfgLaunchpadConfigTestCase(TestCase):
         self.assertTrue(stdout in mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
         self.assertEqual(
             mm_cfg.PRIVATE_EXTERNAL_ARCHIVER, mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
+
+
+class TestMHonArchMRC(TestCase):
+
+    layer = FunctionalLayer
+
+    def setUp(self):
+        super(TestMHonArchMRC, self).setUp()
+        mrc_path = os.path.join(
+            config.root, 'lib', 'lp', 'services', 'mailman', 'monkeypatches',
+            'lp-mhonarc-common.mrc')
+        with open(mrc_path) as mrc_file:
+            self.mrc = mrc_file.read()
+
+    def test_html_disabled(self):
+        mime_excs = (
+            '<MIMEExcs> '
+            'text/html '
+            'text/x-html '
+            '</MIMEExcs> ')
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            mime_excs, self.mrc)
 
 
 class TestSiteTemplates(TestCase):
