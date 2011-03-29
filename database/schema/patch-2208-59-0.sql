@@ -10,6 +10,7 @@ ALTER TABLE bugtask ADD COLUMN heat integer;
 UPDATE bugtask SET heat=bug.heat FROM bug WHERE bug.id=bugtask.bug;
 
 ALTER TABLE bugtask ALTER COLUMN heat SET NOT NULL;
+ALTER TABLE bugtask ALTER COLUMN heat SET DEFAULT 0;
 
 -- Primary use case is 'sort by heat in a context'; for no context we can use
 -- the bug.heat column & index.
