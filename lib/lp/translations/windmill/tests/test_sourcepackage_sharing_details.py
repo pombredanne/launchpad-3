@@ -35,24 +35,30 @@ class TestSharingDetails(WindmillTestCase):
     layer = TranslationsWindmillLayer
 
     def test_set_branch(self):
-        packaging = self.factory.makePackagingLink()
+        sourcepackage = self.factory.makeSourcePackage()
+        productseries = self.factory.makeProductSeries(name='my-ps-name')
         branch = self.factory.makeProductBranch(
-            product=packaging.productseries.product, name='product-branch')
+            product=productseries.product, name='product-branch')
         self.useContext(feature_flags())
         set_feature_flag(u'translations.sharing_information.enabled', u'on')
         transaction.commit()
         url = canonical_url(
-            packaging.sourcepackage, rootsite='translations',
+            sourcepackage, rootsite='translations',
             view_name='+sharing-details')
         self.client.open(url=url)
         self.client.waits.forPageLoad(timeout=PAGE_LOAD)
         lpuser.TRANSLATIONS_ADMIN.ensure_login(self.client)
         self.client.waits.forElement(
             id='branch-incomplete', timeout=FOR_ELEMENT)
+        self.client.click(xpath='//*[@id="packaging-incomplete-picker"]/a')
+        search_and_select_picker_widget(self.client, 'my-ps-name', 1)
+        self.client.waits.forElementProperty(
+            id='packaging-incomplete', option='className|sprite no unseen',
+            timeout=FOR_ELEMENT)
         self.client.click(xpath='//*[@id="branch-incomplete-picker"]/a')
         search_and_select_picker_widget(self.client, 'product-branch', 1)
         self.client.waits.forElementProperty(
             id='branch-incomplete', option='className|sprite no unseen',
             timeout=FOR_ELEMENT)
         transaction.commit()
-        self.assertEqual(branch, packaging.productseries.branch)
+        self.assertEqual(branch, productseries.branch)
