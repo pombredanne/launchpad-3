@@ -6,7 +6,7 @@ SET client_min_messages=ERROR;
 UPDATE pg_index SET indisprimary = FALSE
 FROM pg_class
 WHERE pg_class.oid = pg_index.indexrelid
-    AND relname='branchrevision_pkey';
+    AND relname='revisionnumber_pkey';
 
 -- Make an existing index think it is the primary key.
 UPDATE pg_index SET indisprimary = TRUE
@@ -41,9 +41,18 @@ WHERE refobjid = (
 
 -- Strip the unnecessary crud.
 DROP VIEW RevisionNumber;
+
+-- Need to drop explicitly. Why?
+DROP INDEX revisionnumber_pkey;
+
 ALTER TABLE BranchRevision
     DROP COLUMN id,
     DROP CONSTRAINT revision__branch__revision__key;
-DROP INDEX revisionnumber_pkey;
+
+
+And fail...
+
+ALTER TABLE BranchRevision DROP CONSTRAINT revision__revision__branch__key
+does not work.
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
