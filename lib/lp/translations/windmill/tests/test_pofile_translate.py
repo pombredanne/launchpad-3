@@ -36,25 +36,22 @@ class POFileNewTranslationFieldKeybindings(WindmillTestCase):
         translation.
         """
         # Go to the translation page.
-        self.client.open(url=url)
-        self.client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        self.test_user.ensure_login(self.client)
+        client, start_url = self.getClientFor(url, user=self.test_user)
 
         # Wait for the new translation field and it's associated radio button.
-        self.client.waits.forElement(
+        client.waits.forElement(
             id=new_translation_id, timeout=constants.FOR_ELEMENT)
-        self.client.waits.forElement(
+        client.waits.forElement(
             id=new_translation_select_id, timeout=constants.FOR_ELEMENT)
 
         # Check that the associated radio button is not selected.
-        self.client.asserts.assertNotChecked(id=new_translation_select_id)
+        client.asserts.assertNotChecked(id=new_translation_select_id)
 
         # Type a new translation.
-        self.client.type(
-            id=new_translation_id, text=u'New translation')
+        client.type(id=new_translation_id, text=u'New translation')
 
         # Check that the associated radio button is selected.
-        self.client.asserts.assertChecked(id=new_translation_select_id)
+        client.asserts.assertChecked(id=new_translation_select_id)
 
     def test_pofile_new_translation_autoselect(self):
         """Test for automatically selecting new translation on text input.
@@ -65,26 +62,22 @@ class POFileNewTranslationFieldKeybindings(WindmillTestCase):
         self.test_user = lpuser.TRANSLATIONS_ADMIN
 
         # Test the zoom out view for Evolution trunk Spanish (es).
-        start_url = ('%s/evolution/trunk/+pots/evolution-2.2/es/+translate'
-                     % TranslationsWindmillLayer.base_url)
+        start_url = '/evolution/trunk/+pots/evolution-2.2/es/+translate'
         new_translation_id = u'msgset_1_es_translation_0_new'
         new_translation_select_id = u'msgset_1_es_translation_0_new_select'
         self._checkTranslationAutoselect(
             start_url, new_translation_id, new_translation_select_id)
 
         # Test the zoom in view for Evolution trunk Brazilian (pt_BR).
-        start_url = ('%s/evolution/trunk/+pots/evolution-2.2/'
-                        'pt_BR/1/+translate'
-                        % TranslationsWindmillLayer.base_url )
+        start_url = '/evolution/trunk/+pots/evolution-2.2/pt_BR/1/+translate'
         new_translation_id = u'msgset_1_pt_BR_translation_0_new'
         new_translation_select_id = u'msgset_1_pt_BR_translation_0_new_select'
         self._checkTranslationAutoselect(
             start_url, new_translation_id, new_translation_select_id)
 
         # Test the zoom out view for Ubuntu Hoary Brazilian (pt_BR).
-        start_url = ('%s/ubuntu/hoary/+source/mozilla/+pots/pkgconf-mozilla/'
-                        'pt_BR/1/+translate'
-                        % TranslationsWindmillLayer.base_url)
+        start_url = ('/ubuntu/hoary/+source/mozilla/+pots/pkgconf-mozilla/'
+                        'pt_BR/1/+translate')
         new_translation_id = u'msgset_152_pt_BR_translation_0_new'
         new_translation_select_id = (u'msgset_152_pt_BR'
                                        '_translation_0_new_select')
@@ -108,31 +101,28 @@ class POFileTranslationActions(WindmillTestCase):
 
         self.test_user = lpuser.TRANSLATIONS_ADMIN
         # Test the zoom out view for Evolution trunk Spanish (es).
-        url = ('%s/evolution/trunk/+pots/evolution-2.2/es/5/+translate'
-               % TranslationsWindmillLayer.base_url)
+        url = '/evolution/trunk/+pots/evolution-2.2/es/5/+translate'
         dismiss_id = u'msgset_5_dismiss'
         force_suggestion_id = u'msgset_5_force_suggestion'
 
         # Go to the translation page.
-        self.client.open(url=url)
-        self.client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        self.test_user.ensure_login(self.client)
-        self.client.waits.forElement(
+        client, start_url = self.getClientFor(url, user=self.test_user)
+        client.waits.forElement(
             id=dismiss_id, timeout=constants.FOR_ELEMENT)
-        self.client.waits.forElement(
+        client.waits.forElement(
             id=force_suggestion_id, timeout=constants.FOR_ELEMENT)
 
         # Check that initially the checkboxes are not selected.
-        self.client.asserts.assertNotChecked(id=dismiss_id)
-        self.client.asserts.assertNotChecked(id=force_suggestion_id)
+        client.asserts.assertNotChecked(id=dismiss_id)
+        client.asserts.assertNotChecked(id=force_suggestion_id)
 
         # Click the force suggestion checkbox and verify that it is checked.
-        self.client.click(id=force_suggestion_id)
-        self.client.asserts.assertChecked(id=force_suggestion_id)
+        client.click(id=force_suggestion_id)
+        client.asserts.assertChecked(id=force_suggestion_id)
 
-        self.client.click(id=dismiss_id)
-        self.client.asserts.assertChecked(id=dismiss_id)
-        self.client.asserts.assertNotChecked(id=force_suggestion_id)
+        client.click(id=dismiss_id)
+        client.asserts.assertChecked(id=dismiss_id)
+        client.asserts.assertNotChecked(id=force_suggestion_id)
 
     def test_diverge_and_force_suggestion_mutual_exclusion(self):
         """Test the mutual exclusion of diverge and force suggestion.
@@ -163,8 +153,7 @@ class POFileTranslationActions(WindmillTestCase):
         transaction.commit()
         logout()
 
-        url = ('%s/%s/%s/+pots/%s/pt_BR/1/+translate' % (
-                        TranslationsWindmillLayer.base_url,
+        url = ('/%s/%s/+pots/%s/pt_BR/1/+translate' % (
                         potemplate.product.name,
                         potemplate.productseries.name,
                         potemplate.name))
@@ -174,65 +163,63 @@ class POFileTranslationActions(WindmillTestCase):
         diverge_id = u'msgset_%s_diverge' % potmsgset_id
 
         # Go to the translation page.
-        self.client.open(url=url)
-        self.client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        self.test_user.ensure_login(self.client)
-        self.client.waits.forElement(
+        client, start_url = self.getClientFor(url, user=self.test_user)
+        client.waits.forElement(
             id=dismiss_id, timeout=constants.FOR_ELEMENT)
-        self.client.waits.forElement(
+        client.waits.forElement(
             id=force_suggestion_id, timeout=constants.FOR_ELEMENT)
-        self.client.waits.forElement(
+        client.waits.forElement(
             id=diverge_id, timeout=constants.FOR_ELEMENT)
 
         # Check that initialy the checkboxes are not selected.
-        self.client.asserts.assertNotChecked(id=dismiss_id)
-        self.client.asserts.assertNotChecked(id=force_suggestion_id)
-        self.client.asserts.assertNotChecked(id=diverge_id)
+        client.asserts.assertNotChecked(id=dismiss_id)
+        client.asserts.assertNotChecked(id=force_suggestion_id)
+        client.asserts.assertNotChecked(id=diverge_id)
 
         # Test the diverge translation checking and unchecking.
-        self.client.click(id=diverge_id)
-        self.client.asserts.assertChecked(id=diverge_id)
-        self.client.asserts.assertNotChecked(id=force_suggestion_id)
-        self.client.asserts.assertNotChecked(id=dismiss_id)
-        self.client.asserts.assertElemJS(
+        client.click(id=diverge_id)
+        client.asserts.assertChecked(id=diverge_id)
+        client.asserts.assertNotChecked(id=force_suggestion_id)
+        client.asserts.assertNotChecked(id=dismiss_id)
+        client.asserts.assertElemJS(
             id=force_suggestion_id, js=u'element.disabled')
 
-        self.client.click(id=diverge_id)
-        self.client.asserts.assertNotChecked(id=diverge_id)
-        self.client.asserts.assertNotChecked(id=force_suggestion_id)
-        self.client.asserts.assertNotChecked(id=dismiss_id)
-        self.client.asserts.assertElemJS(
+        client.click(id=diverge_id)
+        client.asserts.assertNotChecked(id=diverge_id)
+        client.asserts.assertNotChecked(id=force_suggestion_id)
+        client.asserts.assertNotChecked(id=dismiss_id)
+        client.asserts.assertElemJS(
             id=force_suggestion_id, js=u'!element.disabled')
 
         # Test the force suggestion checking and unchecking.
-        self.client.click(id=force_suggestion_id)
-        self.client.asserts.assertChecked(id=force_suggestion_id)
-        self.client.asserts.assertNotChecked(id=diverge_id)
-        self.client.asserts.assertNotChecked(id=dismiss_id)
-        self.client.asserts.assertElemJS(
+        client.click(id=force_suggestion_id)
+        client.asserts.assertChecked(id=force_suggestion_id)
+        client.asserts.assertNotChecked(id=diverge_id)
+        client.asserts.assertNotChecked(id=dismiss_id)
+        client.asserts.assertElemJS(
             id=diverge_id, js=u'element.disabled')
 
-        self.client.click(id=force_suggestion_id)
-        self.client.asserts.assertNotChecked(id=force_suggestion_id)
-        self.client.asserts.assertNotChecked(id=diverge_id)
-        self.client.asserts.assertNotChecked(id=dismiss_id)
-        self.client.asserts.assertElemJS(
+        client.click(id=force_suggestion_id)
+        client.asserts.assertNotChecked(id=force_suggestion_id)
+        client.asserts.assertNotChecked(id=diverge_id)
+        client.asserts.assertNotChecked(id=dismiss_id)
+        client.asserts.assertElemJS(
             id=diverge_id, js=u'!element.disabled')
 
         # Test unchecking the diverge translations when dismiss all
         # suggestions is enabled.
-        self.client.click(id=dismiss_id)
-        self.client.asserts.assertElemJS(
+        client.click(id=dismiss_id)
+        client.asserts.assertElemJS(
             id=force_suggestion_id, js=u'element.disabled')
-        self.client.click(id=diverge_id)
-        self.client.asserts.assertElemJS(
+        client.click(id=diverge_id)
+        client.asserts.assertElemJS(
             id=force_suggestion_id, js=u'element.disabled')
-        self.client.asserts.assertNotChecked(id=force_suggestion_id)
+        client.asserts.assertNotChecked(id=force_suggestion_id)
 
-        self.client.click(id=diverge_id)
-        self.client.asserts.assertElemJS(
+        client.click(id=diverge_id)
+        client.asserts.assertElemJS(
             id=force_suggestion_id, js=u'element.disabled')
-        self.client.asserts.assertNotChecked(id=force_suggestion_id)
+        client.asserts.assertNotChecked(id=force_suggestion_id)
 
     def _checkResetTranslationSelect(
         self, client, checkbox, singular_new_select, singular_current_select,
@@ -304,16 +291,10 @@ class POFileTranslationActions(WindmillTestCase):
         """Test for automatically selecting new translation when
         'Someone needs to review this translations' is checked.
         """
-        client = self.client
-        user = lpuser.TRANSLATIONS_ADMIN
-
         # Go to the zoom in page for a translation with plural forms.
-        self.client.open(
-            url='%s/ubuntu/hoary/+source/evolution/+pots/'
-                'evolution-2.2/es/15/+translate'
-                % TranslationsWindmillLayer.base_url)
-        self.client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        user.ensure_login(self.client)
+        client, start_url = self.getClientFor(
+            '/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/15/'
+            '+translate', user=lpuser.TRANSLATIONS_ADMIN)
 
         checkbox = u'msgset_144_force_suggestion'
         singular_new_select = u'msgset_144_es_translation_0_new_select'
@@ -331,11 +312,11 @@ class POFileTranslationActions(WindmillTestCase):
         # Go to the zoom in page for a pt_BR translation with plural forms.
         # pt_BR is a language code using the same delimiter as HTTP form
         # fields and are prone to errors.
-        self.client.open(
+        client.open(
             url='%s/ubuntu/hoary/+source/evolution/+pots/'
                 'evolution-2.2/pt_BR/15/+translate'
                 % TranslationsWindmillLayer.base_url)
-        self.client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
         checkbox = u'msgset_144_force_suggestion'
         singular_new_select = u'msgset_144_pt_BR_translation_0_new_select'
@@ -352,11 +333,11 @@ class POFileTranslationActions(WindmillTestCase):
             plural_new_select=plural_new_select)
 
         # Go to the zoom in page for a translation without plural forms.
-        self.client.open(
+        client.open(
             url='%s/ubuntu/hoary/+source/evolution/+pots/'
                 'evolution-2.2/es/19/+translate'
                 % TranslationsWindmillLayer.base_url)
-        self.client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
         checkbox = u'msgset_148_force_suggestion'
         singular_new_select = u'msgset_148_es_translation_0_new_select'
@@ -424,11 +405,9 @@ class POFileTranslatorAndReviewerWorkingMode(WindmillTestCase):
         Adding new translations will force them as suggestions.
         """
 
-        self.client.open(
-            url='%s/evolution/trunk/+pots/evolution-2.2/pt_BR/1/+translate'
-                % TranslationsWindmillLayer.base_url)
-        self.client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        self.test_user.ensure_login(self.client)
+        self.client, start_url = self.getClientFor(
+            '%s/evolution/trunk/+pots/evolution-2.2/pt_BR/1/+translate',
+            user=self.test_user)
 
         self._ensureTranslationMode(reviewer=True)
 
@@ -443,11 +422,9 @@ class POFileTranslatorAndReviewerWorkingMode(WindmillTestCase):
         Adding new translations will not force them as suggestions.
         """
 
-        self.client.open(
-            url='%s/evolution/trunk/+pots/evolution-2.2/pt_BR/1/+translate'
-                % TranslationsWindmillLayer.base_url)
-        self.client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        self.test_user.ensure_login(self.client)
+        self.client, start_url = self.getClientFor(
+            '%s/evolution/trunk/+pots/evolution-2.2/pt_BR/1/+translate',
+            user=self.test_user)
 
         self._ensureTranslationMode(translator=True)
 

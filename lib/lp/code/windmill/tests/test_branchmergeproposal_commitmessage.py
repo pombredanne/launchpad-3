@@ -10,7 +10,6 @@ import unittest
 
 import transaction
 
-from canonical.launchpad.webapp import canonical_url
 from lp.code.windmill.testing import CodeWindmillLayer
 from lp.testing import WindmillTestCase
 from lp.testing.windmill.constants import (
@@ -18,7 +17,6 @@ from lp.testing.windmill.constants import (
     PAGE_LOAD,
     SLEEP,
     )
-from lp.testing.windmill.lpuser import login_person
 
 
 EDIT_COMMIT_LINK = u'//a[contains(@href, "+edit-commit-message")]'
@@ -46,12 +44,7 @@ class TestCommitMessage(WindmillTestCase):
         bmp = self.factory.makeBranchMergeProposal(registrant=eric)
         transaction.commit()
 
-        client = self.client
-
-        login_person(eric, "eric@example.com", "test", client)
-
-        client.open(url=canonical_url(bmp))
-        client.waits.forPageLoad(timeout=PAGE_LOAD)
+        client, start_url = self.getClientForPerson(bmp, eric)
 
         # Click on the element containing the branch status.
         client.click(xpath=EDIT_COMMIT_LINK)
@@ -67,7 +60,7 @@ class TestCommitMessage(WindmillTestCase):
             xpath=COMMIT_MESSAGE_TEXT, validator=message)
 
         # Confirm that the change was saved.
-        client.open(url=canonical_url(bmp))
+        client.open(start_url)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.asserts.assertText(
             xpath=COMMIT_MESSAGE_TEXT, validator=message)
@@ -89,12 +82,7 @@ class TestQueueStatus(WindmillTestCase):
         merge_proposal = second_branch.addLandingTarget(mike, branch)
         transaction.commit()
 
-        client = self.client
-
-        merge_url = canonical_url(merge_proposal)
-        client.open(url=merge_url)
-        client.waits.forPageLoad(timeout=PAGE_LOAD)
-        login_person(mike, "mike@example.com", "test", client)
+        client, start_url = self.getClientForPerson(merge_proposal, mike)
 
         # Click on the element containing the branch status.
         client.waits.forElement(
@@ -116,7 +104,7 @@ class TestQueueStatus(WindmillTestCase):
             validator=u'5')
 
         # Reload the page and make sure the change sticks.
-        client.open(url=merge_url)
+        client.open(start_url)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.waits.forElement(
             xpath=u'//td[@id="branchmergeproposal-status-value"]/a',

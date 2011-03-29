@@ -30,11 +30,8 @@ class TestNewProjectStep1(WindmillTestCase):
         """
         # Perform step 1 of the project registration, using information
         # that will yield search results.
-        self.client.open(url=u'%s/projects/+new'
-                        % RegistryWindmillLayer.base_url)
-
-        lpuser.SAMPLE_PERSON.ensure_login(self.client)
-
+        client, start_url = self.getClientFor(
+            '/projects/+new', user=lpuser.SAMPLE_PERSON)
         self.client.waits.forElement(id='field.displayname')
         self.client.type(text=u'dolphin', id='field.displayname')
 

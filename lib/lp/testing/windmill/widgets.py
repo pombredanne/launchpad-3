@@ -116,7 +116,21 @@ class SearchPickerWidget(OnPageWidget):
         self.client.click(xpath=item_xpath)
 
 
-class InlineEditorWidgetTest:
+class WidgetTest:
+    """A base class to provide logon capability."""
+    def getLoggedInClient(self):
+        """Return a new client, and the url that it has loaded."""
+        client = WindmillTestClient(self.suite_name)
+        email = self.user.email
+        password = self.user.password
+        client.open(url=lpuser.get_basic_login_url(email, password))
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        client.open(url=self.url)
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        return client
+
+
+class InlineEditorWidgetTest(WidgetTest):
     """Test that the inline editor widget is working properly on a page."""
 
     def __init__(self, url, widget_id, expected_value, new_value, name=None,
@@ -155,11 +169,7 @@ class InlineEditorWidgetTest:
         * asserts that the page was updated with the new value;
         * reloads and verifies that the new value sticked.
         """
-        client = WindmillTestClient(self.suite)
-        self.user.ensure_login(client)
-        client.open(url=self.url)
-
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        client = self.getLoggedInClient()
         widget_base = u"//%s[@id='%s']" % (self.widget_tag, self.widget_id)
         client.waits.forElement(
             xpath=widget_base + '/a', timeout=constants.FOR_ELEMENT)
@@ -193,7 +203,7 @@ def search_and_select_picker_widget(client, search_text, result_index):
     picker.click_result_by_number(result_index)
 
 
-class InlinePickerWidgetSearchTest:
+class InlinePickerWidgetSearchTest(WidgetTest):
     """Test that the Picker widget edits a value inline."""
 
     def __init__(self, url, activator_id, search_text, result_index,
@@ -224,12 +234,8 @@ class InlinePickerWidgetSearchTest:
         self.user = user
 
     def __call__(self):
-        client = WindmillTestClient(self.suite)
-        self.user.ensure_login(client)
-
         # Load page.
-        client.open(url=self.url)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        client = self.getLoggedInClient()
 
         # Click on edit button.
         button_xpath = (
@@ -264,7 +270,7 @@ class InlinePickerWidgetSearchTest:
             validator=self.new_value)
 
 
-class InlinePickerWidgetButtonTest:
+class InlinePickerWidgetButtonTest(WidgetTest):
     """Test custom buttons/links added to the Picker."""
 
     def __init__(self, url, activator_id, button_class, new_value,
@@ -293,12 +299,8 @@ class InlinePickerWidgetButtonTest:
             self.__name__ = name
 
     def __call__(self):
-        client = WindmillTestClient(self.suite)
-        self.user.ensure_login(client)
-
         # Load page.
-        client.open(url=self.url)
-        client.waits.forPageLoad(timeout=u'25000')
+        client = self.getLoggedInClient()
 
         # Click on edit button.
         button_xpath = (
@@ -338,7 +340,7 @@ class InlinePickerWidgetButtonTest:
             validator=self.new_value)
 
 
-class FormPickerWidgetTest:
+class FormPickerWidgetTest(WidgetTest):
     """Test that the Picker widget edits a form value properly."""
 
     def __init__(self, url, short_field_name, search_text, result_index,
@@ -371,11 +373,8 @@ class FormPickerWidgetTest:
         self.field_id = 'field.%s' % short_field_name
 
     def __call__(self):
-        client = WindmillTestClient(self.suite)
-        self.user.ensure_login(client)
-
         # Load page.
-        client.open(url=self.url)
+        client = self.getLoggedInClient()
 
         # Click on "Choose" link to show picker for the given field.
         client.waits.forElement(

@@ -22,7 +22,8 @@ class TestBugAlsoAffects(WindmillTestCase):
 
     def setUp(self):
         WindmillTestCase.setUp(self)
-        lpuser.SAMPLE_PERSON.ensure_login(self.client)
+        self.client, start_url = self.getClientFor(
+            '/', user=lpuser.SAMPLE_PERSON)
         self.choose_affected_url = (
                             '%s/tomcat/+bug/3/+choose-affected-product'
                             % BugsWindmillLayer.base_url)

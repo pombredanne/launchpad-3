@@ -42,15 +42,14 @@ class TestDistroSeriesDifferenceExtraJS(WindmillTestCase):
     def test_diff_extra_details_blacklisting(self):
         """A successful request for the extra info updates the display."""
         #login_person(self.diff.owner, 'test', self.client)
-        lpuser.FOO_BAR.ensure_login(self.client)
-        self.client.open(url=self.package_diffs_url)
-        self.client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        self.client.click(link=u'foo')
-        self.client.waits.forElement(
+        client, start_url = self.getClientFor(
+            self.package_diffs_url, user=lpuser.FOO_BAR)
+        client.click(link=u'foo')
+        client.waits.forElement(
             classname=u'diff-extra', timeout=constants.FOR_ELEMENT)
 
-        self.client.click(id=u'field.blacklist_options.1')
-        self.client.waits.forElementProperty(
+        client.click(id=u'field.blacklist_options.1')
+        client.waits.forElementProperty(
             option=u'enabled', id=u'field.blacklist_options.1')
 
         # Reload the diff and ensure it's been updated.
@@ -63,8 +62,8 @@ class TestDistroSeriesDifferenceExtraJS(WindmillTestCase):
             diff_reloaded.status)
 
         # Now set it back so that it's not blacklisted.
-        self.client.click(id=u'field.blacklist_options.0')
-        self.client.waits.forElementProperty(
+        client.click(id=u'field.blacklist_options.0')
+        client.waits.forElementProperty(
             option=u'enabled', id=u'field.blacklist_options.0')
         transaction.commit()
         diff_reloaded = diff_source.getByDistroSeriesAndName(
@@ -74,15 +73,15 @@ class TestDistroSeriesDifferenceExtraJS(WindmillTestCase):
             diff_reloaded.status)
 
         # Finally, add a comment to this difference.
-        self.client.click(link=u'Add comment')
-        self.client.click(
+        client.click(link=u'Add comment')
+        client.click(
             xpath=u"//div[@class='add-comment-placeholder foo']//textarea")
-        self.client.type(
+        client.type(
             xpath=u"//div[@class='add-comment-placeholder foo']//textarea",
             text=u"Here's a comment.")
-        self.client.click(
+        client.click(
             xpath=u"//div[@class='add-comment-placeholder foo']//button")
-        self.client.waits.forElement(
+        client.waits.forElement(
             classname=u'boardComment', timeout=constants.FOR_ELEMENT)
-        self.client.asserts.assertText(
+        client.asserts.assertText(
             classname=u'boardCommentBody', validator=u"Here's a comment.")

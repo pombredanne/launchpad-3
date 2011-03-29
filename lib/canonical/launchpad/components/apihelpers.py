@@ -19,8 +19,10 @@ __all__ = [
     'patch_choice_vocabulary',
     'patch_collection_property',
     'patch_collection_return_type',
+    'patch_entry_explicit_version',
     'patch_plain_parameter_type',
     'patch_list_parameter_type',
+    'patch_operations_explicit_version',
     'patch_reference_property',
     ]
 
