@@ -22,7 +22,7 @@
         please use the <code>deriveDistroSeries</code> API call via the
         web service.
       </p>
-      <div class="unseen" id="init-series-form-container">
+      <div class="unseen" id="initseries-form-container">
         <metal:form use-macro="context/@@launchpad_form/form" />
       </div>
       <script type="text/javascript">

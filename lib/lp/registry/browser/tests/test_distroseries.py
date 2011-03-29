@@ -44,7 +44,7 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
         with feature_flags():
             root = html.fromstring(view())
             self.assertEqual(
-                [], root.cssselect("#init-series-form-container"))
+                [], root.cssselect("#initseries-form-container"))
             # Instead an explanatory message is shown.
             [message] = root.cssselect("p.error.message")
             self.assertIn(
@@ -59,7 +59,7 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
             set_feature_flag(u"soyuz.derived-series-ui.enabled", u"true")
             root = html.fromstring(view())
             self.assertNotEqual(
-                [], root.cssselect("#init-series-form-container"))
+                [], root.cssselect("#initseries-form-container"))
             # A different explanatory message is shown for clients that don't
             # process Javascript.
             [message] = root.cssselect("p.error.message")
