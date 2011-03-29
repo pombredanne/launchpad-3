@@ -14,7 +14,6 @@ __all__ = [
 import cgi
 
 from lazr.restful.interfaces import IJSONRequestCache
-from zope.component import getMultiAdapter
 from zope.publisher.interfaces import NotFound
 
 from canonical.launchpad.webapp import (
@@ -24,7 +23,6 @@ from canonical.launchpad.webapp import (
     NavigationMenu,
     )
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import ILink
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from lp.app.enums import ServiceUsage
@@ -362,7 +360,7 @@ class SourcePackageTranslationSharingDetailsView(
     def edit_branch_link(self, id, icon, text):
         """The HTML link to define or edit a product series branch.
 
-        If a product ls linked to the source package and if the current
+        If a product is linked to the source package and if the current
         user has the permission to define the branch, a real link is
         returned, otherwise a hidden dummy link is returned.
         """
