@@ -12,7 +12,6 @@ __all__ = [
 from debian.changelog import Changelog
 from lazr.enum import DBItem
 from storm.expr import Desc
-
 from storm.locals import (
     And,
     Int,
@@ -221,6 +220,22 @@ class DistroSeriesDifference(Storm):
     def parent_package_diff_url(self):
         """See `IDistroSeriesDifference`."""
         return self._getPackageDiffURL(self.parent_package_diff)
+
+    @property
+    def package_diff_status(self):
+        """See `IDistroSeriesDifference`."""
+        if self.package_diff is None:
+            return None
+        else:
+            return self.package_diff.status
+
+    @property
+    def parent_package_diff_status(self):
+        """See `IDistroSeriesDifference`."""
+        if self.parent_package_diff is None:
+            return None
+        else:
+            return self.parent_package_diff.status
 
     def _getLatestSourcePub(self, for_parent=False):
         """Helper to keep source_pub/parent_source_pub DRY."""

@@ -1941,6 +1941,26 @@ ul.latest-ppa-updates li.BUILDING {
     background-image: url('/@@/processing');
     }
 
+.package-diff-status span.COMPLETED {
+    background-image: url('/@@/packagediff-ok');
+    background-position: 0 0;
+    background-repeat: no-repeat;
+     }
+.package-diff-status span.PENDING {
+    background-image: url('/@@/packagediff-loading');
+    background-position: 0 0;
+    background-repeat: no-repeat;
+    }
+.package-diff-status span.FAILED {
+    background-image: url('/@@/packagediff-failed');
+    background-position: 0 0;
+    background-repeat: no-repeat;
+    }
+.package-diff-status span.request-derived-diff {
+    background-image: url('/@@/packagediff-unknown');
+    background-position: 0 0;
+    background-repeat: no-repeat;
+    }
 
 /* ====
    Code
