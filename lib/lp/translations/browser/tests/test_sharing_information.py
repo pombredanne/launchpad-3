@@ -145,7 +145,8 @@ class TestSharingDetailsLinkMixin:
 
 
 class TestUpstreamPOTemplateSharingInfo(BrowserTestCase,
-                                        TestSharingInfoMixin):
+                                        TestSharingInfoMixin,
+                                        TestSharingDetailsLinkMixin):
     """Test display of template sharing info."""
 
     layer = DatabaseFunctionalLayer
@@ -163,6 +164,12 @@ class TestUpstreamPOTemplateSharingInfo(BrowserTestCase,
 
     SHARING_TEXT = """
         This template is sharing translations with .*"""
+
+    SHARING_DETAILS_SETUP = None
+
+    def getAuthorizedUser(self, potemplate):
+        productseries = potemplate.productseries
+        return self.getAuthorizedUserForProductseries(productseries)
 
 
 class TestPOFileSharingInfo(BrowserTestCase, TestSharingInfoMixin):
