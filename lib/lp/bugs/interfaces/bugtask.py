@@ -1159,7 +1159,7 @@ class BugTaskSearchParams:
                  hardware_is_linked_to_bug=False,
                  linked_branches=None, linked_blueprints=None,
                  structural_subscriber=None, modified_since=None,
-                 created_since=None, exclude_conjoined_tasks=False):
+                 created_since=None, exclude_conjoined_tasks=False, cve=None):
 
         self.bug = bug
         self.searchtext = searchtext
@@ -1207,6 +1207,7 @@ class BugTaskSearchParams:
         self.modified_since = modified_since
         self.created_since = created_since
         self.exclude_conjoined_tasks = exclude_conjoined_tasks
+        self.cve = cve
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
