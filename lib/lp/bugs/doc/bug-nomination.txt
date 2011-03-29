@@ -537,7 +537,7 @@ automatically.
     ...     bug=bug_one, owner=no_privs,
     ...     distribution=ubuntu,
     ...     sourcepackagename=ubuntu_evolution.sourcepackagename)
-    <BugTask at ...>
+    <BugTask ...>
 
     >>> tasks = sorted(
     ...     bug_one.bugtasks, key=by_bugtargetdisplayname)

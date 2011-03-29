@@ -25,7 +25,6 @@ from canonical.launchpad.webapp.interfaces import (
     MASTER_FLAVOR,
     )
 from canonical.lazr.utils import safe_hasattr
-from lp.services.log.loglevels import DEBUG2
 
 
 class LoopTuner:
@@ -138,11 +137,7 @@ class LoopTuner:
                 time_taken = new_clock - last_clock
                 last_clock = new_clock
 
-                # XXX JeroenVermeulen 2011-03-24 bug=741650: call debug2
-                # log method once we've ensured that the root logger has
-                # it.
-                self.log.log(
-                    DEBUG2,
+                self.log.debug2(
                     "Iteration %d (size %.1f): %.3f seconds",
                     iteration, chunk_size, time_taken)
 
@@ -169,10 +164,7 @@ class LoopTuner:
             total_time = last_clock - self.start_time
             average_size = total_size/max(1, iteration)
             average_speed = total_size/max(1, total_time)
-            # XXX JeroenVermeulen 2011-03-24 bug=741650: call debug2 log
-            # method once we've ensured that the root logger has it.
-            self.log.log(
-                DEBUG2,
+            self.log.debug2(
                 "Done. %d items in %d iterations, 3f seconds, "
                 "average size %f (%s/s)",
                 total_size, iteration, total_time, average_size,
