@@ -160,7 +160,7 @@ invalid.
     when importing comments for Bugzilla *TESTING* #123456.
 
 If the poster's e-mail is already registered in Launchpad, the comment
-is associated with the existing account.
+is associated with the existing person.
 
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> no_priv.preferredemail is not None
@@ -178,6 +178,21 @@ is associated with the existing account.
 
     >>> bug.messages[-1].owner.name
     u'no-priv'
+
+This also works if the address is associated with an Account, but not a
+Person. This should only happen when the user has logged into ShipIt but
+not Launchpad. A new Person is created.
+
+    >>> account = factory.makeAccount(email="account-only@example.com")
+    >>> external_bugtracker.poster_tuple = (
+    ...     'Account Only', 'account-only@example.com')
+    >>> external_bugtracker.remote_comments['account-only-comment'] = (
+    ...     "Account-only comment.")
+    >>> bugwatch_updater.importBugComments()
+    INFO:...:Imported 1 comments for remote bug 123456 on ...
+
+    >>> bug.messages[-1].owner.name
+    u'account-only'
 
 It's also possible for Launchpad to create Persons from remote
 bugtracker users when the remote bugtracker doesn't specify an email
