@@ -459,6 +459,7 @@ class DistributionBugsMenu(PillarBugsMenu):
 
     usedfor = IDistribution
     facet = 'bugs'
+
     @property
     def links(self):
         links = [

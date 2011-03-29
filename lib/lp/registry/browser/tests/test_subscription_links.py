@@ -64,7 +64,7 @@ class _TestStructSubs(TestCaseWithFactory):
 
     def create_view(self, user):
         request = LaunchpadTestRequest(
-            PATH_INFO='/', HTTP_COOKIE='',QUERY_STRING='')
+            PATH_INFO='/', HTTP_COOKIE='', QUERY_STRING='')
         request.features = get_relevant_feature_controller()
         return create_initialized_view(
             self.target, self.view, principal=user,
@@ -76,7 +76,6 @@ class _TestStructSubs(TestCaseWithFactory):
             self.target.owner, None)
         self.assertNotEqual(None, old_link, self.contents)
         self.assertEqual(None, new_link, self.contents)
-
 
     def test_subscribe_link_feature_flag_on_owner(self):
         # Test the new subscription link.
@@ -90,7 +89,6 @@ class _TestStructSubs(TestCaseWithFactory):
             self.regular_user, None)
         self.assertNotEqual(None, old_link, self.contents)
         self.assertEqual(None, new_link, self.contents)
-
 
     def test_subscribe_link_feature_flag_on_user(self):
         old_link, new_link = self._create_scenario(
@@ -249,7 +247,6 @@ class TestDistroViewStructSubs(BrowserTestCase):
             self.target.owner, None)
         self.assertEqual(None, old_link, self.contents)
         self.assertEqual(None, new_link, self.contents)
-
 
     def test_subscribe_link_feature_flag_on_owner(self):
         old_link, new_link = self._create_scenario(
@@ -437,7 +434,6 @@ class TestDistroMilestoneViewStructSubs(TestDistroViewStructSubs):
         self.assertNotEqual(None, old_link, self.contents)
         self.assertEqual(None, new_link, self.contents)
 
-
     def test_subscribe_link_feature_flag_on_owner(self):
         old_link, new_link = self._create_scenario(
             self.distro.owner, 'on')
@@ -535,7 +531,6 @@ class TestProductMilestoneViewStructSubs(TestDistroViewStructSubs):
         self.assertNotEqual(None, old_link, self.contents)
         self.assertEqual(None, new_link, self.contents)
 
-
     def test_subscribe_link_feature_flag_on_owner(self):
         old_link, new_link = self._create_scenario(
             self.product.owner, 'on')
@@ -619,5 +614,6 @@ def test_suite():
     suite.addTest(unittest.makeSuite(TestDistroBugsStructSubs))
     suite.addTest(unittest.makeSuite(TestDistroMilestoneViewStructSubs))
     suite.addTest(unittest.makeSuite(TestProductMilestoneViewStructSubs))
-    suite.addTest(unittest.makeSuite(TestProductSeriesMilestoneViewStructSubs))
+    suite.addTest(unittest.makeSuite(
+        TestProductSeriesMilestoneViewStructSubs))
     return suite
