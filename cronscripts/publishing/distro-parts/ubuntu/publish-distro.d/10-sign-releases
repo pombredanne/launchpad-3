@@ -9,7 +9,8 @@ do
     if [ ! -f "$CANDIDATE.gpg" ] || [ "$CANDIDATE" -nt "$CANDIDATE.gpg" ]
     then
         echo "$(date -R): (re-)signing $CANDIDATE"
-        gpg --yes --detach-sign --armor -o "$CANDIDATE.gpg" --sign "$CANDIDATE"
+        gpg --yes --detach-sign --armor -o "$CANDIDATE.gpg" \
+            --sign "$CANDIDATE"
     else
         echo "$(date -R): Not re-signing $CANDIDATE"
     fi

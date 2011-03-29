@@ -486,7 +486,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         script.installDists()
 
         self.assertEqual("new", self.readMarkerFile([dists_root, "marker"]))
-        self.assertEqual( "old", self.readMarkerFile(
+        self.assertEqual("old", self.readMarkerFile(
             [get_distscopy_root(pub_config), "dists", "marker"]))
 
     def test_runCommercialCompat_runs_commercial_compat_script(self):
