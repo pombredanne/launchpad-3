@@ -193,6 +193,7 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services import features
 from lp.services.fields import (
     PillarAliases,
     PublicPersonChoice,
@@ -583,7 +584,22 @@ class ProductActionNavigationMenu(NavigationMenu, ProductEditLinksMixin):
     usedfor = IProductActionMenu
     facet = 'overview'
     title = 'Actions'
-    links = ('edit', 'review_license', 'administer', 'subscribe')
+
+    @property
+    def links(self):
+        links = ['edit', 'review_license', 'administer']
+        use_advanced_features = features.getFeatureFlag(
+            'advanced-structural-subscriptions.enabled')
+        if use_advanced_features:
+            links.append('subscribe_to_bug_mail')
+        else:
+            links.append('subscribe')
+        return links
+
+    @enabled_with_permission('launchpad.AnyPerson')
+    def subscribe_to_bug_mail(self):
+        text = 'Subscribe to bug mail'
+        return Link('#', text, icon='add', hidden=True)
 
 
 class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
