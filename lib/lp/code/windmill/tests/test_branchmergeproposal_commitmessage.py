@@ -6,8 +6,6 @@
 __metaclass__ = type
 __all__ = []
 
-import unittest
-
 import transaction
 
 from lp.code.windmill.testing import CodeWindmillLayer
@@ -60,7 +58,7 @@ class TestCommitMessage(WindmillTestCase):
             xpath=COMMIT_MESSAGE_TEXT, validator=message)
 
         # Confirm that the change was saved.
-        client.open(start_url)
+        client.open(url=start_url)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.asserts.assertText(
             xpath=COMMIT_MESSAGE_TEXT, validator=message)
@@ -104,7 +102,7 @@ class TestQueueStatus(WindmillTestCase):
             validator=u'5')
 
         # Reload the page and make sure the change sticks.
-        client.open(start_url)
+        client.open(url=start_url)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.waits.forElement(
             xpath=u'//td[@id="branchmergeproposal-status-value"]/a',
@@ -112,7 +110,3 @@ class TestQueueStatus(WindmillTestCase):
         client.asserts.assertText(
             xpath=u'//td[@id="branchmergeproposal-status-value"]/a',
             validator=u'Approved')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

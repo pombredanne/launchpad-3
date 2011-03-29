@@ -406,7 +406,7 @@ class POFileTranslatorAndReviewerWorkingMode(WindmillTestCase):
         """
 
         self.client, start_url = self.getClientFor(
-            '%s/evolution/trunk/+pots/evolution-2.2/pt_BR/1/+translate',
+            '/evolution/trunk/+pots/evolution-2.2/pt_BR/1/+translate',
             user=self.test_user)
 
         self._ensureTranslationMode(reviewer=True)
@@ -423,7 +423,7 @@ class POFileTranslatorAndReviewerWorkingMode(WindmillTestCase):
         """
 
         self.client, start_url = self.getClientFor(
-            '%s/evolution/trunk/+pots/evolution-2.2/pt_BR/1/+translate',
+            '/evolution/trunk/+pots/evolution-2.2/pt_BR/1/+translate',
             user=self.test_user)
 
         self._ensureTranslationMode(translator=True)

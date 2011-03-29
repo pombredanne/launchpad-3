@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import unittest
-
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import WindmillTestCase
 from lp.testing.windmill import (
@@ -60,7 +58,3 @@ class TestBugAlsoAffects(WindmillTestCase):
         search_picker_widget(client, 'nonexistant')
         client.waits.forElement(
             link=u'Register it', timeout=constants.FOR_ELEMENT)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

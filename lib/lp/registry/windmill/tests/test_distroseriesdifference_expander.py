@@ -36,14 +36,12 @@ class TestDistroSeriesDifferenceExtraJS(WindmillTestCase):
                 derived='1.15-2ubuntu1derilucid2', parent='1.17-1'))
         transaction.commit()
 
-        self.package_diffs_url = (
-            canonical_url(self.diff.derived_series) + '/+localpackagediffs')
-
     def test_diff_extra_details_blacklisting(self):
         """A successful request for the extra info updates the display."""
         #login_person(self.diff.owner, 'test', self.client)
         client, start_url = self.getClientFor(
-            self.package_diffs_url, user=lpuser.FOO_BAR)
+            '/+localpackagediffs', user=lpuser.FOO_BAR,
+            base_url=canonical_url(self.diff.derived_series))
         client.click(link=u'foo')
         client.waits.forElement(
             classname=u'diff-extra', timeout=constants.FOR_ELEMENT)

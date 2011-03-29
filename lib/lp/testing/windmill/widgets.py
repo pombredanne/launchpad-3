@@ -134,7 +134,7 @@ class InlineEditorWidgetTest(WidgetTest):
     """Test that the inline editor widget is working properly on a page."""
 
     def __init__(self, url, widget_id, expected_value, new_value, name=None,
-                 suite='inline_editor', user=lpuser.NO_PRIV,
+                 suite_name='inline_editor', user=lpuser.NO_PRIV,
                  widget_tag='h1'):
         """Create a new InlineEditorWidgetTest.
 
@@ -155,7 +155,7 @@ class InlineEditorWidgetTest(WidgetTest):
         self.widget_id = widget_id
         self.expected_value = expected_value
         self.new_value = new_value
-        self.suite = suite
+        self.suite_name = suite_name
         self.user = user
         self.widget_tag = widget_tag
 
@@ -207,7 +207,7 @@ class InlinePickerWidgetSearchTest(WidgetTest):
     """Test that the Picker widget edits a value inline."""
 
     def __init__(self, url, activator_id, search_text, result_index,
-                 new_value, name=None, suite='inline_picker_search_test',
+                 new_value, name=None, suite_name='inline_picker_search_test',
                  user=lpuser.FOO_BAR):
         """Create a new InlinePickerSearchWidgetTest.
 
@@ -230,7 +230,7 @@ class InlinePickerWidgetSearchTest(WidgetTest):
         self.search_text = search_text
         self.result_index = result_index
         self.new_value = new_value
-        self.suite = suite
+        self.suite_name = suite_name
         self.user = user
 
     def __call__(self):
@@ -274,7 +274,7 @@ class InlinePickerWidgetButtonTest(WidgetTest):
     """Test custom buttons/links added to the Picker."""
 
     def __init__(self, url, activator_id, button_class, new_value,
-                 name=None, suite='inline_picker_button_test',
+                 name=None, suite_name='inline_picker_button_test',
                  user=lpuser.FOO_BAR):
         """Create a new InlinePickerWidgetButtonTest.
 
@@ -290,7 +290,7 @@ class InlinePickerWidgetButtonTest(WidgetTest):
         self.activator_id = activator_id
         self.button_class = button_class
         self.new_value = new_value
-        self.suite = suite
+        self.suite_name = suite_name
         self.user = user
         if name is None:
             self.__name__ = 'test_%s_inline_picker' % (
@@ -344,7 +344,7 @@ class FormPickerWidgetTest(WidgetTest):
     """Test that the Picker widget edits a form value properly."""
 
     def __init__(self, url, short_field_name, search_text, result_index,
-                 new_value, name=None, suite='form_picker',
+                 new_value, name=None, suite_name='form_picker',
                  user=lpuser.FOO_BAR):
         """Create a new FormPickerWidgetTest.
 
@@ -367,7 +367,7 @@ class FormPickerWidgetTest(WidgetTest):
         self.search_text = search_text
         self.result_index = result_index
         self.new_value = new_value
-        self.suite = suite
+        self.suite_name = suite_name
         self.user = user
         self.choose_link_id = 'show-widget-field-%s' % short_field_name
         self.field_id = 'field.%s' % short_field_name
