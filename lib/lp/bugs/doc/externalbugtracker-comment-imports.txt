@@ -193,6 +193,8 @@ not Launchpad. A new Person is created.
 
     >>> bug.messages[-1].owner.name
     u'account-only'
+    >>> bug.messages[-1].owner.account == account
+    True
 
 It's also possible for Launchpad to create Persons from remote
 bugtracker users when the remote bugtracker doesn't specify an email
