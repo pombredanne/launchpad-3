@@ -14,6 +14,7 @@ The helper functions in this file make that easy.
 __metaclass__ = type
 
 __all__ = [
+    'patch_entry_explicit_version',
     'patch_entry_return_type',
     'patch_choice_parameter_type',
     'patch_choice_vocabulary',
