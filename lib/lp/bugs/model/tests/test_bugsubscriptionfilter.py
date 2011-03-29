@@ -70,6 +70,33 @@ class TestBugSubscriptionFilter(TestCaseWithFactory):
         self.assertEqual(u"foo", bug_subscription_filter.other_parameters)
         self.assertEqual(u"bar", bug_subscription_filter.description)
 
+    def test_description(self):
+        """Test the description property."""
+        bug_subscription_filter = BugSubscriptionFilter()
+        bug_subscription_filter.description = u"foo"
+        self.assertEqual(u"foo", bug_subscription_filter.description)
+
+    def test_description_xss_safeguard_tags(self):
+        """Test that description property disallows a HTML tags."""
+        bug_subscription_filter = BugSubscriptionFilter()
+        self.assertRaises(ValueError,
+                          setattr, bug_subscription_filter, 'description',
+                          u'<script>')
+
+    def test_description_xss_safeguard_ampersand(self):
+        """description property disallows a few HTML characters."""
+        bug_subscription_filter = BugSubscriptionFilter()
+        self.assertRaises(ValueError,
+                          setattr, bug_subscription_filter, 'description',
+                          u'test & blow up')
+
+    def test_description_xss_safeguard_quote(self):
+        """description property disallows a few HTML characters."""
+        bug_subscription_filter = BugSubscriptionFilter()
+        self.assertRaises(ValueError,
+                          setattr, bug_subscription_filter, 'description',
+                          u'test "double" quotes')
+
     def test_defaults(self):
         """Test the default values of `BugSubscriptionFilter` objects."""
         # Create.
