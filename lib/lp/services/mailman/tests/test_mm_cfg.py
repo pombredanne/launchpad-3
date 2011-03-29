@@ -139,20 +139,25 @@ class TestMMCfgLaunchpadConfigTestCase(TestCase):
         self.assertTrue('-add' in mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
         self.assertTrue('-spammode' in mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
         self.assertTrue('-umask 022'in mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
-        dbfile = (
-            '-dbfile '
-            '/var/tmp/mailman/archives/private/%(listname)s.mbox/mhonarc.db')
-        self.assertTrue(dbfile in mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
-        outdir = '-outdir /var/tmp/mailman/mhonarc/%(listname)s'
-        self.assertTrue(outdir in mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
-        definevar = '-definevar ML-NAME=%(listname)s'
-        self.assertTrue(definevar in mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
-        rcfile = '-rcfile /var/tmp/mailman/data/lp-mhonarc-common.mrc'
-        self.assertTrue(rcfile in mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
-        stderr = '-stderr /var/tmp/mailman/logs/mhonarc'
-        self.assertTrue(stderr in mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
-        stdout = '-stdout /var/tmp/mailman/logs/mhonarc'
-        self.assertTrue(stdout in mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            '-dbfile /var/tmp'
+            '/mailman/archives/private/%\(listname\)s.mbox/mhonarc.db',
+            mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            '-outdir /var/tmp/mailman/mhonarc/%\(listname\)s',
+            mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            '-definevar ML-NAME=%\(listname\)s',
+            mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            '-rcfile /var/tmp/mailman/data/lp-mhonarc-common.mrc',
+            mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            '-stderr /var/tmp/mailman/logs/mhonarc',
+            mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            '-stdout /var/tmp/mailman/logs/mhonarc',
+            mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
         self.assertEqual(
             mm_cfg.PRIVATE_EXTERNAL_ARCHIVER, mm_cfg.PUBLIC_EXTERNAL_ARCHIVER)
 
