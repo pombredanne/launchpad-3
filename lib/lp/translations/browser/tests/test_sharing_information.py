@@ -208,11 +208,10 @@ class TestDummyPOFileSharingInfo(BrowserTestCase, TestSharingInfoMixin):
     SHARING_TEXT = """
         These translations are shared with .*"""
 
-    def getAuthorizedUser(self, productseries):
-        return None
 
-
-class TestUpstreamSharingInfo(BrowserTestCase, TestSharingInfoMixin):
+class TestUpstreamSharingInfo(BrowserTestCase,
+                              TestSharingInfoMixin,
+                              TestSharingDetailsLinkMixin):
     """Test display of product series sharing info."""
 
     layer = DatabaseFunctionalLayer
@@ -227,11 +226,16 @@ class TestUpstreamSharingInfo(BrowserTestCase, TestSharingInfoMixin):
         package."""
 
     def makeSharingObject(self):
-        template = self._makePackagingAndTemplates(TranslationSide.UPSTREAM)
-        return template.productseries
+        packaging = self.factory.makePackagingLink(in_ubuntu=True)
+        return packaging.productseries
 
     SHARING_TEXT = """
         This project series is sharing translations with .*"""
+
+    SHARING_DETAILS_SETUP = None
+
+    def getAuthorizedUser(self, productseries):
+        return self.getAuthorizedUserForProductseries(productseries)
 
 
 class TestUbuntuPOTemplateSharingInfo(BrowserTestCase,
@@ -281,9 +285,8 @@ class TestUbuntuSharingInfo(BrowserTestCase,
         project."""
 
     def makeSharingObject(self):
-        template = self._makePackagingAndTemplates(TranslationSide.UBUNTU)
-        enable_translations_on_distroseries(template.distroseries)
-        return template.sourcepackage
+        packaging = self.factory.makePackagingLink(in_ubuntu=True)
+        return packaging.sourcepackage
 
     SHARING_TEXT = """
         This source package is sharing translations with .*"""
