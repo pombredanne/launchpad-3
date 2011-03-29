@@ -12,25 +12,39 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.testing.layers import LaunchpadZopelessLayer
+from canonical.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
     pocketsuffix,
     )
 from lp.services.log.logger import DevNullLogger
+from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.services.utils import file_exists
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
     )
-from lp.soyuz.scripts.publish_ftpmaster import PublishFTPMaster
+from lp.soyuz.scripts.publish_ftpmaster import (
+    compose_env_string,
+    compose_shell_boolean,
+    find_run_parts_dir,
+    PublishFTPMaster,
+    )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     run_script,
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
+
+
+def path_exists(*path_components):
+    """Does the given file or directory exist?"""
+    return file_exists(os.path.join(*path_components))
 
 
 def name_spph_suite(spph):
@@ -58,7 +72,82 @@ def get_distscopy_root(pub_config):
     return get_archive_root(pub_config) + "-distscopy"
 
 
-class TestPublishFTPMaster(TestCaseWithFactory):
+def get_run_parts_path():
+    """Get relative path to run-parts location the Launchpad source."""
+    return os.path.join("cronscripts", "publishing", "distro-parts")
+
+
+class HelpersMixin:
+    """Helpers for the PublishFTPMaster tests."""
+
+    def enableRunParts(self, parts_directory=None):
+        """Set up for run-parts execution.
+
+        :param parts_directory: Base location for the run-parts
+            directories.  If omitted, the run-parts directory from the
+            Launchpad source tree will be used.
+        """
+        if parts_directory is None:
+            parts_directory = get_run_parts_path()
+
+        config.push("run-parts", dedent("""\
+            [archivepublisher]
+            run_parts_location: %s
+            """ % parts_directory))
+
+        self.addCleanup(config.pop, "run-parts")
+
+
+class TestPublishFTPMasterHelpers(TestCaseWithFactory, HelpersMixin):
+    layer = ZopelessDatabaseLayer
+
+    def test_compose_env_string_iterates_env(self):
+        env = {
+            "A": "1",
+            "B": "2",
+        }
+        env_string = compose_env_string(env)
+        self.assertIn(env_string, ["A=1 B=2", "B=2 A=1"])
+
+    def test_compose_shell_boolean_shows_True_as_yes(self):
+        self.assertEqual("yes", compose_shell_boolean(True))
+
+    def test_compose_shell_boolean_shows_False_as_no(self):
+        self.assertEqual("no", compose_shell_boolean(False))
+
+    def test_find_run_parts_dir_finds_relative_runparts_directory(self):
+        self.enableRunParts()
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        self.assertEqual(
+            os.path.join(
+                config.root, get_run_parts_path(), "ubuntu", "finalize.d"),
+            find_run_parts_dir(ubuntu, "finalize.d"))
+
+    def test_find_run_parts_dir_finds_absolute_runparts_directory(self):
+        self.enableRunParts(os.path.join(config.root, get_run_parts_path()))
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        self.assertEqual(
+            os.path.join(
+                config.root, get_run_parts_path(), "ubuntu", "finalize.d"),
+                find_run_parts_dir(ubuntu, "finalize.d"))
+
+    def test_find_run_parts_dir_ignores_blank_config(self):
+        self.enableRunParts("")
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        self.assertIs(None, find_run_parts_dir(ubuntu, "finalize.d"))
+
+    def test_find_run_parts_dir_ignores_none_config(self):
+        self.enableRunParts("none")
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        self.assertIs(None, find_run_parts_dir(ubuntu, "finalize.d"))
+
+    def test_find_run_parts_dir_ignores_nonexistent_directory(self):
+        self.enableRunParts()
+        distro = self.factory.makeDistribution()
+        self.assertIs(None, find_run_parts_dir(distro, "finalize.d"))
+
+
+class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
     layer = LaunchpadZopelessLayer
 
     # Location of shell script.
@@ -144,9 +233,8 @@ class TestPublishFTPMaster(TestCaseWithFactory):
     def test_produces_listings(self):
         distro = self.getDistro()
         self.makeScript(distro).main()
-        listing = os.path.join(
-            get_archive_root(get_pub_config(distro)), 'ls-lR.gz')
-        self.assertTrue(file_exists(listing))
+        self.assertTrue(
+            path_exists(get_archive_root(get_pub_config(distro)), 'ls-lR.gz'))
 
     def test_publishes_package(self):
         test_publisher = SoyuzTestPublisher()
@@ -171,12 +259,10 @@ class TestPublishFTPMaster(TestCaseWithFactory):
         overrides = os.path.join(
             archive_root + '-overrides', distroseries.name + '_main_source')
         self.assertEqual(dsc, file(overrides).read().rstrip())
-        sources = os.path.join(
-            dists_root, distroseries.name, 'main', 'source', 'Sources.gz')
-        self.assertTrue(file_exists(sources))
-        sources = os.path.join(
-            dists_root, distroseries.name, 'main', 'source', 'Sources.bz2')
-        self.assertTrue(file_exists(sources))
+        self.assertTrue(path_exists(
+            dists_root, distroseries.name, 'main', 'source', 'Sources.gz'))
+        self.assertTrue(path_exists(
+            dists_root, distroseries.name, 'main', 'source', 'Sources.bz2'))
 
         distcopyseries = os.path.join(dists_root, distroseries.name)
         release = self.readReleaseFile(
@@ -313,10 +399,10 @@ class TestPublishFTPMaster(TestCaseWithFactory):
         dists_root = get_dists_root(get_pub_config(distro))
         os.makedirs(dists_root)
         os.makedirs(dists_root + ".new")
-        old_file = os.path.join(dists_root + ".new", "old-file")
-        self.writeMarkerFile([old_file], "old-file")
+        old_file = [dists_root + ".new", "old-file"]
+        self.writeMarkerFile(old_file, "old-file")
         script.rsyncNewDists(ArchivePurpose.PRIMARY)
-        self.assertFalse(file_exists(old_file))
+        self.assertFalse(path_exists(*old_file))
 
     def test_setUpDirs_creates_directory_structure(self):
         distro = self.getDistro()
@@ -444,36 +530,149 @@ class TestPublishFTPMaster(TestCaseWithFactory):
         pass
 
     def test_clearEmptyDirs_cleans_up_empty_directories(self):
-        pass
+        distro = self.getDistro()
+        script = self.makeScript(distro)
+        script.setUp()
+        script.setUpDirs()
+        empty_dir = os.path.join(
+            get_dists_root(get_pub_config(distro)), 'empty-dir')
+        os.makedirs(empty_dir)
+        script.clearEmptyDirs()
+        self.assertFalse(file_exists(empty_dir))
 
     def test_clearEmptyDirs_does_not_clean_up_nonempty_directories(self):
-        pass
+        distro = self.getDistro()
+        script = self.makeScript(distro)
+        script.setUp()
+        script.setUpDirs()
+        nonempty_dir = os.path.join(
+            get_dists_root(get_pub_config(distro)), 'nonempty-dir')
+        os.makedirs(nonempty_dir)
+        self.writeMarkerFile([nonempty_dir, "placeholder"], "Data here!")
+        script.clearEmptyDirs()
+        self.assertTrue(file_exists(nonempty_dir))
 
     def test_processOptions_finds_distribution(self):
-        pass
+        distro = self.getDistro()
+        script = self.makeScript(distro)
+        script.processOptions()
+        self.assertEqual(distro.name, script.options.distribution)
+        self.assertEqual(distro, script.distribution)
 
     def test_processOptions_complains_about_unknown_distribution(self):
-        pass
+        script = self.makeScript()
+        script.options.distribution = self.factory.getUniqueString()
+        self.assertRaises(LaunchpadScriptFailure, script.processOptions)
 
     def test_runParts_runs_parts(self):
-        pass
+        self.enableRunParts()
+        script = self.makeScript(self.getDistro(use_ubuntu=True))
+        script.setUp()
+        script.executeShell = FakeMethod()
+        script.runParts("finalize.d", {})
+        self.assertEqual(1, script.executeShell.call_count)
+        args, kwargs = script.executeShell.calls[-1]
+        command_line, = args
+        self.assertIn("run-parts", command_line)
+        self.assertIn(
+            "cronscripts/publishing/distro-parts/ubuntu/finalize.d",
+            command_line)
+
+    def test_runParts_passes_parameters(self):
+        self.enableRunParts()
+        script = self.makeScript(self.getDistro(use_ubuntu=True))
+        script.setUp()
+        script.executeShell = FakeMethod()
+        key = self.factory.getUniqueString()
+        value = self.factory.getUniqueString()
+        script.runParts("finalize.d", {key: value})
+        args, kwargs = script.executeShell.calls[-1]
+        command_line, = args
+        self.assertIn("%s=%s" % (key, value), command_line)
+
+    def test_executeShell_executes_shell_command(self):
+        distro = self.getDistro()
+        script = self.makeScript(distro)
+        marker = os.path.join(
+            get_pub_config(distro).root_dir, "marker")
+        script.executeShell("touch %s" % marker)
+        self.assertTrue(file_exists(marker))
+
+    def test_executeShell_reports_failure_if_requested(self):
+        distro = self.getDistro()
+        script = self.makeScript(distro)
+
+        class ArbitraryFailure(Exception):
+            """Some exception that's not likely to come from elsewhere."""
+
+        self.assertRaises(
+            ArbitraryFailure,
+            script.executeShell, "/bin/false", failure=ArbitraryFailure())
+
+    def test_executeShell_does_not_report_failure_if_not_requested(self):
+        distro = self.getDistro()
+        script = self.makeScript(distro)
+        # The test is that this does not fail:
+        script.executeShell("/bin/false")
 
     def test_runFinalizeParts_passes_parameters(self):
-        pass
+        script = self.makeScript(self.getDistro(use_ubuntu=True))
+        script.setUp()
+        script.runParts = FakeMethod()
+        script.runFinalizeParts(security_only=True)
+        args, kwargs = script.runParts.calls[0]
+        parts_dir, env = args
+        self.assertEqual("yes", env["SECURITY_UPLOAD_ONLY"])
 
-    def test_publishSecurityUploads_XXX(self):
-        pass
-    def test_publishSecurityUploads_XXX(self):
-        pass
-    def test_publishSecurityUploads_XXX(self):
-        pass
+    def test_publishSecurityUploads_skips_pub_if_no_security_updates(self):
+        script = self.makeScript(self.getDistro())
+        script.setUp()
+        script.setUpDirs()
+        script.installDists = FakeMethod()
+        script.publishSecurityUploads()
+        self.assertEqual(0, script.installDists.call_count)
+
+    def test_publishSecurityUploads_runs_finalize_parts(self):
+        distro = self.getDistro()
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=self.factory.makeDistroSeries(distribution=distro),
+            pocket=PackagePublishingPocket.SECURITY)
+        script = self.makeScript(distro)
+        script.setUp()
+        script.setUpDirs()
+        script.runFinalizeParts = FakeMethod()
+        script.publishSecurityUploads()
+        self.assertEqual(1, script.runFinalizeParts.call_count)
+        args, kwargs = script.runFinalizeParts.calls[0]
+        self.assertTrue(kwargs["security_only"])
 
     def test_publishAllUploads_publishes_all_distro_archives(self):
-        pass
+        distro = self.getDistro()
+        distroseries = self.factory.makeDistroSeries(distribution=distro)
+        partner_archive = self.factory.makeArchive(
+            distribution=distro, purpose=ArchivePurpose.PARTNER)
+        for archive in distro.all_distro_archives:
+            self.factory.makeSourcePackagePublishingHistory(
+                distroseries=distroseries,
+                archive=archive)
+        script = self.makeScript(distro)
+        script.setUp()
+        script.setUpDirs()
+        script.publishDistroArchive = FakeMethod()
+        script.publishAllUploads()
+        published_archives = [
+            args[0] for args, kwargs in script.publishDistroArchive.calls]
 
-    def test_publishAllUploads_XXX(self):
-        pass
-    def test_publishAllUploads_XXX(self):
-        pass
-    def test_publishAllUploads_XXX(self):
-        pass
+        self.assertContentEqual(
+            distro.all_distro_archives, published_archives)
+        self.assertIn(distro.main_archive, published_archives)
+        self.assertIn(partner_archive, published_archives)
+
+    def test_publishAllUploads_runs_finalize_parts(self):
+        distro = self.getDistro()
+        script = self.makeScript(distro)
+        script.setUp()
+        script.setUpDirs()
+        script.runFinalizeParts = FakeMethod()
+        script.publishAllUploads()
+        self.assertEqual(1, script.runFinalizeParts.call_count)

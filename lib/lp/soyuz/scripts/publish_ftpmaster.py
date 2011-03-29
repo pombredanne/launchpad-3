@@ -38,6 +38,20 @@ ARCHIVE_SUFFIXES = {
 }
 
 
+def compose_shell_boolean(boolean_value):
+    """Represent a boolean value as "yes" or "no"."""
+    boolean_text = {
+        True: "yes",
+        False: "no",
+    }
+    return boolean_text[boolean_value]
+
+
+def compose_env_string(env):
+    """Turn a dict into a series of shell parameter assignments."""
+    return ' '.join(['='.join(pair) for pair in env.iteritems()])
+
+
 def get_distscopyroot(archive_config):
     """Return the distscopy root directory for `archive_config`."""
     return archive_config.archiveroot + "-distscopy"
@@ -48,6 +62,26 @@ class StoreArgument:
 
     def __call__(self, argument):
         self.argument = argument
+
+
+def find_run_parts_dir(distro, parts):
+    """Find the requested run-parts directory, if it exists."""
+    run_parts_location = config.archivepublisher.run_parts_location
+    if not run_parts_location:
+        return
+
+    if run_parts_location.startswith("/"):
+        # Absolute path.
+        base_dir = run_parts_location
+    else:
+        # Relative path.
+        base_dir = os.path.join(config.root, run_parts_location)
+
+    parts_dir = os.path.join(base_dir, distro.name, parts)
+    if file_exists(parts_dir):
+        return parts_dir
+    else:
+        return None
 
 
 class PublishFTPMaster(LaunchpadCronScript):
@@ -62,6 +96,24 @@ class PublishFTPMaster(LaunchpadCronScript):
         self.parser.add_option(
             '-s', '--security-only', dest='security_only',
             action='store_true', default=False, help="Security upload only.")
+
+    def executeShell(self, command_line, failure=None):
+        """Run `command_line` through a shell.
+
+        This won't just load an external program and run it; the command
+        line goes through the full shell treatment including variable
+        substitutions, output redirections, and so on.
+
+        :param command_line: Shell command.
+        :param failure: Raise `failure` as an exception if the shell
+            command returns a nonzero value.  If omitted, nonzero return
+            values are ignored.
+        """
+        self.logger.debug("Executing: %s" % command_line)
+        retval = os.system(command_line)
+        if retval != 0 and failure is not None:
+            self.logger.debug("Command failed: %s" % failure)
+            raise failure
 
     def getArchives(self):
         """Find archives for `self.distribution` that should be published."""
@@ -220,24 +272,6 @@ class PublishFTPMaster(LaunchpadCronScript):
             dists = os.path.join(get_distscopyroot(archive_config), "dists")
             os.rename(archive_config.distsroot + ".old", dists)
 
-    def executeShell(self, command_line, failure=None):
-        """Run `command_line` through a shell.
-
-        This won't just load an external program and run it; the command
-        line goes through the full shell treatment including variable
-        substitutions, output redirections, and so on.
-
-        :param command_line: Shell command.
-        :param failure: Raise `failure` as an exception if the shell
-            command returns a nonzero value.  If omitted, nonzero return
-            values are ignored.
-        """
-        self.logger.debug("Executing: %s" % command_line)
-        retval = os.system(command_line)
-        if retval != 0 and failure is not None:
-            self.logger.debug("Command failed: %s" % failure)
-            raise failure
-
     def runCommercialCompat(self):
         """Generate the -commercial pocket.
 
@@ -304,24 +338,18 @@ class PublishFTPMaster(LaunchpadCronScript):
         :param env: A dict of environment variables to pass to the
             scripts in the run-parts directory.
         """
-        parts_dir = os.path.join(
-            config.root, 'cronscripts', 'publishing', 'distro-parts',
-            config.instance_name, self.distribution.name, parts)
-        if not file_exists(parts_dir):
+        parts_dir = find_run_parts_dir(self.distribution, parts)
+        if parts_dir is None:
+            self.logger.debug("Skipping run-parts %s: not configured.", parts)
             return
-        env_string = ' '.join(['='.join(pair for pair in env.iteritems())])
         self.executeShell(
-            "%s run-parts -- '%s'" % (env_string, parts_dir),
+            "%s run-parts -- '%s'" % (compose_env_string(env), parts_dir),
             failure=LaunchpadScriptFailure(
                 "Failure while executing run-parts %s." % parts_dir))
 
     def runFinalizeParts(self, security_only=False):
         """Run the finalize.d parts to finalize publication."""
-        boolean_text = {
-            True: "yes",
-            False: "no",
-        }
-        env = {'SECURITY_UPLOAD_ONLY': boolean_text[security_only]}
+        env = {'SECURITY_UPLOAD_ONLY': compose_shell_boolean(security_only)}
         self.runParts('finalize.d', env)
 
     def publishSecurityUploads(self):
