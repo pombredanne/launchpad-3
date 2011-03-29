@@ -66,6 +66,18 @@ class TestSharingInfoMixin:
         """Get a user that is authorized to edit sharing details on obj."""
         raise NotImplementedError
 
+    def getAuthorizedUserForProductseries(self, productseries):
+        """Get a user that has Edit rights on productseries.
+
+        If productseries is None, return an arbritrary user. Used by
+        implementations of getAuthorizedUser.
+        """
+        logged_in_user = self.factory.makePerson(password='test')
+        if productseries is not None:
+            with celebrity_logged_in('admin'):
+                productseries.product.owner = logged_in_user
+        return logged_in_user
+
     def _test_sharing_information(self, obj,
                                   id_under_test, expected_text,
                                   authorized=False):
@@ -247,14 +259,13 @@ class TestUbuntuPOTemplateSharingInfo(BrowserTestCase,
         This template is sharing translations with .*"""
 
     def getAuthorizedUser(self, potemplate):
-        with celebrity_logged_in('admin'):
-            potemplate.distroseries.owner = self.factory.makePerson(
-                password='test')
-        return potemplate.distroseries.owner
+        productseries = potemplate.sourcepackage.productseries
+        return self.getAuthorizedUserForProductseries(productseries)
 
 
 class TestUbuntuSharingInfo(BrowserTestCase,
-                            TestSharingInfoMixin, TestSharingDetailsLinkMixin):
+                            TestSharingInfoMixin,
+                            TestSharingDetailsLinkMixin):
     """Test display of source package sharing info."""
 
     layer = DatabaseFunctionalLayer
@@ -278,7 +289,5 @@ class TestUbuntuSharingInfo(BrowserTestCase,
         This source package is sharing translations with .*"""
 
     def getAuthorizedUser(self, sourcepackage):
-        with celebrity_logged_in('admin'):
-            sourcepackage.distroseries.owner = self.factory.makePerson(
-                password='test')
-        return sourcepackage.distroseries.owner
+        productseries = sourcepackage.productseries
+        return self.getAuthorizedUserForProductseries(productseries)
