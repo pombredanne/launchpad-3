@@ -158,6 +158,7 @@ class TestMMCfgLaunchpadConfigTestCase(TestCase):
 
 
 class TestMHonArchMRC(TestCase):
+    """Test the archive configuration."""
 
     layer = FunctionalLayer
 
@@ -170,6 +171,7 @@ class TestMHonArchMRC(TestCase):
             self.mrc = mrc_file.read()
 
     def test_html_disabled(self):
+        # HTML messages are ignored because of CVE-2010-4524.
         mime_excs = (
             '<MIMEExcs> '
             'text/html '
