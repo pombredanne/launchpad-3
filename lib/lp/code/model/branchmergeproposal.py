@@ -648,20 +648,19 @@ class BranchMergeProposal(SQLBase):
     def getUnlandedSourceBranchRevisions(self):
         """See `IBranchMergeProposal`."""
         store = Store.of(self)
-        SourceRevision = ClassAlias(BranchRevision)
-        TargetRevision = ClassAlias(BranchRevision)
-        target_join = LeftJoin(
-            TargetRevision, And(
-                SourceRevision.branch_id == self.target_branch.id,
-                TargetRevision.branch_id == self.target_branch.id,
-                TargetRevision.revision_id == SourceRevision.revision_id))
-        origin = [SourceRevision, target_join]
-        result = store.using(*origin).find(
-            SourceRevision,
-            SourceRevision.branch_id == self.source_branch.id,
-            SourceRevision.sequence != None,
-            TargetRevision.branch_id == None)
-        return result.order_by(Desc(SourceRevision.sequence)).config(limit=10)
+        source = SQL("""source AS (SELECT BranchRevision.branch,
+            BranchRevision.revision, Branchrevision.sequence FROM
+            BranchRevision WHERE BranchRevision.branch = %s and
+            BranchRevision.sequence IS NOT NULL ORDER BY BranchRevision.branch
+            DESC, BranchRevision.sequence DESC
+            LIMIT 10)""" % self.source_branch.id)
+        where = SQL("""BranchRevision.revision NOT IN (SELECT revision from
+            BranchRevision AS target where target.branch = %s and
+            BranchRevision.revision = target.revision)""" % self.target_branch.id)
+        using = SQL("""source as BranchRevision""")
+        revisions = store.with_(source).using(using).find(BranchRevision, where)
+        return list(revisions.order_by(
+            Desc(BranchRevision.sequence)).config(limit=10))
 
     def createComment(self, owner, subject, content=None, vote=None,
                       review_type=None, parent=None, _date_created=DEFAULT,
