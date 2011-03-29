@@ -2,7 +2,48 @@
 -- GNU Affero General Public License version 3 (see the file LICENSE).
 SET client_min_messages=ERROR;
 
+-- Make the existing primary key index think it is not the primary key.
+UPDATE pg_index SET indisprimary = FALSE
+FROM pg_class
+WHERE pg_class.oid = pg_index.indexrelid
+    AND relname='branchrevision_pkey';
+
+-- Make an existing index think it is the primary key.
+UPDATE pg_index SET indisprimary = TRUE
+FROM pg_class
+WHERE
+    pg_class.oid = pg_index.indexrelid
+    AND relname='revision__revision__branch__key';
+
+-- Update the primary key constraint to point to the new index.
+UPDATE pg_constraint SET
+    conname='revision__revision__branch__key',
+    conkey='{4,3}'
+FROM pg_class
+WHERE pg_class.oid = pg_constraint.conrelid
+    AND contype='p'
+    AND relname='branchrevision';
+
+-- The primary key constraint now depends on the new index
+UPDATE pg_depend
+    SET objid=(
+            SELECT indexrelid FROM pg_index, pg_class
+            WHERE
+                pg_index.indexrelid = pg_class.oid
+                AND relname='revision__revision__branch__key')
+WHERE refobjid = (
+    SELECT pg_constraint.oid FROM pg_constraint, pg_class
+    WHERE 
+        pg_class.oid = pg_constraint.conrelid
+        AND contype='p'
+        AND relname='branchrevision');
+
+
+-- Strip the unnecessary crud.
 DROP VIEW RevisionNumber;
-ALTER TABLE BranchRevision DROP COLUMN id;
+ALTER TABLE BranchRevision
+    DROP COLUMN id,
+    DROP CONSTRAINT revision__branch__revision__key;
+DROP INDEX revisionnumber_pkey;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
