@@ -278,12 +278,11 @@ from lp.registry.vocabularies import MilestoneVocabulary
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import (
     cachedproperty,
-    get_property_cache,
     )
 
 
 DISPLAY_BUG_STATUS_FOR_PATCHES = {
-    BugTaskStatus.NEW:  True,
+    BugTaskStatus.NEW: True,
     BugTaskStatus.INCOMPLETE: True,
     BugTaskStatus.INVALID: False,
     BugTaskStatus.WONTFIX: False,
@@ -293,7 +292,7 @@ DISPLAY_BUG_STATUS_FOR_PATCHES = {
     BugTaskStatus.FIXCOMMITTED: True,
     BugTaskStatus.FIXRELEASED: False,
     BugTaskStatus.UNKNOWN: False,
-    BugTaskStatus.EXPIRED: False
+    BugTaskStatus.EXPIRED: False,
     }
 
 
@@ -2346,7 +2345,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user)
-
 
     @property
     def columns_to_show(self):
