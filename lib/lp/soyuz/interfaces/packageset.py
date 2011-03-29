@@ -353,9 +353,8 @@ class IPackageset(IPackagesetViewOnly, IPackagesetEdit):
     export_as_webservice_entry(publish_web_link=False)
 
 
-class IPackagesetSet(Interface):
-    """An interface for multiple package sets."""
-    export_as_webservice_collection(IPackageset)
+class IPackagesetSetEdit(Interface):
+    """Multiple package sets operations requiring `launchpad.Edit`."""
 
     @operation_parameters(
         name=TextLine(title=_('Valid package set name'), required=True),
@@ -390,6 +389,11 @@ class IPackagesetSet(Interface):
             exists in `distroseries` already.
         :return: a newly created `IPackageset`.
         """
+
+
+class IPackagesetSet(IPackagesetSetEdit):
+    """An interface for multiple package sets."""
+    export_as_webservice_collection(IPackageset)
 
     @operation_parameters(
         name=TextLine(title=_('Package set name'), required=True),
