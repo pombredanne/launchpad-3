@@ -126,9 +126,9 @@
     </div>
 
     <tal:side metal:fill-slot="side"
-      define="overview_menu context/menu:overview"
-      condition="overview_menu/subscribe_to_bug_mail/enabled|nothing">
-      <div id="global-actions" class="portlet">
+      define="overview_menu context/menu:overview">
+      <div id="global-actions" class="portlet"
+           condition="overview_menu/subscribe_to_bug_mail/enabled|overview_menu/subscribe/enabled|nothing">
         <ul>
           <li tal:condition="overview_menu/edit/enabled">
             <a tal:replace="structure overview_menu/edit/fmt:link" />
@@ -139,10 +139,10 @@
           <li tal:condition="overview_menu/reassign/enabled">
             <a tal:replace="structure overview_menu/reassign/fmt:link" />
           </li>
-          <li tal:condition="overview_menu/subscribe/enabled">
+          <li tal:condition="overview_menu/subscribe/enabled|nothing">
             <a tal:replace="structure overview_menu/subscribe/fmt:link" />
           </li>
-          <li tal:condition="overview_menu/subscribe_to_bug_mail/enabled">
+          <li tal:condition="overview_menu/subscribe_to_bug_mail/enabled|nothing">
             <a tal:replace="structure overview_menu/subscribe_to_bug_mail/fmt:link" />
           </li>
         </ul>
