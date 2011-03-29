@@ -53,6 +53,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.parent.nominatedarchindep = self.parent_das
         getUtility(ISourcePackageFormatSelectionSet).add(
             self.parent, SourcePackageFormat.FORMAT_1_0)
+        self.parent.backports_not_automatic = True
         self._populate_parent()
 
     def _populate_parent(self):
@@ -153,10 +154,12 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             self.parent[self.parent_das.architecturetag],
             self.parent.main_archive)
         self.assertEqual(parent_udev.id, child_udev.id)
-        # We also inherient the permitted source formats from our parent
+        # We also inherit the permitted source formats from our parent
         self.assertTrue(
             child.isSourcePackageFormatPermitted(
             SourcePackageFormat.FORMAT_1_0))
+        # Other configuration bits are copied too.
+        self.assertTrue(child.backports_not_automatic)
 
     def _full_initialise(self, arches=(), packagesets=(), rebuild=False):
         child = self.factory.makeDistroSeries(parent_series=self.parent)
@@ -334,4 +337,5 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.assertEqual(process.returncode, 0)
         self.assertTrue(
             "DEBUG   Committing transaction." in stderr.split('\n'))
+        transaction.commit()
         self.assertDistroSeriesInitialisedCorrectly(child)

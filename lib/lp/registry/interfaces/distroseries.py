@@ -344,6 +344,14 @@ class IDistroSeriesPublic(
     language_packs = Attribute(
         "All language packs associated with this distribution series.")
 
+    backports_not_automatic = Bool(
+        title=_("Don't upgrade to backports automatically"), required=True,
+        description=_("""
+            Set NotAutomatic: yes and ButAutomaticUpgrades: yes in Release
+            files generated for the backports pocket. This tells apt to
+            automatically upgrade within backports, but not into it.
+            """))
+
     # other properties
     previous_series = Attribute("Previous series from the same "
         "distribution.")

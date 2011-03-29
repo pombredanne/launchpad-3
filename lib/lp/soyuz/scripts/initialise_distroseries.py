@@ -127,9 +127,14 @@ class InitialiseDistroSeries:
             raise InitialisationError(error)
 
     def initialise(self):
+        self._copy_configuration()
         self._copy_architectures()
         self._copy_packages()
         self._copy_packagesets()
+
+    def _copy_configuration(self):
+        self.distroseries.backports_not_automatic = \
+            self.parent.backports_not_automatic
 
     def _copy_architectures(self):
         include = ''
