@@ -349,7 +349,15 @@ class PublishFTPMaster(LaunchpadCronScript):
 
     def runFinalizeParts(self, security_only=False):
         """Run the finalize.d parts to finalize publication."""
-        env = {'SECURITY_UPLOAD_ONLY': compose_shell_boolean(security_only)}
+        env = {
+            'SECURITY_UPLOAD_ONLY': compose_shell_boolean(security_only),
+            'PRIMARY_ARCHIVEROOT':
+                self.configs[ArchivePurpose.PRIMARY].archiveroot,
+            'ARCHIVEROOTS':
+                ' '.join([
+                    archive_config.archiveroot
+                    for archive_config in self.configs.itervalues()]),
+        }
         self.runParts('finalize.d', env)
 
     def publishSecurityUploads(self):

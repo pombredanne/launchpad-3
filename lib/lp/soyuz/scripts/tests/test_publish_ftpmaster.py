@@ -619,10 +619,16 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         script = self.makeScript(self.getDistro(use_ubuntu=True))
         script.setUp()
         script.runParts = FakeMethod()
-        script.runFinalizeParts(security_only=True)
+        script.runFinalizeParts()
         args, kwargs = script.runParts.calls[0]
         parts_dir, env = args
-        self.assertEqual("yes", env["SECURITY_UPLOAD_ONLY"])
+        required_parameters = set([
+            "ARCHIVEROOTS",
+            "PRIMARY_ARCHIVEROOT",
+            "SECURITY_UPLOAD_ONLY",
+            ])
+        missing_parameters = set(env.keys()).difference(required_parameters)
+        self.assertEqual(set(), missing_parameters)
 
     def test_publishSecurityUploads_skips_pub_if_no_security_updates(self):
         script = self.makeScript(self.getDistro())

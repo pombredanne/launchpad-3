@@ -2,4 +2,4 @@
 #
 # Timestamp the trace file, so we can track when the last archive publisher
 # run took place.
-date -u > "$ARCHIVEROOT"/project/trace/$(hostname --fqdn)
+date -u > "$MAIN_ARCHIVEROOT"/project/trace/$(hostname --fqdn)
