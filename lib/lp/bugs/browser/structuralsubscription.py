@@ -5,9 +5,9 @@ __metaclass__ = type
 
 __all__ = [
     'expose_enum_to_js',
+    'expose_structural_subscription_data_to_js',
     'expose_user_administered_teams_to_js',
     'expose_user_subscriptions_to_js',
-    'StructuralSubscriptionJSMixin',
     'StructuralSubscriptionMenuMixin',
     'StructuralSubscriptionTargetTraversalMixin',
     'StructuralSubscriptionView',
@@ -33,7 +33,10 @@ from zope.schema.vocabulary import (
 from zope.traversing.browser import absoluteURL
 
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.menu import Link
+from canonical.launchpad.webapp.menu import (
+    enabled_with_permission,
+    Link,
+    )
 from canonical.launchpad.webapp.publisher import (
     canonical_url,
     LaunchpadView,
@@ -329,6 +332,14 @@ class StructuralSubscriptionTargetTraversalMixin:
 class StructuralSubscriptionMenuMixin:
     """Mix-in class providing the subscription add/edit menu link."""
 
+    def _getSST(self):
+        if IStructuralSubscriptionTarget.providedBy(self.context):
+            sst = self.context
+        else:
+            # self.context is a view, and the target is its context
+            sst = self.context.context
+        return sst
+
     def subscribe(self):
         """The subscribe menu link.
 
@@ -337,11 +348,7 @@ class StructuralSubscriptionMenuMixin:
         and displays the edit icon. Otherwise, the link offers to subscribe
         and displays the add icon.
         """
-        if IStructuralSubscriptionTarget.providedBy(self.context):
-            sst = self.context
-        else:
-            # self.context is a view, and the target is its context
-            sst = self.context.context
+        sst = self._getSST()
 
         # ProjectGroup milestones aren't really structural subscription
         # targets as they're not real milestones, so you can't subscribe to
@@ -359,6 +366,25 @@ class StructuralSubscriptionMenuMixin:
             return Link('+subscribe', text, icon=icon, enabled=False)
         else:
             return Link('+subscribe', text, icon=icon, enabled=enabled)
+
+    @enabled_with_permission('launchpad.AnyPerson')
+    def subscribe_to_bug_mail(self):
+        sst = self._getSST()
+        enabled = sst.userCanAlterBugSubscription(self.user, self.user)
+        text = 'Subscribe to bug mail'
+        return Link('#', text, icon='add', hidden=True, enabled=enabled)
+
+
+def expose_structural_subscription_data_to_js(context, request,
+                                              user, subscriptions=None):
+    """Expose all of the data for a structural subscription to JavaScript."""
+    expose_user_administered_teams_to_js(request, user)
+    expose_enum_to_js(request, BugTaskImportance, 'importances')
+    expose_enum_to_js(request, BugTaskStatus, 'statuses')
+    if subscriptions is None:
+        subscriptions = []
+    expose_user_subscriptions_to_js(
+        user, subscriptions, request)
 
 
 def expose_enum_to_js(request, enum, name):
@@ -422,25 +448,6 @@ def expose_user_subscriptions_to_js(user, subscriptions, request):
     info = info.values()
     info.sort(key=lambda item: item['target_url'])
     IJSONRequestCache(request).objects['subscription_info'] = info
-
-
-class StructuralSubscriptionJSMixin:
-    """A mixin that exposes structural-subscription data in JS.
-
-    Descendants of this mixin must define a `subscriptions` property
-    that returns a list of the subscriptions to cache in the JS of the
-    page.
-    """
-
-    def initialize(self):
-        super(StructuralSubscriptionJSMixin, self).initialize()
-        expose_user_administered_teams_to_js(self.request, self.user)
-        expose_user_subscriptions_to_js(
-            self.user, self.subscriptions, self.request)
-        expose_enum_to_js(self.request, BugTaskImportance, 'importances')
-        expose_enum_to_js(self.request, BugTaskStatus, 'statuses')
-
-    subscriptions = None # Override this.
 
 
 class StructuralSubscribersPortletView(LaunchpadView):

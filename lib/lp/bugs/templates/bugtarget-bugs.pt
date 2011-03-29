@@ -12,11 +12,22 @@
   <metal:block fill-slot="head_epilogue">
     <meta tal:condition="not: view/bug_tracking_usage/enumvalue:LAUNCHPAD"
           name="robots" content="noindex,nofollow" />
+    <script type="text/javascript"
+        tal:condition="
+          request/features/malone.advanced-structural-subscriptions.enabled">
+      LPS.use('lp.registry.structural_subscription', function(Y) {
+          module = Y.lp.registry.structural_subscription;
+          Y.on('domready', function() {
+            module.setup({content_box: "#structural-subscription-content-box"});
+          });
+      });
+    </script>
     <style type="text/css">
       p#more-hot-bugs {float:right; margin-top:7px;}
     </style>
-  </metal:block>
+</metal:block>
   <body>
+
     <tal:side metal:fill-slot="side"
               condition="view/bug_tracking_usage/enumvalue:LAUNCHPAD">
       <div id="involvement" class="portlet">
@@ -211,6 +222,10 @@
           tal:attributes="href string:${context/fmt:url/+edit}">
           Enable bug tracking.</a>
       </p>
+    </div>
+
+    <div class="yui-u">
+      <div id="structural-subscription-content-box"></div>
     </div>
 
     </div><!-- main -->

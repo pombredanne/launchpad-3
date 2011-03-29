@@ -61,6 +61,8 @@ from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
+    StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
 from lp.bugs.interfaces.bug import IBugSet
@@ -70,6 +72,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
     )
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.sourcepackagerelease import (
     extract_bug_numbers,
@@ -123,9 +126,6 @@ class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
 
 class DistributionSourcePackageLinksMixin:
 
-    def subscribe(self):
-        return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
-
     def publishinghistory(self):
         return Link('+publishinghistory', 'Show publishing history')
 
@@ -152,17 +152,27 @@ class DistributionSourcePackageOverviewMenu(
 
     usedfor = IDistributionSourcePackage
     facet = 'overview'
-    links = [
-        'subscribe', 'publishinghistory', 'edit', 'new_bugs',
-        'open_questions']
+    links = ['new_bugs', 'open_questions']
 
 
 class DistributionSourcePackageBugsMenu(
-    PillarBugsMenu, DistributionSourcePackageLinksMixin):
+    PillarBugsMenu,
+    StructuralSubscriptionMenuMixin,
+    DistributionSourcePackageLinksMixin):
 
     usedfor = IDistributionSourcePackage
     facet = 'bugs'
-    links = ['filebug', 'subscribe']
+
+    @cachedproperty
+    def links(self):
+        links = ['filebug']
+        use_advanced_features = getFeatureFlag(
+            'malone.advanced-structural-subscriptions.enabled')
+        if use_advanced_features:
+            links.append('subscribe_to_bug_mail')
+        else:
+            links.append('subscribe')
+        return links
 
 
 class DistributionSourcePackageNavigation(Navigation,
@@ -217,12 +227,26 @@ class IDistributionSourcePackageActionMenu(Interface):
 
 
 class DistributionSourcePackageActionMenu(
-    NavigationMenu, DistributionSourcePackageLinksMixin):
+    NavigationMenu,
+    StructuralSubscriptionMenuMixin,
+    DistributionSourcePackageLinksMixin):
     """Action menu for distro source packages."""
     usedfor = IDistributionSourcePackageActionMenu
     facet = 'overview'
     title = 'Actions'
-    links = ('publishing_history', 'change_log', 'subscribe', 'edit')
+    links = []
+
+    @cachedproperty
+    def links(self):
+        links = ['publishing_history', 'change_log']
+        use_advanced_features = getFeatureFlag(
+            'malone.advanced-structural-subscriptions.enabled')
+        if use_advanced_features:
+            links.append('subscribe_to_bug_mail')
+        else:
+            links.append('subscribe')
+        links.append('edit')
+        return links
 
     def publishing_history(self):
         text = 'View full publishing history'
@@ -294,6 +318,11 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
                                     LaunchpadView):
     """View class for DistributionSourcePackage."""
     implements(IDistributionSourcePackageActionMenu)
+
+    def initialize(self):
+        super(DistributionSourcePackageView, self).initialize()
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user)
 
     @property
     def label(self):

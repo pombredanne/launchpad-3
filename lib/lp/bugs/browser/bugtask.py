@@ -195,6 +195,9 @@ from lp.bugs.browser.bug import (
     BugTextView,
     BugViewMixin,
     )
+from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
+    )
 from lp.bugs.browser.bugcomment import (
     build_comments_from_chunks,
     group_comments_with_activity,
@@ -2205,11 +2208,6 @@ class BugTaskSearchListingMenu(NavigationMenu):
         return Link(
             '+securitycontact', 'Change security contact', icon='edit')
 
-    def subscribe(self):
-        user = getUtility(ILaunchBag).user
-        if self.context.userCanAlterBugSubscription(user):
-            return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
-
     def nominations(self):
         return Link('+nominations', 'Review nominations', icon='bug')
 
@@ -2345,6 +2343,10 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         # action. We pass an empty dict to _validate() because all the data
         # needing validation is already available internally to self.
         self._validate(None, {})
+
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user)
+
 
     @property
     def columns_to_show(self):
@@ -3196,7 +3198,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         # Hint to optimize when there are many bugtasks.
         view.many_bugtasks = self.many_bugtasks
         return view
-    
+
     def getBugTaskAndNominationViews(self):
         """Return the IBugTasks and IBugNominations views for this bug.
 
