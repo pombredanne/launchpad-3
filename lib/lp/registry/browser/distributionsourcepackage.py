@@ -66,13 +66,13 @@ from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin,
     )
 from lp.bugs.interfaces.bug import IBugSet
+from lp.registry.browser import add_subscribe_link
 from lp.registry.browser.pillar import PillarBugsMenu
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.sourcepackagerelease import (
     extract_bug_numbers,
@@ -166,12 +166,7 @@ class DistributionSourcePackageBugsMenu(
     @cachedproperty
     def links(self):
         links = ['filebug']
-        use_advanced_features = getFeatureFlag(
-            'malone.advanced-structural-subscriptions.enabled')
-        if use_advanced_features:
-            links.append('subscribe_to_bug_mail')
-        else:
-            links.append('subscribe')
+        add_subscribe_link(links)
         return links
 
 
@@ -234,17 +229,11 @@ class DistributionSourcePackageActionMenu(
     usedfor = IDistributionSourcePackageActionMenu
     facet = 'overview'
     title = 'Actions'
-    links = []
 
     @cachedproperty
     def links(self):
         links = ['publishing_history', 'change_log']
-        use_advanced_features = getFeatureFlag(
-            'malone.advanced-structural-subscriptions.enabled')
-        if use_advanced_features:
-            links.append('subscribe_to_bug_mail')
-        else:
-            links.append('subscribe')
+        add_subscribe_link(links)
         links.append('edit')
         return links
 

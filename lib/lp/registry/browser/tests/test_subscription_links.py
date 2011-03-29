@@ -228,9 +228,11 @@ class TestDistroViewStructSubs(BrowserTestCase):
         with person_logged_in(user):
             with FeatureFixture({self.feature_flag: flag}):
                 logged_in_user = getUtility(ILaunchBag).user
+                no_login = logged_in_user is None
                 browser = self.getViewBrowser(
                     self.target, view_name=self.view,
                     rootsite=self.rootsite,
+                    no_login=no_login,
                     user=logged_in_user)
                 self.contents = browser.contents
                 soup = BeautifulSoup(self.contents)
@@ -277,20 +279,17 @@ class TestDistroViewStructSubs(BrowserTestCase):
         self.assertEqual(None, old_link, self.contents)
         self.assertEqual(None, new_link, self.contents)
 
-    # Can't do ANONYMOUS testing with BrowserTestCase as it creates a new,
-    # valid user when it encounters ANONYMOUS.
+    def test_subscribe_link_feature_flag_off_anonymous(self):
+        old_link, new_link = self._create_scenario(
+            ANONYMOUS, None)
+        self.assertEqual(None, old_link, self.contents)
+        self.assertEqual(None, new_link, self.contents)
 
-    ## def test_subscribe_link_feature_flag_off_anonymous(self):
-    ##     old_link, new_link = self._create_scenario(
-    ##         ANONYMOUS, None)
-    ##     self.assertEqual(None, old_link, self.contents)
-    ##     self.assertEqual(None, new_link, self.contents)
-
-    ## def test_subscribe_link_feature_flag_on_anonymous(self):
-    ##     old_link, new_link = self._create_scenario(
-    ##         ANONYMOUS, 'on')
-    ##     self.assertEqual(None, old_link, self.contents)
-    ##     self.assertEqual(None, new_link, self.contents)
+    def test_subscribe_link_feature_flag_on_anonymous(self):
+        old_link, new_link = self._create_scenario(
+            ANONYMOUS, 'on')
+        self.assertEqual(None, old_link, self.contents)
+        self.assertEqual(None, new_link, self.contents)
 
     def test_subscribe_link_feature_flag_off_bug_super(self):
         with celebrity_logged_in('admin'):
@@ -369,20 +368,17 @@ class TestDistroBugsStructSubs(TestDistroViewStructSubs):
         self.assertEqual(None, old_link, self.contents)
         self.assertEqual(None, new_link, self.contents)
 
-    # Can't do ANONYMOUS testing with BrowserTestCase as it creates a new,
-    # valid user when it encounters ANONYMOUS.
+    def test_subscribe_link_feature_flag_off_anonymous(self):
+        old_link, new_link = self._create_scenario(
+            ANONYMOUS, None)
+        self.assertNotEqual(None, old_link, self.contents)
+        self.assertEqual(None, new_link, self.contents)
 
-    ## def test_subscribe_link_feature_flag_off_anonymous(self):
-    ##     old_link, new_link = self._create_scenario(
-    ##         ANONYMOUS, None)
-    ##     self.assertEqual(None, old_link, self.contents)
-    ##     self.assertEqual(None, new_link, self.contents)
-
-    ## def test_subscribe_link_feature_flag_on_anonymous(self):
-    ##     old_link, new_link = self._create_scenario(
-    ##         ANONYMOUS, 'on')
-    ##     self.assertEqual(None, old_link, self.contents)
-    ##     self.assertEqual(None, new_link, self.contents)
+    def test_subscribe_link_feature_flag_on_anonymous(self):
+        old_link, new_link = self._create_scenario(
+            ANONYMOUS, 'on')
+        self.assertEqual(None, old_link, self.contents)
+        self.assertEqual(None, new_link, self.contents)
 
     def test_subscribe_link_feature_flag_off_bug_super(self):
         with celebrity_logged_in('admin'):
@@ -463,20 +459,17 @@ class TestDistroMilestoneViewStructSubs(TestDistroViewStructSubs):
         self.assertEqual(None, old_link, self.contents)
         self.assertNotEqual(None, new_link, self.contents)
 
-    # Can't do ANONYMOUS testing with BrowserTestCase as it creates a new,
-    # valid user when it encounters ANONYMOUS.
+    def test_subscribe_link_feature_flag_off_anonymous(self):
+        old_link, new_link = self._create_scenario(
+            ANONYMOUS, None)
+        self.assertNotEqual(None, old_link, self.contents)
+        self.assertEqual(None, new_link, self.contents)
 
-    ## def test_subscribe_link_feature_flag_off_anonymous(self):
-    ##     old_link, new_link = self._create_scenario(
-    ##         ANONYMOUS, None)
-    ##     self.assertEqual(None, old_link, self.contents)
-    ##     self.assertEqual(None, new_link, self.contents)
-
-    ## def test_subscribe_link_feature_flag_on_anonymous(self):
-    ##     old_link, new_link = self._create_scenario(
-    ##         ANONYMOUS, 'on')
-    ##     self.assertEqual(None, old_link, self.contents)
-    ##     self.assertEqual(None, new_link, self.contents)
+    def test_subscribe_link_feature_flag_on_anonymous(self):
+        old_link, new_link = self._create_scenario(
+            ANONYMOUS, 'on')
+        self.assertEqual(None, old_link, self.contents)
+        self.assertEqual(None, new_link, self.contents)
 
     def test_subscribe_link_feature_flag_off_bug_super(self):
         with celebrity_logged_in('admin'):
@@ -549,20 +542,17 @@ class TestProductMilestoneViewStructSubs(TestDistroViewStructSubs):
     test_subscribe_link_feature_flag_off_bug_super = None
     test_subscribe_link_feature_flag_on_bug_super = None
 
-    # Can't do ANONYMOUS testing with BrowserTestCase as it creates a new,
-    # valid user when it encounters ANONYMOUS.
+    def test_subscribe_link_feature_flag_off_anonymous(self):
+        old_link, new_link = self._create_scenario(
+            ANONYMOUS, None)
+        self.assertNotEqual(None, old_link, self.contents)
+        self.assertEqual(None, new_link, self.contents)
 
-    ## def test_subscribe_link_feature_flag_off_anonymous(self):
-    ##     old_link, new_link = self._create_scenario(
-    ##         ANONYMOUS, None)
-    ##     self.assertEqual(None, old_link, self.contents)
-    ##     self.assertEqual(None, new_link, self.contents)
-
-    ## def test_subscribe_link_feature_flag_on_anonymous(self):
-    ##     old_link, new_link = self._create_scenario(
-    ##         ANONYMOUS, 'on')
-    ##     self.assertEqual(None, old_link, self.contents)
-    ##     self.assertEqual(None, new_link, self.contents)
+    def test_subscribe_link_feature_flag_on_anonymous(self):
+        old_link, new_link = self._create_scenario(
+            ANONYMOUS, 'on')
+        self.assertEqual(None, old_link, self.contents)
+        self.assertEqual(None, new_link, self.contents)
 
     def test_subscribe_link_feature_flag_off_admin(self):
         admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)

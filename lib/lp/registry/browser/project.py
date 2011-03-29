@@ -74,7 +74,10 @@ from lp.app.errors import NotFoundError
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
-from lp.registry.browser import BaseRdfView
+from lp.registry.browser import (
+    add_subscribe_link,
+    BaseRdfView,
+    )
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.menu import (
@@ -98,7 +101,6 @@ from lp.registry.interfaces.projectgroup import (
     IProjectGroupSeries,
     IProjectGroupSet,
     )
-from lp.services.features import getFeatureFlag
 from lp.services.fields import (
     PillarAliases,
     PublicPersonChoice,
@@ -283,12 +285,8 @@ class ProjectActionMenu(ProjectAdminMenuMixin,
 
     @cachedproperty
     def links(self):
-        use_advanced_features = getFeatureFlag(
-            'malone.advanced-structural-subscriptions.enabled')
-        if use_advanced_features:
-            links = ['subscribe_to_bug_mail']
-        else:
-            links = ['subscribe']
+        links = []
+        add_subscribe_link(links)
         links.extend(['edit', 'administer'])
         return links
 
@@ -339,12 +337,7 @@ class ProjectBugsMenu(StructuralSubscriptionMenuMixin,
     @cachedproperty
     def links(self):
         links = ['new']
-        use_advanced_features = getFeatureFlag(
-            'malone.advanced-structural-subscriptions.enabled')
-        if use_advanced_features:
-            links.append('subscribe_to_bug_mail')
-        else:
-            links.append('subscribe')
+        add_subscribe_link(links)
         return links
 
     def new(self):

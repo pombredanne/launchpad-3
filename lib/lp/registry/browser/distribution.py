@@ -87,7 +87,10 @@ from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
-from lp.registry.browser import RegistryEditFormView
+from lp.registry.browser import (
+    add_subscribe_link,
+    RegistryEditFormView,
+    )
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu,
@@ -106,7 +109,7 @@ from lp.registry.interfaces.distributionmirror import (
     MirrorSpeed,
     )
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services import features
+from lp.services.features import getFeatureFlag
 from lp.services.geoip.helpers import (
     ipaddress_from_request,
     request_country,
@@ -285,7 +288,7 @@ class DistributionNavigationMenu(NavigationMenu, DistributionLinksMixin):
     @cachedproperty
     def links(self):
         links = ['edit']
-        use_advanced_features = features.getFeatureFlag(
+        use_advanced_features = getFeatureFlag(
             'malone.advanced-structural-subscriptions.enabled')
         if use_advanced_features:
             links.append('subscribe_to_bug_mail')
@@ -468,12 +471,7 @@ class DistributionBugsMenu(PillarBugsMenu):
             'cve',
             'filebug',
             ]
-        use_advanced_features = features.getFeatureFlag(
-            'malone.advanced-structural-subscriptions.enabled')
-        if use_advanced_features:
-            links.append('subscribe_to_bug_mail')
-        else:
-            links.append('subscribe')
+        add_subscribe_link(links)
         return links
 
 

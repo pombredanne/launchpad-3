@@ -156,7 +156,10 @@ from lp.bugs.browser.bugtask import (
 from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
 from lp.code.browser.branchref import BranchRef
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
-from lp.registry.browser import BaseRdfView
+from lp.registry.browser import (
+    add_subscribe_link,
+    BaseRdfView,
+    )
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.menu import (
@@ -188,7 +191,6 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.services.features import getFeatureFlag
 from lp.services.fields import (
     PillarAliases,
     PublicPersonChoice,
@@ -583,12 +585,7 @@ class ProductActionNavigationMenu(NavigationMenu, ProductEditLinksMixin):
     @cachedproperty
     def links(self):
         links = ['edit', 'review_license', 'administer']
-        use_advanced_features = getFeatureFlag(
-            'malone.advanced-structural-subscriptions.enabled')
-        if use_advanced_features:
-            links.append('subscribe_to_bug_mail')
-        else:
-            links.append('subscribe')
+        add_subscribe_link(links)
         return links
 
 
@@ -694,14 +691,8 @@ class ProductBugsMenu(PillarBugsMenu,
             'securitycontact',
             'cve',
             ]
-        use_advanced_features = getFeatureFlag(
-            'malone.advanced-structural-subscriptions.enabled')
-        if use_advanced_features:
-            links.append('subscribe_to_bug_mail')
-        else:
-            links.append('subscribe')
+        add_subscribe_link(links)
         links.append('configure_bugtracker')
-
         return links
 
 

@@ -354,18 +354,16 @@ class StructuralSubscriptionMenuMixin:
         # targets as they're not real milestones, so you can't subscribe to
         # them.
         enabled = not IProjectGroupMilestone.providedBy(sst)
-
         if sst.userHasBugSubscriptions(self.user):
             text = 'Edit bug mail subscription'
             icon = 'edit'
         else:
             text = 'Subscribe to bug mail'
             icon = 'add'
-        if enabled == False or (
+        if not enabled or (
             not sst.userCanAlterBugSubscription(self.user, self.user)):
-            return Link('+subscribe', text, icon=icon, enabled=False)
-        else:
-            return Link('+subscribe', text, icon=icon, enabled=enabled)
+            enabled = False
+        return Link('+subscribe', text, icon=icon, enabled=enabled)
 
     @enabled_with_permission('launchpad.AnyPerson')
     def subscribe_to_bug_mail(self):

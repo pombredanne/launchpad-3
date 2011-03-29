@@ -79,7 +79,10 @@ from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
-from lp.registry.browser import MilestoneOverlayMixin
+from lp.registry.browser import (
+    add_subscribe_link,
+    MilestoneOverlayMixin,
+    )
 from lp.registry.enum import DistroSeriesDifferenceStatus
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distroseriesdifference import (
@@ -202,12 +205,7 @@ class DistroSeriesOverviewMenu(
                  'add_port',
                  'create_milestone',
                  ]
-        use_advanced_features = getFeatureFlag(
-            'malone.advanced-structural-subscriptions.enabled')
-        if use_advanced_features:
-            links.append('subscribe_to_bug_mail')
-        else:
-            links.append('subscribe')
+        add_subscribe_link(links)
         links.append('admin')
         return links
 
@@ -279,12 +277,7 @@ class DistroSeriesBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
         links = ['cve',
                  'nominations',
                  ]
-        use_advanced_features = getFeatureFlag(
-            'malone.advanced-structural-subscriptions.enabled')
-        if use_advanced_features:
-            links.append('subscribe_to_bug_mail')
-        else:
-            links.append('subscribe')
+        add_subscribe_link(links)
         return links
 
     def cve(self):

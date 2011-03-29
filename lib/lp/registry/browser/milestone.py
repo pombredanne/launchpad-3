@@ -64,6 +64,7 @@ from lp.registry.browser import (
     get_status_counts,
     RegistryDeleteViewMixin,
     )
+from lp.registry.browser import add_subscribe_link
 from lp.registry.browser.product import ProductDownloadFileMixin
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import (
@@ -73,7 +74,6 @@ from lp.registry.interfaces.milestone import (
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProduct
-from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 
 
@@ -145,12 +145,7 @@ class MilestoneContextMenu(ContextMenu, MilestoneLinkMixin):
     @cachedproperty
     def links(self):
         links = ['edit']
-        use_advanced_features = getFeatureFlag(
-            'malone.advanced-structural-subscriptions.enabled')
-        if use_advanced_features:
-            links.append('subscribe_to_bug_mail')
-        else:
-            links.append('subscribe')
+        add_subscribe_link(links)
         links.append('create_release')
         return links
 
@@ -163,12 +158,7 @@ class MilestoneOverviewNavigationMenu(NavigationMenu, MilestoneLinkMixin):
     @cachedproperty
     def links(self):
         links = ['edit', 'delete']
-        use_advanced_features = getFeatureFlag(
-            'malone.advanced-structural-subscriptions.enabled')
-        if use_advanced_features:
-            links.append('subscribe_to_bug_mail')
-        else:
-            links.append('subscribe')
+        add_subscribe_link(links)
         return links
 
 

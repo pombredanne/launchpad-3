@@ -118,6 +118,7 @@ from lp.code.interfaces.codeimport import (
     ICodeImportSet,
     )
 from lp.registry.browser import (
+    add_subscribe_link,
     BaseRdfView,
     MilestoneOverlayMixin,
     RegistryDeleteViewMixin,
@@ -138,7 +139,6 @@ from lp.registry.interfaces.packaging import (
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.features import getFeatureFlag
 from lp.services.fields import URIField
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountry
@@ -295,12 +295,7 @@ class ProductSeriesOverviewMenu(
             'rdf',
             'set_branch',
             ]
-        use_advanced_features = getFeatureFlag(
-            'malone.advanced-structural-subscriptions.enabled')
-        if use_advanced_features:
-            links.append('subscribe_to_bug_mail')
-        else:
-            links.append('subscribe')
+        add_subscribe_link(links)
         links.append('ubuntupkg')
         return links
 
@@ -395,12 +390,7 @@ class ProductSeriesBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
     @cachedproperty
     def links(self):
         links = ['new', 'nominations']
-        use_advanced_features = getFeatureFlag(
-            'malone.advanced-structural-subscriptions.enabled')
-        if use_advanced_features:
-            links.append('subscribe_to_bug_mail')
-        else:
-            links.append('subscribe')
+        add_subscribe_link(links)
         return links
 
     def new(self):
