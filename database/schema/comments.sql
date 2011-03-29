@@ -271,6 +271,7 @@ COMMENT ON COLUMN BugTask.date_fix_released IS 'The date when this bug transitio
 COMMENT ON COLUMN BugTask.date_left_closed IS 'The date when this bug last transitioned out of a CLOSED status.';
 COMMENT ON COLUMN BugTask.date_milestone_set IS 'The date when this bug was targed to the milestone that is currently set.';
 COMMENT ON COLUMN BugTask.heat_rank IS 'The heat bin in which this bugtask appears, as a value from the BugTaskHeatRank enumeration.';
+COMMENT ON COLUMN BugTask.heat IS 'The relevance of this bug. This value is computed periodically using bug_affects_person and other bug values.';
 
 
 -- BugNotification
