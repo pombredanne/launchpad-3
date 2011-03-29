@@ -292,7 +292,7 @@ class InitialiseDistroSeries:
             if self.distroseries.distribution == self.parent.distribution:
                 new_owner = parent_ps.owner
             else:
-                new_owner = self.distroseries.distribution.owner
+                new_owner = self.distroseries.owner
             child_ps = getUtility(IPackagesetSet).new(
                 parent_ps.name, parent_ps.description,
                 new_owner, distroseries=self.distroseries,

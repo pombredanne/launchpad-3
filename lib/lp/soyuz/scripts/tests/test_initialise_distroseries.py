@@ -253,12 +253,10 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         ps = getUtility(IPackagesetSet).new(
             u'ps', u'packageset', self.factory.makePerson(),
             distroseries=self.parent)
-        new_owner = self.factory.makePerson()
-        child = self._full_initialise(
-            distribution=self.factory.makeDistribution(owner=new_owner))
+        child = self._full_initialise()
         child_ps = getUtility(IPackagesetSet).getByName(
             u'ps', distroseries=child)
-        self.assertEqual(new_owner, child_ps.owner)
+        self.assertEqual(child.owner, child_ps.owner)
 
     def test_copy_limit_packagesets(self):
         # If a parent series has packagesets, we can decide which ones we
