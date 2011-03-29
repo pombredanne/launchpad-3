@@ -10,7 +10,6 @@ __all__ = [
 
 from optparse import OptionParser
 import os
-import subprocess
 from zope.component import getUtility
 
 from canonical.config import config
@@ -39,21 +38,8 @@ ARCHIVE_SUFFIXES = {
 }
 
 
-def run_command(args):
-    """Run command line (passed as a list).
-
-    :return: A tuple of process return value; stdout; and stderr.
-    """
-    child = subprocess.Popen(
-        args, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE)
-    stdout, stderr = child.communicate()
-    result = child.wait()
-    return (result, stdout, stderr)
-
-
 def get_distscopyroot(archive_config):
-    """Return the distscropy root directory for `archive_config`."""
+    """Return the distscopy root directory for `archive_config`."""
     return archive_config.archiveroot + "-distscopy"
 
 
@@ -96,6 +82,7 @@ class PublishFTPMaster(LaunchpadCronScript):
 
     def cleanUp(self):
         """Post-publishing cleanup."""
+        self.logger.debug("Cleaning up.")
         for purpose, archive_config in self.configs.iteritems():
             self.logger.debug(
                 "Moving %s dists backup to safe keeping for next time.",
@@ -107,9 +94,12 @@ class PublishFTPMaster(LaunchpadCronScript):
             else:
                 replacement_dists = archive_config.distsroot + ".new"
             if file_exists(replacement_dists):
+                self.logger.debug(
+                    "Renaming %s to %s.", replacement_dists, dists)
                 os.rename(replacement_dists, dists)
 
     def processAccepted(self):
+        """Run the process-accepted script."""
         self.logger.debug(
             "Processing the accepted queue into the publishing records...")
         script = ProcessAccepted(test_args=[self.distribution.name])
@@ -126,8 +116,8 @@ class PublishFTPMaster(LaunchpadCronScript):
         query_distro.runAction(presenter=receiver)
         return receiver.argument.split()
 
-    def gatherSecuritySuites(self):
-        """List security suites."""
+    def getDirtySecuritySuites(self):
+        """List security suites with pending publications."""
         suites = self.getDirtySuites()
         return [suite for suite in suites if suite.endswith('-security')]
 
@@ -140,19 +130,11 @@ class PublishFTPMaster(LaunchpadCronScript):
         :param archive_purpose: The (purpose of the) archive to copy.
         """
         archive_config = self.configs[archive_purpose]
-        retval, stdout, stderr = run_command([
-            "rsync",
-            "-aH",
-            "--delete",
-            archive_config.distsroot + "/",
-            os.path.join(archive_config.archiveroot, "dists.new"),
-            ])
-
-        if retval != 0:
-            self.logger.warn(stdout)
-            self.logger.error(stderr)
-            raise LaunchpadScriptFailure(
-                "Failed to rsync dists.new for %s." % archive_purpose.title)
+        self.executeShell(
+            "rsync -aH --delete '%s/' '%s/dists.new'"
+            % (archive_config.distsroot, archive_config.archiveroot),
+            failure=LaunchpadScriptFailure(
+                "Failed to rsync dists.new for %s." % archive_purpose.title))
 
     def setUpDirs(self):
         """Copy the dists tree ready for publishing into.
@@ -238,6 +220,24 @@ class PublishFTPMaster(LaunchpadCronScript):
             dists = os.path.join(get_distscopyroot(archive_config), "dists")
             os.rename(archive_config.distsroot + ".old", dists)
 
+    def executeShell(self, command_line, failure=None):
+        """Run `command_line` through a shell.
+
+        This won't just load an external program and run it; the command
+        line goes through the full shell treatment including variable
+        substitutions, output redirections, and so on.
+
+        :param command_line: Shell command.
+        :param failure: Raise `failure` as an exception if the shell
+            command returns a nonzero value.  If omitted, nonzero return
+            values are ignored.
+        """
+        self.logger.debug("Executing: %s" % command_line)
+        retval = os.system(command_line)
+        if retval != 0 and failure is not None:
+            self.logger.debug("Command failed: %s" % failure)
+            raise failure
+
     def runCommercialCompat(self):
         """Generate the -commercial pocket.
 
@@ -249,17 +249,14 @@ class PublishFTPMaster(LaunchpadCronScript):
         # support ends.
         if self.distribution.name != 'ubuntu':
             return
-        if config.instance_name != 'production':
+        if not config.archivepublisher.run_commercial_compat:
             return
 
-        try:
-            os.system("""
-                env PATH="$PATH:%s/cronscripts/publishing" \
-                    LPCONFIG="%s" \
-                    commercial-compat.sh
-                """ % (config.root, config.instance_name))
-        except Exception:
-            pass
+        self.executeShell("""
+            env PATH="$PATH:%s/cronscripts/publishing" \
+                LPCONFIG="%s" \
+                commercial-compat.sh
+            """ % (config.root, config.instance_name))
 
     def generateListings(self):
         """Create ls-lR.gz listings."""
@@ -271,18 +268,17 @@ class PublishFTPMaster(LaunchpadCronScript):
             new_lslr_file = os.path.join(archive_config.archiveroot, lslr_new)
             if file_exists(new_lslr_file):
                 os.remove(new_lslr_file)
-            retval = os.system(
+            self.executeShell(
                 "cd -- '%s' ; TZ=UTC ls -lR | gzip -9n >'%s'"
-                % (archive_config.archiveroot, lslr_new))
-            if retval != 0:
-                raise LaunchpadScriptFailure(
-                    "Failed to create %s for %s." % (lslr, purpose.title))
+                % (archive_config.archiveroot, lslr_new),
+                failure=LaunchpadScriptFailure(
+                    "Failed to create %s for %s." % (lslr, purpose.title)))
             os.rename(new_lslr_file, lslr_file)
 
     def clearEmptyDirs(self):
         """Clear out any redundant empty directories."""
         for archive_config in self.configs.itervalues():
-            os.system(
+            self.executeShell(
                 "find '%s' -type d -empty | xargs -r rmdir"
                 % archive_config.archiveroot)
 
@@ -314,10 +310,10 @@ class PublishFTPMaster(LaunchpadCronScript):
         if not file_exists(parts_dir):
             return
         env_string = ' '.join(['='.join(pair for pair in env.iteritems())])
-        retval = os.system("%s run-parts -- '%s'" % (env_string, parts_dir))
-        if retval != 0:
-            raise LaunchpadScriptFailure(
-                "Failure while executing run-parts %s." % parts_dir)
+        self.executeShell(
+            "%s run-parts -- '%s'" % (env_string, parts_dir),
+            failure=LaunchpadScriptFailure(
+                "Failure while executing run-parts %s." % parts_dir))
 
     def runFinalizeParts(self, security_only=False):
         """Run the finalize.d parts to finalize publication."""
@@ -329,7 +325,9 @@ class PublishFTPMaster(LaunchpadCronScript):
         self.runParts('finalize.d', env)
 
     def publishSecurityUploads(self):
-        security_suites = self.gatherSecuritySuites()
+        """Quickly process just the pending security uploads."""
+        self.logger.debug("Expediting security uploads.")
+        security_suites = self.getDirtySecuritySuites()
         if len(security_suites) == 0:
             self.logger.info("Nothing to do for security publisher.")
             return
@@ -343,6 +341,8 @@ class PublishFTPMaster(LaunchpadCronScript):
         self.runFinalizeParts(security_only=True)
 
     def publishAllUploads(self):
+        """Publish the distro's complete uploads."""
+        self.logger.debug("Full publication.  This may take some time.")
         for archive in self.archives:
             # This, for the main archive, is where the script spends
             # most of its time.
@@ -365,7 +365,6 @@ class PublishFTPMaster(LaunchpadCronScript):
         self.setUp()
         try:
             self.processAccepted()
-            # XXX: Repeat setUpDirs for security/full upload?
             self.setUpDirs()
             self.publishSecurityUploads()
             if not self.options.security_only:
