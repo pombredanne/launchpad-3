@@ -48,7 +48,7 @@ class SourcePackageTranslationsView(TranslationsMixin,
         return "Translations for %s" % self.context.displayname
 
     def is_sharing(self):
-        return self.context.has_sharing_translation_templates
+        return self.sharing_productseries is not None
 
     @property
     def sharing_productseries(self):

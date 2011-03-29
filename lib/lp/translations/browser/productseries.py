@@ -456,7 +456,7 @@ class ProductSeriesView(LaunchpadView,
         return check_permission("launchpad.TranslationsAdmin", self.context)
 
     def is_sharing(self):
-        return self.context.has_sharing_translation_templates
+        return self.sharing_sourcepackage is not None
 
     @property
     def sharing_sourcepackage(self):
