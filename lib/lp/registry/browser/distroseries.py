@@ -544,6 +544,10 @@ class DistroSeriesInitializeView(LaunchpadFormView):
     label = 'Initialize series'
     page_title = label
 
+    @action(_(label), name='initialize')
+    def submit(self, action, data):
+        """Stub for the Javascript in the page to use."""
+
     @property
     def is_derived_series_feature_enabled(self):
         return getFeatureFlag("soyuz.derived-series-ui.enabled") is not None
