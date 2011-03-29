@@ -191,7 +191,7 @@
     tal:condition="request/features/visible_render_time"
     define="render_time modules/canonical.launchpad.webapp.adapter/summarize_requests;"
     replace='structure string:&lt;script type="text/javascript"&gt;
-  var render_time = "${render_time} &amp;bull;";
+  var render_time = "${render_time}";
   LPS.use("node", function(Y) {
     Y.on("domready", function() {
       var node = Y.one("#rendertime");
@@ -203,66 +203,7 @@
 <tal:comment
     tal:condition="request/features/visible_render_time"
     replace='structure string:&lt;script type="text/javascript"&gt;
-  /* Log time taken for AJAX requests */
-  LPS.use("node", "lazr.anim", function(Y) {
-    Y.on("domready", function() {
-      var node = Y.one("#ajax-time-list");
-      var ajax_request_times = {};
-      var ajax_menu_animating = false;
-      var flash_menu = Y.lazr.anim.green_flash({node:"#ajax-time"});
-      flash_menu.on("end", function() {
-          ajax_menu_animating = false;
-      });
-      Y.on("io:start", function(transactionid) {
-          var now = new Date();
-          ajax_request_times[transactionid] = now;
-      });
-      Y.on("io:complete", function(transactionid, arguments) {
-          var no_events = Y.one("#ajax-time-list .no-events");
-          if (no_events) {
-            no_events.remove();
-          }
-          var now = new Date();
-          var oops_id = arguments.getResponseHeader("X-Lazr-OopsId");
-          if (ajax_request_times[transactionid]) {
-            var time = (now - ajax_request_times[transactionid])/1000;
-            var warning = "";
-            if (time > 1) {
-              warning = " class=\"warning\"";
-            }
-            var log_html = "<li class=\"transaction-"+transactionid+"\">"+
-              "Time: <strong"+warning+">"+time.toFixed(2)+" seconds</strong><br />"+
-              "<span>ID: "+transactionid+", status: "+arguments.status+
-              " ("+arguments.statusText+")";
-            
-            if (oops_id) {
-              log_html += ", OOPS ID: <a href=\"http://pad.lv/"+oops_id+"\">"+oops_id+"</a>";
-            }
-            log_html += "</span></li>";
-            
-            node.prepend(log_html);
-            
-            Y.lazr.anim.green_flash({
-                node:"#ajax-time-list li.transaction-"+transactionid
-                }).run();
-            if (ajax_menu_animating == false) {
-              flash_menu.run();
-              ajax_menu_animating = true;
-            }
-          }
-      });
-      Y.on("click", function(e) {
-        e.halt();
-        var list_node = Y.one("#ajax-time-list");
-        if (list_node.hasClass("hidden")){
-          list_node.removeClass("hidden");
-        }
-        else {
-          list_node.addClass("hidden");
-        }
-      }, "#ajax-time a");
-    });
-  });
+    start_ajax_logging();
 &lt;/script&gt;' />
 
 </html>
