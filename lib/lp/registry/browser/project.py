@@ -356,6 +356,7 @@ class ProjectView(HasAnnouncementsView, FeedsMixin):
     implements(IProjectGroupActionMenu)
 
     def initialize(self):
+        super(ProjectView, self).initialize()
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user)
 
