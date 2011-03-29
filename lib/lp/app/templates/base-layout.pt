@@ -223,16 +223,24 @@
             no_events.remove();
           }
           var now = new Date();
+          var oops_id = arguments.getResponseHeader("X-Lazr-OopsId");
           if (ajax_request_times[transactionid]) {
             var time = (now - ajax_request_times[transactionid])/1000;
             var warning = "";
             if (time > 1) {
-              warning = " class=\"warning\""
+              warning = " class=\"warning\"";
             }
-            node.prepend("<li class=\"transaction-"+transactionid+"\">"+
+            var log_html = "<li class=\"transaction-"+transactionid+"\">"+
               "Time: <strong"+warning+">"+time.toFixed(2)+" seconds</strong><br />"+
               "<span>ID: "+transactionid+", status: "+arguments.status+
-              " ("+arguments.statusText+")</span></li>");
+              " ("+arguments.statusText+")";
+            
+            if (oops_id) {
+              log_html += ", OOPS ID: <a href=\"http://pad.lv/"+oops_id+"\">"+oops_id+"</a>";
+            }
+            log_html += "</span></li>";
+            
+            node.prepend(log_html);
             
             Y.lazr.anim.green_flash({
                 node:"#ajax-time-list li.transaction-"+transactionid
