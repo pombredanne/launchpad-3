@@ -152,11 +152,11 @@ class ArchiveSubscribersView(LaunchpadFormView):
 
         super(ArchiveSubscribersView, self).initialize()
 
-    @property
+    @cachedproperty
     def subscriptions(self):
         """Return all the subscriptions for this archive."""
-        result = getUtility(IArchiveSubscriberSet).getByArchive(
-            self.context)
+        result = list(getUtility(IArchiveSubscriberSet
+            ).getByArchive( self.context))
         ids = set(map(attrgetter('subscriber_id'), result))
         list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(ids,
             need_validity=True))
@@ -165,7 +165,7 @@ class ArchiveSubscribersView(LaunchpadFormView):
     @cachedproperty
     def has_subscriptions(self):
         """Return whether this archive has any subscribers."""
-        return not self.subscriptions.is_empty()
+        return bool(self.subscriptions)
 
     def validate_new_subscription(self, action, data):
         """Ensure the subscriber isn't already subscribed.
