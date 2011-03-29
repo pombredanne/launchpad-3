@@ -12,15 +12,17 @@ import transaction
 import windmill
 
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.windmill.testing import lpuser
-from canonical.launchpad.windmill.testing.widgets import (
-    search_and_select_picker_widget,
-    )
 from lp.code.windmill.testing import CodeWindmillLayer
-from canonical.launchpad.windmill.testing import constants
 from lp.testing import (
     login_person,
     WindmillTestCase,
+    )
+from lp.testing.windmill import (
+    constants,
+    lpuser,
+    )
+from lp.testing.windmill.widgets import (
+    search_and_select_picker_widget,
     )
 
 

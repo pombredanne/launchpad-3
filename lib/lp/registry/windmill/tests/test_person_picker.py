@@ -8,12 +8,12 @@ __all__ = []
 
 import unittest
 
-from canonical.launchpad.windmill.testing import (
+from lp.registry.windmill.testing import RegistryWindmillLayer
+from lp.testing import WindmillTestCase
+from lp.testing.windmill import (
     constants,
     lpuser,
     )
-from lp.registry.windmill.testing import RegistryWindmillLayer
-from lp.testing import WindmillTestCase
 
 
 VISIBLE_PICKER_OVERLAY = (

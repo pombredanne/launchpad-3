@@ -24,7 +24,10 @@ from psycopg2.extensions import (
     QueryCanceledError,
     )
 import pytz
-from storm.database import register_scheme
+from storm.database import (
+    Connection,
+    register_scheme,
+    )
 from storm.databases.postgres import (
     Postgres,
     PostgresConnection,
@@ -114,13 +117,13 @@ class RequestExpired(RuntimeError):
 
 def _get_dirty_commit_flags():
     """Return the current dirty commit status"""
-    from canonical.ftests.pgsql import ConnectionWrapper
+    from lp.testing.pgsql import ConnectionWrapper
     return (ConnectionWrapper.committed, ConnectionWrapper.dirty)
 
 
 def _reset_dirty_commit_flags(previous_committed, previous_dirty):
     """Set the dirty commit status to False unless previous is True"""
-    from canonical.ftests.pgsql import ConnectionWrapper
+    from lp.testing.pgsql import ConnectionWrapper
     if not previous_committed:
         ConnectionWrapper.committed = False
     if not previous_dirty:
@@ -180,9 +183,8 @@ def set_request_started(
         set_request_timeline(request, Timeline())
     _local.current_statement_timeout = None
     _local.enable_timeout = enable_timeout
-    if txn is not None:
-        _local.commit_logger = CommitLogger(txn)
-        txn.registerSynch(_local.commit_logger)
+    _local.commit_logger = CommitLogger(transaction)
+    transaction.manager.registerSynch(_local.commit_logger)
     set_permit_timeout_from_features(False)
 
 
@@ -196,9 +198,8 @@ def clear_request_started():
     _local.request_start_time = None
     request = get_current_browser_request()
     set_request_timeline(request, Timeline())
-    commit_logger = getattr(_local, 'commit_logger', None)
-    if commit_logger is not None:
-        _local.commit_logger.txn.unregisterSynch(_local.commit_logger)
+    if getattr(_local, 'commit_logger', None) is not None:
+        transaction.manager.unregisterSynch(_local.commit_logger)
         del _local.commit_logger
 
 
@@ -598,8 +599,6 @@ class LaunchpadStatementTracer:
 
     def __init__(self):
         self._debug_sql = bool(os.environ.get('LP_DEBUG_SQL'))
-        self._debug_sql_bind_values = bool(
-            os.environ.get('LP_DEBUG_SQL_VALUES'))
         self._debug_sql_extra = bool(os.environ.get('LP_DEBUG_SQL_EXTRA'))
 
     def connection_raw_execute(self, connection, raw_cursor,
@@ -607,13 +606,22 @@ class LaunchpadStatementTracer:
         if self._debug_sql_extra:
             traceback.print_stack()
             sys.stderr.write("." * 70 + "\n")
+        statement_to_log = statement
+        if params:
+            # There are some bind parameters so we want to insert them into
+            # the sql statement so we can log the statement.
+            query_params = list(Connection.to_database(params))
+            # We need to ensure % symbols used for LIKE statements etc are
+            # properly quoted or else the string format operation will fail.
+            quoted_statement = re.sub(
+                    "%%%", "%%%%", re.sub("%([^s])", r"%%\1", statement))
+            # We need to massage the query parameters a little to deal with
+            # string parameters which represent encoded binary data.
+            param_strings = [repr(p) if isinstance(p, basestring) else p
+                                 for p in query_params]
+            statement_to_log = quoted_statement % tuple(param_strings)
         if self._debug_sql or self._debug_sql_extra:
-            stmt_to_log = statement
-            if self._debug_sql_bind_values:
-                from storm.database import Connection
-                param_strings = Connection.to_database(params)
-                stmt_to_log = statement % tuple(param_strings)
-            sys.stderr.write(stmt_to_log + "\n")
+            sys.stderr.write(statement_to_log + "\n")
             sys.stderr.write("-" * 70 + "\n")
         # store the last executed statement as an attribute on the current
         # thread
@@ -622,7 +630,7 @@ class LaunchpadStatementTracer:
         if request_starttime is None:
             return
         action = get_request_timeline(get_current_browser_request()).start(
-            'SQL-%s' % connection._database.name, statement)
+            'SQL-%s' % connection._database.name, statement_to_log)
         connection._lp_statement_action = action
 
     def connection_raw_execute_success(self, connection, raw_cursor,

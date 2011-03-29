@@ -107,11 +107,11 @@ As will its oops_id
 If the remote bug tracker breaks during an update the error will be
 recorded in the activity entry for that update.
 
-    >>> from lp.bugs.externalbugtracker.base import BugNotFound
+    >>> from lp.bugs.externalbugtracker.base import UnparsableBugData
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestBrokenExternalBugTracker)
     >>> broken_bugtracker = TestBrokenExternalBugTracker('http://example.com')
-    >>> broken_bugtracker.get_remote_status_error = BugNotFound
+    >>> broken_bugtracker.get_remote_status_error = UnparsableBugData
 
     >>> updater.updateBugWatches(broken_bugtracker, [bug_watch])
 
@@ -125,7 +125,7 @@ not found.
 
     >>> most_recent_activity = bug_watch.activity.first()
     >>> print most_recent_activity.result.title
-    Bug Not Found
+    Unparsable Bug
 
 The OOPS ID for the error will also have been recorded.
 

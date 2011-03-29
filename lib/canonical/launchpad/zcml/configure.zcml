@@ -35,6 +35,5 @@
 
     <!-- Special Utilities -->
     <include file="gpghandler.zcml" />
-    <include file="searchservice.zcml" />
 
 </configure>

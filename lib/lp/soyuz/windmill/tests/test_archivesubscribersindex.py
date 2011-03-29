@@ -11,15 +11,15 @@ import unittest
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import (
-    login,
-    logout,
-    )
-from canonical.launchpad.windmill.testing import constants
-from canonical.launchpad.windmill.testing.lpuser import LaunchpadUser
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.windmill.testing import SoyuzWindmillLayer
-from lp.testing import WindmillTestCase
+from lp.testing import (
+    login,
+    logout,
+    WindmillTestCase,
+    )
+from lp.testing.windmill import constants
+from lp.testing.windmill.lpuser import LaunchpadUser
 
 
 ADD_ACCESS_LINK = u'//a[@class="js-action sprite add"]'

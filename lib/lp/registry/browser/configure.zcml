@@ -129,13 +129,6 @@
         template="../templates/distroseries-needs-packaging.pt"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        permission="launchpad.Admin"
-        facet="overview"
-        class="canonical.launchpad.browser.ObjectReassignmentView"
-        name="+reassign"
-        template="../../../canonical/launchpad/templates/object-reassignment.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.distroseries.IDistroSeries"
         permission="launchpad.Edit"
         name="+edit"
         class="lp.registry.browser.distroseries.DistroSeriesEditView"
@@ -1330,14 +1323,14 @@
     <browser:page
         name="+pillar-table-row"
         for="lp.registry.interfaces.milestone.IMilestone"
-        class="lp.registry.browser.milestone.MilestonesView"
+        class="lp.registry.browser.milestone.MilestoneWithoutCountsView"
         facet="overview"
         permission="zope.Public"
         template="../templates/productseries-milestone-table-row.pt"/>
     <browser:page
         name="+pillar-table-row"
         for="lp.registry.interfaces.milestone.IProjectGroupMilestone"
-        class="lp.registry.browser.milestone.MilestoneView"
+        class="lp.registry.browser.milestone.MilestoneWithoutCountsView"
         facet="overview"
         permission="zope.Public"
         template="../templates/productseries-milestone-table-row.pt"/>
@@ -1443,9 +1436,6 @@
         <browser:page
             name="+listing-for-review"
             template="../templates/product-listing-for-review.pt"/>
-        <browser:page
-            name="+listing-detailed"
-            template="../templates/product-listing-detailed.pt"/>
 
         <!-- Products Portlets -->
 
@@ -1482,6 +1472,12 @@
         name="+packages"
         facet="overview"
         template="../templates/product-packages.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        permission="zope.Public"
+        class="canonical.launchpad.webapp.LaunchpadView"
+        name="+listing-detailed"
+        template="../templates/product-listing-detailed.pt"/>
     <browser:renamed-page
         name="+distributions"
         for="lp.registry.interfaces.product.IProduct"
@@ -1948,7 +1944,7 @@
         for="lp.registry.interfaces.distribution.IDistribution"
         permission="launchpad.Edit"
         facet="overview"
-        class="canonical.launchpad.browser.ObjectReassignmentView">
+        class="lp.registry.browser.distribution.DistributionReassignmentView">
         <browser:page
             name="+reassign"
             template="../../../canonical/launchpad/templates/object-reassignment.pt"/>
@@ -1992,6 +1988,13 @@
         facet="overview"
         permission="launchpad.Edit"
         template="../../app/templates/generic-edit.pt"/>
+    <browser:page
+        name="+pubconf"
+        for="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.registry.browser.distribution.DistributionPublisherConfigView"
+        template="../../app/templates/generic-edit.pt"
+        facet="overview"
+        permission="launchpad.Admin"/>
     <browser:defaultView
         for="lp.registry.interfaces.distribution.IDistributionSet"
         name="+index"/>
@@ -2279,29 +2282,6 @@
         facet="overview"
         template="../templates/sourcepackage-remove-packaging.pt"
         />
-
-    <browser:page
-        for="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTarget"
-        name="+subscribe"
-        permission="launchpad.AnyPerson"
-        facet="bugs"
-        class="lp.registry.browser.structuralsubscription.StructuralSubscriptionView"
-        template="../templates/structural-subscriptions-manage.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTarget"
-        name="+portlet-structural-subscribers"
-        facet="bugs"
-        permission="zope.Public"
-        class="lp.registry.browser.structuralsubscription.StructuralSubscribersPortletView"
-        template="../templates/structural-subscription-target-portlet-subscribers.pt"/>
-
-    <browser:url
-        for="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"
-        path_expression="string:+subscription/${subscriber/name}"
-        attribute_to_parent="target"/>
-    <browser:navigation
-        module="lp.registry.browser.structuralsubscription"
-        classes="StructuralSubscriptionNavigation"/>
 
     <browser:url
         for="lp.registry.interfaces.personproduct.IPersonProduct"

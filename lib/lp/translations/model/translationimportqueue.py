@@ -293,7 +293,8 @@ class TranslationImportQueueEntry(SQLBase):
         return pofile_set.getPOFilesByPathAndOrigin(
             self.path, productseries=self.productseries,
             distroseries=self.distroseries,
-            sourcepackagename=self.sourcepackagename).one()
+            sourcepackagename=self.sourcepackagename,
+            ignore_obsolete=True).one()
 
     def canAdmin(self, roles):
         """See `ITranslationImportQueueEntry`."""
@@ -1008,7 +1009,7 @@ class TranslationImportQueue:
             path = path_filter(path)
         return path
 
-    def _isTranslationFile(self, path):
+    def _isTranslationFile(self, path, only_templates):
         """Is this a translation file that should be uploaded?"""
         if path is None or path == '':
             return False
@@ -1023,11 +1024,15 @@ class TranslationImportQueue:
             # Doesn't look like a supported translation file type.
             return False
 
+        if only_templates and not translation_importer.isTemplateName(path):
+            return False
+
         return True
 
     def addOrUpdateEntriesFromTarball(self, content, by_maintainer, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
-        potemplate=None, filename_filter=None, approver_factory=None):
+        potemplate=None, filename_filter=None, approver_factory=None,
+        only_templates=False):
         """See ITranslationImportQueue."""
         num_files = 0
         conflict_files = []
@@ -1044,7 +1049,7 @@ class TranslationImportQueue:
         upload_files = {}
         for name in self._iterTarballFiles(tarball):
             path = self._makePath(name, filename_filter)
-            if self._isTranslationFile(path):
+            if self._isTranslationFile(path, only_templates):
                 upload_files[name] = path
         tarball.close()
 

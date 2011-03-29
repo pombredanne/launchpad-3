@@ -107,7 +107,7 @@ the respective librarian URL and size:
     >>> dfiles_element = find_tag_by_id(
     ...     browser.contents, 'downloadable-files')
     >>> print dfiles_element.find(name='a')['href']
-    http://localhost:58000/40/mozilla-firefox_0.9_i386.deb
+    http://.../40/mozilla-firefox_0.9_i386.deb
 
 If the binary package did produce files, but those files have been
 subsequently deleted, this will also be indicated and the file will

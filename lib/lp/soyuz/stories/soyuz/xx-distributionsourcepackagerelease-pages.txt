@@ -188,7 +188,7 @@ source in the context distribution, grouped by distroseries.
     Breezy Badger Autotest: i386
 
     >>> print anon_browser.getLink('i386').url
-    http://launchpad.dev/ubuntutest/+source/testing-dspr/1.0/+build/...
+    http://launchpad.dev/ubuntutest/+source/testing-dspr/1.0/+buildjob/...
 
 The 'Downloads' section lists and links to the files for this
 source. Each file links to its normalized download path based on the

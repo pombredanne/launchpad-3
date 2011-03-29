@@ -177,7 +177,7 @@ The code also generated an email about the error we produced.
     'PO-Revision-Date' field updated.
     <BLANKLINE>
     For your convenience, you can get the file you uploaded at:
-    http://localhost:58000/.../firefox-cy.po
+    http://.../firefox-cy.po
     <BLANKLINE>
     Thank you,
     <BLANKLINE>

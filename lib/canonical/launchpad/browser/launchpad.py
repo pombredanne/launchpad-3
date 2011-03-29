@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser code for the launchpad application."""
@@ -93,7 +93,6 @@ from canonical.lazr import (
     ExportedFolder,
     ExportedImageFolder,
     )
-from canonical.widgets.project import ProjectScopeWidget
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.app.browser.launchpadform import (
     custom_widget,
@@ -115,6 +114,7 @@ from lp.app.errors import (
     POSTToNonCanonicalURL,
     )
 from lp.app.interfaces.headings import IMajorHeadingView
+from lp.app.widgets.project import ProjectScopeWidget
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.interfaces.sprint import ISprintSet
 from lp.bugs.interfaces.bug import IBugSet
@@ -210,6 +210,33 @@ class LinkView(LaunchpadView):
             return self.template().strip()
         else:
             return ''
+
+    @property
+    def css_class(self):
+        """Return the CSS class."""
+        value = ["menu-link-%s" % self.context.name]
+        if not self.context.linked:
+            value.append('nolink')
+        if self.context.icon:
+            value.append(self.sprite_class)
+            value.append(self.context.icon)
+        if self.context.hidden:
+            value.append('invisible-link')
+        return " ".join(value)
+
+    @property
+    def url(self):
+        """Return the url if linked."""
+        if self.context.linked:
+            return self.context.url
+        return ''
+
+    @property
+    def summary(self):
+        """Return the summary if linked."""
+        if self.context.linked:
+            return self.context.summary
+        return ''
 
 
 class Hierarchy(LaunchpadView):
@@ -639,7 +666,7 @@ class LaunchpadRootNavigation(Navigation):
                     raise NotFound(self.context, name)
                 # Only admins are permitted to see suspended users.
                 if person.account_status == AccountStatus.SUSPENDED:
-                    if not check_permission('launchpad.Admin', person):
+                    if not check_permission('launchpad.Moderate', person):
                         raise GoneError(
                             'User is suspended: %s' % name)
                 return person
@@ -668,7 +695,8 @@ class LaunchpadRootNavigation(Navigation):
             if pillar.name != name:
                 # This pillar was accessed through one of its aliases, so we
                 # must redirect to its canonical URL.
-                return self.redirectSubTree(canonical_url(pillar), status=301)
+                return self.redirectSubTree(
+                    canonical_url(pillar, self.request), status=301)
             return pillar
         return None
 
@@ -706,7 +734,7 @@ class LaunchpadRootNavigation(Navigation):
             except NotFoundError:
                 raise NotFound(self.context, bug_number)
             if not check_permission("launchpad.View", bug):
-                raise Unauthorized("Bug %s is private" % bug_number)
+                return None
             # Empty the traversal stack, since we're redirecting.
             self.request.setTraversalStack([])
             # And perform a temporary redirect.

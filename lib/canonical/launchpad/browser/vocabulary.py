@@ -144,13 +144,14 @@ class HugeVocabularyJSONView:
 
         vocabulary = factory(self.context)
 
-        if not IHugeVocabulary.providedBy(vocabulary):
-            raise UnexpectedFormData(
-                'Non-huge vocabulary %r' % name)
+        if IHugeVocabulary.providedBy(vocabulary):
+            matches = vocabulary.searchForTerms(search_text)
+            total_size = matches.count()
+        else:
+            matches = list(vocabulary)
+            total_size = len(matches)
 
-        matches = vocabulary.searchForTerms(search_text)
         batch_navigator = BatchNavigator(matches, self.request)
-        total_size = matches.count()
 
         result = []
         for term in batch_navigator.currentBatch():

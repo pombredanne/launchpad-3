@@ -8,19 +8,26 @@ __all__ = ['BugSubscriptionFilter']
 
 from itertools import chain
 
-from storm.base import Storm
 from storm.locals import (
     Bool,
     Int,
     Reference,
+    SQL,
     Store,
     Unicode,
     )
 from zope.interface import implements
 
+from canonical.database.enumcol import DBEnum
+from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad import searchbuilder
 from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.bugs.model.bugsubscriptionfilterimportance import (
     BugSubscriptionFilterImportance,
     )
@@ -28,9 +35,10 @@ from lp.bugs.model.bugsubscriptionfilterstatus import (
     BugSubscriptionFilterStatus,
     )
 from lp.bugs.model.bugsubscriptionfiltertag import BugSubscriptionFilterTag
+from lp.services.database.stormbase import StormBase
 
 
-class BugSubscriptionFilter(Storm):
+class BugSubscriptionFilter(StormBase):
     """A filter to specialize a *structural* subscription."""
 
     implements(IBugSubscriptionFilter)
@@ -44,6 +52,10 @@ class BugSubscriptionFilter(Storm):
     structural_subscription = Reference(
         structural_subscription_id, "StructuralSubscription.id")
 
+    bug_notification_level = DBEnum(
+        enum=BugNotificationLevel,
+        default=BugNotificationLevel.COMMENTS,
+        allow_none=False)
     find_all_tags = Bool(allow_none=False, default=False)
     include_any_tags = Bool(allow_none=False, default=False)
     exclude_any_tags = Bool(allow_none=False, default=False)
@@ -65,8 +77,15 @@ class BugSubscriptionFilter(Storm):
 
         The statuses must be from the `BugTaskStatus` enum, but can be
         bundled in any iterable.
+
+        Setting all statuses is equivalent to setting no statuses, and
+        is normalized that way.
         """
         statuses = frozenset(statuses)
+        if statuses == frozenset(BugTaskStatus.items):
+            # Setting all is the same as setting none, and setting none is
+            # cheaper for reading and storage.
+            statuses = frozenset()
         current_statuses = self.statuses
         store = IStore(BugSubscriptionFilterStatus)
         # Add additional statuses.
@@ -99,8 +118,15 @@ class BugSubscriptionFilter(Storm):
 
         The importances must be from the `BugTaskImportance` enum, but can be
         bundled in any iterable.
+
+        Setting all importances is equivalent to setting no importances, and
+        is normalized that way.
         """
         importances = frozenset(importances)
+        if importances == frozenset(BugTaskImportance.items):
+            # Setting all is the same as setting none, and setting none is
+            # cheaper for reading and storage.
+            importances = frozenset()
         current_importances = self.importances
         store = IStore(BugSubscriptionFilterImportance)
         # Add additional importances.
@@ -184,7 +210,30 @@ class BugSubscriptionFilter(Storm):
         _get_tags, _set_tags, doc=(
             "A frozenset of tags filtered on."))
 
+    def _has_other_filters(self):
+        """Are there other filters for parent `StructuralSubscription`?"""
+        store = Store.of(self)
+        # Avoid race conditions by locking all the rows
+        # that we do our check over.
+        store.execute(SQL(
+            """SELECT * FROM BugSubscriptionFilter
+                 WHERE structuralsubscription=%s
+                 FOR UPDATE""" % sqlvalues(self.structural_subscription_id)))
+        return bool(store.find(
+            BugSubscriptionFilter,
+            (BugSubscriptionFilter.structural_subscription ==
+             self.structural_subscription),
+            BugSubscriptionFilter.id != self.id).any())
+
     def delete(self):
         """See `IBugSubscriptionFilter`."""
+        # This clears up all of the linked sub-records in the associated
+        # tables.
         self.importances = self.statuses = self.tags = ()
-        Store.of(self).remove(self)
+
+        if self._has_other_filters():
+            Store.of(self).remove(self)
+        else:
+            # There are no other filters.  We can delete the parent
+            # subscription.
+            self.structural_subscription.delete()

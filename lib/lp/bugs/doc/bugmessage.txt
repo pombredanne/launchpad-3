@@ -68,6 +68,11 @@ The parent gets set to the initial message of the bug:
     >>> test_message.message.parent == bug_one.initial_message
     True
 
+And the index of the bugmessage is set:
+
+    >>> test_message.index
+    2
+
 
 == Links and CVEs in bug messages ==
 
@@ -131,8 +136,11 @@ an external bug tracker.
     ...        CVE-1991-3333
     ...    """,
     ...    bug_watch_updater)
-    >>> bug_one.linkMessage(message)
+    >>> bugmsg = bug_one.linkMessage(message)
+    >>> bugmsg
     <BugMessage at...
+    >>> bugmsg.index
+    4
     >>> for cve in bug_one.cves:
     ...     print cve.displayname
     CVE-1991-3333

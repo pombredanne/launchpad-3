@@ -348,10 +348,10 @@ subscribed to milestone 1.0, and David is subscribed to milestone 2.0.
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> ddaa = getUtility(IPersonSet).getByName('ddaa')
     >>> milestone_one.addBugSubscription(cprov, cprov)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
 
     >>> milestone_two.addBugSubscription(ddaa, ddaa)
-    <StructuralSubscription at ...>
+    <...StructuralSubscription object at ...>
 
 We change the milestone for the task from 1.0 to 2.0, and fire the
 change event.

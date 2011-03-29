@@ -1,4 +1,5 @@
-= Bug tags =
+Bug tags
+========
 
 In order to arbitrary group bugs together a bug can be associated with
 one or more tags. A tag is a simple text string, not contain a space
@@ -62,7 +63,8 @@ Let's correct the spelling mistake we did and delete one of the tags:
     sco
 
 
-== Widgets ==
+Widgets
+-------
 
 To make it easy editing the tags as a space separated text string, we
 use BugTagsWidget.
@@ -158,7 +160,8 @@ Duplicate tags are converted to a single instance.
     [u'bar', u'foo']
 
 
-=== Bug Tags Widget for Frozen Sets ===
+Bug Tags Widget for Frozen Sets
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A variant of `BugTagsWidget` exists for when tags are stored in a
 `FrozenSet` field.
@@ -201,7 +204,8 @@ Otherwise it returns a `frozenset` of the tags given:
     frozenset([u'foo', u'bar'])
 
 
-=== Large and Small Bug Tags Widget ===
+Large and Small Bug Tags Widget
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A regular BugTagsWidget is rendered as an <input> tag,
 
@@ -217,7 +221,8 @@ A LargeBugTagsWidget is rendered as a <textarea>,
     <textarea...
 
 
-== Searching ==
+Searching
+---------
 
 We can search for bugs with some specific tag.
 
@@ -277,7 +282,9 @@ If we now set bug one's tag to 'some-tag', it will be found.
     ...     print bugtask.id, bugtask.bug.id, bugtask.bug.tags
     1 [u'some-tag']
 
-== Tags for a context ==
+
+Tags for a context
+------------------
 
 When viewing a bug listing for a context we want to display all the tags
 that are used in that context. For this we have a method on each bug
@@ -317,7 +324,8 @@ are shown, no matter if they are used in open bugs or closed ones.
     >>> debian_woody.getUsedBugTags()
     [u'dataloss', u'layout-test', u'pebcak']
 
-    >>> debian_woody_firefox = debian_woody.getSourcePackage('mozilla-firefox')
+    >>> debian_woody_firefox = (
+    ...     debian_woody.getSourcePackage('mozilla-firefox'))
     >>> debian_woody_firefox.getUsedBugTags()
     [u'dataloss', u'layout-test', u'pebcak']
 
@@ -333,7 +341,6 @@ bugs each tag has. Only tags having open bugs are returned.
     >>> ubuntu.getUsedBugTagsWithOpenCounts(None)
     [(u'crash', 2L), (u'dataloss', 1L), (u'pebcak', 1L),
      (u'sco', 1L), (u'svg', 1L)]
-
 
 Source packages are a bit special, they return all the tags that are
 used in the whole distribution, while the bug count includes only bugs

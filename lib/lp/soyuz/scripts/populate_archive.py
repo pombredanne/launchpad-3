@@ -13,8 +13,8 @@ __all__ = [
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.validators.name import valid_name
 from lp.app.errors import NotFoundError
+from lp.app.validators.name import valid_name
 from lp.soyuz.adapters.packagelocation import build_package_location
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.component import IComponentSet

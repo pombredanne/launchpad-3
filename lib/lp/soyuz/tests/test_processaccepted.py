@@ -125,8 +125,8 @@ class TestProcessAccepted(TestCaseWithFactory):
         self.assertEqual(published_main.count(), 0)
 
         # Check the copy archive source was accepted.
-        [published_copy] = copy_archive.getPublishedSources(
-            name=self.test_package_name)
+        published_copy = copy_archive.getPublishedSources(
+            name=self.test_package_name).one()
         self.assertEqual(
             published_copy.status, PackagePublishingStatus.PENDING)
         self.assertEqual(copy_source, published_copy.sourcepackagerelease)

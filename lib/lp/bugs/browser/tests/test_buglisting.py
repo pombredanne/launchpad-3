@@ -49,7 +49,7 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
         self.assertTrue(len(top_portlet) > 0,
                         "Tag with class=top-portlet not found")
         self.assertTextMatchesExpressionIgnoreWhitespace("""
-            test-dsp in test-distro does not use Launchpad for bug tracking.
+            test-dsp in Test-distro does not use Launchpad for bug tracking.
             Getting started with bug tracking in Launchpad.""",
             extract_text(top_portlet[0]))
 
@@ -140,7 +140,7 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
 
     def test_searchUnbatched_can_preload_objects(self):
         # BugTaskSearchListingView.searchUnbatched() can optionally
-        # preload objects while retureving the bugtasks.
+        # preload objects while retrieving the bugtasks.
         product = self.factory.makeProduct()
         bugtask_1 = self.factory.makeBug(product=product).default_bugtask
         bugtask_2 = self.factory.makeBug(product=product).default_bugtask
@@ -154,7 +154,7 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
             # If the table prejoin failed, then this will issue two
             # additional SQL queries
             [bugtask.owner for bugtask in bugtasks]
-        self.assertThat(recorder, HasQueryCount(Equals(1)))
+        self.assertThat(recorder, HasQueryCount(Equals(2)))
 
 
 class BugTargetTestCase(TestCaseWithFactory):

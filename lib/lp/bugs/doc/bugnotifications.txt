@@ -51,6 +51,16 @@ those notifications look like.
     >>> print latest_notification.message.text_contents
     this is a comment
 
+Notifications usually have references to a corresponding bug activity.  These
+can get you details on precisely what changed from a more programmatic
+perspective.  You can get details on what the activity provides in
+bugactivity.txt, but for now here is a small demo.
+
+    >>> print latest_notification.activity.whatchanged
+    bug
+    >>> print latest_notification.activity.person.displayname
+    Sample Person
+
 
 === Editing a bug report ===
 
@@ -72,6 +82,12 @@ those notifications look like.
     >>> print latest_notification.message.text_contents
     ** Description changed:
     ...
+    >>> print latest_notification.activity.attribute
+    description
+    >>> print latest_notification.activity.oldvalue
+    this is a comment
+    >>> print latest_notification.activity.newvalue
+    a new description
 
 
 === Filing a new task on an existing bug ===

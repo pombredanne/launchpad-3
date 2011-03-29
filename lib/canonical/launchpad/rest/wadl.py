@@ -46,7 +46,7 @@ def generate_html(wadl_filename, suppress_stderr=True):
     # stderr file handle and then discard the output.  Otherwise we let the
     # subprocess inherit stderr.
     stylesheet = pkg_resources.resource_filename(
-        'launchpadlib', 'wadl-to-refhtml.xsl')
+        'lp.services.webservice', 'wadl-to-refhtml.xsl')
     if suppress_stderr:
         stderr = subprocess.PIPE
     else:

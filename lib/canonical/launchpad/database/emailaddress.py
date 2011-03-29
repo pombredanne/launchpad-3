@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces.emailaddress import (
     IEmailAddressSet,
     InvalidEmailAddress,
     )
-from canonical.launchpad.validators.email import valid_email
+from lp.app.validators.email import valid_email
 
 
 class HasOwnerMixin:
@@ -67,6 +67,7 @@ class EmailAddress(SQLBase, HasOwnerMixin):
     def destroySelf(self):
         """See `IEmailAddress`."""
         # Import this here to avoid circular references.
+        from lp.registry.interfaces.mailinglist import MailingListStatus
         from lp.registry.model.mailinglist import (
             MailingListSubscription)
 
@@ -74,7 +75,9 @@ class EmailAddress(SQLBase, HasOwnerMixin):
             raise UndeletableEmailAddress(
                 "This is a person's preferred email, so it can't be deleted.")
         mailing_list = self.person and self.person.mailing_list
-        if mailing_list is not None and mailing_list.address == self.email:
+        if (mailing_list is not None
+            and mailing_list.status != MailingListStatus.PURGED
+            and mailing_list.address == self.email):
             raise UndeletableEmailAddress(
                 "This is the email address of a team's mailing list, so it "
                 "can't be deleted.")

@@ -26,9 +26,9 @@ option to subscribe to the bug at a given BugNotificationLevel.
     ...     name='field.bug_notification_level')
     >>> for control in bug_notification_level_control.controls:
     ...     print control.optionValue
-    COMMENTS
-    METADATA
-    LIFECYCLE
+    Discussion
+    Details
+    Lifecycle
 
 The user can now subscribe to the bug at any of the given notification
 levels. In this case, they want to subscribe to just metadata updates:

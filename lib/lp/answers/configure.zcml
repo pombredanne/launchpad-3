@@ -60,12 +60,6 @@
         handler=".karma.question_comment_added"
         />
 
-    <subscriber
-        for=".interfaces.question.IQuestion
-             lazr.lifecycle.interfaces.IObjectModifiedEvent"
-        handler=".model.questionreopening.create_questionreopening"
-        />
-
     <class class=".model.questionreopening.QuestionReopening">
         <allow
           interface=".interfaces.questionreopening.IQuestionReopening"

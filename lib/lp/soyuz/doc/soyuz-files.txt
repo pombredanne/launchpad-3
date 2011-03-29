@@ -48,7 +48,7 @@ package for that release:
  u'firefox_0.9.2.orig.tar.gz'
 
  >>> srcfile.libraryfile.http_url
- 'http://localhost:58000/3/firefox_0.9.2.orig.tar.gz'
+ 'http://.../3/firefox_0.9.2.orig.tar.gz'
 
 
 == Binary Files ==
@@ -76,7 +76,7 @@ instalable debian-format file:
  u'pmount_1.9-1_all.deb'
 
  >>> debfile.libraryfile.http_url
- 'http://localhost:58000/37/pmount_1.9-1_all.deb'
+ 'http://.../37/pmount_1.9-1_all.deb'
 
 
 == Utilities ==

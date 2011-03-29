@@ -31,11 +31,25 @@ from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.webapp.adapter import get_request_statements
 from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import OAuthPermission
+from canonical.launchpad.webapp.publisher import canonical_url
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing._login import (
     login,
     logout,
     )
+
+
+def api_url(obj):
+    """Find the web service URL of a data model object.
+
+    This makes it easy to load up the factory object you just created
+    in launchpadlib.
+
+    :param: Which web service version to use.
+
+    :return: A relative URL suitable for passing into Launchpad.load().
+    """
+    return canonical_url(obj, force_local_path=True)
 
 
 def oauth_access_token_for(consumer_name, person, permission, context=None):
@@ -121,7 +135,7 @@ def _clean_up_cache(cache):
 
 def launchpadlib_for(
     consumer_name, person=None, permission=OAuthPermission.WRITE_PRIVATE,
-    context=None, version=None, service_root="http://api.launchpad.dev/"):
+    context=None, version="devel", service_root="http://api.launchpad.dev/"):
     """Create a Launchpad object for the given person.
 
     :param consumer_name: An OAuth consumer name.
@@ -142,41 +156,17 @@ def launchpadlib_for(
         credentials = launchpadlib_credentials_for(
             consumer_name, person, permission, context)
     transaction.commit()
-    version = version or Launchpad.DEFAULT_VERSION
     cache = tempfile.mkdtemp(prefix='launchpadlib-cache-')
     zope.testing.cleanup.addCleanUp(_clean_up_cache, (cache,))
-    return TestLaunchpad(credentials, None, None, service_root=service_root,
-                         version=version, cache=cache)
-
-
-class TestLaunchpad(Launchpad):
-    """A variant of the Launchpad service root class providing test helpers.
-    """
-
-    def rawGet(self, url, follow_redirects=None):
-        """Return a the result of a GET request for the given URL.
-
-        :param url: The URL of the request.
-        :param follow_redirects: If None, keep the default behaviour.
-            If True, follow redirect responses.
-            If False, do not follow a redirect response but return the
-            plain redirect.
-
-        :return: The tuple (response, content)
-        """
-        default_redirect = self._browser._connection.follow_redirects
-        if follow_redirects is not None:
-            self._browser._connection.follow_redirects = follow_redirects
-        response, content = self._browser.get(url, return_response=True)
-        self._browser._connection.follow_redirects = default_redirect
-        return response, content
+    return Launchpad(credentials, None, None, service_root=service_root,
+                     version=version, cache=cache)
 
 
 class QueryCollector:
     """Collect database calls made in web requests.
 
     These are only retrievable at the end of a request, and for tests it is
-    useful to be able to make aassertions about the calls made during a
+    useful to be able to make assertions about the calls made during a
     request: this class provides a tool to gather them in a simple fashion.
 
     :ivar count: The count of db queries the last web request made.

@@ -143,13 +143,3 @@ Source package recipes have their own section on the home page.
     /+daily-builds
     >>> print changed.fetch('a')[-1]['href']
     https://help.launchpad.net/Packaging/SourceBuilds
-
-    >>> browser.getLink(url='daily-builds').click()
-    >>> print browser.title
-    Most Recently Completed Daily Recipe Builds
-
-    >>> text = extract_text(browser.contents)
-    >>> print text
-    Most Recently Completed Daily Recipe Builds ...
-    No recently completed daily builds found. ...
-

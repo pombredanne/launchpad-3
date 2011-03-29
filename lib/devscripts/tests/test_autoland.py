@@ -71,7 +71,7 @@ class TestPQMRegexAcceptance(unittest.TestCase):
     def setUp(self):
         # PQM regexes; might need update once in a while
         self.devel_open_re = ("(?is)^\s*(:?\[testfix\])?\[(?:"
-            "release-critical=[^\]]+|rs?=[^\]]+)\]\[ui=(?:.+)\]")
+            "release-critical=[^\]]+|rs?=[^\]]+)\]")
         self.dbdevel_normal_re = ("(?is)^\s*(:?\[testfix\])?\[(?:"
             "release-critical|rs?=[^\]]+)\]")
 
@@ -153,7 +153,7 @@ class TestGetCommitMessage(unittest.TestCase):
         self.mp.get_bugs = FakeMethod([self.fake_bug])
         self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
 
-        self.assertEqual("[r=foo][ui=none][bug=20] Foobaring the sbrubble.",
+        self.assertEqual("[r=foo][bug=20] Foobaring the sbrubble.",
             self.mp.build_commit_message("Foobaring the sbrubble.",
                 testfix, no_qa, incr))
 
@@ -176,7 +176,7 @@ class TestGetCommitMessage(unittest.TestCase):
         self.mp.get_bugs = FakeMethod([])
         self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
 
-        self.assertEqual("[r=foo][ui=none][no-qa] Foobaring the sbrubble.",
+        self.assertEqual("[r=foo][no-qa] Foobaring the sbrubble.",
             self.mp.build_commit_message("Foobaring the sbrubble.",
                 testfix, no_qa, incr))
 
@@ -189,7 +189,7 @@ class TestGetCommitMessage(unittest.TestCase):
         self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
 
         self.assertEqual(
-            "[r=foo][ui=none][bug=20][no-qa] Foobaring the sbrubble.",
+            "[r=foo][bug=20][no-qa] Foobaring the sbrubble.",
             self.mp.build_commit_message("Foobaring the sbrubble.",
                 testfix, no_qa, incr))
 
@@ -202,7 +202,7 @@ class TestGetCommitMessage(unittest.TestCase):
         self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
 
         self.assertEqual(
-            "[r=foo][ui=none][bug=20][incr] Foobaring the sbrubble.",
+            "[r=foo][bug=20][incr] Foobaring the sbrubble.",
             self.mp.build_commit_message("Foobaring the sbrubble.",
                 testfix, no_qa, incr))
 
@@ -215,7 +215,7 @@ class TestGetCommitMessage(unittest.TestCase):
         self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
 
         self.assertEqual(
-            "[r=foo][ui=none][bug=20][incr] Foobaring the sbrubble.",
+            "[r=foo][bug=20][incr] Foobaring the sbrubble.",
             self.mp.build_commit_message("Foobaring the sbrubble.",
                 testfix, no_qa, incr))
 
@@ -228,7 +228,7 @@ class TestGetCommitMessage(unittest.TestCase):
         self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
 
         self.assertEqual(
-            "[r=foo][ui=none][bug=20][no-qa][incr] Foobaring the sbrubble.",
+            "[r=foo][bug=20][no-qa][incr] Foobaring the sbrubble.",
             self.mp.build_commit_message("Foobaring the sbrubble.", 
                 testfix, no_qa, incr))
 
@@ -237,7 +237,7 @@ class TestGetCommitMessage(unittest.TestCase):
         self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
 
         self.assertEqual(
-            "[r=foo][ui=none][bug=20][rollback=123] Foobaring the sbrubble.",
+            "[r=foo][bug=20][rollback=123] Foobaring the sbrubble.",
             self.mp.build_commit_message("Foobaring the sbrubble.", 
                 rollback=123))
 
@@ -246,9 +246,9 @@ class TestGetCommitMessage(unittest.TestCase):
         self.mp.get_reviews = FakeMethod({None : [self.fake_person]})
 
         self.assertEqual(
-            "[r=foo][ui=none][bug=20][rollback=123] Foobaring the sbrubble.",
+            "[r=foo][bug=20][rollback=123] Foobaring the sbrubble.",
             self.mp.build_commit_message(
-                "[r=foo][ui=none][bug=20][rollback=123] Foobaring the sbrubble.",
+                "[r=foo][bug=20][rollback=123] Foobaring the sbrubble.",
                 rollback=123))
 
 
@@ -378,15 +378,15 @@ class TestGetReviewerClause(unittest.TestCase):
     def test_one_reviewer_no_type(self):
         # It's very common for a merge proposal to be reviewed by one person
         # with no specified type of review. It such cases the review clause is
-        # '[r=<person>][ui=none]'.
+        # '[r=<person>]'.
         clause = self.get_reviewer_clause({None: [self.makePerson('foo')]})
-        self.assertEqual('[r=foo][ui=none]', clause)
+        self.assertEqual('[r=foo]', clause)
 
     def test_two_reviewers_no_type(self):
         # Branches can have more than one reviewer.
         clause = self.get_reviewer_clause(
             {None: [self.makePerson('foo'), self.makePerson('bar')]})
-        self.assertEqual('[r=bar,foo][ui=none]', clause)
+        self.assertEqual('[r=bar,foo]', clause)
 
     def test_mentat_reviewers(self):
         # A mentat review sometimes is marked like 'ui*'.  Due to the
@@ -404,7 +404,7 @@ class TestGetReviewerClause(unittest.TestCase):
         # reviews, these are treated in the same way as reviewers without any
         # given type.
         clause = self.get_reviewer_clause({'code': [self.makePerson('foo')]})
-        self.assertEqual('[r=foo][ui=none]', clause)
+        self.assertEqual('[r=foo]', clause)
 
     def test_release_critical(self):
         # Reviews that are marked as release-critical are included in a
@@ -412,13 +412,13 @@ class TestGetReviewerClause(unittest.TestCase):
         clause = self.get_reviewer_clause(
             {'code': [self.makePerson('foo')],
              'release-critical': [self.makePerson('bar')]})
-        self.assertEqual('[release-critical=bar][r=foo][ui=none]', clause)
+        self.assertEqual('[release-critical=bar][r=foo]', clause)
 
     def test_db_reviewer_counts(self):
         # There's no special way of annotating database reviews in Launchpad
         # commit messages, so they are included with the code reviews.
         clause = self.get_reviewer_clause({'db': [self.makePerson('foo')]})
-        self.assertEqual('[r=foo][ui=none]', clause)
+        self.assertEqual('[r=foo]', clause)
 
     def test_ui_reviewers(self):
         # If someone has done a UI review, then that appears in the clause

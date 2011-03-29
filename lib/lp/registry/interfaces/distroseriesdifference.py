@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface classes for a difference between two distribution series."""
@@ -38,8 +38,8 @@ from lp.registry.enum import (
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.soyuz.interfaces.packagediff import IPackageDiff
 from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 
@@ -132,7 +132,8 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
         ISourcePackagePublishingHistory,
         title=_("Base source pub"), readonly=True,
         description=_(
-            "The common base version published in the derived series."))
+            "The common base version published in the parent or the "
+            "derived series."))
 
     owner = Reference(
         IPerson, title=_("Owning team of the derived series"), readonly=True,
@@ -222,7 +223,9 @@ class IDistroSeriesDifferenceSource(Interface):
     def getForDistroSeries(
         distro_series,
         difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
-        status=None):
+        source_package_name_filter=None,
+        status=None,
+        child_version_higher=False):
         """Return differences for the derived distro series.
 
         :param distro_series: The derived distribution series which is to be
@@ -231,9 +234,14 @@ class IDistroSeriesDifferenceSource(Interface):
         :param difference_type: The type of difference to include in the
             results.
         :type difference_type: `DistroSeriesDifferenceType`.
+        :param source_package_name_filter: Package source name filter.
+        :type source_package_name_filter: unicode.
         :param status: Only differences matching the status(es) will be
             included.
         :type status: `DistroSeriesDifferenceStatus`.
+        :param child_version_higher: Only differences for which the child's
+            version is higher than the parent's version will be included.
+        :type child_version_higher: bool.
         :return: A result set of differences.
         """
 

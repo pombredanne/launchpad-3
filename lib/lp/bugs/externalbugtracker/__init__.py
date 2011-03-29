@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0401
@@ -27,8 +27,8 @@ __all__ = [
     'Trac',
     'UnknownBugTrackerTypeError',
     'UnknownRemoteStatusError',
-    'UnparseableBugData',
-    'UnparseableBugTrackerVersion',
+    'UnparsableBugData',
+    'UnparsableBugTrackerVersion',
     'UnsupportedBugTrackerVersion',
     'get_external_bugtracker',
     ]
@@ -51,7 +51,7 @@ BUG_TRACKER_CLASSES = {
     BugTrackerType.TRAC: Trac,
     BugTrackerType.ROUNDUP: Roundup,
     BugTrackerType.RT: RequestTracker,
-    BugTrackerType.SOURCEFORGE: SourceForge
+    BugTrackerType.SOURCEFORGE: SourceForge,
     }
 
 

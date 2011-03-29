@@ -319,5 +319,5 @@ def schedule_diff_updates(tip_changed):
 
 
 def update_recipes(tip_changed):
-    for recipe in tip_changed.db_branch.getRecipes():
+    for recipe in tip_changed.db_branch.recipes:
         recipe.is_stale = True

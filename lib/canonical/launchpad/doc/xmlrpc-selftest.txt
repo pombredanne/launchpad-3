@@ -16,7 +16,7 @@ We can test our XMLRPC APIs using xmlrpclib, using a custom Transport
 which talks with the publisher directly.
 
     >>> import xmlrpclib
-    >>> from canonical.functional import XMLRPCTestTransport
+    >>> from lp.testing.xmlrpc import XMLRPCTestTransport
     >>> selftest = xmlrpclib.ServerProxy(
     ...     'http://xmlrpc.launchpad.dev/', transport=XMLRPCTestTransport())
     >>> selftest.concatenate('foo', 'bar')

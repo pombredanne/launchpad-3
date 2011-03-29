@@ -57,6 +57,7 @@ from lp.registry.scripts.distributionmirror_prober import (
     RedirectAwareProberFactory,
     RedirectAwareProberProtocol,
     RequestManager,
+    RedirectToDifferentFile,
     restore_http_proxy,
     should_skip_host,
     UnknownURLSchemeAfterRedirect,
@@ -666,11 +667,13 @@ class TestMirrorCDImageProberCallbacks(TestCaseWithFactory):
                 BadResponseCode,
                 ProberTimeout,
                 ConnectionSkipped,
+                RedirectToDifferentFile,
                 UnknownURLSchemeAfterRedirect,
                 ]))
         exceptions = [BadResponseCode(str(httplib.NOT_FOUND)),
                       ProberTimeout('http://localhost/', 5),
                       ConnectionSkipped(),
+                      RedirectToDifferentFile('/foo', '/bar'),
                       UnknownURLSchemeAfterRedirect('https://localhost')]
         for exception in exceptions:
             failure = callbacks.ensureOrDeleteMirrorCDImageSeries(

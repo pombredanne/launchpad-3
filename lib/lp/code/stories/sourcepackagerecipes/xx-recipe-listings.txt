@@ -5,7 +5,10 @@ Recipe Listing Pages
 Pages that want to display lists of recipes use the recipe-listing
 page template, and views derived from RecipeListingView.
 
-
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> fixture = FeatureFixture(
+    ...     {'code.recipes_enabled': 'on', 'code.recipes.beta': 'true'})
+    >>> fixture.setUp()
     >>> def print_recipe_listing_head(browser):
     ...     table = find_tag_by_id(browser.contents, 'recipetable')
     ...     for row in table.thead.fetch('tr'):
@@ -135,3 +138,5 @@ this product.
     generic-string... lp://dev/... ...
     generic-string... lp://dev/... ...
     generic-string... lp://dev/... ...
+
+    >>> fixture.cleanUp()

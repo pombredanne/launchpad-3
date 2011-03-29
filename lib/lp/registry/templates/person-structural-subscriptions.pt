@@ -23,7 +23,7 @@
       <div class="yui-g">
         <div class="portlet" id="structural-subscriptions">
 
-          <ul tal:condition="structural_subscriptions">
+          <ul tal:condition="python:not structural_subscriptions.is_empty()">
             <li tal:repeat="subscription structural_subscriptions"
                 style="margin: 1em 0em; padding: 1em; border: 1px solid #ddd;">
               <span tal:replace="structure subscription/target/fmt:link" />
@@ -55,17 +55,26 @@
                   </dl>
                 </tal:filtered>
                 <tal:unfiltered condition="not:bug_filters">
-                  Bug mail is <b>not</b> filtered; mail for <span
-                  tal:content="subscription/subscriber/fmt:displayname" />
-                  about
-                  <span tal:content="subscription/target/displayname" />
-                  will always be sent.
+                  <p>
+                    Bug mail is <b>not</b> filtered; mail for <span
+                    tal:content="subscription/subscriber/fmt:displayname" />
+                    about
+                    <span tal:content="subscription/target/displayname" />
+                    will always be sent.
+                  </p>
                 </tal:unfiltered>
+                <div style="margin-top: 1em"
+                     tal:condition="subscription/required:launchpad.Edit">
+                  <a class="sprite add new-filter"
+                     tal:attributes="href subscription/fmt:url/+new-filter">
+                    Create a new filter
+                  </a>
+                </div>
               </div>
             </li>
           </ul>
 
-          <p tal:condition="not: structural_subscriptions">
+          <p tal:condition="python: structural_subscriptions.is_empty()">
             <tal:person content="context/fmt:displayname" /> does not
             have any structural subscriptions.
           </p>

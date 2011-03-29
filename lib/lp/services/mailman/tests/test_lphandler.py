@@ -81,3 +81,17 @@ class TestLaunchpadMemberTestCase(MailmanTestCase):
         silence = LaunchpadMember.process(self.mm_list, message, msg_data)
         self.assertEqual(None, silence)
         self.assertEqual(True, msg_data['approved'])
+
+    def test_proxy_error_retries_message(self):
+        # When the Launchpad xmlrpc proxy raises an error, the message
+        # is re-enqueed.
+        lp_user_email = 'groundhog@eg.dom'
+        lp_user = self.factory.makePerson(email=lp_user_email)
+        message = self.makeMailmanMessage(
+            self.mm_list, lp_user_email, 'subject', 'any content.')
+        msg_data = {}
+        with self.raise_proxy_exception('isRegisteredInLaunchpad'):
+            args = (self.mm_list, message, msg_data)
+            self.assertRaises(
+                Errors.DiscardMessage, LaunchpadMember.process, *args)
+            self.assertIsEnqueued(message)

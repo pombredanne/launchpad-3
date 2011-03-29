@@ -413,7 +413,7 @@
       </tr>
       <tr>
         <td>remove</td>
-        <td><img src="/@@/remove" /></td>
+        <td><img src="/@@/remove" alt="Remove" /></td>
         <td>Can be clicked to "remove" data from the system. Is sometimes
         used as a bullet on an action menu item which results in data
         removal, or in lists where clicking it will remove the data in that

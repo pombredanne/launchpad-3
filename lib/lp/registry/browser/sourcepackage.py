@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for sourcepackages."""
@@ -56,13 +56,10 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from canonical.launchpad.webapp.interfaces import IBreadcrumb
 from canonical.launchpad import (
     _,
     helpers,
     )
-from lp.app.interfaces.launchpad import IServiceUsage
-from lp.app.browser.tales import CustomizableFormatter
 from canonical.launchpad.browser.multistep import (
     MultiStepView,
     StepView,
@@ -80,21 +77,24 @@ from canonical.launchpad.webapp import (
     stepto,
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import IBreadcrumb
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.lazr.utils import smartquote
-from canonical.widgets import LaunchpadRadioWidget
+from lp.answers.browser.questiontarget import (
+    QuestionTargetAnswersMenu,
+    QuestionTargetFacetMixin,
+    )
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     ReturnToReferrerMixin,
     )
+from lp.app.browser.tales import CustomizableFormatter
 from lp.app.enums import ServiceUsage
-from lp.answers.browser.questiontarget import (
-    QuestionTargetAnswersMenu,
-    QuestionTargetFacetMixin,
-    )
+from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.registry.browser.product import ProjectAddStepOne
 from lp.registry.interfaces.packaging import (
@@ -569,8 +569,8 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
             product = item.value
             self.product_suggestions.append(product)
             item_url = canonical_url(product)
-            description = """<a href="%s">%s</a>""" % (
-                item_url, escape(product.displayname))
+            description = structured(
+                '<a href="%s">%s</a>', item_url, product.displayname)
             vocab_terms.append(SimpleTerm(product, product.name, description))
         # Add an option to represent the user's decision to choose a
         # different project. Note that project names cannot be uppercase.

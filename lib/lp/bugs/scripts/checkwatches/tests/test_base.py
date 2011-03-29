@@ -16,11 +16,11 @@ from canonical.launchpad.webapp.interaction import (
     queryInteraction,
     )
 from canonical.testing.layers import LaunchpadZopelessLayer
-from lp.bugs.externalbugtracker.isolation import (
+from lp.bugs.scripts.checkwatches.base import WorkingBase
+from lp.services.database.isolation import (
     is_transaction_in_progress,
     TransactionInProgress,
     )
-from lp.bugs.scripts.checkwatches.base import WorkingBase
 from lp.services.log.logger import BufferLogger
 from lp.testing import TestCaseWithFactory
 

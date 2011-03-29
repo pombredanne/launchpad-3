@@ -21,11 +21,10 @@ from canonical.librarian.client import LibrarianClient
 from lp.archivepublisher import HARDCODED_COMPONENT_ORDER
 from lp.archivepublisher.config import (
     getPubConfig,
-    LucilleConfigError,
     )
 from lp.archivepublisher.diskpool import DiskPool
 from lp.archivepublisher.domination import Dominator
-from lp.archivepublisher.ftparchive import FTPArchiveHandler
+from lp.archivepublisher.model.ftparchive import FTPArchiveHandler
 from lp.archivepublisher.htaccess import (
     htpasswd_credentials_for_archive,
     write_htaccess,
@@ -120,11 +119,7 @@ def getPublisher(archive, allowed_suites, log, distsroot=None):
     else:
         log.debug("Finding configuration for '%s' PPA."
                   % archive.owner.name)
-    try:
-        pubconf = getPubConfig(archive)
-    except LucilleConfigError, info:
-        log.error(info)
-        raise
+    pubconf = getPubConfig(archive)
 
     disk_pool = _getDiskPool(pubconf, log)
 

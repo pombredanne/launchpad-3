@@ -4,13 +4,13 @@
 == Setup ==
 
     >>> import email
-    >>> from canonical.zeca.ftests.harness import ZecaTestSetup
+    >>> from lp.testing.keyserver import KeyServerTac
     >>> from lp.services.mail import stub
 
-Setup the stub KeyServer:
+Set up the stub KeyServer:
 
-    >>> z = ZecaTestSetup()
-    >>> z.setUp()
+    >>> tac = KeyServerTac()
+    >>> tac.setUp()
 
 
 == Claim an encrypting GPG key ==
@@ -358,6 +358,4 @@ used in any more tests.)
 
 == Teardown ==
 
-Kill stub KeyServer:
-
-    >>> z.tearDown()
+    >>> tac.tearDown()

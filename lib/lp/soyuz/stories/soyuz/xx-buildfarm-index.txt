@@ -32,7 +32,7 @@ corresponding 'Build' page.
 
     >>> print anon_browser.getLink(
     ...     'i386 build of mozilla-firefox 0.9').url
-    http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+build/8
+    http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+buildjob/8
 
 The build status portlets contain the number of builds waiting
 in queue and the sum of their 'estimated_duration' for each

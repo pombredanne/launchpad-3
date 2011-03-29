@@ -247,7 +247,7 @@
                     getIncrementalDiffs
                     votes
                     all_comments
-                    related_bugs
+                    getRelatedBugTasks
                     revision_end_date
                     isMergable
                     getComment
@@ -283,12 +283,6 @@
         attributes="createComment
                     createCommentFromMessage"/>
   </class>
-  <adapter
-      factory="lp.code.browser.branchmergeproposal.text_xhtml_representation"
-      name="commit_message"/>
-  <adapter
-      factory="lp.code.browser.branchmergeproposal.text_xhtml_representation"
-      name="description"/>
 
   <!-- Branch Merge Proposal Jobs -->
 
@@ -991,6 +985,10 @@
     <allow attributes="as_tuple recipe_branch nest_path" />
   </class>
 
+  <subscriber
+    for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+    handler="lp.code.model.sourcepackagerecipe.recipe_modified"/>
+
   <utility component="lp.code.model.sourcepackagerecipebuild.SourcePackageRecipeBuildJob"
         name="RECIPEBRANCHBUILD"
         provides="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"/>
@@ -1003,6 +1001,10 @@
         name="RECIPEBRANCHBUILD"
         permission="zope.Public"/>
 
+  <adapter
+    factory="lp.code.browser.sourcepackagerecipe.distroseries_renderer"
+    name="distroseries"/>
+
   <!-- RecipeBuildRecordSet and related classes-->
 
   <securedutility
@@ -1013,7 +1015,8 @@
 
   <class class="lp.code.model.recipebuild.RecipeBuildRecord">
     <allow attributes="sourcepackagename recipeowner recipe archive
-                        most_recent_build_time distro_source_package"/>
+                        most_recent_build_time distro_source_package
+                        recipe_name recipe_url"/>
   </class>
 
   <class class="lp.code.model.recipebuild.RecipeBuildRecordResultSet">

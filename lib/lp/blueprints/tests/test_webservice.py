@@ -9,9 +9,7 @@ from zope.security.management import endInteraction
 
 from canonical.testing import DatabaseFunctionalLayer
 from canonical.launchpad.testing.pages import webservice_for_person
-from lp.blueprints.interfaces.specification import (
-    SpecificationDefinitionStatus,
-    )
+from lp.blueprints.enums import SpecificationDefinitionStatus
 from lp.testing import (
     launchpadlib_for,
     person_logged_in,
@@ -52,7 +50,8 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
         webservice = webservice_for_person(user)
         response = webservice.get(
             '/%s/+spec/%s' % (spec.product.name, spec.name))
-        expected_keys = [u'self_link', u'http_etag', u'resource_type_link']
+        expected_keys = [u'self_link', u'http_etag', u'resource_type_link',
+                         u'web_link']
         self.assertEqual(response.status, 200)
         self.assertContentEqual(expected_keys, response.jsonBody().keys())
 
@@ -153,6 +152,14 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
         spec_webservice = self.getSpecOnWebservice(spec)
         self.assertEqual(1, spec_webservice.dependencies.total_size)
         self.assertEqual(spec2.name, spec_webservice.dependencies[0].name)
+
+    def test_representation_contains_linked_branches(self):
+        spec = self.factory.makeSpecification()
+        branch = self.factory.makeBranch()
+        person = self.factory.makePerson()
+        spec.linkBranch(branch, person)
+        spec_webservice = self.getSpecOnWebservice(spec)
+        self.assertEqual(1, spec_webservice.linked_branches.total_size)
 
     def test_representation_contains_bug_links(self):
         spec = self.factory.makeSpecification()

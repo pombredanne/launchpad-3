@@ -9,9 +9,9 @@ __all__ = []
 import unittest
 from uuid import uuid1
 
-from canonical.launchpad.windmill.testing import lpuser
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import WindmillTestCase
+from lp.testing.windmill import lpuser
 
 
 WAIT_PAGELOAD = u'30000'

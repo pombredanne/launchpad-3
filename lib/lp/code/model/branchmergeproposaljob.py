@@ -42,7 +42,6 @@ from lazr.enum import (
 import pytz
 import simplejson
 from sqlobject import SQLObjectNotFound
-from storm.base import Storm
 from storm.expr import (
     And,
     Desc,
@@ -111,6 +110,7 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.mail.sendmail import format_address_for_person
+from lp.services.database.stormbase import StormBase
 
 
 class BranchMergeProposalJobType(DBEnumeratedType):
@@ -155,7 +155,7 @@ class BranchMergeProposalJobType(DBEnumeratedType):
         This job generates an incremental diff for a merge proposal.""")
 
 
-class BranchMergeProposalJob(Storm):
+class BranchMergeProposalJob(StormBase):
     """Base class for jobs related to branch merge proposals."""
 
     implements(IBranchMergeProposalJob)
@@ -187,7 +187,7 @@ class BranchMergeProposalJob(Storm):
         :param metadata: The type-specific variables, as a JSON-compatible
             dict.
         """
-        Storm.__init__(self)
+        super(BranchMergeProposalJob, self).__init__()
         json_data = simplejson.dumps(metadata)
         self.job = Job()
         self.branch_merge_proposal = branch_merge_proposal
@@ -286,8 +286,7 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
                 # or if it is hosted but pending a mirror.
                 Branch.revision_count > 0,
                 Or(Branch.next_mirror_time == None,
-                   Branch.branch_type != BranchType.HOSTED)
-                ))
+                   Branch.branch_type != BranchType.HOSTED)))
         return (klass(job) for job in jobs)
 
     def getOopsVars(self):

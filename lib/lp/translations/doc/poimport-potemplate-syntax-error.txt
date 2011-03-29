@@ -94,7 +94,7 @@ And the code composed email with a notification of the error.
     answer or file a question at https://answers.launchpad.net/rosetta/
     <BLANKLINE>
     For your convenience, you can get the file you uploaded at:
-    http://localhost:58000/.../firefox.pot
+    http://.../firefox.pot
     <BLANKLINE>
     Thank you,
     <BLANKLINE>
@@ -151,7 +151,7 @@ The uploader receives an email about the encoding problem.
     'ascii' codec can't decode byte ...
     <BLANKLINE>
     For your convenience, you can find the file you uploaded at:
-    http://localhost:58000/.../nonascii.pot
+    http://.../nonascii.pot
     <BLANKLINE>
     Thank you,
     <BLANKLINE>

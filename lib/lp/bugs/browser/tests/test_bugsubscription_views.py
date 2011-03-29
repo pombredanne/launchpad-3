@@ -6,20 +6,22 @@
 __metaclass__ = type
 
 from canonical.launchpad.ftests import LaunchpadFormHarness
+from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
 
 from lp.bugs.browser.bugsubscription import (
     BugPortletSubcribersIds,
-    BugSubscriptionAddView,
+    BugSubscriptionListView,
     BugSubscriptionSubscribeSelfView,
     )
-from lp.registry.enum import BugNotificationLevel
+from lp.bugs.enum import BugNotificationLevel
 from lp.testing import (
     feature_flags,
     person_logged_in,
     set_feature_flag,
     TestCaseWithFactory,
     )
+from lp.testing.views import create_initialized_view
 
 
 class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
@@ -28,6 +30,9 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
 
     def setUp(self):
         super(BugSubscriptionAdvancedFeaturesTestCase, self).setUp()
+        self.bug = self.factory.makeBug()
+        self.person = self.factory.makePerson()
+        self.team = self.factory.makeTeam()
         with feature_flags():
             set_feature_flag(u'malone.advanced-subscriptions.enabled', u'on')
 
@@ -54,7 +59,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                         bug.default_bugtask, BugSubscriptionSubscribeSelfView)
                     form_data = {
                         'field.subscription': person.name,
-                        'field.bug_notification_level': level.name,
+                        'field.bug_notification_level': level.title,
                         }
                     harness.submit('continue', form_data)
 
@@ -63,7 +68,8 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     level, subscription.bug_notification_level,
                     "Bug notification level of subscription should be %s, is "
                     "actually %s." % (
-                        level.name, subscription.bug_notification_level.name))
+                        level.title,
+                        subscription.bug_notification_level.title))
 
     def test_nothing_is_not_a_valid_level(self):
         # BugNotificationLevel.NOTHING isn't considered valid when
@@ -77,7 +83,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     bug.default_bugtask, BugSubscriptionSubscribeSelfView)
                 form_data = {
                     'field.subscription': person.name,
-                    'field.bug_notification_level': level.name,
+                    'field.bug_notification_level': level.title,
                     }
                 harness.submit('continue', form_data)
                 self.assertTrue(harness.hasErrors())
@@ -102,7 +108,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     bug.default_bugtask, BugSubscriptionSubscribeSelfView)
                 form_data = {
                     'field.subscription': 'update-subscription',
-                    'field.bug_notification_level': level.name,
+                    'field.bug_notification_level': level.title,
                     }
                 harness.submit('continue', form_data)
                 self.assertFalse(harness.hasErrors())
@@ -112,7 +118,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
             BugNotificationLevel.METADATA,
             subscription.bug_notification_level,
             "Bug notification level of subscription should be METADATA, is "
-            "actually %s." % subscription.bug_notification_level.name)
+            "actually %s." % subscription.bug_notification_level.title)
 
     def test_user_can_unsubscribe(self):
         # A user can unsubscribe from a bug using the
@@ -151,7 +157,7 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                     bug.default_bugtask, BugSubscriptionSubscribeSelfView)
                 form_data = {
                     'field.subscription': person.name,
-                    'field.bug_notification_level': level.name,
+                    'field.bug_notification_level': level.title,
                     }
                 harness.submit('continue', form_data)
 
@@ -249,6 +255,127 @@ class BugSubscriptionAdvancedFeaturesTestCase(TestCaseWithFactory):
                 self.assertFalse(
                     harness.view.widgets['bug_notification_level'].visible)
 
+    def test_bug_721400(self):
+        # If a subscription exists with a BugNotificationLevel of
+        # NOTHING the view will still render correctly, even though
+        # NOTHING is not accepted as a valid value for the
+        # bug_notification_level field.
+        # This is a regression test for bug 721400.
+        bug = self.factory.makeBug()
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            subscription = bug.subscribe(
+                person, person, level=BugNotificationLevel.NOTHING)
+
+        with feature_flags():
+            with person_logged_in(person):
+                subscribe_view = create_initialized_view(
+                    bug.default_bugtask, name='+subscribe')
+                self.assertEqual(0, len(subscribe_view.errors))
+                bug_notification_level_widget = (
+                    subscribe_view.widgets['bug_notification_level'])
+                default_notification_level_value = (
+                    bug_notification_level_widget._getDefault())
+                self.assertEqual(
+                    BugNotificationLevel.COMMENTS,
+                    default_notification_level_value)
+
+    def test_muted_subs_have_unmute_option(self):
+        # If a user has a muted subscription, the
+        # BugSubscriptionSubscribeSelfView's subscription field will
+        # show an "Unmute" option.
+        with person_logged_in(self.person):
+            self.bug.mute(self.person, self.person)
+
+        with feature_flags():
+            with person_logged_in(self.person):
+                subscribe_view = create_initialized_view(
+                    self.bug.default_bugtask, name='+subscribe')
+                subscription_widget = (
+                    subscribe_view.widgets['subscription'])
+                # The Unmute option is actually treated the same way as
+                # the unsubscribe option.
+                self.assertEqual(
+                    "Unmute bug mail from this bug",
+                    subscription_widget.vocabulary.getTerm(self.person).title)
+
+    def test_muted_subs_have_unmute_and_update_option(self):
+        # If a user has a muted subscription, the
+        # BugSubscriptionSubscribeSelfView's subscription field will
+        # show an option to unmute the subscription and update it to a
+        # new BugNotificationLevel.
+        with person_logged_in(self.person):
+            self.bug.mute(self.person, self.person)
+
+        with feature_flags():
+            with person_logged_in(self.person):
+                subscribe_view = create_initialized_view(
+                    self.bug.default_bugtask, name='+subscribe')
+                subscription_widget = (
+                    subscribe_view.widgets['subscription'])
+                update_term = subscription_widget.vocabulary.getTermByToken(
+                    'update-subscription')
+                self.assertEqual(
+                    "Unmute bug mail from this bug and subscribe me to it",
+                    update_term.title)
+
+    def test_unmute_unmutes(self):
+        # Using the "Unmute bug mail" option when the user has a muted
+        # subscription will remove the muted subscription.
+        with person_logged_in(self.person):
+            self.bug.mute(self.person, self.person)
+
+        with feature_flags():
+            with person_logged_in(self.person):
+                level = BugNotificationLevel.METADATA
+                form_data = {
+                    'field.subscription': self.person.name,
+                    # Although this isn't used we must pass it for the
+                    # sake of form validation.
+                    'field.bug_notification_level': level.title,
+                    'field.actions.continue': 'Continue',
+                    }
+                subscribe_view = create_initialized_view(
+                    self.bug.default_bugtask, form=form_data,
+                    name='+subscribe')
+                self.assertFalse(self.bug.isMuted(self.person))
+                self.assertFalse(self.bug.isSubscribed(self.person))
+
+    def test_update_when_muted_updates(self):
+        # Using the "Unmute and subscribe me" option when the user has a
+        # muted subscription will update the existing subscription to a
+        # new BugNotificationLevel.
+        with person_logged_in(self.person):
+            muted_subscription = self.bug.mute(self.person, self.person)
+
+        with feature_flags():
+            with person_logged_in(self.person):
+                level = BugNotificationLevel.COMMENTS
+                form_data = {
+                    'field.subscription': 'update-subscription',
+                    'field.bug_notification_level': level.title,
+                    'field.actions.continue': 'Continue',
+                    }
+                subscribe_view = create_initialized_view(
+                    self.bug.default_bugtask, form=form_data,
+                    name='+subscribe')
+                self.assertFalse(self.bug.isMuted(self.person))
+                self.assertTrue(self.bug.isSubscribed(self.person))
+                self.assertEqual(
+                    level, muted_subscription.bug_notification_level)
+
+    def test_bug_notification_level_field_has_widget_class(self):
+        # The bug_notification_level widget has a widget_class property
+        # that can be used to manipulate it with JavaScript.
+        with person_logged_in(self.person):
+            with feature_flags():
+                subscribe_view = create_initialized_view(
+                    self.bug.default_bugtask, name='+subscribe')
+            widget_class = (
+                subscribe_view.widgets['bug_notification_level'].widget_class)
+            self.assertEqual(
+                'bug-notification-level-field', widget_class)
+
 
 class BugPortletSubcribersIdsTests(TestCaseWithFactory):
 
@@ -266,3 +393,89 @@ class BugPortletSubcribersIdsTests(TestCaseWithFactory):
         self.assertEqual(
             harness.request.response.getHeader('content-type'),
             'application/json')
+
+
+class BugSubscriptionsListViewTestCase(TestCaseWithFactory):
+    """Tests for the BugSubscriptionsListView."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(BugSubscriptionsListViewTestCase, self).setUp()
+        self.product = self.factory.makeProduct(
+            name='widgetsrus', displayname='Widgets R Us')
+        self.bug = self.factory.makeBug(product=self.product)
+        self.subscriber = self.factory.makePerson()
+
+    def test_form_initializes(self):
+        # It's a start.
+        with person_logged_in(self.subscriber):
+            sub = self.product.addBugSubscription(
+                self.subscriber, self.subscriber)
+            harness = LaunchpadFormHarness(
+                self.bug.default_bugtask, BugSubscriptionListView)
+            harness.view.initialize()
+
+
+class BugPortletSubscribersContentsTestCase(TestCaseWithFactory):
+    """Tests for the BugPortletSubscribersContents view."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(BugPortletSubscribersContentsTestCase, self).setUp()
+        self.bug = self.factory.makeBug()
+        self.subscriber = self.factory.makePerson()
+
+    def test_sorted_direct_subscriptions_doesnt_show_mutes(self):
+        # BugPortletSubscribersContents.sorted_direct_subscriptions does
+        # not return muted subscriptions.
+        with person_logged_in(self.subscriber):
+            subscription = self.bug.subscribe(
+                self.subscriber, self.subscriber,
+                level=BugNotificationLevel.NOTHING)
+            view = create_initialized_view(
+                self.bug, name="+bug-portlet-subscribers-content")
+            # Loop over the results of sorted_direct_subscriptions to
+            # extract the subscriptions from their
+            # SubscriptionAttrDecorator intances.
+            sorted_subscriptions = [
+                decorator.subscription for decorator in
+                view.sorted_direct_subscriptions]
+            self.assertFalse(subscription in sorted_subscriptions)
+
+
+class BugMuteSelfViewTestCase(TestCaseWithFactory):
+    """Tests for the BugMuteSelfView."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(BugMuteSelfViewTestCase, self).setUp()
+        self.bug = self.factory.makeBug()
+        self.person = self.factory.makePerson()
+
+    def test_bug_mute_self_view_mutes_bug(self):
+        # The BugMuteSelfView mutes bug mail for the current user when
+        # its form is submitted.
+        with person_logged_in(self.person):
+            self.assertFalse(self.bug.isMuted(self.person))
+            mute_view = create_initialized_view(
+                self.bug.default_bugtask, name="+mute",
+                form={'field.actions.mute': 'Mute bug mail'})
+            self.assertTrue(self.bug.isMuted(self.person))
+
+    def test_bug_mute_self_view_redirects_muted_users(self):
+        # The BugMuteSelfView redirects muted users to the +subscribe
+        # page, where they can remove their muted subscription or change
+        # their BugNotificationLevel.
+        with person_logged_in(self.person):
+            self.bug.mute(self.person, self.person)
+            mute_view = create_initialized_view(
+                self.bug.default_bugtask, name="+mute")
+            response = mute_view.request.response
+            self.assertEqual(302, response.getStatus())
+            self.assertEqual(
+                canonical_url(self.bug.default_bugtask,
+                    view_name="+subscribe"),
+                response.getHeader('Location'))

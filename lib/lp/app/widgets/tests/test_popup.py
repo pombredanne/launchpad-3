@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -7,7 +7,7 @@ from zope.schema.vocabulary import getVocabularyRegistry
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
-from canonical.widgets.popup import VocabularyPickerWidget
+from lp.app.widgets.popup import VocabularyPickerWidget
 from lp.registry.interfaces.person import ITeam
 from lp.testing import TestCaseWithFactory
 

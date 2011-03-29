@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -39,25 +39,23 @@ from canonical.launchpad.interfaces.validation import (
     valid_upstreamtask,
     validate_new_distrotask,
     )
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.email import email_validator
-from canonical.launchpad.webapp import (
-    canonical_url,
-    )
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
-from canonical.widgets.bugtask import (
-    BugTaskAlsoAffectsSourcePackageNameWidget,
-    )
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets.popup import SearchForUpstreamPopupWidget
-from canonical.widgets.textwidgets import StrippedTextWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     )
 from lp.app.enums import ServiceUsage
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.email import email_validator
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.widgets.popup import SearchForUpstreamPopupWidget
+from lp.app.widgets.textwidgets import StrippedTextWidget
+from lp.bugs.browser.widgets.bugtask import (
+    BugTaskAlsoAffectsSourcePackageNameWidget,
+    )
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
@@ -395,7 +393,6 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
                          cgi.escape(target.displayname),
                          confirm_button))))
             return None
-
         # Create the task.
         return super(DistroBugTaskCreationStep, self).main_action(data)
 
@@ -770,10 +767,10 @@ class BugAlsoAffectsProductWithProductCreationView(LinkPackgingMixin,
             # Use a local import as we don't want removeSecurityProxy used
             # anywhere else.
             from zope.security.proxy import removeSecurityProxy
-            name_matches = getUtility(IProductSet).search(
-                self.request.form.get('field.name'))
-            products = bugtracker.products.intersect(
-                removeSecurityProxy(name_matches))
+            name_matches = removeSecurityProxy(
+                getUtility(IProductSet).search_sqlobject(
+                self.request.form.get('field.name')))
+            products = bugtracker.products.intersect(name_matches)
             self.existing_products = list(
                 products[:self.MAX_PRODUCTS_TO_DISPLAY])
         else:

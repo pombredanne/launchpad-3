@@ -1,6 +1,6 @@
 -- Copyright 2010 Canonical Ltd.  This software is licensed under the
 -- GNU Affero General Public License version 3 (see the file LICENSE).
--- Created using pg_dump (PostgreSQL) 8.4.6
+-- Created using pg_dump (PostgreSQL) 8.4.7
 
 SET check_function_bodies = false;
 SET client_encoding = 'UTF8';
@@ -10,6 +10,15 @@ SET standard_conforming_strings = off;
 SET statement_timeout = 0;
 
 SET search_path = public, pg_catalog;
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1873,20 +1882,20 @@ ALTER TABLE distroarchseries ENABLE TRIGGER ALL;
 
 ALTER TABLE distroseries DISABLE TRIGGER ALL;
 
-INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (1, 1, 'warty', 'The Warty Warthog Release', 'Warty was the first stable release of Ubuntu. Key feature goals included releasing on time, with the latest version of the Gnome Desktop Environment, and the creation of all the infrastructure required to manage Ubuntu itself. Warty includes excellent support for Python, with most of the widely used Python libraries installed by default.', '4.10', 4, '2004-08-20 00:00:00', NULL, 17, 'Warty is the first release of Ubuntu, with a planned release date of October 2004.', 'Warty', NULL, 0, 1, 'warty-changes@ubuntu.com', 4, 3, NULL, '2006-10-16 18:31:43.475428', false, false, NULL, NULL, NULL, false);
-INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (2, 2, 'six', 'Six Six Six', 'some text to describe the whole 666 release of RH', '6.0.1', 4, '2004-03-21 00:00:00', NULL, 8, 'some text to describe the whole 666 release of RH', 'Six', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.482603', false, false, NULL, NULL, NULL, false);
-INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (3, 1, 'hoary', 'The Hoary Hedgehog Release', 'Hoary is the second release of Ubuntu. Key feature goals include the integration of Hoary with the Launchpad for bugs and translation information, as well as Gnome 2.10 and the X.org window system.', '5.04', 2, NULL, 1, 1, 'Hoary is the second released of Ubuntu, with release planned for April 2005.', 'Hoary', NULL, 96, 6, 'hoary-changes@ubuntu.com', 1, 4, NULL, '2006-10-16 18:31:43.483559', false, false, NULL, NULL, NULL, false);
-INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (4, 2, '7.0', 'Seven', 'The release that we would not expect', '7.0.1', 3, NULL, 2, 7, 'The release that we would not expect', '7.0', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.484426', false, false, NULL, NULL, NULL, false);
-INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (5, 1, 'grumpy', 'The Grumpy Groundhog Release', 'Grumpy, the third release of Ubuntu Linux, is not yet in active development. This information is purely a placeholder.', '5.10', 1, NULL, 1, 1, 'Grumpy is the third release of Ubuntu, planned for October 2005.', 'Grumpy', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.485233', false, false, NULL, NULL, NULL, false);
-INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (6, 3, 'woody', 'WOODY', 'WOODY is the current stable verison of Debian GNU/Linux', '3.0', 4, '2003-01-01 00:00:00', NULL, 2, 'WOODY is the current stable verison of Debian GNU/Linux', 'Woody', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.486054', false, false, NULL, NULL, NULL, false);
-INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (7, 3, 'sarge', 'Sarge', 'Sarge is the FROZEN unstable version of Debian GNU/Linux.', '3.1', 3, NULL, 6, 5, 'Sarge is the FROZEN unstable version of Debian GNU/Linux.', 'Sarge', NULL, 0, NULL, NULL, 0, 0, 6, '2006-10-16 18:31:43.486972', false, false, NULL, NULL, NULL, false);
-INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (8, 3, 'sid', 'Sid', 'Sid is the CRAZY unstable version of Debian GNU/Linux.', '3.2', 1, NULL, 6, 6, 'Sid is the CRAZY unstable version of Debian GNU/Linux.', 'Sid', NULL, 0, NULL, NULL, 0, 1, NULL, '2006-10-16 18:31:43.487779', false, false, NULL, NULL, NULL, false);
-INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (9, 7, '2k5', 'Guada 2005', 'This release places extra emphasis on usability and installability. The installer is adapted from Ubuntu to assume your country, language, keyboard and time zone preference, thus ensuring that installs ask the minimum number of questions possible.', '2005', 2, NULL, 3, 4, 'Guada 2005 is a rapid-install version of
+INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, registrant, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (1, 1, 'warty', 'The Warty Warthog Release', 'Warty was the first stable release of Ubuntu. Key feature goals included releasing on time, with the latest version of the Gnome Desktop Environment, and the creation of all the infrastructure required to manage Ubuntu itself. Warty includes excellent support for Python, with most of the widely used Python libraries installed by default.', '4.10', 4, '2004-08-20 00:00:00', NULL, 17, 'Warty is the first release of Ubuntu, with a planned release date of October 2004.', 'Warty', NULL, 0, 1, 'warty-changes@ubuntu.com', 4, 3, NULL, '2006-10-16 18:31:43.475428', false, false, NULL, NULL, NULL, false);
+INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, registrant, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (2, 2, 'six', 'Six Six Six', 'some text to describe the whole 666 release of RH', '6.0.1', 4, '2004-03-21 00:00:00', NULL, 8, 'some text to describe the whole 666 release of RH', 'Six', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.482603', false, false, NULL, NULL, NULL, false);
+INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, registrant, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (3, 1, 'hoary', 'The Hoary Hedgehog Release', 'Hoary is the second release of Ubuntu. Key feature goals include the integration of Hoary with the Launchpad for bugs and translation information, as well as Gnome 2.10 and the X.org window system.', '5.04', 2, NULL, 1, 1, 'Hoary is the second released of Ubuntu, with release planned for April 2005.', 'Hoary', NULL, 96, 6, 'hoary-changes@ubuntu.com', 1, 4, NULL, '2006-10-16 18:31:43.483559', false, false, NULL, NULL, NULL, false);
+INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, registrant, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (4, 2, '7.0', 'Seven', 'The release that we would not expect', '7.0.1', 3, NULL, 2, 7, 'The release that we would not expect', '7.0', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.484426', false, false, NULL, NULL, NULL, false);
+INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, registrant, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (5, 1, 'grumpy', 'The Grumpy Groundhog Release', 'Grumpy, the third release of Ubuntu Linux, is not yet in active development. This information is purely a placeholder.', '5.10', 1, NULL, 1, 1, 'Grumpy is the third release of Ubuntu, planned for October 2005.', 'Grumpy', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.485233', false, false, NULL, NULL, NULL, false);
+INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, registrant, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (6, 3, 'woody', 'WOODY', 'WOODY is the current stable verison of Debian GNU/Linux', '3.0', 4, '2003-01-01 00:00:00', NULL, 2, 'WOODY is the current stable verison of Debian GNU/Linux', 'Woody', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.486054', false, false, NULL, NULL, NULL, false);
+INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, registrant, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (7, 3, 'sarge', 'Sarge', 'Sarge is the FROZEN unstable version of Debian GNU/Linux.', '3.1', 3, NULL, 6, 5, 'Sarge is the FROZEN unstable version of Debian GNU/Linux.', 'Sarge', NULL, 0, NULL, NULL, 0, 0, 6, '2006-10-16 18:31:43.486972', false, false, NULL, NULL, NULL, false);
+INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, registrant, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (8, 3, 'sid', 'Sid', 'Sid is the CRAZY unstable version of Debian GNU/Linux.', '3.2', 1, NULL, 6, 6, 'Sid is the CRAZY unstable version of Debian GNU/Linux.', 'Sid', NULL, 0, NULL, NULL, 0, 1, NULL, '2006-10-16 18:31:43.487779', false, false, NULL, NULL, NULL, false);
+INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, registrant, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (9, 7, '2k5', 'Guada 2005', 'This release places extra emphasis on usability and installability. The installer is adapted from Ubuntu to assume your country, language, keyboard and time zone preference, thus ensuring that installs ask the minimum number of questions possible.', '2005', 2, NULL, 3, 4, 'Guada 2005 is a rapid-install version of
 Ubuntu Hoary for the Andalucian marketplace.', 'Guada2005', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.488598', false, false, NULL, NULL, NULL, false);
-INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (10, 1, 'breezy-autotest', 'Breezy Badger Autotest', 'Autotest version of Breezy', '6.6.6', 1, NULL, 3, 1, 'Autosync uploader test', 'Breezy Badger Autotest', NULL, 0, 8, 'autotest_changes@ubuntu.com', 0, 0, NULL, '2006-10-16 18:31:43.489468', false, false, NULL, NULL, NULL, false);
-INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (11, 8, 'breezy-autotest', 'Breezy Badger Autotest', 'Autotest version of Breezy', '6.6.6', 1, NULL, 1, 1, 'Autosync uploader test', 'Breezy Badger Autotest', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.490333', false, false, NULL, NULL, NULL, false);
-INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (12, 5, 'krunch', 'The Krunchy Kangaroo', 'The archive split allows us to use different kernel settings for Kubuntu, as well as make other pervasive low-level fixes, and release on our own schedule.', '8.06', 1, NULL, 3, 1, 'This is the first experimental release of Kubuntu that uses a separate archive from the main Ubuntu release.', 'Krunch', NULL, 0, NULL, NULL, 0, 0, 33, '2006-10-16 18:31:43.491929', false, false, NULL, NULL, NULL, false);
-INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (13, 8, 'hoary-test', 'Mock Hoary', 'nothing special', '9.9.9', 1, NULL, 1, 1, 'summmmmmmary', 'Hoary Mock', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.492845', false, false, NULL, NULL, NULL, false);
+INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, registrant, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (10, 1, 'breezy-autotest', 'Breezy Badger Autotest', 'Autotest version of Breezy', '6.6.6', 1, NULL, 3, 1, 'Autosync uploader test', 'Breezy Badger Autotest', NULL, 0, 8, 'autotest_changes@ubuntu.com', 0, 0, NULL, '2006-10-16 18:31:43.489468', false, false, NULL, NULL, NULL, false);
+INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, registrant, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (11, 8, 'breezy-autotest', 'Breezy Badger Autotest', 'Autotest version of Breezy', '6.6.6', 1, NULL, 1, 1, 'Autosync uploader test', 'Breezy Badger Autotest', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.490333', false, false, NULL, NULL, NULL, false);
+INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, registrant, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (12, 5, 'krunch', 'The Krunchy Kangaroo', 'The archive split allows us to use different kernel settings for Kubuntu, as well as make other pervasive low-level fixes, and release on our own schedule.', '8.06', 1, NULL, 3, 1, 'This is the first experimental release of Kubuntu that uses a separate archive from the main Ubuntu release.', 'Krunch', NULL, 0, NULL, NULL, 0, 0, 33, '2006-10-16 18:31:43.491929', false, false, NULL, NULL, NULL, false);
+INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, registrant, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (13, 8, 'hoary-test', 'Mock Hoary', 'nothing special', '9.9.9', 1, NULL, 1, 1, 'summmmmmmary', 'Hoary Mock', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.492845', false, false, NULL, NULL, NULL, false);
 
 
 ALTER TABLE distroseries ENABLE TRIGGER ALL;
@@ -1902,21 +1911,21 @@ ALTER TABLE translationgroup ENABLE TRIGGER ALL;
 
 ALTER TABLE distribution DISABLE TRIGGER ALL;
 
-INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (1, 'ubuntu', 'Ubuntu Linux', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 'ubuntulinux.org', 17, 'Ubuntu', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 17, NULL, 1, NULL, true, true, NULL, NULL, 3, 59, NULL, NULL, '2006-10-16 18:31:43.415195', NULL, NULL, NULL, NULL, NULL, true, NULL, true, true, NULL, NULL, NULL, NULL, 10, 10, 10);
-INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 'redhat.com', 1, 'Red Hat', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.417928', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL, NULL, 10, 10, 10);
-INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (3, 'debian', 'Debian GNU/Linux', 'Debian GNU/Linux is
+INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage, registrant) VALUES (1, 'ubuntu', 'Ubuntu Linux', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 'ubuntulinux.org', 17, 'Ubuntu', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 17, NULL, 1, NULL, true, true, NULL, NULL, 3, 59, NULL, NULL, '2006-10-16 18:31:43.415195', NULL, NULL, NULL, NULL, NULL, true, NULL, true, true, NULL, NULL, NULL, NULL, 10, 10, 10, 60);
+INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage, registrant) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 'redhat.com', 1, 'Red Hat', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.417928', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL, NULL, 10, 10, 10, 60);
+INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage, registrant) VALUES (3, 'debian', 'Debian GNU/Linux', 'Debian GNU/Linux is
 a non commercial distribution of a GNU/Linux Operating System for many
 platforms.', 'debian.org', 1, 'Debian', 'Debian GNU/Linux is
 a non commercial distribution of a GNU/Linux Operating System for many
-platforms.', 1, NULL, 1, NULL, false, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.418942', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL, NULL, 10, 10, 10);
-INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (4, 'gentoo', 'The Gentoo Linux', 'Gentoo is a very
+platforms.', 1, NULL, 1, NULL, false, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.418942', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL, NULL, 10, 10, 10, 60);
+INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage, registrant) VALUES (4, 'gentoo', 'The Gentoo Linux', 'Gentoo is a very
 customizeable GNU/Linux Distribution that is designed to let you build every
-single package yourself, with your own preferences.', 'gentoo.org', 1, 'Gentoo', 'Gentoo is a very customizeable GNU/Linux Distribution that is designed to let you build every single package yourself, with your own preferences.', 1, NULL, 1, NULL, true, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.41974', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL, NULL, 10, 10, 10);
-INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (5, 'kubuntu', 'Kubuntu - Free KDE-based Linux', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
+single package yourself, with your own preferences.', 'gentoo.org', 1, 'Gentoo', 'Gentoo is a very customizeable GNU/Linux Distribution that is designed to let you build every single package yourself, with your own preferences.', 1, NULL, 1, NULL, true, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.41974', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL, NULL, 10, 10, 10, 60);
+INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage, registrant) VALUES (5, 'kubuntu', 'Kubuntu - Free KDE-based Linux', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
 Environment as its default desktop after install.', 'kubuntu.org', 1, 'Kubuntu', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
-Environment as its default desktop after install.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.420551', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL, NULL, 10, 10, 10);
-INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (7, 'guadalinex', 'GuadaLinex: Linux for Andalucia', 'GuadaLinex is based on Ubuntu and adds full support for applications specific to the local environment in Andalucia.', 'guadalinex.es', 4, 'GuadaLinex', 'The GuadaLinex team produces a high quality linux for the Andalucian marketplace.', 32, NULL, 1, NULL, false, false, NULL, NULL, NULL, 4, NULL, NULL, '2006-10-16 18:31:43.421329', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL, NULL, 10, 10, 10);
-INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (8, 'ubuntutest', 'Ubuntu Test', 'Ubuntu Test', 'ubuntulinux.org', 17, 'ubuntutest', 'Ubuntu Test summary', 17, NULL, 1, NULL, false, false, NULL, NULL, NULL, 17, NULL, NULL, '2006-10-16 18:31:43.422162', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL, NULL, 10, 10, 10);
+Environment as its default desktop after install.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.420551', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL, NULL, 10, 10, 10, 60);
+INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage, registrant) VALUES (7, 'guadalinex', 'GuadaLinex: Linux for Andalucia', 'GuadaLinex is based on Ubuntu and adds full support for applications specific to the local environment in Andalucia.', 'guadalinex.es', 4, 'GuadaLinex', 'The GuadaLinex team produces a high quality linux for the Andalucian marketplace.', 32, NULL, 1, NULL, false, false, NULL, NULL, NULL, 4, NULL, NULL, '2006-10-16 18:31:43.421329', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL, NULL, 10, 10, 10, 60);
+INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage, registrant) VALUES (8, 'ubuntutest', 'Ubuntu Test', 'Ubuntu Test', 'ubuntulinux.org', 17, 'ubuntutest', 'Ubuntu Test summary', 17, NULL, 1, NULL, false, false, NULL, NULL, NULL, 17, NULL, NULL, '2006-10-16 18:31:43.422162', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL, NULL, 10, 10, 10, 60);
 
 
 ALTER TABLE distribution ENABLE TRIGGER ALL;
@@ -2885,54 +2894,54 @@ ALTER TABLE bounty ENABLE TRIGGER ALL;
 
 ALTER TABLE message DISABLE TRIGGER ALL;
 
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (1, '2004-09-24 20:58:04.684057', 'PEBCAK', 16, NULL, NULL, 'foo@example.com-332342--1231', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (3, '2004-09-24 21:17:17.153792', 'Reproduced on AIX', 12, NULL, NULL, 'sdsdfsfd', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (4, '2004-09-24 21:24:03.922564', 'Re: Reproduced on AIX', 12, NULL, NULL, 'sdfssfdfsd', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (5, '2004-09-24 21:29:27.407354', 'Fantastic idea, I''d really like to see this', 12, NULL, NULL, 'dxssdfsdgf', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (6, '2004-09-24 21:35:20.125564', 'Strange bug with duplicate messages.', 12, NULL, NULL, 'sdfsfwew', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (7, '2005-01-14 17:20:12.820778', 'Reflow problems with complex page layouts', 12, NULL, NULL, '<20050114172012.6687.51124.malonedeb@localhost.localdomain>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (8, '2005-01-14 17:27:03.702622', 'Firefox install instructions should be complete', 12, NULL, NULL, '<20050114172703.6687.71983.malonedeb@localhost.localdomain>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (9, '2005-01-14 17:35:39.548665', 'Firefox crashes when Save As dialog for a nonexistent window is closed', 12, NULL, NULL, '<20050114173539.6687.81610.malonedeb@localhost.localdomain>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (10, '2004-10-05 00:00:00', 'Re: Bug Title Test', 12, NULL, NULL, '<20050831114528.7616.78129.malone@localhost.localdomain>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (11, '2005-10-14 15:12:29.602117', 'A test bug', 16, NULL, NULL, '<20051014151229.28962.1536.malonedeb@localhost.localdomain>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (12, '2005-10-14 12:25:21.508923', 'Re: Newly installed plug-in doesn''t seem to be used', 16, NULL, NULL, '<20051014122521.14276.39260.lptickets@localhost.localdomain>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (13, '2005-10-14 13:28:11.554476', 'Re: Slow system', 12, NULL, NULL, '<20051014132811.14276.65873.lptickets@localhost.localdomain>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (14, '2005-10-28 09:10:17.13237', 'Printing doesn''t work', 12, NULL, 3, '<20051028091017.6690.9505.malonedeb@localhost.localdomain>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (15, '2006-02-23 16:42:14.080227', 'Thunderbird crashes', 16, NULL, 1, '<20060223164214.9126.7558.malonedeb@localhost.localdomain>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (16, '2006-06-16 17:12:54', 'Unicode™', 16, NULL, NULL, '<20060616141252.22134.71562@localhost.localdomain>', NULL, 51);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (17, '2006-02-22 19:42:21.890299', 'another test bug', 16, NULL, 1, '<20060222194221.25842.69665.malonedeb@banzai.async.com.br>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (18, '2006-07-20 20:48:24.975495', 'Re: Continue playing after shutdown', 16, NULL, NULL, '<20060720204825.13277.37433.lptickets@Bourdieu.Contre.COM>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (19, '2006-07-20 20:49:47.551344', 'Re: mailto: problem in webpage', 16, NULL, NULL, '<20060720204947.13277.79684.lptickets@Bourdieu.Contre.COM>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (20, '2006-07-20 20:52:07.054216', 'Re: Installation of Java Runtime Environment for Mozilla', 16, NULL, NULL, '<20060720205207.13277.68582.lptickets@Bourdieu.Contre.COM>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (21, '2006-07-20 20:53:53.684848', 'Re: Play DVDs in Totem', 16, NULL, NULL, '<20060720205354.13277.37000.lptickets@Bourdieu.Contre.COM>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (22, '2006-07-20 20:56:35.442839', 'Re: mailto: problem in webpage', 12, NULL, NULL, '<20060720205635.13277.87295.lptickets@Bourdieu.Contre.COM>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (23, '2006-07-20 23:11:24.975495', 'Re: Continue playing after shutdown', 12, NULL, NULL, '<20061201222020.597.97888.lptickets@Huxley.Contre.COM>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (24, '2007-03-15 20:33:56.67893', 'Make Jokosher use autoaudiosink', 26, NULL, NULL, '<20070315203356.12919.76581.malonedeb@localhost>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (25, '2007-03-15 20:34:26.518114', 'Re: Make Jokosher use autoaudiosink', 50, NULL, NULL, '<20070315203426.12919.54628.malone@localhost>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (26, '2007-03-15 20:35:10.133383', 'Re: Make Jokosher use autoaudiosink', 66, NULL, NULL, '<20070315203510.12919.22697.malone@localhost>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (27, '2007-03-15 20:36:01.779544', 'Autoaudiosink is no longer under development', 63, NULL, NULL, '<20070315203601.12919.29640.malone@localhost>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (28, '2007-03-15 20:36:57.133832', 'Re: Autoaudiosink is no longer under development', 27, NULL, NULL, '<20070315203657.12919.48585.malone@localhost>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (29, '2007-03-15 20:37:27.991571', 'This is a really new title', 33, NULL, NULL, '<20070315203728.12919.76787.malone@localhost>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (30, '2007-03-15 20:37:51.544376', 'Re: Make Jokosher use autoaudiosink', 3, NULL, NULL, '<20070315203751.12919.49072.malone@localhost>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (31, '2007-03-15 20:41:18.635493', 'Copy, Cut and Delete operations should work on selections', 8, NULL, NULL, '<20070315204118.14326.61124.malonedeb@localhost>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (32, '2007-03-15 20:41:42.154264', 'Re: Copy, Cut and Delete operations should work on selections', 16, NULL, NULL, '<20070315204142.14326.82988.launchpad@localhost>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (33, '2007-03-15 20:43:14.981111', 'Re: Copy, Cut and Delete operations should work on selections', 45, NULL, NULL, '<20070315204315.14326.75272.malone@localhost>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (34, '2007-03-15 20:45:15.852052', 'Re: Copy, Cut and Delete operations should work on selections', 13, NULL, NULL, '<20070315204515.14326.38817.malone@localhost>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (35, '2007-03-15 20:45:51.817826', 'Re: Copy, Cut and Delete operations should work on selections', 9, NULL, NULL, '<20070315204551.14326.36994.malone@localhost>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (36, '2007-03-15 20:46:49.83307', 'Re: Copy, Cut and Delete operations should work on selections', 6, NULL, NULL, '<20070315204649.14326.69581.malone@localhost>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (37, '2007-07-27 20:00:58.299796', 'Launchpad CSS and JS is not testible', 12, NULL, NULL, '<20070727200058.25131.76173.malonedeb@autumn.annrky-sinzui.local>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (38, '2007-07-27 20:29:46.25854', 'Re: Launchpad CSS and JS is not testible', 12, NULL, NULL, '<20070727202946.25131.16206.malone@autumn.annrky-sinzui.local>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (39, '2007-08-09 11:39:16.836856', 'jokosher exposes personal details in its actions portlet', 63, NULL, NULL, '<20070809113916.26819.83859.malonedeb@localhost.localdomain>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (40, '2004-12-18 16:30:19.103679', 'Nonsensical bugs are useless', 16, NULL, NULL, '<20071218163019.18924.87555.malonedeb@localhost>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (41, '2007-12-18 16:30:47.889614', 'Re: Nonsensical bugs are useless', 16, NULL, NULL, '<20071218163048.18924.13348.launchpad@localhost>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (42, '2007-12-18 16:30:47.889614', 'Re: Nonsensical bugs are useless', 16, NULL, NULL, '<20071218163048.18924.86681.launchpad@localhost>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (43, '2007-12-18 16:31:34.790641', 'Re: Nonsensical bugs are useless', 62, NULL, NULL, '<20071218163134.18996.53651.launchpad@localhost>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (44, '2005-05-13 16:37:37', 'gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243614, NULL, NULL, '<4284D7D1.6010208@gmx.de>', NULL, 75);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (45, '2005-05-17 18:54:29', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243615, 44, NULL, '<20050517185429.GB20786@spring.luon.net>', NULL, 76);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (46, '2005-05-17 19:24:25', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243614, 45, NULL, '<428A44E9.6090802@gmx.de>', NULL, 77);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (47, '2005-05-17 20:20:44', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243615, 46, NULL, '<20050517202044.GA23231@spring.luon.net>', NULL, 78);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (48, '2005-06-17 14:00:11', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243616, 46, NULL, '<20050617140011.GA15638@piware.de>', NULL, 79);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (49, '2005-06-25 10:13:10', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243614, NULL, NULL, '<42BD2E36.9090809@gmx.de>', NULL, 81);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (1, '2004-09-24 20:58:04.684057', 'PEBCAK', 16, NULL, NULL, 'foo@example.com-332342--1231', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (3, '2004-09-24 21:17:17.153792', 'Reproduced on AIX', 12, NULL, NULL, 'sdsdfsfd', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (4, '2004-09-24 21:24:03.922564', 'Re: Reproduced on AIX', 12, NULL, NULL, 'sdfssfdfsd', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (5, '2004-09-24 21:29:27.407354', 'Fantastic idea, I''d really like to see this', 12, NULL, NULL, 'dxssdfsdgf', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (6, '2004-09-24 21:35:20.125564', 'Strange bug with duplicate messages.', 12, NULL, NULL, 'sdfsfwew', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (7, '2005-01-14 17:20:12.820778', 'Reflow problems with complex page layouts', 12, NULL, NULL, '<20050114172012.6687.51124.malonedeb@localhost.localdomain>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (8, '2005-01-14 17:27:03.702622', 'Firefox install instructions should be complete', 12, NULL, NULL, '<20050114172703.6687.71983.malonedeb@localhost.localdomain>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (9, '2005-01-14 17:35:39.548665', 'Firefox crashes when Save As dialog for a nonexistent window is closed', 12, NULL, NULL, '<20050114173539.6687.81610.malonedeb@localhost.localdomain>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (10, '2004-10-05 00:00:00', 'Re: Bug Title Test', 12, NULL, NULL, '<20050831114528.7616.78129.malone@localhost.localdomain>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (11, '2005-10-14 15:12:29.602117', 'A test bug', 16, NULL, NULL, '<20051014151229.28962.1536.malonedeb@localhost.localdomain>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (12, '2005-10-14 12:25:21.508923', 'Re: Newly installed plug-in doesn''t seem to be used', 16, NULL, NULL, '<20051014122521.14276.39260.lptickets@localhost.localdomain>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (13, '2005-10-14 13:28:11.554476', 'Re: Slow system', 12, NULL, NULL, '<20051014132811.14276.65873.lptickets@localhost.localdomain>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (14, '2005-10-28 09:10:17.13237', 'Printing doesn''t work', 12, NULL, 3, '<20051028091017.6690.9505.malonedeb@localhost.localdomain>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (15, '2006-02-23 16:42:14.080227', 'Thunderbird crashes', 16, NULL, 1, '<20060223164214.9126.7558.malonedeb@localhost.localdomain>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (16, '2006-06-16 17:12:54', 'Unicode™', 16, NULL, NULL, '<20060616141252.22134.71562@localhost.localdomain>', NULL, 51, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (17, '2006-02-22 19:42:21.890299', 'another test bug', 16, NULL, 1, '<20060222194221.25842.69665.malonedeb@banzai.async.com.br>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (18, '2006-07-20 20:48:24.975495', 'Re: Continue playing after shutdown', 16, NULL, NULL, '<20060720204825.13277.37433.lptickets@Bourdieu.Contre.COM>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (19, '2006-07-20 20:49:47.551344', 'Re: mailto: problem in webpage', 16, NULL, NULL, '<20060720204947.13277.79684.lptickets@Bourdieu.Contre.COM>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (20, '2006-07-20 20:52:07.054216', 'Re: Installation of Java Runtime Environment for Mozilla', 16, NULL, NULL, '<20060720205207.13277.68582.lptickets@Bourdieu.Contre.COM>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (21, '2006-07-20 20:53:53.684848', 'Re: Play DVDs in Totem', 16, NULL, NULL, '<20060720205354.13277.37000.lptickets@Bourdieu.Contre.COM>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (22, '2006-07-20 20:56:35.442839', 'Re: mailto: problem in webpage', 12, NULL, NULL, '<20060720205635.13277.87295.lptickets@Bourdieu.Contre.COM>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (23, '2006-07-20 23:11:24.975495', 'Re: Continue playing after shutdown', 12, NULL, NULL, '<20061201222020.597.97888.lptickets@Huxley.Contre.COM>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (24, '2007-03-15 20:33:56.67893', 'Make Jokosher use autoaudiosink', 26, NULL, NULL, '<20070315203356.12919.76581.malonedeb@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (25, '2007-03-15 20:34:26.518114', 'Re: Make Jokosher use autoaudiosink', 50, NULL, NULL, '<20070315203426.12919.54628.malone@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (26, '2007-03-15 20:35:10.133383', 'Re: Make Jokosher use autoaudiosink', 66, NULL, NULL, '<20070315203510.12919.22697.malone@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (27, '2007-03-15 20:36:01.779544', 'Autoaudiosink is no longer under development', 63, NULL, NULL, '<20070315203601.12919.29640.malone@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (28, '2007-03-15 20:36:57.133832', 'Re: Autoaudiosink is no longer under development', 27, NULL, NULL, '<20070315203657.12919.48585.malone@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (29, '2007-03-15 20:37:27.991571', 'This is a really new title', 33, NULL, NULL, '<20070315203728.12919.76787.malone@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (30, '2007-03-15 20:37:51.544376', 'Re: Make Jokosher use autoaudiosink', 3, NULL, NULL, '<20070315203751.12919.49072.malone@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (31, '2007-03-15 20:41:18.635493', 'Copy, Cut and Delete operations should work on selections', 8, NULL, NULL, '<20070315204118.14326.61124.malonedeb@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (32, '2007-03-15 20:41:42.154264', 'Re: Copy, Cut and Delete operations should work on selections', 16, NULL, NULL, '<20070315204142.14326.82988.launchpad@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (33, '2007-03-15 20:43:14.981111', 'Re: Copy, Cut and Delete operations should work on selections', 45, NULL, NULL, '<20070315204315.14326.75272.malone@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (34, '2007-03-15 20:45:15.852052', 'Re: Copy, Cut and Delete operations should work on selections', 13, NULL, NULL, '<20070315204515.14326.38817.malone@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (35, '2007-03-15 20:45:51.817826', 'Re: Copy, Cut and Delete operations should work on selections', 9, NULL, NULL, '<20070315204551.14326.36994.malone@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (36, '2007-03-15 20:46:49.83307', 'Re: Copy, Cut and Delete operations should work on selections', 6, NULL, NULL, '<20070315204649.14326.69581.malone@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (37, '2007-07-27 20:00:58.299796', 'Launchpad CSS and JS is not testible', 12, NULL, NULL, '<20070727200058.25131.76173.malonedeb@autumn.annrky-sinzui.local>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (38, '2007-07-27 20:29:46.25854', 'Re: Launchpad CSS and JS is not testible', 12, NULL, NULL, '<20070727202946.25131.16206.malone@autumn.annrky-sinzui.local>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (39, '2007-08-09 11:39:16.836856', 'jokosher exposes personal details in its actions portlet', 63, NULL, NULL, '<20070809113916.26819.83859.malonedeb@localhost.localdomain>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (40, '2004-12-18 16:30:19.103679', 'Nonsensical bugs are useless', 16, NULL, NULL, '<20071218163019.18924.87555.malonedeb@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (41, '2007-12-18 16:30:47.889614', 'Re: Nonsensical bugs are useless', 16, NULL, NULL, '<20071218163048.18924.13348.launchpad@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (42, '2007-12-18 16:30:47.889614', 'Re: Nonsensical bugs are useless', 16, NULL, NULL, '<20071218163048.18924.86681.launchpad@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (43, '2007-12-18 16:31:34.790641', 'Re: Nonsensical bugs are useless', 62, NULL, NULL, '<20071218163134.18996.53651.launchpad@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (44, '2005-05-13 16:37:37', 'gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243614, NULL, NULL, '<4284D7D1.6010208@gmx.de>', NULL, 75, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (45, '2005-05-17 18:54:29', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243615, 44, NULL, '<20050517185429.GB20786@spring.luon.net>', NULL, 76, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (46, '2005-05-17 19:24:25', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243614, 45, NULL, '<428A44E9.6090802@gmx.de>', NULL, 77, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (47, '2005-05-17 20:20:44', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243615, 46, NULL, '<20050517202044.GA23231@spring.luon.net>', NULL, 78, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (48, '2005-06-17 14:00:11', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243616, 46, NULL, '<20050617140011.GA15638@piware.de>', NULL, 79, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (49, '2005-06-25 10:13:10', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243614, NULL, NULL, '<42BD2E36.9090809@gmx.de>', NULL, 81, true);
 
 
 ALTER TABLE message ENABLE TRIGGER ALL;
@@ -3330,42 +3339,42 @@ ALTER TABLE bugwatch ENABLE TRIGGER ALL;
 
 ALTER TABLE bugmessage DISABLE TRIGGER ALL;
 
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (1, 2, 1, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (2, 1, 3, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (3, 1, 4, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (4, 2, 5, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (5, 2, 6, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (6, 4, 7, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (7, 5, 8, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (8, 6, 9, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (9, 3, 10, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (10, 7, 11, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (11, 8, 14, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (12, 9, 15, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (13, 10, 17, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (14, 10, 16, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (15, 11, 24, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (16, 11, 25, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (17, 11, 26, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (18, 11, 27, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (19, 11, 28, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (20, 11, 29, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (21, 11, 30, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (22, 12, 31, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (23, 12, 33, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (24, 12, 34, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (25, 12, 35, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (26, 12, 36, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (27, 13, 37, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (28, 13, 38, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (29, 14, 39, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (30, 15, 40, NULL, NULL, true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (31, 15, 44, 11, '<4284D7D1.6010208@gmx.de>', true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (32, 15, 45, 11, '<20050517185429.GB20786@spring.luon.net>', true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (33, 15, 46, 11, '<428A44E9.6090802@gmx.de>', true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (34, 15, 47, 11, '<20050517202044.GA23231@spring.luon.net>', true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (35, 15, 48, 11, '<20050617140011.GA15638@piware.de>', true, NULL);
-INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, visible, index) VALUES (36, 15, 49, 11, '<42BD2E36.9090809@gmx.de>', true, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (1, 2, 1, NULL, NULL, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (2, 1, 3, NULL, NULL, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (3, 1, 4, NULL, NULL, 1);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (4, 2, 5, NULL, NULL, 1);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (5, 2, 6, NULL, NULL, 2);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (6, 4, 7, NULL, NULL, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (7, 5, 8, NULL, NULL, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (8, 6, 9, NULL, NULL, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (9, 3, 10, NULL, NULL, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (10, 7, 11, NULL, NULL, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (11, 8, 14, NULL, NULL, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (12, 9, 15, NULL, NULL, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (13, 10, 17, NULL, NULL, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (14, 10, 16, NULL, NULL, 1);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (15, 11, 24, NULL, NULL, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (16, 11, 25, NULL, NULL, 1);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (17, 11, 26, NULL, NULL, 2);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (18, 11, 27, NULL, NULL, 3);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (19, 11, 28, NULL, NULL, 4);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (20, 11, 29, NULL, NULL, 5);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (21, 11, 30, NULL, NULL, 6);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (22, 12, 31, NULL, NULL, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (23, 12, 33, NULL, NULL, 1);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (24, 12, 34, NULL, NULL, 2);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (25, 12, 35, NULL, NULL, 3);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (26, 12, 36, NULL, NULL, 4);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (27, 13, 37, NULL, NULL, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (28, 13, 38, NULL, NULL, 1);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (29, 14, 39, NULL, NULL, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (30, 15, 40, NULL, NULL, 0);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (31, 15, 44, 11, '<4284D7D1.6010208@gmx.de>', 1);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (32, 15, 45, 11, '<20050517185429.GB20786@spring.luon.net>', 2);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (33, 15, 46, 11, '<428A44E9.6090802@gmx.de>', 3);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (34, 15, 47, 11, '<20050517202044.GA23231@spring.luon.net>', 4);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (35, 15, 48, 11, '<20050617140011.GA15638@piware.de>', 5);
+INSERT INTO bugmessage (id, bug, message, bugwatch, remote_comment_id, index) VALUES (36, 15, 49, 11, '<42BD2E36.9090809@gmx.de>', 6);
 
 
 ALTER TABLE bugmessage ENABLE TRIGGER ALL;
@@ -3448,6 +3457,50 @@ ALTER TABLE bugnotificationattachment DISABLE TRIGGER ALL;
 ALTER TABLE bugnotificationattachment ENABLE TRIGGER ALL;
 
 
+ALTER TABLE milestone DISABLE TRIGGER ALL;
+
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (1, 4, '1.0', NULL, '2056-10-16 18:31:44.293448', true, 1, NULL, '2006-10-16 18:31:44.293448', NULL, NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (2, NULL, '3.1', 3, '2056-05-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574', NULL, NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (3, NULL, '3.1-rc1', 3, '2056-02-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574', NULL, NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (4, 4, '0.9.2', NULL, NULL, false, 1, NULL, '2009-03-02 18:31:35.911331', 'This was a security fix release for 0.9.', 'One (secure) Tree Hill');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (5, 4, '0.9.1', NULL, NULL, false, 1, NULL, '2009-03-02 18:31:35.911331', 'This was a bugfix release to patch up problems with the new extension system.', 'One Tree Hill (v2)');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (6, 4, '0.9', NULL, NULL, false, 1, NULL, '2009-03-02 18:31:35.911331', 'Release 0.9 of Firefox introduced a new theme as well as improved migration tools for people switching to Firefox.', 'One Tree Hill');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (7, 4, '1.0.0', NULL, NULL, false, 2, NULL, '2009-03-02 18:31:35.911331', 'After four years of work the Mozilla project makes its first public stable release. Mozilla 1.0.0 is a major milestone in open source history.', 'First Stable Release');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (8, 5, '2.1.6', NULL, NULL, false, 3, NULL, '2009-03-02 18:31:35.911331', '', NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (9, 8, '0.8', NULL, NULL, false, 4, NULL, '2009-03-02 18:31:35.911331', '', NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (10, 11, '1.0', NULL, NULL, false, 5, NULL, '2009-03-02 18:31:35.911331', '', NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (11, 15, '1.0.9a', NULL, NULL, false, 8, NULL, '2009-03-02 18:31:35.911331', '', NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (12, 15, '1.0.8', NULL, NULL, false, 8, NULL, '2009-03-02 18:31:35.911331', '', NULL);
+
+
+ALTER TABLE milestone ENABLE TRIGGER ALL;
+
+
+ALTER TABLE structuralsubscription DISABLE TRIGGER ALL;
+
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (1, NULL, NULL, NULL, NULL, 1, NULL, 1, 16, 16, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (2, NULL, NULL, NULL, NULL, 1, NULL, 14, 16, 16, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (3, 22, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (4, 16, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
+
+
+ALTER TABLE structuralsubscription ENABLE TRIGGER ALL;
+
+
+ALTER TABLE bugsubscriptionfilter DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE bugsubscriptionfilter ENABLE TRIGGER ALL;
+
+
+ALTER TABLE bugnotificationfilter DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE bugnotificationfilter ENABLE TRIGGER ALL;
+
+
 ALTER TABLE bugnotificationrecipient DISABLE TRIGGER ALL;
 
 
@@ -3467,25 +3520,6 @@ ALTER TABLE bugpackageinfestation DISABLE TRIGGER ALL;
 
 
 ALTER TABLE bugpackageinfestation ENABLE TRIGGER ALL;
-
-
-ALTER TABLE milestone DISABLE TRIGGER ALL;
-
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (1, 4, '1.0', NULL, '2056-10-16 18:31:44.293448', true, 1, NULL, '2006-10-16 18:31:44.293448', NULL, NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (2, NULL, '3.1', 3, '2056-05-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574', NULL, NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (3, NULL, '3.1-rc1', 3, '2056-02-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574', NULL, NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (4, 4, '0.9.2', NULL, NULL, false, 1, NULL, '2009-03-02 18:31:35.911331', 'This was a security fix release for 0.9.', 'One (secure) Tree Hill');
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (5, 4, '0.9.1', NULL, NULL, false, 1, NULL, '2009-03-02 18:31:35.911331', 'This was a bugfix release to patch up problems with the new extension system.', 'One Tree Hill (v2)');
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (6, 4, '0.9', NULL, NULL, false, 1, NULL, '2009-03-02 18:31:35.911331', 'Release 0.9 of Firefox introduced a new theme as well as improved migration tools for people switching to Firefox.', 'One Tree Hill');
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (7, 4, '1.0.0', NULL, NULL, false, 2, NULL, '2009-03-02 18:31:35.911331', 'After four years of work the Mozilla project makes its first public stable release. Mozilla 1.0.0 is a major milestone in open source history.', 'First Stable Release');
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (8, 5, '2.1.6', NULL, NULL, false, 3, NULL, '2009-03-02 18:31:35.911331', '', NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (9, 8, '0.8', NULL, NULL, false, 4, NULL, '2009-03-02 18:31:35.911331', '', NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (10, 11, '1.0', NULL, NULL, false, 5, NULL, '2009-03-02 18:31:35.911331', '', NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (11, 15, '1.0.9a', NULL, NULL, false, 8, NULL, '2009-03-02 18:31:35.911331', '', NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (12, 15, '1.0.8', NULL, NULL, false, 8, NULL, '2009-03-02 18:31:35.911331', '', NULL);
-
-
-ALTER TABLE milestone ENABLE TRIGGER ALL;
 
 
 ALTER TABLE productrelease DISABLE TRIGGER ALL;
@@ -3687,24 +3721,6 @@ INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by, bug_n
 
 
 ALTER TABLE bugsubscription ENABLE TRIGGER ALL;
-
-
-ALTER TABLE structuralsubscription DISABLE TRIGGER ALL;
-
-INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, blueprint_notification_level, date_created, date_last_updated) VALUES (1, NULL, NULL, NULL, NULL, 1, NULL, 1, 16, 16, 40, 10, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
-INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, blueprint_notification_level, date_created, date_last_updated) VALUES (2, NULL, NULL, NULL, NULL, 1, NULL, 14, 16, 16, 40, 10, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
-INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, blueprint_notification_level, date_created, date_last_updated) VALUES (3, 22, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, 40, 10, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
-INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, blueprint_notification_level, date_created, date_last_updated) VALUES (4, 16, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, 40, 10, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
-
-
-ALTER TABLE structuralsubscription ENABLE TRIGGER ALL;
-
-
-ALTER TABLE bugsubscriptionfilter DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE bugsubscriptionfilter ENABLE TRIGGER ALL;
 
 
 ALTER TABLE bugsubscriptionfilterimportance DISABLE TRIGGER ALL;
@@ -3985,6 +4001,13 @@ ALTER TABLE databasecpustats DISABLE TRIGGER ALL;
 
 
 ALTER TABLE databasecpustats ENABLE TRIGGER ALL;
+
+
+ALTER TABLE databasediskutilization DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE databasediskutilization ENABLE TRIGGER ALL;
 
 
 ALTER TABLE databasereplicationlag DISABLE TRIGGER ALL;
@@ -4374,6 +4397,13 @@ ALTER TABLE featureflag DISABLE TRIGGER ALL;
 
 
 ALTER TABLE featureflag ENABLE TRIGGER ALL;
+
+
+ALTER TABLE featureflagchangelogentry DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE featureflagchangelogentry ENABLE TRIGGER ALL;
 
 
 ALTER TABLE flatpackagesetinclusion DISABLE TRIGGER ALL;
@@ -5992,8 +6022,8 @@ ALTER TABLE mirrorsourcecontent ENABLE TRIGGER ALL;
 
 ALTER TABLE nameblacklist DISABLE TRIGGER ALL;
 
-INSERT INTO nameblacklist (id, regexp, comment) VALUES (1, 'blacklist', 'For testing purposes');
-INSERT INTO nameblacklist (id, regexp, comment) VALUES (2, '^admin', NULL);
+INSERT INTO nameblacklist (id, regexp, comment, admin) VALUES (1, 'blacklist', 'For testing purposes', NULL);
+INSERT INTO nameblacklist (id, regexp, comment, admin) VALUES (2, '^admin', NULL, NULL);
 
 
 ALTER TABLE nameblacklist ENABLE TRIGGER ALL;
@@ -6264,6 +6294,13 @@ INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productse
 ALTER TABLE packaging ENABLE TRIGGER ALL;
 
 
+ALTER TABLE packagingjob DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE packagingjob ENABLE TRIGGER ALL;
+
+
 ALTER TABLE parsedapachelog DISABLE TRIGGER ALL;
 
 
@@ -6306,6 +6343,112 @@ ALTER TABLE personnotification DISABLE TRIGGER ALL;
 
 
 ALTER TABLE personnotification ENABLE TRIGGER ALL;
+
+
+ALTER TABLE personsettings DISABLE TRIGGER ALL;
+
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (1, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (2, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (3, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (4, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (5, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (6, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (7, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (8, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (9, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (10, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (11, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (12, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (13, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (14, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (16, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (17, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (18, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (19, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (20, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (21, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (22, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (23, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (24, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (25, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (26, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (27, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (28, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (29, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (30, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (31, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (32, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (33, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (34, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (35, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (36, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (37, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (38, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (39, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (40, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (41, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (42, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (43, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (44, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (45, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (46, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (47, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (48, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (49, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (50, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (51, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (52, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (53, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (55, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (56, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (57, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (58, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (59, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (60, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (61, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (62, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (63, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (64, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (65, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (66, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (67, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (68, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (69, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (70, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243601, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243602, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243603, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243604, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243606, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243607, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243608, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243609, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243610, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243611, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243612, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243613, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243614, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243615, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243616, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243617, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243618, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243620, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243621, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243622, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243623, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243624, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243625, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243626, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243627, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243628, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243629, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243630, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243631, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243632, true);
+INSERT INTO personsettings (person, selfgenerated_bugnotifications) VALUES (243651, true);
+
+
+ALTER TABLE personsettings ENABLE TRIGGER ALL;
 
 
 ALTER TABLE persontransferjob DISABLE TRIGGER ALL;
@@ -9775,6 +9918,15 @@ ALTER TABLE projectrelationship DISABLE TRIGGER ALL;
 
 
 ALTER TABLE projectrelationship ENABLE TRIGGER ALL;
+
+
+ALTER TABLE publisherconfig DISABLE TRIGGER ALL;
+
+INSERT INTO publisherconfig (id, distribution, root_dir, base_url, copy_base_url) VALUES (1, 1, '/var/tmp/archive', 'http://archive.launchpad.dev/', 'http://rebuild-test.internal/');
+INSERT INTO publisherconfig (id, distribution, root_dir, base_url, copy_base_url) VALUES (2, 8, '/var/tmp/archive', 'http://archive.launchpad.dev/', 'http://rebuild-test.internal/');
+
+
+ALTER TABLE publisherconfig ENABLE TRIGGER ALL;
 
 
 ALTER TABLE pushmirroraccess DISABLE TRIGGER ALL;

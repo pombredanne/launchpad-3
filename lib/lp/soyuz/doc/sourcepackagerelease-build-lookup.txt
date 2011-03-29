@@ -288,7 +288,7 @@ Another possible situation is when the user wants to rebuild the
 same source published in hoary to another suite, let's say
 breezy-autotest in his PPA.
 
-    >>> cprov_foo_src = cprov.archive.getPublishedSources(name='foo')[0]
+    >>> cprov_foo_src = cprov.archive.getPublishedSources(name='foo').first()
 
     >>> breezy_autotest = ubuntu.getSeries('breezy-autotest')
     >>> copy = cprov_foo_src.copyTo(
@@ -310,7 +310,7 @@ It's even possible to copy source and binaries from hoary to warty
 suite in Celso's PPA.
 
     >>> cprov_foo_src = cprov.archive.getPublishedSources(
-    ...    name='foo', distroseries=hoary)[0]
+    ...    name='foo', distroseries=hoary).first()
     >>> cprov_foo_bin = cprov_foo_src.getPublishedBinaries()[0]
 
     >>> warty = ubuntu.getSeries('warty')
@@ -340,7 +340,7 @@ Now we can also copy the hoary source and its binary from Celso's PPA
 to Mark Shuttleworth's PPA.
 
     >>> cprov_foo_src = cprov.archive.getPublishedSources(
-    ...    name='foo', distroseries=hoary)[0]
+    ...    name='foo', distroseries=hoary).first()
     >>> cprov_foo_bin = cprov_foo_src.getPublishedBinaries()[0]
 
     >>> mark = getUtility(IPersonSet).getByName('mark')

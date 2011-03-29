@@ -28,7 +28,6 @@ class ConfigFixture(Fixture):
     _extend_str = dedent("""\
         [meta]
         extends: ../%s/launchpad-lazr.conf
-        
         """)
 
     def __init__(self, instance_name, copy_from_instance):

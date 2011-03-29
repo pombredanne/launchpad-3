@@ -40,7 +40,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.encoding import (
+from lp.services.encoding import (
     ascii_smash,
     guess as guess_encoding,
     )
@@ -72,7 +72,6 @@ from lp.registry.interfaces.pocket import (
     )
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.enums import (
-    BinaryPackageFormat,
     PackageUploadCustomFormat,
     PackageUploadStatus,
     )
@@ -192,8 +191,22 @@ class PackageUpload(SQLBase):
     # PackageUploadSource objects which are related.
     sources = SQLMultipleJoin('PackageUploadSource',
                               joinColumn='packageupload')
+    # Does not include source builds.
     builds = SQLMultipleJoin('PackageUploadBuild',
                              joinColumn='packageupload')
+
+    def getSourceBuild(self):
+        #avoid circular import
+        from lp.code.model.sourcepackagerecipebuild import (
+            SourcePackageRecipeBuild)
+        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+        return Store.of(self).find(
+            SourcePackageRecipeBuild,
+            SourcePackageRecipeBuild.id ==
+                SourcePackageRelease.source_package_recipe_build_id,
+            SourcePackageRelease.id ==
+            PackageUploadSource.sourcepackagereleaseID,
+            PackageUploadSource.packageupload == self.id).one()
 
     # Also the custom files associated with the build.
     customfiles = SQLMultipleJoin('PackageUploadCustom',
@@ -360,7 +373,7 @@ class PackageUpload(SQLBase):
     def _giveKarma(self):
         """Assign karma as appropriate for an accepted upload."""
         # Give some karma to the uploader for source uploads only.
-        if self.sources.count() == 0:
+        if not bool(self.sources):
             return
 
         changed_by = self.sources[0].sourcepackagerelease.creator
@@ -473,8 +486,8 @@ class PackageUpload(SQLBase):
     def _isSingleSourceUpload(self):
         """Return True if this upload contains only a single source."""
         return ((self.sources.count() == 1) and
-                (self.builds.count() == 0) and
-                (self.customfiles.count() == 0))
+                (not bool(self.builds)) and
+                (not bool(self.customfiles)))
 
     # XXX cprov 2006-03-14: Following properties should be redesigned to
     # reduce the duplicated code.
@@ -487,6 +500,10 @@ class PackageUpload(SQLBase):
     def contains_build(self):
         """See `IPackageUpload`."""
         return self.builds
+
+    @cachedproperty
+    def from_build(self):
+        return bool(self.builds) or self.getSourceBuild()
 
     def isAutoSyncUpload(self, changed_by_email):
         """See `IPackageUpload`."""
@@ -591,9 +608,9 @@ class PackageUpload(SQLBase):
         and I am hence introducing this non-cached variant for
         usage inside the content class.
         """
-        if self.sources is not None and self.sources.count() > 0:
+        if self.sources is not None and bool(self.sources):
             return self.sources[0].sourcepackagerelease
-        elif self.builds is not None and self.builds.count() > 0:
+        elif self.builds is not None and bool(self.builds):
             return self.builds[0].build.source_package_release
         else:
             return None
@@ -1070,10 +1087,10 @@ class PackageUpload(SQLBase):
 
         # If this is a binary or mixed upload, we don't send *any* emails
         # provided it's not a rejection or a security upload:
-        if(self.contains_build and
+        if(self.from_build and
            self.status != PackageUploadStatus.REJECTED and
            self.pocket != PackagePublishingPocket.SECURITY):
-            debug(self.logger, "Not sending email, upload contains binaries.")
+            debug(self.logger, "Not sending email; upload is from a build.")
             return
 
         # XXX julian 2007-05-11:
@@ -1387,7 +1404,7 @@ class PackageUpload(SQLBase):
                     section=new_section,
                     priority=new_priority)
 
-        return self.builds.count() > 0
+        return bool(self.builds)
 
 
 class PackageUploadBuild(SQLBase):
@@ -1440,62 +1457,29 @@ class PackageUploadBuild(SQLBase):
         """See `IPackageUploadBuild`."""
         # Determine the build's architecturetag
         build_archtag = self.build.distro_arch_series.architecturetag
-        # Determine the target arch series.
-        # This will raise NotFoundError if anything odd happens.
-        target_das = self.packageupload.distroseries[build_archtag]
+        distroseries = self.packageupload.distroseries
         debug(logger, "Publishing build to %s/%s/%s" % (
-            target_das.distroseries.distribution.name,
-            target_das.distroseries.name,
+            distroseries.distribution.name, distroseries.name,
             build_archtag))
 
-        # Get the other enabled distroarchseries for this
-        # distroseries.  If the binary is architecture independent then
-        # we need to publish it in all of those too.
-
-        # XXX Julian 2010-09-28 bug=649859
-        # This logic is duplicated in
-        # PackagePublishingSet.copyBinariesTo() and should be
-        # refactored.
-        other_das = set(
-            arch for arch in self.packageupload.distroseries.architectures
-            if arch.enabled)
-        other_das = other_das - set([target_das])
         # First up, publish everything in this build into that dar.
         published_binaries = []
         for binary in self.build.binarypackages:
-            target_dars = set([target_das])
-            if not binary.architecturespecific:
-                target_dars = target_dars.union(other_das)
-                debug(logger, "... %s/%s (Arch Independent)" % (
-                    binary.binarypackagename.name,
-                    binary.version))
-            else:
-                debug(logger, "... %s/%s (Arch Specific)" % (
-                    binary.binarypackagename.name,
-                    binary.version))
-
-
-            archive = self.packageupload.archive
-            # DDEBs targeted to the PRIMARY archive are published in the
-            # corresponding DEBUG archive.
-            if binary.binpackageformat == BinaryPackageFormat.DDEB:
-                debug_archive = archive.debug_archive
-                if debug_archive is None:
-                    raise QueueInconsistentStateError(
-                        "Could not find the corresponding DEBUG archive "
-                        "for %s" % (archive.displayname))
-                archive = debug_archive
-
-            for each_target_dar in target_dars:
-                bpph = getUtility(IPublishingSet).newBinaryPublication(
-                    archive=archive,
+            debug(
+                logger, "... %s/%s (Arch %s)" % (
+                binary.binarypackagename.name,
+                binary.version,
+                'Specific' if binary.architecturespecific else 'Independent',
+                ))
+            published_binaries.extend(
+                getUtility(IPublishingSet).publishBinary(
+                    archive=self.packageupload.archive,
                     binarypackagerelease=binary,
-                    distroarchseries=each_target_dar,
+                    distroseries=distroseries,
                     component=binary.component,
                     section=binary.section,
                     priority=binary.priority,
-                    pocket=self.packageupload.pocket)
-                published_binaries.append(bpph)
+                    pocket=self.packageupload.pocket))
         return published_binaries
 
 
@@ -1532,9 +1516,10 @@ class PackageUploadSource(SQLBase):
                 name=self.sourcepackagerelease.name,
                 distroseries=distroseries, pocket=pocket,
                 exact_match=True)
-            if ancestries.count() == 0:
+            try:
+                ancestry = ancestries[0]
+            except IndexError:
                 continue
-            ancestry = ancestries[0]
             break
         return ancestry
 
@@ -1670,13 +1655,7 @@ class PackageUploadCustom(SQLBase):
             self.packageupload.distroseries.distribution.name,
             self.packageupload.distroseries.name))
 
-        name = "publish_" + self.customformat.name
-        method = getattr(self, name, None)
-        if method is not None:
-            method(logger)
-        else:
-            raise NotFoundError("Unable to find a publisher method for %s" % (
-                self.customformat.name))
+        self.publisher_dispatch[self.customformat](self, logger)
 
     def temp_filename(self):
         """See `IPackageUploadCustom`."""
@@ -1707,7 +1686,7 @@ class PackageUploadCustom(SQLBase):
         finally:
             shutil.rmtree(os.path.dirname(temp_filename))
 
-    def publish_DEBIAN_INSTALLER(self, logger=None):
+    def publishDebianInstaller(self, logger=None):
         """See `IPackageUploadCustom`."""
         # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
         # to instantiate the object in question and avoid circular imports
@@ -1716,7 +1695,7 @@ class PackageUploadCustom(SQLBase):
 
         self._publishCustom(process_debian_installer)
 
-    def publish_DIST_UPGRADER(self, logger=None):
+    def publishDistUpgrader(self, logger=None):
         """See `IPackageUploadCustom`."""
         # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
         # to instantiate the object in question and avoid circular imports
@@ -1725,7 +1704,7 @@ class PackageUploadCustom(SQLBase):
 
         self._publishCustom(process_dist_upgrader)
 
-    def publish_DDTP_TARBALL(self, logger=None):
+    def publishDdtpTarball(self, logger=None):
         """See `IPackageUploadCustom`."""
         # XXX cprov 2005-03-03: We need to use the Zope Component Lookup
         # to instantiate the object in question and avoid circular imports
@@ -1734,7 +1713,7 @@ class PackageUploadCustom(SQLBase):
 
         self._publishCustom(process_ddtp_tarball)
 
-    def publish_ROSETTA_TRANSLATIONS(self, logger=None):
+    def publishRosettaTranslations(self, logger=None):
         """See `IPackageUploadCustom`."""
         sourcepackagerelease = self.packageupload.sourcepackagerelease
 
@@ -1771,7 +1750,7 @@ class PackageUploadCustom(SQLBase):
                 debug(logger, "Unable to fetch %s to import it into Rosetta" %
                     self.libraryfilealias.http_url)
 
-    def publish_STATIC_TRANSLATIONS(self, logger=None):
+    def publishStaticTranslations(self, logger=None):
         """See `IPackageUploadCustom`."""
         # Static translations are not published.  Currently, they're
         # only exposed via webservice methods so that third parties can
@@ -1779,7 +1758,7 @@ class PackageUploadCustom(SQLBase):
         debug(logger, "Skipping publishing of static translations.")
         return
 
-    def publish_META_DATA(self, logger=None):
+    def publishMetaData(self, logger=None):
         """See `IPackageUploadCustom`."""
         # In the future this could use the existing custom upload file
         # processing which deals with versioning, etc., but that's too
@@ -1801,6 +1780,21 @@ class PackageUploadCustom(SQLBase):
         file_obj = file(dest_file, "wb")
         self.libraryfilealias.open()
         copy_and_close(self.libraryfilealias, file_obj)
+
+    publisher_dispatch = {
+        PackageUploadCustomFormat.DEBIAN_INSTALLER: publishDebianInstaller,
+        PackageUploadCustomFormat.ROSETTA_TRANSLATIONS:
+            publishRosettaTranslations,
+        PackageUploadCustomFormat.DIST_UPGRADER: publishDistUpgrader,
+        PackageUploadCustomFormat.DDTP_TARBALL: publishDdtpTarball,
+        PackageUploadCustomFormat.STATIC_TRANSLATIONS:
+            publishStaticTranslations,
+        PackageUploadCustomFormat.META_DATA: publishMetaData,
+        }
+
+    # publisher_dispatch must have an entry for each value of
+    # PackageUploadCustomFormat.
+    assert len(publisher_dispatch) == len(PackageUploadCustomFormat)
 
 
 class PackageUploadSet:

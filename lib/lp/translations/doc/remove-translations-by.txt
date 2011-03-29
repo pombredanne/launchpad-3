@@ -111,6 +111,8 @@ The long list of matching options we gave above indicated exactly 1
 message.
 
     >>> print err
+    WARNING Deleting messages currently in use:
+    WARNING Message ... is a current translation in upstream
     DEBUG Sample of messages to be deleted follows.
     DEBUG   [message] [unmasks]
     DEBUG   ...       --
@@ -154,6 +156,10 @@ database.
     >>> print err
     WARNING Safety override in effect.  Deleting translations for template ...
     INFO    Dry run only.  Not really deleting.
+    WARNING Deleting messages currently in use:
+    WARNING Message ... is a current translation in upstream
+    WARNING Message ... is a current translation in upstream
+    WARNING Message ... is a current translation in upstream
     DEBUG   Sample of messages to be deleted follows.
     DEBUG   [message] [unmasks]
     DEBUG   ...       --

@@ -51,6 +51,7 @@ from lp.bugs.interfaces.bugtask import (
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
     )
+from lp.bugs.interfaces.bugtaskfilter import simple_weight_calculator
 from lp.bugs.model.bugtask import (
     BugTaskSet,
     get_bug_privacy_filter,
@@ -94,7 +95,8 @@ class HasBugsBase:
                     hardware_owner_is_affected_by_bug=False,
                     hardware_owner_is_subscribed_to_bug=False,
                     hardware_is_linked_to_bug=False, linked_branches=None,
-                    modified_since=None, created_since=None, prejoins=[]):
+                    linked_blueprints=None, modified_since=None,
+                    created_since=None, prejoins=[]):
         """See `IHasBugs`."""
         if status is None:
             # If no statuses are supplied, default to the
@@ -140,12 +142,7 @@ class HasBugsBase:
     @property
     def open_bugtasks(self):
         """See `IHasBugs`."""
-        open_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES),
-            omit_dupes=True)
-
-        return self.searchTasks(open_tasks_query)
+        return self.searchTasks(BugTaskSet().open_bugtask_search)
 
     @property
     def new_bugtasks(self):
@@ -236,6 +233,10 @@ class HasBugsBase:
                 ', '.join(select_columns), ' AND '.join(conditions)))
         counts = cur.fetchone()
         return dict(zip(statuses, counts))
+
+    def getBugTaskWeightFunction(self):
+        """Default weight function is the simple one."""
+        return simple_weight_calculator
 
 
 class BugTargetBase(HasBugsBase):

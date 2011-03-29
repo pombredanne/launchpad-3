@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=E1002
 
@@ -35,7 +35,6 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import structured
-from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -43,12 +42,17 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.enums import service_uses_launchpad
+from lp.app.browser.launchpadform import ReturnToReferrerMixin
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.services.propertycache import cachedproperty
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.potemplate import BaseSeriesTemplatesView
 from lp.translations.browser.translations import TranslationsMixin
+from lp.translations.browser.translationsharing import (
+    TranslationSharingDetailsMixin,
+    )
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguageSet,
     )
@@ -78,7 +82,9 @@ class ProductSeriesTranslationsMenuMixIn:
     @enabled_with_permission('launchpad.Edit')
     def settings(self):
         """Return a link to configure the translations settings."""
-        return Link('+translations-settings', 'Settings', site='translations')
+        return Link(
+            '+translations-settings', 'Settings',
+            site='translations', icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def requestbzrimport(self):
@@ -340,7 +346,9 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
         return check_permission("launchpad.Edit", self.context)
 
 
-class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
+class ProductSeriesView(LaunchpadView,
+                        ProductSeriesTranslationsMixin,
+                        TranslationSharingDetailsMixin):
     """A view to show a series with translations."""
 
     label = "Translation status by language"
@@ -447,6 +455,19 @@ class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
         """Whether or not the user is a translations admin."""
         return check_permission("launchpad.TranslationsAdmin", self.context)
 
+    def is_sharing(self):
+        return self.context.has_sharing_translation_templates
+
+    @property
+    def sharing_sourcepackage(self):
+        return self.context.getUbuntuTranslationFocusPackage()
+
+    def getTranslationTarget(self):
+        """See `TranslationSharingDetailsMixin`."""
+        return self.context
+
+    can_edit_sharing_details = can_configure_translations
+
 
 class SettingsRadioWidget(LaunchpadRadioWidgetWithDescription):
     """Remove the confusing hint under the widget."""
@@ -456,8 +477,10 @@ class SettingsRadioWidget(LaunchpadRadioWidgetWithDescription):
         self.hint = None
 
 
-class ProductSeriesTranslationsSettingsView(LaunchpadEditFormView,
-                                            ProductSeriesTranslationsMixin):
+class ProductSeriesTranslationsSettingsView(ReturnToReferrerMixin,
+                                            LaunchpadEditFormView,
+                                            ProductSeriesTranslationsMixin,
+                                            ):
     """Edit settings for translations import and export."""
 
     schema = IProductSeries
@@ -468,11 +491,6 @@ class ProductSeriesTranslationsSettingsView(LaunchpadEditFormView,
     field_names = ['translations_autoimport_mode']
     settings_widget = custom_widget('translations_autoimport_mode',
                   SettingsRadioWidget)
-
-    def __init__(self, context, request):
-        super(ProductSeriesTranslationsSettingsView, self).__init__(
-            context, request)
-        self.cancel_url = canonical_url(self.context, rootsite='translations')
 
     @action(u"Save settings", name="save_settings")
     def change_settings_action(self, action, data):

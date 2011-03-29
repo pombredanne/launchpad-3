@@ -1195,16 +1195,19 @@
         rootsite="code" />
     <browser:url
         for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
-        attribute_to_parent="recipe"
-        path_expression="string:+build/${id}"
-        rootsite="code" />
+        attribute_to_parent="archive"
+        path_expression="string:+buildjob/${url_id}"
+        />
+    <adapter
+        for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildFormatterAPI"
+        name="fmt"
+        />
     <browser:menus
         classes="SourcePackageRecipeBuildContextMenu"
         module="lp.code.browser.sourcepackagerecipebuild"/>
 
-    <browser:navigation
-        module="lp.code.browser.sourcepackagerecipe"
-        classes="SourcePackageRecipeNavigation" />
     <browser:navigation
         module="lp.code.browser.sourcepackagerecipebuild"
         classes="SourcePackageRecipeBuildNavigation" />
@@ -1225,33 +1228,43 @@
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             layer="lp.code.publisher.CodeLayer"
-            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeRequestBuildsView"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeRequestBuildsHtmlView"
             name="+request-builds"
             template="../templates/sourcepackagerecipe-request-builds.pt"
             permission="launchpad.AnyPerson"/>
+        <browser:page
+            for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+            layer="lp.code.publisher.CodeLayer"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeRequestBuildsAjaxView"
+            name="+builds"
+            template="../templates/sourcepackagerecipe-builds.pt"
+            permission="launchpad.View"/>
+        <browser:page
+            for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
+            layer="lp.code.publisher.CodeLayer"
+            class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeRequestDailyBuildView"
+            name="+request-daily-build"
+            permission="launchpad.Edit"/>
     </facet>
     <facet facet="branches">
         <browser:defaultView
             for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
             name="+index"
-            layer="lp.code.publisher.CodeLayer"/>
+            />
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
-            layer="lp.code.publisher.CodeLayer"
             class="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildView"
             name="+index"
             template="../templates/sourcepackagerecipebuild-index.pt"
             permission="launchpad.View"/>
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
-            layer="lp.code.publisher.CodeLayer"
             class="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildCancelView"
             name="+cancel"
             template="../../app/templates/generic-edit.pt"
             permission="launchpad.Admin"/>
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
-            layer="lp.code.publisher.CodeLayer"
             class="lp.code.browser.sourcepackagerecipebuild.SourcePackageRecipeBuildRescoreView"
             name="+rescore"
             template="../../app/templates/generic-edit.pt"

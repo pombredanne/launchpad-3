@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for products."""
@@ -42,7 +42,6 @@ __all__ = [
     ]
 
 
-from cgi import escape
 from datetime import (
     datetime,
     timedelta,
@@ -117,19 +116,6 @@ from canonical.launchpad.webapp.interfaces import (
     UnsafeFormGetSubmissionError,
     )
 from canonical.launchpad.webapp.menu import NavigationMenu
-from canonical.widgets.date import DateWidget
-from canonical.widgets.itemswidgets import (
-    CheckBoxMatrixWidget,
-    LaunchpadRadioWidget,
-    )
-from canonical.widgets.lazrjs import TextLineEditorWidget
-from canonical.widgets.popup import PersonPickerWidget
-from canonical.widgets.product import (
-    GhostWidget,
-    LicenseWidget,
-    ProductNameWidget,
-    )
-from canonical.widgets.textwidgets import StrippedTextWidget
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin,
@@ -143,10 +129,23 @@ from lp.app.browser.launchpadform import (
     ReturnToReferrerMixin,
     safe_action,
     )
+from lp.app.browser.lazrjs import TextLineEditorWidget
 from lp.app.browser.tales import MenuAPI
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.headings import IEditableContextTitle
+from lp.app.widgets.date import DateWidget
+from lp.app.widgets.itemswidgets import (
+    CheckBoxMatrixWidget,
+    LaunchpadRadioWidget,
+    )
+from lp.app.widgets.popup import PersonPickerWidget
+from lp.app.widgets.product import (
+    GhostWidget,
+    LicenseWidget,
+    ProductNameWidget,
+    )
+from lp.app.widgets.textwidgets import StrippedTextWidget
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
@@ -154,7 +153,11 @@ from lp.bugs.browser.bugtask import (
     BugTargetTraversalMixin,
     get_buglisting_search_filter_url,
     )
-from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
+from lp.bugs.interfaces.bugtask import (
+    RESOLVED_BUGTASK_STATUSES,
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.code.browser.branchref import BranchRef
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.registry.browser import BaseRdfView
@@ -169,7 +172,9 @@ from lp.registry.browser.pillar import (
     PillarView,
     )
 from lp.registry.browser.productseries import get_series_branch_error
-from lp.registry.browser.structuralsubscription import (
+from lp.bugs.browser.structuralsubscription import (
+    expose_enum_to_js,
+    expose_user_administered_teams_to_js,
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
@@ -188,6 +193,7 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services import features
 from lp.services.fields import (
     PillarAliases,
     PublicPersonChoice,
@@ -336,7 +342,8 @@ class ProductLicenseMixin:
         subject = (
             "License information for %(product_name)s "
             "in Launchpad" % substitutions)
-        template = helpers.get_email_template('product-other-license.txt')
+        template = helpers.get_email_template(
+            'product-other-license.txt', app='registry')
         message = template % substitutions
         simple_sendmail(
             from_address, user_address,
@@ -577,7 +584,22 @@ class ProductActionNavigationMenu(NavigationMenu, ProductEditLinksMixin):
     usedfor = IProductActionMenu
     facet = 'overview'
     title = 'Actions'
-    links = ('edit', 'review_license', 'administer', 'subscribe')
+
+    @property
+    def links(self):
+        links = ['edit', 'review_license', 'administer']
+        use_advanced_features = features.getFeatureFlag(
+            'advanced-structural-subscriptions.enabled')
+        if use_advanced_features:
+            links.append('subscribe_to_bug_mail')
+        else:
+            links.append('subscribe')
+        return links
+
+    @enabled_with_permission('launchpad.AnyPerson')
+    def subscribe_to_bug_mail(self):
+        text = 'Subscribe to bug mail'
+        return Link('#', text, icon='add', hidden=True)
 
 
 class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
@@ -818,6 +840,11 @@ class DecoratedSeries:
             # This is normal presentation.
             return ''
 
+    @cachedproperty
+    def packagings(self):
+        """Convert packagings to list to prevent multiple evaluations."""
+        return list(self.series.packagings)
+
 
 class SeriesWithReleases(DecoratedSeries):
     """A decorated series that includes releases.
@@ -983,28 +1010,27 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
 
     def initialize(self):
         self.status_message = None
+        product = self.context
+        title_field = IProduct['title']
+        title = "Edit this title"
         self.title_edit_widget = TextLineEditorWidget(
-            self.context, 'title',
-            canonical_url(self.context, view_name='+edit'),
-            id="product-title", title="Edit this title")
+            product, title_field, title, 'h1')
+        programming_lang = IProduct['programminglang']
+        title = 'Edit programming languages'
+        additional_arguments = {'width': '9em'}
         if self.context.programminglang is None:
-            additional_arguments = dict(
+            additional_arguments.update(dict(
                 default_text='Not yet specified',
                 initial_value_override='',
-                )
-        else:
-            additional_arguments = {}
+                ))
         self.languages_edit_widget = TextLineEditorWidget(
-            self.context, 'programminglang',
-            canonical_url(self.context, view_name='+edit'),
-            id='programminglang', title='Edit programming languages',
-            tag='span', public_attribute='programming_language',
-            accept_empty=True,
-            width='9em',
-            **additional_arguments)
+            product, programming_lang, title, 'span', **additional_arguments)
         self.show_programming_languages = bool(
             self.context.programminglang or
             check_permission('launchpad.Edit', self.context))
+        expose_user_administered_teams_to_js(self.request, self.user)
+        expose_enum_to_js(self.request, BugTaskImportance, 'importances')
+        expose_enum_to_js(self.request, BugTaskStatus, 'statuses')
 
     @property
     def show_license_status(self):
@@ -1109,6 +1135,13 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         return (check_permission('launchpad.Edit', self.context) or
                 check_permission('launchpad.Commercial', self.context))
 
+    @cachedproperty
+    def show_license_info(self):
+        """Should the view show the extra license information."""
+        return (
+            License.OTHER_OPEN_SOURCE in self.context.licenses
+            or License.OTHER_PROPRIETARY in self.context.licenses)
+
 
 class ProductPackagesView(LaunchpadView):
     """View for displaying product packaging"""
@@ -1117,25 +1150,11 @@ class ProductPackagesView(LaunchpadView):
     page_title = label
 
     @cachedproperty
-    def series_packages(self):
-        """A hierarchy of product series, packaging and field data.
-
-        A dict of series and packagings. Each packaging is a dict of the
-        packaging and a hidden HTML field for forms:
-           [{series: <hoary>,
-             packagings: {
-                packaging: <packaging>,
-                field: '<input type=''hidden' ...>},
-                }]
-        """
-        packaged_series = []
-        for series in self.context.series:
-            packagings = []
-            for packaging in series.packagings:
-                packagings.append(packaging)
-            packaged_series.append(dict(
-                series=series, packagings=packagings))
-        return packaged_series
+    def series_batch(self):
+        """A batch of series that are active or have packages."""
+        decorated_series = DecoratedResultSet(
+            self.context.active_or_packaged_series, DecoratedSeries)
+        return BatchNavigator(decorated_series, self.request)
 
     @property
     def distro_packaging(self):
@@ -1147,18 +1166,8 @@ class ProductPackagesView(LaunchpadView):
         title, and an attribute "packagings" which is a list of the relevant
         packagings for this distro and product.
         """
-        # First get a list of all relevant packagings.
-        all_packagings = []
-        for series in self.context.series:
-            for packaging in series.packagings:
-                all_packagings.append(packaging)
-        # We sort it so that the packagings will always be displayed in the
-        # distroseries version, then productseries name order.
-        all_packagings.sort(key=lambda a: (a.distroseries.version,
-            a.productseries.name, a.id))
-
         distros = {}
-        for packaging in all_packagings:
+        for packaging in self.context.packagings:
             distribution = packaging.distroseries.distribution
             if distribution.name in distros:
                 distro = distros[distribution.name]
@@ -1230,8 +1239,8 @@ class ProductPackagesPortletView(LaunchpadFormView):
             if package.development_version.currentrelease is not None:
                 self.suggestions.append(package)
                 item_url = canonical_url(package)
-                description = """<a href="%s">%s</a>""" % (
-                    item_url, escape(package.name))
+                description = structured(
+                    '<a href="%s">%s</a>', item_url, package.name)
                 vocab_terms.append(
                     SimpleTerm(package, package.name, description))
         # Add an option to represent the user's decision to choose a

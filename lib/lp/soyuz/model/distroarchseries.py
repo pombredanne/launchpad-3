@@ -192,30 +192,41 @@ class DistroArchSeries(SQLBase):
                     BinaryPackageName.id
                 )
             ]
-        find_spec = (
-            BinaryPackageRelease,
-            BinaryPackageName,
-            SQL("rank(BinaryPackageRelease.fti, ftq(%s)) AS rank" %
-                sqlvalues(text))
-            )
+        if text:
+            find_spec = (
+                BinaryPackageRelease,
+                BinaryPackageName,
+                SQL("rank(BinaryPackageRelease.fti, ftq(%s)) AS rank" %
+                    sqlvalues(text))
+                )
+        else:
+            find_spec = (
+                BinaryPackageRelease,
+                BinaryPackageName,
+                BinaryPackageName, # dummy value
+                )
         archives = self.distroseries.distribution.getArchiveIDList()
 
         # Note: When attempting to convert the query below into straight
         # Storm expressions, a 'tuple index out-of-range' error was always
         # raised.
-        result = store.using(*origin).find(
-            find_spec,
-            """
+        query = """
             BinaryPackagePublishingHistory.distroarchseries = %s AND
             BinaryPackagePublishingHistory.archive IN %s AND
-            BinaryPackagePublishingHistory.dateremoved is NULL AND
-            (BinaryPackageRelease.fti @@ ftq(%s) OR
-             BinaryPackageName.name ILIKE '%%' || %s || '%%')
-            """ % (quote(self), quote(archives),
-                   quote(text), quote_like(text))
-            ).config(distinct=True)
+            BinaryPackagePublishingHistory.dateremoved is NULL
+            """ % (quote(self), quote(archives))
+        if text:
+            query += """
+            AND (BinaryPackageRelease.fti @@ ftq(%s) OR
+            BinaryPackageName.name ILIKE '%%' || %s || '%%')
+            """ % (quote(text), quote_like(text))
+        result = store.using(*origin).find(
+            find_spec, query).config(distinct=True)
 
-        result = result.order_by("rank DESC, BinaryPackageName.name")
+        if text:
+            result = result.order_by("rank DESC, BinaryPackageName.name")
+        else:
+            result = result.order_by("BinaryPackageName.name")
 
         # import here to avoid circular import problems
         from lp.soyuz.model.distroarchseriesbinarypackagerelease import (

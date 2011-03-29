@@ -1,22 +1,24 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Fixture for the librarians."""
 
 __metaclass__ = type
 __all__ = [
-    'cleanupLibrarianFiles',
     'fillLibrarianFile',
     'LibrarianServerFixture',
-    'LibrarianTestSetup',
     ]
 
-import atexit
 import os
 import shutil
+import tempfile
+from textwrap import dedent
 import warnings
 
-from fixtures import Fixture
+from fixtures import (
+    Fixture,
+    FunctionFixture,
+    )
 
 import canonical
 from canonical.config import config
@@ -31,81 +33,28 @@ from canonical.librarian.storage import _relFileLocation
 class LibrarianServerFixture(TacTestSetup):
     """Librarian server fixture.
 
-    >>> from urllib import urlopen
-    >>> from canonical.config import config
-
-    >>> librarian_url = "http://%s:%d" % (
-    ...     config.librarian.download_host,
-    ...     config.librarian.download_port)
-    >>> restricted_librarian_url = "http://%s:%d" % (
-    ...     config.librarian.restricted_download_host,
-    ...     config.librarian.restricted_download_port)
-
-    >>> fixture = LibrarianServerFixture()
-    >>> fixture.setUp()
-
-    Set a socket timeout, so that this test cannot hang indefinitely.
-
-    >>> import socket
-    >>> print socket.getdefaulttimeout()
-    None
-    >>> socket.setdefaulttimeout(1)
-
-    After setUp() is called, two librarian ports are available:
-    The regular one:
-
-    >>> 'Copyright' in urlopen(librarian_url).read()
-    True
-
-    And the restricted one:
-
-    >>> 'Copyright' in urlopen(restricted_librarian_url).read()
-    True
-
-    The librarian root is also available.
-
-    >>> import os
-    >>> os.path.isdir(config.librarian_server.root)
-    True
-
-    After tearDown() is called, both ports are closed:
-
-    >>> fixture.tearDown()
-
-    >>> urlopen(librarian_url).read()
-    Traceback (most recent call last):
-    ...
-    IOError: ...
-
-    >>> urlopen(restricted_librarian_url).read()
-    Traceback (most recent call last):
-    ...
-    IOError: ...
-
-    The root directory was removed:
-
-    >>> os.path.exists(config.librarian_server.root)
-    False
-
-    That fixture can be started and stopped multiple time in succession:
-
-    >>> fixture.setUp()
-    >>> 'Copyright' in urlopen(librarian_url).read()
-    True
-
-    Tidy up.
-
-    >>> fixture.tearDown()
-    >>> socket.setdefaulttimeout(None)
-
-    :ivar: pid pid of the external process.
+    :ivar service_config: A config fragment with the variables for this
+           service.
+    :ivar root: the root of the server storage area.
+    :ivar upload_port: the port to upload on.
+    :ivar download_port: the port to download from.
+    :ivar restricted_upload_port: the port to upload restricted files on.
+    :ivar restricted_download_port: the port to upload restricted files from.
+    :ivar pid: pid of the external process.
     """
 
-    def __init__(self):
+    def __init__(self, config_fixture):
+        """Initialize the LibrarianServerFixture.
+
+        :param config_fixture: The ConfigFixture in use by our tests.
+                               In the layered environment, this is
+                               BaseLayer.config_fixture.
+        """
         Fixture.__init__(self)
         self._pid = None
         # Track whether the fixture has been setup or not.
         self._setup = False
+        self.config_fixture = config_fixture
 
     def setUp(self):
         """Start both librarian instances."""
@@ -126,6 +75,11 @@ class LibrarianServerFixture(TacTestSetup):
         self._setup = True
         self.addCleanup(setattr, self, '_setup', False)
 
+        # Update the config our tests are using to know about the
+        # correct ports.
+        self.config_fixture.add_section(self.service_config)
+        config.reloadConfig()
+
     def cleanUp(self):
         """Shut downs both librarian instances."""
         if self._persistent_servers():
@@ -139,9 +93,8 @@ class LibrarianServerFixture(TacTestSetup):
     def clear(self):
         """Clear all files from the Librarian"""
         # Make this smarter if our tests create huge numbers of files
-        root = config.librarian_server.root
-        if os.path.isdir(os.path.join(root, '00')):
-            shutil.rmtree(os.path.join(root, '00'))
+        if os.path.isdir(os.path.join(self.root, '00')):
+            shutil.rmtree(os.path.join(self.root, '00'))
 
     @property
     def pid(self):
@@ -154,22 +107,89 @@ class LibrarianServerFixture(TacTestSetup):
     def _read_pid(self):
         return get_pid_from_file(self.pidfile)
 
+    def _dynamic_config(self):
+        """Is a dynamic config to be used?
+
+        True if LP_TEST_INSTANCE is set in the environment.
+        """
+        return 'LP_TEST_INSTANCE' in os.environ
+
     def _persistent_servers(self):
         return os.environ.get('LP_PERSISTENT_TEST_SERVICES') is not None
 
     @property
     def root(self):
         """The root directory for the librarian file repository."""
-        return config.librarian_server.root
+        if self._dynamic_config():
+            return self._root
+        else:
+            return config.librarian_server.root
 
     def setUpRoot(self):
         """Create the librarian root archive."""
-        # This should not happen in normal usage, but might if someone
-        # interrupts the test suite.
-        if os.path.exists(self.root):
-            self.tearDownRoot()
-        os.makedirs(self.root, 0700)
-        self.addCleanup(self.tearDownRoot)
+        if self._dynamic_config():
+            root_fixture = FunctionFixture(tempfile.mkdtemp, shutil.rmtree)
+            self.useFixture(root_fixture)
+            self._root = root_fixture.fn_result
+            os.chmod(self.root, 0700)
+            # Give the root to the new librarian.
+            os.environ['LP_LIBRARIAN_ROOT'] = self._root
+        else:
+            # This should not happen in normal usage, but might if someone
+            # interrupts the test suite.
+            if os.path.exists(self.root):
+                self.tearDownRoot()
+            self.addCleanup(self.tearDownRoot)
+            os.makedirs(self.root, 0700)
+
+    def _waitForDaemonStartup(self):
+        super(LibrarianServerFixture, self)._waitForDaemonStartup()
+        # Expose the dynamically allocated ports, if we used them.
+        if not self._dynamic_config():
+            self.download_port = config.librarian.download_port
+            self.upload_port = config.librarian.upload_port
+            self.restricted_download_port = \
+                config.librarian.restricted_download_port
+            self.restricted_upload_port = \
+                config.librarian.restricted_upload_port
+            return
+        chunks = self.getLogChunks()
+        # A typical startup: upload, download, restricted up, restricted down.
+        #2010-10-20 14:28:21+0530 [-] Log opened.
+        #2010-10-20 14:28:21+0530 [-] twistd 10.1.0 (/usr/bin/python 2.6.5) starting up.
+        #2010-10-20 14:28:21+0530 [-] reactor class: twisted.internet.selectreactor.SelectReactor.
+        #2010-10-20 14:28:21+0530 [-] canonical.librarian.libraryprotocol.FileUploadFactory starting on 59090
+        #2010-10-20 14:28:21+0530 [-] Starting factory <canonical.librarian.libraryprotocol.FileUploadFactory instance at 0x6f8ff38>
+        #2010-10-20 14:28:21+0530 [-] twisted.web.server.Site starting on 58000
+        #2010-10-20 14:28:21+0530 [-] Starting factory <twisted.web.server.Site instance at 0x6fb2638>
+        #2010-10-20 14:28:21+0530 [-] canonical.librarian.libraryprotocol.FileUploadFactory starting on 59095
+        #2010-10-20 14:28:21+0530 [-] Starting factory <canonical.librarian.libraryprotocol.FileUploadFactory instance at 0x6fb25f0>
+        #2010-10-20 14:28:21+0530 [-] twisted.web.server.Site starting on 58005
+        self.upload_port = int(chunks[3].split()[-1])
+        self.download_port = int(chunks[5].split()[-1])
+        self.restricted_upload_port = int(chunks[7].split()[-1])
+        self.restricted_download_port = int(chunks[9].split()[-1])
+        self.service_config = dedent("""\
+            [librarian_server]
+            root: %s
+            [librarian]
+            download_port: %s
+            upload_port: %s
+            download_url: http://%s:%s/
+            restricted_download_port: %s
+            restricted_upload_port: %s
+            restricted_download_url: http://%s:%s/
+            """) % (
+                self.root,
+                self.download_port,
+                self.upload_port,
+                config.librarian.download_host,
+                self.download_port,
+                self.restricted_download_port,
+                self.restricted_upload_port,
+                config.librarian.restricted_download_host,
+                self.restricted_download_port,
+                )
 
     def tearDownRoot(self):
         """Remove the librarian root archive."""
@@ -185,26 +205,28 @@ class LibrarianServerFixture(TacTestSetup):
 
     @property
     def pidfile(self):
-        return os.path.join(self.root, 'librarian.pid')
+        try:
+            return os.path.join(self.root, 'librarian.pid')
+        except AttributeError:
+            # An attempt to read the pidfile before this fixture was setUp,
+            # with dynamic configuration.
+            return '/tmp/unused/'
 
     @property
     def logfile(self):
         # Store the log in the server root; if its wanted after a test, that
-        # test can use addDetail to grab the log and include it in its 
+        # test can use addDetail to grab the log and include it in its
         # error.
-        return os.path.join(self.root, 'librarian.log')
+        try:
+            return os.path.join(self.root, 'librarian.log')
+        except AttributeError:
+            # An attempt to read the pidfile before this fixture was setUp,
+            # with dynamic configuration.
+            return '/tmp/unused/'
 
-    def logChunks(self):
+    def getLogChunks(self):
         """Get a list with the contents of the librarian log in it."""
         return open(self.logfile, 'rb').readlines()
-
-
-_global_fixture = LibrarianServerFixture()
-
-
-def LibrarianTestSetup():
-    """Support the stateless lie."""
-    return _global_fixture
 
 
 def fillLibrarianFile(fileid, content='Fake Content'):
@@ -218,8 +240,3 @@ def fillLibrarianFile(fileid, content='Fake Content'):
     libfile = open(filepath, 'wb')
     libfile.write(content)
     libfile.close()
-
-
-def cleanupLibrarianFiles():
-    """Remove all librarian files present in disk."""
-    _global_fixture.clear()

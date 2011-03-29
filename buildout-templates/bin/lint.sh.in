@@ -107,7 +107,7 @@ fi
 
 
 # Sample data contains auto generated files with long lines.
-pocketlint_files=`echo "$files" | grep -v "$sample_dir"`
+pocketlint_files=`echo "$files" | env -i grep -v ".sql$"`
 if [ -z "$pocketlint_files" ]; then
     exit 0
 fi

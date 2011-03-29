@@ -8,9 +8,9 @@ __all__ = []
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.windmill.testing import lpuser
 from lp.app.enums import ServiceUsage
 from lp.testing import WindmillTestCase
+from lp.testing.windmill import lpuser
 from lp.translations.windmill.testing import TranslationsWindmillLayer
 
 

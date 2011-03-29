@@ -11,7 +11,20 @@ __all__ = [
     'SourcePackageRecipe',
     ]
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
+
+from bzrlib.plugins.builder.recipe import RecipeParseError
 from lazr.delegates import delegates
+from lazr.restful.declarations import error_status
+from pytz import utc
+from storm.expr import (
+    And,
+    Join,
+    RightJoin,
+    )
 from storm.locals import (
     Bool,
     Desc,
@@ -28,6 +41,10 @@ from zope.interface import (
     implements,
     )
 
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import (
@@ -46,7 +63,6 @@ from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
     ISourcePackageRecipeData,
     ISourcePackageRecipeSource,
-    recipes_enabled,
     )
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource,
@@ -54,9 +70,15 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
+from lp.services.database.stormexpr import Greatest
 from lp.soyuz.interfaces.archive import IArchiveSet
-from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.model.archive import Archive
+
+# "Slam" a 400 response code onto RecipeParseError so that it will behave
+# properly when raised in a web service context.
+error_status(400)(RecipeParseError)
 
 
 def get_buildable_distroseries_set(user):
@@ -71,6 +93,15 @@ def get_buildable_distroseries_set(user):
         if distro.active and distro.distribution in supported_distros:
             buildables.append(distro)
     return buildables
+
+
+def recipe_modified(recipe, event):
+    """Update the date_last_modified property when a recipe is modified.
+
+    This method is registered as a subscriber to `IObjectModifiedEvent` events
+    on recipes.
+    """
+    recipe.date_last_modified = UTC_NOW
 
 
 class NonPPABuildRequest(Exception):
@@ -131,7 +162,7 @@ class SourcePackageRecipe(Storm):
         return self.sourcepackagename.name
 
     name = Unicode(allow_none=True)
-    description = Unicode(allow_none=False)
+    description = Unicode(allow_none=True)
 
     @property
     def _recipe_data(self):
@@ -156,9 +187,16 @@ class SourcePackageRecipe(Storm):
     def recipe_text(self):
         return self.builder_recipe.get_recipe_text()
 
+    def updateSeries(self, distroseries):
+        if distroseries != self.distroseries:
+            self.distroseries.clear()
+            for distroseries_item in distroseries:
+                self.distroseries.add(distroseries_item)
+
     @staticmethod
     def new(registrant, owner, name, recipe, description,
-            distroseries=None, daily_build_archive=None, build_daily=False):
+            distroseries=None, daily_build_archive=None, build_daily=False,
+            date_created=DEFAULT):
         """See `ISourcePackageRecipeSource.new`."""
         store = IMasterStore(SourcePackageRecipe)
         sprecipe = SourcePackageRecipe()
@@ -173,13 +211,29 @@ class SourcePackageRecipe(Storm):
         sprecipe.description = description
         sprecipe.daily_build_archive = daily_build_archive
         sprecipe.build_daily = build_daily
+        sprecipe.date_created = date_created
+        sprecipe.date_last_modified = date_created
         store.add(sprecipe)
         return sprecipe
 
     @classmethod
     def findStaleDailyBuilds(cls):
-        store = IStore(cls)
-        return store.find(cls, cls.is_stale == True, cls.build_daily == True)
+        one_day_ago = datetime.now(utc) - timedelta(hours=23, minutes=50)
+        joins = RightJoin(
+            Join(
+                Join(SourcePackageRecipeBuild, PackageBuild,
+                    PackageBuild.id ==
+                    SourcePackageRecipeBuild.package_build_id),
+                BuildFarmJob,
+                And(BuildFarmJob.id == PackageBuild.build_farm_job_id,
+                    BuildFarmJob.date_created > one_day_ago)),
+            SourcePackageRecipe,
+            And(SourcePackageRecipeBuild.recipe == SourcePackageRecipe.id,
+                SourcePackageRecipe.daily_build_archive_id ==
+                    PackageBuild.archive_id))
+        return IStore(cls).using(joins).find(
+            cls, cls.is_stale == True, cls.build_daily == True,
+            BuildFarmJob.date_created == None).config(distinct=True)
 
     @staticmethod
     def exists(owner, name):
@@ -209,21 +263,20 @@ class SourcePackageRecipe(Storm):
         return SourcePackageRecipeBuild.getRecentBuilds(
             requester, self, distroseries).count() >= 5
 
-    def requestBuild(self, archive, requester, distroseries, pocket,
+    def requestBuild(self, archive, requester, distroseries,
+                     pocket=PackagePublishingPocket.RELEASE,
                      manual=False):
         """See `ISourcePackageRecipe`."""
-        if not recipes_enabled():
-            raise ValueError('Source package recipe builds disabled.')
         if not archive.is_ppa:
             raise NonPPABuildRequest
-        component = getUtility(IComponentSet)["multiverse"]
 
         buildable_distros = get_buildable_distroseries_set(archive.owner)
         if distroseries not in buildable_distros:
             raise BuildNotAllowedForDistro(self, distroseries)
 
         reject_reason = archive.checkUpload(
-            requester, self.distroseries, None, component, pocket)
+            requester, self.distroseries, None, archive.default_component,
+            pocket)
         if reject_reason is not None:
             raise reject_reason
         if self.isOverQuota(requester, distroseries):
@@ -246,31 +299,79 @@ class SourcePackageRecipe(Storm):
             queue_record.manualScore(queue_record.lastscore + 100)
         return build
 
-    def getBuilds(self, pending=False):
+    def performDailyBuild(self):
         """See `ISourcePackageRecipe`."""
-        if pending:
-            clauses = [BuildFarmJob.date_finished == None]
-        else:
-            clauses = [BuildFarmJob.date_finished != None]
-        result = Store.of(self).find(
-            SourcePackageRecipeBuild,
+        builds = []
+        self.is_stale = False
+        for distroseries in self.distroseries:
+            try:
+                build = self.requestBuild(
+                    self.daily_build_archive, self.owner,
+                    distroseries, PackagePublishingPocket.RELEASE)
+                builds.append(build)
+            except BuildAlreadyPending:
+                continue
+        return builds
+
+    @property
+    def builds(self):
+        """See `ISourcePackageRecipe`."""
+        order_by = (Desc(Greatest(
+                            BuildFarmJob.date_started,
+                            BuildFarmJob.date_finished)),
+                   Desc(BuildFarmJob.date_created), Desc(BuildFarmJob.id))
+        return self._getBuilds(None, order_by)
+
+    @property
+    def completed_builds(self):
+        """See `ISourcePackageRecipe`."""
+        filter_term = BuildFarmJob.status != BuildStatus.NEEDSBUILD
+        order_by = (Desc(Greatest(
+                            BuildFarmJob.date_started,
+                            BuildFarmJob.date_finished)),
+                   Desc(BuildFarmJob.id))
+        return self._getBuilds(filter_term, order_by)
+
+    @property
+    def pending_builds(self):
+        """See `ISourcePackageRecipe`."""
+        filter_term = BuildFarmJob.status == BuildStatus.NEEDSBUILD
+        # We want to order by date_created but this is the same as ordering
+        # by id (since id increases monotonically) and is less expensive.
+        order_by = Desc(BuildFarmJob.id)
+        return self._getBuilds(filter_term, order_by)
+
+    def _getBuilds(self, filter_term, order_by):
+        """The actual query to get the builds."""
+        query_args = [
             SourcePackageRecipeBuild.recipe==self,
             SourcePackageRecipeBuild.package_build_id == PackageBuild.id,
             PackageBuild.build_farm_job_id == BuildFarmJob.id,
-            *clauses)
-        result.order_by(Desc(BuildFarmJob.date_finished))
+            And(PackageBuild.archive_id == Archive.id,
+                Archive._enabled == True),
+            ]
+        if filter_term is not None:
+            query_args.append(filter_term)
+        result = Store.of(self).find(SourcePackageRecipeBuild, *query_args)
+        result.order_by(order_by)
         return result
 
-    def getLastBuild(self):
+    def getPendingBuildInfo(self):
+        """See `ISourcePackageRecipe`."""
+        builds = self.pending_builds
+        result = []
+        for build in builds:
+            result.append(
+                {"distroseries": build.distroseries.displayname,
+                 "archive": '%s/%s' %
+                           (build.archive.owner.name, build.archive.name)})
+        return result
+
+    @property
+    def last_build(self):
         """See `ISourcePackageRecipeBuild`."""
-        store = Store.of(self)
-        result = store.find(
-            (SourcePackageRecipeBuild),
-            SourcePackageRecipeBuild.recipe == self,
-            SourcePackageRecipeBuild.package_build_id == PackageBuild.id,
-            PackageBuild.build_farm_job_id == BuildFarmJob.id)
-        result.order_by(Desc(BuildFarmJob.date_finished))
-        return result.first()
+        return self._getBuilds(
+            True, Desc(BuildFarmJob.date_finished)).first()
 
     def getMedianBuildDuration(self):
         """Return the median duration of builds of this recipe."""

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Round ExternalBugTracker utility."""
@@ -17,7 +17,7 @@ from lp.bugs.externalbugtracker import (
     InvalidBugId,
     LookupTree,
     UnknownRemoteStatusError,
-    UnparseableBugData,
+    UnparsableBugData,
     )
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
@@ -223,7 +223,7 @@ class Roundup(ExternalBugTracker):
 
     def getRemoteBugBatch(self, bug_ids):
         """See `ExternalBugTracker`"""
-        # XXX: 2007-08-28 Graham Binns bug=135317
+        # XXX: Graham Binns 2007-08-28 bug=135317:
         #      At present, Roundup does not support exporting only a
         #      subset of bug ids as a batch (launchpad bug 135317). When
         #      this bug is fixed we need to change this method to only
@@ -263,7 +263,7 @@ class Roundup(ExternalBugTracker):
             if field in remote_bug:
                 field_values.append(remote_bug[field])
             else:
-                raise UnparseableBugData(
+                raise UnparsableBugData(
                     "Remote bug %s does not define a value for %s." % (
                         bug_id, field))
 

@@ -280,14 +280,14 @@ If a bug can't be found a BugNotFound error will be raised.
     BugNotFound: no-such-bug
 
 If the data we've imported from Bugzilla is incomplete and doesn't
-contain either the bug's status or its resolution an UnparseableBugData
+contain either the bug's status or its resolution an UnparsableBugData
 error will be raised. We can add a sample bug to demonstrate this.
 
     >>> bugzilla._bugs[999] = {}
     >>> bugzilla.getRemoteStatus(999)
     Traceback (most recent call last):
       ...
-    UnparseableBugData: No status or resolution defined for bug 999
+    UnparsableBugData: No status or resolution defined for bug 999
 
     >>> del bugzilla._bugs[999]
 
@@ -338,7 +338,7 @@ BugzillaAPI instance's bugs dict.
     ...         print "    %s: %s" % (key, bugzilla._bugs[bug][key])
     ...     print "\n"
     Bug 1:
-        alias: 
+        alias:
         assigned_to: test@canonical.com...
     Bug 2:
         alias: bug-two
@@ -387,7 +387,8 @@ means that we can use it to import comments from the remote Bugzilla
 instance.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from lp.bugs.interfaces.externalbugtracker import ISupportsCommentImport
+    >>> from lp.bugs.interfaces.externalbugtracker import (
+    ...     ISupportsCommentImport)
     >>> verifyObject(ISupportsCommentImport, bugzilla)
     True
 

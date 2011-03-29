@@ -20,6 +20,8 @@ import time
 import traceback
 import unittest
 
+import simplejson
+
 from bzrlib.config import GlobalConfig
 from bzrlib.tests import TestCaseWithTransport
 
@@ -30,7 +32,7 @@ from testtools.matchers import DocTestMatches
 
 from devscripts.ec2test.remote import (
     EC2Runner,
-    FlagFallStream,
+    FailureUpdateResult,
     gunzip_data,
     gzip_data,
     LaunchpadTester,
@@ -122,39 +124,6 @@ class RequestHelpers:
             'full.log', 'summary.log', 'index.html', request, echo_to_stdout)
 
 
-class TestFlagFallStream(TestCase):
-    """Tests for `FlagFallStream`."""
-
-    def test_doesnt_write_before_flag(self):
-        # A FlagFallStream does not forward any writes before it sees the
-        # 'flag'.
-        stream = StringIO()
-        flag = self.getUniqueString('flag')
-        flagfall = FlagFallStream(stream, flag)
-        flagfall.write('foo')
-        flagfall.flush()
-        self.assertEqual('', stream.getvalue())
-
-    def test_writes_after_flag(self):
-        # After a FlagFallStream sees the flag, it forwards all writes.
-        stream = StringIO()
-        flag = self.getUniqueString('flag')
-        flagfall = FlagFallStream(stream, flag)
-        flagfall.write('foo')
-        flagfall.write(flag)
-        flagfall.write('bar')
-        self.assertEqual('%sbar' % (flag,), stream.getvalue())
-
-    def test_mixed_write(self):
-        # If a single call to write has pre-flagfall and post-flagfall data in
-        # it, then only the post-flagfall data is forwarded to the stream.
-        stream = StringIO()
-        flag = self.getUniqueString('flag')
-        flagfall = FlagFallStream(stream, flag)
-        flagfall.write('foo%sbar' % (flag,))
-        self.assertEqual('%sbar' % (flag,), stream.getvalue())
-
-
 class TestSummaryResult(TestCase):
     """Tests for `SummaryResult`."""
 
@@ -205,6 +174,29 @@ class TestSummaryResult(TestCase):
         result = SummaryResult(stream)
         result.stopTest(self)
         self.assertEqual(1, len(flush_calls))
+
+
+class TestFailureUpdateResult(TestCaseWithTransport, RequestHelpers):
+
+    def makeException(self, factory=None, *args, **kwargs):
+        if factory is None:
+            factory = RuntimeError
+        try:
+            raise factory(*args, **kwargs)
+        except:
+            return sys.exc_info()
+
+    def test_addError_is_unsuccessful(self):
+        logger = self.make_logger()
+        result = FailureUpdateResult(logger)
+        result.addError(self, self.makeException())
+        self.assertEqual(False, logger.successful)
+
+    def test_addFailure_is_unsuccessful(self):
+        logger = self.make_logger()
+        result = FailureUpdateResult(logger)
+        result.addFailure(self, self.makeException(AssertionError))
+        self.assertEqual(False, logger.successful)
 
 
 class FakePopen:
@@ -267,6 +259,16 @@ class TestLaunchpadTester(TestCaseWithTransport, RequestHelpers):
         # Message being sent implies got_result thought it got a success.
         self.assertEqual([message], log)
 
+    def test_failing_test(self):
+        # If LaunchpadTester gets a failing test, then it records that on the
+        # logger.
+        logger = self.make_logger()
+        tester = self.make_tester(logger=logger)
+        output = "test: foo\nerror: foo\n"
+        tester._spawn_test_process = lambda: FakePopen(output, 0)
+        tester.test()
+        self.assertEqual(False, logger.successful)
+
     def test_error_in_testrunner(self):
         # Any exception is raised within LaunchpadTester.test() is an error in
         # the testrunner. When we detect these, we do three things:
@@ -299,6 +301,18 @@ class TestLaunchpadTester(TestCaseWithTransport, RequestHelpers):
         tester.test()
         # Message not being sent implies got_result thought it got a failure.
         self.assertEqual([], log)
+
+    def test_gather_test_output(self):
+        # LaunchpadTester._gather_test_output() summarises the output
+        # stream as a TestResult.
+        logger = self.make_logger()
+        tester = self.make_tester(logger=logger)
+        result = tester._gather_test_output(
+            ['test: test_failure', 'failure: test_failure',
+             'test: test_success', 'successful: test_success'],
+            logger)
+        self.assertEquals(2, result.testsRun)
+        self.assertEquals(1, len(result.failures))
 
 
 class TestPidfileHelpers(TestCase):
@@ -527,7 +541,7 @@ class TestRequest(TestCaseWithTransport, RequestHelpers):
         self.assertIsInstance(body, MIMEText)
         self.assertEqual('inline', body['Content-Disposition'])
         self.assertEqual('text/plain; charset="utf-8"', body['Content-Type'])
-        self.assertEqual("foo", body.get_payload())
+        self.assertEqual("foo", body.get_payload(decode=True))
 
     def test_report_email_attachment(self):
         req = self.make_request(emails=['foo@example.com'])
@@ -540,7 +554,7 @@ class TestRequest(TestCaseWithTransport, RequestHelpers):
                 req.get_nick(), req.get_revno()),
             attachment['Content-Disposition'])
         self.assertEqual(
-            "gobbledygook", attachment.get_payload().decode('base64'))
+            "gobbledygook", attachment.get_payload(decode=True))
 
     def test_send_report_email_sends_email(self):
         log = []
@@ -707,6 +721,43 @@ class TestWebTestLogger(TestCaseWithTransport, RequestHelpers):
         logger = self.make_logger()
         self.assertEqual('', logger.get_summary_contents())
 
+    def test_initial_json(self):
+        self.build_tree(['www/'])
+        request = self.make_request()
+        logger = WebTestLogger.make_in_directory('www', request, False)
+        logger.prepare()
+        self.assertEqual(
+            {'description': request.get_merge_description(),
+             'failed-yet': False,
+             },
+            simplejson.loads(open('www/info.json').read()))
+
+    def test_initial_success(self):
+        # The Logger initially thinks it is successful because there have been
+        # no failures yet.
+        logger = self.make_logger()
+        self.assertEqual(True, logger.successful)
+
+    def test_got_failure_changes_success(self):
+        # Logger.got_failure() tells the logger it is no longer successful.
+        logger = self.make_logger()
+        logger.got_failure()
+        self.assertEqual(False, logger.successful)
+
+    def test_got_failure_updates_json(self):
+        # Logger.got_failure() updates JSON so that interested parties can
+        # determine that it is unsuccessful.
+        self.build_tree(['www/'])
+        request = self.make_request()
+        logger = WebTestLogger.make_in_directory('www', request, False)
+        logger.prepare()
+        logger.got_failure()
+        self.assertEqual(
+            {'description': request.get_merge_description(),
+             'failed-yet': True,
+             },
+            simplejson.loads(open('www/info.json').read()))
+
     def test_got_line_no_echo(self):
         # got_line forwards the line to the full log, but does not forward to
         # stdout if echo_to_stdout is False.
@@ -838,7 +889,9 @@ class TestEC2Runner(TestCaseWithTransport, RequestHelpers):
         self.assertNotEqual([], email_log)
         [tester_msg] = email_log
         self.assertEqual('foo@example.com', tester_msg['To'])
-        self.assertIn('ZeroDivisionError', str(tester_msg))
+        self.assertIn(
+            'ZeroDivisionError',
+            tester_msg.get_payload()[0].get_payload(decode=True))
 
 
 class TestDaemonizationInteraction(TestCaseWithTransport, RequestHelpers):
@@ -888,7 +941,7 @@ class TestResultHandling(TestCaseWithTransport, RequestHelpers):
     """Tests for how we handle the result at the end of the test suite."""
 
     def get_body_text(self, email):
-        return email.get_payload()[0].get_payload()
+        return email.get_payload()[0].get_payload(decode=True)
 
     def make_empty_result(self):
         return TestResult()
@@ -989,7 +1042,7 @@ class TestResultHandling(TestCaseWithTransport, RequestHelpers):
         self.assertEqual(
             request.format_result(
                 result, logger._start_time, logger._end_time),
-            self.get_body_text(user_message).decode('quoted-printable'))
+            self.get_body_text(user_message))
 
     def test_gzip_of_full_log_attached(self):
         # The full log is attached to the email.

@@ -15,6 +15,7 @@ from operator import attrgetter
 
 from lazr.delegates import delegates
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import sqlvalues
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
@@ -182,13 +183,16 @@ class DistroSeriesSourcePackageRelease:
     @property
     def publishing_history(self):
         """See `IDistroSeriesSourcePackage`."""
+        # sqlvalues bails on security proxied objects.
+        archive_ids = removeSecurityProxy(
+            self.distroseries.distribution.all_distro_archive_ids)
         return SourcePackagePublishingHistory.select("""
             distroseries = %s AND
             archive IN %s AND
             sourcepackagerelease = %s
             """ % sqlvalues(
                     self.distroseries,
-                    self.distroseries.distribution.all_distro_archive_ids,
+                    archive_ids,
                     self.sourcepackagerelease),
             orderBy='-datecreated')
 
@@ -198,9 +202,10 @@ class DistroSeriesSourcePackageRelease:
         this release is or was published.
         """
         pub_hist = self.publishing_history
-        if pub_hist.count() == 0:
+        try:
+            return pub_hist[0]
+        except IndexError:
             return None
-        return pub_hist[0]
 
     @property
     def current_published(self):

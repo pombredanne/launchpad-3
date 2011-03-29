@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views for SprintAttendance."""
@@ -14,16 +14,14 @@ from datetime import timedelta
 import pytz
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp import (
-    canonical_url,
-    )
-from canonical.widgets.date import DateTimeWidget
-from canonical.widgets.itemswidgets import LaunchpadBooleanRadioWidget
+from canonical.launchpad.webapp import canonical_url
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     )
+from lp.app.widgets.date import DateTimeWidget
+from lp.app.widgets.itemswidgets import LaunchpadBooleanRadioWidget
 from lp.blueprints.interfaces.sprintattendance import ISprintAttendance
 
 

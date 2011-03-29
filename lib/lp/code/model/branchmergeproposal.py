@@ -27,6 +27,7 @@ from storm.expr import (
     LeftJoin,
     Or,
     Select,
+    SQL,
     )
 from storm.info import ClassAlias
 from storm.locals import (
@@ -236,14 +237,15 @@ class BranchMergeProposal(SQLBase):
         storm_validator=validate_public_person, notNull=False,
         default=None)
 
-    @property
-    def related_bugs(self):
-        """Bugs which are linked to the source but not the target.
+    def getRelatedBugTasks(self, user):
+        """Bug tasks which are linked to the source but not the target.
 
-        Implies that these bugs would be fixed, in the target, by the merge.
+        Implies that these would be fixed, in the target, by the merge.
         """
-        return (bug for bug in self.source_branch.linked_bugs
-                if bug not in self.target_branch.linked_bugs)
+        source_tasks = self.source_branch.getLinkedBugTasks(user)
+        target_tasks = self.target_branch.getLinkedBugTasks(user)
+        return [bugtask
+            for bugtask in source_tasks if bugtask not in target_tasks]
 
     @property
     def address(self):
@@ -880,10 +882,10 @@ class BranchMergeProposal(SQLBase):
         entries.extend(
             ((revision.date_created, branch_revision.sequence),
                 branch_revision)
-            for branch_revision, revision, revision_author in revisions)
+            for branch_revision, revision in revisions)
         entries.sort()
         current_group = []
-        for date, entry in entries:
+        for sortkey, entry in entries:
             if IBranchRevision.providedBy(entry):
                 current_group.append(entry)
             else:

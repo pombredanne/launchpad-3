@@ -30,10 +30,12 @@ from urlparse import (
     )
 
 from storm.store import Store
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config, dbconfig
-from canonical.database.sqlbase import cursor
+from canonical.launchpad.webapp.interfaces import (
+        IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from canonical.librarian.interfaces import (
     DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient,
     LIBRARIAN_SERVER_DEFAULT_TIMEOUT, LibrarianServerError, UploadFailed)
@@ -101,7 +103,7 @@ class FileUploadClient:
         self._sendLine('%s: %s' % (name, value))
 
     def addFile(self, name, size, file, contentType, expires=None,
-                debugID=None):
+                debugID=None, allow_zero_length=False):
         """Add a file to the librarian.
 
         :param name: Name to store the file as
@@ -113,13 +115,18 @@ class FileUploadClient:
         :param debugID: Optional.  If set, causes extra logging for this
             request on the server, which will be marked with the value
             given.
+        :param allow_zero_length: If True permit zero length files.
         :returns: aliasID as an integer
         :raises UploadFailed: If the server rejects the upload for some
-            reason, is 0.
+            reason.
         """
         if file is None:
             raise TypeError('Bad File Descriptor: %s' % repr(file))
-        if size <= 0:
+        if allow_zero_length:
+            min_size = -1
+        else:
+            min_size = 0
+        if size <= min_size:
             raise UploadFailed('Invalid length: %d' % size)
 
         if isinstance(name, unicode):
@@ -134,15 +141,15 @@ class FileUploadClient:
             # Get the name of the database the client is using, so that
             # the server can check that the client is using the same
             # database as the server.
-            cur = cursor()
-            databaseName = self._getDatabaseName(cur)
+            store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+            databaseName = self._getDatabaseName(store)
 
             # Generate new content and alias IDs.
             # (we'll create rows with these IDs later, but not yet)
-            cur.execute("SELECT nextval('libraryfilecontent_id_seq')")
-            contentID = cur.fetchone()[0]
-            cur.execute("SELECT nextval('libraryfilealias_id_seq')")
-            aliasID = cur.fetchone()[0]
+            contentID = store.execute(
+                "SELECT nextval('libraryfilecontent_id_seq')").get_one()[0]
+            aliasID = store.execute(
+                "SELECT nextval('libraryfilealias_id_seq')").get_one()[0]
 
             # Send command
             self._sendLine('STORE %d %s' % (size, name))
@@ -200,10 +207,8 @@ class FileUploadClient:
         finally:
             self._close()
 
-    def _getDatabaseName(self, cur):
-        cur.execute("SELECT current_database();")
-        databaseName = cur.fetchone()[0]
-        return databaseName
+    def _getDatabaseName(self, store):
+        return store.execute("SELECT current_database();").get_one()[0]
 
     def remoteAddFile(self, name, size, file, contentType, expires=None):
         """See `IFileUploadClient`."""

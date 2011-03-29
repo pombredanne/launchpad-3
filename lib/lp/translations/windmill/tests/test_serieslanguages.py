@@ -6,12 +6,12 @@
 __metaclass__ = type
 __all__ = []
 
-from canonical.launchpad.windmill.testing import lpuser
-from canonical.launchpad.windmill.testing.constants import (
+from lp.testing import WindmillTestCase
+from lp.testing.windmill import lpuser
+from lp.testing.windmill.constants import (
     PAGE_LOAD,
     SLEEP,
     )
-from lp.testing import WindmillTestCase
 from lp.translations.windmill.testing import TranslationsWindmillLayer
 
 

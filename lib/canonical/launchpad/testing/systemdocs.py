@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'default_optionflags',
     'LayeredDocFileSuite',
-    'SpecialOutputChecker',
     'setUp',
     'setGlobs',
     'stop',
@@ -26,7 +25,6 @@ import transaction
 from zope.component import getUtility
 from zope.testing.loggingsupport import Handler
 
-from canonical.chunkydiff import elided_source
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
@@ -139,27 +137,6 @@ def LayeredDocFileSuite(*args, **kw):
     if layer is not None:
         suite.layer = layer
     return suite
-
-
-class SpecialOutputChecker(doctest.OutputChecker):
-    """An OutputChecker that runs the 'chunkydiff' checker if appropriate."""
-    def output_difference(self, example, got, optionflags):
-        if config.canonical.chunkydiff is False:
-            return doctest.OutputChecker.output_difference(
-                self, example, got, optionflags)
-
-        if optionflags & doctest.ELLIPSIS:
-            normalize_whitespace = optionflags & doctest.NORMALIZE_WHITESPACE
-            newgot = elided_source(example.want, got,
-                                   normalize_whitespace=normalize_whitespace)
-            if newgot == example.want:
-                # There was no difference.  May be an error in
-                # elided_source().  In any case, return the whole thing.
-                newgot = got
-        else:
-            newgot = got
-        return doctest.OutputChecker.output_difference(
-            self, example, newgot, optionflags)
 
 
 def ordered_dict_as_string(dict):

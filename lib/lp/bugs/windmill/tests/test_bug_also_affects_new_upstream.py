@@ -3,16 +3,16 @@
 
 import unittest
 
-from canonical.launchpad.windmill.testing import (
+from lp.bugs.windmill.testing import BugsWindmillLayer
+from lp.testing import WindmillTestCase
+from lp.testing.windmill import (
     constants,
     lpuser,
     )
-from canonical.launchpad.windmill.testing.widgets import (
+from lp.testing.windmill.widgets import (
     FormPickerWidgetTest,
     search_picker_widget,
     )
-from lp.bugs.windmill.testing import BugsWindmillLayer
-from lp.testing import WindmillTestCase
 
 
 class TestBugAlsoAffects(WindmillTestCase):

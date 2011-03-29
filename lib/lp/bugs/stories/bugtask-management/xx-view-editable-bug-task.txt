@@ -6,8 +6,7 @@ redirected to the login page.
       ...
     Unauthorized: ...
 
-(Even when the product has a bug supervisor:
-https://launchpad.net/malone/+bug/49891)
+Even when the product has a bug supervisor, see bug #49891.
 
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates

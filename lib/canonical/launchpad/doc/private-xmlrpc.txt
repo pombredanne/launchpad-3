@@ -15,7 +15,7 @@ internal Mailman server and Launchpad.  This end point is not available on the
 external XML-RPC port.
 
     >>> import xmlrpclib
-    >>> from canonical.functional import XMLRPCTestTransport
+    >>> from lp.testing.xmlrpc import XMLRPCTestTransport
     >>> external_api = xmlrpclib.ServerProxy(
     ...    public_root + 'mailinglists/',
     ...    transport=XMLRPCTestTransport())

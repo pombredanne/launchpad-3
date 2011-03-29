@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBug related view classes."""
@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'bug_description_xhtml_representation',
     'BugContextMenu',
     'BugEditView',
     'BugFacets',
@@ -38,20 +37,12 @@ from lazr.enum import (
     )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
-from lazr.restful.interfaces import (
-    IFieldHTMLRenderer,
-    IWebServiceClientRequest,
-    )
 import pytz
 from zope import formlib
 from zope.app.form.browser import TextWidget
-from zope.component import (
-    adapter,
-    getUtility,
-    )
+from zope.component import getUtility
 from zope.event import notify
 from zope.interface import (
-    implementer,
     implements,
     Interface,
     providedBy,
@@ -60,7 +51,6 @@ from zope.schema import (
     Bool,
     Choice,
     )
-from zope.schema.interfaces import IText
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
@@ -86,16 +76,15 @@ from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData,
     ILaunchBag,
     )
-from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
-from canonical.widgets.project import ProjectScopeWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
-from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.errors import NotFoundError
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from lp.app.widgets.project import ProjectScopeWidget
 from lp.bugs.browser.widgets.bug import BugTagsWidget
 from lp.bugs.interfaces.bug import (
     IBug,
@@ -109,12 +98,12 @@ from lp.bugs.interfaces.bugnomination import IBugNominationSet
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     BugTaskStatus,
-    IBugTask,
     IFrontPageBugTaskSearch,
     )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.mail.bugnotificationbuilder import format_rfc2822_date
+from lp.services import features
 from lp.services.fields import DuplicateBug
 from lp.services.propertycache import cachedproperty
 
@@ -212,12 +201,19 @@ class BugContextMenu(ContextMenu):
         'editdescription', 'markduplicate', 'visibility', 'addupstream',
         'adddistro', 'subscription', 'addsubscriber', 'addcomment',
         'nominate', 'addbranch', 'linktocve', 'unlinkcve',
-        'createquestion', 'removequestion', 'activitylog', 'affectsmetoo']
+        'createquestion', 'mute_subscription', 'removequestion',
+        'activitylog', 'affectsmetoo']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
         # have to duplicate menu code.
         ContextMenu.__init__(self, getUtility(ILaunchBag).bugtask)
+
+    @cachedproperty
+    def _use_advanced_features(self):
+        """Return True if advanced subscriptions features are enabled."""
+        return features.getFeatureFlag(
+            'malone.advanced-subscriptions.enabled')
 
     def editdescription(self):
         """Return the 'Edit description/tags' Link."""
@@ -252,8 +248,16 @@ class BugContextMenu(ContextMenu):
         elif user is not None and (
             self.context.bug.isSubscribed(user) or
             self.context.bug.isSubscribedToDupes(user)):
-            text = 'Unsubscribe'
-            icon = 'remove'
+            if self._use_advanced_features:
+                if self.context.bug.isMuted(user):
+                    text = 'Subscribe'
+                    icon = 'add'
+                else:
+                    text = 'Edit subscription'
+                    icon = 'edit'
+            else:
+                text = 'Unsubscribe'
+                icon = 'remove'
         else:
             text = 'Subscribe'
             icon = 'add'
@@ -268,6 +272,21 @@ class BugContextMenu(ContextMenu):
             '+addsubscriber', text, icon='add', summary=(
                 'Launchpad will email that person whenever this bugs '
                 'changes'))
+
+    def mute_subscription(self):
+        """Return the 'Mute subscription' Link."""
+        user = getUtility(ILaunchBag).user
+        if self.context.bug.isMuted(user):
+            text = "Unmute bug mail"
+            link = "+subscribe"
+        else:
+            text = "Mute bug mail"
+            link = "+mute"
+
+        return Link(
+            link, text, icon='remove', summary=(
+                "Mute this bug so that you will never receive emails "
+                "about it."))
 
     def nominate(self):
         """Return the 'Target/Nominate for series' Link."""
@@ -372,6 +391,9 @@ class MaloneView(LaunchpadFormView):
 
     def _redirectToBug(self, bug_id):
         """Redirect to the specified bug id."""
+        if not isinstance(bug_id, basestring):
+            self.error_message = "Bug %r is not registered." % bug_id
+            return
         if bug_id.startswith("#"):
             # Be nice to users and chop off leading hashes
             bug_id = bug_id[1:]
@@ -425,39 +447,28 @@ class BugViewMixin:
     """Mix-in class to share methods between bug and portlet views."""
 
     @cachedproperty
+    def subscription_info(self):
+        return IBug(self.context).getSubscriptionInfo()
+
+    @property
     def direct_subscribers(self):
         """Return the list of direct subscribers."""
-        if IBug.providedBy(self.context):
-            return set(self.context.getDirectSubscribers())
-        elif IBugTask.providedBy(self.context):
-            return set(self.context.bug.getDirectSubscribers())
-        else:
-            raise NotImplementedError(
-                'direct_subscribers is not provided by %s' % self)
+        return self.subscription_info.direct_subscriptions.subscribers
 
-    @cachedproperty
+    @property
     def duplicate_subscribers(self):
         """Return the list of subscribers from duplicates.
 
-        Don't use getSubscribersFromDuplicates here because that method
-        omits a user if the user is also a direct or indirect subscriber.
-        getSubscriptionsFromDuplicates doesn't, so find person objects via
-        this method.
+        This includes all subscribers who are also direct or indirect
+        subscribers.
         """
-        if IBug.providedBy(self.context):
-            dupe_subs = self.context.getSubscriptionsFromDuplicates()
-            return set(sub.person for sub in dupe_subs)
-        elif IBugTask.providedBy(self.context):
-            dupe_subs = self.context.bug.getSubscriptionsFromDuplicates()
-            return set(sub.person for sub in dupe_subs)
-        else:
-            raise NotImplementedError(
-                'duplicate_subscribers is not implemented for %s' % self)
+        return self.subscription_info.duplicate_subscriptions.subscribers
 
     @cachedproperty
     def subscriber_ids(self):
         """Return a dictionary mapping a css_name to user name."""
-        subscribers = self.direct_subscribers.union(
+        subscribers = set().union(
+            self.direct_subscribers,
             self.duplicate_subscribers)
 
         # The current user has to be in subscribers_id so
@@ -495,10 +506,20 @@ class BugViewMixin:
         else:
             dup_class = 'dup-subscribed-false'
 
-        if bug.personIsDirectSubscriber(self.user):
+        if (bug.personIsDirectSubscriber(self.user) and not
+            bug.isMuted(self.user)):
             return 'subscribed-true %s' % dup_class
         else:
             return 'subscribed-false %s' % dup_class
+
+    @property
+    def current_user_mute_class(self):
+        bug = self.context
+        subscription_class = self.current_user_subscription_class
+        if bug.isMuted(self.user):
+            return 'muted-true %s' % subscription_class
+        else:
+            return 'muted-false %s' % subscription_class
 
     @cachedproperty
     def _bug_attachments(self):
@@ -1052,20 +1073,3 @@ class BugMarkAsAffectingUserView(LaunchpadFormView):
         self.context.bug.markUserAffected(
             self.user, data['affects'] == BugAffectingUserChoice.YES)
         self.request.response.redirect(canonical_url(self.context.bug))
-
-
-# XXX mars 2009-05-12 bug=372847
-# This will likely have to change or be removed when the bug description
-# changes from IText to IDescription.
-@adapter(IBug, IText, IWebServiceClientRequest)
-@implementer(IFieldHTMLRenderer)
-def bug_description_xhtml_representation(context, field, request):
-    """Render `IBug.description` as XHTML using the webservice."""
-    formatter = FormattersAPI
-
-    def renderer(value):
-        nomail = formatter(value).obfuscate_email()
-        html = formatter(nomail).text_to_html()
-        return html.encode('utf-8')
-
-    return renderer

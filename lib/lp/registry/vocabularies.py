@@ -140,11 +140,11 @@ from lp.registry.interfaces.milestone import (
     IProjectGroupMilestone,
     )
 from lp.registry.interfaces.person import (
+    CLOSED_TEAM_POLICY,
     IPerson,
     IPersonSet,
     ITeam,
     PersonVisibility,
-    TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.pillar import IPillarName
 from lp.registry.interfaces.product import (
@@ -737,7 +737,7 @@ class TeamVocabularyMixin:
 
     @property
     def is_closed_team(self):
-        return self.team.subscriptionpolicy != TeamSubscriptionPolicy.OPEN
+        return self.team.subscriptionpolicy in CLOSED_TEAM_POLICY
 
     @property
     def step_title(self):
@@ -781,7 +781,7 @@ class ValidTeamMemberVocabulary(TeamVocabularyMixin,
         if self.is_closed_team:
             clause = And(
                 clause,
-                Person.subscriptionpolicy != TeamSubscriptionPolicy.OPEN)
+                Person.subscriptionpolicy.is_in(CLOSED_TEAM_POLICY))
         return clause
 
 
@@ -819,7 +819,7 @@ class ValidTeamOwnerVocabulary(TeamVocabularyMixin,
         if self.is_closed_team:
             clause = And(
                 clause,
-                Person.subscriptionpolicy != TeamSubscriptionPolicy.OPEN)
+                Person.subscriptionpolicy.is_in(CLOSED_TEAM_POLICY))
         return clause
 
 
@@ -1290,6 +1290,9 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
     def __iter__(self):
         for milestone in self.visible_milestones:
             yield self.toTerm(milestone)
+
+    def __len__(self):
+        return len(self.visible_milestones)
 
     def __contains__(self, obj):
         if IProjectGroupMilestone.providedBy(obj):

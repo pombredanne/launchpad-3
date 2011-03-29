@@ -42,10 +42,10 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet,
     )
+from lp.bugs.errors import InvalidBugTargetType
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBugSet,
-    InvalidBugTargetType,
     )
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,

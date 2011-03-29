@@ -239,11 +239,11 @@ class AbortedSlave(OkSlave):
     """A mock slave that looks like it's aborted."""
 
     def clean(self):
-        self.call_log.append('status')
+        self.call_log.append('clean')
         return defer.succeed(None)
 
     def status(self):
-        self.call_log.append('clean')
+        self.call_log.append('status')
         return defer.succeed(('BuilderStatus.ABORTED', '1-1'))
 
 

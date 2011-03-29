@@ -99,7 +99,7 @@ class IPackageUploadQueue(Interface):
 class IPackageUpload(Interface):
     """A Queue item for the archive uploader."""
 
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     id = Int(
             title=_("ID"), required=True, readonly=True,
@@ -389,6 +389,7 @@ class IPackageUploadBuild(Interface):
         process will be logged to it.
         """
 
+
 class IPackageUploadSource(Interface):
     """A Queue item's related sourcepackagereleases."""
 
@@ -517,7 +518,7 @@ class IPackageUploadCustom(Interface):
         process will be logged to it.
         """
 
-    def publish_DEBIAN_INSTALLER(logger=None):
+    def publishDebianInstaller(logger=None):
         """Publish this custom item as a raw installer tarball.
 
         This will write the installer tarball out to the right part of
@@ -527,7 +528,7 @@ class IPackageUploadCustom(Interface):
         process will be logged to it.
         """
 
-    def publish_DIST_UPGRADER(logger=None):
+    def publishDistUpgrader(logger=None):
         """Publish this custom item as a raw dist-upgrader tarball.
 
         This will write the dist-upgrader tarball out to the right part of
@@ -537,7 +538,7 @@ class IPackageUploadCustom(Interface):
         process will be logged to it.
         """
 
-    def publish_DDTP_TARBALL(logger=None):
+    def publishDdtpTarball(logger=None):
         """Publish this custom item as a raw ddtp-tarball.
 
         This will write the ddtp-tarball out to the right part of
@@ -547,7 +548,7 @@ class IPackageUploadCustom(Interface):
         process will be logged to it.
         """
 
-    def publish_ROSETTA_TRANSLATIONS(logger=None):
+    def publishRosettaTranslations(logger=None):
         """Publish this custom item as a rosetta tarball.
 
         Essentially this imports the tarball into rosetta.
@@ -556,14 +557,14 @@ class IPackageUploadCustom(Interface):
         process will be logged to it.
         """
 
-    def publish_STATIC_TRANSLATIONS(logger):
+    def publishStaticTranslations(logger):
         """Publish this custom item as a static translations tarball.
 
         This is currently a no-op as we don't publish these files, they only
         reside in the librarian for later retrieval using the webservice.
         """
 
-    def publish_META_DATA(logger):
+    def publishMetaData(logger):
         """Publish this custom item as a meta-data file.
 
         This method writes the meta-data custom file to the archive in
@@ -662,7 +663,8 @@ class IHasQueueItems(Interface):
         return all pockets.  It supports multiple pockets as a list.
 
         If 'archive' is specified return only queue items targeted to this
-        archive, if not restrict the results to the IDistribution.main_archive.
+        archive, if not restrict the results to the
+        IDistribution.main_archive.
 
         Use 'exact_match' argument for precise results.
         """

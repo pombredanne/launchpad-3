@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = ['Archive', 'ArchiveSet']
 
+from operator import attrgetter
 import re
 
 from lazr.lifecycle.event import ObjectCreatedEvent
@@ -25,6 +26,7 @@ from storm.expr import (
     Or,
     Select,
     Sum,
+    SQL,
     )
 from storm.locals import (
     Count,
@@ -49,6 +51,9 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.components.tokens import (
     create_unique_token_for_table,
     )
@@ -61,7 +66,6 @@ from canonical.launchpad.interfaces.lpstorm import (
     ISlaveStore,
     IStore,
     )
-from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -69,7 +73,9 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.url import urlappend
 from lp.app.errors import NotFoundError
+from lp.app.validators.name import valid_name
 from lp.archivepublisher.debversion import Version
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archiveuploader.utils import (
     re_isadeb,
     re_issource,
@@ -80,16 +86,21 @@ from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
+    IPersonSet,
+    OPEN_TEAM_POLICY,
     PersonVisibility,
-    TeamSubscriptionPolicy,
     validate_person,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.job.interfaces.job import JobStatus
-from lp.services.propertycache import get_property_cache
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.soyuz.adapters.archivedependencies import expand_dependencies
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
@@ -112,6 +123,7 @@ from lp.soyuz.interfaces.archive import (
     CannotUploadToPPA,
     default_name_by_purpose,
     DistroSeriesNotFound,
+    FULL_COMPONENT_SUPPORT,
     IArchive,
     IArchiveSet,
     IDistributionArchive,
@@ -177,6 +189,7 @@ from lp.soyuz.model.queue import (
     PackageUpload,
     PackageUploadSource,
     )
+from lp.soyuz.model.section import Section
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.soyuz.scripts.packagecopier import do_copy
 
@@ -295,39 +308,6 @@ class Archive(SQLBase):
     commercial = BoolCol(
         dbName='commercial', notNull=True, default=False)
 
-    def _get_arm_builds_enabled(self):
-        """Check whether ARM builds are allowed for this archive."""
-        archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_families = archive_arch_set.getRestrictedFamilies(self)
-        arm = getUtility(IProcessorFamilySet).getByName('arm')
-        for (family, archive_arch) in restricted_families:
-            if family == arm:
-                return (archive_arch is not None)
-        # ARM doesn't exist or isn't restricted. Either way, there is no
-        # need for an explicit association.
-        return False
-
-    def _set_arm_builds_enabled(self, value):
-        """Set whether ARM builds are enabled for this archive."""
-        archive_arch_set = getUtility(IArchiveArchSet)
-        restricted_families = archive_arch_set.getRestrictedFamilies(self)
-        arm = getUtility(IProcessorFamilySet).getByName('arm')
-        for (family, archive_arch) in restricted_families:
-            if family == arm:
-                if value:
-                    if archive_arch is not None:
-                        # ARM builds are already enabled
-                        return
-                    else:
-                        archive_arch_set.new(self, family)
-                else:
-                    if archive_arch is not None:
-                        Store.of(self).remove(archive_arch)
-                    else:
-                        pass # ARM builds are already disabled
-    arm_builds_allowed = property(_get_arm_builds_enabled,
-        _set_arm_builds_enabled)
-
     def _init(self, *args, **kw):
         """Provide the right interface for URL traversal."""
         SQLBase._init(self, *args, **kw)
@@ -406,7 +386,7 @@ class Archive(SQLBase):
             query, clauseTables=clauseTables, orderBy=orderBy)
         return dependencies
 
-    @property
+    @cachedproperty
     def debug_archive(self):
         """See `IArchive`."""
         if self.purpose == ArchivePurpose.PRIMARY:
@@ -414,6 +394,16 @@ class Archive(SQLBase):
                 self.distribution, ArchivePurpose.DEBUG)
         else:
             return self
+
+    @cachedproperty
+    def default_component(self):
+        """See `IArchive`."""
+        if self.is_partner:
+            return getUtility(IComponentSet)['partner']
+        elif self.is_ppa:
+            return getUtility(IComponentSet)['main']
+        else:
+            return None
 
     @property
     def archive_url(self):
@@ -433,9 +423,11 @@ class Archive(SQLBase):
                 url, "/".join(
                     (self.owner.name, self.name, self.distribution.name)))
 
+        db_pubconf = getUtility(
+            IPublisherConfigSet).getByDistribution(self.distribution)
         if self.is_copy:
             url = urlappend(
-                config.archivepublisher.copy_base_url,
+                db_pubconf.copy_base_url,
                 self.distribution.name + '-' + self.name)
             return urlappend(url, self.distribution.name)
 
@@ -445,8 +437,7 @@ class Archive(SQLBase):
             raise AssertionError(
                 "archive_url unknown for purpose: %s" % self.purpose)
         return urlappend(
-            config.archivepublisher.base_url,
-            self.distribution.name + postfix)
+            db_pubconf.base_url, self.distribution.name + postfix)
 
     @property
     def signing_key_fingerprint(self):
@@ -476,76 +467,94 @@ class Archive(SQLBase):
                             distroseries=None, pocket=None,
                             exact_match=False, created_since_date=None):
         """See `IArchive`."""
-        clauses = ["""
-            SourcePackagePublishingHistory.archive = %s AND
-            SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename =
+        # clauses contains literal sql expressions for things that don't work
+        # easily in storm : this method was migrated from sqlobject but some
+        # callers are problematic. (Migrate them and test to see).
+        clauses = []
+        storm_clauses = [
+            SourcePackagePublishingHistory.archiveID==self.id,
+            SourcePackagePublishingHistory.sourcepackagereleaseID==
+                SourcePackageRelease.id,
+            SourcePackageRelease.sourcepackagenameID==
                 SourcePackageName.id
-            """ % sqlvalues(self)]
-        clauseTables = ['SourcePackageRelease', 'SourcePackageName']
-        orderBy = ['SourcePackageName.name',
-                   '-SourcePackagePublishingHistory.id']
+            ]
+        orderBy = [SourcePackageName.name,
+                   Desc(SourcePackagePublishingHistory.id)]
 
         if name is not None:
             if exact_match:
-                clauses.append("""
-                    SourcePackageName.name=%s
-                """ % sqlvalues(name))
+                storm_clauses.append(SourcePackageName.name==name)
             else:
-                clauses.append("""
-                    SourcePackageName.name LIKE '%%' || %s || '%%'
-                """ % quote_like(name))
+                clauses.append(
+                    "SourcePackageName.name LIKE '%%%%' || %s || '%%%%'"
+                    % quote_like(name))
 
         if version is not None:
             if name is None:
                 raise VersionRequiresName(
                     "The 'version' parameter can be used only together with"
                     " the 'name' parameter.")
-            clauses.append("""
-                SourcePackageRelease.version = %s
-            """ % sqlvalues(version))
+            storm_clauses.append(SourcePackageRelease.version==version)
         else:
-            order_const = "debversion_sort_key(SourcePackageRelease.version)"
-            desc_version_order = SQLConstant(order_const+" DESC")
-            orderBy.insert(1, desc_version_order)
+            orderBy.insert(1, Desc(SourcePackageRelease.version))
 
         if status is not None:
             try:
                 status = tuple(status)
             except TypeError:
                 status = (status, )
-            clauses.append("""
-                SourcePackagePublishingHistory.status IN %s
-            """ % sqlvalues(status))
+            clauses.append(
+                "SourcePackagePublishingHistory.status IN %s "
+                % sqlvalues(status))
 
         if distroseries is not None:
-            clauses.append("""
-                SourcePackagePublishingHistory.distroseries = %s
-            """ % sqlvalues(distroseries))
+            storm_clauses.append(
+                SourcePackagePublishingHistory.distroseriesID==distroseries.id)
 
         if pocket is not None:
-            clauses.append("""
-                SourcePackagePublishingHistory.pocket = %s
-            """ % sqlvalues(pocket))
+            storm_clauses.append(
+                SourcePackagePublishingHistory.pocket==pocket)
 
         if created_since_date is not None:
-            clauses.append("""
-                SourcePackagePublishingHistory.datecreated >= %s
-            """ % sqlvalues(created_since_date))
+            clauses.append(
+                "SourcePackagePublishingHistory.datecreated >= %s"
+                % sqlvalues(created_since_date))
 
-        preJoins = [
-            'sourcepackagerelease.creator',
-            'sourcepackagerelease.dscsigningkey',
-            'distroseries',
-            'section',
-            ]
-
-        sources = SourcePackagePublishingHistory.select(
-            ' AND '.join(clauses), clauseTables=clauseTables, orderBy=orderBy,
-            prejoins=preJoins)
-
-        return sources
+        store = Store.of(self)
+        if clauses:
+            storm_clauses.append(SQL(' AND '.join(clauses)))
+        resultset = store.find(SourcePackagePublishingHistory,
+            *storm_clauses).order_by(
+            *orderBy)
+        # Its not clear that this eager load is necessary or sufficient, it
+        # replaces a prejoin that had pathological query plans.
+        def eager_load(rows):
+            # \o/ circular imports.
+            from lp.registry.model.distroseries import DistroSeries
+            from lp.registry.model.gpgkey import GPGKey
+            ids = set(map(attrgetter('distroseriesID'), rows))
+            ids.discard(None)
+            if ids:
+                list(store.find(DistroSeries, DistroSeries.id.is_in(ids)))
+            ids = set(map(attrgetter('sectionID'), rows))
+            ids.discard(None)
+            if ids:
+                list(store.find(Section, Section.id.is_in(ids)))
+            ids = set(map(attrgetter('sourcepackagereleaseID'), rows))
+            ids.discard(None)
+            if not ids:
+                return
+            releases = list(store.find(
+                SourcePackageRelease, SourcePackageRelease.id.is_in(ids)))
+            ids = set(map(attrgetter('creatorID'), releases))
+            ids.discard(None)
+            if ids:
+                list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(ids))
+            ids = set(map(attrgetter('dscsigningkeyID'), releases))
+            ids.discard(None)
+            if ids:
+                list(store.find(GPGKey, GPGKey.id.is_in(ids)))
+        return DecoratedResultSet(resultset, pre_iter_hook=eager_load)
 
     def getSourcesForDeletion(self, name=None, status=None,
             distroseries=None):
@@ -596,7 +605,7 @@ class Archive(SQLBase):
 
         clauseTables = ['SourcePackageRelease', 'SourcePackageName']
 
-        order_const = "debversion_sort_key(SourcePackageRelease.version)"
+        order_const = "SourcePackageRelease.version"
         desc_version_order = SQLConstant(order_const+" DESC")
         orderBy = ['SourcePackageName.name', desc_version_order,
                    '-SourcePackagePublishingHistory.id']
@@ -690,7 +699,7 @@ class Archive(SQLBase):
                 BinaryPackageRelease.version = %s
             """ % sqlvalues(version))
         else:
-            order_const = "debversion_sort_key(BinaryPackageRelease.version)"
+            order_const = "BinaryPackageRelease.version"
             desc_version_order = SQLConstant(order_const + " DESC")
             orderBy.insert(1, desc_version_order)
 
@@ -841,12 +850,13 @@ class Archive(SQLBase):
         return permission
 
     def getComponentsForSeries(self, distroseries):
-        if self.is_partner:
-            return [getUtility(IComponentSet)['partner']]
-        elif self.is_ppa:
-            return [getUtility(IComponentSet)['main']]
-        else:
+        """See `IArchive`."""
+        # DistroSeries.components and Archive.default_component are
+        # cachedproperties, so this is fairly cheap.
+        if self.purpose in FULL_COMPONENT_SUPPORT:
             return distroseries.components
+        else:
+            return [self.default_component]
 
     def updateArchiveCache(self):
         """See `IArchive`."""
@@ -948,9 +958,10 @@ class Archive(SQLBase):
                 raise ArchiveDependencyError(
                     "Non-primary archives only support the RELEASE pocket.")
             if (component is not None and
-                component.id is not getUtility(IComponentSet)['main'].id):
+                component != dependency.default_component):
                 raise ArchiveDependencyError(
-                    "Non-primary archives only support the 'main' component.")
+                    "Non-primary archives only support the '%s' component." %
+                    dependency.default_component.name)
 
         return ArchiveDependency(
             archive=self, dependency=dependency, pocket=pocket,
@@ -1086,7 +1097,7 @@ class Archive(SQLBase):
                 # interface will no longer require them because we can
                 # then relax the database constraint on
                 # ArchivePermission.
-                component_or_package = getUtility(IComponentSet)['main']
+                component_or_package = self.default_component
 
         # Flatly refuse uploads to copy archives, at least for now.
         if self.is_copy:
@@ -1210,7 +1221,7 @@ class Archive(SQLBase):
     def _authenticate(self, user, component, permission):
         """Private helper method to check permissions."""
         permissions = self.getPermissions(user, component, permission)
-        return permissions.count() > 0
+        return bool(permissions)
 
     def newPackageUploader(self, person, source_package_name):
         """See `IArchive`."""
@@ -1234,8 +1245,10 @@ class Archive(SQLBase):
             else:
                 name = None
 
-            if name is None or name != 'main':
-                raise InvalidComponent("Component for PPAs should be 'main'")
+            if name != self.default_component.name:
+                raise InvalidComponent(
+                    "Component for PPAs should be '%s'" %
+                    self.default_component.name)
 
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.newComponentUploader(
@@ -1388,7 +1401,7 @@ class Archive(SQLBase):
 
     def getBinaryPackageReleaseByFileName(self, filename):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        results = store.find(
+        return store.find(
             BinaryPackageRelease,
             BinaryPackageFile.binarypackagereleaseID ==
                 BinaryPackageRelease.id,
@@ -1396,10 +1409,8 @@ class Archive(SQLBase):
             LibraryFileAlias.filename == filename,
             BinaryPackagePublishingHistory.archive == self,
             BinaryPackagePublishingHistory.binarypackagereleaseID ==
-                BinaryPackageRelease.id).config(distinct=True)
-        if results.count() > 1:
-            return None
-        return results.one()
+                BinaryPackageRelease.id,
+            ).order_by(Desc(BinaryPackagePublishingHistory.id)).first()
 
     def requestPackageCopy(self, target_location, requestor, suite=None,
         copy_binaries=False, reason=None):
@@ -1435,7 +1446,7 @@ class Archive(SQLBase):
         getUtility(ISourcePackageNameSet)[source_name]
         # Find and validate the source package version required.
         source = from_archive.getPublishedSources(
-            name=source_name, version=version, exact_match=True)[0]
+            name=source_name, version=version, exact_match=True).first()
 
         self._copySources([source], to_pocket, to_series, include_binaries)
 
@@ -1457,8 +1468,9 @@ class Archive(SQLBase):
             published_sources = from_archive.getPublishedSources(
                 name=name, exact_match=True,
                 status=PackagePublishingStatus.PUBLISHED)
-            if published_sources.count() > 0:
-                sources.append(published_sources[0])
+            first_source = published_sources.first()
+            if first_source is not None:
+                sources.append(first_source)
         return sources
 
     def _copySources(self, sources, to_pocket, to_series=None,
@@ -1563,6 +1575,31 @@ class Archive(SQLBase):
         notify(ObjectCreatedEvent(subscription))
 
         return subscription
+
+    @property
+    def num_pkgs_building(self):
+        """See `IArchive`."""
+        store = Store.of(self)
+
+        base_query = (
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.archive == self,
+            PackageBuild.build_farm_job == BuildFarmJob.id)
+        sprs_building = store.find(
+            BinaryPackageBuild.source_package_release_id,
+            BuildFarmJob.status == BuildStatus.BUILDING,
+            *base_query)
+        sprs_waiting = store.find(
+            BinaryPackageBuild.source_package_release_id,
+            BuildFarmJob.status == BuildStatus.NEEDSBUILD,
+            *base_query)
+
+        # A package is not counted as waiting if it already has at least
+        # one build building.
+        pkgs_building_count = sprs_building.count()
+        pkgs_waiting_count = sprs_waiting.difference(sprs_building).count()
+
+        return pkgs_building_count, pkgs_waiting_count
 
     def getSourcePackageReleases(self, build_status=None):
         """See `IArchive`."""
@@ -1721,7 +1758,7 @@ class Archive(SQLBase):
     def validatePPA(self, person, proposed_name):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         if person.isTeam() and (
-            person.subscriptionpolicy == TeamSubscriptionPolicy.OPEN):
+            person.subscriptionpolicy in OPEN_TEAM_POLICY):
             return "Open teams cannot have PPAs."
         if proposed_name is not None and proposed_name == ubuntu.name:
             return (
@@ -1897,6 +1934,11 @@ class ArchiveSet:
         if enabled == False:
             new_archive.disable()
 
+        if purpose == ArchivePurpose.DEBUG:
+            if distribution.main_archive is not None:
+                del get_property_cache(
+                    distribution.main_archive).debug_archive
+
         # Private teams cannot have public PPAs.
         if owner.visibility == PersonVisibility.PRIVATE:
             new_archive.buildd_secret = create_unique_token_for_table(
@@ -1938,7 +1980,7 @@ class ArchiveSet:
     def getPPAOwnedByPerson(self, person, name=None, statuses=None,
                             has_packages=False):
         """See `IArchiveSet`."""
-        # See Person._all_members which also directly queries this.
+        # See Person._members which also directly queries this.
         store = Store.of(person)
         clause = [
             Archive.purpose == ArchivePurpose.PPA,
@@ -1960,6 +2002,9 @@ class ArchiveSet:
         # Avoiding circular imports.
         from lp.soyuz.model.archivepermission import ArchivePermission
 
+        # If there's no user logged in, then there's no archives.
+        if user is None:
+            return []
         store = Store.of(user)
         direct_membership = store.find(
             Archive,

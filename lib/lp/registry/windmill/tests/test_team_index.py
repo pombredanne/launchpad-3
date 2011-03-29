@@ -8,12 +8,12 @@ __all__ = []
 
 import unittest
 
-from canonical.launchpad.windmill.testing import lpuser
-from canonical.launchpad.windmill.testing.widgets import (
-    search_and_select_picker_widget,
-    )
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.testing import WindmillTestCase
+from lp.testing.windmill import lpuser
+from lp.testing.windmill.widgets import (
+    search_and_select_picker_widget,
+    )
 
 
 class TestTeamIndex(WindmillTestCase):

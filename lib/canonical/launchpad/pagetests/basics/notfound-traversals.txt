@@ -222,7 +222,7 @@ is still pointing to this old URL (see bug #138090).
 >>> check("/ubuntu/hoary")
 >>> check("/ubuntu/hoary/+edit", auth=True)
 >>> check("/ubuntu/hoary/+specs")
->>> check("/ubuntu/hoary/+reassign", auth=True)
+>>> check_not_found("/ubuntu/hoary/+reassign")
 >>> check("/ubuntu/hoary/+packaging")
 >>> check("/ubuntu/hoary/+bugs")
 
@@ -288,8 +288,8 @@ If a requested bug attachment is not associated with the bug already
 traversed we will get a 404. For paths using the old attachments/<id>
 form, a 404 will be issued immediately; no redirect will be sent.
 
->>> check_not_found("/firefox/+bug/2/attachments/1")
->>> check_not_found("/firefox/+bug/2/+attachment/1")
+>>> check_not_found("/tomcat/+bug/2/attachments/1")
+>>> check_not_found("/tomcat/+bug/2/+attachment/1")
 >>> check_not_found("/bugs/2/attachments/1")
 >>> check_not_found("/bugs/2/+attachment/1")
 
@@ -404,7 +404,6 @@ mark owns many packages, so he's a better test for some pages:
 >>> check("/builders")
 >>> check("/builders/bob/")
 >>> check_redirect("/+builds", status=301)
->>> check("/ubuntu/+source/pmount/0.1-1/+build/7/")
 
 >>> check_redirect("/support/", status=301)
 

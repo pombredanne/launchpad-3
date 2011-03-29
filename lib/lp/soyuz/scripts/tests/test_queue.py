@@ -24,13 +24,13 @@ from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.testing.server import (
-    cleanupLibrarianFiles,
     fillLibrarianFile,
     )
 from canonical.librarian.utils import filechunks
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
+    LibrarianLayer,
     )
 from lp.archiveuploader.nascentupload import NascentUpload
 from lp.archiveuploader.tests import (
@@ -144,7 +144,7 @@ class TestQueueTool(TestQueueBase):
 
     def tearDown(self):
         """Remove test contents from disk."""
-        cleanupLibrarianFiles()
+        LibrarianLayer.librarian_fixture.clear()
 
     def uploadPackage(self,
             changesfile="suite/bar_1.0-1/bar_1.0-1_source.changes"):
@@ -988,7 +988,7 @@ class TestQueueToolInJail(TestQueueBase):
         directory used as jail.
         """
         os.chdir(self._home)
-        cleanupLibrarianFiles()
+        LibrarianLayer.librarian_fixture.clear()
         shutil.rmtree(self._jail)
 
     def _listfiles(self):

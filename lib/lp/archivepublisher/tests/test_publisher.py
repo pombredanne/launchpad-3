@@ -23,11 +23,8 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from canonical.zeca.ftests.harness import ZecaTestSetup
-from lp.archivepublisher.config import (
-    Config,
-    getPubConfig,
-    )
+from lp.testing.keyserver import KeyServerTac
+from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
 from lp.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey,
@@ -1043,8 +1040,9 @@ class TestPublisher(TestPublisherBase):
             distribution=self.ubuntutest, private=True)
         ppa.buildd_secret = "geheim"
 
-        # Setup the publisher for it and publish its repository.
-        archive_publisher = getPublisher(ppa, [], self.logger)
+        # Set up the publisher for it and publish its repository.
+        # 'getPublisher' is what actually configures the htaccess file.
+        getPublisher(ppa, [], self.logger)
         pubconf = getPubConfig(ppa)
         htaccess_path = os.path.join(pubconf.htaccessroot, ".htaccess")
         self.assertTrue(os.path.exists(htaccess_path))
@@ -1286,8 +1284,8 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
         self.assertTrue(cprov.archive.signing_key is None)
 
         # Start the test keyserver, so the signing_key can be uploaded.
-        z = ZecaTestSetup()
-        z.setUp()
+        tac = KeyServerTac()
+        tac.setUp()
 
         # Set a signing key for Celso's PPA.
         key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
@@ -1309,4 +1307,4 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
             signature.fingerprint, cprov.archive.signing_key.fingerprint)
 
         # All done, turn test-keyserver off.
-        z.tearDown()
+        tac.tearDown()

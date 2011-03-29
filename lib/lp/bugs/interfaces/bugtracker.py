@@ -61,8 +61,8 @@ from zope.schema.interfaces import IObject
 
 from canonical.launchpad import _
 from canonical.launchpad.components.apihelpers import patch_reference_property
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import name_validator
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.name import name_validator
 from lp.services.fields import (
     ContentNameField,
     StrippedTextLine,

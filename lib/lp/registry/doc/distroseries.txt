@@ -842,9 +842,11 @@ so that he can edit it.
     >>> yo_series = youbuntu.newSeries(
     ...     name='island', displayname='Island', title='YouBuntu Island',
     ...     summary='summary', description='description', version='09.07',
-    ...     parent_series=warty, owner=yo_driver)
+    ...     parent_series=warty, registrant=yo_driver)
     >>> print yo_series.name
     island
+    >>> print yo_series.registrant.name
+    yo-driver
     >>> print yo_series.driver.name
     yo-driver
 
@@ -856,7 +858,7 @@ have permission to edit the series.
     >>> yo_series = youbuntu.newSeries(
     ...     name='forest', displayname='Forest', title='YouBuntu Forest',
     ...     summary='summary', description='description', version='09.07',
-    ...     parent_series=warty, owner=youbuntu.owner)
+    ...     parent_series=warty, registrant=youbuntu.owner)
     >>> print yo_series.name
     forest
     >>> print yo_series.driver
@@ -884,9 +886,11 @@ series.
     >>> u_series = ubuntu.newSeries(
     ...     name='finch', displayname='Finch', title='Ubuntu Finch',
     ...     summary='summary', description='description', version='9.06',
-    ...     parent_series=warty, owner=ubuntu.owner)
+    ...     parent_series=warty, registrant=ubuntu.owner)
     >>> print u_series.name
     finch
+    >>> print u_series.registrant.name
+    ubuntu-team
     >>> print u_series.driver
     None
 
@@ -1056,7 +1060,7 @@ driver. Here, we expect the driver to be the owner of the distribution
     mark
     >>> print sid.driver
     None
-    >>> print sid.owner.name
+    >>> print sid.registrant.name
     jdub
 
     >>> for d in sid.drivers:

@@ -57,13 +57,14 @@ from lp.answers.browser.questiontarget import (
     )
 from lp.answers.interfaces.questionenums import QuestionStatus
 from lp.app.browser.tales import CustomizableFormatter
+from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
-from lp.bugs.interfaces.bug import IBugSet
-from lp.registry.browser.pillar import PillarBugsMenu
-from lp.registry.browser.structuralsubscription import (
+from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin,
     )
+from lp.bugs.interfaces.bug import IBugSet
+from lp.registry.browser.pillar import PillarBugsMenu
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
@@ -275,7 +276,8 @@ class DistributionSourcePackageBaseView:
         else:
             self._person_data = None
         # Collate diffs for relevant SourcePackageReleases
-        pkg_diffs = getUtility(IPackageDiffSet).getDiffsToReleases(sprs)
+        pkg_diffs = getUtility(IPackageDiffSet).getDiffsToReleases(
+            sprs, preload_for_display=True)
         spr_diffs = {}
         for spr, diffs in itertools.groupby(pkg_diffs,
                                             operator.attrgetter('to_source')):
@@ -514,6 +516,20 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
     def open_questions(self):
         """Return result set containing open questions for this package."""
         return self.context.searchQuestions(status=QuestionStatus.OPEN)
+
+    @cachedproperty
+    def bugs_answers_usage(self):
+        """Return a  dict of uses_bugs, uses_answers, uses_both, uses_either.
+        """
+        service_usage = IServiceUsage(self.context)
+        uses_bugs = (
+            service_usage.bug_tracking_usage == ServiceUsage.LAUNCHPAD)
+        uses_answers = service_usage.answers_usage == ServiceUsage.LAUNCHPAD
+        uses_both = uses_bugs and uses_answers
+        uses_either = uses_bugs or uses_answers
+        return dict(
+            uses_bugs=uses_bugs, uses_answers=uses_answers,
+            uses_both=uses_both, uses_either=uses_either)
 
 
 class DistributionSourcePackageChangelogView(

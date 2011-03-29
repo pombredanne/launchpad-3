@@ -187,6 +187,12 @@ class ILinkData(Interface):
     sort_key = Attribute(
         "The sort key to use when rendering it with a group of links.")
 
+    hidden = Attribute(
+        "Boolean to say whether this link is hidden.  This is separate from "
+        "being enabled and is used to support links which need to be be "
+        "enabled but not viewable in the rendered HTML.  The link may be "
+        "changed to visible by JavaScript or some other means.")
+
 
 class ILink(ILinkData):
     """An object that represents a link in a menu.
@@ -852,14 +858,6 @@ class IStoreSelector(Interface):
 
         :raises DisallowedStore:
         """
-
-
-class IWebBrowserOriginatingRequest(Interface):
-    """Marker interface for converting webservice requests into webapp ones.
-
-    It's used in the webservice domain for calculating webapp URLs, for
-    instance, `ProxiedLibraryFileAlias`.
-    """
 
 
 # XXX mars 2010-07-14 bug=598816

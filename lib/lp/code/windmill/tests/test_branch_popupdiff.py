@@ -11,16 +11,15 @@ import unittest
 import transaction
 import windmill
 
-from canonical.launchpad.windmill.testing.constants import PAGE_LOAD
-from canonical.launchpad.windmill.testing.lpuser import (
-    login_person as windmill_login_person,
-    )
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.code.tests.helpers import make_erics_fooix_project
-from lp.code.windmill.testing import CodeWindmillLayer
 from lp.testing import (
     login_person,
     WindmillTestCase,
+    )
+from lp.testing.windmill.constants import PAGE_LOAD
+from lp.testing.windmill.lpuser import (
+    login_person as windmill_login_person,
     )
 
 
@@ -124,7 +123,10 @@ class TestPopupOnBugPage(WindmillTestCase):
         bug = self.factory.makeBug(product=objs['fooix'])
         transaction.commit()
 
-        windmill_login_person(objs['eric'], "test", client)
+        # The `objs` used here hides the email, but that is no longer
+        # accessible.  We have to pass it in by hand.
+        windmill_login_person(
+            objs['eric'], "eric@example.com", "test", client)
 
         start_url = (windmill.settings['TEST_URL'] + 'bugs/%d' % bug.id)
         client.open(url=start_url)

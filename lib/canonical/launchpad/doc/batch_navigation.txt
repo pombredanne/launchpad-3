@@ -55,7 +55,7 @@ used with SQLObject, i.e. that it puts appropriate LIMIT clauses on queries.
 
 Imports and initialization:
 
-  >>> from canonical.ftests.pgsql import CursorWrapper
+  >>> from lp.testing.pgsql import CursorWrapper
   >>> from canonical.launchpad.database.emailaddress import EmailAddress
   >>> from canonical.launchpad.interfaces.lpstorm import IStore
   >>> ignore = IStore(EmailAddress) # Prime the database connection.

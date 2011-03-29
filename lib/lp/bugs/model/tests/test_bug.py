@@ -4,9 +4,9 @@
 __metaclass__ = type
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.registry.enum import BugNotificationLevel
+from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.model.bug import BugSubscriptionInfo
 from lp.registry.interfaces.person import PersonVisibility
-from lp.registry.model.structuralsubscription import StructuralSubscription
 from lp.testing import (
     login_person,
     person_logged_in,
@@ -89,8 +89,8 @@ class TestBug(TestCaseWithFactory):
         member = self.factory.makePerson()
         team = self.factory.makeTeam(
             owner=member, visibility=PersonVisibility.PRIVATE)
-        StructuralSubscription(
-            product=product, subscriber=team, subscribed_by=member)
+        with person_logged_in(member):
+            product.addSubscription(team, member)
         self.assertTrue(team in bug.getAlsoNotifiedSubscribers())
 
     def test_get_indirect_subscribers_with_private_team(self):
@@ -99,8 +99,8 @@ class TestBug(TestCaseWithFactory):
         member = self.factory.makePerson()
         team = self.factory.makeTeam(
             owner=member, visibility=PersonVisibility.PRIVATE)
-        StructuralSubscription(
-            product=product, subscriber=team, subscribed_by=member)
+        with person_logged_in(member):
+            product.addSubscription(team, member)
         self.assertTrue(team in bug.getIndirectSubscribers())
 
     def test_get_direct_subscribers_with_private_team(self):
@@ -200,22 +200,16 @@ class TestBug(TestCaseWithFactory):
             # the results retuned by getSubscribersFromDuplicates()
             duplicate_bug.unsubscribe(
                 duplicate_bug.owner, duplicate_bug.owner)
-        reversed_levels = sorted(
-            BugNotificationLevel.items, reverse=True)
-        subscribers = []
-        for level in reversed_levels:
+        for level in BugNotificationLevel.items:
             subscriber = self.factory.makePerson()
-            subscribers.append(subscriber)
             with person_logged_in(subscriber):
                 duplicate_bug.subscribe(subscriber, subscriber, level=level)
-            duplicate_subscribers = (
-                bug.getSubscribersFromDuplicates(level=level))
-            # All the previous subscribers will be included because
-            # their level of subscription is such that they also receive
-            # notifications at the current level.
+            # Only the most recently subscribed person will be included
+            # because the previous subscribers are subscribed at a lower
+            # level.
             self.assertEqual(
-                set(subscribers), set(duplicate_subscribers),
-                "Number of subscribers did not match expected value.")
+                (subscriber,),
+                bug.getSubscribersFromDuplicates(level=level))
 
     def test_subscribers_from_dupes_overrides_using_level(self):
         # Bug.getSubscribersFromDuplicates() does not return subscribers
@@ -240,3 +234,16 @@ class TestBug(TestCaseWithFactory):
         self.assertTrue(
             subscriber not in duplicate_subscribers,
             "Subscriber should not be in duplicate_subscribers.")
+
+    def test_getSubscriptionInfo(self):
+        # getSubscriptionInfo() returns a BugSubscriptionInfo object.
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            info = bug.getSubscriptionInfo()
+        self.assertIsInstance(info, BugSubscriptionInfo)
+        self.assertEqual(bug, info.bug)
+        self.assertEqual(BugNotificationLevel.NOTHING, info.level)
+        # A level can also be specified.
+        with person_logged_in(bug.owner):
+            info = bug.getSubscriptionInfo(BugNotificationLevel.METADATA)
+        self.assertEqual(BugNotificationLevel.METADATA, info.level)

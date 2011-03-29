@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug attachment views."""
@@ -22,7 +22,6 @@ from zope.interface import implements
 from canonical.launchpad.browser.librarian import (
     FileNavigationMixin,
     ProxiedLibraryFileAlias,
-    SafeStreamOrRedirectLibraryFileAliasView,
     )
 from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAliasWithParent,
@@ -39,11 +38,11 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
-from canonical.widgets.itemswidgets import LaunchpadBooleanRadioWidget
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
     )
+from lp.app.widgets.itemswidgets import LaunchpadBooleanRadioWidget
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType,
     IBugAttachment,
@@ -237,5 +236,3 @@ class BugAttachmentFileNavigation(Navigation, FileNavigationMixin):
     """Traversal to +files/${filename}."""
 
     usedfor = IBugAttachment
-
-    view_class = SafeStreamOrRedirectLibraryFileAliasView

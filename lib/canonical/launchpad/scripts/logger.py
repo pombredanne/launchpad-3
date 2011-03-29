@@ -15,16 +15,23 @@ __metaclass__ = type
 
 # Don't import stuff from this module. Import it from canonical.scripts
 __all__ = [
+    'DEBUG2',
+    'DEBUG3',
+    'DEBUG4',
+    'DEBUG5',
+    'DEBUG6',
+    'DEBUG7',
+    'DEBUG8',
+    'DEBUG9',
+    'LaunchpadFormatter',
     'log',
     'logger',
     'logger_options',
     'OopsHandler',
-    'LaunchpadFormatter',
-    'DEBUG2', 'DEBUG3', 'DEBUG4', 'DEBUG5',
-    'DEBUG6', 'DEBUG7', 'DEBUG8', 'DEBUG9',
     ]
 
 
+from contextlib import contextmanager
 from cStringIO import StringIO
 from datetime import (
     datetime,
@@ -38,12 +45,12 @@ import os.path
 import re
 import sys
 import time
-import traceback
+from traceback import format_exception_only
 
 from pytz import utc
 from zope.component import getUtility
+from zope.exceptions.log import Formatter
 
-from canonical.base import base
 from canonical.config import config
 from canonical.launchpad.webapp.errorlog import (
     globalErrorUtility,
@@ -54,7 +61,7 @@ from canonical.librarian.interfaces import (
     UploadFailed,
     )
 from lp.services.log import loglevels
-
+from lp.services.utils import compress_hash
 
 # Reexport our custom loglevels for old callsites. These callsites
 # should be importing the symbols from lp.services.log.loglevels
@@ -91,7 +98,7 @@ class OopsHandler(logging.Handler):
             self.handleError(record)
 
 
-class LaunchpadFormatter(logging.Formatter):
+class LaunchpadFormatter(Formatter):
     """logging.Formatter encoding our preferred output format."""
 
     def __init__(self, fmt=None, datefmt=None):
@@ -124,7 +131,7 @@ class LibrarianFormatter(LaunchpadFormatter):
         Returns the URL, or the formatted exception if the Librarian is
         not available.
         """
-        traceback = logging.Formatter.formatException(self, ei)
+        traceback = LaunchpadFormatter.formatException(self, ei)
         # Uncomment this line to stop exception storage in the librarian.
         # Useful for debugging tests.
         # return traceback
@@ -143,8 +150,7 @@ class LibrarianFormatter(LaunchpadFormatter):
 
         expiry = datetime.now().replace(tzinfo=utc) + timedelta(days=90)
         try:
-            filename = base(long(
-                hashlib.sha1(traceback).hexdigest(), 16), 62) + '.txt'
+            filename = compress_hash(hashlib.sha1(traceback)) + '.txt'
             url = librarian.remoteAddFile(
                     filename, len(traceback), StringIO(traceback),
                     'text/plain;charset=%s' % sys.getdefaultencoding(),
@@ -158,7 +164,7 @@ class LibrarianFormatter(LaunchpadFormatter):
             # information, we can stuff our own problems in there too.
             return '%s\n\nException raised in formatter:\n%s\n' % (
                     traceback,
-                    logging.Formatter.formatException(self, sys.exc_info()))
+                    LaunchpadFormatter.formatException(self, sys.exc_info()))
 
 
 def logger_options(parser, default=logging.INFO):
@@ -405,10 +411,19 @@ class _LogWrapper:
         else:
             return setattr(self._log, key, value)
 
+    @contextmanager
+    def use(self, log):
+        """Temporarily use a different `log`."""
+        self._log, log = log, self._log
+        try:
+            yield
+        finally:
+            self._log = log
+
     def shortException(self, msg, *args):
         """Like Logger.exception, but does not print a traceback."""
         exctype, value = sys.exc_info()[:2]
-        report = ''.join(traceback.format_exception_only(exctype, value))
+        report = ''.join(format_exception_only(exctype, value))
         # _log.error interpolates msg, so we need to escape % chars
         msg += '\n' + report.rstrip('\n').replace('%', '%%')
         self._log.error(msg, *args)

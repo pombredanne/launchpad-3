@@ -78,7 +78,7 @@ inspected.
     >>> cprov = getUtility(IPersonSet).getByName("cprov")
 
     >>> iceweasel_source_pub = cprov.archive.getPublishedSources(
-    ...     'iceweasel')[0]
+    ...     'iceweasel').first()
 
     >>> ppa_source_view = getMultiAdapter(
     ...     (iceweasel_source_pub, LaunchpadTestRequest()),

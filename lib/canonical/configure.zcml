@@ -132,7 +132,6 @@
         layer="lp.answers.publisher.AnswersLayer"
         />
 
-    <include package="canonical.widgets" />
     <include package="canonical.launchpad" />
     <include package="canonical.lazr" />
     <include zcml:condition="installed canonical.shipit"

@@ -175,8 +175,6 @@ of type text/plain, so are stored as blobs.
     >>> blob = chunks[1].blob
     >>> blob.filename
     u'anna.jpg.exe'
-    >>> blob.http_url.startswith(u'http://localhost:58000/')
-    True
     >>> blob.http_url.endswith(u'/anna.jpg.exe')
     True
 

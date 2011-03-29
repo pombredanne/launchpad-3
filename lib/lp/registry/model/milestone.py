@@ -15,14 +15,13 @@ __all__ = [
 
 import datetime
 
-from lazr.restful.error import expose
+from lazr.restful.declarations import webservice_error
 from sqlobject import (
     AND,
     BoolCol,
     DateCol,
     ForeignKey,
     SQLMultipleJoin,
-    SQLObjectNotFound,
     StringCol,
     )
 from storm.locals import (
@@ -37,6 +36,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.sorting import expand_numbers
 from lp.app.errors import NotFoundError
 from lp.blueprints.model.specification import Specification
@@ -47,6 +47,9 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     )
 from lp.bugs.model.bugtarget import HasBugsBase
+from lp.bugs.model.structuralsubscription import (
+    StructuralSubscriptionTargetMixin,
+    )
 from lp.registry.interfaces.milestone import (
     IHasMilestones,
     IMilestone,
@@ -54,9 +57,6 @@ from lp.registry.interfaces.milestone import (
     IProjectGroupMilestone,
     )
 from lp.registry.model.productrelease import ProductRelease
-from lp.registry.model.structuralsubscription import (
-    StructuralSubscriptionTargetMixin,
-    )
 
 
 FUTURE_NONE = datetime.date(datetime.MAXYEAR, 1, 1)
@@ -121,6 +121,7 @@ class HasMilestonesMixin:
 
 class MultipleProductReleases(Exception):
     """Raised when a second ProductRelease is created for a milestone."""
+    webservice_error(400)
 
     def __init__(self, msg='A milestone can only have one ProductRelease.'):
         super(MultipleProductReleases, self).__init__(msg)
@@ -211,7 +212,7 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
                              changelog=None, release_notes=None):
         """See `IMilestone`."""
         if self.product_release is not None:
-            raise expose(MultipleProductReleases())
+            raise MultipleProductReleases()
         release = ProductRelease(
             owner=owner,
             changelog=changelog,
@@ -257,11 +258,16 @@ class MilestoneSet:
 
     def get(self, milestoneid):
         """See lp.registry.interfaces.milestone.IMilestoneSet."""
-        try:
-            return Milestone.get(milestoneid)
-        except SQLObjectNotFound:
+        result = list(self.getByIds([milestoneid]))
+        if not result:
             raise NotFoundError(
                 "Milestone with ID %d does not exist" % milestoneid)
+        return result[0]
+
+    def getByIds(self, milestoneids):
+        """See `IMilestoneSet`."""
+        return IStore(Milestone).find(Milestone,
+            Milestone.id.is_in(milestoneids))
 
     def getByNameAndProduct(self, name, product, default=None):
         """See lp.registry.interfaces.milestone.IMilestoneSet."""

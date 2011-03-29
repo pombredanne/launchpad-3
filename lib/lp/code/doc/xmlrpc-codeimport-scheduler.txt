@@ -44,7 +44,7 @@ can be found in the tests for ICodeImportJobSet.
 The point of all this is for it to be accessed over XMLRPC.
 
     >>> import xmlrpclib
-    >>> from canonical.functional import XMLRPCTestTransport
+    >>> from lp.testing.xmlrpc import XMLRPCTestTransport
     >>> codeimportscheduler = xmlrpclib.ServerProxy(
     ...     'http://xmlrpc-private.launchpad.dev:8087/codeimportscheduler',
     ...     transport=XMLRPCTestTransport())

@@ -80,7 +80,7 @@ class ScenarioMixin:
         # will create an empty message so as to mark the review time.
         pofile = self._makePOFile()
         template = pofile.potemplate
-        potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
+        potmsgset = self.factory.makePOTMsgSet(template)
 
         potmsgset.clearCurrentTranslation(pofile, template.owner, ORIGIN)
 
@@ -94,7 +94,7 @@ class ScenarioMixin:
         pofile = self._makePOFile()
         template = pofile.potemplate
         traits = get_traits(template)
-        potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
+        potmsgset = self.factory.makePOTMsgSet(template)
         tm = self._makeTranslationMessage(potmsgset, pofile)
         traits.setFlag(tm, True)
         self.assertTrue(traits.getFlag(tm))
@@ -107,7 +107,7 @@ class ScenarioMixin:
         pofile = self._makePOFile()
         template = pofile.potemplate
         traits = get_traits(template)
-        potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
+        potmsgset = self.factory.makePOTMsgSet(template)
         tm = self._makeTranslationMessage(potmsgset, pofile, diverged=True)
         traits.setFlag(tm, True)
 
@@ -122,7 +122,7 @@ class ScenarioMixin:
         pofile = self._makePOFile()
         template = pofile.potemplate
         traits = get_traits(template)
-        potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
+        potmsgset = self.factory.makePOTMsgSet(template)
         shared_tm = self._makeTranslationMessage(potmsgset, pofile)
         traits.setFlag(shared_tm, True)
         diverged_tm = self._makeTranslationMessage(
@@ -145,7 +145,7 @@ class ScenarioMixin:
         pofile = self._makePOFile()
         template = pofile.potemplate
         traits = get_traits(template)
-        potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
+        potmsgset = self.factory.makePOTMsgSet(template)
         tm = self._makeTranslationMessage(potmsgset, pofile)
         traits.setFlag(tm, True)
 
@@ -162,7 +162,7 @@ class ScenarioMixin:
         pofile = self._makePOFile()
         template = pofile.potemplate
         traits = get_traits(template)
-        potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
+        potmsgset = self.factory.makePOTMsgSet(template)
         tm = self._makeTranslationMessage(potmsgset, pofile)
         traits.setFlag(tm, True)
         traits.other_side_traits.setFlag(tm, True)
@@ -176,7 +176,7 @@ class ScenarioMixin:
         pofile = self._makePOFile()
         template = pofile.potemplate
         traits = get_traits(template)
-        potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
+        potmsgset = self.factory.makePOTMsgSet(template)
         tm = self._makeTranslationMessage(potmsgset, pofile)
         traits.setFlag(tm, True)
         traits.other_side_traits.setFlag(tm, True)
@@ -191,7 +191,7 @@ class ScenarioMixin:
         pofile = self._makePOFile()
         template = pofile.potemplate
         traits = get_traits(template)
-        potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
+        potmsgset = self.factory.makePOTMsgSet(template)
         diverged_tm = self._makeTranslationMessage(
             potmsgset, pofile, diverged=True)
         traits.setFlag(diverged_tm, True)
@@ -211,7 +211,7 @@ class ScenarioMixin:
         # review fields set.
         pofile = self._makePOFile()
         template = pofile.potemplate
-        potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
+        potmsgset = self.factory.makePOTMsgSet(template)
         reviewer = self.factory.makePerson()
 
         potmsgset.clearCurrentTranslation(pofile, reviewer, ORIGIN)
@@ -229,7 +229,7 @@ class ScenarioMixin:
         pofile = self._makePOFile()
         template = pofile.potemplate
         traits = get_traits(template)
-        potmsgset = self.factory.makePOTMsgSet(template, sequence=1)
+        potmsgset = self.factory.makePOTMsgSet(template)
         blank = self.factory.makeSuggestion(
             potmsgset=potmsgset, pofile=pofile, translations=[])
 
