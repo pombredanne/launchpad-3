@@ -40,25 +40,21 @@ class TestMessageTraversal(TestCaseWithFactory):
         # Traversal over bug messages with bugattachments has no failures.
         
         # Add some attachments to the bug.
+        expected_messages = []
         with person_logged_in(self.bugowner):
             for i in range(3):
                 att = self.factory.makeBugAttachment(self.bug)
-
-        owners = [removeSecurityProxy(msg).owner.name
-            for msg in self.bug.messages]
+                expected_messages.append(att.message.subject)
 
         lp_user = self.factory.makePerson()
-        lp = launchpadlib_for("test", lp_user)
+        lp = launchpadlib_for("test", lp_user, version="devel")
         lp_bug = lp.bugs[self.bug.id]
-        messages = list(lp_bug.messages)
-        # We don't actually care about the owner, per se. It's just a
-        # a convenient Reference on the API to pull in order to check
-        # that everything is evaluating properly, and mimics the failing
-        # case in bug 607438.
-        lp_owners = [msg.owner.name for msg in messages]
+
+        attachments = lp_bug.attachments
+        messages = [a.message.subject for a in attachments if a.message is not None]
         self.assertEqual(
-            sorted(lp_owners),
-            sorted(owners))
+            sorted(messages),
+            sorted(expected_messages))
 
         
 
