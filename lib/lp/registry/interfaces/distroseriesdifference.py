@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface classes for a difference between two distribution series."""
@@ -38,8 +38,9 @@ from lp.registry.enum import (
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.sourcepackagename import ISourcePackageName
+from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.packagediff import IPackageDiff
 from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 
@@ -84,6 +85,22 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
         title=_("Parent package diff url"), readonly=True, required=False,
         description=_(
             "The url for the diff between the base version and the "
+            "parent version.")))
+
+    package_diff_status = exported(Choice(
+        title=_("Package diff status"),
+        readonly=True,
+        vocabulary=PackageDiffStatus,
+        description=_(
+            "The status of the diff between the base version and the "
+            "derived version.")))
+
+    parent_package_diff_status = exported(Choice(
+        title=_("Parent package diff status"),
+        readonly=True,
+        vocabulary=PackageDiffStatus,
+        description=_(
+            "The status of the diff between the base version and the "
             "parent version.")))
 
     status = Choice(
