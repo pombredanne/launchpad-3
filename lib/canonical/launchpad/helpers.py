@@ -24,7 +24,6 @@ from zope.component import getUtility
 from zope.security.interfaces import ForbiddenAttribute
 
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.registry.model.person import get_recipients
 from lp.services.geoip.interfaces import (
     IRequestLocalLanguages,
     IRequestPreferredLanguages,
@@ -210,6 +209,8 @@ def get_contact_email_addresses(person):
     # Need to remove the security proxy of the email address because the
     # logged in user may not have permission to see it.
     from zope.security.proxy import removeSecurityProxy
+    # Circular imports force this import.
+    from lp.registry.model.person import get_recipients
     return set(
         str(removeSecurityProxy(mail_person.preferredemail).email)
         for mail_person in get_recipients(person))
