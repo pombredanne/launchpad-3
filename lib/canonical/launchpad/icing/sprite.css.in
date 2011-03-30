@@ -492,3 +492,11 @@
     background-image: url(/@@/trash-logo.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
+.notification-private {
+    background-image: url(/@@/notification-private.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+    }
+.notification-close {
+    background-image: url(/@@/notification-close.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+    }
