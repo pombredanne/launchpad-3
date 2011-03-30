@@ -137,6 +137,7 @@ class IProductSeriesPublic(
         ReferenceChoice(title=_('Project'), required=True,
             vocabulary='Product', schema=Interface), # really IProduct
         exported_as='project')
+    productID = Attribute('The product ID.')
 
     status = exported(
         Choice(

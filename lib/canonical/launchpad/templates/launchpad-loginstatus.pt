@@ -9,7 +9,13 @@
 <div id="logincontrol" tal:condition="view/logged_in">
   <form action="+logout" method="post">
     <input type="hidden" name="loggingout" value="1" />
-    <div id="rendertime" tal:condition="request/features/visible_render_time">Loading... &bull;</div>
+    <div id="rendertime" tal:condition="request/features/visible_render_time">Loading...</div>
+    <div id="ajax-time" tal:condition="request/features/visible_render_time">
+        <a href="" class="js-action">AJAX Log &darr;</a>
+        <ul id="ajax-time-list" class="hidden">
+            <li class="no-events">No AJAX events detected</li>
+        </ul>
+    </div>
     <a tal:replace="structure request/lp:person/fmt:name_link" /> &bull;
     <input type="submit" name="logout" value="Log Out" />
   </form>

@@ -441,6 +441,36 @@ class TestDistroSeriesDifferenceJobEndToEnd(TestCaseWithFactory):
         jobs = find_waiting_jobs(derived_series, source_package_name)
         self.assertEqual(0, jobs.count())
 
+    def test_update_deletes_diffs(self):
+        # When a DSD is updated, the diffs are invalidated.
+        derived_series = self.makeDerivedDistroSeries()
+        source_package_name = self.factory.makeSourcePackageName()
+        self.createPublication(
+            source_package_name, ['1.0-1derived1', '1.0-1'], derived_series)
+        self.createPublication(
+            source_package_name, ['1.0-2', '1.0-1'],
+            derived_series.parent_series)
+        spr = self.factory.makeSourcePackageRelease(
+            sourcepackagename=source_package_name, version='1.0-1')
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr,
+            archive=derived_series.parent_series.main_archive,
+            distroseries=derived_series.parent_series,
+            status=PackagePublishingStatus.SUPERSEDED)
+        jobs = find_waiting_jobs(derived_series, source_package_name)
+        self.runJob(jobs[0])
+        ds_diff = self.findDSD(derived_series, source_package_name)
+        ds_diff[0].requestPackageDiffs(self.factory.makePerson())
+        self.assertIsNot(None, ds_diff[0].package_diff)
+        self.assertIsNot(None, ds_diff[0].parent_package_diff)
+        self.createPublication(
+            source_package_name, ['1.0-3', '1.0-2', '1.0-1'],
+            derived_series.parent_series)
+        jobs = find_waiting_jobs(derived_series, source_package_name)
+        self.runJob(jobs[0])
+        self.assertIs(None, ds_diff[0].package_diff)
+        self.assertIs(None, ds_diff[0].parent_package_diff)
+
 
 class TestDistroSeriesDifferenceJobPermissions(TestCaseWithFactory):
     """Database permissions test for `DistroSeriesDifferenceJob`."""
