@@ -186,40 +186,18 @@ class POTranslationPruner(BulkPruner):
         """
 
 
-class OAuthNoncePruner(TunableLoop):
+class OAuthNoncePruner(BulkPruner):
     """An ITunableLoop to prune old OAuthNonce records.
 
     We remove all OAuthNonce records older than 1 day.
     """
-    maximum_chunk_size = 6*60*60 # 6 hours in seconds.
-
-    def __init__(self, log, abort_time=None):
-        super(OAuthNoncePruner, self).__init__(log, abort_time)
-        self.store = IMasterStore(OAuthNonce)
-        self.oldest_age = self.store.execute("""
-            SELECT COALESCE(EXTRACT(EPOCH FROM
-                CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-                - MIN(request_timestamp)), 0)
-            FROM OAuthNonce
-            """).get_one()[0]
-
-    def isDone(self):
-        return self.oldest_age <= ONE_DAY_IN_SECONDS
-
-    def __call__(self, chunk_size):
-        self.oldest_age = max(
-            ONE_DAY_IN_SECONDS, self.oldest_age - chunk_size)
-
-        self.log.debug(
-            "Removed OAuthNonce rows older than %d seconds"
-            % self.oldest_age)
-
-        self.store.find(
-            OAuthNonce,
-            OAuthNonce.request_timestamp < SQL(
-                "CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%d seconds'"
-                % self.oldest_age)).remove()
-        transaction.commit()
+    target_table_class = OAuthNonce
+    target_table_key = 'id'
+    ids_to_prune_query = """
+        SELECT id FROM OauthNonce
+        WHERE request_timestamp
+            < CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - CAST('1 day' AS interval)
+        """
 
 
 class OpenIDConsumerNoncePruner(TunableLoop):
