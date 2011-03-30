@@ -32,12 +32,6 @@ ARCHIVES_TO_PUBLISH = [
     ]
 
 
-ARCHIVE_SUFFIXES = {
-    ArchivePurpose.PRIMARY: "",
-    ArchivePurpose.PARTNER: "-partner",
-}
-
-
 def compose_shell_boolean(boolean_value):
     """Represent a boolean value as "yes" or "no"."""
     boolean_text = {
@@ -139,7 +133,7 @@ class PublishFTPMaster(LaunchpadCronScript):
             self.logger.debug(
                 "Moving %s dists backup to safe keeping for next time.",
                 purpose.title)
-            distscopyroot = archive_config.archiveroot + '-distscopy'
+            distscopyroot = get_distscopyroot(archive_config.archiveroot)
             dists = os.path.join(distscopyroot, "dists")
             if self.done_pub:
                 replacement_dists = archive_config.distsroot + ".old"
