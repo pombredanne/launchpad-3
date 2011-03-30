@@ -133,7 +133,7 @@ class PublishFTPMaster(LaunchpadCronScript):
             self.logger.debug(
                 "Moving %s dists backup to safe keeping for next time.",
                 purpose.title)
-            distscopyroot = get_distscopyroot(archive_config.archiveroot)
+            distscopyroot = get_distscopyroot(archive_config)
             dists = os.path.join(distscopyroot, "dists")
             if self.done_pub:
                 replacement_dists = archive_config.distsroot + ".old"
