@@ -840,9 +840,6 @@ SET search_path = public, pg_catalog;
 
 
 
-
-
-
 SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE account DISABLE TRIGGER ALL;
@@ -2517,6 +2514,14 @@ INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, d
    #11
 
      -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 1, 16, 1, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (43, 1, '2.0.7-1ubuntu1', '2005-08-01 14:10:00', 1, NULL, 1, 'evolution (2.0.7-1ubuntu1) deriwarty; urgency=low
+ * Placeholder
+ LP: #10
+ LP: #999
+ LP: #badid
+ LP: #7, #8,
+   #11
+     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 1, 16, 9, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 
 ALTER TABLE sourcepackagerelease ENABLE TRIGGER ALL;
@@ -4159,6 +4164,8 @@ ALTER TABLE distrocomponentuploader ENABLE TRIGGER ALL;
 
 ALTER TABLE packagediff DISABLE TRIGGER ALL;
 
+INSERT INTO packagediff (id, date_requested, requester, from_source, to_source, date_fulfilled, diff_content, status) VALUES (1, '2011-03-22 13:27:38.178011', 16, 43, 40, NULL, NULL, 0);
+INSERT INTO packagediff (id, date_requested, requester, from_source, to_source, date_fulfilled, diff_content, status) VALUES (2, '2011-03-22 13:27:38.178011', 16, 43, 39, NULL, NULL, 2);
 
 
 ALTER TABLE packagediff ENABLE TRIGGER ALL;
@@ -4167,7 +4174,7 @@ ALTER TABLE packagediff ENABLE TRIGGER ALL;
 ALTER TABLE distroseriesdifference DISABLE TRIGGER ALL;
 
 INSERT INTO distroseriesdifference (id, derived_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version) VALUES (1, 14, 19, NULL, 2, 3, NULL, '1.0.10-4deribuntu1', '1.0.9a-4ubuntu1', '1.0.9a-4ubuntu1');
-INSERT INTO distroseriesdifference (id, derived_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version) VALUES (2, 14, 9, NULL, 1, 3, NULL, '2.0.8-4deribuntu1', '2.0.9-1ubuntu2', '2.0.7-1ubuntu1');
+INSERT INTO distroseriesdifference (id, derived_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version) VALUES (2, 14, 9, 1, 1, 3, 2, '2.0.8-4deribuntu1', '2.0.9-1ubuntu2', '2.0.7-1ubuntu1');
 INSERT INTO distroseriesdifference (id, derived_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version) VALUES (3, 14, 1, NULL, 2, 3, NULL, '4.1.1-1deribuntu1', '4.1.2-1ubuntu1', '4.1.1-1ubuntu1');
 
 
@@ -4458,13 +4465,6 @@ ALTER TABLE featureflag DISABLE TRIGGER ALL;
 
 
 ALTER TABLE featureflag ENABLE TRIGGER ALL;
-
-
-ALTER TABLE featureflagchangelogentry DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE featureflagchangelogentry ENABLE TRIGGER ALL;
 
 
 ALTER TABLE featureflagchangelogentry DISABLE TRIGGER ALL;
@@ -10420,6 +10420,7 @@ INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseri
 INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor) VALUES (34, 40, 14, 1, 1, 3, '2006-02-15 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, 16, NULL, NULL, NULL);
 INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor) VALUES (35, 41, 1, 1, 1, 3, '2006-08-15 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL);
 INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor) VALUES (36, 41, 14, 1, 1, 3, '2006-02-15 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, 16, NULL, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor) VALUES (37, 43, 1, 1, 1, 3, '2006-02-15 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, 16, NULL, NULL, NULL);
 
 
 ALTER TABLE sourcepackagepublishinghistory ENABLE TRIGGER ALL;

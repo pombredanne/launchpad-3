@@ -486,8 +486,10 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
             'parent': '1.0-1',
         }
         parent_series = self.factory.makeDistroSeries(name='warty')
+        derived_distro = self.factory.makeDistribution(name='deribuntu')
         derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=parent_series)
+            distribution=derived_distro, name='derilucid',
+            parent_series=parent_series)
         self._set_source_selection(derived_series)
         difference = self.factory.makeDistroSeriesDifference(
             source_package_name_str='my-src-name',
@@ -524,7 +526,10 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
         self.assertEqual(
-            "The following sources were synchronized: my-src-name",
+            '<p>Packages copied to '
+            '<a href="http://launchpad.dev/deribuntu/derilucid"'
+            '>Derilucid</a>:</p>\n<ul>\n<li>my-src-name 1.0-1 in '
+            'derilucid</li>\n</ul>',
             notifications[0].message)
         # 302 is a redirect back to the same page.
         self.assertEqual(302, view.request.response.getStatus())
