@@ -519,8 +519,8 @@ appropriate project's bug.
 
     >>> bugtask = bug.bugtasks[0]
     >>> test_tales("bugtask/fmt:link", bugtask=bugtask)
-    u'<a href=".../firefox/+bug/1" class="sprite bug-low">Bug #1:
-      Firefox does not support SVG</a>'
+    u'<a href=".../firefox/+bug/1" class="sprite bug-low"
+         title="Low - New">Bug #1: Firefox does not support SVG</a>'
 
 Bug titles may contain markup (when describing issue regarding markup).
 Their titles are escaped so that they display correctly. This also
@@ -530,11 +530,11 @@ title might be interpreted by the browser.
     >>> login('test@canonical.com')
     >>> bug.title = "Opps<br/><script>alert('XSS')</script>"
     >>> test_tales("bug/fmt:link", bug=getUtility(IBugSet).get(1))
-    u'<a href=".../bugs/1" class="sprite bug">Bug #1:
+    u'<a href=".../bugs/1" ...>Bug #1:
       Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
 
     >>> test_tales("bugtask/fmt:link", bugtask=bugtask)
-    u'<a href=".../firefox/+bug/1" class="sprite bug-low">Bug #1:
+    u'<a href=".../firefox/+bug/1" ...>Bug #1:
       Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
 
 
