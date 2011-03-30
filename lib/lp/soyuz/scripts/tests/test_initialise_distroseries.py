@@ -158,8 +158,11 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             child.isSourcePackageFormatPermitted(
             SourcePackageFormat.FORMAT_1_0))
 
-    def _full_initialise(self, arches=(), packagesets=(), rebuild=False):
-        child = self.factory.makeDistroSeries(parent_series=self.parent)
+    def _full_initialise(self, arches=(), packagesets=(), rebuild=False,
+                         distribution=None):
+        child = self.factory.makeDistroSeries(
+            parent_series=self.parent,
+            distribution=distribution)
         ids = InitialiseDistroSeries(child, arches, packagesets, rebuild)
         ids.check()
         ids.initialise()
@@ -232,6 +235,28 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             getUtility(IArchivePermissionSet).isSourceUploadAllowed(
                 child.main_archive, 'udev', uploader,
                 distroseries=child))
+
+    def test_packageset_owner_preserved_within_distro(self):
+        # When initialising a new series within a distro, the copied
+        # packagesets have ownership preserved.
+        ps_owner = self.factory.makePerson()
+        ps = getUtility(IPackagesetSet).new(
+            u'ps', u'packageset', ps_owner, distroseries=self.parent)
+        child = self._full_initialise(distribution=self.parent.distribution)
+        child_ps = getUtility(IPackagesetSet).getByName(
+            u'ps', distroseries=child)
+        self.assertEqual(ps_owner, child_ps.owner)
+
+    def test_packageset_owner_not_preserved_cross_distro(self):
+        # In the case of a cross-distro initialisation, the new
+        # packagesets are owned by the new distro owner.
+        ps = getUtility(IPackagesetSet).new(
+            u'ps', u'packageset', self.factory.makePerson(),
+            distroseries=self.parent)
+        child = self._full_initialise()
+        child_ps = getUtility(IPackagesetSet).getByName(
+            u'ps', distroseries=child)
+        self.assertEqual(child.owner, child_ps.owner)
 
     def test_copy_limit_packagesets(self):
         # If a parent series has packagesets, we can decide which ones we
