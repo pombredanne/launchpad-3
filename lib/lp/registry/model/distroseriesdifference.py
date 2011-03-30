@@ -9,10 +9,12 @@ __all__ = [
     'DistroSeriesDifference',
     ]
 
-from debian.changelog import Changelog
+from debian.changelog import (
+    Changelog,
+    Version,
+    )
 from lazr.enum import DBItem
 from storm.expr import Desc
-
 from storm.locals import (
     And,
     Int,
@@ -202,7 +204,17 @@ class DistroSeriesDifference(Storm):
         """Return the version ancestry for the given SPR, or None."""
         if spr.changelog is None:
             return None
-        return set(Changelog(spr.changelog.read()).versions)
+        versions = set()
+        # It would be nicer to use .versions() here, but it won't catch the
+        # ValueError from malformed versions, and we don't want them leaking
+        # into the ancestry.
+        for raw_version in Changelog(spr.changelog.read())._raw_versions():
+            try:
+                version = Version(raw_version)
+            except ValueError:
+                continue
+            versions.add(version)
+        return versions
 
     def _getPackageDiffURL(self, package_diff):
         """Check status and return URL if appropriate."""
@@ -221,6 +233,22 @@ class DistroSeriesDifference(Storm):
     def parent_package_diff_url(self):
         """See `IDistroSeriesDifference`."""
         return self._getPackageDiffURL(self.parent_package_diff)
+
+    @property
+    def package_diff_status(self):
+        """See `IDistroSeriesDifference`."""
+        if self.package_diff is None:
+            return None
+        else:
+            return self.package_diff.status
+
+    @property
+    def parent_package_diff_status(self):
+        """See `IDistroSeriesDifference`."""
+        if self.parent_package_diff is None:
+            return None
+        else:
+            return self.parent_package_diff.status
 
     def _getLatestSourcePub(self, for_parent=False):
         """Helper to keep source_pub/parent_source_pub DRY."""
