@@ -59,6 +59,7 @@ from lp.blueprints.model.specification import (
     Specification,
     )
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
+from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
     get_bug_tags,
     get_bug_tags_open_count,
@@ -660,6 +661,24 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
             uri=canonical_url(self, path_only_if_possible=True),
             landmarks=landmarks,
             product=self.product)
+
+    def getBugTaskWeightFunction(self):
+        """Provide a weight function to determine optimal bug task.
+
+        Full weight is given to tasks for this product series.
+
+        If the series isn't found, the product task is better than others.
+        """
+        seriesID = self.id
+        productID = self.productID
+        def weight_function(bugtask):
+            if bugtask.productseriesID == seriesID:
+                return OrderedBugTask(1, bugtask.id, bugtask)
+            elif bugtask.productID == productID:
+                return OrderedBugTask(2, bugtask.id, bugtask)
+            else:
+                return OrderedBugTask(3, bugtask.id, bugtask)
+        return weight_function
 
 
 class TimelineProductSeries:

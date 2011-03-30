@@ -456,17 +456,15 @@ class ProductSeriesView(LaunchpadView,
         return check_permission("launchpad.TranslationsAdmin", self.context)
 
     def is_sharing(self):
-        return self.context.has_sharing_translation_templates
+        return self.sharing_sourcepackage is not None
 
     @property
     def sharing_sourcepackage(self):
         return self.context.getUbuntuTranslationFocusPackage()
 
-    def getTranslationTarget(self):
+    def getTranslationSourcePackage(self):
         """See `TranslationSharingDetailsMixin`."""
-        return self.context
-
-    can_edit_sharing_details = can_configure_translations
+        return self.sharing_sourcepackage
 
 
 class SettingsRadioWidget(LaunchpadRadioWidgetWithDescription):
