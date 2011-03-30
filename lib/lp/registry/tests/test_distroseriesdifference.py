@@ -466,6 +466,31 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         self.assertEqual('1.1', ds_diff.base_version)
 
+    def test_base_version_invalid(self):
+        # If the maximum base version is invalid, it is discarded and not
+        # set as the base version.
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+        source_package_name = self.factory.getOrMakeSourcePackageName('foo')
+        # Create changelogs for both.
+        changelog_lfa = self.factory.makeChangelog(
+            'foo', ['1:2.0-1', 'a1:1.8.8-070403-1~priv1', '1:1.7-1'])
+        parent_changelog_lfa = self.factory.makeChangelog(
+            'foo', ['1:2.0-2', 'a1:1.8.8-070403-1~priv1', '1:1.7-1'])
+        transaction.commit() # Yay, librarian.
+
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series, source_package_name_str='foo',
+            versions={
+                'derived': '1:2.0-1',
+                'parent': '1:2.0-2',
+                },
+            changelogs={
+                'derived': changelog_lfa,
+                'parent': parent_changelog_lfa})
+
+        self.assertEqual('1:1.7-1', ds_diff.base_version)
+
     def test_base_source_pub_none(self):
         # None is simply returned if there is no base version.
         ds_diff = self.factory.makeDistroSeriesDifference()
