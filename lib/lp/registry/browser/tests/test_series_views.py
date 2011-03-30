@@ -3,12 +3,12 @@
 
 __metaclass__ = type
 
+import unittest
+
 from BeautifulSoup import BeautifulSoup
 from storm.zope.interfaces import IResultSet
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
-
-import unittest
 
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -17,32 +17,30 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
     LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
+    )
+from lp.services.features import (
+    getFeatureFlag,
+    install_feature_controller,
     )
 from lp.services.features.flags import FeatureController
 from lp.services.features.model import (
     FeatureFlag,
     getFeatureStore,
     )
-from lp.services.features import (
-    getFeatureFlag,
-    install_feature_controller,
-    )
+from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
-from lp.soyuz.enums import (
-    SourcePackageFormat,
-    )
 from lp.testing import (
-    TestCaseWithFactory,
     login_person,
     person_logged_in,
+    TestCaseWithFactory,
     )
 from lp.testing.views import create_initialized_view
 
@@ -267,6 +265,53 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
         links = row.findAll('a', href=href)
         self.assertEqual(1, len(links))
         self.assertEqual(difference.source_package_name.name, links[0].string)
+
+    def test_diff_row_shows_version_attached(self):
+        # The +localpackagediffs page showis the version attached to the
+        # DSD and not the last published version (bug=745776).
+        package_name = 'package-1'
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
+        versions = {
+            'base': u'1.0',
+            'derived': u'1.0derived1',
+            'parent': u'1.0-1',
+        }
+        new_version = u'1.2'
+
+        difference = self.factory.makeDistroSeriesDifference(
+            versions=versions,
+            source_package_name_str=package_name,
+            derived_series=derived_series)
+
+        # Create a more recent source package publishing history.
+        sourcepackagename = self.factory.getOrMakeSourcePackageName(
+            package_name)
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=sourcepackagename,
+            distroseries=derived_series,
+            version=new_version)
+
+        set_derived_series_ui_feature_flag(self)
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs')
+        soup = BeautifulSoup(view())
+        diff_table = soup.find('table', {'class': 'listing'})
+        row = diff_table.tbody.findAll('tr')[0]
+        links = row.findAll('a', {'class': 'derived-version'})
+
+        # The version displayed is the version attached to the
+        # difference.
+        self.assertEqual(1, len(links))
+        self.assertEqual(versions['derived'], links[0].string.strip())
+
+        # The link points to the sourcepackagerelease referenced in the
+        # difference.
+        link = canonical_url(
+            difference.source_pub.sourcepackagerelease).replace(
+                'http://launchpad.dev', '')
+        self.assertEqual(link, links[0].get('href'))
 
 
 class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
