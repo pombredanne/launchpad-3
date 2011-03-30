@@ -218,7 +218,7 @@ class OAuthNoncePruner(BulkPruner):
     """
     target_table_class = OAuthNonce
     ids_to_prune_query = """
-        SELECT id FROM OauthNonce
+        SELECT id FROM OAuthNonce
         WHERE request_timestamp
             < CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - CAST('1 day' AS interval)
         """
