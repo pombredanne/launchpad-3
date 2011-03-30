@@ -210,7 +210,6 @@ class OAuthNoncePruner(BulkPruner):
     We remove all OAuthNonce records older than 1 day.
     """
     target_table_class = OAuthNonce
-    target_table_key = 'id'
     ids_to_prune_query = """
         SELECT id FROM OauthNonce
         WHERE request_timestamp
@@ -315,45 +314,20 @@ class CodeImportEventPruner(BulkPruner):
         """
 
 
-class CodeImportResultPruner(TunableLoop):
+class CodeImportResultPruner(BulkPruner):
     """A TunableLoop to prune unwanted CodeImportResult rows.
 
     Removes CodeImportResult rows if they are older than 30 days
     and they are not one of the most recent results for that
     CodeImport.
     """
-    maximum_chunk_size = 1000
-
-    def __init__(self, log, abort_time=None):
-        super(CodeImportResultPruner, self).__init__(log, abort_time)
-        self.store = IMasterStore(CodeImportResult)
-
-        self.min_code_import = self.store.find(
-            Min(CodeImportResult.code_importID)).one()
-        self.max_code_import = self.store.find(
-            Max(CodeImportResult.code_importID)).one()
-
-        self.next_code_import_id = self.min_code_import
-
-    def isDone(self):
-        return (
-            self.min_code_import is None
-            or self.next_code_import_id > self.max_code_import)
-
-    def __call__(self, chunk_size):
-        self.log.debug(
-            "Removing expired CodeImportResults for CodeImports %d -> %d" % (
-                self.next_code_import_id,
-                self.next_code_import_id + chunk_size - 1))
-
-        self.store.execute("""
-            DELETE FROM CodeImportResult
+    target_table_class = CodeImportResult
+    ids_to_prune_query = """
+            SELECT id FROM CodeImportResult
             WHERE
                 CodeImportResult.date_created
                     < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
                         - interval '30 days'
-                AND CodeImportResult.code_import >= %s
-                AND CodeImportResult.code_import < %s + %s
                 AND CodeImportResult.id NOT IN (
                     SELECT LatestResult.id
                     FROM CodeImportResult AS LatestResult
@@ -362,13 +336,7 @@ class CodeImportResultPruner(TunableLoop):
                             = CodeImportResult.code_import
                     ORDER BY LatestResult.date_created DESC
                     LIMIT %s)
-            """ % sqlvalues(
-                self.next_code_import_id,
-                self.next_code_import_id,
-                chunk_size,
-                config.codeimport.consecutive_failure_limit - 1))
-        self.next_code_import_id += chunk_size
-        transaction.commit()
+            """ % sqlvalues(config.codeimport.consecutive_failure_limit - 1)
 
 
 class RevisionAuthorEmailLinker(TunableLoop):
