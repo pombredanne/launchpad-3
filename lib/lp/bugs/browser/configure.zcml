@@ -526,6 +526,12 @@
                 template="../templates/bugtarget-portlet-search.pt"/>
         </browser:pages>
         <browser:page
+            for="lp.bugs.interfaces.bug.IBug"
+            class="lp.bugs.browser.bug.BugView"
+            permission="launchpad.View"
+            name="+portlet-subscribers"
+            template="../templates/bug-portlet-subscribers.pt"/>
+        <browser:page
             for="lp.bugs.interfaces.bugtask.IBugTask"
             class="lp.bugs.browser.bug.BugView"
             permission="launchpad.View"
@@ -1049,9 +1055,6 @@
             <browser:page
                 name="+portlet-attachments"
                 template="../templates/bug-portlet-attachments.pt"/>
-            <browser:page
-                name="+portlet-subscribers"
-                template="../templates/bug-portlet-subscribers.pt"/>
             <browser:page
                 name="+portlet-notified"
                 template="../templates/bug-portlet-notified.pt"/>

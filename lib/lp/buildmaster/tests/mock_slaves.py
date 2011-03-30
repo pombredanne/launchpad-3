@@ -25,7 +25,6 @@ import fixtures
 import os
 import types
 
-from StringIO import StringIO
 import xmlrpclib
 
 from testtools.content import Content
@@ -48,10 +47,8 @@ from lp.buildmaster.model.builder import (
 from lp.soyuz.model.binarypackagebuildbehavior import (
     BinaryPackageBuildBehavior,
     )
-from lp.services.twistedsupport.xmlrpc import fix_bug_2518
 from lp.testing.sampledata import I386_ARCHITECTURE_NAME
 
-fix_bug_2518()
 
 def make_publisher():
     """Make a Soyuz test publisher."""
