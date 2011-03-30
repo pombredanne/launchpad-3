@@ -598,37 +598,21 @@ class BugNotificationPruner(BulkPruner):
         """
 
 
-class BranchJobPruner(TunableLoop):
+class BranchJobPruner(BulkPruner):
     """Prune `BranchJob`s that are in a final state and more than a month old.
 
     When a BranchJob is completed, it gets set to a final state.  These jobs
     should be pruned from the database after a month.
     """
-
-    maximum_chunk_size = 10000
-    minimum_chunk_size = 500
-
-    _is_done = False
-
-    def isDone(self):
-        return self._is_done
-
-    def __call__(self, chunk_size):
-        chunk_size = int(chunk_size)
-        store = IMasterStore(BranchJob)
-        ids_to_remove = list(store.find(
-            Job.id,
-            BranchJob.job == Job.id,
-            Job.date_finished < THIRTY_DAYS_AGO)[:chunk_size])
-        if len(ids_to_remove) > 0:
-            # BranchJob is removed too, as the BranchJob.job foreign key
-            # constraint is ON DELETE CASCADE.
-            IMasterStore(Job).find(
-                Job,
-                Job.id.is_in(ids_to_remove)).remove()
-        else:
-            self._is_done = True
-        transaction.commit()
+    target_table_class = Job
+    ids_to_prune_query = """
+        SELECT DISTINCT Job.id
+        FROM Job, BranchJob
+        WHERE
+            Job.id = BranchJob.job
+            AND Job.date_finished < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - CAST('30 days' AS interval)
+        """
 
 
 class BugHeatUpdater(TunableLoop):
