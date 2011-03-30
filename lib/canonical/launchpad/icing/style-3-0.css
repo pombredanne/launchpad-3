@@ -1203,6 +1203,7 @@ span.see-all {
 #ajax-time-list li span {
     color: #999;
     font-size: 11px;
+    display: block;
     }
 #ajax-time-list strong.warning {
     color: #f00;

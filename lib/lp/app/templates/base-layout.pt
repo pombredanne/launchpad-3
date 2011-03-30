@@ -191,6 +191,7 @@
     tal:condition="request/features/visible_render_time"
     define="render_time modules/canonical.launchpad.webapp.adapter/summarize_requests;"
     replace='structure string:&lt;script type="text/javascript"&gt;
+  start_ajax_logging();
   var render_time = "${render_time}";
   LPS.use("node", function(Y) {
     Y.on("domready", function() {
@@ -198,12 +199,6 @@
       node.set("innerHTML", render_time);
     });
   });
-&lt;/script&gt;' />
-
-<tal:comment
-    tal:condition="request/features/visible_render_time"
-    replace='structure string:&lt;script type="text/javascript"&gt;
-    start_ajax_logging();
 &lt;/script&gt;' />
 
 </html>
