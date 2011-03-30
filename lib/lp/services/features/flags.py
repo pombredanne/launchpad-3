@@ -65,10 +65,6 @@ flag_info = sorted([
      'boolean',
      'Overrides config.profiling.profiling_allowed to permit profiling.',
      ''),
-    ('publicrestrictedlibrarian',
-     'boolean',
-     'Redirects to private librarian files instead of proxying them.',
-     ''),
     ('soyuz.derived-series-ui.enabled',
      'boolean',
      'Enables derivative distributions pages.',
@@ -84,6 +80,10 @@ flag_info = sorted([
     ('visible_render_time',
      'boolean',
      'Shows the server-side page render time in the login widget.',
+     ''),
+    ('bugs.private_notification.enabled',
+     'boolean',
+     'Changes the appearance of notifications on private bugs.',
      ''),
     ])
 
