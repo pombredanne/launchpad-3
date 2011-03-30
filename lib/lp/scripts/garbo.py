@@ -27,7 +27,6 @@ from storm.locals import (
     Count,
     Max,
     Min,
-    Select,
     SQL,
     )
 import transaction
@@ -36,7 +35,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database import postgresql
-from canonical.database.constants import THIRTY_DAYS_AGO
 from canonical.database.sqlbase import (
     cursor,
     session_store,
@@ -71,7 +69,6 @@ from lp.bugs.scripts.checkwatches.scheduler import (
     MAX_SAMPLE_SIZE,
     )
 from lp.code.interfaces.revision import IRevisionSet
-from lp.code.model.branchjob import BranchJob
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.model.revision import (
