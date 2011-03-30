@@ -74,42 +74,42 @@ class _TestStructSubs(TestCaseWithFactory):
     def test_subscribe_link_feature_flag_off_owner(self):
         old_link, new_link = self._create_scenario(
             self.target.owner, None)
-        self.assertNotEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertNotEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_on_owner(self):
         # Test the new subscription link.
         old_link, new_link = self._create_scenario(
             self.target.owner, 'on')
-        self.assertEqual(None, old_link, self.contents)
-        self.assertNotEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertNotEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_off_user(self):
         old_link, new_link = self._create_scenario(
             self.regular_user, None)
-        self.assertNotEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertNotEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_on_user(self):
         old_link, new_link = self._create_scenario(
             self.regular_user, 'on')
-        self.assertEqual(None, old_link, self.contents)
-        self.assertNotEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertNotEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_off_anonymous(self):
         old_link, new_link = self._create_scenario(
             ANONYMOUS, None)
         # The old subscribe link is actually shown to anonymous users but the
         # behavior has changed with the new link.
-        self.assertNotEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertNotEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_on_anonymous(self):
         old_link, new_link = self._create_scenario(
             ANONYMOUS, 'on')
         # The subscribe link is not shown to anonymous.
-        self.assertEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
 
 class TestProductViewStructSubs(_TestStructSubs):
@@ -247,26 +247,26 @@ class TestDistroViewStructSubs(BrowserTestCase):
     def test_subscribe_link_feature_flag_off_owner(self):
         old_link, new_link = self._create_scenario(
             self.target.owner, None)
-        self.assertEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_on_owner(self):
         old_link, new_link = self._create_scenario(
             self.target.owner, 'on')
-        self.assertEqual(None, old_link, self.contents)
-        self.assertNotEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertNotEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_off_user(self):
         old_link, new_link = self._create_scenario(
             self.regular_user, None)
-        self.assertEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_on_user_no_bug_super(self):
         old_link, new_link = self._create_scenario(
             self.regular_user, 'on')
-        self.assertEqual(None, old_link, self.contents)
-        self.assertNotEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertNotEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_on_user_with_bug_super(self):
         with celebrity_logged_in('admin'):
@@ -276,20 +276,20 @@ class TestDistroViewStructSubs(BrowserTestCase):
                 supervisor, admin)
         old_link, new_link = self._create_scenario(
             self.regular_user, 'on')
-        self.assertEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_off_anonymous(self):
         old_link, new_link = self._create_scenario(
             ANONYMOUS, None)
-        self.assertEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_on_anonymous(self):
         old_link, new_link = self._create_scenario(
             ANONYMOUS, 'on')
-        self.assertEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_off_bug_super(self):
         with celebrity_logged_in('admin'):
@@ -298,8 +298,8 @@ class TestDistroViewStructSubs(BrowserTestCase):
                 self.regular_user, admin)
         old_link, new_link = self._create_scenario(
             self.regular_user, None)
-        self.assertEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_on_bug_super(self):
         with celebrity_logged_in('admin'):
@@ -308,23 +308,23 @@ class TestDistroViewStructSubs(BrowserTestCase):
                 self.regular_user, admin)
         old_link, new_link = self._create_scenario(
             self.regular_user, 'on')
-        self.assertEqual(None, old_link, self.contents)
-        self.assertNotEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertNotEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_off_admin(self):
         admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
         old_link, new_link = self._create_scenario(
             admin, None)
-        self.assertEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_on_admin(self):
         from lp.testing.sampledata import ADMIN_EMAIL
         admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
         old_link, new_link = self._create_scenario(
             admin, 'on')
-        self.assertEqual(None, old_link, self.contents)
-        self.assertNotEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertNotEqual(None, new_link)
 
 
 class TestDistroBugsStructSubs(TestDistroViewStructSubs):
@@ -336,26 +336,26 @@ class TestDistroBugsStructSubs(TestDistroViewStructSubs):
     def test_subscribe_link_feature_flag_off_owner(self):
         old_link, new_link = self._create_scenario(
             self.target.owner, None)
-        self.assertNotEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertNotEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_on_owner(self):
         old_link, new_link = self._create_scenario(
             self.target.owner, 'on')
-        self.assertEqual(None, old_link, self.contents)
-        self.assertNotEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertNotEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_off_user(self):
         old_link, new_link = self._create_scenario(
             self.regular_user, None)
-        self.assertNotEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertNotEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_on_user_no_bug_super(self):
         old_link, new_link = self._create_scenario(
             self.regular_user, 'on')
-        self.assertEqual(None, old_link, self.contents)
-        self.assertNotEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertNotEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_on_user_with_bug_super(self):
         with celebrity_logged_in('admin'):
@@ -365,20 +365,20 @@ class TestDistroBugsStructSubs(TestDistroViewStructSubs):
                 supervisor, admin)
         old_link, new_link = self._create_scenario(
             self.regular_user, 'on')
-        self.assertEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_off_anonymous(self):
         old_link, new_link = self._create_scenario(
             ANONYMOUS, None)
-        self.assertNotEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertNotEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_on_anonymous(self):
         old_link, new_link = self._create_scenario(
             ANONYMOUS, 'on')
-        self.assertEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_off_bug_super(self):
         with celebrity_logged_in('admin'):
@@ -387,8 +387,8 @@ class TestDistroBugsStructSubs(TestDistroViewStructSubs):
                 self.regular_user, admin)
         old_link, new_link = self._create_scenario(
             self.regular_user, None)
-        self.assertNotEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertNotEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_on_bug_super(self):
         with celebrity_logged_in('admin'):
@@ -397,23 +397,23 @@ class TestDistroBugsStructSubs(TestDistroViewStructSubs):
                 self.regular_user, admin)
         old_link, new_link = self._create_scenario(
             self.regular_user, 'on')
-        self.assertEqual(None, old_link, self.contents)
-        self.assertNotEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertNotEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_off_admin(self):
         admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
         old_link, new_link = self._create_scenario(
             admin, None)
-        self.assertNotEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertNotEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_on_admin(self):
         from lp.testing.sampledata import ADMIN_EMAIL
         admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
         old_link, new_link = self._create_scenario(
             admin, 'on')
-        self.assertEqual(None, old_link, self.contents)
-        self.assertNotEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertNotEqual(None, new_link)
 
 
 class TestDistroMilestoneViewStructSubs(TestDistroViewStructSubs):
@@ -427,26 +427,26 @@ class TestDistroMilestoneViewStructSubs(TestDistroViewStructSubs):
     def test_subscribe_link_feature_flag_off_owner(self):
         old_link, new_link = self._create_scenario(
             self.distro.owner, None)
-        self.assertNotEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertNotEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_on_owner(self):
         old_link, new_link = self._create_scenario(
             self.distro.owner, 'on')
-        self.assertEqual(None, old_link, self.contents)
-        self.assertNotEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertNotEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_off_user(self):
         old_link, new_link = self._create_scenario(
             self.regular_user, None)
-        self.assertNotEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertNotEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_on_user_no_bug_super(self):
         old_link, new_link = self._create_scenario(
             self.regular_user, 'on')
-        self.assertEqual(None, old_link, self.contents)
-        self.assertNotEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertNotEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_on_user_with_bug_super(self):
         with celebrity_logged_in('admin'):
@@ -456,20 +456,20 @@ class TestDistroMilestoneViewStructSubs(TestDistroViewStructSubs):
                 supervisor, admin)
         old_link, new_link = self._create_scenario(
             self.regular_user, 'on')
-        self.assertEqual(None, old_link, self.contents)
-        self.assertNotEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertNotEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_off_anonymous(self):
         old_link, new_link = self._create_scenario(
             ANONYMOUS, None)
-        self.assertNotEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertNotEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_on_anonymous(self):
         old_link, new_link = self._create_scenario(
             ANONYMOUS, 'on')
-        self.assertEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_off_bug_super(self):
         with celebrity_logged_in('admin'):
@@ -478,8 +478,8 @@ class TestDistroMilestoneViewStructSubs(TestDistroViewStructSubs):
                 self.regular_user, admin)
         old_link, new_link = self._create_scenario(
             self.regular_user, None)
-        self.assertNotEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertNotEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_on_bug_super(self):
         with celebrity_logged_in('admin'):
@@ -488,23 +488,23 @@ class TestDistroMilestoneViewStructSubs(TestDistroViewStructSubs):
                 self.regular_user, admin)
         old_link, new_link = self._create_scenario(
             self.regular_user, 'on')
-        self.assertEqual(None, old_link, self.contents)
-        self.assertNotEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertNotEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_off_admin(self):
         admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
         old_link, new_link = self._create_scenario(
             admin, None)
-        self.assertNotEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertNotEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_on_admin(self):
         from lp.testing.sampledata import ADMIN_EMAIL
         admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
         old_link, new_link = self._create_scenario(
             admin, 'on')
-        self.assertEqual(None, old_link, self.contents)
-        self.assertNotEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertNotEqual(None, new_link)
 
 
 class TestProductMilestoneViewStructSubs(TestDistroViewStructSubs):
@@ -521,20 +521,20 @@ class TestProductMilestoneViewStructSubs(TestDistroViewStructSubs):
     def test_subscribe_link_feature_flag_off_owner(self):
         old_link, new_link = self._create_scenario(
             self.product.owner, None)
-        self.assertNotEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertNotEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_on_owner(self):
         old_link, new_link = self._create_scenario(
             self.product.owner, 'on')
-        self.assertEqual(None, old_link, self.contents)
-        self.assertNotEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertNotEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_off_user(self):
         old_link, new_link = self._create_scenario(
             self.regular_user, None)
-        self.assertNotEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertNotEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
     # There are no special bug supervisor rules for products.
     test_subscribe_link_feature_flag_on_user_no_bug_super = None
@@ -545,29 +545,29 @@ class TestProductMilestoneViewStructSubs(TestDistroViewStructSubs):
     def test_subscribe_link_feature_flag_off_anonymous(self):
         old_link, new_link = self._create_scenario(
             ANONYMOUS, None)
-        self.assertNotEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertNotEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_on_anonymous(self):
         old_link, new_link = self._create_scenario(
             ANONYMOUS, 'on')
-        self.assertEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_off_admin(self):
         admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
         old_link, new_link = self._create_scenario(
             admin, None)
-        self.assertNotEqual(None, old_link, self.contents)
-        self.assertEqual(None, new_link, self.contents)
+        self.assertNotEqual(None, old_link)
+        self.assertEqual(None, new_link)
 
     def test_subscribe_link_feature_flag_on_admin(self):
         from lp.testing.sampledata import ADMIN_EMAIL
         admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
         old_link, new_link = self._create_scenario(
             admin, 'on')
-        self.assertEqual(None, old_link, self.contents)
-        self.assertNotEqual(None, new_link, self.contents)
+        self.assertEqual(None, old_link)
+        self.assertNotEqual(None, new_link)
 
 
 class TestProductSeriesMilestoneViewStructSubs(
