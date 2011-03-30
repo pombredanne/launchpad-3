@@ -441,6 +441,10 @@
         0, 
         -4096
     ], 
+    "../images/notification-close.png": [
+        0, 
+        -20725
+    ], 
     "../images/merge-proposal-large.png": [
         0, 
         -17868
@@ -452,6 +456,10 @@
     "../images/person-badge.png": [
         0, 
         -1968
+    ], 
+    "../images/notification-private.png": [
+        0, 
+        -20554
     ], 
     "../images/bug.png": [
         0, 
