@@ -6,8 +6,6 @@
 __metaclass__ = type
 __all__ = []
 
-import unittest
-
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.testing import WindmillTestCase
 from lp.testing.windmill import lpuser
@@ -60,7 +58,3 @@ class TestNewProjectStep1(WindmillTestCase):
         self.client.asserts.assertValue(
             id=u'field.name',
             validator=u'hyena')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -445,13 +445,14 @@ class POFileTranslatorAndReviewerWorkingMode(WindmillTestCase):
     def _ensureTranslationMode(self, reviewer=False, translator=False):
         """Ensure the specified mode is currently selected."""
 
-        if (reviewer is translator):
+        if reviewer is translator:
             raise AssertionError("You must specify a single working mode.")
 
         self.client.waits.forElement(
             id=self.switch_working_mode, timeout=constants.FOR_ELEMENT)
 
-        current_is_reviewer = self.client.execJS(js=self.js_code)['output']
+        current_is_reviewer = self.client.commands.execJS(
+            js=self.js_code)['result']
         need_to_switch_mode = (
             reviewer and not current_is_reviewer or
             translator and current_is_reviewer)
@@ -461,7 +462,8 @@ class POFileTranslatorAndReviewerWorkingMode(WindmillTestCase):
             return
 
         # We check that the mode was changed.
-        current_is_reviewer = self.client.execJS(js=self.js_code)['output']
+        current_is_reviewer = self.client.commands.execJS(
+            js=self.js_code)['result']
 
         switch_done = (
             reviewer and current_is_reviewer or
