@@ -109,7 +109,7 @@ h1, ul, ol, dl, li, dt, dd {
       <img alt="" width="64" height="64" src="https://launchpad.net/@@/team-logo" />
     </div>
     <div class="flowed-block wide">
-      <h2>Telugu l10n Translation</h2>
+      <h2>$ML-NAME$ team</h2>
 
       <ul class="facetmenu">
           <li class="overview active"
