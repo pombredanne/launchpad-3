@@ -8,12 +8,17 @@
      especially your friend, when all others have abandoned you.  -->
 
 <!-- Basic parameters. -->
+<SPAMMODE>
 <MAIN>
 <THREAD>
 <SORT>
 <REVERSE>
 <TREVERSE>
 <NODOC>
+<UMASK>
+022
+</UMASK>
+
 
 <!-- Encode all messages as utf-8 and set the page encoding to utf-8 -->
 <TextEncode>
