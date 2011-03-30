@@ -36,14 +36,7 @@ from lp.translations.interfaces.translations import (
 from lp.translations.model.translationpackagingjob import TranslationMergeJob
 
 
-class SharingDetailsPermissionsMixin:
-
-    def can_edit_sharing_details(self):
-        return check_permission('launchpad.Edit', self.context.distroseries)
-
-
 class SourcePackageTranslationsView(TranslationsMixin,
-                                    SharingDetailsPermissionsMixin,
                                     TranslationSharingDetailsMixin):
 
     @property
@@ -55,13 +48,13 @@ class SourcePackageTranslationsView(TranslationsMixin,
         return "Translations for %s" % self.context.displayname
 
     def is_sharing(self):
-        return self.context.has_sharing_translation_templates
+        return self.sharing_productseries is not None
 
     @property
     def sharing_productseries(self):
         return self.context.productseries
 
-    def getTranslationTarget(self):
+    def getTranslationSourcePackage(self):
         """See `TranslationSharingDetailsMixin`."""
         return self.context
 
@@ -108,15 +101,16 @@ class SourcePackageTranslationsExportView(BaseExportView):
         return "Download translations for %s" % self.download_description
 
 
-class SourcePackageTranslationSharingDetailsView(
-                                            LaunchpadView,
-                                            SharingDetailsPermissionsMixin):
+class SourcePackageTranslationSharingDetailsView(LaunchpadView):
     """Details about translation sharing."""
 
     page_title = "Sharing details"
 
     def is_sharing(self):
         return self.context.has_sharing_translation_templates
+
+    def can_edit_sharing_details(self):
+        return check_permission('launchpad.Edit', self.context.productseries)
 
     def initialize(self):
         if not getFeatureFlag('translations.sharing_information.enabled'):

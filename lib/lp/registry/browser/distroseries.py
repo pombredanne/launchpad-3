@@ -85,13 +85,14 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.soyuz.browser.archive import PackageCopyingMixin
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
-from lp.soyuz.interfaces.archive import CannotCopy
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.translations.browser.distroseries import (
     check_distroseries_translations_viewable,
@@ -604,7 +605,7 @@ class IDifferencesFormSchema(Interface):
         required=True)
 
 
-class DistroSeriesLocalDifferences(LaunchpadFormView):
+class DistroSeriesLocalDifferences(LaunchpadFormView, PackageCopyingMixin):
     """Present differences between a derived series and its parent."""
     schema = IDifferencesFormSchema
     field_names = ['selected_differences']
@@ -666,22 +667,22 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
         # synced' and write a job runner to do it in the background.
 
         selected_differences = data['selected_differences']
-        diffs = [
-            diff.source_package_name.name
-                for diff in selected_differences]
+        sources = [
+            diff.parent_source_pub
+            for diff in selected_differences]
 
-        try:
-            self.context.main_archive.syncSources(
-                diffs, from_archive=self.context.parent_series.main_archive,
-                to_pocket='Release', to_series=self.context.name)
-        except CannotCopy, e:
-            self.request.response.addErrorNotification("Cannot copy: %s" % e)
-        else:
-            self.request.response.addNotification(
-                "The following sources were synchronized: " +
-                ", ".join(diffs))
-
-        self.next_url = self.request.URL
+        # PackageCopyingMixin.do_copy() does the work of copying and
+        # setting up on-page notifications.
+        series_url = canonical_url(self.context)
+        series_title = self.context.displayname
+        if self.do_copy(
+            'selected_differences', sources, self.context.main_archive,
+            self.context, PackagePublishingPocket.RELEASE,
+            include_binaries=False, dest_url=series_url,
+            dest_display_name=series_title):
+            # The copy worked so we can redirect back to the page to
+            # show the results.
+            self.next_url = self.request.URL
 
     def validate_sync(self, action, data):
         """Validate selected differences."""

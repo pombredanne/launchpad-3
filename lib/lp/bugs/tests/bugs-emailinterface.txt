@@ -331,6 +331,52 @@ And the summaries were changed:
     >>> print bug_five.title
     Nicer summary
 
+The email handler requires that a bug be specified to be changed. If no
+bug is specified, no edits occur and a message is sent to the user telling
+them what happened.
+
+    >>> edit_mail = """From: test@canonical.com
+    ... To: edit@malone-domain
+    ... Date: Fri Jun 17 10:10:23 BST 2005
+    ... Subject: Not important
+    ...
+    ...     summary "Even nicer summary" 
+    ... """
+
+    >>> process_email(edit_mail)
+    >>> commit()
+
+This time, neither bug four or five were updated.
+
+    >>> print bug_four.title
+    Changed summary
+    >>> print bug_five.title
+    Nicer summary
+
+And the person sending the email has received an error message.
+
+    >>> def print_latest_email():
+    ...     commit()
+    ...     if not stub.test_emails:
+    ...         raise AssertionError("No emails queued!")
+    ...     from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    ...     sent_msg = email.message_from_string(raw_message)
+    ...     error_mail, original_mail = sent_msg.get_payload()
+    ...     print "Subject: %s" % sent_msg['Subject']
+    ...     print "To: %s" % ', '.join(to_addrs)
+    ...     print
+    ...     print error_mail.get_payload(decode=True)
+
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    The message you sent included commands to modify a bug,
+    but no bug was specified. Please supply a bug before the command
+    to modify it.
+    <BLANKLINE>
+    ...
 
 GPG signing and adding comments
 -------------------------------
@@ -397,17 +443,6 @@ changes was made to the bug, and the comment wasn't added.
 And an error message was sent to the Sample Person, telling him what's
 wrong.
 
-    >>> def print_latest_email():
-    ...     commit()
-    ...     if not stub.test_emails:
-    ...         raise AssertionError("No emails queued!")
-    ...     from_addr, to_addrs, raw_message = stub.test_emails[-1]
-    ...     sent_msg = email.message_from_string(raw_message)
-    ...     error_mail, original_mail = sent_msg.get_payload()
-    ...     print "Subject: %s" % sent_msg['Subject']
-    ...     print "To: %s" % ', '.join(to_addrs)
-    ...     print
-    ...     print error_mail.get_payload(decode=True)
     >>> print_latest_email()
     Subject: Submit Request Failure
     To: test@canonical.com
