@@ -423,6 +423,11 @@ class SummaryEmailCommand(EditEmailCommand):
 
     def execute(self, bug, current_event):
         """See IEmailCommand."""
+        if bug is None:
+            raise EmailProcessingError(
+                get_error_message('command-with-no-bug.txt'),
+                stop_processing=True)
+
         # Do a manual control of the number of arguments, in order to
         # provide a better error message than the default one.
         if len(self.string_args) > 1:
@@ -612,6 +617,11 @@ class AffectsEmailCommand(EmailCommand):
 
     def execute(self, bug):
         """See IEmailCommand."""
+        if bug is None:
+            raise EmailProcessingError(
+                get_error_message('command-with-no-bug.txt'),
+                stop_processing=True)
+
         string_args = list(self.string_args)
         try:
             path = string_args.pop(0)
