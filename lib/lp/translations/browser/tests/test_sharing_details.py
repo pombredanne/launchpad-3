@@ -419,9 +419,13 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             Upstream source branch is.*
             Change branch
             Translations are not enabled on the upstream project.
+            Configure Upstream Translations
             Translations are enabled on the upstream project.
+            Configure Upstream Translations
             Automatic synchronization of translations is not enabled.
-            Automatic synchronization of translations is enabled.""",
+            Configure Translation Synchronisation
+            Automatic synchronization of translations is enabled.
+            Configure Translation Synchronisation""",
             extract_text(checklist))
         self.assertElementText(
             browser, 'packaging-incomplete',
@@ -611,6 +615,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         if real_links:
             match = (
                 r'^http://translations.launchpad.dev/.*/trunk/\+linkbranch$')
+
             def link_matcher(url):
                 return re.search(match, url)
         else:
@@ -678,6 +683,118 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
             packaging.sourcepackage, user=packaging.productseries.owner)
         self.assertBranchLinks(
             browser.contents, real_links=True, enabled=True)
+
+    def assertConfigurationLink(self, contents, real_link, enabled, id,
+                                expected_url):
+        if real_link:
+
+            def link_matcher(url):
+                return re.search(expected_url, url)
+        else:
+            link_matcher = '#'
+        if enabled:
+            css_class = 'sprite edit'
+        else:
+            css_class = 'sprite edit unseen'
+        matcher = Tag(id, 'a', attrs={
+            'id': id,
+            'href': link_matcher,
+            'class': css_class})
+        self.assertThat(contents, HTMLContains(matcher))
+
+    def assertTranslationConfigurationLink(self, contents, real_link,
+                                           enabled, id):
+        expected_url = (
+            r'^http://translations.launchpad.dev/.*/'
+            '\+configure-translations$')
+        self.assertConfigurationLink(
+            contents, real_link, enabled, id, expected_url)
+
+    def assertAllTranslationConfigurationLinks(self, contents, real_link,
+                                               enabled):
+        self.assertTranslationConfigurationLink(
+            contents, real_link, enabled,
+            id='upstream-translations-unconfigured')
+        self.assertTranslationConfigurationLink(
+            contents, real_link, enabled,
+            id='upstream-translations-configured')
+
+    def test_configure_translations_link__no_packaging_link(self):
+        # If no packaging link exists,
+        # configure_translations_link_unconfigured and
+        # configure_translations_link_configured return hidden dummy
+        # links.
+        sourcepackage = self._makeSourcePackage()
+        browser = self._getSharingDetailsViewBrowser(sourcepackage)
+        self.assertAllTranslationConfigurationLinks(
+            browser.contents, real_link=False, enabled=False)
+
+    def test_configure_translations_link__packaging_link__anon_user(self):
+        # If no packaging link exists,
+        # configure_translations_link_unconfigured and
+        # configure_translations_link_configured return hidden links
+        # pointing to the configuration page for anonymous users.
+        packaging = self.factory.makePackagingLink(in_ubuntu=True)
+        self.configureUpstreamProject(
+            productseries=packaging.productseries)
+        browser = self._getSharingDetailsViewBrowser(packaging.sourcepackage)
+        self.assertAllTranslationConfigurationLinks(
+            browser.contents, real_link=True, enabled=False)
+
+    def test_configure_translations_link__packaging_link__unprivileged_user(
+        self):
+        # If no packaging link exists,
+        # configure_translations_link_unconfigured and
+        # configure_translations_link_configured return hidden links
+        # pointing to the configuration page for users which cannot configure
+        # the product series.
+        packaging = self.factory.makePackagingLink(in_ubuntu=True)
+        self.configureUpstreamProject(
+            productseries=packaging.productseries)
+        browser = self._getSharingDetailsViewBrowser(
+            packaging.sourcepackage, user=self.factory.makePerson())
+        self.assertAllTranslationConfigurationLinks(
+            browser.contents, real_link=True, enabled=False)
+
+    def test_configure_translations_link__packaging_link__privileged_user(
+        self):
+        # If no packaging link exists,
+        # configure_translations_link_unconfigured and
+        # configure_translations_link_configured return visible links
+        # pointing to the configuration page for users which can configure
+        # the product series.
+        packaging = self.factory.makePackagingLink(in_ubuntu=True)
+        self.configureUpstreamProject(
+            productseries=packaging.productseries)
+        browser = self._getSharingDetailsViewBrowser(
+            packaging.sourcepackage, user=packaging.productseries.owner)
+        self.assertAllTranslationConfigurationLinks(
+            browser.contents, real_link=True, enabled=True)
+
+    def assertTranslationSynchronisationLink(self, contents, real_link,
+                                             enabled, id):
+        expected_url = (
+            r'https://translations.launchpad.dev/.*/trunk'
+            '/+translations-settings')
+        self.assertConfigurationLink(
+            contents, real_link, enabled, id, expected_url)
+
+    def assertAllTranslationSynchronisationLinks(self, contents, real_link,
+                                               enabled):
+        self.assertTranslationSynchronisationLink(
+            contents, real_link, enabled,
+            id='translation-synchronisation-unconfigured')
+        self.assertTranslationSynchronisationLink(
+            contents, real_link, enabled,
+            id='translation-synchronisation-configured')
+
+    def test_upstream_sync_link__no_packaging_link(self):
+        # If no packaing link exists, translation_sync_link_unconfigured
+        # and translation_sync_link_configured return hidden dummy links.
+        sourcepackage = self._makeSourcePackage()
+        browser = self._getSharingDetailsViewBrowser(sourcepackage)
+        self.assertAllTranslationSynchronisationLinks(
+            browser.contents, real_link=False, enabled=False)
 
 
 class TestTranslationSharingDetailsViewNotifications(TestCaseWithFactory,

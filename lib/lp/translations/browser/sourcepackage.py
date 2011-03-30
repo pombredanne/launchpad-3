@@ -11,8 +11,6 @@ __all__ = [
     'SourcePackageTranslationSharingStatus',
     ]
 
-import cgi
-
 from zope.publisher.interfaces import NotFound
 
 from canonical.launchpad.webapp import (
@@ -29,6 +27,10 @@ from lp.registry.browser.productseries import ProductSeriesOverviewMenu
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.features import getFeatureFlag
 from lp.translations.browser.poexportrequest import BaseExportView
+from lp.translations.browser.product import ProductTranslationsMenu
+from lp.translations.browser.productseries import (
+    ProductSeriesTranslationsMenu,
+    )
 from lp.translations.browser.translations import TranslationsMixin
 from lp.translations.browser.translationsharing import (
     TranslationSharingDetailsMixin,
@@ -140,10 +142,10 @@ class SourcePackageTranslationSharingDetailsView(
                 'No upstream templates have been found yet. Please follow '
                 'the import process by going to the '
                 '<a href="%s">Translation Import Queue</a> of the '
-                'upstream project series.' %(
+                'upstream project series.',
                 canonical_url(
                     self.context.productseries, rootsite='translations',
-                    view_name="+imports"))))
+                    view_name="+imports")))
         if self.is_merge_job_running:
             self.request.response.addInfoNotification(
                 'Translations are currently being linked by a background '
@@ -155,12 +157,13 @@ class SourcePackageTranslationSharingDetailsView(
         if self.has_upstream_branch:
             # Normally should use BranchFormatterAPI(branch).link(None), but
             # on this page, that information is redundant.
-            title = cgi.escape(self.upstream_branch.unique_name)
+            title = self.upstream_branch.unique_name
             url = canonical_url(self.upstream_branch)
         else:
             title = ''
             url = '#'
-        return '<a class="sprite branch link" href="%s">%s</a>' % (url, title)
+        return structured(
+            '<a class="sprite branch link" href="%s">%s</a>', url, title)
 
     def makeConfigCompleteCSS(self, complete, disable, lowlight):
         if complete:
@@ -339,10 +342,10 @@ class SourcePackageTranslationSharingDetailsView(
             css_class = 'sprite %s unseen' % icon
         else:
             css_class = 'sprite %s' % icon
-        return (
+        return structured(
             '<a id="%s" class="%s" href="%s">'
-            '<span class="invisible-link">%s</span></a>'
-            % (id, css_class, url, text))
+            '<span class="invisible-link">%s</span></a>',
+            id, css_class, url, text)
 
     def edit_branch_link(self, id, icon, text):
         """The HTML link to define or edit a product series branch.
@@ -372,3 +375,75 @@ class SourcePackageTranslationSharingDetailsView(
     def change_branch_link(self):
         """The HTML link to change a product series branch."""
         return self.edit_branch_link('change-branch', 'edit', 'Change branch')
+
+    def getConfigureTranslationsLink(self, id):
+        """The HTML link to the product translation configuration page.
+        """
+        packaging = self.context.direct_packaging
+        if packaging is not None:
+            productseries = self.context.direct_packaging.productseries
+            product = productseries.product
+            product_menu = ProductTranslationsMenu(product)
+            settings_link = product_menu.settings()
+            url = '%s/%s' % (canonical_url(product), settings_link.target)
+            hidden = not settings_link.enabled
+        else:
+            url = '#'
+            hidden = True
+        icon = 'edit'
+        text = 'Configure Upstream Translations'
+        return self.icon_link(id, icon, url, text, hidden)
+
+    @property
+    def configure_translations_link_unconfigured(self):
+        """The HTML link to the product translation configuration page.
+
+        Variant for the status "not configured"
+        """
+        id = 'upstream-translations-unconfigured'
+        return self.getConfigureTranslationsLink(id)
+
+    @property
+    def configure_translations_link_configured(self):
+        """The HTML link to the product translation configuration page.
+
+        Variant for the status "configured"
+        """
+        id = 'upstream-translations-configured'
+        return self.getConfigureTranslationsLink(id)
+
+    def getTranslationSynchronisationLink(self, id):
+        """The HTML link to the series translation synchronisation page.
+        """
+        packaging = self.context.direct_packaging
+        if packaging is not None:
+            productseries = self.context.direct_packaging.productseries
+            productseries_menu = ProductSeriesTranslationsMenu(productseries)
+            settings_link = productseries_menu.settings()
+            url = '%s/%s' % (
+                canonical_url(productseries), settings_link.target)
+            hidden = not settings_link.enabled
+        else:
+            url = '#'
+            hidden = True
+        icon = 'edit'
+        text = 'Configure Translation Synchronisation'
+        return self.icon_link(id, icon, url, text, hidden)
+
+    @property
+    def translation_sync_link_unconfigured(self):
+        """The HTML link to the series translation synchronisation page.
+
+        Variant for the status "not configured"
+        """
+        id = 'translation-synchronisation-unconfigured'
+        return self.getTranslationSynchronisationLink(id)
+
+    @property
+    def translation_sync_link_configured(self):
+        """The HTML link to the series translation synchronisation page.
+
+        Variant for the status "configured"
+        """
+        id = 'translation-synchronisation-configured'
+        return self.getTranslationSynchronisationLink(id)
