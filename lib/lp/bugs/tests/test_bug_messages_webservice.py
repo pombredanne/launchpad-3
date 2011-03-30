@@ -10,8 +10,12 @@ import transaction
 from lazr.restfulclient.errors import HTTPError
 from zope.component import getUtility
 from zope.security.management import endInteraction
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
@@ -20,6 +24,43 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 
+class TestMessageTraversal(TestCaseWithFactory):
+    """Tests safe traversal of bugs.
+
+    See bug 607438."""
+    
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestMessageTraversal, self).setUp()
+        self.bugowner = self.factory.makePerson()
+        self.bug = self.factory.makeBug(owner=self.bugowner)
+
+    def test_message_with_attachments(self):
+        # Traversal over bug messages with bugattachments has no failures.
+        
+        # Add some attachments to the bug.
+        with person_logged_in(self.bugowner):
+            for i in range(3):
+                att = self.factory.makeBugAttachment(self.bug)
+
+        owners = [removeSecurityProxy(msg).owner.name
+            for msg in self.bug.messages]
+
+        lp_user = self.factory.makePerson()
+        lp = launchpadlib_for("test", lp_user)
+        lp_bug = lp.bugs[self.bug.id]
+        messages = list(lp_bug.messages)
+        # We don't actually care about the owner, per se. It's just a
+        # a convenient Reference on the API to pull in order to check
+        # that everything is evaluating properly, and mimics the failing
+        # case in bug 607438.
+        lp_owners = [msg.owner.name for msg in messages]
+        self.assertEqual(
+            sorted(lp_owners),
+            sorted(owners))
+
+        
 
 class TestSetCommentVisibility(TestCaseWithFactory):
     """Tests who can successfully set comment visibility."""
