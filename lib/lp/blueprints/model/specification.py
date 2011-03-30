@@ -30,6 +30,7 @@ from storm.locals import (
     SQL,
     )
 from storm.store import Store
+from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 
@@ -77,6 +78,11 @@ from lp.blueprints.model.specificationsubscription import (
     SpecificationSubscription,
     )
 from lp.bugs.interfaces.buglink import IBugLinkTarget
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    )
+from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -669,9 +675,24 @@ class Specification(SQLBase, BugLinkTargetMixin):
         spec_branch = self.getBranchLink(branch)
         spec_branch.destroySelf()
 
+    def getLinkedBugTasks(self, user):
+        """See `ISpecification`."""
+        params = BugTaskSearchParams(user=user, linked_blueprints=self.id)
+        tasks = getUtility(IBugTaskSet).search(params)
+        if self.distroseries is not None:
+            context = self.distroseries
+        elif self.distribution is not None:
+            context = self.distribution
+        elif self.productseries is not None:
+            context = self.productseries
+        else:
+            context = self.product
+        return filter_bugtasks_by_context(context, tasks)
+
     def __repr__(self):
         return '<Specification %s %r for %r>' % (
             self.id, self.name, self.target.name)
+
 
 
 class HasSpecificationsMixin:

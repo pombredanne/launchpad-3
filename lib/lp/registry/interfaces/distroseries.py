@@ -223,6 +223,7 @@ class IDistroSeriesPublic(
             Interface, # Really IDistribution, see circular import fix below.
             title=_("Distribution"), required=True,
             description=_("The distribution for which this is a series.")))
+    distributionID = Attribute('The distribution ID.')
     named_version = Attribute('The combined display name and version.')
     parent = Attribute('The structural parent of this series - the distro')
     components = Attribute("The series components.")
@@ -342,6 +343,14 @@ class IDistroSeriesPublic(
 
     language_packs = Attribute(
         "All language packs associated with this distribution series.")
+
+    backports_not_automatic = Bool(
+        title=_("Don't upgrade to backports automatically"), required=True,
+        description=_("""
+            Set NotAutomatic: yes and ButAutomaticUpgrades: yes in Release
+            files generated for the backports pocket. This tells apt to
+            automatically upgrade within backports, but not into it.
+            """))
 
     # other properties
     previous_series = Attribute("Previous series from the same "
