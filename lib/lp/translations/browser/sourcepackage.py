@@ -122,10 +122,10 @@ class SourcePackageTranslationSharingDetailsView(LaunchpadView):
                 'No upstream templates have been found yet. Please follow '
                 'the import process by going to the '
                 '<a href="%s">Translation Import Queue</a> of the '
-                'upstream project series.' %(
+                'upstream project series.',
                 canonical_url(
                     self.context.productseries, rootsite='translations',
-                    view_name="+imports"))))
+                    view_name="+imports")))
         if self.is_merge_job_running:
             self.request.response.addInfoNotification(
                 'Translations are currently being linked by a background '

@@ -51,7 +51,7 @@ class TranslatorAdminView(LaunchpadEditFormView):
 
             self.setFieldError('language',
                 structured(
-                    '%s is already a translator for this language' %
+                    '%s is already a translator for this language',
                     existing_translator_link))
 
     @property

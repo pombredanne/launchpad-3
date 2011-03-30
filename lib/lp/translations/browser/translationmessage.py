@@ -322,7 +322,7 @@ class BaseTranslationView(LaunchpadView):
             This only needs to be done once per language. Thanks for helping
             Launchpad Translations.
             </p>
-            """ % self.pofile.language.englishname))
+            """, self.pofile.language.englishname))
             return
 
         self._initializeAltLanguage()
@@ -665,11 +665,10 @@ class BaseTranslationView(LaunchpadView):
                         "language %(alternative)s.  If you wish to see "
                         "suggestions from this language, "
                         '<a href="%(editlanguages_url)s">'
-                        "add it to your preferred languages</a> first."
-                        % dict(
+                        "add it to your preferred languages</a> first.",
                             alternative=alternative_language.displayname,
                             editlanguages_url=editlanguages_url,
-                            )))
+                            ))
                     alternative_language = None
                     second_lang_code = None
 
