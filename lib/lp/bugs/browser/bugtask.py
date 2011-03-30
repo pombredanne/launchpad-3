@@ -974,6 +974,13 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         else:
             return bugtask_heat_html(self.context)
 
+    @property
+    def privacy_notice_classes(self):
+        if not self.context.bug.private:
+            return 'hidden'
+        else:
+            return ''
+
 
 def calculate_heat_display(heat, max_bug_heat):
     """Calculate the number of heat 'flames' to display."""
@@ -1779,6 +1786,13 @@ class BugsInfoMixin:
         else:
             return get_buglisting_search_filter_url(assignee=self.user.name)
 
+    @property
+    def my_reported_bugs_url(self):
+        """A URL to a list of bugs reported by the user, or None."""
+        if self.user is None:
+            return None
+        return get_buglisting_search_filter_url(bug_reporter=self.user.name)
+
 
 class BugsStatsMixin(BugsInfoMixin):
     """Contains properties giving bug stats.
@@ -1909,6 +1923,15 @@ class BugsStatsMixin(BugsInfoMixin):
             return self.context.searchTasks(params).count()
 
     @property
+    def my_reported_bugs_count(self):
+        """A count of bugs reported by the user, or None."""
+        if self.user is None:
+            return None
+        params = get_default_search_params(self.user)
+        params.bug_reporter = self.user
+        return self.context.searchTasks(params).count()
+
+    @property
     def bugs_with_patches_count(self):
         """A count of unresolved bugs with patches."""
         return self._bug_stats['with_patch']
@@ -1924,7 +1947,7 @@ class BugListingPortletStatsView(LaunchpadView, BugsStatsMixin):
 
 def get_buglisting_search_filter_url(
         assignee=None, importance=None, status=None, status_upstream=None,
-        has_patches=None):
+        has_patches=None, bug_reporter=None):
     """Return the given URL with the search parameters specified."""
     search_params = []
 
@@ -1938,6 +1961,8 @@ def get_buglisting_search_filter_url(
         search_params.append(('field.status_upstream', status_upstream))
     if has_patches is not None:
         search_params.append(('field.has_patch', 'on'))
+    if bug_reporter is not None:
+        search_params.append(('field.bug_reporter', bug_reporter))
 
     query_string = urllib.urlencode(search_params, doseq=True)
 

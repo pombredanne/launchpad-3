@@ -15,6 +15,7 @@ __all__ = [
     ]
 
 import datetime
+from operator import attrgetter
 
 import pytz
 from zope.app.form import CustomWidgetFactory
@@ -43,6 +44,7 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.widgets.date import DateWidget
 from lp.app.widgets.popup import PersonPickerWidget
+from lp.registry.interfaces.person import IPersonSet
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.sourceslist import (
@@ -150,18 +152,20 @@ class ArchiveSubscribersView(LaunchpadFormView):
 
         super(ArchiveSubscribersView, self).initialize()
 
-    @property
+    @cachedproperty
     def subscriptions(self):
         """Return all the subscriptions for this archive."""
-        return getUtility(IArchiveSubscriberSet).getByArchive(
-            self.context)
+        result = list(getUtility(IArchiveSubscriberSet
+            ).getByArchive( self.context))
+        ids = set(map(attrgetter('subscriber_id'), result))
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(ids,
+            need_validity=True))
+        return result
 
     @cachedproperty
     def has_subscriptions(self):
         """Return whether this archive has any subscribers."""
-        # XXX noodles 20090212 bug=246200: use bool() when it gets fixed
-        # in storm.
-        return self.subscriptions.any() is not None
+        return bool(self.subscriptions)
 
     def validate_new_subscription(self, action, data):
         """Ensure the subscriber isn't already subscribed.
