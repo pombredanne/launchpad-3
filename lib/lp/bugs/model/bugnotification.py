@@ -78,17 +78,8 @@ class BugNotification(SQLBase):
     @property
     def recipients(self):
         """See `IBugNotification`."""
-        # We will preload the each recipient's person.
-        store = IStore(BugNotificationRecipient)
-        source = store.using(BugNotificationRecipient,
-                             Join(
-                                Person,
-                                BugNotificationRecipient.person == Person.id))
-        return (recipient for recipient, person in
-                source.find(
-                    (BugNotificationRecipient, Person),
-                    BugNotificationRecipient.bug_notification==self
-                    ).order_by('BugNotificationRecipient.id'))
+        return BugNotificationRecipient.selectBy(
+            bug_notification=self, orderBy='id')
 
     @property
     def bug_filters(self):
