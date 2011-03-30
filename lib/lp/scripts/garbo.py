@@ -320,19 +320,15 @@ class CodeImportResultPruner(BulkPruner):
     """
     target_table_class = CodeImportResult
     ids_to_prune_query = """
-            SELECT id FROM CodeImportResult
-            WHERE
-                CodeImportResult.date_created
-                    < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-                        - interval '30 days'
-                AND CodeImportResult.id NOT IN (
-                    SELECT LatestResult.id
-                    FROM CodeImportResult AS LatestResult
-                    WHERE
-                        LatestResult.code_import
-                            = CodeImportResult.code_import
-                    ORDER BY LatestResult.date_created DESC
-                    LIMIT %s)
+        SELECT id FROM (
+            SELECT id, date_created, rank() OVER w AS rank
+            FROM CodeImportResult
+            WINDOW w AS (PARTITION BY code_import ORDER BY date_created DESC)
+            ) AS whatever
+        WHERE
+            rank > %s
+            AND date_created < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - CAST('30 days' AS interval)
             """ % sqlvalues(config.codeimport.consecutive_failure_limit - 1)
 
 
