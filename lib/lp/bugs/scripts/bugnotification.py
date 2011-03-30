@@ -18,10 +18,7 @@ from operator import itemgetter
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.helpers import (
-    emailPeople,
-    get_email_template,
-    )
+from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.scripts.logger import log
 from canonical.launchpad.webapp import canonical_url
 from lp.bugs.mail.bugnotificationbuilder import (
@@ -30,6 +27,7 @@ from lp.bugs.mail.bugnotificationbuilder import (
     )
 from lp.bugs.mail.newbug import generate_bug_add_email
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
+from lp.registry.model.person import get_recipients
 from lp.services.mail.mailwrapper import MailWrapper
 
 
@@ -108,7 +106,7 @@ def construct_email_notifications(bug_notifications):
             # We will report this notification.
             filtered_notifications.append(notification)
             for recipient in notification.recipients:
-                email_people = emailPeople(recipient.person)
+                email_people = get_recipients(recipient.person)
                 for email_person in email_people:
                     recipients_for_person = recipients.get(email_person)
                     if recipients_for_person is None:
@@ -169,6 +167,7 @@ def construct_email_notifications(bug_notifications):
     cached_filters = {}
 
     bug_notification_set = getUtility(IBugNotificationSet)
+
     def get_filter_descriptions(recipients):
         "Given a list of recipients, return the filter descriptions for them."
         descriptions = set()
