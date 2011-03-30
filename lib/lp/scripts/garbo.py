@@ -681,7 +681,7 @@ class BugWatchActivityPruner(BulkPruner):
         """ % sqlvalues(MAX_SAMPLE_SIZE)
 
 
-class ObsoleteBugAttachmentDeleter(TunableLoop):
+class ObsoleteBugAttachmentPruner(BulkPruner):
     """Delete bug attachments without a LibraryFileContent record.
 
     Our database schema allows LibraryFileAlias records that have no
@@ -690,28 +690,14 @@ class ObsoleteBugAttachmentDeleter(TunableLoop):
     This class deletes bug attachments that reference such "content free"
     and thus completely useless LFA records.
     """
-
-    maximum_chunk_size = 1000
-
-    def __init__(self, log, abort_time=None):
-        super(ObsoleteBugAttachmentDeleter, self).__init__(log, abort_time)
-        self.store = IMasterStore(BugAttachment)
-
-    def _to_remove(self):
-        return self.store.find(
-            BugAttachment.id,
-            BugAttachment.libraryfile == LibraryFileAlias.id,
-            LibraryFileAlias.content == None)
-
-    def isDone(self):
-        return self._to_remove().any() is None
-
-    def __call__(self, chunk_size):
-        chunk_size = int(chunk_size)
-        ids_to_remove = list(self._to_remove()[:chunk_size])
-        self.store.find(
-            BugAttachment, BugAttachment.id.is_in(ids_to_remove)).remove()
-        transaction.commit()
+    target_table_class = BugAttachment
+    ids_to_prune_query = """
+        SELECT BugAttachment.id
+        FROM BugAttachment, LibraryFileAlias
+        WHERE
+            BugAttachment.libraryfile = LibraryFileAlias.id
+            AND LibraryFileAlias.content IS NULL
+        """
 
 
 class OldTimeLimitedTokenDeleter(TunableLoop):
@@ -997,7 +983,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         CodeImportEventPruner,
         CodeImportResultPruner,
         HWSubmissionEmailLinker,
-        ObsoleteBugAttachmentDeleter,
+        ObsoleteBugAttachmentPruner,
         OldTimeLimitedTokenDeleter,
         RevisionAuthorEmailLinker,
         SuggestiveTemplatesCacheUpdater,
