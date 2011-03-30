@@ -584,30 +584,18 @@ class PersonPruner(TunableLoop):
                 % chunk_size)
 
 
-class BugNotificationPruner(TunableLoop):
+class BugNotificationPruner(BulkPruner):
     """Prune `BugNotificationRecipient` records no longer of interest.
 
     We discard all rows older than 30 days that have been sent. We
     keep 30 days worth or records to help diagnose email delivery issues.
     """
-    maximum_chunk_size = 10000
-
-    def _to_remove(self):
-        return IMasterStore(BugNotification).find(
-            BugNotification.id,
-            BugNotification.date_emailed < THIRTY_DAYS_AGO)
-
-    def isDone(self):
-        return self._to_remove().any() is None
-
-    def __call__(self, chunk_size):
-        chunk_size = int(chunk_size)
-        ids_to_remove = list(self._to_remove()[:chunk_size])
-        num_removed = IMasterStore(BugNotification).find(
-            BugNotification,
-            BugNotification.id.is_in(ids_to_remove)).remove()
-        transaction.commit()
-        self.log.debug("Removed %d rows" % num_removed)
+    target_table_class = BugNotification
+    ids_to_prune_query = """
+        SELECT BugNotification.id FROM BugNotification
+        WHERE date_emailed < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            - CAST('30 days' AS interval)
+        """
 
 
 class BranchJobPruner(TunableLoop):
