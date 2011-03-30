@@ -65,7 +65,7 @@ from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugnotification import BugNotification
-from lp.bugs.model.bugwatch import BugWatch
+from lp.bugs.model.bugwatch import BugWatchActivity
 from lp.bugs.scripts.checkwatches.scheduler import (
     BugWatchScheduler,
     MAX_SAMPLE_SIZE,
@@ -666,58 +666,19 @@ class BugHeatUpdater(TunableLoop):
         transaction.commit()
 
 
-class BugWatchActivityPruner(TunableLoop):
+class BugWatchActivityPruner(BulkPruner):
     """A TunableLoop to prune BugWatchActivity entries."""
-
-    maximum_chunk_size = 1000
-
-    def getPrunableBugWatchIds(self, chunk_size):
-        """Return the set of BugWatch IDs whose activity is prunable."""
-        query = """
-            SELECT
-                watch_activity.id
-            FROM (
-                SELECT
-                    BugWatch.id AS id,
-                    COUNT(BugWatchActivity.id) as activity_count
-                FROM BugWatch, BugWatchActivity
-                WHERE BugWatchActivity.bug_watch = BugWatch.id
-                GROUP BY BugWatch.id) AS watch_activity
-            WHERE watch_activity.activity_count > %s
-            LIMIT %s;
-        """ % sqlvalues(MAX_SAMPLE_SIZE, chunk_size)
-        store = IMasterStore(BugWatch)
-        results = store.execute(query)
-        return set(result[0] for result in results)
-
-    def pruneBugWatchActivity(self, bug_watch_ids):
-        """Prune the BugWatchActivity for bug_watch_ids."""
-        query = """
-            DELETE FROM BugWatchActivity
-            WHERE id IN (
-                SELECT id
-                FROM BugWatchActivity
-                WHERE bug_watch = %s
-                ORDER BY id DESC
-                OFFSET %s);
-        """
-        store = IMasterStore(BugWatch)
-        for bug_watch_id in bug_watch_ids:
-            results = store.execute(
-                query % sqlvalues(bug_watch_id, MAX_SAMPLE_SIZE))
-            self.log.debug(
-                "Pruned %s BugWatchActivity entries for watch %s" %
-                (results.rowcount, bug_watch_id))
-
-    def __call__(self, chunk_size):
-        transaction.begin()
-        prunable_ids = self.getPrunableBugWatchIds(chunk_size)
-        self.pruneBugWatchActivity(prunable_ids)
-        transaction.commit()
-
-    def isDone(self):
-        """Return True if there are no watches left to prune."""
-        return len(self.getPrunableBugWatchIds(1)) == 0
+    target_table_class = BugWatchActivity
+    # For each bug_watch, remove all but the most recent MAX_SAMPLE_SIZE
+    # entries.
+    ids_to_prune_query = """
+        SELECT id FROM (
+            SELECT id, rank() OVER w AS rank
+            FROM BugWatchActivity
+            WINDOW w AS (PARTITION BY bug_watch ORDER BY id DESC)
+            ) AS whatever
+        WHERE rank > %s
+        """ % sqlvalues(MAX_SAMPLE_SIZE)
 
 
 class ObsoleteBugAttachmentDeleter(TunableLoop):
