@@ -84,11 +84,13 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.soyuz.browser.archive import PackageCopyingMixin
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.translations.browser.distroseries import (
@@ -562,7 +564,7 @@ class IDifferencesFormSchema(Interface):
         required=True)
 
 
-class DistroSeriesLocalDifferences(LaunchpadFormView):
+class DistroSeriesLocalDifferences(LaunchpadFormView, PackageCopyingMixin):
     """Present differences between a derived series and its parent."""
     schema = IDifferencesFormSchema
     field_names = ['selected_differences']
@@ -618,21 +620,29 @@ class DistroSeriesLocalDifferences(LaunchpadFormView):
     @action(_("Sync Sources"), name="sync", validator='validate_sync',
             condition='canPerformSync')
     def sync_sources(self, action, data):
-        """Mark the diffs as syncing and request the sync.
+        """Synchronise packages from the parent series to this one."""
+        # We're doing a direct copy sync here as an interim measure
+        # until we work out if it's fast enough to work reliably.  If it
+        # isn't, we need to implement a way of flagging sources 'to be
+        # synced' and write a job runner to do it in the background.
 
-        Currently this is a stub operation, the details of which will
-        be implemented later.
-        """
         selected_differences = data['selected_differences']
-        diffs = [
-            diff.source_package_name.name
-                for diff in selected_differences]
+        sources = [
+            diff.parent_source_pub
+            for diff in selected_differences]
 
-        self.request.response.addNotification(
-            "The following sources would have been synced if this "
-            "wasn't just a stub operation: " + ", ".join(diffs))
-
-        self.next_url = self.request.URL
+        # PackageCopyingMixin.do_copy() does the work of copying and
+        # setting up on-page notifications.
+        series_url = canonical_url(self.context)
+        series_title = self.context.displayname
+        if self.do_copy(
+            'selected_differences', sources, self.context.main_archive,
+            self.context, PackagePublishingPocket.RELEASE,
+            include_binaries=False, dest_url=series_url,
+            dest_display_name=series_title):
+            # The copy worked so we can redirect back to the page to
+            # show the results.
+            self.next_url = self.request.URL
 
     def validate_sync(self, action, data):
         """Validate selected differences."""

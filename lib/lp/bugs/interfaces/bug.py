@@ -32,6 +32,7 @@ from lazr.restful.declarations import (
     export_write_operation,
     exported,
     mutator_for,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
@@ -432,11 +433,11 @@ class IBug(IPrivacy, IHasLinkedBranches):
     def newMessage(owner, subject, content):
         """Create a new message, and link it to this object."""
 
+    # The level actually uses BugNotificationLevel as its vocabulary,
+    # but due to circular import problems we fix that in
+    # _schema_circular_imports.py rather than here.
     @operation_parameters(
         person=Reference(IPerson, title=_('Person'), required=True),
-        # level actually uses BugNotificationLevel as its vocabulary,
-        # but due to circular import problems we fix that in
-        # _schema_circular_imports.py rather than here.
         level=Choice(
             vocabulary=DBEnumeratedType, required=False,
             title=_('Level')))
@@ -489,6 +490,22 @@ class IBug(IPrivacy, IHasLinkedBranches):
             with a BugNotificationLevel of NOTHING.
         """
 
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=False))
+    @call_with(muted_by=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def mute(person, muted_by):
+        """Add a muted subscription for `person`."""
+
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=False))
+    @call_with(unmuted_by=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def unmute(person, unmuted_by):
+        """Remove a muted subscription for `person`."""
+
     def getDirectSubscriptions():
         """A sequence of IBugSubscriptions directly linked to this bug."""
 
@@ -531,12 +548,6 @@ class IBug(IPrivacy, IHasLinkedBranches):
         """Return the `BugSubscription` for a `Person` to this `Bug`.
 
         If no such `BugSubscription` exists, return None.
-        """
-
-    def getStructuralSubscriptionsForPerson(person):
-        """Return the `StructuralSubscription`s for a `Person` to this `Bug`.
-
-        This disregards filters.
         """
 
     def getSubscriptionInfo(level):

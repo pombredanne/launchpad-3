@@ -33,20 +33,10 @@ from lp.translations.browser.translationsharing import (
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
-from lp.translations.utilities.translationsharinginfo import (
-    has_upstream_template,
-    get_upstream_sharing_info,
-    )
-
-
-class SharingDetailsPermissionsMixin:
-
-    def can_edit_sharing_details(self):
-        return check_permission('launchpad.Edit', self.context.distroseries)
+from lp.translations.model.translationpackagingjob import TranslationMergeJob
 
 
 class SourcePackageTranslationsView(TranslationsMixin,
-                                    SharingDetailsPermissionsMixin,
                                     TranslationSharingDetailsMixin):
 
     @property
@@ -58,18 +48,13 @@ class SourcePackageTranslationsView(TranslationsMixin,
         return "Translations for %s" % self.context.displayname
 
     def is_sharing(self):
-        return has_upstream_template(self.context)
+        return self.sharing_productseries is not None
 
     @property
     def sharing_productseries(self):
-        infos = get_upstream_sharing_info(self.context)
-        if len(infos) == 0:
-            return None
+        return self.context.productseries
 
-        productseries, template = infos[0]
-        return productseries
-
-    def getTranslationTarget(self):
+    def getTranslationSourcePackage(self):
         """See `TranslationSharingDetailsMixin`."""
         return self.context
 
@@ -116,21 +101,22 @@ class SourcePackageTranslationsExportView(BaseExportView):
         return "Download translations for %s" % self.download_description
 
 
-class SourcePackageTranslationSharingDetailsView(
-                                            LaunchpadView,
-                                            SharingDetailsPermissionsMixin):
+class SourcePackageTranslationSharingDetailsView(LaunchpadView):
     """Details about translation sharing."""
 
     page_title = "Sharing details"
+
+    def is_sharing(self):
+        return self.context.has_sharing_translation_templates
+
+    def can_edit_sharing_details(self):
+        return check_permission('launchpad.Edit', self.context.productseries)
 
     def initialize(self):
         if not getFeatureFlag('translations.sharing_information.enabled'):
             raise NotFound(self.context, '+sharing-details')
         super(SourcePackageTranslationSharingDetailsView, self).initialize()
-        has_no_upstream_templates = (
-            self.is_configuration_complete and
-            not has_upstream_template(self.context))
-        if has_no_upstream_templates:
+        if self.is_configuration_complete and not self.is_sharing():
             self.request.response.addInfoNotification(
                 structured(
                 'No upstream templates have been found yet. Please follow '
@@ -140,6 +126,11 @@ class SourcePackageTranslationSharingDetailsView(
                 canonical_url(
                     self.context.productseries, rootsite='translations',
                     view_name="+imports"))))
+        if self.is_merge_job_running:
+            self.request.response.addInfoNotification(
+                'Translations are currently being linked by a background '
+                'job. When that job has finished, translations will be '
+                'shared with the upstream project.')
 
     @property
     def is_packaging_configured(self):
@@ -191,6 +182,14 @@ class SourcePackageTranslationSharingDetailsView(
             self.is_upstream_translations_enabled and
             self.is_upstream_synchronization_enabled)
 
+    @property
+    def is_merge_job_running(self):
+        """Is a merge job running for this source package?"""
+        if not self.is_packaging_configured:
+            return False
+        return TranslationMergeJob.getNextJobStatus(
+            self.context.direct_packaging) is not None
+
     def template_info(self):
         """Details about translation templates.
 
@@ -212,13 +211,16 @@ class SourcePackageTranslationSharingDetailsView(
                 'upstream_template': None,
                 'status': 'only in Ubuntu',
                 }
-        if self.is_configuration_complete:
+        if self.is_packaging_configured:
             upstream_templates = (
                 self.context.productseries.getCurrentTranslationTemplates())
             for template in upstream_templates:
                 if template.name in info:
                     info[template.name]['upstream_template'] = template
-                    info[template.name]['status'] = 'shared'
+                    if self.is_merge_job_running:
+                        info[template.name]['status'] = 'linking'
+                    else:
+                        info[template.name]['status'] = 'shared'
                 else:
                     info[template.name] = {
                         'name': template.name,

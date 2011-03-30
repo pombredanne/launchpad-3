@@ -171,7 +171,7 @@ from lp.bugs.model.bugtask import (
     )
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (
-    get_all_structural_subscriptions,
+    get_structural_subscriptions_for_bug,
     get_structural_subscribers,
     )
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
@@ -780,6 +780,9 @@ BugMessage""" % sqlvalues(self.id))
         """See `IBug`."""
         # Drop cached subscription info.
         clear_property_cache(self)
+        # Ensure the unsubscriber is in the _known_viewer cache for the bug so
+        # that the permissions are such that the operation can succeed.
+        get_property_cache(self)._known_viewers = set([unsubscribed_by.id])
         if person is None:
             person = unsubscribed_by
 
@@ -835,6 +838,27 @@ BugMessage""" % sqlvalues(self.id))
             BugSubscription.bug_notification_level ==
                 BugNotificationLevel.NOTHING)
         return not subscriptions.is_empty()
+
+    def mute(self, person, muted_by):
+        """See `IBug`."""
+        # If there's an existing subscription, update it.
+        store = Store.of(self)
+        subscriptions = store.find(
+            BugSubscription,
+            BugSubscription.bug == self,
+            BugSubscription.person == person)
+        if subscriptions.is_empty():
+            return self.subscribe(
+                person, muted_by, level=BugNotificationLevel.NOTHING)
+        else:
+            subscription = subscriptions.one()
+            subscription.bug_notification_level = (
+                BugNotificationLevel.NOTHING)
+            return subscription
+
+    def unmute(self, person, unmuted_by):
+        """See `IBug`."""
+        self.unsubscribe(person, unmuted_by)
 
     @property
     def subscriptions(self):
@@ -980,10 +1004,6 @@ BugMessage""" % sqlvalues(self.id))
             BugSubscription,
             BugSubscription.person == person,
             BugSubscription.bug == self).one()
-
-    def getStructuralSubscriptionsForPerson(self, person):
-        """See `IBug`."""
-        return get_all_structural_subscriptions(self.bugtasks, person)
 
     def getAlsoNotifiedSubscribers(self, recipients=None, level=None):
         """See `IBug`.
@@ -1131,14 +1151,8 @@ BugMessage""" % sqlvalues(self.id))
             distribution = target.distribution
             source_package_name = target.sourcepackagename
         if ISourcePackage.providedBy(target):
-            if target.distroseries is not None:
-                distro_series = target.distroseries
-                source_package_name = target.sourcepackagename
-            elif target.distribution is not None:
-                distribution = target.distribution
-                source_package_name = target.sourcepackagename
-            else:
-                source_package_name = target.sourcepackagename
+            distro_series = target.distroseries
+            source_package_name = target.sourcepackagename
 
         new_task = getUtility(IBugTaskSet).createTask(
             self, owner=owner, product=product,
@@ -2212,7 +2226,7 @@ class BugSubscriptionInfo:
     @freeze(StructuralSubscriptionSet)
     def structural_subscriptions(self):
         """Structural subscriptions to the bug's targets."""
-        return get_all_structural_subscriptions(self.bug.bugtasks)
+        return get_structural_subscriptions_for_bug(self.bug)
 
     @cachedproperty
     @freeze(BugSubscriberSet)

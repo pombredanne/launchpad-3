@@ -462,17 +462,21 @@ class IBugTask(IHasDateCreated, IHasBug):
         BugField(title=_("Bug"), readonly=True))
     product = Choice(
         title=_('Project'), required=False, vocabulary='Product')
+    productID = Attribute('The product ID')
     productseries = Choice(
         title=_('Series'), required=False, vocabulary='ProductSeries')
     productseriesID = Attribute('The product series ID')
     sourcepackagename = Choice(
         title=_("Package"), required=False,
         vocabulary='SourcePackageName')
+    sourcepackagenameID = Attribute('The sourcepackagename ID')
     distribution = Choice(
         title=_("Distribution"), required=False, vocabulary='Distribution')
+    distributionID = Attribute('The distribution ID')
     distroseries = Choice(
         title=_("Series"), required=False,
         vocabulary='DistroSeries')
+    distroseriesID = Attribute('The distroseries ID')
     milestone = exported(ReferenceChoice(
         title=_('Milestone'),
         required=False,
@@ -1274,21 +1278,37 @@ class BugTaskSearchParams:
             supported.
         """
         # Yay circular deps.
+        from lp.registry.interfaces.distribution import IDistribution
         from lp.registry.interfaces.distroseries import IDistroSeries
+        from lp.registry.interfaces.product import IProduct
         from lp.registry.interfaces.productseries import IProductSeries
         from lp.registry.interfaces.milestone import IMilestone
+        from lp.registry.interfaces.projectgroup import IProjectGroup
+        from lp.registry.interfaces.sourcepackage import ISourcePackage
+        from lp.registry.interfaces.distributionsourcepackage import \
+            IDistributionSourcePackage
         if isinstance(target, (any, all)):
             assert len(target.query_values), \
                 'cannot determine target with no targets'
             instance = target.query_values[0]
         else:
             instance = target
-        if IDistroSeries.providedBy(instance):
+        if IDistribution.providedBy(instance):
+            self.setDistribution(target)
+        elif IDistroSeries.providedBy(instance):
             self.setDistroSeries(target)
+        elif IProduct.providedBy(instance):
+            self.setProduct(target)
         elif IProductSeries.providedBy(instance):
             self.setProductSeries(target)
         elif IMilestone.providedBy(instance):
             self.milestone = target
+        elif ISourcePackage.providedBy(instance):
+            self.setSourcePackage(target)
+        elif IDistributionSourcePackage.providedBy(instance):
+            self.setSourcePackage(target)
+        elif IProjectGroup.providedBy(instance):
+            self.setProject(target)
         else:
             raise AssertionError("unknown target type %r" % target)
 
@@ -1595,7 +1615,17 @@ class IBugTaskSet(Interface):
         The assignee and the assignee's validity are precached.
         """
 
+    def getBugTaskTargetMilestones(self, bugtasks, eager=False):
+        """Get all the milestones for the selected bugtasks' targets."""
+
     open_bugtask_search = Attribute("A search returning open bugTasks.")
+
+    def buildUpstreamClause(params):
+        """Create a SQL clause to do upstream checks in a bug search.
+        
+        :return: A string SQL expression.
+        """
+
 
 
 def valid_remote_bug_url(value):

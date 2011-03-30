@@ -179,6 +179,9 @@ from lp.registry.interfaces.distributionmirror import (
     MirrorContent,
     MirrorSpeed,
     )
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
@@ -820,14 +823,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                       productseries=productseries, distroseries=distroseries,
                       name=name))
 
-    def makePackaging(self):
-        """Create a new Packaging."""
-        productseries = self.makeProductSeries()
-        sourcepackage = self.makeSourcePackage()
-        return productseries.setPackaging(
-            sourcepackage.distroseries, sourcepackage.sourcepackagename,
-            productseries.owner)
-
     def makeProcessor(self, family=None, name=None, title=None,
                       description=None):
         """Create a new processor.
@@ -1074,16 +1069,28 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makePackagingLink(self, productseries=None, sourcepackagename=None,
                           distroseries=None, packaging_type=None, owner=None,
-                          in_ubuntu=False):
+                          sourcepackage=None, in_ubuntu=False):
+        assert sourcepackage is None or (
+            distroseries is None and sourcepackagename is None), (
+            "Specify either a sourcepackage or a "
+            "distroseries/sourcepackagename pair")
         if productseries is None:
             productseries = self.makeProduct().development_focus
-        if sourcepackagename is None or isinstance(sourcepackagename, str):
-            sourcepackagename = self.makeSourcePackageName(sourcepackagename)
-        if distroseries is None:
-            if in_ubuntu:
-                distroseries = self.makeUbuntuDistroSeries()
-            else:
-                distroseries = self.makeDistroSeries()
+        if sourcepackage is not None:
+            distroseries = sourcepackage.distroseries
+            sourcepackagename = sourcepackage.sourcepackagename
+        else:
+            make_sourcepackagename = (
+                sourcepackagename is None or
+                isinstance(sourcepackagename, str))
+            if make_sourcepackagename:
+                sourcepackagename = self.makeSourcePackageName(
+                    sourcepackagename)
+            if distroseries is None:
+                if in_ubuntu:
+                    distroseries = self.makeUbuntuDistroSeries()
+                else:
+                    distroseries = self.makeDistroSeries()
         if packaging_type is None:
             packaging_type = PackagingType.PRIME
         if owner is None:
@@ -1672,8 +1679,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             prerequisite_target = target.distribution
         if ISourcePackage.providedBy(target):
             # We can't have a series task without a distribution task.
-            prerequisite_target = target.distribution.getSourcePackage(
-                target.sourcepackagename)
+            prerequisite_target = target.distribution_sourcepackage
+            if publish:
+                self.makeSourcePackagePublishingHistory(
+                    distroseries=target.distroseries,
+                    sourcepackagename=target.sourcepackagename)
+        if IDistributionSourcePackage.providedBy(target):
             if publish:
                 self.makeSourcePackagePublishingHistory(
                     distroseries=target.distribution.currentseries,
@@ -1681,7 +1692,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if prerequisite_target is not None:
             prerequisite = bug.getBugTask(prerequisite_target)
             if prerequisite is None:
-                self.makeBugTask(bug, prerequisite_target)
+                self.makeBugTask(bug, prerequisite_target, publish=publish)
 
         return removeSecurityProxy(bug).addTask(owner, target)
 
@@ -2073,11 +2084,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         for version in versions:
             entry = dedent('''
             %s (%s) unstable; urgency=low
-            
-              * %s. 
-            
+
+              * %s.
+
              -- Foo Bar <foo@example.com>  Tue, 01 Jan 1970 01:50:41 +0000
-            
+
             ''' % (spn, version, version))
             changelog += entry
         return self.makeLibraryFileAlias(content=changelog)
@@ -2262,6 +2273,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             description=self.getUniqueString(),
             parent_series=parent_series, owner=distribution.owner)
         series.status = status
+
         return ProxyFactory(series)
 
     def makeUbuntuDistroRelease(self, version=None,
@@ -2492,7 +2504,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                 distroseries=None, name=None,
                                 description=None, branches=(),
                                 build_daily=False, daily_build_archive=None,
-                                is_stale=None, recipe=None):
+                                is_stale=None, recipe=None,
+                                date_created=DEFAULT):
         """Make a `SourcePackageRecipe`."""
         if registrant is None:
             registrant = self.makePerson()
@@ -2514,7 +2527,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             assert branches == ()
         source_package_recipe = getUtility(ISourcePackageRecipeSource).new(
             registrant, owner, name, recipe, description, [distroseries],
-            daily_build_archive, build_daily)
+            daily_build_archive, build_daily, date_created)
         if is_stale is not None:
             removeSecurityProxy(source_package_recipe).is_stale = is_stale
         IStore(source_package_recipe).flush()

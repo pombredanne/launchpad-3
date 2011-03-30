@@ -168,6 +168,10 @@
     <facet
         facet="bugs">
 
+      <class class="lp.bugs.interfaces.bugtaskfilter.OrderedBugTask">
+        <allow attributes="rank id task"/>
+      </class>
+
         <!-- IBugTask -->
 
         <class
@@ -190,8 +194,12 @@
                     date_fix_released
                     date_left_closed
                     date_closed
+                    distributionID
+                    distroseriesID
                     milestoneID
+                    productID
                     productseriesID
+                    sourcepackagenameID
                     task_age
                     bug_subscribers
                     is_complete
@@ -308,6 +316,11 @@
             <allow
                 attributes="
                     setTarget
+                    "/>
+            <require
+                permission="zope.Public"
+                set_attributes="
+                    resolved_upstream
                     "/>
         </class>
 
@@ -734,7 +747,6 @@
                     getSubscriptionsFromDuplicates
                     getSubscribersForPerson
                     getSubscriptionForPerson
-                    getStructuralSubscriptionsForPerson
                     getSubscriptionInfo
                     indexed_messages
                     _indexed_messages
@@ -782,6 +794,7 @@
                     linkMessage
                     markAsDuplicate
                     markUserAffected
+                    mute
                     newMessage
                     removeWatch
                     setPrivate
@@ -791,6 +804,7 @@
                     unlinkBranch
                     unlinkCVE
                     unlinkHWSubmission
+                    unmute
                     unsubscribe
                     unsubscribeFromDupes
                     updateHeat"

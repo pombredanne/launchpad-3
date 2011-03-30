@@ -156,8 +156,9 @@ def process_in_batches(input, task, logger, goal_seconds=60,
         each batch, defaults to 10000
     """
     loop = PublishingTunableLoop(input, task, logger)
-    loop_tuner = LoopTuner(loop, goal_seconds=goal_seconds,
-                           minimum_chunk_size=minimum_chunk_size)
+    loop_tuner = LoopTuner(
+        loop, goal_seconds=goal_seconds,
+        minimum_chunk_size=minimum_chunk_size, log=logger)
     loop_tuner.run()
 
 

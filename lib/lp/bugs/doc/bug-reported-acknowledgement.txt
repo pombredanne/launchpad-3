@@ -120,4 +120,4 @@ Distribution can edit the message.
     >>> check_access(
     ...     distribution_source_package.distribution.owner.activemembers[0],
     ...     distribution_source_package)
-    alsa-utils in ubuntu let Alexander Limi have access.
+    alsa-utils in Ubuntu let Alexander Limi have access.

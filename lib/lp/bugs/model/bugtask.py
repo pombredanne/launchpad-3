@@ -25,10 +25,7 @@ import datetime
 from itertools import chain
 from operator import attrgetter
 
-from lazr.enum import (
-    DBItem,
-    Item,
-    )
+from lazr.enum import BaseItem
 import pytz
 from sqlobject import (
     ForeignKey,
@@ -170,8 +167,6 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services import features
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.enums import PackagePublishingStatus
-from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
 debbugsseveritymap = {
@@ -1015,8 +1010,11 @@ class BugTask(SQLBase, BugTaskMixin):
             # value.
             self.date_assigned = None
             # The bugtask is unassigned, so clear the _known_viewer cached
-            # property for the bug.
-            get_property_cache(self.bug)._known_viewers = set()
+            # property for the bug. Retain the current assignee as a viewer so
+            # that they are able to unassign themselves and get confirmation
+            # that that worked.
+            get_property_cache(self.bug)._known_viewers = set(
+                [self.assignee.id])
         if not self.assignee and assignee:
             # The task is going from not having an assignee to having
             # one, so record when this happened
@@ -1226,6 +1224,9 @@ class BugTask(SQLBase, BugTaskMixin):
         return (self._userIsPillarEditor(user) or
                 user == celebs.bug_watch_updater or
                 user == celebs.bug_importer)
+
+    def __repr__(self):
+        return "<BugTask for bug %s on %r>" % (self.bugID, self.target)
 
 
 def search_value_to_where_condition(search_value):
@@ -1588,7 +1589,7 @@ class BugTaskSet:
                 in status.query_values) + ')'
         elif zope_isinstance(status, not_equals):
             return '(NOT %s)' % self._buildStatusClause(status.value)
-        elif zope_isinstance(status, DBItem):
+        elif zope_isinstance(status, BaseItem):
             with_response = (
                 status == BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE)
             without_response = (
@@ -1690,6 +1691,14 @@ class BugTaskSet:
                     "project group, or distribution")
         return (join_tables, extra_clauses)
 
+    def _require_params(self, params):
+        assert zope_isinstance(params, BugTaskSearchParams)
+        if not isinstance(params, BugTaskSearchParams):
+            # Browser code let this get wrapped, unwrap it here as its just a
+            # dumb data store that has no security implications.
+            params = removeSecurityProxy(params)
+        return params
+
     def buildQuery(self, params):
         """Build and return an SQL query with the given parameters.
 
@@ -1698,11 +1707,7 @@ class BugTaskSet:
         :return: A query, the tables to query, ordering expression and a
             decorator to call on each returned row.
         """
-        assert zope_isinstance(params, BugTaskSearchParams)
-        if not isinstance(params, BugTaskSearchParams):
-            # Browser code let this get wrapped, unwrap it here as its just a
-            # dumb data store that has no security implications.
-            params = removeSecurityProxy(params)
+        params = self._require_params(params)
         from lp.bugs.model.bug import Bug
         extra_clauses = ['Bug.id = BugTask.bug']
         clauseTables = [BugTask, Bug]
@@ -1934,7 +1939,7 @@ class BugTaskSet:
                 """BugTask.sourcepackagename in (
                     select sourcepackagename from spns)""")
 
-        upstream_clause = self._buildUpstreamClause(params)
+        upstream_clause = self.buildUpstreamClause(params)
         if upstream_clause:
             extra_clauses.append(upstream_clause)
 
@@ -2031,7 +2036,7 @@ class BugTaskSet:
         if hw_clause is not None:
             extra_clauses.append(hw_clause)
 
-        if zope_isinstance(params.linked_branches, Item):
+        if zope_isinstance(params.linked_branches, BaseItem):
             if params.linked_branches == BugBranchSearch.BUGS_WITH_BRANCHES:
                 extra_clauses.append(
                     """EXISTS (
@@ -2085,12 +2090,13 @@ class BugTaskSet:
             query, clauseTables, orderby_arg, decorator, join_tables,
             has_duplicate_results, with_clause)
 
-    def _buildUpstreamClause(self, params):
+    def buildUpstreamClause(self, params):
         """Return an clause for returning upstream data if the data exists.
 
         This method will handles BugTasks that do not have upstream BugTasks
         as well as thoses that do.
         """
+        params = self._require_params(params)
         upstream_clauses = []
         if params.pending_bugwatch_elsewhere:
             if params.product:
@@ -2317,16 +2323,25 @@ class BugTaskSet:
     def _buildBlueprintRelatedClause(self, params):
         """Find bugs related to Blueprints, or not."""
         linked_blueprints = params.linked_blueprints
-        if linked_blueprints == BugBlueprintSearch.BUGS_WITH_BLUEPRINTS:
-            return "EXISTS (%s)" % (
-                "SELECT 1 FROM SpecificationBug"
-                " WHERE SpecificationBug.bug = Bug.id")
-        elif linked_blueprints == BugBlueprintSearch.BUGS_WITHOUT_BLUEPRINTS:
-            return "NOT EXISTS (%s)" % (
-                "SELECT 1 FROM SpecificationBug"
-                " WHERE SpecificationBug.bug = Bug.id")
-        else:
+        if linked_blueprints is None:
             return None
+        elif zope_isinstance(linked_blueprints, BaseItem):
+            if linked_blueprints == BugBlueprintSearch.BUGS_WITH_BLUEPRINTS:
+                return "EXISTS (%s)" % (
+                    "SELECT 1 FROM SpecificationBug"
+                    " WHERE SpecificationBug.bug = Bug.id")
+            elif (linked_blueprints ==
+                  BugBlueprintSearch.BUGS_WITHOUT_BLUEPRINTS):
+                return "NOT EXISTS (%s)" % (
+                    "SELECT 1 FROM SpecificationBug"
+                    " WHERE SpecificationBug.bug = Bug.id")
+        else:
+            # A specific search term has been supplied.
+            return """EXISTS (
+                    SELECT TRUE FROM SpecificationBug
+                    WHERE SpecificationBug.bug=Bug.id AND
+                    SpecificationBug.specification %s)
+                """ % search_value_to_where_condition(linked_blueprints)
 
     def buildOrigin(self, join_tables, prejoin_tables, clauseTables):
         """Build the parameter list for Store.using().
@@ -3088,3 +3103,51 @@ class BugTaskSet:
             counts.append(package_counts)
 
         return counts
+
+    def getBugTaskTargetMilestones(self, bugtasks):
+        from lp.registry.model.distribution import Distribution
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.registry.model.milestone import Milestone
+        from lp.registry.model.product import Product
+        from lp.registry.model.productseries import ProductSeries
+        store = Store.of(bugtasks[0])
+        distro_ids = set()
+        distro_series_ids = set()
+        product_ids = set()
+        product_series_ids = set()
+        
+        # Gather all the ids that might have milestones to preload for the
+        # for the milestone vocabulary
+        for task in bugtasks:
+            task = removeSecurityProxy(task)
+            distro_ids.add(task.distributionID)
+            distro_series_ids.add(task.distroseriesID)
+            product_ids.add(task.productID)
+            product_series_ids.add(task.productseriesID)
+
+        distro_ids.discard(None) 
+        distro_series_ids.discard(None) 
+        product_ids.discard(None) 
+        product_series_ids.discard(None) 
+        
+        milestones = store.find(
+            Milestone,
+            Or(
+                Milestone.distributionID.is_in(distro_ids),
+                Milestone.distroseriesID.is_in(distro_series_ids),
+                Milestone.productID.is_in(product_ids),
+                Milestone.productseriesID.is_in(product_series_ids)))
+
+        # Pull in all the related pillars
+        list(store.find(
+            Distribution, Distribution.id.is_in(distro_ids)))
+        list(store.find(
+            DistroSeries, DistroSeries.id.is_in(distro_series_ids)))
+        list(store.find(
+            Product, Product.id.is_in(product_ids)))
+        list(store.find(
+            ProductSeries, ProductSeries.id.is_in(product_series_ids)))
+            
+        return milestones
+
+        

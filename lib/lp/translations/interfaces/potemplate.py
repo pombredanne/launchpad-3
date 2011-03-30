@@ -415,6 +415,11 @@ class IPOTemplate(IRosettaStats):
         Return None if there is no such POFile.
         """
 
+    def getOtherSidePOTemplate():
+        """Get the POTemplate with the same name on the other side of a
+        packaging link.
+        """
+
     def hasPluralMessage():
         """Test whether this template has any message sets which are plural
         message sets."""
