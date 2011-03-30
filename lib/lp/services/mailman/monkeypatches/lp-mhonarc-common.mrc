@@ -15,11 +15,24 @@
 <TREVERSE>
 <NODOC>
 
+<!-- Encode all messages as utf-8 and set the page encoding to utf-8 -->
+<TextEncode>
+utf-8; MHonArc::UTF8::to_utf8; MHonArc/UTF8.pm
+</TextEncode>
+
 <!-- text/plain only. CVE-2010-4524 -->
 <MIMEExcs>
 text/html
 text/x-html
 </MIMEExcs>
+
+<IDXFNAME>
+date.html
+</IDXFNAME>
+
+<TIDXFNAME>
+maillist.html
+</TIDXFNAME>
 
 <!-- Use multi-page indexes.
      See http://www.mhonarc.org/MHonArc/doc/resources/multipg.html -->
@@ -28,171 +41,471 @@ text/x-html
 200
 </IDXSIZE>
 
+<!-- strip the first [list-name] from the subect line. -->
+<SUBJECTSTRIPCODE>
+s/\[[^ ]+\]//;
+</SUBJECTSTRIPCODE>
+
+
 <!-- Define a custom resource variable to represent this mailing list.
      This depends on $ML-NAME$ having been set already, presumably on
-     the command line via '-definevar'.  See 
+     the command line via '-definevar'.  See
      http://www.mhonarc.org/MHonArc/doc/resources/definevar.html. -->
+
 <DefineVar>
-ML-FULL-TITLE
-<a href="https://launchpad.net/~$ML-NAME$">$ML-NAME$</a> mailing list archive
+TEAM-LINK
+<a href="https://launchpad.net/~$ML-NAME$">$ML-NAME$</a>
 </DefineVar>
 
+
+<DefineVar>
+PAGE-TOP-START
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>
+</DefineVar>
+
+<DefineVar>
+PAGE-TOP-END
+</title>
+<style type="text/css">
+h1, ul, ol, dl, li, dt, dd {
+    margin: 0;
+    padding: 0;
+    }
+.mail li {
+    margin-left: 20px;
+    padding-left: 0px;
+   }
+.upper-batch-nav {
+    margin: 12px 0;
+    border-bottom: 1px solid #d2d2d2;
+    }
+.lower-batch-nav {
+    margin: 12px 0;
+    border-top: 1px solid #d2d2d2;
+    }
+.lower-batch-nav.message-count-0 {
+    display: none;
+    }
+.batch-navigation-links {
+    padding-left: 24px;
+    }
+.message-count-0 {
+    margin-bottom: 12px;
+    }
+.message-count-0:before {
+    content: "There are no messages in this mailing list archive.";
+    }
+</style>
+<link rel="stylesheet" href="https://launchpad.net/+icing/style-3-0.css" />
+<link rel="shortcut icon" href="https://launchpad.net/@@/launchpad.png" /> 
+</head>
+<body>
+  <div id="watermark" class="watermark-apps-portlet">
+    <div class="flowed-block">
+      <img alt="" width="64" height="64" src="https://launchpad.net/@@/team-logo" />
+    </div>
+    <div class="flowed-block wide">
+      <h2>Telugu l10n Translation</h2>
+
+      <ul class="facetmenu">
+          <li class="overview active"
+              title="General information about $ML-NAME$"><span>Overview</span></li>
+          <li class="branches"
+              title="Bazaar Branches and revisions registered and authored by $ML-NAME$"><a
+        href="https://code.launchpad.net/~$ML-NAME$">Code</a></li>
+          <li class="bugs"
+              title="Bug reports that $ML-NAME$ is involved with"><a
+        href="https://bugs.launchpad.net/~$ML-NAME$">Bugs</a></li>
+          <li class="specifications"
+              title="Feature specifications that $ML-NAME$ is involved with"><a
+        href="https://blueprints.launchpad.net/~$ML-NAME$">Blueprints</a></li>
+          <li class="translations"
+              title="Software that $ML-NAME$ is involved in translating"><a
+        href="https://translations.launchpad.net/~$ML-NAME$">Translations</a></li>
+          <li class="answers"
+              title="Questions that $ML-NAME$ is involved with"><a
+        href="https://answers.launchpad.net/~$ML-NAME$">Answers</a></li>
+      </ul>
+    </div>
+  </div>
+</DefineVar>
+
+<DefineVar>
+PAGE-BOTTOM
+  <div id="footer" class="footer">
+    <div class="lp-arcana">
+        <div class="lp-branding">
+          <a href="https://launchpad.net/"><img src="https://launchpad.net/@@/launchpad-logo-and-name-hierarchy.png" alt="Launchpad" /></a>
+          &nbsp;&bull;&nbsp;
+          <a href="https://launchpad.net/+tour">Take the tour</a>
+          &nbsp;&bull;&nbsp;
+          <a href="https://help.launchpad.net/">Read the guide</a>
+          &nbsp;&bull;&nbsp;
+          <a href="https://help.launchpad.net/Teams/MailingLists"
+          >Help for mailing lists</a>
+          &nbsp;
+          <form id="globalsearch" method="get"
+                accept-charset="UTF-8"
+                action="https://launchpad.net/+search">
+            <input type="search" id="search-text" name="field.text" />
+            <input type="submit" value="" class="icon-only sprite search-icon" />
+          </form>
+        </div>
+    </div>
+    <div class="colophon">
+      &copy; 2004-2011
+      <a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
+      &nbsp;&bull;&nbsp;
+      <a href="https://launchpad.net/legal">Terms of use</a>
+      &nbsp;&bull;&nbsp;
+      <a href="/support">Contact Launchpad Support</a>
+      &nbsp;&bull;&nbsp;
+      <a href="http://identi.ca/launchpadstatus">System status</a>
+      </span>
+    </div>
+  </div>
+</body>
+</html>
+</DefineVar>
+
+
+<!-- What do the next/prev links look like? -->
 <IDXLABEL>
-Date Index
+Date index
 </IDXLABEL>
 
 <TIDXLABEL>
-Thread Index
+Thread index
 </TIDXLABEL>
 
-<!-- What do the next/prev links look like? -->
+<!-- The text is reversed because the messages are sorted in reverse. -->
 <PREVPGLINK>
-<a href="$PG(FIRST)$">&larr;First</a>&nbsp;&nbsp;&nbsp;<a href="$PG(PREV)$">&larr;Prev</a>
+<a href="$PG(FIRST)$">Last</a> &bull; <a href="$PG(PREV)$">Next</a>
 </PREVPGLINK>
+
 <PREVPGLINKIA>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<span class="inactive">Last &bull; Next</span>
 </PREVPGLINKIA>
+
 <TPREVPGLINK>
-<a href="$PG(TFIRST)$">&larr;First</a>&nbsp;&nbsp;&nbsp;<a href="$PG(TPREV)$">&larr;Prev</a>
+<a href="$PG(TFIRST)$">Last</a> &bull; <a href="$PG(TPREV)$">Next</a>
 </TPREVPGLINK>
+
 <TPREVPGLINKIA>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<span class="inactive">Last &bull; Next</span>
 </TPREVPGLINKIA>
+
 <NEXTPGLINK>
-<a href="$PG(NEXT)$">Next&rarr;</a>&nbsp;&nbsp;&nbsp;<a href="$PG(LAST)$">Last&rarr;</a>
+<a class="next" href="$PG(NEXT)$">Previous</a> &bull; <a href="$PG(LAST)$">First</a>
 </NEXTPGLINK>
+
 <NEXTPGLINKIA>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<span class="next inactive">Previous</span> &bull; <span class="inactive">First</span>
 </NEXTPGLINKIA>
+
 <TNEXTPGLINK>
-<a href="$PG(TNEXT)$">Next&rarr;</a>&nbsp;&nbsp;&nbsp;<a href="$PG(TLAST)$">Last&rarr;</a>
+<a class="next" href="$PG(TNEXT)$">Previous</a> &bull; <a href="$PG(TLAST)$">First</a>
 </TNEXTPGLINK>
+
 <TNEXTPGLINKIA>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+<span class="next inactive">Previous</span> &bull;<span class="inactive">First</span>
 </TNEXTPGLINKIA>
 
-<!-- Formatting for the start of list page.
-     See http://www.mhonarc.org/MHonArc/doc/resources/listbegin.html. -->
-<LISTBEGIN>
-<p>(<a href="$TIDXFNAME$">go to $TIDXLABEL$</a>)</p>
-<hr/>
-<div style="text-align: left;">$PGLINK(PREV)$&nbsp;&nbsp;&nbsp;$PGLINK(NEXT)$</div>
-<div style="text-align: center;">$PGLINKLIST(5;5)$</div>
-<ul>
-</LISTBEGIN>
 
-<LISTEND>
-</ul>
-<div style="text-align: center;">$PGLINKLIST(5;5)$</div>
-<div style="text-align: left;">$PGLINK(PREV)$&nbsp;&nbsp;&nbsp;$PGLINK(NEXT)$</div>
-</LISTEND>
+<!-- Thread index pages -->
+<TIDXPGBEGIN>
+$PAGE-TOP-START$
+Messages by thread : Mailing list archive : $ML-NAME$ team in Launchpad
+$PAGE-TOP-END$
+</TIDXPGBEGIN>
+
+<TIDXPGEND>
+$PAGE-BOTTOM$
+</TIDXPGEND>
 
 <!-- Formatting for the start of thread page.
      See http://www.mhonarc.org/MHonArc/doc/resources/thead.html. -->
 <THEAD>
-<p>(<a href="$IDXFNAME$">go to $IDXLABEL$</a>)</p>
-<hr/>
-<div style="text-align: left;">$PGLINK(TPREV)$&nbsp;&nbsp;&nbsp;$PGLINK(TNEXT)$</div>
-<div style="text-align: center;">$PGLINKLIST(T5;T5)$</div>
-<ul>
+<h1>Messages by thread</h1>
+
+<ol class="breadcrumbs"> 
+  <li>
+    <img src="https://launchpad.net/@@/team" alt=""/>
+    <a href="https://launchpad.net/~$ML-NAME$">$ML-NAME$ team</a>
+  </li>
+  <li>
+    <a href="https://lists.launchpad.net/$ML-NAME$/">Mailing list archive</a>
+  </li>
+  <li>
+    Messages by thread
+  </li> 
+</ol>
+
+<p>
+Messages sent to the $ML-NAME$ mailing list, ordered by tread from the
+newest to oldest.
+</p>
+
+<table class="wide upper-batch-nav">
+  <tr>
+    <td>
+      $NUMOFIDXMSG$ of $NUMOFMSG$ messages, page $PGLINKLIST(T5;T5)$
+      &bull;
+      <a href="$IDXFNAME$">$IDXLABEL$</a>
+    </td>
+    <td class="batch-navigation-links" style="text-align: right;">
+      $PGLINK(TPREV)$ &bull; $PGLINK(TNEXT)$
+    </td>
+  </tr>
+</table>
+
+<ul class="mail wide message-count-$NUMOFMSG$">
 </THEAD>
 
 <TFOOT>
 </ul>
-<div style="text-align: center;">$PGLINKLIST(T5;T5)$</div>
-<div style="text-align: left;">$PGLINK(TPREV)$&nbsp;&nbsp;&nbsp;$PGLINK(TNEXT)$</div>
+<table class="wide lower-batch-nav message-count-$NUMOFMSG$">
+  <tr>
+    <td>
+      $NUMOFIDXMSG$ of $NUMOFMSG$ messages, page $PGLINKLIST(T5;T5)$
+      &bull;
+      <a href="$IDXFNAME$">$IDXLABEL$</a>
+    </td>
+    <td class="batch-navigation-links" style="text-align: right;">
+      $PGLINK(TPREV)$ &bull; $PGLINK(TNEXT)$
+    </td>
+  </tr>
+</table>
 </TFOOT>
 
-<!-- Per-message formatting on the indexed-by-date main page. -->
-<LITEMPLATE>
-<li><strong>$SUBJECT$</strong>
-<ul><li><em>From</em>: $FROM$,&nbsp;<em>$YYYYMMDD$</em></li></ul>
-</li>
-</LITEMPLATE>
 
-<!-- Per-message formatting on the thread page. -->
-<TTOPBEGIN>
-<li><strong>$SUBJECT$</strong>,
-<em><b>$FROMNAME$</b>, $YYYYMMDD$</em>
-</TTOPBEGIN>
-<TLITXT>
-<li><strong>$SUBJECT$</strong>,
-<em><b>$FROMNAME$</b>, $YYYYMMDD$</em>
-</TLITXT>
-<TSINGLETXT>
-<li><strong>$SUBJECT$</strong>,
-<em><b>$FROMNAME$</b>, $YYYYMMDD$</em>
-</TSINGLETXT>
-
-<!-- Modify appropriate resources to print our link at the bottom
-     of MHonArc generated pages. Notice how the custom resource
-     variable defined above can be used to include our link. -->
-
-<!-- Main index pages -->
+<!-- Date index pages -->
 <IDXPGBEGIN>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-        "http://www.w3.org/TR/html4/loose.dtd">
-<html>
-<head>
-<title>$ML-NAME$ mailing list (by date)</title>
-</head>
-<body text="#000000" bgcolor="#FFFFFF">
-<p><a href="https://launchpad.net/"><img border="0" src="https://launchpad.net/@@/launchpad-logo-and-name.png" alt="Launchpad logo and name."/></a></p>
-<h1><center>$ML-FULL-TITLE$ (by date)</center></h1>
+$PAGE-TOP-START$
+Messages by date : Mailing list archive : $ML-NAME$ team in Launchpad
+$PAGE-TOP-END$
 </IDXPGBEGIN>
 
 <IDXPGEND>
-<hr/>
-<p><strong>This is the $ML-FULL-TITLE$&mdash;&nbsp;see also the
-general <a href="https://help.launchpad.net/Teams/MailingLists"
->help for Launchpad.net mailing lists</a>.</strong></p>
-<p><em>(Formatted by <a href="$DOCURL$">MHonArc</a>.)</em></p>
-</body>
-</html>
+$PAGE-BOTTOM$
 </IDXPGEND>
 
-<!-- Thread index pages -->
-<TIDXPGBEGIN>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-        "http://www.w3.org/TR/html4/loose.dtd">
-<html>
-<head>
-<title>$ML-NAME$ mailing list (by thread)</title>
-</head>
-<body text="#000000" bgcolor="#FFFFFF">
-<p><a href="https://launchpad.net/"><img border="0" src="https://launchpad.net/@@/launchpad-logo-and-name.png" alt="Launchpad logo and name."/></a></p>
-<h1><center>$ML-FULL-TITLE$ (by thread)</center></h1>
-</TIDXPGBEGIN>
+<!-- Formatting for the start of list page.
+     See http://www.mhonarc.org/MHonArc/doc/resources/listbegin.html. -->
+<LISTBEGIN>
+<h1>Messages by date</h1>
 
-<TIDXPGEND>
-<hr/>
-<p><strong>This is the $ML-FULL-TITLE$&mdash;&nbsp;see also the
-general <a href="https://help.launchpad.net/Teams/MailingLists"
->help for Launchpad.net mailing lists</a>.</strong></p>
-<p><em>(Formatted by <a href="$DOCURL$">MHonArc</a>.)</em></p>
-</body>
-</html>
-</TIDXPGEND>
+<ol class="breadcrumbs"> 
+  <li>
+    <img src="https://launchpad.net/@@/team" alt=""/>
+    <a href="https://launchpad.net/~$ML-NAME$">$ML-NAME$ team</a>
+  </li>
+  <li>
+    <a href="https://lists.launchpad.net/$ML-NAME$/">Mailing list archive</a>
+  </li>
+  <li>
+    Messages by date
+  </li> 
+</ol>
+
+<p>
+Messages sent to the $ML-NAME$ mailing list, ordered by date from the
+newest to oldest.
+</p>
+
+<table class="wide upper-batch-nav">
+  <tr>
+    <td>
+      $NUMOFIDXMSG$ of $NUMOFMSG$ messages, page $PGLINKLIST(5;5)$
+      &bull;
+      <a href="$TIDXFNAME$">$TIDXLABEL$</a>
+    </td>
+    <td class="batch-navigation-links" style="text-align: right;">
+      $PGLINK(PREV)$ &bull; $PGLINK(NEXT)$
+    </td>
+  </tr>
+</table>
+
+<ul class="mail wide message-count-$NUMOFMSG$">
+</LISTBEGIN>
+
+<LISTEND>
+</ul>
+<table class="wide lower-batch-nav message-count-$NUMOFMSG$">
+  <tr>
+    <td>
+      $NUMOFIDXMSG$ of $NUMOFMSG$ messages, page $PGLINKLIST(5;5)$
+      &bull;
+      <a href="$TIDXFNAME$">$TIDXLABEL$</a>
+    </td>
+    <td class="batch-navigation-links" style="text-align: right;">
+      $PGLINK(PREV)$ &bull; $PGLINK(NEXT)$
+    </td>
+  </tr>
+</table>
+</LISTEND>
+
+
+<!-- Message item formatting for all lists. -->
+<DefineVar>
+MESSAGE-LIST-ITEM
+<li>
+  <strong>$SUBJECT$</strong>
+  <br />From: $FROMNAME$, $MSGGMTDATE(CUR;%Y-%m-%d)$
+</li>
+</DefineVar>
+
+<LITEMPLATE>
+$MESSAGE-LIST-ITEM$
+</LITEMPLATE>
+
+<TTOPBEGIN>
+$MESSAGE-LIST-ITEM$
+</TTOPBEGIN>
+
+<TLITXT>
+$MESSAGE-LIST-ITEM$
+</TLITXT>
+
+<TSINGLETXT>
+$MESSAGE-LIST-ITEM$
+</TSINGLETXT>
+
 
 <!-- Message pages -->
 <MSGPGBEGIN>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-        "http://www.w3.org/TR/html4/loose.dtd">
-<html>
-<head>
-<title>$SUBJECTNA$</title>
-<link rev="made" href="mailto:$FROMADDR$">
-</head>
-<body text="#000000" bgcolor="#FFFFFF">
-<p><a href="https://launchpad.net/"><img border="0" src="https://launchpad.net/@@/launchpad-logo-and-name.png" alt="Launchpad logo and name."/></a></p>
+$PAGE-TOP-START$
+$SUBJECTNA$ : Mailing list archive : $ML-NAME$ team in Launchpad
+$PAGE-TOP-END$
 </MSGPGBEGIN>
 
 <MSGPGEND>
-<hr/>
-<p><strong>This is the $ML-FULL-TITLE$&mdash;&nbsp;see also the
-general <a href="https://help.launchpad.net/Teams/MailingLists"
->help for Launchpad.net mailing lists</a>.</strong></p>
-<p><em>(Formatted by <a href="$DOCURL$">MHonArc</a>.)</em></p>
-</body>
-</html>
+$PAGE-BOTTOM$
 </MSGPGEND>
+
+<SUBJECTHEADER>
+  <!-- Supress the header section since it was moved before the top links. -->
+</SUBJECTHEADER>
+
+<!-- Message navigation links -->
+<TopLinks>
+<h1>$SUBJECTNA$</h1>
+
+<ol class="breadcrumbs"> 
+  <li>
+    <img src="https://launchpad.net/@@/team" alt=""/>
+    <a href="https://launchpad.net/~$ML-NAME$">$ML-NAME$ team</a>
+  </li>
+  <li>
+    <a href="https://lists.launchpad.net/$ML-NAME$/">Mailing list archive</a>
+  </li>
+  <li>
+    Message #$MSGNUM$
+  </li> 
+</ol>
+
+<table class="wide upper-batch-nav">
+  <tr>
+    <td>
+      <a href="$IDXFNAME$">$IDXLABEL$</a>
+      &bull;
+      <a href="$TIDXFNAME$">$TIDXLABEL$</a>
+    </td>
+    <td class="batch-navigation-links" style="text-align: right;">
+      <a href="$MSG(TPREV)$">Thread Previous</a> &bull;
+      <a href="$MSG(PREV)$">Date Previous</a> &bull;
+      <a class="next" href="$MSG(NEXT)$">Date Next</a> &bull;
+      <a href="$MSG(TNEXT)$">Thread Next</a>
+    </td>
+  </tr>
+</table>
+</TopLinks>
+
+<BotLinks>
+<table class="wide lower-batch-nav">
+  <tr>
+    <td>
+      <a href="$IDXFNAME$">$IDXLABEL$</a>
+      &bull;
+      <a href="$TIDXFNAME$">$TIDXLABEL$</a>
+    </td>
+    <td class="batch-navigation-links">
+      <a href="$MSG(TPREV)$">Thread Previous</a> &bull;
+      <a href="$MSG(PREV)$">Date Previous</a> &bull;
+      <a class="next" href="$MSG(NEXT)$">Date Next</a> &bull;
+      <a href="$MSG(TNEXT)$">Thread Next</a>
+    </td>
+  </tr>
+</table>
+</BotLinks>
+
+<!-- Exclude noisy message fields -->
+<EXCS>
+subject
+list-
+dkim-
+Domainkey-
+precendence
+References
+</EXCS>
+
+<!-- Format message header in a definition list. -->
+
+<Fieldsbeg>
+<ul class="iconed">
+</FieldsBeg>
+
+<LabelBeg>
+<li>
+  <strong>
+</LabelBeg>
+
+<LabelEnd>
+</strong>:
+</LabelEnd>
+
+<FldBeg>
+</FldBeg>
+
+<FldEnd>
+</li>
+</FldEnd>
+
+<FieldsEnd>
+</ul>
+</FieldsEnd>
+
+<LabelStyles>
+-default-:strong
+</LabelStyles>
+
+<FOLUPBEGIN>
+<h3>Follow ups</h3>
+<ul class="mail wide">
+</FOLUPBEGIN>
+
+<FOLUPLITXT>
+$MESSAGE-LIST-ITEM$
+</FOLUPLITXT>
+
+<FOLUPEND>
+</ul>
+</FOLUPEND>
+
+
+<REFSBEGIN>
+<h3>References</h3>
+<ul class="mail wide">
+</REFSBEGIN>
+
+<REFSLITXT>
+$MESSAGE-LIST-ITEM$
+</REFSLITXT>
+
+<REFSEND>
+</ul>
+</REFSEND>
