@@ -527,7 +527,8 @@ class BugViewMixin:
         if features.getFeatureFlag('malone.advanced-subscriptions.enabled'):
             user_is_subscribed = (
                 # Note that we don't have to check for isMuted(), since
-                # it's a subset of isSubscribed().
+                # if isMuted() is True isSubscribed() will also be
+                # True.
                 self.context.isSubscribed(self.user) or
                 self.context.isSubscribedToDupes(self.user) or
                 self.context.personIsAlsoNotifiedSubscriber(self.user))
