@@ -192,7 +192,7 @@ def construct_email_notifications(bug_notifications):
         address = str(email_person.preferredemail.email)
         # Choosing the first recipient is a bit arbitrary, but it
         # is simple for the user to understand.  We may want to reconsider
-        # this in the future, in the face of subscription filters.
+        # this in the future.
         reason = recipients[0].reason_body
         rationale = recipients[0].reason_header
 

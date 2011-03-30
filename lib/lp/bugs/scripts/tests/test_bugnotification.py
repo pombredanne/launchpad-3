@@ -630,9 +630,7 @@ class EmailNotificationsBugMixin:
     def test_change_seen(self):
         # A smoketest.
         self.change(self.old, self.new)
-        from storm.tracer import debug; debug(True)
         message, body = self.get_messages().next()
-        debug(False)
         self.assertThat(body, Contains(self.unexpected_text))
 
     def test_undone_change_sends_no_emails(self):
@@ -687,9 +685,7 @@ class EmailNotificationsBugTaskMixin(EmailNotificationsBugMixin):
             self.bug.addTask(self.product_owner, product2)
         self.change(self.old, self.new, index=0)
         self.change(self.new, self.old, index=1)
-        from storm.tracer import debug; debug(True)
         message, body = self.get_messages().next()
-        debug(False)
         self.assertThat(body, Contains(self.unexpected_text))
 
 

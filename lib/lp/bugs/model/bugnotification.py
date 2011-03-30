@@ -34,6 +34,7 @@ from storm.locals import (
     Int,
     Reference,
     )
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
@@ -55,6 +56,7 @@ from lp.bugs.interfaces.bugnotification import (
 from lp.bugs.model.bugactivity import BugActivity
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
 from lp.bugs.model.structuralsubscription import StructuralSubscription
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.stormbase import StormBase
@@ -97,24 +99,22 @@ class BugNotificationSet:
 
     def getNotificationsToSend(self):
         """See IBugNotificationSet."""
-        # Prevent circular import fun.
+        # We preload the bug activity and the message in order to
+        # try to reduce subsequent database calls: try to get direct
+        # dependencies at once.  We then also pre-load the pertinent bugs,
+        # people (with their own dependencies), and message chunks before
+        # returning the notifications that should be processed.
+        # Sidestep circular reference.
         from lp.bugs.model.bug import Bug
-        # We preload the activity, the bug, the message, and the message's
-        # owner in order to try to reduce subsequent database calls: try
-        # to get it all at once.
         store = IStore(BugNotification)
         source = store.using(BugNotification,
                              Join(Message,
                                   BugNotification.message==Message.id),
-                             Join(Person,
-                                  Message.owner==Person.id),
-                             Join(Bug,
-                                  BugNotification.bug==Bug.id),
                              LeftJoin(
                                 BugActivity,
                                 BugNotification.activity==BugActivity.id))
         results = list(source.find(
-            (BugNotification, BugActivity, Bug, Message, Person),
+            (BugNotification, BugActivity, Message),
             BugNotification.date_emailed == None).order_by(
             'BugNotification.bug', '-BugNotification.id'))
         interval = timedelta(
@@ -123,19 +123,33 @@ class BugNotificationSet:
             datetime.now(pytz.timezone('UTC')) - interval)
         last_omitted_notification = None
         pending_notifications = []
-        for notification, ignore, ignore, ignore, ignore in results:
+        people_ids = set()
+        bug_ids = set()
+        for notification, ignore, ignore in results:
             if notification.message.datecreated > time_limit:
                 last_omitted_notification = notification
             elif (last_omitted_notification is not None and
-                notification.message.owner ==
-                   last_omitted_notification.message.owner and
-                notification.bug == last_omitted_notification.bug and
+                notification.message.ownerID ==
+                   last_omitted_notification.message.ownerID and
+                notification.bugID == last_omitted_notification.bugID and
                 last_omitted_notification.message.datecreated -
                 notification.message.datecreated < interval):
                 last_omitted_notification = notification
             if last_omitted_notification != notification:
                 last_omitted_notification = None
                 pending_notifications.append(notification)
+                people_ids.add(notification.message.ownerID)
+                bug_ids.add(notification.bugID)
+        # Now we do some calls that are purely for cacheing.
+        # Converting these into lists forces the queries to execute.
+        if pending_notifications:
+            cached_people = list(
+                getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                    list(people_ids),
+                    need_validity=True,
+                    need_preferred_email=True))
+            cached_bugs = list(
+                IStore(Bug).find(Bug, In(Bug.id, list(bug_ids))))
         pending_notifications.reverse()
         return pending_notifications
 
