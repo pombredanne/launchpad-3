@@ -9,7 +9,10 @@ __all__ = [
     'POTMsgSet',
     ]
 
-
+from collections import (
+    defaultdict,
+    namedtuple,
+    )
 import logging
 import re
 
@@ -361,7 +364,8 @@ class POTMsgSet(SQLBase):
 
         return TranslationMessage.select(query)
 
-    def _getExternalTranslationMessages(self, language, used):
+    def _getExternalTranslationMessages(self, suggested_languages=(),
+        used_languages=()):
         """Return external suggestions for this message.
 
         External suggestions are all TranslationMessages for the
@@ -372,6 +376,10 @@ class POTMsgSet(SQLBase):
 
         Suggestions are read-only, so these objects come from the slave
         store.
+
+        :param suggested_languages: Languages that suggestions should be found
+            for.
+        :param used_languages: Languages that used messages should be found for.
         """
         if not config.rosetta.global_suggestions_enabled:
             return []
@@ -385,15 +393,27 @@ class POTMsgSet(SQLBase):
         # Also note that there is a NOT(in_use_clause) index.
         in_use_clause = (
             "(is_current_ubuntu IS TRUE OR is_current_upstream IS TRUE)")
-        if used:
-            query = [in_use_clause]
-        else:
-            query = ["(NOT %s)" % in_use_clause]
-        query.append('TranslationMessage.language = %s' % sqlvalues(language))
-        query.append('TranslationMessage.potmsgset <> %s' % sqlvalues(self))
+        # Present a list of language + usage constraints to sql. A language
+        # can either be unconstrained, used, or suggested depending on which
+        # of suggested_languages, used_languages it appears in.
+        suggested_languages = set(lang.id for lang in suggested_languages)
+        used_languages = set(lang.id for lang in used_languages)
+        both_languages = suggested_languages.intersection(used_languages)
+        suggested_languages = suggested_languages - both_languages
+        used_languages = used_languages - both_languages
+        lang_used = []
+        if both_languages:
+            lang_used.append('TranslationMessage.language IN %s' % 
+                quote(both_languages))
+        if used_languages:
+            lang_used.append('(TranslationMessage.language IN %s AND %s)' % (
+                quote(used_languages), in_use_clause))
+        if suggested_languages:
+            lang_used.append(
+                '(TranslationMessage.language IN %s AND NOT %s)' % (
+                quote(suggested_languages), in_use_clause))
 
-        query.append('''
-            potmsgset IN (
+        pots = SQL('''pots AS (
                 SELECT POTMsgSet.id
                 FROM POTMsgSet
                 JOIN TranslationTemplateItem ON
@@ -401,8 +421,8 @@ class POTMsgSet(SQLBase):
                 JOIN SuggestivePOTemplate ON
                     TranslationTemplateItem.potemplate =
                         SuggestivePOTemplate.potemplate
-                WHERE msgid_singular = %s
-            )''' % sqlvalues(self.msgid_singular))
+                WHERE msgid_singular = %s and potmsgset.id <> %s
+            )''' % sqlvalues(self.msgid_singular, self))
 
         # Subquery to find the ids of TranslationMessages that are
         # matching suggestions.
@@ -416,17 +436,17 @@ class POTMsgSet(SQLBase):
             for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)])
         ids_query_params = {
             'msgstrs': msgstrs,
-            'where': ' AND '.join(query),
+            'where': '(' + ' OR '.join(lang_used) + ')',
         }
         ids_query = '''
             SELECT DISTINCT ON (%(msgstrs)s)
                 TranslationMessage.id
-            FROM TranslationMessage
+            FROM TranslationMessage join pots on pots.id=translationmessage.potmsgset
             WHERE %(where)s
             ORDER BY %(msgstrs)s, date_created DESC
             ''' % ids_query_params
 
-        result = IStore(TranslationMessage).find(
+        result = IStore(TranslationMessage).with_(pots).find(
             TranslationMessage,
             TranslationMessage.id.is_in(SQL(ids_query)))
 
@@ -434,11 +454,32 @@ class POTMsgSet(SQLBase):
 
     def getExternallyUsedTranslationMessages(self, language):
         """See `IPOTMsgSet`."""
-        return self._getExternalTranslationMessages(language, used=True)
+        return self._getExternalTranslationMessages(used_languages=[language])
 
     def getExternallySuggestedTranslationMessages(self, language):
         """See `IPOTMsgSet`."""
-        return self._getExternalTranslationMessages(language, used=False)
+        return self._getExternalTranslationMessages(suggested_languages=[language])
+
+    def getExternallySuggestedOrUsedTranslationMessages(self,
+        suggested_languages=(), used_languages=()):
+        """See `IPOTMsgSet`."""
+        # This method exists because suggestions + used == all external
+        # messages : its better not to do the work twice. We could use a
+        # temp table and query twice, but as the list length is capped at
+        # 2000, doing a single pass in python should be insignificantly
+        # slower.
+        result_type = namedtuple('SuggestedOrUsed', 'suggested used')
+        result = defaultdict(lambda:result_type([], []))
+        for message in self._getExternalTranslationMessages(
+            suggested_languages=suggested_languages,
+            used_languages=used_languages):
+            in_use = message.is_current_ubuntu or message.is_current_upstream
+            language_result = result[message.language]
+            if in_use:
+                language_result.used.append(message)
+            else:
+                language_result.suggested.append(message)
+        return result
 
     @property
     def flags(self):

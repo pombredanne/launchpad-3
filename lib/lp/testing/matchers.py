@@ -3,6 +3,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BrowsesWithQueryLimit',
     'Contains',
     'DocTestMatches',
     'DoesNotCorrectlyProvide',
@@ -24,6 +25,7 @@ from testtools.content_type import UTF8_TEXT
 from testtools.matchers import (
     Equals,
     DocTestMatches as OriginalDocTestMatches,
+    LessThan,
     Matcher,
     Mismatch,
     MismatchesAll,
@@ -40,7 +42,55 @@ from zope.security.proxy import (
     Proxy,
     )
 
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.batching import BatchNavigator
+from lp.testing._login import person_logged_in
+from lp.testing._webservice import QueryCollector
+
+
+class BrowsesWithQueryLimit(Matcher):
+    """Matches the rendering of an objects default view with a query limit.
+
+    This is a wrapper for HasQueryCount which does the heavy lifting on the
+    query comparison - BrowsesWithQueryLimit simply provides convenient
+    glue to use a userbrowser and view an object.
+    """
+
+    def __init__(self, query_limit, user, view_name="+index", **options):
+        """Create a BrowsesWithQueryLimit checking for limit query_limit.
+
+        :param query_limit: The number of queries permited for the page.
+        :param user: The user to use to render the page.
+        :param view_name: The name of the view to use to render tha page.
+        :param options: Additional options for view generation eg rootsite.
+        """
+        self.query_limit = query_limit
+        self.user = user
+        self.view_name = view_name
+        self.options = options
+
+    def match(self, context):
+        # circular dependencies.
+        from canonical.launchpad.testing.pages import setupBrowserForUser
+        with person_logged_in(self.user):
+            context_url = canonical_url(
+                context, view_name=self.view_name, **self.options)
+        browser = setupBrowserForUser(self.user)
+        collector = QueryCollector()
+        collector.register()
+        try:
+            browser.open(context_url)
+            counter = HasQueryCount(LessThan(self.query_limit))
+            # When bug 724691 is fixed, this can become an AnnotateMismatch to
+            # describe the object being rendered.
+            return counter.match(collector)
+        finally:
+            # Unregister now in case this method is called multiple
+            # times in a single test.
+            collector.unregister()
+
+    def __str__(self):
+        return "BrowsesWithQueryLimit(%s, %s)" % (self.query_limit, self.user)
 
 
 class DoesNotProvide(Mismatch):

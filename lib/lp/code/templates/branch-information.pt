@@ -22,15 +22,7 @@
 
     <dl id="status">
       <dt>Status:</dt>
-      <dd>
-        <span id="branch-details-status-value">
-        <span tal:attributes="class string:value branchstatus${context/lifecycle_status/name}"
-              tal:content="structure context/lifecycle_status/title" />&nbsp;
-        <a href="+edit-status" tal:condition="context/required:launchpad.Edit">
-          <img class="editicon" src="/@@/edit"/>
-        </a>
-        </span>
-      </dd>
+      <dd tal:content="structure view/status_widget" />
     </dl>
   </div>
 

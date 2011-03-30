@@ -18,9 +18,11 @@ from datetime import (
 
 import pytz
 from storm.expr import (
+    Desc,
     Join,
     Max,
-    Select)
+    Select,
+    )
 from storm import Undef
 
 from zope.interface import implements
@@ -29,6 +31,7 @@ from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.interfaces.lpstorm import ISlaveStore
+from canonical.launchpad.webapp.publisher import canonical_url
 
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
@@ -48,6 +51,17 @@ class RecipeBuildRecord(namedtuple(
     'RecipeBuildRecord',
     """sourcepackagename, recipeowner, archive, recipe,
         most_recent_build_time""")):
+
+    def __new__(cls, sourcepackagename, recipeowner, archive, recipe,
+                most_recent_build_time):
+        # Ensure that a valid (not None) recipe is used. This may change in
+        # future if we support build records with no recipe.
+        assert recipe is not None, "RecipeBuildRecord requires a recipe."
+        self = super(RecipeBuildRecord, cls).__new__(
+            cls, sourcepackagename, recipeowner, archive, recipe,
+            most_recent_build_time)
+        return self
+
     # We need to implement our own equality check since __eq__ is broken on
     # SourcePackageRecipe. It's broken there because __eq__ is broken,
     # or not supported, on storm's ReferenceSet implementation.
@@ -71,6 +85,14 @@ class RecipeBuildRecord(namedtuple(
         return self.archive.distribution.getSourcePackage(
             self.sourcepackagename)
 
+    @property
+    def recipe_name(self):
+        return self.recipe.name
+
+    @property
+    def recipe_url(self):
+        return canonical_url(self.recipe, rootsite='code')
+
 
 class RecipeBuildRecordSet:
     """See `IRecipeBuildRecordSet`."""
@@ -83,8 +105,6 @@ class RecipeBuildRecordSet:
         store = ISlaveStore(SourcePackageRecipe)
         tables = [
             SourcePackageRecipe,
-            Join(Person,
-                 Person.id == SourcePackageRecipe.owner_id),
             Join(SourcePackageRecipeBuild,
                  SourcePackageRecipeBuild.recipe_id ==
                  SourcePackageRecipe.id),
@@ -100,9 +120,6 @@ class RecipeBuildRecordSet:
             Join(PackageBuild,
                  PackageBuild.id ==
                  BinaryPackageBuild.package_build_id),
-            Join(Archive,
-                 Archive.id ==
-                 SourcePackageRecipe.daily_build_archive_id),
             Join(BuildFarmJob,
                  BuildFarmJob.id ==
                  PackageBuild.build_farm_job_id),
@@ -114,35 +131,68 @@ class RecipeBuildRecordSet:
             epoch = datetime.now(pytz.UTC) - timedelta(days=epoch_days)
             where.append(BuildFarmJob.date_finished >= epoch)
 
+        # We include SourcePackageName directly in the query instead of just
+        # selecting its id and fetching the objects later. This is because
+        # SourcePackageName only has an id and and a name and we use the name
+        # for the order by so there's no benefit in introducing another query
+        # for eager fetching later. If SourcePackageName gets new attributes,
+        # this can be re-evaluated.
         result_set = store.using(*tables).find(
-                (SourcePackageName,
-                    Person,
-                    SourcePackageRecipe,
-                    Archive,
+                (SourcePackageRecipe.id,
+                    SourcePackageName,
                     Max(BuildFarmJob.date_finished),
                     ),
                 *where
             ).group_by(
+                SourcePackageRecipe.id,
                 SourcePackageName,
-                Person,
-                SourcePackageRecipe,
-                Archive,
             ).order_by(
                 SourcePackageName.name,
-                Person.name,
-                Archive.name,
-                )
+                Desc(Max(BuildFarmJob.date_finished)),
+            )
 
         def _makeRecipeBuildRecord(values):
-            (sourcepackagename, recipeowner, recipe, archive,
-                date_finished) = values
+            (recipe_id, sourcepackagename, date_finished) = values
+            recipe = store.get(SourcePackageRecipe, recipe_id)
             return RecipeBuildRecord(
-                sourcepackagename, recipeowner,
-                archive, recipe,
+                sourcepackagename, recipe.owner,
+                recipe.daily_build_archive, recipe,
                 date_finished)
 
+        to_recipes_ids = lambda rows: [row[0] for row in rows]
+
+        def eager_load_recipes(recipe_ids):
+            if not recipe_ids:
+                return []
+            return list(store.find(
+                SourcePackageRecipe,
+                SourcePackageRecipe.id.is_in(recipe_ids)))
+
+        def eager_load_owners(recipes):
+            owner_ids = set(recipe.owner_id for recipe in recipes)
+            owner_ids.discard(None)
+            if not owner_ids:
+                return
+            list(store.find(Person, Person.id.is_in(owner_ids)))
+
+        def eager_load_archives(recipes):
+            archive_ids = set(
+            recipe.daily_build_archive_id for recipe in recipes)
+            archive_ids.discard(None)
+            if not archive_ids:
+                return
+            list(store.find(Archive, Archive.id.is_in(archive_ids)))
+
+        def _prefetchRecipeBuildData(rows):
+            recipe_ids = set(to_recipes_ids(rows))
+            recipe_ids.discard(None)
+            recipes = eager_load_recipes(recipe_ids)
+            eager_load_owners(recipes)
+            eager_load_archives(recipes)
+
         return RecipeBuildRecordResultSet(
-            result_set, _makeRecipeBuildRecord)
+            result_set, _makeRecipeBuildRecord,
+            pre_iter_hook=_prefetchRecipeBuildData)
 
 
 class RecipeBuildRecordResultSet(DecoratedResultSet):

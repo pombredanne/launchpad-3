@@ -30,7 +30,6 @@ __all__ = [
     'IDistroSeriesBugTask',
     'IFrontPageBugTaskSearch',
     'INominationsReviewTableBatchNavigator',
-    'INullBugTask',
     'IPersonBugTaskSearch',
     'IProductSeriesBugTask',
     'IRemoveQuestionFromBugTaskForm',
@@ -46,6 +45,8 @@ __all__ = [
     'UserCannotEditBugTaskStatus',
     'valid_remote_bug_url',
     ]
+
+import httplib
 
 from lazr.enum import (
     DBEnumeratedType,
@@ -105,9 +106,9 @@ from canonical.launchpad.searchbuilder import (
     any,
     NULL,
     )
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.name import name_validator
 from lp.bugs.interfaces.bugwatch import (
     IBugWatch,
     IBugWatchSet,
@@ -402,6 +403,7 @@ DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY = [
 
 class ConjoinedBugTaskEditError(Exception):
     """An error raised when trying to modify a conjoined bugtask."""
+    webservice_error(httplib.BAD_REQUEST)
 
 
 class UserCannotEditBugTaskStatus(Unauthorized):
@@ -410,7 +412,7 @@ class UserCannotEditBugTaskStatus(Unauthorized):
     Raised when a user tries to transition to a new status who doesn't
     have the necessary permissions.
     """
-    webservice_error(401) # HTTP Error: 'Unauthorised'
+    webservice_error(httplib.UNAUTHORIZED)
 
 
 class UserCannotEditBugTaskImportance(Unauthorized):
@@ -419,7 +421,7 @@ class UserCannotEditBugTaskImportance(Unauthorized):
     Raised when a user tries to transition to a new importance who
     doesn't have the necessary permissions.
     """
-    webservice_error(401) # HTTP Error: 'Unauthorised'
+    webservice_error(httplib.UNAUTHORIZED)
 
 
 class UserCannotEditBugTaskMilestone(Unauthorized):
@@ -428,7 +430,7 @@ class UserCannotEditBugTaskMilestone(Unauthorized):
     Raised when a user tries to transition to a milestone who doesn't have
     the necessary permissions.
     """
-    webservice_error(401) # HTTP Error: 'Unauthorised'
+    webservice_error(httplib.UNAUTHORIZED)
 
 
 class UserCannotEditBugTaskAssignee(Unauthorized):
@@ -437,18 +439,18 @@ class UserCannotEditBugTaskAssignee(Unauthorized):
     Raised when a user with insufficient prilieges tries to set
     the assignee of a bug task.
     """
-    webservice_error(401) # HTTP Error: 'Unauthorised'
+    webservice_error(httplib.UNAUTHORIZED)
 
 
 class IllegalTarget(Exception):
     """Exception raised when trying to set an illegal bug task target."""
-    webservice_error(400) #Bad request.
+    webservice_error(httplib.BAD_REQUEST)
 
 
 class IllegalRelatedBugTasksParams(Exception):
     """Exception raised when trying to overwrite all relevant parameters
     in a search for related bug tasks"""
-    webservice_error(400) #Bad request.
+    webservice_error(httplib.BAD_REQUEST)
 
 
 class IBugTask(IHasDateCreated, IHasBug):
@@ -460,17 +462,21 @@ class IBugTask(IHasDateCreated, IHasBug):
         BugField(title=_("Bug"), readonly=True))
     product = Choice(
         title=_('Project'), required=False, vocabulary='Product')
+    productID = Attribute('The product ID')
     productseries = Choice(
         title=_('Series'), required=False, vocabulary='ProductSeries')
     productseriesID = Attribute('The product series ID')
     sourcepackagename = Choice(
         title=_("Package"), required=False,
         vocabulary='SourcePackageName')
+    sourcepackagenameID = Attribute('The sourcepackagename ID')
     distribution = Choice(
         title=_("Distribution"), required=False, vocabulary='Distribution')
+    distributionID = Attribute('The distribution ID')
     distroseries = Choice(
         title=_("Series"), required=False,
         vocabulary='DistroSeries')
+    distroseriesID = Attribute('The distroseries ID')
     milestone = exported(ReferenceChoice(
         title=_('Milestone'),
         required=False,
@@ -838,16 +844,6 @@ IBugTask['related_tasks'].value_type.schema = IBugTask
 # We are forced to define this now to avoid circular import problems.
 IBugWatch['bugtasks'].value_type.schema = IBugTask
 
-
-class INullBugTask(IBugTask):
-    """A marker interface for an IBugTask that doesn't exist in a context.
-
-    An INullBugTask is useful when wanting to view a bug in a context
-    where that bug hasn't yet been reported. This might happen, for
-    example, when searching to see if a bug you want to report has
-    already been filed and finding matching reports that don't yet
-    have tasks reported in your context.
-    """
 
 UPSTREAM_STATUS_VOCABULARY = SimpleVocabulary(
     [SimpleTerm(
@@ -1282,21 +1278,37 @@ class BugTaskSearchParams:
             supported.
         """
         # Yay circular deps.
+        from lp.registry.interfaces.distribution import IDistribution
         from lp.registry.interfaces.distroseries import IDistroSeries
+        from lp.registry.interfaces.product import IProduct
         from lp.registry.interfaces.productseries import IProductSeries
         from lp.registry.interfaces.milestone import IMilestone
+        from lp.registry.interfaces.projectgroup import IProjectGroup
+        from lp.registry.interfaces.sourcepackage import ISourcePackage
+        from lp.registry.interfaces.distributionsourcepackage import \
+            IDistributionSourcePackage
         if isinstance(target, (any, all)):
             assert len(target.query_values), \
                 'cannot determine target with no targets'
             instance = target.query_values[0]
         else:
             instance = target
-        if IDistroSeries.providedBy(instance):
+        if IDistribution.providedBy(instance):
+            self.setDistribution(target)
+        elif IDistroSeries.providedBy(instance):
             self.setDistroSeries(target)
+        elif IProduct.providedBy(instance):
+            self.setProduct(target)
         elif IProductSeries.providedBy(instance):
             self.setProductSeries(target)
         elif IMilestone.providedBy(instance):
             self.milestone = target
+        elif ISourcePackage.providedBy(instance):
+            self.setSourcePackage(target)
+        elif IDistributionSourcePackage.providedBy(instance):
+            self.setSourcePackage(target)
+        elif IProjectGroup.providedBy(instance):
+            self.setProject(target)
         else:
             raise AssertionError("unknown target type %r" % target)
 
@@ -1597,25 +1609,23 @@ class IBugTaskSet(Interface):
     def getOpenBugTasksPerProduct(user, products):
         """Return open bugtask count for multiple products."""
 
-    def getAllStructuralSubscriptions(bugtasks):
-        """Return all potential structural subscriptions for the bugtasks.
-
-        This method ignores subscription filters.
-        """
-
-    def getStructuralSubscribers(bugtasks, recipients=None, level=None):
-        """Return `IPerson`s subscribed to the given bug tasks.
-
-        This takes into account bug subscription filters.
-        """
-
     def getPrecachedNonConjoinedBugTasks(user, milestone):
         """List of non-conjoined bugtasks targeted to the milestone.
 
         The assignee and the assignee's validity are precached.
         """
 
+    def getBugTaskTargetMilestones(self, bugtasks, eager=False):
+        """Get all the milestones for the selected bugtasks' targets."""
+
     open_bugtask_search = Attribute("A search returning open bugTasks.")
+
+    def buildUpstreamClause(params):
+        """Create a SQL clause to do upstream checks in a bug search.
+        
+        :return: A string SQL expression.
+        """
+
 
 
 def valid_remote_bug_url(value):

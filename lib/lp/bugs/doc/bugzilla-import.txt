@@ -359,6 +359,16 @@ upstream bug tracker URL is included in the URL field of the bug.
 The Malone equivalent of this is to create a second task on the bug,
 and attach a watch to the upstream bug tracker:
 
+    # Make sane data to play this test.
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+    >>> evolution_dsp = debian.getSourcePackage('evolution')
+    >>> ignore = factory.makeSourcePackagePublishingHistory(
+    ...     distroseries=debian.currentseries,
+    ...     sourcepackagename=evolution_dsp.sourcepackagename)
+    >>> transaction.commit()
+
   >>> bug = bz.handleBug(5)
   >>> bugInfo(bug)
   Title: Test bug 5

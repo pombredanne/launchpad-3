@@ -23,7 +23,8 @@ class TestInlineEditPickerWidget(TestCaseWithFactory):
     def getWidget(self, **kwargs):
         class ITest(Interface):
             test_field = Choice(**kwargs)
-        return InlineEditPickerWidget(None, ITest['test_field'], None)
+        return InlineEditPickerWidget(
+            None, ITest['test_field'], None, edit_url='fake')
 
     def test_huge_vocabulary_is_searchable(self):
         # Make sure that when given a field for a huge vocabulary, the picker

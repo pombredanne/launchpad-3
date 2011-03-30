@@ -36,7 +36,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.validators.version import valid_debian_version
+from lp.app.validators.version import valid_debian_version
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.soyuz.interfaces.archive import IArchive
 
@@ -44,6 +44,7 @@ from lp.soyuz.interfaces.archive import IArchive
 class IBinaryPackageRelease(Interface):
     id = Int(title=_('ID'), required=True)
     binarypackagename = Int(required=True)
+    binarypackagenameID = Int(required=True)
     version = TextLine(required=True, constraint=valid_debian_version)
     summary = Text(required=True)
     description = Text(required=True)

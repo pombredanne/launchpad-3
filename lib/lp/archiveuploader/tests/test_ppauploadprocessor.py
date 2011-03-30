@@ -209,8 +209,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.assertEqual(pending_ppas.count(), 1)
         self.assertEqual(pending_ppas[0], self.name16.archive)
 
-        pub_sources = self.name16.archive.getPublishedSources(name='bar')
-        [pub_bar] = pub_sources
+        pub_bar = self.name16.archive.getPublishedSources(name='bar').one()
 
         self.assertEqual(pub_bar.sourcepackagerelease.version, u'1.0-1')
         self.assertEqual(pub_bar.status, PackagePublishingStatus.PENDING)
@@ -340,8 +339,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         _from_addr, _to_addrs, _raw_msg = stub.test_emails.pop()
 
         # The SourcePackageRelease still has a component of universe:
-        pub_sources = self.name16.archive.getPublishedSources(name="bar")
-        [pub_foo] = pub_sources
+        pub_foo = self.name16.archive.getPublishedSources(name="bar").one()
         self.assertEqual(
             pub_foo.sourcepackagerelease.component.name, "universe")
 
@@ -387,8 +385,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # Source publication and build record for breezy-i386
         # distroarchseries were created as expected. The source is ready
         # to receive the binary upload.
-        pub_sources = self.name16.archive.getPublishedSources(name='bar')
-        [pub_bar] = pub_sources
+        pub_bar = self.name16.archive.getPublishedSources(name='bar').one()
         self.assertEqual(pub_bar.sourcepackagerelease.version, u'1.0-1')
         self.assertEqual(pub_bar.status, PackagePublishingStatus.PENDING)
         self.assertEqual(pub_bar.component.name, 'main')
@@ -439,8 +436,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             PackageUploadStatus.DONE)
 
         # Copy source uploaded to name16 PPA to cprov's PPA.
-        pub_sources = self.name16.archive.getPublishedSources(name='bar')
-        [name16_pub_bar] = pub_sources
+        name16_pub_bar = self.name16.archive.getPublishedSources(
+            name='bar').one()
         cprov = getUtility(IPersonSet).getByName("cprov")
         cprov_pub_bar = name16_pub_bar.copyTo(
             self.breezy, PackagePublishingPocket.RELEASE, cprov.archive)
@@ -635,8 +632,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # the main archive later where it would be published using the
         # source's component if the standard auto-overrides don't match
         # an existing publication.
-        pub_sources = self.name16.archive.getPublishedSources(name='foocomm')
-        [pub_foocomm] = pub_sources
+        pub_foocomm = self.name16.archive.getPublishedSources(
+            name='foocomm').one()
         self.assertEqual(
             pub_foocomm.sourcepackagerelease.component.name, 'partner')
         self.assertEqual(pub_foocomm.component.name, 'main')
@@ -1125,7 +1122,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
             PackageUploadStatus.DONE)
 
         # Delete the published file.
-        [bar_src] = self.name16.archive.getPublishedSources(name="bar")
+        bar_src = self.name16.archive.getPublishedSources(name="bar").one()
         bar_src.requestDeletion(self.name16)
         bar_src.dateremoved = UTC_NOW
         self.layer.txn.commit()

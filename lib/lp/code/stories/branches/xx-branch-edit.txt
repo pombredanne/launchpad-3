@@ -111,7 +111,7 @@ The branch page is displayed with the new status:
     'http://code.launchpad.dev/~name12/gnome-terminal/klingon'
 
     >>> contents = browser.contents
-    >>> status_tag = find_tag_by_id(contents, 'branch-details-status-value')
+    >>> status_tag = find_tag_by_id(contents, 'edit-lifecycle_status')
     >>> print extract_text(status_tag)
     Merged
 

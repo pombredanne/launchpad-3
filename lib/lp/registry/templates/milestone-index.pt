@@ -199,10 +199,10 @@
 
     <div id="milestone-specs-bugs" class="portlet full-page-width">
         <h2>
-          <span id="specification-count" style="color: #3594bb;"
+          <span id="specification-count"
             tal:content="structure view/specification_count_text">2</span>
           and
-          <span id="bug-count" style="color: #9f2b33;"
+          <span id="bug-count"
             tal:content="structure view/bugtask_count_text">2</span>
           targeted
         </h2>

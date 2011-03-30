@@ -6,6 +6,8 @@ __metaclass__ = type
 __all__ = [
     "DistributionJobType",
     "IDistributionJob",
+    "IDistroSeriesDifferenceJob",
+    "IDistroSeriesDifferenceJobSource",
     "IInitialiseDistroSeriesJob",
     "IInitialiseDistroSeriesJobSource",
     "ISyncPackageJob",
@@ -76,6 +78,13 @@ class DistributionJobType(DBEnumeratedType):
         This job copies a single package, optionally including binaries.
         """)
 
+    DISTROSERIESDIFFERENCE = DBItem(3, """
+        Create, delete, or update a Distro Series Difference.
+
+        Updates the status of a potential difference between a derived
+        distribution release series and its parent series.
+        """)
+
 
 class IInitialiseDistroSeriesJobSource(IJobSource):
     """An interface for acquiring IInitialiseDistroSeriesJobs."""
@@ -126,3 +135,20 @@ class ISyncPackageJob(IRunnableJob):
     include_binaries = Bool(
             title=_("Copy binaries"),
             required=False, readonly=True)
+
+
+class IDistroSeriesDifferenceJob(IRunnableJob):
+        """A Job that performs actions related to DSDs."""
+
+
+class IDistroSeriesDifferenceJobSource(IJobSource):
+    """An `IJob` for creating `DistroSeriesDifference`s."""
+
+    def createForPackagePublication(distroseries, sourcepackagename):
+        """Create jobs as appropriate for a given status publication.
+
+        :param distroseries: A `DistroSeries` that is assumed to be
+            derived from another one.
+        :param sourcepackagename: A `SourcePackageName` that is being
+            published in `distroseries`.
+        """

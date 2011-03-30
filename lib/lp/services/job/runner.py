@@ -1,11 +1,9 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Facilities for running Jobs."""
 
-
 __metaclass__ = type
-
 
 __all__ = [
     'BaseRunnableJob',
@@ -284,14 +282,19 @@ class RunJobCommand(amp.Command):
     response = [('success', amp.Integer()), ('oops_id', amp.String())]
 
 
+def import_source(job_source_name):
+    """Return the IJobSource specified by its full name."""
+    module, name = job_source_name.rsplit('.', 1)
+    source_module = __import__(module, fromlist=[name])
+    return getattr(source_module, name)
+
+
 class JobRunnerProcess(child.AMPChild):
     """Base class for processes that run jobs."""
 
     def __init__(self, job_source_name, dbuser):
         child.AMPChild.__init__(self)
-        module, name = job_source_name.rsplit('.', 1)
-        source_module = __import__(module, fromlist=[name])
-        self.job_source = getattr(source_module, name)
+        self.job_source = import_source(job_source_name)
         self.context_manager = self.job_source.contextManager()
         # icky, but it's really a global value anyhow.
         self.__class__.dbuser = dbuser
@@ -299,6 +302,22 @@ class JobRunnerProcess(child.AMPChild):
     @classmethod
     def __enter__(cls):
         def handler(signum, frame):
+            # We raise an exception **and** schedule a call to exit the
+            # process hard.  This is because we cannot rely on the exception
+            # being raised during useful code.  Sometimes, it will be raised
+            # while the reactor is looping, which means that it will be
+            # ignored.
+            #
+            # If the exception is raised during the actual job, then we'll get
+            # a nice traceback indicating what timed out, and that will be
+            # logged as an OOPS.
+            #
+            # Regardless of where the exception is raised, we'll hard exit the
+            # process and have a TimeoutError OOPS logged, although that will
+            # have a crappy traceback. See the job_raised callback in
+            # TwistedJobRunner.runJobInSubprocess for the other half of that.
+            reactor.callFromThread(
+                reactor.callLater, 0, os._exit, TwistedJobRunner.TIMEOUT_CODE)
             raise TimeoutError
         scripts.execute_zcml_for_scripts(use_web_security=False)
         signal(SIGHUP, handler)
@@ -334,6 +353,8 @@ class JobRunnerProcess(child.AMPChild):
 class TwistedJobRunner(BaseJobRunner):
     """Run Jobs via twisted."""
 
+    TIMEOUT_CODE = 42
+
     def __init__(self, job_source, dbuser, logger=None, error_utility=None):
         env = {'PATH': os.environ['PATH']}
         for name in ('PYTHONPATH', 'LPCONFIG'):
@@ -367,7 +388,8 @@ class TwistedJobRunner(BaseJobRunner):
         self.logger.debug(
             'Running %r, lease expires %s', job, job.lease_expires)
         deferred = self.pool.doWork(
-            RunJobCommand, job_id = job_id, _deadline=deadline)
+            RunJobCommand, job_id=job_id, _deadline=deadline)
+
         def update(response):
             if response['success']:
                 self.completed_jobs.append(job)
@@ -377,18 +399,39 @@ class TwistedJobRunner(BaseJobRunner):
                 self.logger.debug('Incomplete %r', job)
             if response['oops_id'] != '':
                 self._logOopsId(response['oops_id'])
+
         def job_raised(failure):
             self.incomplete_jobs.append(job)
-            info = (failure.type, failure.value, failure.tb)
-            oops = self._doOops(job, info)
-            self._logOopsId(oops.id)
+            exit_code = getattr(failure.value, 'exitCode', None)
+            if exit_code == self.TIMEOUT_CODE:
+                # The process ended with the error code that we have
+                # arbitrarily chosen to indicate a timeout. Rather than log
+                # that error (ProcessDone), we log a TimeoutError instead.
+                self._logTimeout(job)
+            else:
+                info = (failure.type, failure.value, failure.tb)
+                oops = self._doOops(job, info)
+                self._logOopsId(oops.id)
         deferred.addCallbacks(update, job_raised)
         return deferred
 
+    def _logTimeout(self, job):
+        try:
+            raise TimeoutError
+        except TimeoutError:
+            oops = self._doOops(job, sys.exc_info())
+            self._logOopsId(oops.id)
+
     def getTaskSource(self):
         """Return a task source for all jobs in job_source."""
+
         def producer():
             while True:
+                # XXX: JonathanLange bug=741204: If we're getting all of the
+                # jobs at the start anyway, we can use a DeferredSemaphore,
+                # instead of the more complex PollingTaskSource, which is
+                # better suited to cases where we don't know how much work
+                # there will be.
                 jobs = list(self.job_source.iterReady())
                 if len(jobs) == 0:
                     yield None
@@ -398,9 +441,9 @@ class TwistedJobRunner(BaseJobRunner):
 
     def doConsumer(self):
         """Create a ParallelLimitedTaskConsumer for this job type."""
-        logger = logging.getLogger('gloop')
-        logger.addHandler(logging.StreamHandler(sys.stdout))
-        logger.setLevel(logging.DEBUG)
+        # 1 is hard-coded for now until we're sure we'd get gains by running
+        # more than one at a time.  Note that test_timeout relies on this
+        # being 1.
         consumer = ParallelLimitedTaskConsumer(1, logger=None)
         return consumer.consume(self.getTaskSource())
 
@@ -442,10 +485,16 @@ class JobCronScript(LaunchpadCronScript):
 
     config_name = None
 
-    def __init__(self, runner_class=JobRunner, test_args=None, name=None):
+    def __init__(self, runner_class=JobRunner, test_args=None, name=None,
+                 commandline_config=False):
         super(JobCronScript, self).__init__(
             name=name, dbuser=None, test_args=test_args)
         self._runner_class = runner_class
+        if not commandline_config:
+            return
+        self.config_name = self.args[0]
+        self.source_interface = import_source(
+            self.config_section.source_interface)
 
     @property
     def dbuser(self):

@@ -37,8 +37,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from storm.store import Store
 
-from canonical.database.sqlbase import sqlvalues
-
 from canonical.lp import initZopeless
 
 from canonical.launchpad.interfaces.launchpad import (
@@ -249,17 +247,33 @@ def create_sample_series(original_series, log):
         ('Feisty Fawn', SeriesStatus.OBSOLETE, '7.04'),
         ('Gutsy Gibbon', SeriesStatus.OBSOLETE, '7.10'),
         ('Hardy Heron', SeriesStatus.SUPPORTED, '8.04'),
-        ('Intrepid Ibex', SeriesStatus.SUPPORTED, '8.10'),
-        ('Jaunty Jackalope', SeriesStatus.SUPPORTED, '9.04'),
+        ('Intrepid Ibex', SeriesStatus.OBSOLETE, '8.10'),
+        ('Jaunty Jackalope', SeriesStatus.OBSOLETE, '9.04'),
         ('Karmic Koala', SeriesStatus.SUPPORTED, '9.10'),
-        ('Lucid Lynx', SeriesStatus.CURRENT, '10.04'),
-        ('Maverick Meerkat', SeriesStatus.DEVELOPMENT, '10.10'),
+        ('Lucid Lynx', SeriesStatus.SUPPORTED, '10.04'),
+        ('Maverick Meerkat', SeriesStatus.CURRENT, '10.10'),
+        ('Natty Narwhal', SeriesStatus.DEVELOPMENT, '11.04'),
+        ('Onerous Ocelot', SeriesStatus.FUTURE, '11.10'),
         ]
 
     parent = original_series
     for full_name, status, version in series_descriptions:
         log.info('Creating %s...' % full_name)
         parent = create_series(parent, full_name, version, status)
+        # Karmic is the first series in which the 3.0 formats are
+        # allowed. Subsequent series will inherit them.
+        if version == '9.10':
+            spfss = getUtility(ISourcePackageFormatSelectionSet)
+            spfss.add(parent, SourcePackageFormat.FORMAT_3_0_QUILT)
+            spfss.add(parent, SourcePackageFormat.FORMAT_3_0_NATIVE)
+
+
+def add_series_component(series):
+    """Permit a component in the given series."""
+    component = getUtility(IComponentSet)['main']
+    get_store(MASTER_FLAVOR).add(
+        ComponentSelection(
+            distroseries=series, component=component))
 
 
 def clean_up(distribution, log):
@@ -279,6 +293,9 @@ def clean_up(distribution, log):
     retire_ppas(distribution)
 
     retire_series(distribution)
+
+    # grumpy has no components, which upsets the publisher.
+    add_series_component(distribution['grumpy'])
 
 
 def set_source_package_format(distroseries):
@@ -355,11 +372,9 @@ def create_ppa(distribution, person, name):
     ppa = LaunchpadObjectFactory().makeArchive(
         distribution=distribution, owner=person, name=name, virtualized=False,
         description="Automatically created test PPA.")
-
-    series_name = distribution.currentseries.name
     ppa.external_dependencies = (
-        "deb http://archive.ubuntu.com/ubuntu %s "
-        "main restricted universe multiverse\n") % series_name
+        "deb http://archive.ubuntu.com/ubuntu %(series)s "
+        "main restricted universe multiverse\n")
 
 
 def main(argv):

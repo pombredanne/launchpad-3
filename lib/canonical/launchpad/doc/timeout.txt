@@ -81,14 +81,15 @@ and a TimeoutError is never raised.
 = Overriding hard timeouts via FeatureFlags =
 
 It's possible to use FeatureFlags to control the hard timeout. This is used to
-deal with pages that suddenly start performing badly, which are being optimised
-but should not hold back the overall timeout decrease, or for which there are
-only a few specific users and we are willing to have them run for longer
-periods. For more information on feature flags see lp.services.features.
+deal with pages that suddenly start performing badly, which are being
+optimised but should not hold back the overall timeout decrease, or for which
+there are only a few specific users and we are willing to have them run for
+longer periods. For more information on feature flags see
+lp.services.features.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from lp.services.features.model import FeatureFlag, getFeatureStore
-    >>> from lp.services.features import per_thread
+    >>> from lp.services.features import install_feature_controller
     >>> from lp.services.features.flags import FeatureController
     >>> from lp.services.features.webapp import ScopesFromRequest
 
@@ -99,8 +100,8 @@ Install the feature flag to increase the timeout value.
     ... db_statement_timeout = 10000'''))
 
     >>> empty_request = LaunchpadTestRequest()
-    >>> per_thread.features = FeatureController(
-    ...     ScopesFromRequest(empty_request).lookup)
+    >>> install_feature_controller(FeatureController(
+    ...     ScopesFromRequest(empty_request).lookup))
     >>> ignore = getFeatureStore().add(FeatureFlag(
     ...     scope=u'default', flag=u'hard_timeout', value=u'20000',
     ...     priority=1))

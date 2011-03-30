@@ -33,11 +33,6 @@ from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 vocabulary_registry = getVocabularyRegistry()
 
 
-BUG_INTERESTING_FIELDS = [
-    'name',
-    ]
-
-
 def get_string_representation(obj):
     """Returns a string representation of an object.
 
@@ -100,32 +95,13 @@ def what_changed(sqlobject_modified_event):
 
 @block_implicit_flushes
 def record_bug_added(bug, object_created_event):
-    getUtility(IBugActivitySet).new(
+    activity = getUtility(IBugActivitySet).new(
         bug = bug.id,
         datechanged = UTC_NOW,
         person = IPerson(object_created_event.user),
         whatchanged = "bug",
         message = "added bug")
-
-
-@block_implicit_flushes
-def record_bug_edited(bug_edited, sqlobject_modified_event):
-    # If the event was triggered by a web service named operation, its
-    # edited_fields will be empty. We'll need to check all interesting
-    # fields to see which were actually changed.
-    sqlobject_modified_event.edited_fields = BUG_INTERESTING_FIELDS
-
-    changes = what_changed(sqlobject_modified_event)
-    for changed_field in changes:
-        oldvalue, newvalue = changes[changed_field]
-        getUtility(IBugActivitySet).new(
-            bug=bug_edited.id,
-            datechanged=UTC_NOW,
-            person=IPerson(sqlobject_modified_event.user),
-            whatchanged=changed_field,
-            oldvalue=oldvalue,
-            newvalue=newvalue,
-            message="")
+    bug.addCommentNotification(bug.initial_message, activity=activity)
 
 
 @block_implicit_flushes

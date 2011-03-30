@@ -169,7 +169,7 @@ class DistributionSourcePackage(BugTargetBase,
     def displayname(self):
         """See `IDistributionSourcePackage`."""
         return '%s in %s' % (
-            self.sourcepackagename.name, self.distribution.name)
+            self.sourcepackagename.name, self.distribution.displayname)
 
     @property
     def bugtargetdisplayname(self):
@@ -572,14 +572,15 @@ class DistributionSourcePackage(BugTargetBase,
 
         Only create a record for primary archives (i.e. not for PPAs).
         """
-        sourcepackagename = spph.sourcepackagerelease.sourcepackagename
-        distribution = spph.distroseries.distribution
+        if spph.archive.purpose != ArchivePurpose.PRIMARY:
+            return
 
-        if spph.archive.purpose == ArchivePurpose.PRIMARY:
-            dsp = cls._get(distribution, sourcepackagename)
-            if dsp is None:
-                cls._new(distribution, sourcepackagename,
-                         is_upstream_link_allowed(spph))
+        distribution = spph.distroseries.distribution
+        sourcepackagename = spph.sourcepackagerelease.sourcepackagename
+        dsp = cls._get(distribution, sourcepackagename)
+        if dsp is None:
+            upstream_link_allowed = is_upstream_link_allowed(spph)
+            cls._new(distribution, sourcepackagename, upstream_link_allowed)
 
 
 class DistributionSourcePackageInDatabase(Storm):

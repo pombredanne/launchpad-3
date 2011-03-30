@@ -1291,6 +1291,9 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
         for milestone in self.visible_milestones:
             yield self.toTerm(milestone)
 
+    def __len__(self):
+        return len(self.visible_milestones)
+
     def __contains__(self, obj):
         if IProjectGroupMilestone.providedBy(obj):
             # ProjectGroup milestones are pseudo content objects

@@ -487,9 +487,6 @@ class DistributionUsingMaloneVocabulary:
         return (IDistribution.providedBy(obj)
                 and obj.bug_tracking_usage == ServiceUsage.LAUNCHPAD)
 
-    def getQuery(self):
-        return None
-
     def getTerm(self, obj):
         if obj not in self:
             raise LookupError(obj)

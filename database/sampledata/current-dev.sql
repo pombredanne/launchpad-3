@@ -1,6 +1,6 @@
 -- Copyright 2010 Canonical Ltd.  This software is licensed under the
 -- GNU Affero General Public License version 3 (see the file LICENSE).
--- Created using pg_dump (PostgreSQL) 8.4.6
+-- Created using pg_dump (PostgreSQL) 8.4.7
 
 SET check_function_bodies = false;
 SET client_encoding = 'UTF8';
@@ -10,6 +10,12 @@ SET standard_conforming_strings = off;
 SET statement_timeout = 0;
 
 SET search_path = public, pg_catalog;
+
+
+
+
+
+
 
 
 
@@ -1890,6 +1896,7 @@ INSERT INTO distroseries (id, distribution, name, title, description, version, r
 INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (11, 8, 'breezy-autotest', 'Breezy Badger Autotest', 'Autotest version of Breezy', '6.6.6', 1, NULL, 1, 1, 'Autosync uploader test', 'Breezy Badger Autotest', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.490333', false, false, NULL, NULL, NULL, false);
 INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (12, 5, 'krunch', 'The Krunchy Kangaroo', 'The archive split allows us to use different kernel settings for Kubuntu, as well as make other pervasive low-level fixes, and release on our own schedule.', '8.06', 1, NULL, 3, 1, 'This is the first experimental release of Kubuntu that uses a separate archive from the main Ubuntu release.', 'Krunch', NULL, 0, NULL, NULL, 0, 0, 33, '2006-10-16 18:31:43.491929', false, false, NULL, NULL, NULL, false);
 INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (13, 8, 'hoary-test', 'Mock Hoary', 'nothing special', '9.9.9', 1, NULL, 1, 1, 'summmmmmmary', 'Hoary Mock', NULL, 0, NULL, NULL, 0, 0, NULL, '2006-10-16 18:31:43.492845', false, false, NULL, NULL, NULL, false);
+INSERT INTO distroseries (id, distribution, name, title, description, version, releasestatus, datereleased, parent_series, owner, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount, driver, date_created, hide_all_translations, defer_translation_imports, language_pack_base, language_pack_delta, language_pack_proposed, language_pack_full_export_requested) VALUES (14, 9, 'deriwarty', 'Deriwarty', 'Deriwarty', '1', 1, NULL, 1, 16, 'Deriwarty', 'Deriwarty', NULL, 0, NULL, NULL, 0, 0, NULL, '2011-03-17 14:29:23.190835', true, true, NULL, NULL, NULL, false);
 
 
 ALTER TABLE distroseries ENABLE TRIGGER ALL;
@@ -1920,6 +1927,7 @@ Environment as its default desktop after install.', 'kubuntu.org', 1, 'Kubuntu',
 Environment as its default desktop after install.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.420551', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL, NULL, 10, 10, 10);
 INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (7, 'guadalinex', 'GuadaLinex: Linux for Andalucia', 'GuadaLinex is based on Ubuntu and adds full support for applications specific to the local environment in Andalucia.', 'guadalinex.es', 4, 'GuadaLinex', 'The GuadaLinex team produces a high quality linux for the Andalucian marketplace.', 32, NULL, 1, NULL, false, false, NULL, NULL, NULL, 4, NULL, NULL, '2006-10-16 18:31:43.421329', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL, NULL, 10, 10, 10);
 INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (8, 'ubuntutest', 'Ubuntu Test', 'Ubuntu Test', 'ubuntulinux.org', 17, 'ubuntutest', 'Ubuntu Test summary', 17, NULL, 1, NULL, false, false, NULL, NULL, NULL, 17, NULL, NULL, '2006-10-16 18:31:43.422162', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL, NULL, 10, 10, 10);
+INSERT INTO distribution (id, name, title, description, domainname, owner, displayname, summary, members, translationgroup, translationpermission, bug_supervisor, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, language_pack_admin, official_blueprints, enable_bug_expiration, bug_reporting_guidelines, reviewer_whiteboard, max_bug_heat, bug_reported_acknowledgement, answers_usage, blueprints_usage, translations_usage) VALUES (9, 'deribuntu', 'Deribuntu', 'Deribuntu', 'deribuntu', 16, 'Deribuntu', 'Deribuntu', 16, NULL, 1, NULL, false, false, NULL, NULL, NULL, 16, NULL, NULL, '2011-03-17 14:28:54.354337', NULL, NULL, NULL, NULL, NULL, false, NULL, false, false, NULL, NULL, NULL, NULL, 10, 10, 10);
 
 
 ALTER TABLE distribution ENABLE TRIGGER ALL;
@@ -2146,6 +2154,7 @@ INSERT INTO archive (id, owner, description, enabled, authorized_size, distribut
 INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies, status, commercial, build_debug_symbols) VALUES (13, 17, 'Partner archive', true, NULL, 8, 4, false, NULL, NULL, NULL, NULL, NULL, false, 'partner', true, '2008-05-27 18:15:15.869732', 0, 0, 0, 0, 0, '2008-09-23 17:29:03.449471', NULL, NULL, NULL, 'Partner Archive for Ubuntu Test', 0, NULL, 0, false, false);
 INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies, status, commercial, build_debug_symbols) VALUES (14, 17, 'Sample copy archive', true, NULL, 8, 6, false, NULL, NULL, NULL, NULL, NULL, false, 'samplecopyarchive', false, '2008-11-19 18:15:15.869732', 0, 0, 0, 0, 0, '2008-11-18 17:29:03.449471', NULL, NULL, NULL, 'Copy archive samplecopyarchive for Ubuntu Team', 0, NULL, 0, false, false);
 INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies, status, commercial, build_debug_symbols) VALUES (15, 17, 'Debug archive', true, NULL, 1, 7, false, NULL, NULL, NULL, NULL, NULL, false, 'debug', true, '2009-04-17 10:09:10.859746', 0, 0, 0, 0, 0, '2009-04-17 10:01:03.449876', NULL, NULL, NULL, 'Ubuntu DEBUG archive', 0, NULL, 0, false, false);
+INSERT INTO archive (id, owner, description, enabled, authorized_size, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti, buildd_secret, require_virtualized, name, publish, date_updated, total_count, pending_count, succeeded_count, failed_count, building_count, date_created, signing_key, removed_binary_retention_days, num_old_versions_published, displayname, relative_build_score, external_dependencies, status, commercial, build_debug_symbols) VALUES (16, 16, NULL, true, 2048, 9, 1, false, 0, 0, NULL, NULL, NULL, true, 'primary', true, '2011-03-17 14:28:54.354337', 0, 0, 0, 0, 0, '2011-03-17 14:28:54.354337', NULL, NULL, NULL, 'Primary Archive for Deribuntu', 0, NULL, 0, false, false);
 
 
 ALTER TABLE archive ENABLE TRIGGER ALL;
@@ -2455,6 +2464,64 @@ iD8DBQFGtzTjWhGlTF8G/HcRAtFsAJ4hHyKhOnsUOQDI+SAk000DmFAnUgCcC84J
 =Tjln
 ', 7, 243606, 27, 10, 1, 'Julian Edwards <launchpad@julian-edwards.com>', '3.6.2', '1.0', 'commercialpackage', 12, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (37, 1, '1.0', '2006-04-11 11:19:01', 1, NULL, 1, NULL, NULL, NULL, 'i386', NULL, 1, 16, 26, 1, 1, NULL, NULL, '1.0', NULL, 11, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (38, 1, '1.0.10-4deribuntu1', '2007-08-01 14:10:00', 1, NULL, 1, 'alsa-utils (1.0.10-4deribuntu1) deriwarty; urgency=low
+
+ * Placeholder
+ LP: #10
+ LP: #999
+ LP: #badid
+ LP: #7, #8,
+   #11
+
+     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 1, 16, 19, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (39, 1, '2.0.9-1ubuntu2', '2005-08-01 14:10:00', 1, NULL, 1, 'evolution (2.0.9-1ubuntu2) warty; urgency=low
+
+ * Placeholder
+ LP: #10
+ LP: #999
+ LP: #badid
+ LP: #7, #8,
+   #11
+
+     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 1, 16, 9, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (40, 1, '2.0.8-4deribuntu1', '2007-08-01 14:10:00', 1, NULL, 1, 'evolution (2.0.8-4deribuntu1) deriwarty; urgency=low
+
+ * Placeholder
+ LP: #10
+ LP: #999
+ LP: #badid
+ LP: #7, #8,
+   #11
+
+     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 1, 16, 9, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (41, 1, '4.1.2-1ubuntu1', '2006-07-05 14:10:00', 1, NULL, 1, 'mozilla-firefox (4.1.2-1ubuntu1) warty; urgency=low
+
+ * Placeholder
+ LP: #10
+ LP: #999
+ LP: #badid
+ LP: #7, #8,
+   #11
+
+     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 1, 16, 1, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (42, 1, '4.1.1-1deribuntu1', '2007-08-01 14:10:00', 1, NULL, 1, 'mozilla-firefox (4.1.1-1deribuntu1) deriwarty; urgency=low
+
+ * Placeholder
+ LP: #10
+ LP: #999
+ LP: #badid
+ LP: #7, #8,
+   #11
+
+     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 1, 16, 1, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog_entry, builddepends, builddependsindep, architecturehintlist, dsc, section, maintainer, sourcepackagename, upload_distroseries, format, dsc_maintainer_rfc822, dsc_standards_version, dsc_format, dsc_binaries, upload_archive, copyright, build_conflicts, build_conflicts_indep, sourcepackage_recipe_build, changelog, user_defined_fields, homepage) VALUES (43, 1, '2.0.7-1ubuntu1', '2005-08-01 14:10:00', 1, NULL, 1, 'evolution (2.0.7-1ubuntu1) deriwarty; urgency=low
+ * Placeholder
+ LP: #10
+ LP: #999
+ LP: #badid
+ LP: #7, #8,
+   #11
+     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', NULL, NULL, 'all', NULL, 1, 16, 9, 3, 1, NULL, NULL, '1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 
 ALTER TABLE sourcepackagerelease ENABLE TRIGGER ALL;
@@ -2936,6 +3003,9 @@ INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc8
 INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (47, '2005-05-17 20:20:44', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243615, 46, NULL, '<20050517202044.GA23231@spring.luon.net>', NULL, 78);
 INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (48, '2005-06-17 14:00:11', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243616, 46, NULL, '<20050617140011.GA15638@piware.de>', NULL, 79);
 INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (49, '2005-06-25 10:13:10', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243614, NULL, NULL, '<42BD2E36.9090809@gmx.de>', NULL, 81);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (50, '2010-06-25 10:13:10', 'Sample comment 1', 1, NULL, NULL, '<42BD2E36.9090810@zz.de>', NULL, 81);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (51, '2010-06-26 10:13:10', 'Sample comment 2', 1, NULL, NULL, '<42BD2E36.9090810@zz.de>', NULL, 81);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw) VALUES (52, '2010-06-27 10:13:10', 'Sample comment 3', 1, NULL, NULL, '<42BD2E36.9090810@zz.de>', NULL, 81);
 
 
 ALTER TABLE message ENABLE TRIGGER ALL;
@@ -3451,6 +3521,50 @@ ALTER TABLE bugnotificationattachment DISABLE TRIGGER ALL;
 ALTER TABLE bugnotificationattachment ENABLE TRIGGER ALL;
 
 
+ALTER TABLE milestone DISABLE TRIGGER ALL;
+
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (1, 4, '1.0', NULL, '2056-10-16 18:31:44.293448', true, 1, NULL, '2006-10-16 18:31:44.293448', NULL, NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (2, NULL, '3.1', 3, '2056-05-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574', NULL, NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (3, NULL, '3.1-rc1', 3, '2056-02-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574', NULL, NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (4, 4, '0.9.2', NULL, NULL, false, 1, NULL, '2009-03-02 18:31:35.911331', 'This was a security fix release for 0.9.', 'One (secure) Tree Hill');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (5, 4, '0.9.1', NULL, NULL, false, 1, NULL, '2009-03-02 18:31:35.911331', 'This was a bugfix release to patch up problems with the new extension system.', 'One Tree Hill (v2)');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (6, 4, '0.9', NULL, NULL, false, 1, NULL, '2009-03-02 18:31:35.911331', 'Release 0.9 of Firefox introduced a new theme as well as improved migration tools for people switching to Firefox.', 'One Tree Hill');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (7, 4, '1.0.0', NULL, NULL, false, 2, NULL, '2009-03-02 18:31:35.911331', 'After four years of work the Mozilla project makes its first public stable release. Mozilla 1.0.0 is a major milestone in open source history.', 'First Stable Release');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (8, 5, '2.1.6', NULL, NULL, false, 3, NULL, '2009-03-02 18:31:35.911331', '', NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (9, 8, '0.8', NULL, NULL, false, 4, NULL, '2009-03-02 18:31:35.911331', '', NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (10, 11, '1.0', NULL, NULL, false, 5, NULL, '2009-03-02 18:31:35.911331', '', NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (11, 15, '1.0.9a', NULL, NULL, false, 8, NULL, '2009-03-02 18:31:35.911331', '', NULL);
+INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (12, 15, '1.0.8', NULL, NULL, false, 8, NULL, '2009-03-02 18:31:35.911331', '', NULL);
+
+
+ALTER TABLE milestone ENABLE TRIGGER ALL;
+
+
+ALTER TABLE structuralsubscription DISABLE TRIGGER ALL;
+
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (1, NULL, NULL, NULL, NULL, 1, NULL, 1, 16, 16, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (2, NULL, NULL, NULL, NULL, 1, NULL, 14, 16, 16, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (3, 22, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (4, 16, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
+
+
+ALTER TABLE structuralsubscription ENABLE TRIGGER ALL;
+
+
+ALTER TABLE bugsubscriptionfilter DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE bugsubscriptionfilter ENABLE TRIGGER ALL;
+
+
+ALTER TABLE bugnotificationfilter DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE bugnotificationfilter ENABLE TRIGGER ALL;
+
+
 ALTER TABLE bugnotificationrecipient DISABLE TRIGGER ALL;
 
 
@@ -3470,25 +3584,6 @@ ALTER TABLE bugpackageinfestation DISABLE TRIGGER ALL;
 
 
 ALTER TABLE bugpackageinfestation ENABLE TRIGGER ALL;
-
-
-ALTER TABLE milestone DISABLE TRIGGER ALL;
-
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (1, 4, '1.0', NULL, '2056-10-16 18:31:44.293448', true, 1, NULL, '2006-10-16 18:31:44.293448', NULL, NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (2, NULL, '3.1', 3, '2056-05-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574', NULL, NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (3, NULL, '3.1-rc1', 3, '2056-02-16 18:31:44.293448', true, NULL, 6, '2006-10-16 18:31:44.29574', NULL, NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (4, 4, '0.9.2', NULL, NULL, false, 1, NULL, '2009-03-02 18:31:35.911331', 'This was a security fix release for 0.9.', 'One (secure) Tree Hill');
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (5, 4, '0.9.1', NULL, NULL, false, 1, NULL, '2009-03-02 18:31:35.911331', 'This was a bugfix release to patch up problems with the new extension system.', 'One Tree Hill (v2)');
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (6, 4, '0.9', NULL, NULL, false, 1, NULL, '2009-03-02 18:31:35.911331', 'Release 0.9 of Firefox introduced a new theme as well as improved migration tools for people switching to Firefox.', 'One Tree Hill');
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (7, 4, '1.0.0', NULL, NULL, false, 2, NULL, '2009-03-02 18:31:35.911331', 'After four years of work the Mozilla project makes its first public stable release. Mozilla 1.0.0 is a major milestone in open source history.', 'First Stable Release');
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (8, 5, '2.1.6', NULL, NULL, false, 3, NULL, '2009-03-02 18:31:35.911331', '', NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (9, 8, '0.8', NULL, NULL, false, 4, NULL, '2009-03-02 18:31:35.911331', '', NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (10, 11, '1.0', NULL, NULL, false, 5, NULL, '2009-03-02 18:31:35.911331', '', NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (11, 15, '1.0.9a', NULL, NULL, false, 8, NULL, '2009-03-02 18:31:35.911331', '', NULL);
-INSERT INTO milestone (id, product, name, distribution, dateexpected, active, productseries, distroseries, date_created, summary, codename) VALUES (12, 15, '1.0.8', NULL, NULL, false, 8, NULL, '2009-03-02 18:31:35.911331', '', NULL);
-
-
-ALTER TABLE milestone ENABLE TRIGGER ALL;
 
 
 ALTER TABLE productrelease DISABLE TRIGGER ALL;
@@ -3690,24 +3785,6 @@ INSERT INTO bugsubscription (id, person, bug, date_created, subscribed_by, bug_n
 
 
 ALTER TABLE bugsubscription ENABLE TRIGGER ALL;
-
-
-ALTER TABLE structuralsubscription DISABLE TRIGGER ALL;
-
-INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (1, NULL, NULL, NULL, NULL, 1, NULL, 1, 16, 16, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
-INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (2, NULL, NULL, NULL, NULL, 1, NULL, 14, 16, 16, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
-INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (3, 22, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
-INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, date_created, date_last_updated) VALUES (4, 16, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
-
-
-ALTER TABLE structuralsubscription ENABLE TRIGGER ALL;
-
-
-ALTER TABLE bugsubscriptionfilter DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE bugsubscriptionfilter ENABLE TRIGGER ALL;
 
 
 ALTER TABLE bugsubscriptionfilterimportance DISABLE TRIGGER ALL;
@@ -3985,6 +4062,13 @@ ALTER TABLE databasecpustats DISABLE TRIGGER ALL;
 ALTER TABLE databasecpustats ENABLE TRIGGER ALL;
 
 
+ALTER TABLE databasediskutilization DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE databasediskutilization ENABLE TRIGGER ALL;
+
+
 ALTER TABLE databasereplicationlag DISABLE TRIGGER ALL;
 
 
@@ -4080,6 +4164,8 @@ ALTER TABLE distrocomponentuploader ENABLE TRIGGER ALL;
 
 ALTER TABLE packagediff DISABLE TRIGGER ALL;
 
+INSERT INTO packagediff (id, date_requested, requester, from_source, to_source, date_fulfilled, diff_content, status) VALUES (1, '2011-03-22 13:27:38.178011', 16, 43, 40, NULL, NULL, 0);
+INSERT INTO packagediff (id, date_requested, requester, from_source, to_source, date_fulfilled, diff_content, status) VALUES (2, '2011-03-22 13:27:38.178011', 16, 43, 39, NULL, NULL, 2);
 
 
 ALTER TABLE packagediff ENABLE TRIGGER ALL;
@@ -4087,6 +4173,9 @@ ALTER TABLE packagediff ENABLE TRIGGER ALL;
 
 ALTER TABLE distroseriesdifference DISABLE TRIGGER ALL;
 
+INSERT INTO distroseriesdifference (id, derived_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version) VALUES (1, 14, 19, NULL, 2, 3, NULL, '1.0.10-4deribuntu1', '1.0.9a-4ubuntu1', '1.0.9a-4ubuntu1');
+INSERT INTO distroseriesdifference (id, derived_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version) VALUES (2, 14, 9, 1, 1, 3, 2, '2.0.8-4deribuntu1', '2.0.9-1ubuntu2', '2.0.7-1ubuntu1');
+INSERT INTO distroseriesdifference (id, derived_series, source_package_name, package_diff, status, difference_type, parent_package_diff, source_version, parent_source_version, base_version) VALUES (3, 14, 1, NULL, 2, 3, NULL, '4.1.1-1deribuntu1', '4.1.2-1ubuntu1', '4.1.1-1ubuntu1');
 
 
 ALTER TABLE distroseriesdifference ENABLE TRIGGER ALL;
@@ -4094,6 +4183,9 @@ ALTER TABLE distroseriesdifference ENABLE TRIGGER ALL;
 
 ALTER TABLE distroseriesdifferencemessage DISABLE TRIGGER ALL;
 
+INSERT INTO distroseriesdifferencemessage (id, distro_series_difference, message) VALUES (1, 1, 50);
+INSERT INTO distroseriesdifferencemessage (id, distro_series_difference, message) VALUES (2, 2, 51);
+INSERT INTO distroseriesdifferencemessage (id, distro_series_difference, message) VALUES (3, 3, 52);
 
 
 ALTER TABLE distroseriesdifferencemessage ENABLE TRIGGER ALL;
@@ -4346,6 +4438,7 @@ INSERT INTO pillarname (id, name, product, project, distribution, active, alias_
 INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (39, 'mega-money-maker', 24, NULL, NULL, true, NULL);
 INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (40, 'rosetta', 25, NULL, NULL, true, NULL);
 INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (41, 'obsolete-junk', 26, NULL, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (42, 'deribuntu', NULL, NULL, 9, true, NULL);
 
 
 ALTER TABLE pillarname ENABLE TRIGGER ALL;
@@ -4372,6 +4465,13 @@ ALTER TABLE featureflag DISABLE TRIGGER ALL;
 
 
 ALTER TABLE featureflag ENABLE TRIGGER ALL;
+
+
+ALTER TABLE featureflagchangelogentry DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE featureflagchangelogentry ENABLE TRIGGER ALL;
 
 
 ALTER TABLE flatpackagesetinclusion DISABLE TRIGGER ALL;
@@ -6260,6 +6360,13 @@ INSERT INTO packaging (packaging, id, sourcepackagename, distroseries, productse
 
 
 ALTER TABLE packaging ENABLE TRIGGER ALL;
+
+
+ALTER TABLE packagingjob DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE packagingjob ENABLE TRIGGER ALL;
 
 
 ALTER TABLE parsedapachelog DISABLE TRIGGER ALL;
@@ -10299,6 +10406,12 @@ INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseri
 INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor) VALUES (29, 20, 1, 2, 1, 3, '2007-07-09 12:00:00', '2007-07-09 12:00:01', NULL, NULL, NULL, NULL, NULL, 0, 9, NULL, NULL, NULL);
 INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor) VALUES (30, 36, 10, 2, 5, 7, '2007-08-09 21:28:12.106187', NULL, NULL, NULL, NULL, NULL, NULL, 0, 12, NULL, NULL, NULL);
 INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor) VALUES (31, 35, 10, 2, 1, 3, '2007-07-09 12:00:00', '2007-07-09 12:00:01', NULL, NULL, NULL, NULL, NULL, 0, 10, NULL, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor) VALUES (32, 38, 14, 1, 1, 3, '2006-02-15 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, 16, NULL, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor) VALUES (33, 39, 1, 1, 1, 3, '2006-02-15 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor) VALUES (34, 40, 14, 1, 1, 3, '2006-02-15 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, 16, NULL, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor) VALUES (35, 41, 1, 1, 1, 3, '2006-08-15 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor) VALUES (36, 41, 14, 1, 1, 3, '2006-02-15 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, 16, NULL, NULL, NULL);
+INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distroseries, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, archive, removed_by, removal_comment, ancestor) VALUES (37, 43, 1, 1, 1, 3, '2006-02-15 12:19:00.05741', NULL, NULL, NULL, NULL, NULL, NULL, 0, 16, NULL, NULL, NULL);
 
 
 ALTER TABLE sourcepackagepublishinghistory ENABLE TRIGGER ALL;

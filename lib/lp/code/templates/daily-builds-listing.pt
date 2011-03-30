@@ -77,8 +77,8 @@
               </td>
 
               <td>
-                <a href="recipe" tal:attributes="href dailybuild/recipe/fmt:url">
-                <span tal:replace="dailybuild/recipe/name">
+                <a href="recipe" tal:attributes="href dailybuild/recipe_url">
+                <span tal:replace="dailybuild/recipe_name">
                   recipe
                 </span>
                 </a>

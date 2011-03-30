@@ -3,7 +3,11 @@
 
 """Test Archive features."""
 
-from datetime import date
+from datetime import (
+    date,
+    datetime,
+    timedelta,
+    )
 
 import transaction
 from zope.component import getUtility
@@ -23,7 +27,10 @@ from canonical.testing.layers import (
     )
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import BuildStatus
-from lp.registry.interfaces.person import TeamSubscriptionPolicy
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    TeamSubscriptionPolicy,
+    )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.job.interfaces.job import JobStatus
@@ -45,6 +52,7 @@ from lp.soyuz.interfaces.archive import (
     InvalidPocketForPPA,
     NoRightsForArchive,
     NoRightsForComponent,
+    VersionRequiresName,
     )
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
@@ -1635,3 +1643,85 @@ class TestGetFileByName(TestCaseWithFactory):
         new_dsc = self.factory.makeLibraryFileAlias(filename=dsc.filename)
         pub.sourcepackagerelease.addFile(new_dsc)
         self.assertEquals(new_dsc, self.archive.getFileByName(dsc.filename))
+
+
+class TestGetPublishedSources(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getPublishedSources_comprehensive(self):
+        # The doctests for getPublishedSources migrated from a doctest for
+        # better testing.
+        cprov = getUtility(IPersonSet).getByName('cprov')
+        cprov_archive = cprov.archive
+        # There are three published sources by default - no args returns all
+        # publications.
+        self.assertEqual(3, cprov_archive.getPublishedSources().count())
+        # Various filters.
+        active_status = [PackagePublishingStatus.PENDING,
+                         PackagePublishingStatus.PUBLISHED]
+        inactive_status = [PackagePublishingStatus.SUPERSEDED,
+                           PackagePublishingStatus.DELETED]
+        warty = cprov_archive.distribution['warty']
+        hoary = cprov_archive.distribution['hoary']
+        breezy_autotest = cprov_archive.distribution['breezy-autotest']
+        all_sources = cprov_archive.getPublishedSources()
+        expected = [('cdrkit - 1.0', 'breezy-autotest'),
+            ('iceweasel - 1.0', 'warty'),
+            ('pmount - 0.1-1', 'warty'),
+            ]
+        found = []
+        for pub in all_sources:
+            title = pub.sourcepackagerelease.title
+            pub_ds = pub.distroseries.name
+            found.append((title, pub_ds))
+        self.assertEqual(expected, found)
+        self.assertEqual(1,
+            cprov_archive.getPublishedSources(name='cd').count())
+        self.assertEqual(1,
+            cprov_archive.getPublishedSources(name='ice').count())
+        self.assertEqual(1, cprov_archive.getPublishedSources(
+            name='iceweasel', exact_match=True).count())
+        self.assertEqual(0, cprov_archive.getPublishedSources(
+            name='ice', exact_match=True).count())
+        self.assertRaises(VersionRequiresName,
+            cprov_archive.getPublishedSources,
+            version='1.0')
+        self.assertEqual(1, cprov_archive.getPublishedSources(
+            name='ice', version='1.0').count())
+        self.assertEqual(0, cprov_archive.getPublishedSources(
+            name='ice', version='666').count())
+        self.assertEqual(3, cprov_archive.getPublishedSources(
+            status=PackagePublishingStatus.PUBLISHED).count())
+        self.assertEqual(3, cprov_archive.getPublishedSources(
+            status=active_status).count())
+        self.assertEqual(0, cprov_archive.getPublishedSources(
+            status=inactive_status).count())
+        self.assertEqual(2, cprov_archive.getPublishedSources(
+            distroseries=warty).count())
+        self.assertEqual(0, cprov_archive.getPublishedSources(
+            distroseries=hoary).count())
+        self.assertEqual(1, cprov_archive.getPublishedSources(
+            distroseries=breezy_autotest).count())
+        self.assertEqual(2, cprov_archive.getPublishedSources(
+            distroseries=warty,
+            pocket=PackagePublishingPocket.RELEASE).count())
+        self.assertEqual(0, cprov_archive.getPublishedSources(
+            distroseries=warty,
+            pocket=PackagePublishingPocket.UPDATES).count())
+        self.assertEqual(1, cprov_archive.getPublishedSources(
+            name='ice', distroseries=warty).count())
+        self.assertEqual(0, cprov_archive.getPublishedSources(
+            name='ice', distroseries=breezy_autotest).count())
+        self.assertEqual(0, cprov_archive.getPublishedSources(
+            created_since_date='2007-07-09 14:00:00').count())
+        mid_2007 = datetime(year=2007, month=7, day=9, hour=14)
+        self.assertEqual(0, cprov_archive.getPublishedSources(
+            created_since_date=mid_2007).count())
+        one_hour_step = timedelta(hours=1)
+        one_hour_earlier = mid_2007 - one_hour_step
+        self.assertEqual(1, cprov_archive.getPublishedSources(
+             created_since_date=one_hour_earlier).count())
+        two_hours_earlier = one_hour_earlier - one_hour_step
+        self.assertEqual(3, cprov_archive.getPublishedSources(
+            created_since_date=two_hours_earlier).count())

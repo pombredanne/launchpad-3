@@ -9,12 +9,16 @@ from zope.component import getUtility
 
 from lazr.restfulclient.errors import HTTPError
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.branch import IBranchSet
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import (
     launchpadlib_for,
     login_person,
     logout,
+    run_with_login,
     TestCaseWithFactory,
     )
 
@@ -59,3 +63,42 @@ class TestBranchDeletes(TestCaseWithFactory):
             target_branch.lp_delete)
         self.assertIn('Cannot delete', api_error.content)
         self.assertEqual(httplib.BAD_REQUEST, api_error.response.status)
+
+
+class TestSlashBranches(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_renders_with_source_package_branch(self):
+        mint = self.factory.makeDistribution(name='mint')
+        dev = self.factory.makeDistroSeries(
+            distribution=mint, version='1.0', name='dev')
+        eric = self.factory.makePerson(name='eric')
+        branch = self.factory.makePackageBranch(
+            distroseries=dev, sourcepackagename='choc', name='tip',
+            owner=eric)
+        dsp = self.factory.makeDistributionSourcePackage('choc', mint)
+        distro_link = ICanHasLinkedBranch(dsp)
+        development_package = dsp.development_version
+        suite_sourcepackage = development_package.getSuiteSourcePackage(
+            PackagePublishingPocket.RELEASE)
+        suite_sp_link = ICanHasLinkedBranch(suite_sourcepackage)
+
+        registrant = getUtility(
+            ILaunchpadCelebrities).ubuntu_branches.teamowner
+        run_with_login(
+            registrant,
+            suite_sp_link.setBranch, branch, registrant)
+        branch.updateScannedDetails(None, 0)
+        logout()
+        lp = launchpadlib_for("test")
+        list(lp.branches)
+
+    def test_renders_with_product_branch(self):
+        branch = self.factory.makeBranch()
+        login_person(branch.product.owner)
+        branch.product.development_focus.branch = branch
+        branch.updateScannedDetails(None, 0)
+        logout()
+        lp = launchpadlib_for("test")
+        list(lp.branches)

@@ -67,9 +67,7 @@
   </div>
 
   <div class="top-portlet">
-    <h2 style="float:left">Release notes &nbsp;</h2>
-    <a tal:replace="structure view/release/menu:context/edit/fmt:icon" />
-    <div style="clear:both"></div>
+    <h2>Release notes&nbsp;<a tal:replace="structure view/release/menu:context/edit/fmt:icon" /></h2>
 
     <div id="release-notes"
       tal:content="structure view/release/release_notes/fmt:text-to-html"
@@ -81,9 +79,7 @@
       <em>This release does not have release notes.</em>
     </p>
 
-    <h2 style="float:left">Changelog &nbsp;</h2>
-    <a tal:replace="structure view/release/menu:context/edit/fmt:icon" />
-    <div style="clear:both"></div>
+    <h2>Changelog&nbsp;<a tal:replace="structure view/release/menu:context/edit/fmt:icon" /></h2>
 
     <fieldset class="collapsible collapsed" style="padding: 0px;"
       tal:condition="view/release/changelog">

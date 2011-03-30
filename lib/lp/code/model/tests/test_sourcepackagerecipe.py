@@ -16,9 +16,12 @@ from pytz import UTC
 from storm.locals import Store
 import transaction
 from zope.component import getUtility
+from zope.event import notify
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
@@ -599,6 +602,22 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertEqual(builds[1:], list(recipe.pending_builds))
         self.assertEqual(builds, list(recipe.builds))
 
+    def test_getPendingBuildInfo(self):
+        """SourcePackageRecipe.getPendingBuildInfo() is as expected."""
+        person = self.factory.makePerson()
+        archives = [self.factory.makeArchive(owner=person) for x in range(4)]
+        distroseries= self.factory.makeSourcePackageRecipeDistroseries()
+        recipe = self.factory.makeSourcePackageRecipe()
+
+        build_info = []
+        for archive in archives:
+            build = recipe.requestBuild(archive, person, distroseries)
+            build_info.insert(0, {
+                "distroseries": distroseries.displayname,
+                "archive": '%s/%s' %
+                           (archive.owner.name, archive.name)})
+        self.assertEqual(build_info, list(recipe.getPendingBuildInfo()))
+
     def test_getBuilds_cancelled(self):
         # Cancelled builds are not considered pending.
         recipe = self.factory.makeSourcePackageRecipe()
@@ -839,6 +858,31 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
             child_branch, "zam", self.merged_branch.bzr_identity, revspec="2")
 
 
+class RecipeDateLastModified(TestCaseWithFactory):
+    """Exercises the situations where date_last_modified is updated."""
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self, 'test@canonical.com')
+        date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
+        self.recipe = self.factory.makeSourcePackageRecipe(
+            date_created=date_created)
+
+    def test_initialValue(self):
+        """Initially the date_last_modified is the date_created."""
+        self.assertEqual(
+            self.recipe.date_last_modified, self.recipe.date_created)
+
+    def test_modifiedevent_sets_date_last_updated(self):
+        # We publish an object modified event to check that the last modified
+        # date is set to UTC_NOW.
+        field = ISourcePackageRecipe['name']
+        notify(ObjectModifiedEvent(
+            removeSecurityProxy(self.recipe), self.recipe, [field]))
+        self.assertSqlAttributeEqualsDate(
+            self.recipe, 'date_last_modified', UTC_NOW)
+
+
 class TestWebservice(TestCaseWithFactory):
 
     layer = AppServerLayer
@@ -847,7 +891,8 @@ class TestWebservice(TestCaseWithFactory):
         branch = self.factory.makeBranch()
         return MINIMAL_RECIPE_TEXT % branch.bzr_identity
 
-    def makeRecipe(self, user=None, owner=None, recipe_text=None, version='devel'):
+    def makeRecipe(self, user=None, owner=None, recipe_text=None,
+                   version='devel'):
         # rockstar 21 Jul 2010 - This function does more commits than I'd
         # like, but it's the result of the fact that the webservice runs in a
         # separate thread so doesn't get the database updates without those
@@ -985,7 +1030,7 @@ class TestWebservice(TestCaseWithFactory):
         e = self.assertRaises(Exception, recipe.requestBuild,
             archive=archive, distroseries=distroseries,
             pocket=PackagePublishingPocket.RELEASE.title)
-        self.assertIn('BuildNotAllowedForDistro', str(e))
+        self.assertIn('build against this distro is not allowed', str(e))
 
     def test_getBuilds(self):
         """SourcePackageRecipe.[pending_|completed_]builds is as expected."""
@@ -1006,3 +1051,24 @@ class TestWebservice(TestCaseWithFactory):
         self.assertEqual(builds, list(recipe.pending_builds))
         self.assertEqual(builds, list(recipe.builds))
         self.assertEqual([], list(recipe.completed_builds))
+
+    def test_getPendingBuildInfo(self):
+        """SourcePackageRecipe.getPendingBuildInfo() is as expected."""
+        person = self.factory.makePerson()
+        archives = [self.factory.makeArchive(owner=person) for x in range(4)]
+        distroseries= self.factory.makeSourcePackageRecipeDistroseries()
+
+        recipe, user, launchpad = self.makeRecipe(person)
+        ws_distroseries = ws_object(launchpad, distroseries)
+
+        build_info = []
+        for archive in archives:
+            ws_archive = ws_object(launchpad, archive)
+            build = recipe.requestBuild(
+                archive=ws_archive, distroseries=ws_distroseries,
+                pocket=PackagePublishingPocket.RELEASE.title)
+            build_info.insert(0, {
+                "distroseries": distroseries.displayname,
+                "archive": '%s/%s' %
+                           (archive.owner.name, archive.name)})
+        self.assertEqual(build_info, list(recipe.getPendingBuildInfo()))

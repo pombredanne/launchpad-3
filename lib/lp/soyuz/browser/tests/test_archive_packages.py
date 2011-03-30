@@ -245,8 +245,7 @@ class TestPPAPackages(TestCaseWithFactory):
                 archive=ppa)
             url = canonical_url(ppa) + "/+packages"
         browser.open(url)
-        self.assertThat(collector, HasQueryCount(
-            MatchesAny(LessThan(query_baseline), Equals(query_baseline))))
+        self.assertThat(collector, HasQueryCount(LessThan(query_baseline)))
         expected_count = collector.count
         # Use all new objects - avoids caching issues invalidating the
         # gathered metrics.
@@ -260,5 +259,4 @@ class TestPPAPackages(TestCaseWithFactory):
                     archive=ppa, distroarchseries=pkg.distroarchseries)
             url = canonical_url(ppa) + "/+packages"
         browser.open(url)
-        self.assertThat(collector, HasQueryCount(
-            MatchesAny(Equals(expected_count), LessThan(expected_count))))
+        self.assertThat(collector, HasQueryCount(Equals(expected_count)))

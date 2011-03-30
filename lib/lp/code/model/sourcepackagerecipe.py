@@ -18,7 +18,7 @@ from datetime import (
 
 from bzrlib.plugins.builder.recipe import RecipeParseError
 from lazr.delegates import delegates
-from lazr.restful.error import expose
+from lazr.restful.declarations import error_status
 from pytz import utc
 from storm.expr import (
     And,
@@ -41,6 +41,10 @@ from zope.interface import (
     implements,
     )
 
+from canonical.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import (
@@ -53,10 +57,7 @@ from lp.buildmaster.model.packagebuild import PackageBuild
 from lp.code.errors import (
     BuildAlreadyPending,
     BuildNotAllowedForDistro,
-    NoSuchBranch,
-    PrivateBranchRecipe,
     TooManyBuilds,
-    TooNewRecipeFormat,
     )
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
@@ -69,11 +70,15 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.code.model.sourcepackagerecipedata import SourcePackageRecipeData
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
-from lp.registry.model.distroseries import DistroSeries
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.distroseries import DistroSeries
 from lp.services.database.stormexpr import Greatest
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.model.archive import Archive
+
+# "Slam" a 400 response code onto RecipeParseError so that it will behave
+# properly when raised in a web service context.
+error_status(400)(RecipeParseError)
 
 
 def get_buildable_distroseries_set(user):
@@ -88,6 +93,15 @@ def get_buildable_distroseries_set(user):
         if distro.active and distro.distribution in supported_distros:
             buildables.append(distro)
     return buildables
+
+
+def recipe_modified(recipe, event):
+    """Update the date_last_modified property when a recipe is modified.
+
+    This method is registered as a subscriber to `IObjectModifiedEvent` events
+    on recipes.
+    """
+    recipe.date_last_modified = UTC_NOW
 
 
 class NonPPABuildRequest(Exception):
@@ -148,7 +162,7 @@ class SourcePackageRecipe(Storm):
         return self.sourcepackagename.name
 
     name = Unicode(allow_none=True)
-    description = Unicode(allow_none=False)
+    description = Unicode(allow_none=True)
 
     @property
     def _recipe_data(self):
@@ -166,21 +180,23 @@ class SourcePackageRecipe(Storm):
         return self._recipe_data.base_branch
 
     def setRecipeText(self, recipe_text):
-        try:
-            parsed = SourcePackageRecipeData.getParsedRecipe(recipe_text)
-            self._recipe_data.setRecipe(parsed)
-        except (RecipeParseError, NoSuchBranch, PrivateBranchRecipe,
-                TooNewRecipeFormat) as e:
-            expose(e)
-            raise
+        parsed = SourcePackageRecipeData.getParsedRecipe(recipe_text)
+        self._recipe_data.setRecipe(parsed)
 
     @property
     def recipe_text(self):
         return self.builder_recipe.get_recipe_text()
 
+    def updateSeries(self, distroseries):
+        if distroseries != self.distroseries:
+            self.distroseries.clear()
+            for distroseries_item in distroseries:
+                self.distroseries.add(distroseries_item)
+
     @staticmethod
     def new(registrant, owner, name, recipe, description,
-            distroseries=None, daily_build_archive=None, build_daily=False):
+            distroseries=None, daily_build_archive=None, build_daily=False,
+            date_created=DEFAULT):
         """See `ISourcePackageRecipeSource.new`."""
         store = IMasterStore(SourcePackageRecipe)
         sprecipe = SourcePackageRecipe()
@@ -195,6 +211,8 @@ class SourcePackageRecipe(Storm):
         sprecipe.description = description
         sprecipe.daily_build_archive = daily_build_archive
         sprecipe.build_daily = build_daily
+        sprecipe.date_created = date_created
+        sprecipe.date_last_modified = date_created
         store.add(sprecipe)
         return sprecipe
 
@@ -336,6 +354,17 @@ class SourcePackageRecipe(Storm):
             query_args.append(filter_term)
         result = Store.of(self).find(SourcePackageRecipeBuild, *query_args)
         result.order_by(order_by)
+        return result
+
+    def getPendingBuildInfo(self):
+        """See `ISourcePackageRecipe`."""
+        builds = self.pending_builds
+        result = []
+        for build in builds:
+            result.append(
+                {"distroseries": build.distroseries.displayname,
+                 "archive": '%s/%s' %
+                           (build.archive.owner.name, build.archive.name)})
         return result
 
     @property

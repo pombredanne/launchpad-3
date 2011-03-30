@@ -162,7 +162,7 @@ def end_request(event):
             for name in ('inlinetime', 'totaltime', 'callcount'):
                 prof_stats.sort(name)
                 f = StringIO.StringIO()
-                prof_stats.pprint(top=25, file=f)
+                prof_stats.pprint(file=f)
                 template_context[name] = f.getvalue()
     if actions and is_html:
         # Hack the new HTML in at the end of the page.

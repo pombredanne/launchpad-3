@@ -21,6 +21,7 @@ from lp.testing import (
     login,
     TestCaseWithFactory,
     )
+from lp.testing.matchers import BrowsesWithQueryLimit
 from lp.testing.views import create_initialized_view
 
 
@@ -30,7 +31,7 @@ class TestRecipeBuildView(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_recipebuildrecords(self):
-        records, records_outside_30_days = (
+        all_records, recent_records = (
             self.factory.makeRecipeBuildRecords(10, 5))
         login(ANONYMOUS)
         root = getUtility(ILaunchpadRoot)
@@ -39,8 +40,7 @@ class TestRecipeBuildView(TestCaseWithFactory):
         # work properly on zope proxies.
         self.assertEqual(15, view.dailybuilds.count())
         # By default, all build records will be included in the view.
-        records.extend(records_outside_30_days)
-        self.assertEqual(set(records), set(view.dailybuilds))
+        self.assertEqual(set(all_records), set(view.dailybuilds))
 
 
 class TestRecipeBuildListing(BrowserTestCase):
@@ -59,9 +59,9 @@ class TestRecipeBuildListing(BrowserTestCase):
 
     def _test_recipebuild_listing(self, no_login=False):
         # Test the text on a recipe build listing page is as expected.
-        [record], records_outside_30_days = (
+        all_records, [recent_record] = (
             self.factory.makeRecipeBuildRecords(1, 5))
-        record_text = self._extract_view_text(record)
+        record_text = self._extract_view_text(recent_record)
         root = getUtility(ILaunchpadRoot)
         text = self.getMainText(
             root, '+daily-builds', rootsite='code', no_login=no_login)
@@ -91,6 +91,17 @@ class TestRecipeBuildListing(BrowserTestCase):
         # Ensure we can see the listing when we are logged in.
         self._test_recipebuild_listing()
 
+    def test_recipebuild_listing_querycount(self):
+        # The query count on the recipe build listing page is small enough.
+        # There's a base query count of approx 30, but if the page template
+        # is not set up right, the query count can increases linearly with the
+        # number of records.
+        self.factory.makeRecipeBuildRecords(5, 0)
+        root = getUtility(ILaunchpadRoot)
+        browser_query_limit = BrowsesWithQueryLimit(
+            35, self.user, view_name='+daily-builds', rootsite='code')
+        self.assertThat(root, browser_query_limit)
+
     def test_recipebuild_url(self):
         # Check the browser URL is as expected.
         root_url = self.layer.appserver_root_url(facet='code')
@@ -100,10 +111,10 @@ class TestRecipeBuildListing(BrowserTestCase):
 
     def test_recentbuild_filter(self):
         login(ANONYMOUS)
-        records, records_outside_30_days = (
+        all_records, recent_records = (
             self.factory.makeRecipeBuildRecords(3, 2))
         records_text = set()
-        for record in records:
+        for record in recent_records:
             record_text = self._extract_view_text(
                 record).replace(' ', '').replace('\n', '')
             records_text.add(record_text)
@@ -130,10 +141,10 @@ class TestRecipeBuildListing(BrowserTestCase):
 
         login(ANONYMOUS)
         # Create records all outside the filter time window.
-        records, records_outside_30_days = (
+        all_records, recent_records = (
             self.factory.makeRecipeBuildRecords(0, 2))
         records_text = set()
-        for record in records_outside_30_days:
+        for record in all_records:
             record_text = self._extract_view_text(
                 record).replace(' ', '').replace('\n', '')
             records_text.add(record_text)
@@ -169,11 +180,10 @@ class TestRecipeBuildListing(BrowserTestCase):
 
     def test_all_records_filter(self):
         login(ANONYMOUS)
-        records, records_outside_30_days = (
+        all_records, recent_records = (
             self.factory.makeRecipeBuildRecords(3, 2))
-        records.extend(records_outside_30_days)
         records_text = set()
-        for record in records:
+        for record in all_records:
             record_text = self._extract_view_text(
                 record).replace(' ', '').replace('\n', '')
             records_text.add(record_text)
