@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'add_subscribe_link',
     'BaseRdfView',
     'get_status_counts',
     'MilestoneOverlayMixin',
@@ -38,6 +39,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.features import getFeatureFlag
 
 
 class StatusCount:
@@ -67,6 +69,16 @@ def get_status_counts(workitems, status_attr, key='sortkey'):
     return [
         StatusCount(status, statuses[status])
         for status in sorted(statuses, key=attrgetter(key))]
+
+
+def add_subscribe_link(links):
+    """Based on a feature flag, add the correct link."""
+    use_advanced_features = getFeatureFlag(
+        'malone.advanced-structural-subscriptions.enabled')
+    if use_advanced_features:
+        links.append('subscribe_to_bug_mail')
+    else:
+        links.append('subscribe')
 
 
 class MilestoneOverlayMixin:

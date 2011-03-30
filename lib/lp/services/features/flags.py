@@ -53,6 +53,10 @@ flag_info = sorted([
      'boolean',
      'Enables advanced bug subscription features.',
      ''),
+    ('malone.advanced-structural-subscriptions.enabled',
+     'boolean',
+     'Enables advanced structural subscriptions',
+     ''),
     ('malone.disable_targetnamesearch',
      'boolean',
      'If true, disables consultation of target names during bug text search.',
@@ -80,6 +84,10 @@ flag_info = sorted([
     ('visible_render_time',
      'boolean',
      'Shows the server-side page render time in the login widget.',
+     ''),
+    ('bugs.private_notification.enabled',
+     'boolean',
+     'Changes the appearance of notifications on private bugs.',
      ''),
     ])
 
