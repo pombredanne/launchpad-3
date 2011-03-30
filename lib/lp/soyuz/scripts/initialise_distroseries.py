@@ -290,11 +290,17 @@ class InitialiseDistroSeries:
         parent_to_child = {}
         # Create the packagesets, and any archivepermissions
         for parent_ps in packagesets:
+            # Cross-distro initialisations get packagesets owned by the
+            # distro owner, otherwise the old owner is preserved.
             if self.packagesets and parent_ps.name not in self.packagesets:
                 continue
+            if self.distroseries.distribution == self.parent.distribution:
+                new_owner = parent_ps.owner
+            else:
+                new_owner = self.distroseries.owner
             child_ps = getUtility(IPackagesetSet).new(
                 parent_ps.name, parent_ps.description,
-                self.distroseries.owner, distroseries=self.distroseries,
+                new_owner, distroseries=self.distroseries,
                 related_set=parent_ps)
             self._store.execute("""
                 INSERT INTO Archivepermission
