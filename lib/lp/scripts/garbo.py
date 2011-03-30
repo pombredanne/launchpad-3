@@ -984,7 +984,9 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
         # down when the script timeout is hit, and the extra time is to
         # give them a chance to clean up.
         for thread in threads:
-            time_to_go = start_time + abort_script - time.time() + 60
+            time_to_go = min(
+                abort_task,
+                start_time + abort_script - time.time()) + 60
             if time_to_go > 0:
                 thread.join(time_to_go)
             else:
