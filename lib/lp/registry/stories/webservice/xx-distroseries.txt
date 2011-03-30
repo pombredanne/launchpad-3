@@ -61,6 +61,7 @@ For distroseries we publish a subset of its attributes.
     active_milestones_collection_link:
         u'http://.../ubuntu/hoary/active_milestones'
     all_milestones_collection_link: u'http://.../ubuntu/hoary/all_milestones'
+    architectures_collection_link: u'http://.../ubuntu/hoary/architectures'
     bug_reported_acknowledgement: None
     bug_reporting_guidelines: None
     changeslist: u'hoary-changes@ubuntu.com'
@@ -85,6 +86,7 @@ For distroseries we publish a subset of its attributes.
     title: u'The Hoary Hedgehog Release'
     version: u'5.04'
     web_link: u'http://launchpad.../ubuntu/hoary'
+
 
 Creating a milestone on the distroseries
 ----------------------------------------
