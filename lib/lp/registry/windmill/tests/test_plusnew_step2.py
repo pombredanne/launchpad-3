@@ -37,7 +37,9 @@ class TestNewProjectStep2(WindmillTestCase):
 
         lpuser.SAMPLE_PERSON.ensure_login(self.client)
 
-        self.client.waits.forElement(id='field.displayname', timeout=u'20000')
+        self.client.open(url=u'%s/projects/+new'
+                        % RegistryWindmillLayer.base_url)
+        self.client.waits.forElement(id='field.displayname', timeout=u'200000')
         self.client.type(text=u'Badgers', id='field.displayname')
         self.client.type(text=u'badgers', id='field.name')
         self.client.type(text=u"There's the Badger", id='field.title')
