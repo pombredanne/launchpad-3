@@ -22,7 +22,6 @@ from canonical.database.enumcol import DBEnum
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad import searchbuilder
 from canonical.launchpad.interfaces.lpstorm import IStore
-from lazr.restful.error import expose
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
 from lp.bugs.interfaces.bugtask import (
@@ -63,22 +62,7 @@ class BugSubscriptionFilter(StormBase):
 
     other_parameters = Unicode()
 
-    _description = Unicode('description')
-
-    def _get_description(self):
-        return self._description
-
-    def _set_description(self, description):
-        has_html_chars = (
-            '<' in description or '>' in description or
-            '"' in description or '&' in description)
-        if has_html_chars:
-            raise expose(ValueError(
-                'BugSubscriptionFilter description cannot contain '
-                'any of <, >, " or &.'))
-        self._description = description
-
-    description = property(_get_description, _set_description)
+    description = Unicode('description')
 
     def _get_statuses(self):
         """Return a frozenset of statuses to filter on."""
