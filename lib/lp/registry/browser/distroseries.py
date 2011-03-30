@@ -76,10 +76,14 @@ from lp.blueprints.browser.specificationtarget import (
     )
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
-from lp.registry.browser import MilestoneOverlayMixin
+from lp.registry.browser import (
+    add_subscribe_link,
+    MilestoneOverlayMixin,
+    )
 from lp.registry.enum import DistroSeriesDifferenceStatus
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distroseriesdifference import (
@@ -187,9 +191,23 @@ class DistroSeriesOverviewMenu(
 
     usedfor = IDistroSeries
     facet = 'overview'
-    links = ['edit', 'reassign', 'driver', 'answers',
-             'packaging', 'needs_packaging', 'builds', 'queue',
-             'add_port', 'create_milestone', 'subscribe', 'admin']
+
+    @property
+    def links(self):
+        links = ['edit',
+                 'reassign',
+                 'driver',
+                 'answers',
+                 'packaging',
+                 'needs_packaging',
+                 'builds',
+                 'queue',
+                 'add_port',
+                 'create_milestone',
+                 ]
+        add_subscribe_link(links)
+        links.append('admin')
+        return links
 
     @enabled_with_permission('launchpad.Admin')
     def edit(self):
@@ -253,11 +271,14 @@ class DistroSeriesBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
 
     usedfor = IDistroSeries
     facet = 'bugs'
-    links = (
-        'cve',
-        'nominations',
-        'subscribe',
-        )
+
+    @property
+    def links(self):
+        links = ['cve',
+                 'nominations',
+                 ]
+        add_subscribe_link(links)
+        return links
 
     def cve(self):
         return Link('+cve', 'CVE reports', icon='cve')
@@ -328,12 +349,15 @@ class SeriesStatusMixin:
             self.context.datereleased = UTC_NOW
 
 
-class DistroSeriesView(MilestoneOverlayMixin):
+class DistroSeriesView(LaunchpadView, MilestoneOverlayMixin):
 
     def initialize(self):
+        super(DistroSeriesView, self).initialize()
         self.displayname = '%s %s' % (
             self.context.distribution.displayname,
             self.context.version)
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user)
 
     @property
     def page_title(self):
