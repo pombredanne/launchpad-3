@@ -24,6 +24,7 @@
       * Header, footer, side, help
       * Colors
       * Sprites
+      * Global notifications
       * Application or page specifc styles that do not belong in this file.
 */
 
@@ -131,6 +132,10 @@ body {
 body.private {
     /* It must be obvious to the user that the context is private */
     background: url("/@@/private-y-bg") top left repeat-y;
+    }
+/* Override for when the feature flag is active */
+body.feature-flag-bugs-private-notification-enabled.private {
+    background-image: none;
     }
 * html body {
     /* stops floats dropping in IE 5.5/6 */
@@ -1102,7 +1107,7 @@ span.see-all {
     font-size: 12px;
     text-decoration: underline;
     }
-.unseen {
+.unseen, .hidden {
     display: none;
     }
 .invisible-link {
@@ -1112,6 +1117,11 @@ span.see-all {
     left:-9999em;
     display:block;
     }
+.transparent {
+  opacity: 0;
+  filter: alpha(opacity=0);
+  -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=0)";
+}
 .rss-right {
     background: url(/@@/rss.png) right center no-repeat;
     }
@@ -1314,8 +1324,14 @@ div.watermark-apps-portlet span img {
     background: #fbfbfb;
     }
 #privacy.private {
-      background: url(/@@/private-bg) top left repeat-x; /* 8px high */
-      padding-top: 12px; /* = 8px + the usual 4px top padding */
+    background: url(/@@/private-bg) top left repeat-x; /* 8px high */
+    padding-top: 12px; /* = 8px + the usual 4px top padding */
+    }
+/* Override for when the feature flag is active */
+.feature-flag-bugs-private-notification-enabled #privacy.private {
+    background-image: none;
+    background-color: #FBFBFB;
+    padding-top: 0.5em;
     }
 .downloads li {
     margin: 0;
@@ -1875,6 +1891,68 @@ body.tab-bugs #duplicate-actions .sprite {
      */
     padding:2px 0 0 18px;
     }
+
+
+/* ====================
+   Global notifications
+*/
+/* Move the content down so the notification banner doesn't hide any content. */
+body.global-notification-visible {
+    padding-top: 40px;
+    }
+body.global-notification-visible .login-logout {
+    top: 45px;
+    }
+.global-notification {
+    position: fixed;
+    z-index: 10;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 8px 20px;
+    /* Define colour for browsers that don't support transparency */
+    background-color: #8d1f1f;
+    /* Set transparent background for browsers that support it */
+    background-color: rgba(125,0,0,0.9);
+    color: #fff;
+    text-shadow: 0 -1px 0 #631616;
+    font-size: 14px;
+    line-height: 21px;
+    font-weight: bold;
+    -moz-box-shadow: 0 0 5px #333;
+    -webkit-box-shadow: 0 0 5px #333;
+    box-shadow: 0 0 5px #333;
+    }
+.global-notification .sprite.notification-private {
+    float: left;
+    display: inline-block;
+    height: 21px;
+    width: 20px;
+    margin-right: 10px;
+    padding: 0;
+    }
+.global-notification-close, .global-notification-close:active,
+.global-notification-close:visited {
+    color: #e47a7a;
+    }
+.global-notification-close {
+    display: block;
+    position: absolute;
+    top: 11px;
+    right: 20px;
+    font-size: 12px;
+    font-weight: normal;
+    line-height: 14px;
+    }
+.global-notification-close .sprite.notification-close {
+    float: right;
+    display: block;
+    height: 9px;
+    width: 8px;
+    margin: 3px 0 0 7px;
+    padding: 0;
+    }
+
 
 /*
  * YOU HAVE REACHED THE END OF THIS FILE. IF YOU SEE ANYTHING BELOW SPRITES
