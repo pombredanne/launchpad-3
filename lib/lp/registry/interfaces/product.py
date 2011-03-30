@@ -77,14 +77,14 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasLogo,
     IHasMugshot,
     )
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import name_validator
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
     )
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.name import name_validator
 from lp.blueprints.interfaces.specificationtarget import ISpecificationTarget
 from lp.blueprints.interfaces.sprint import IHasSprints
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
@@ -938,14 +938,20 @@ class IProductSet(Interface):
     @operation_parameters(text=TextLine(title=_("Search text")))
     @operation_returns_collection_of(IProduct)
     @export_read_operation()
-    def search(text=None, soyuz=None,
-               rosetta=None, malone=None,
-               bazaar=None):
+    def search(text=None):
         """Search through the Registry database for products that match the
         query terms. text is a piece of text in the title / summary /
-        description fields of product. soyuz, bazaar, malone etc are
-        hints as to whether the search should be limited to products
-        that are active in those Launchpad applications."""
+        description fields of product.
+
+        This call eager loads data appropriate for web API; caution may be
+        needed for other callers.
+        """
+
+    def search_sqlobject(text):
+        """A compatible sqlobject search for bugalsoaffects.py.
+
+        DO NOT ADD USES.
+        """
 
     @operation_returns_collection_of(IProduct)
     @call_with(quantity=None)

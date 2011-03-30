@@ -23,10 +23,12 @@ __all__ = [
     'ArchiveView',
     'ArchiveViewBase',
     'make_archive_vocabulary',
+    'PackageCopyingMixin',
     'traverse_named_ppa',
     ]
 
 
+from cgi import escape
 from datetime import (
     datetime,
     timedelta,
@@ -35,7 +37,7 @@ from urlparse import urlparse
 
 import pytz
 from sqlobject import SQLObjectNotFound
-from storm.zope.interfaces import IResultSet
+from storm.expr import Desc
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
@@ -105,6 +107,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.browser_helpers import get_user_agent_distroseries
+from lp.services.database.bulk import load
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.adapters.archivedependencies import (
@@ -150,6 +153,11 @@ from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     )
 from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 from lp.soyuz.scripts.packagecopier import do_copy
 
 
@@ -573,7 +581,7 @@ class ArchiveViewBase(LaunchpadView):
         the view to determine whether to display "This PPA does not yet
         have any published sources" or "No sources matching 'blah'."
         """
-        return bool(self.context.getPublishedSources())
+        return not self.context.getPublishedSources().is_empty()
 
     @cachedproperty
     def repository_usage(self):
@@ -924,13 +932,8 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
         """Return the last five published sources for this archive."""
         sources = self.context.getPublishedSources(
             status=PackagePublishingStatus.PUBLISHED)
-
-        # We adapt the ISQLResultSet into a normal storm IResultSet so we
-        # can re-order and limit the results (orderBy is not included on
-        # the ISQLResultSet interface). Because this query contains
-        # pre-joins, the result of the adaption is a set of tuples.
-        result_tuples = IResultSet(sources)
-        result_tuples = result_tuples.order_by('datepublished DESC')[:5]
+        sources.order_by(Desc(SourcePackagePublishingHistory.datepublished))
+        result_tuples = sources[:5]
 
         # We want to return a list of dicts for easy template rendering.
         latest_updates_list = []
@@ -948,7 +951,7 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
             }
 
         now = datetime.now(tz=pytz.UTC)
-        source_ids = [result_tuple[0].id for result_tuple in result_tuples]
+        source_ids = [result_tuple.id for result_tuple in result_tuples]
         summaries = getUtility(
             IPublishingSet).getBuildStatusSummariesForSourceIdsAndArchive(
                 source_ids, self.context)
@@ -981,11 +984,8 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
         """Return the number of updates over the past days."""
         now = datetime.now(tz=pytz.UTC)
         created_since = now - timedelta(num_days)
-
-        sources = self.context.getPublishedSources(
-            created_since_date=created_since)
-
-        return sources.count()
+        return self.context.getPublishedSources(
+            created_since_date=created_since).count()
 
     @property
     def num_pkgs_building(self):
@@ -1213,6 +1213,89 @@ class DestinationSeriesDropdownWidget(LaunchpadDropdownWidget):
     _messageNoValue = _("vocabulary-copy-to-same-series", "The same series")
 
 
+class PackageCopyingMixin:
+    """A mixin class that adds helpers for package copying."""
+
+    def do_copy(self, sources_field_name, source_pubs, dest_archive,
+                dest_series, dest_pocket, include_binaries,
+                dest_url=None, dest_display_name=None):
+        """Copy packages and add appropriate feedback to the browser page.
+
+        :param sources_field_name: The name of the form field to set errors
+            on when the copy fails
+        :param source_pubs: A list of SourcePackagePublishingHistory to copy
+        :param dest_archive: The destination IArchive
+        :param dest_series: The destination IDistroSeries
+        :param dest_pocket: The destination PackagePublishingPocket
+        :param include_binaries: Boolean, whether to copy binaries with the
+            sources
+        :param dest_url: The URL of the destination to display in the
+            notification box.  Defaults to the target archive and will be
+            automatically escaped for inclusion in the output.
+        :param dest_display_name: The text to use for the dest_url link.
+            Defaults to the target archive's display name and will be
+            automatically escaped for inclusion in the output.
+
+        :return: True if the copying worked, False otherwise.
+        """
+        try:
+            copies = do_copy(
+                source_pubs, dest_archive, dest_series,
+                dest_pocket, include_binaries)
+        except CannotCopy, error:
+            messages = []
+            error_lines = str(error).splitlines()
+            if len(error_lines) == 1:
+                messages.append(
+                    "<p>The following source cannot be copied:</p>")
+            else:
+                messages.append(
+                    "<p>The following sources cannot be copied:</p>")
+            messages.append('<ul>')
+            messages.append(
+                "\n".join('<li>%s</li>' % escape(line)
+                    for line in error_lines))
+            messages.append('</ul>')
+
+            self.setFieldError(
+                sources_field_name, structured('\n'.join(messages)))
+            return False
+
+        # Preload BPNs to save queries when calculating display names.
+        load(BinaryPackageName, (
+            copy.binarypackagerelease.binarypackagenameID for copy in copies
+            if isinstance(copy, BinaryPackagePublishingHistory)))
+
+        # Present a page notification describing the action.
+        messages = []
+        if dest_url is None:
+            dest_url = escape(
+                canonical_url(dest_archive) + '/+packages',
+                quote=True)
+        if dest_display_name is None:
+            dest_display_name = escape(dest_archive.displayname)
+        if len(copies) == 0:
+            messages.append(
+                '<p>All packages already copied to '
+                '<a href="%s">%s</a>.</p>' % (
+                    dest_url,
+                    dest_display_name))
+        else:
+            messages.append(
+                '<p>Packages copied to <a href="%s">%s</a>:</p>' % (
+                    dest_url,
+                    dest_display_name))
+            messages.append('<ul>')
+            messages.append(
+                "\n".join(['<li>%s</li>' % escape(copy.displayname)
+                           for copy in copies]))
+            messages.append('</ul>')
+
+        notification = "\n".join(messages)
+        self.request.response.addNotification(structured(notification))
+        return True
+
+
 def make_archive_vocabulary(archives):
     terms = []
     for archive in archives:
@@ -1222,7 +1305,8 @@ def make_archive_vocabulary(archives):
     return SimpleVocabulary(terms)
 
 
-class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
+class ArchivePackageCopyingView(ArchiveSourceSelectionFormView,
+                                PackageCopyingMixin):
     """Archive package copying view class.
 
     This view presents a package selection slot in a POST form implementing
@@ -1373,52 +1457,14 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
             self.setFieldError('selected_sources', 'No sources selected.')
             return
 
-        try:
-            copies = do_copy(
-                selected_sources, destination_archive, destination_series,
-                destination_pocket, include_binaries)
-        except CannotCopy, error:
-            messages = []
-            error_lines = str(error).splitlines()
-            if len(error_lines) == 1:
-                messages.append(
-                    "<p>The following source cannot be copied:</p>")
-            else:
-                messages.append(
-                    "<p>The following sources cannot be copied:</p>")
-            messages.append('<ul>')
-            messages.append(
-                "\n".join('<li>%s</li>' % line for line in error_lines))
-            messages.append('</ul>')
-
-            self.setFieldError(
-                'selected_sources', structured('\n'.join(messages)))
-            return
-
-        # Present a page notification describing the action.
-        messages = []
-        destination_url = canonical_url(destination_archive) + '/+packages'
-        if len(copies) == 0:
-            messages.append(
-                '<p>All packages already copied to '
-                '<a href="%s">%s</a>.</p>' % (
-                    destination_url,
-                    destination_archive.displayname))
-        else:
-            messages.append(
-                '<p>Packages copied to <a href="%s">%s</a>:</p>' % (
-                    destination_url,
-                    destination_archive.displayname))
-            messages.append('<ul>')
-            messages.append(
-                "\n".join(['<li>%s</li>' % copy.displayname
-                           for copy in copies]))
-            messages.append('</ul>')
-
-        notification = "\n".join(messages)
-        self.request.response.addNotification(structured(notification))
-
-        self.setNextURL()
+        # PackageCopyingMixin.do_copy() does the work of copying and
+        # setting up on-page notifications.
+        if self.do_copy(
+            'selected_sources', selected_sources, destination_archive,
+            destination_series, destination_pocket, include_binaries):
+            # The copy worked so we can redirect back to the page to
+            # show the result.
+            self.setNextURL()
 
 
 class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
@@ -1941,7 +1987,7 @@ class ArchiveAdminView(BaseArchiveEditView):
 
         if data.get('private') != self.context.private:
             # The privacy is being switched.
-            if bool(self.context.getPublishedSources()):
+            if not self.context.getPublishedSources().is_empty():
                 self.setFieldError(
                     'private',
                     'This archive already has published sources. It is '

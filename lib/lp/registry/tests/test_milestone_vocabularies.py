@@ -122,6 +122,9 @@ class TestMilestoneVocabulary(TestCase):
         debian = getUtility(IDistributionSet).getByName('debian')
         distro_sourcepackage = factory.makeDistributionSourcePackage(
             distribution=debian)
+        factory.makeSourcePackagePublishingHistory(
+            distroseries=debian.currentseries,
+            sourcepackagename=distro_sourcepackage.sourcepackagename)
         bugtask = factory.makeBugTask(target=distro_sourcepackage)
         vocabulary = MilestoneVocabulary(bugtask)
         self.assertEqual(

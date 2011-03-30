@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -308,18 +308,18 @@ class DistributionMirror(SQLBase):
             # all mirrors (binary and source) for this distribution mirror.
             arch_mirror_freshness = self.arch_mirror_freshness
             source_mirror_freshness = self.source_mirror_freshness
-        
+
             # Return unknown if no content
             if (arch_mirror_freshness is None and
                 source_mirror_freshness is None):
                 return MirrorFreshness.UNKNOWN
 
-            
+
             # Return arch_mirror freshness if we have no source mirror.
             if  (arch_mirror_freshness is not None and
                   source_mirror_freshness is None):
                 return arch_mirror_freshness
-            
+
             # Return source_mirror freshness if we have no arch mirror.
             if (arch_mirror_freshness is None and
                 source_mirror_freshness is not None):
@@ -368,7 +368,8 @@ class DistributionMirror(SQLBase):
         """Send a failure notification to the distribution's mirror admins and
         to the mirror owner, in case notify_owner is True.
         """
-        template = get_email_template('notify-mirror-owner.txt')
+        template = get_email_template(
+            'notify-mirror-owner.txt', app='registry')
         fromaddress = format_address(
             "Launchpad Mirror Prober", config.canonical.noreply_from_address)
 
@@ -500,8 +501,9 @@ class DistributionMirror(SQLBase):
         """See IDistributionMirror"""
         query = """
             MirrorDistroSeriesSource.id IN (
-              SELECT DISTINCT ON (MirrorDistroSeriesSource.distribution_mirror,
-                                  MirrorDistroSeriesSource.distroseries)
+              SELECT DISTINCT ON (
+                        MirrorDistroSeriesSource.distribution_mirror,
+                        MirrorDistroSeriesSource.distroseries)
                      MirrorDistroSeriesSource.id
               FROM MirrorDistroSeriesSource, DistributionMirror
               WHERE DistributionMirror.id =
@@ -518,8 +520,9 @@ class DistributionMirror(SQLBase):
         """See IDistributionMirror"""
         query = """
             MirrorDistroArchSeries.id IN (
-                SELECT DISTINCT ON (MirrorDistroArchSeries.distribution_mirror,
-                                    MirrorDistroArchSeries.distroarchseries)
+                SELECT DISTINCT ON (
+                        MirrorDistroArchSeries.distribution_mirror,
+                        MirrorDistroArchSeries.distroarchseries)
                        MirrorDistroArchSeries.id
                 FROM MirrorDistroArchSeries, DistributionMirror
                 WHERE DistributionMirror.id =
@@ -634,7 +637,8 @@ class DistributionMirrorSet:
             SELECT distributionmirror.id, MAX(mirrorproberecord.date_created)
             FROM distributionmirror
             LEFT OUTER JOIN mirrorproberecord
-                ON mirrorproberecord.distribution_mirror = distributionmirror.id
+                ON mirrorproberecord.distribution_mirror =
+                    distributionmirror.id
             WHERE distributionmirror.content = %s
                 AND distributionmirror.official_candidate IS TRUE
                 AND distributionmirror.status = %s
@@ -851,8 +855,11 @@ class MirrorDistroArchSeries(SQLBase, _MirrorSeriesMixIn):
             orderBy='-datepublished')
 
     def _getPackageReleaseURLFromPublishingRecord(self, publishing_record):
-        """Given a BinaryPackagePublishingHistory, return the URL on
-        this mirror from where the BinaryPackageRelease file can be downloaded.
+        """Return the URL on this mirror from where the BinaryPackageRelease.
+
+        Given a BinaryPackagePublishingHistory, return the URL on
+        this mirror from where the BinaryPackageRelease file can be
+        downloaded.
         """
         bpr = publishing_record.binarypackagerelease
         base_url = self.distribution_mirror.base_url
@@ -904,8 +911,11 @@ class MirrorDistroSeriesSource(SQLBase, _MirrorSeriesMixIn):
             query, orderBy='-datepublished')
 
     def _getPackageReleaseURLFromPublishingRecord(self, publishing_record):
-        """Given a SourcePackagePublishingHistory, return the URL on
-        this mirror from where the SourcePackageRelease file can be downloaded.
+        """return the URL on this mirror from where the SourcePackageRelease.
+
+        Given a SourcePackagePublishingHistory, return the URL on
+        this mirror from where the SourcePackageRelease file can be
+        downloaded.
         """
         spr = publishing_record.sourcepackagerelease
         base_url = self.distribution_mirror.base_url

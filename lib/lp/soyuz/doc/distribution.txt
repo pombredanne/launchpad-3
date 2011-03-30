@@ -383,7 +383,7 @@ Nothing is pending-publication in sampledata:
 We can make Celso's PPA pending publication by copying a published
 source to another location within the PPA.
 
-    >>> cprov_src = cprov.archive.getPublishedSources()[0]
+    >>> cprov_src = cprov.archive.getPublishedSources().first()
 
     >>> warty = ubuntu['warty']
     >>> pocket_release = PackagePublishingPocket.RELEASE

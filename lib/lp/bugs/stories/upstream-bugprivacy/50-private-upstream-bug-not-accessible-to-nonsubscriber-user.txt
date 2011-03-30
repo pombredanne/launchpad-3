@@ -15,9 +15,7 @@ Note that the no-privs user doesn't have the permissions to see bug #13.
   ... GET /firefox/+bug/14 HTTP/1.1
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
-  HTTP/1.1 403 Forbidden
-  ...
-      <title>Error: Launchpad system error</title>
+  HTTP/1.1 404 Not Found
   ...
 
 This is also true if no-privs tries to access the bug from another
@@ -27,7 +25,5 @@ context.
   ... GET /tomcat/+bug/14 HTTP/1.1
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
-  HTTP/1.1 403 Forbidden
-  ...
-      <title>Error: Launchpad system error</title>
+  HTTP/1.1 404 Not Found
   ...

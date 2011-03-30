@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0611
@@ -15,6 +15,7 @@ __all__ = [
     'IHasTranslationImports',
     'IPOFile',
     'IPOTemplate',
+    'ITranslationGroup',
     'ITranslationImportQueue',
     'ITranslationImportQueueEntry',
     ]
@@ -24,6 +25,10 @@ from lp.translations.interfaces.hastranslationimports import (
     )
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import IPOTemplate
+from lp.translations.interfaces.translationgroup import (
+    ITranslationGroup,
+    ITranslationGroupSet,
+)
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     ITranslationImportQueueEntry,

@@ -8,6 +8,10 @@ import transaction
 
 from canonical.launchpad.scripts.tests import run_script
 from canonical.testing.layers import ZopelessAppServerLayer
+from lp.translations.tests.test_translationpackagingjob import (
+    count_translations,
+    make_translation_merge_job,
+    )
 from lp.translations.translationmerger import TranslationMerger
 from lp.testing import TestCaseWithFactory
 
@@ -18,16 +22,13 @@ class TestMergeExistingPackagings(TestCaseWithFactory):
 
     def test_merge_translations(self):
         """Running the script performs a translation merge."""
-        from lp.translations.tests.test_translationmergejob import (
-            TestTranslationMergeJob,
-            )
         # Import here to avoid autodetection by test runner.
         for packaging in set(TranslationMerger.findMergeablePackagings()):
             packaging.destroySelf()
-        job = TestTranslationMergeJob.makeTranslationMergeJob(self.factory)
+        job = make_translation_merge_job(self.factory)
         packaging = self.factory.makePackagingLink(job.productseries,
                 job.sourcepackagename, job.distroseries)
-        self.assertEqual(2, TestTranslationMergeJob.countTranslations(job))
+        self.assertEqual(2, count_translations(job))
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'scripts/rosetta/merge-existing-packagings.py', [],
@@ -41,4 +42,4 @@ class TestMergeExistingPackagings(TestCaseWithFactory):
             'INFO    Deleted POTMsgSets: 1.  TranslationMessages: 1.\n',
             stderr)
         self.assertEqual('', stdout)
-        self.assertEqual(1, TestTranslationMergeJob.countTranslations(job))
+        self.assertEqual(1, count_translations(job))

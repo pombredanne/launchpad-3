@@ -8,16 +8,22 @@ __metaclass__ = type
 from textwrap import dedent
 
 from zope.app.form import InputWidget
-from zope.app.form.browser.widget import BrowserWidget, renderElement
+from zope.app.form.browser.widget import (
+    BrowserWidget,
+    renderElement,
+    )
 from zope.app.form.interfaces import (
-    ConversionError, IInputWidget, InputErrors)
+    ConversionError,
+    IInputWidget,
+    InputErrors,
+    )
 from zope.app.form.utility import setUpWidget
 from zope.interface import implements
 from zope.schema import Choice
 
-from lp.app.errors import UnexpectedFormData
-from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
+from lp.app.errors import UnexpectedFormData
+from lp.app.validators import LaunchpadValidationError
 
 
 class ProjectScopeWidget(BrowserWidget, InputWidget):

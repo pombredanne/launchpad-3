@@ -364,6 +364,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         self.assertEquals(
             self.potmsgset.getExternallyUsedTranslationMessages(language),
             [])
+        self.assertEquals(
+            self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                used_languages=[language])[language].used,
+            [])
 
         # If there are only suggestions on the external POTMsgSet,
         # no externally used suggestions are returned.
@@ -374,6 +378,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         self.assertEquals(
             self.potmsgset.getExternallyUsedTranslationMessages(language),
+            [])
+        self.assertEquals(
+            self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                used_languages=[language])[language].used,
             [])
 
         # If there is a translation for the other side on the external
@@ -387,6 +395,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         self.assertEquals(
             self.potmsgset.getExternallyUsedTranslationMessages(language),
             [other_translation])
+        self.assertEquals(
+            self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                used_languages=[language])[language].used,
+            [other_translation])
 
         # If there is a current translation on the external POTMsgSet,
         # it is returned as the externally used suggestion as well.
@@ -397,6 +409,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         self.assertContentEqual(
             self.potmsgset.getExternallyUsedTranslationMessages(language),
+            [other_translation, current_translation])
+        self.assertEquals(
+            self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                used_languages=[language])[language].used,
             [other_translation, current_translation])
 
     def test_getExternallySuggestedTranslationMessages(self):
@@ -422,6 +438,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             self.potmsgset.getExternallySuggestedTranslationMessages(
                 language),
             [])
+        self.assertEquals(
+            self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                suggested_languages=[language])[language].suggested,
+            [])
 
         # If there is a suggestion on the external POTMsgSet,
         # it is returned.
@@ -433,6 +453,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         self.assertEquals(
             self.potmsgset.getExternallySuggestedTranslationMessages(
                 language),
+            [external_suggestion])
+        self.assertEquals(
+            self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                suggested_languages=[language])[language].suggested,
             [external_suggestion])
 
         # If there is a translation for the other side on the external
@@ -446,6 +470,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             self.potmsgset.getExternallySuggestedTranslationMessages(
                 language),
             [external_suggestion])
+        self.assertEquals(
+            self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                suggested_languages=[language])[language].suggested,
+            [external_suggestion])
 
         # A current translation on the external POTMsgSet is not
         # considered an external suggestion.
@@ -457,6 +485,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         self.assertEquals(
             self.potmsgset.getExternallySuggestedTranslationMessages(
                 language),
+            [external_suggestion])
+        self.assertEquals(
+            self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                suggested_languages=[language])[language].suggested,
             [external_suggestion])
 
     def test_hasTranslationChangedInLaunchpad(self):

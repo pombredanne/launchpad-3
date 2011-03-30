@@ -13,16 +13,19 @@ __all__ = [
 from difflib import unified_diff
 import logging
 
+from zope.app.form.browser import TextAreaWidget
 from zope.interface import Interface
 from zope.schema import Text
-from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.webapp.authorization import check_permission
 from lp.app.browser.launchpadform import (
     action,
+    custom_widget,
     LaunchpadFormView,
     )
 from lp.app.browser.stringformatter import FormattersAPI
+from lp.services.features.changelog import ChangeLog
+from lp.services.features.rulesource import DuplicatePriorityError
 
 
 class IFeatureControlForm(Interface):
@@ -39,6 +42,10 @@ class IFeatureControlForm(Interface):
             u"whitespace-separated.  Numerically higher "
             u"priorities match first."),
         required=False)
+    comment = Text(
+        title=u"Comment",
+        description=(u"Who requested this change and why."),
+        required=True)
 
 
 class FeatureControlView(LaunchpadFormView):
@@ -50,14 +57,23 @@ class FeatureControlView(LaunchpadFormView):
 
     schema = IFeatureControlForm
     page_title = label = 'Feature control'
-    field_names = ['feature_rules']
     diff = None
     logger_name = 'lp.services.features'
+    custom_widget('comment', TextAreaWidget, height=2)
 
-    @action(u"Change", name="change")
+    @property
+    def field_names(self):
+        if self.canSubmit(None):
+            return ['feature_rules', 'comment']
+        else:
+            return []
+
+    def canSubmit(self, action):
+        """Is the user authorized to change the rules?"""
+        return check_permission('launchpad.Admin', self.context)
+
+    @action(u"Change", name="change", condition=canSubmit)
     def change_action(self, action, data):
-        if not check_permission('launchpad.Admin', self.context):
-            raise Unauthorized()
         original_rules = self.request.features.rule_source.getAllRulesAsText()
         rules_text = data.get('feature_rules') or ''
         logger = logging.getLogger(self.logger_name)
@@ -68,7 +84,9 @@ class FeatureControlView(LaunchpadFormView):
         # (whitespace normalized) and ordered consistently so the diff is
         # minimal.
         new_rules = self.request.features.rule_source.getAllRulesAsText()
-        diff = '\n'.join(self.diff_rules(original_rules, new_rules))
+        diff = u'\n'.join(self.diff_rules(original_rules, new_rules))
+        comment = data['comment']
+        ChangeLog.append(diff, comment, self.user)
         self.diff = FormattersAPI(diff).format_diff()
 
     @staticmethod
@@ -96,5 +114,5 @@ class FeatureControlView(LaunchpadFormView):
             # Unfortunately if the field is '', zope leaves it out of data.
             self.request.features.rule_source.parseRules(
                 data.get('feature_rules') or '')
-        except (IndexError, TypeError, ValueError), e:
+        except (IndexError, TypeError, ValueError, DuplicatePriorityError), e:
             self.setFieldError('feature_rules', 'Invalid rule syntax: %s' % e)

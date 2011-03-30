@@ -1,0 +1,121 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad"
+>
+  <body>
+    <div metal:fill-slot="heading">
+      <h1>Translation sharing details</h1>
+    </div>
+    <div metal:fill-slot="main">
+      <dl id="sharing-checklist">
+        <dt><span tal:condition="not:view/is_configuration_complete">
+            Translation sharing configuration is incomplete.
+          </span>
+          <span tal:condition="view/is_configuration_complete">
+            Translation sharing with upstream is active.
+          </span>
+        </dt>
+        <dd>
+          <ul>
+            <li class="sprite no"
+                tal:condition="not:view/is_packaging_configured">
+                No upstream project series has been linked.
+                <a tal:replace="structure context/menu:overview/edit_packaging/fmt:icon" />
+            </li>
+            <li class="sprite yes"
+                tal:condition="view/is_packaging_configured">
+              Linked upstream series is
+              <a tal:replace="structure context/productseries/fmt:link">
+                Gimp trunk</a>.
+              <a tal:replace="structure context/menu:overview/edit_packaging/fmt:icon" />
+              <a tal:replace="structure context/menu:overview/remove_packaging/fmt:icon" />
+            </li>
+            <li tal:attributes="class view/no_item_class"
+                tal:condition="not:view/has_upstream_branch">
+              No source branch exists for the upstream series.
+              <a tal:condition="view/is_packaging_configured"
+                 tal:replace="structure context/productseries/menu:overview/set_branch/fmt:icon" />
+            </li>
+            <li class="sprite yes"
+                tal:condition="view/has_upstream_branch">
+              Upstream source branch is
+              <a tal:replace="structure context/productseries/branch/fmt:link">
+                lp:gimp</a>.
+              <a tal:condition="view/is_packaging_configured"
+                 tal:replace="structure context/productseries/menu:overview/set_branch/fmt:icon" />
+            </li>
+            <li tal:attributes="class view/no_item_class"
+                tal:condition="not:view/is_upstream_translations_enabled">
+              Translations are not enabled on the upstream series.
+              <a tal:condition="view/is_packaging_configured"
+                 tal:replace="structure context/productseries/product/menu:translations/settings/fmt:icon" />
+            </li>
+            <li class="sprite yes"
+                tal:condition="view/is_upstream_translations_enabled">
+              Translations are enabled on the upstream project.
+              <a tal:condition="view/is_packaging_configured"
+                 tal:replace="structure context/productseries/product/menu:translations/settings/fmt:icon" />
+            </li>
+            <li tal:attributes="class view/no_item_class"
+                tal:condition="not:view/is_upstream_synchronization_enabled">
+              Automatic synchronization of translations is not enabled.
+              <a tal:condition="view/is_packaging_configured"
+                 tal:replace="structure context/productseries/menu:translations/settings/fmt:icon" />
+            </li>
+            <li class="sprite yes"
+                tal:condition="view/is_upstream_synchronization_enabled">
+              Automatic synchronization of translations is enabled.
+              <a tal:condition="view/is_packaging_configured"
+                 tal:replace="structure context/productseries/menu:translations/settings/fmt:icon" />
+            </li>
+          </ul>
+        </dd>
+      </dl>
+      <table class="listing" id="template-table">
+        <thead>
+          <tr>
+            <th class="name_column" rowspan="2">Template name</th>
+            <th class="state_column" rowspan="2">State</th>
+            <th style="text-align: center" colspan="2">Ubuntu</th>
+            <th style="text-align: center" colspan="3">Upstream</th>
+          </tr>
+          <tr>
+            <th class="length_ubuntu_column">Length</th>
+            <th class="updated_ubuntu_column">Updated</th>
+            <th class="length_upstream_column">Length</th>
+            <th class="updated_upstream_column">Updated</th>
+            <th class="upstream_link_column">Upstream template</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="info view/template_info">
+            <td class="name_column">
+              <a tal:content="info/name"
+                 tal:attributes="href info/package_template/fmt:url"
+                 tal:omit-tag="not:info/package_template">gimp20</a></td>
+            <td class="state_column" tal:content="info/status">sharing</td>
+            <td class="length_ubuntu_column">
+                <tal:content tal:condition="info/package_template"
+                             tal:content="info/package_template/messagecount">82</tal:content></td>
+            <td class="updated_ubuntu_column">
+                <tal:content tal:condition="info/package_template"
+                             tal:content="info/package_template/date_last_updated/fmt:approximatedate">2 minutes ago</tal:content></td>
+            <td class="length_upstream_column">
+                <tal:content tal:condition="info/upstream_template"
+                             tal:content="info/upstream_template/messagecount">85</tal:content></td>
+            <td class="updated_upstream_column">
+                <tal:content tal:condition="info/upstream_template"
+                             tal:content="info/upstream_template/date_last_updated/fmt:approximatedate">2 minutes ago</tal:content></td>
+            <td class="upstream_link_column">
+              <a tal:condition="info/upstream_template"
+                 tal:attributes="href info/upstream_template/fmt:url">View upstream</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </body>
+</html>

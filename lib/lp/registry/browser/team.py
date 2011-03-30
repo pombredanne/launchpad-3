@@ -46,7 +46,6 @@ from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.validation import validate_new_team_email
-from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,
@@ -65,6 +64,7 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.browser.tales import PersonFormatterAPI
 from lp.app.errors import UnexpectedFormData
+from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.itemswidgets import (
     LaunchpadRadioWidget,
     LaunchpadRadioWidgetWithDescription,

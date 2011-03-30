@@ -57,13 +57,13 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver,
     IHasDrivers,
     )
-from canonical.launchpad.validators.name import name_validator
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
     )
+from lp.app.validators.name import name_validator
 from lp.blueprints.interfaces.specificationtarget import ISpecificationTarget
 from lp.blueprints.interfaces.sprint import IHasSprints
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
@@ -644,7 +644,7 @@ class IDistribution(
             source_name="apport",
             distro_series=series)[0].source_package_version
     """
-    export_as_webservice_entry()
+    export_as_webservice_entry(as_of="beta")
 
 
 class IBaseDistribution(IDistribution):

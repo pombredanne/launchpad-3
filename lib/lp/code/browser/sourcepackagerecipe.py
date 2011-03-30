@@ -15,7 +15,6 @@ __all__ = [
     ]
 
 import itertools
-import simplejson
 
 from bzrlib.plugins.builder.recipe import (
     ForbiddenInstructionError,
@@ -25,34 +24,41 @@ from bzrlib.plugins.builder.recipe import (
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import use_template
+from lazr.restful.interfaces import (
+    IFieldHTMLRenderer,
+    IWebServiceClientRequest,
+    )
+import simplejson
 from storm.locals import Store
 from z3c.ptcompat import ViewPageTemplateFile
+from zope import component
 from zope.app.form.browser.widget import Widget
 from zope.app.form.interfaces import IView
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
 from zope.interface import (
+    implementer,
     implements,
     Interface,
     providedBy,
     )
 from zope.schema import (
-    Field,
     Choice,
+    Field,
     List,
     Text,
     TextLine,
     )
+from zope.schema.interfaces import ICollection
 from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
+from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad.browser.launchpad import Hierarchy
-from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,
@@ -76,8 +82,10 @@ from lp.app.browser.lazrjs import (
     BooleanChoiceWidget,
     InlineEditPickerWidget,
     TextAreaEditorWidget,
+    TextLineEditorWidget,
     )
 from lp.app.browser.tales import format_link
+from lp.app.validators.name import name_validator
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadRadioWidget,
@@ -96,6 +104,7 @@ from lp.code.interfaces.sourcepackagerecipe import (
     MINIMAL_RECIPE_TEXT,
     RECIPE_BETA_FLAG,
     )
+from lp.code.model.branchtarget import PersonBranchTarget
 from lp.code.model.sourcepackagerecipe import get_buildable_distroseries_set
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import getFeatureFlag
@@ -288,6 +297,49 @@ class SourcePackageRecipeView(LaunchpadView):
         return TextAreaEditorWidget(
             self.context, description, title="")
 
+    @property
+    def name_widget(self):
+        name = ISourcePackageRecipe['name']
+        title = "Edit the recipe name"
+        return TextLineEditorWidget(self.context, name, title, 'h1')
+
+    @property
+    def distroseries_widget(self):
+        from lp.app.browser.lazrjs import InlineMultiCheckboxWidget
+        field = ISourcePackageEditSchema['distroseries']
+        return InlineMultiCheckboxWidget(
+            self.context,
+            field,
+            attribute_type="reference",
+            vocabulary='BuildableDistroSeries',
+            label="Distribution series:",
+            label_tag="dt",
+            header="Change default distribution series:",
+            empty_display_value="None",
+            selected_items=sorted(
+                self.context.distroseries, key=lambda ds: ds.displayname),
+            items_tag="dd",
+            )
+
+
+@component.adapter(ISourcePackageRecipe, ICollection,
+                   IWebServiceClientRequest)
+@implementer(IFieldHTMLRenderer)
+def distroseries_renderer(context, field, request):
+    """Render a distroseries collection as a set of links."""
+
+    def render(value):
+        distroseries = sorted(
+            context.distroseries, key=lambda ds: ds.displayname)
+        if not distroseries:
+            return 'None'
+        html = "<ul>"
+        html += ''.join(
+            ["<li>%s</li>" % format_link(series) for series in distroseries])
+        html += "</ul>"
+        return html
+    return render
+
 
 def builds_for_recipe(recipe):
         """A list of interesting builds.
@@ -307,7 +359,7 @@ def builds_for_recipe(recipe):
         return builds
 
 
-def new_builds_notification_text(builds):
+def new_builds_notification_text(builds, already_pending=None):
     nr_builds = len(builds)
     if not nr_builds:
         builds_text = "All requested recipe builds are already queued."
@@ -315,7 +367,9 @@ def new_builds_notification_text(builds):
         builds_text = "1 new recipe build has been queued."
     else:
         builds_text = "%d new recipe builds have been queued." % nr_builds
-    return builds_text
+    if nr_builds > 0 and already_pending:
+        builds_text = "<p>%s</p>%s" % (builds_text, already_pending)
+    return structured(builds_text)
 
 
 class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
@@ -327,7 +381,7 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
 
         The distroseries function as defaults for requesting a build.
         """
-        initial_values = {'distros': self.context.distroseries}
+        initial_values = {'distroseries': self.context.distroseries}
         build = self.context.last_build
         if build is not None:
             initial_values['archive'] = build.archive
@@ -336,26 +390,26 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
     class schema(Interface):
         """Schema for requesting a build."""
         archive = Choice(vocabulary='TargetPPAs', title=u'Archive')
-        distros = List(
+        distroseries = List(
             Choice(vocabulary='BuildableDistroSeries'),
             title=u'Distribution series')
 
-    custom_widget('distros', LabeledMultiCheckBoxWidget)
+    custom_widget('distroseries', LabeledMultiCheckBoxWidget)
 
     def validate(self, data):
-        distros = data.get('distros', [])
+        distros = data.get('distroseries', [])
         if not len(distros):
-            self.setFieldError('distros',
+            self.setFieldError('distroseries',
                 "You need to specify at least one distro series for which "
                 "to build.")
             return
         over_quota_distroseries = []
-        for distroseries in data['distros']:
+        for distroseries in data['distroseries']:
             if self.context.isOverQuota(self.user, distroseries):
                 over_quota_distroseries.append(str(distroseries))
         if len(over_quota_distroseries) > 0:
             self.setFieldError(
-                'distros',
+                'distroseries',
                 "You have exceeded today's quota for %s." %
                 ', '.join(over_quota_distroseries))
 
@@ -366,17 +420,24 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
         build for a particular distroseries, we simply record that so that
         other builds can ne queued and a message be displayed to the caller.
         """
-        errors = {}
+        informational = {}
         builds = []
-        for distroseries in data['distros']:
+        for distroseries in data['distroseries']:
             try:
                 build = self.context.requestBuild(
                     data['archive'], self.user, distroseries, manual=True)
                 builds.append(build)
             except BuildAlreadyPending, e:
-                errors['distros'] = ("An identical build is already pending "
-                    "for %s." % e.distroseries)
-        return builds, errors
+                existing_message = informational.get("already_pending")
+                if existing_message:
+                    new_message = existing_message[:-1] + (
+                                    ", and %s." % e.distroseries)
+                else:
+                    new_message = ("An identical build is "
+                                "already pending for %s." % e.distroseries)
+                informational["already_pending"] = new_message
+
+        return builds, informational
 
 
 class SourcePackageRecipeRequestBuildsHtmlView(
@@ -395,25 +456,27 @@ class SourcePackageRecipeRequestBuildsHtmlView(
 
     @action('Request builds', name='request')
     def request_action(self, action, data):
-        builds, errors = self.requestBuild(data)
-        if errors:
-            [self.setFieldError(field, message)
-                for (field, message) in errors.items()]
-            return
+        builds, informational = self.requestBuild(data)
         self.next_url = self.cancel_url
-        self.request.response.addNotification(
-                new_builds_notification_text(builds))
+        already_pending = informational.get("already_pending")
+        notification_text = new_builds_notification_text(
+            builds, already_pending)
+        self.request.response.addNotification(notification_text)
 
 
 class SourcePackageRecipeRequestBuildsAjaxView(
         SourcePackageRecipeRequestBuildsView):
     """Supports AJAX form recipe build requests."""
 
-    def _process_error(self, data, errors, reason):
+    def _process_error(self, data=None, builds=None, informational=None,
+                       errors=None, reason="Validation"):
         """Set up the response and json data to return to the caller."""
         self.request.response.setStatus(400, reason)
         self.request.response.setHeader('Content-type', 'application/json')
-        return simplejson.dumps(errors)
+        return_data = dict(builds=builds, errors=errors)
+        if informational:
+            return_data.update(informational)
+        return simplejson.dumps(return_data)
 
     def failure(self, action, data, errors):
         """Called by the form if validate() finds any errors.
@@ -421,7 +484,7 @@ class SourcePackageRecipeRequestBuildsAjaxView(
            We simply convert the errors to json and return that data to the
            caller for display to the user.
         """
-        return self._process_error(data, self.widget_errors, "Validation")
+        return self._process_error(data=data, errors=self.widget_errors)
 
     @action('Request builds', name='request', failure=failure)
     def request_action(self, action, data):
@@ -434,12 +497,18 @@ class SourcePackageRecipeRequestBuildsAjaxView(
         unexpected exception, that will be handled using the form's standard
         exception processing mechanism (using response code 500).
         """
-        builds, errors = self.requestBuild(data)
+        builds, informational = self.requestBuild(data)
         # If there are errors we return a json data snippet containing the
-        # errors instead of rendering the form. These errors are processed
-        # by the caller's response handler and displayed to the user.
-        if errors:
-            return self._process_error(data, errors, "Request Build")
+        # errors as well as the form content. These errors are processed
+        # by the caller's response handler and displayed to the user. The
+        # form content may be rendered as well if required.
+        if informational:
+            builds_html = None
+            if len(builds):
+                builds_html = self.render()
+            return self._process_error(
+                data=data, builds=builds_html, informational=informational,
+                reason="Request Build")
 
     @property
     def builds(self):
@@ -479,47 +548,6 @@ class SourcePackageRecipeRequestDailyBuildView(LaunchpadFormView):
         return builds_for_recipe(self.context)
 
 
-class SourcePackageRecipeRequestBuildsAjaxView(
-        SourcePackageRecipeRequestBuildsView):
-    """Supports AJAX form recipe build requests."""
-
-    def _process_error(self, data, errors, reason):
-        """Set up the response and json data to return to the caller."""
-        self.request.response.setStatus(400, reason)
-        self.request.response.setHeader('Content-type', 'application/json')
-        return simplejson.dumps(errors)
-
-    def failure(self, action, data, errors):
-        """Called by the form if validate() finds any errors.
-
-           We simply convert the errors to json and return that data to the
-           caller for display to the user.
-        """
-        return self._process_error(data, self.widget_errors, "Validation")
-
-    @action('Request builds', name='request', failure=failure)
-    def request_action(self, action, data):
-        """User action for requesting a number of builds.
-
-        The failure handler will handle any validation errors. We still need
-        to handle errors which may occur when invoking the business logic.
-        These "expected" errors are ones which result in a predefined message
-        being displayed to the user. If the business method raises an
-        unexpected exception, that will be handled using the form's standard
-        exception processing mechanism (using response code 500).
-        """
-        builds, errors = self.requestBuild(data)
-        # If there are errors we return a json data snippet containing the
-        # errors instead of rendering the form. These errors are processed
-        # by the caller's response handler and displayed to the user.
-        if errors:
-            return self._process_error(data, errors, "Request Build")
-
-    @property
-    def builds(self):
-        return builds_for_recipe(self.context)
-
-
 class ISourcePackageEditSchema(Interface):
     """Schema for adding or editing a recipe."""
 
@@ -528,18 +556,13 @@ class ISourcePackageEditSchema(Interface):
         'description',
         'owner',
         'build_daily',
+        'distroseries',
         ])
     daily_build_archive = Choice(vocabulary='TargetPPAs',
         title=u'Daily build archive',
         description=(
             u'If built daily, this is the archive where the package '
             u'will be uploaded.'))
-    distros = List(
-        Choice(vocabulary='BuildableDistroSeries'),
-        title=u'Default distribution series',
-        description=(
-            u'If built daily, these are the distribution versions that '
-            u'the recipe will be built for.'))
     recipe_text = has_structured_doc(
         Text(
             title=u'Recipe text', required=True,
@@ -593,9 +616,9 @@ class RecipeTextValidatorMixin:
 
     def validate(self, data):
         if data['build_daily']:
-            if len(data['distros']) == 0:
+            if len(data['distroseries']) == 0:
                 self.setFieldError(
-                    'distros',
+                    'distroseries',
                     'You must specify at least one series for daily builds.')
         try:
             parser = RecipeParser(data['recipe_text'])
@@ -689,14 +712,14 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
     title = label = 'Create a new source package recipe'
 
     schema = ISourcePackageAddSchema
-    custom_widget('distros', LabeledMultiCheckBoxWidget)
+    custom_widget('distroseries', LabeledMultiCheckBoxWidget)
     custom_widget('owner', RecipeOwnerWidget)
     custom_widget('use_ppa', LaunchpadRadioWidget)
 
     def initialize(self):
         super(SourcePackageRecipeAddView, self).initialize()
         if getFeatureFlag(RECIPE_BETA_FLAG):
-           self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
+            self.request.response.addWarningNotification(RECIPE_BETA_MESSAGE)
         widget = self.widgets['use_ppa']
         current_value = widget._getFormValue()
         self.use_ppa_existing = render_radio_widget_part(
@@ -712,13 +735,23 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
         # all confused when we want to create a new PPA.
         archive_widget._displayItemForMissingValue = False
 
+    def setUpFields(self):
+        super(SourcePackageRecipeAddView, self).setUpFields()
+        # Ensure distro series widget allows input
+        self.form_fields['distroseries'].for_input = True
+
     def getBranch(self):
         """The branch on which the recipe is built."""
         return self.context
 
     def _recipe_names(self):
         """A generator of recipe names."""
-        branch_target_name = self.context.target.name.split('/')[-1]
+        # +junk-daily doesn't make a very good recipe name, so use the
+        # branch name in that case.
+        if zope_isinstance(self.context.target, PersonBranchTarget):
+            branch_target_name = self.context.name
+        else:
+            branch_target_name = self.context.target.name.split('/')[-1]
         yield "%s-daily" % branch_target_name
         counter = itertools.count(1)
         while True:
@@ -728,8 +761,8 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
         # Grab the last path element of the branch target path.
         source = getUtility(ISourcePackageRecipeSource)
         for recipe_name in self._recipe_names():
-             if not source.exists(owner, recipe_name):
-                 return recipe_name
+            if not source.exists(owner, recipe_name):
+                return recipe_name
 
     @property
     def initial_values(self):
@@ -737,10 +770,10 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
         series = [series for series in distroseries if series.status in (
                 SeriesStatus.CURRENT, SeriesStatus.DEVELOPMENT)]
         return {
-            'name' : self._find_unused_name(self.user),
+            'name': self._find_unused_name(self.user),
             'recipe_text': MINIMAL_RECIPE_TEXT % self.context.bzr_identity,
             'owner': self.user,
-            'distros': series,
+            'distroseries': series,
             'build_daily': True,
             'use_ppa': EXISTING_PPA,
             }
@@ -761,8 +794,8 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
             source_package_recipe = self.error_handler(
                 getUtility(ISourcePackageRecipeSource).new,
                 self.user, owner, data['name'],
-                data['recipe_text'], data['description'], data['distros'],
-                ppa, data['build_daily'])
+                data['recipe_text'], data['description'],
+                data['distroseries'], ppa, data['build_daily'])
             Store.of(source_package_recipe).flush()
         except ErrorHandled:
             return
@@ -806,10 +839,13 @@ class SourcePackageRecipeEditView(RecipeRelatedBranchesMixin,
     label = title
 
     schema = ISourcePackageEditSchema
-    custom_widget('distros', LabeledMultiCheckBoxWidget)
+    custom_widget('distroseries', LabeledMultiCheckBoxWidget)
 
     def setUpFields(self):
         super(SourcePackageRecipeEditView, self).setUpFields()
+
+        # Ensure distro series widget allows input
+        self.form_fields['distroseries'].for_input = True
 
         if check_permission('launchpad.Admin', self.context):
             # Exclude the PPA archive dropdown.
@@ -830,7 +866,7 @@ class SourcePackageRecipeEditView(RecipeRelatedBranchesMixin,
     @property
     def initial_values(self):
         return {
-            'distros': self.context.distroseries,
+            'distroseries': self.context.distroseries,
             'recipe_text': self.context.recipe_text,
             }
 
@@ -854,7 +890,7 @@ class SourcePackageRecipeEditView(RecipeRelatedBranchesMixin,
             except ErrorHandled:
                 return
 
-        distros = data.pop('distros')
+        distros = data.pop('distroseries')
         if distros != self.context.distroseries:
             self.context.distroseries.clear()
             for distroseries_item in distros:
@@ -869,9 +905,6 @@ class SourcePackageRecipeEditView(RecipeRelatedBranchesMixin,
                 form_field.__name__ for form_field in self.form_fields]
             notify(ObjectModifiedEvent(
                 self.context, recipe_before_modification, field_names))
-            # Only specify that the context was modified if there
-            # was in fact a change.
-            self.context.date_last_modified = UTC_NOW
 
         self.next_url = canonical_url(self.context)
 

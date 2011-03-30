@@ -421,8 +421,6 @@ class FakePackager:
         if queue_record.status in needs_acceptance_statuses:
             queue_record.acceptFromUploader(changesfile_path, logger)
 
-        pub_record = queue_record.archive.getPublishedSources(
-            name=self.name, version=version, exact_match=True)[0]
-
-        return pub_record
+        return queue_record.archive.getPublishedSources(
+            name=self.name, version=version, exact_match=True).first()
 

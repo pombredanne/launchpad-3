@@ -24,6 +24,7 @@ from canonical.launchpad.interfaces.account import (
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressAlreadyTaken,
     EmailAddressStatus,
+    IEmailAddressSet,
     InvalidEmailAddress,
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -46,6 +47,7 @@ from lp.registry.errors import (
     PrivatePersonLinkageError,
     )
 from lp.registry.interfaces.karma import IKarmaCacheManager
+from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.nameblacklist import INameBlacklistSet
 from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
@@ -276,6 +278,29 @@ class TestPerson(TestCaseWithFactory):
         received_pillars = [pillar.name for pillar in
             user.getOwnedOrDrivenPillars()]
         self.assertEqual(expected_pillars, received_pillars)
+
+    def test_no_merge_pending(self):
+        # is_merge_pending returns False when this person is not the "from"
+        # person of an active merge job.
+        person = self.factory.makePerson()
+        self.assertFalse(person.is_merge_pending)
+
+    def test_merge_pending(self):
+        # is_merge_pending returns True when this person is being merged with
+        # another person in an active merge job.
+        from_person = self.factory.makePerson()
+        to_person = self.factory.makePerson()
+        getUtility(IPersonSet).mergeAsync(from_person, to_person)
+        self.assertTrue(from_person.is_merge_pending)
+        self.assertTrue(to_person.is_merge_pending)
+
+    def test_mergeAsync_success(self):
+        # mergeAsync returns a job with the from and to persons.
+        from_person = self.factory.makePerson()
+        to_person = self.factory.makePerson()
+        job = getUtility(IPersonSet).mergeAsync(from_person, to_person)
+        self.assertEqual(from_person, job.from_person)
+        self.assertEqual(to_person, job.to_person)
 
     def test_selfgenerated_bugnotifications_none_by_default(self):
         # Default for new accounts is to not get any
@@ -668,35 +693,71 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         self.person_set.merge(duplicate, person)
         self.assertEqual(oldest_date, person.datecreated)
 
-    def _doMerge(self, test_team, target_team):
-        test_team.deactivateAllMembers(
-            comment='',
-            reviewer=test_team.teamowner)
-        self.person_set.merge(test_team, target_team)
+    def test_team_with_active_mailing_list_raises_error(self):
+        # A team with an active mailing list cannot be merged.
+        target_team = self.factory.makeTeam()
+        test_team = self.factory.makeTeam()
+        mailing_list = self.factory.makeMailingList(
+            test_team, test_team.teamowner)
+        self.assertRaises(
+            AssertionError, self.person_set.merge, test_team, target_team)
+
+    def test_team_with_inactive_mailing_list(self):
+        # A team with an inactive mailing list can be merged.
+        target_team = self.factory.makeTeam()
+        test_team = self.factory.makeTeam()
+        mailing_list = self.factory.makeMailingList(
+            test_team, test_team.teamowner)
+        mailing_list.deactivate()
+        mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
+        self.person_set.merge(test_team, target_team, test_team.teamowner)
+        self.assertEqual(target_team, test_team.merged)
+        self.assertEqual(MailingListStatus.PURGED, mailing_list.status)
+        emails = getUtility(IEmailAddressSet).getByPerson(target_team).count()
+        self.assertEqual(0, emails)
+
+    def test_team_with_purged_mailing_list(self):
+        # A team with a purges mailing list can be merged.
+        target_team = self.factory.makeTeam()
+        test_team = self.factory.makeTeam()
+        mailing_list = self.factory.makeMailingList(
+            test_team, test_team.teamowner)
+        mailing_list.deactivate()
+        mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
+        mailing_list.purge()
+        self.person_set.merge(test_team, target_team, test_team.teamowner)
+        self.assertEqual(target_team, test_team.merged)
+
+    def test_team_with_members(self):
+        # Team members are removed before merging.
+        target_team = self.factory.makeTeam()
+        test_team = self.factory.makeTeam()
+        former_member = self.factory.makePerson()
+        with person_logged_in(test_team.teamowner):
+            test_team.addMember(former_member, test_team.teamowner)
+        self.person_set.merge(test_team, target_team, test_team.teamowner)
+        self.assertEqual(target_team, test_team.merged)
+        self.assertEqual([], list(former_member.super_teams))
 
     def test_team_without_super_teams_is_fine(self):
         # A team with no members and no super teams
         # merges without errors.
         test_team = self.factory.makeTeam()
         target_team = self.factory.makeTeam()
-
         login_person(test_team.teamowner)
-        self._doMerge(test_team, target_team)
+        self.person_set.merge(test_team, target_team, test_team.teamowner)
 
-    def test_team_with_super_teams_raises_error(self):
-        # A team with no members but with superteams
-        # raises an assertion error.
+    def test_team_with_super_teams(self):
+        # A team with superteams can be merged, but the memberships
+        # are not transferred.
         test_team = self.factory.makeTeam()
         super_team = self.factory.makeTeam()
         target_team = self.factory.makeTeam()
-
         login_person(test_team.teamowner)
         test_team.join(super_team, test_team.teamowner)
-        self.assertRaises(
-            AssertionError,
-            self._doMerge,
-            test_team,
-            target_team)
+        self.person_set.merge(test_team, target_team, test_team.teamowner)
+        self.assertEqual(target_team, test_team.merged)
+        self.assertEqual([], list(target_team.super_teams))
 
     def test_merge_moves_branches(self):
         # When person/teams are merged, branches owned by the from person
@@ -755,6 +816,15 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         descriptions = [r.description for r in recipes]
         self.assertEqual([u'TO', u'FROM'], descriptions)
         self.assertEqual(u'foo-1', recipes[1].name)
+
+    def test_mergeAsync(self):
+        # mergeAsync() creates a new `PersonMergeJob`.
+        from_person = self.factory.makePerson()
+        to_person = self.factory.makePerson()
+        login_person(from_person)
+        job = self.person_set.mergeAsync(from_person, to_person)
+        self.assertEqual(from_person, job.from_person)
+        self.assertEqual(to_person, job.to_person)
 
 
 class TestPersonSetCreateByOpenId(TestCaseWithFactory):
@@ -1222,4 +1292,4 @@ class TestAPIPartipication(TestCaseWithFactory):
         # XXX: This number should really be 10, but see
         # https://bugs.launchpad.net/storm/+bug/619017 which is adding 3
         # queries to the test.
-        self.assertThat(collector, HasQueryCount(LessThan(13)))
+        self.assertThat(collector, HasQueryCount(LessThan(14)))

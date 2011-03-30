@@ -35,7 +35,6 @@ from lp.bugs.externalbugtracker import (
     InvalidBugId,
     UnknownRemoteStatusError,
     )
-from lp.bugs.externalbugtracker.isolation import ensure_no_transaction
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
@@ -47,6 +46,7 @@ from lp.bugs.interfaces.externalbugtracker import (
     UNKNOWN_REMOTE_IMPORTANCE,
     )
 from lp.bugs.scripts import debbugs
+from lp.services.database.isolation import ensure_no_transaction
 
 
 debbugsstatusmap = {'open':      BugTaskStatus.NEW,

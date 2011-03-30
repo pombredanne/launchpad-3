@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -13,12 +13,10 @@ __all__ = [
 
 from operator import attrgetter
 
-from sqlobject.sqlbuilder import SQLConstant
 from storm.locals import (
     And,
     Desc,
     Select,
-    SQL,
     Store,
     )
 from zope.component import getUtility
@@ -43,6 +41,7 @@ from lp.answers.model.question import (
     QuestionTargetSearch,
     )
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
+from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import get_bug_tags_open_count
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
@@ -529,22 +528,29 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             'BugTask.distroseries = %s AND BugTask.sourcepackagename = %s' %
                 sqlvalues(self.distroseries, self.sourcepackagename))
 
-    def setPackaging(self, productseries, user):
+    def setPackaging(self, productseries, owner):
+        """See `ISourcePackage`."""
         target = self.direct_packaging
         if target is not None:
             # we should update the current packaging
             target.productseries = productseries
-            target.owner = user
+            target.owner = owner
             target.datecreated = UTC_NOW
         else:
             # ok, we need to create a new one
             Packaging(
                 distroseries=self.distroseries,
                 sourcepackagename=self.sourcepackagename,
-                productseries=productseries, owner=user,
+                productseries=productseries, owner=owner,
                 packaging=PackagingType.PRIME)
         # and make sure this change is immediately available
         flush_database_updates()
+
+    def deletePackaging(self):
+        """See `ISourcePackage`."""
+        if self.direct_packaging is None:
+            return
+        self.direct_packaging.destroySelf()
 
     def __hash__(self):
         """See `ISourcePackage`."""
@@ -671,6 +677,10 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         collection = collection.restrictDistroSeries(self.distroseries)
         return collection.restrictSourcePackageName(self.sourcepackagename)
 
+    def getSharingPartner(self):
+        """See `IHasTranslationTemplates`."""
+        return self.productseries
+
     def getBranch(self, pocket):
         """See `ISourcePackage`."""
         store = Store.of(self.sourcepackagename)
@@ -747,3 +757,27 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     def linkedBranches(self):
         """See `ISourcePackage`."""
         return dict((p.name, b) for (p, b) in self.linked_branches)
+
+    def getBugTaskWeightFunction(self):
+        """Provide a weight function to determine optimal bug task.
+
+        We look for the source package task, followed by the distro source
+        package, then the distroseries task, and lastly the distro task.
+        """
+        sourcepackagenameID = self.sourcepackagename.id
+        seriesID = self.distroseries.id
+        distributionID = self.distroseries.distributionID
+        def weight_function(bugtask):
+            if bugtask.sourcepackagenameID == sourcepackagenameID:
+                if bugtask.distroseriesID == seriesID:
+                    return OrderedBugTask(1, bugtask.id, bugtask)
+                elif bugtask.distributionID == distributionID:
+                    return OrderedBugTask(2, bugtask.id, bugtask)
+            elif bugtask.distroseriesID == seriesID:
+                return OrderedBugTask(3, bugtask.id, bugtask)
+            elif bugtask.distributionID == distributionID:
+                return OrderedBugTask(4, bugtask.id, bugtask)
+            # Catch the default case, and where there is a task for the same
+            # sourcepackage on a different distro.
+            return OrderedBugTask(5, bugtask.id, bugtask)
+        return weight_function

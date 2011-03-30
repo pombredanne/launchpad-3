@@ -67,7 +67,7 @@ class MaloneApplicationNavigation(Navigation):
         # /malone/$bug.id Just Work
         bug = getUtility(IBugSet).getByNameOrID(name)
         if not check_permission("launchpad.View", bug):
-            raise Unauthorized("Bug %s is private" % name)
+            return None
         return bug
 
 

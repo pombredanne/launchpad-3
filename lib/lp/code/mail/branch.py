@@ -237,8 +237,8 @@ class BranchMailer(BaseMailer):
             headers['X-Launchpad-Branch-Revision-Number'] = str(self.revno)
         return headers
 
-    def _getTemplateParams(self, email):
-        params = BaseMailer._getTemplateParams(self, email)
+    def _getTemplateParams(self, email, recipient):
+        params = BaseMailer._getTemplateParams(self, email, recipient)
         reason, rationale = self._recipients.getReason(email)
         branch = reason.branch
         params['unique_name'] = branch.unique_name

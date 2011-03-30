@@ -27,8 +27,8 @@ from lazr.uri import URI
 from zope.interface import Interface
 
 from canonical.config import config
-from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
+from lp.app.validators.name import valid_name
 
 # When LAUNCHPAD_SERVICES is provided as a login ID to XML-RPC methods, they
 # bypass the normal security checks and give read-only access to all branches.

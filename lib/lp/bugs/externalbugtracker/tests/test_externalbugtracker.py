@@ -6,17 +6,25 @@
 __metaclass__ = type
 
 from StringIO import StringIO
+import urllib2
 
 from zope.interface import implements
 
-from lp.bugs.externalbugtracker.base import ExternalBugTracker
+from canonical.testing.layers import ZopelessLayer
+from lp.bugs.externalbugtracker.base import (
+    BugTrackerConnectError,
+    ExternalBugTracker,
+    )
 from lp.bugs.externalbugtracker.debbugs import DebBugs
 from lp.bugs.interfaces.externalbugtracker import (
     ISupportsBackLinking,
     ISupportsCommentImport,
     ISupportsCommentPushing,
     )
-from lp.testing import TestCase
+from lp.testing import (
+    monkey_patch,
+    TestCase,
+    )
 from lp.testing.fakemethod import FakeMethod
 
 
@@ -144,3 +152,21 @@ class TestCheckwatchesConfig(TestCase):
         self.assertEqual(2, bugtracker._post.call_count)
         last_args, last_kwargs = bugtracker._post.calls[-1]
         self.assertEqual((fake_form.url, ), last_args)
+
+
+class TestExternalBugTracker(TestCase):
+    """Tests for various methods of the ExternalBugTracker."""
+
+    layer = ZopelessLayer
+
+    def test_post_raises_on_404(self):
+        # When posting, a 404 is converted to a BugTrackerConnectError.
+        base_url = "http://example.com/"
+        bugtracker = ExternalBugTracker(base_url)
+        def raise404(request, data):
+            raise urllib2.HTTPError('url', 404, 'Not Found', None, None)
+        with monkey_patch(urllib2, urlopen=raise404):
+            self.assertRaises(
+                BugTrackerConnectError,
+                bugtracker._post,
+                'some-url', {'post-data': 'here'})

@@ -351,13 +351,6 @@ class POTemplate(SQLBase, RosettaStats):
         return self.getTranslationPolicy().getEffectiveTranslationPermission()
 
     @property
-    def relatives_by_name(self):
-        """See `IPOTemplate`."""
-        return POTemplate.select(
-            'id <> %s AND name = %s AND iscurrent' % sqlvalues(
-                self, self.name), orderBy=['datecreated'])
-
-    @property
     def relatives_by_source(self):
         """See `IPOTemplate`."""
         if self.productseries is not None:
@@ -547,6 +540,17 @@ class POTemplate(SQLBase, RosettaStats):
             clauseTables=['Language'])
 
         return self._cached_pofiles_by_language[language_code]
+
+    def getOtherSidePOTemplate(self):
+        """See `IPOTemplate`."""
+        if self.translation_side == TranslationSide.UBUNTU:
+            other_side_object = self.sourcepackage.productseries
+        else:
+            other_side_object = (
+                self.productseries.getUbuntuTranslationFocusPackage())
+        if other_side_object is None:
+            return None
+        return other_side_object.getTranslationTemplateByName(self.name)
 
     def messageCount(self):
         """See `IRosettaStats`."""
@@ -1645,39 +1649,15 @@ class TranslationTemplatesCollection(Collection):
     """A `Collection` of `POTemplate`."""
     starting_table = POTemplate
 
-    # The Product or Distribution that this collection is restricted to.
-    target_pillar = None
-
-    def __init__(self, *args, **kwargs):
-        super(TranslationTemplatesCollection, self).__init__(*args, **kwargs)
-        if self.base is not None:
-            self.target_pillar = self.base.target_pillar
-
     def restrictProductSeries(self, productseries):
-        product = productseries.product
-        new_collection = self.refine(
-            POTemplate.productseriesID == productseries.id)
-        new_collection._setTargetPillar(product)
-        return new_collection
+        return self.refine(POTemplate.productseriesID == productseries.id)
 
     def restrictDistroSeries(self, distroseries):
-        distribution = distroseries.distribution
-        new_collection = self.refine(
-            POTemplate.distroseriesID == distroseries.id)
-        new_collection._setTargetPillar(distribution)
-        return new_collection
+        return self.refine(POTemplate.distroseriesID == distroseries.id)
 
     def restrictSourcePackageName(self, sourcepackagename):
         return self.refine(
             POTemplate.sourcepackagenameID == sourcepackagename.id)
-
-    def _setTargetPillar(self, target_pillar):
-        assert (
-            self.target_pillar is None or
-            self.target_pillar == target_pillar), (
-                "Collection restricted to both %s and %s." % (
-                    self.target_pillar, target_pillar))
-        self.target_pillar = target_pillar
 
     def restrictCurrent(self, current_value=True):
         """Select based on `POTemplate.iscurrent`.
@@ -1690,6 +1670,15 @@ class TranslationTemplatesCollection(Collection):
             but restricted to ones with the desired `iscurrent` value.
         """
         return self.refine(POTemplate.iscurrent == current_value)
+
+    def restrictName(self, template_name):
+        """Select based on `POTemplate.name`.
+
+        :param template: The value for `name` that you are looking for.
+        :return: A `TranslationTemplatesCollection based on this one but
+            restricted to ones with the desired `name` value.
+        """
+        return self.refine(POTemplate.name == template_name)
 
     def joinPOFile(self):
         """Join `POFile` into the collection.

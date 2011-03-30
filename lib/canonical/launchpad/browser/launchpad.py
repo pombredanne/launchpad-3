@@ -211,6 +211,33 @@ class LinkView(LaunchpadView):
         else:
             return ''
 
+    @property
+    def css_class(self):
+        """Return the CSS class."""
+        value = ["menu-link-%s" % self.context.name]
+        if not self.context.linked:
+            value.append('nolink')
+        if self.context.icon:
+            value.append(self.sprite_class)
+            value.append(self.context.icon)
+        if self.context.hidden:
+            value.append('invisible-link')
+        return " ".join(value)
+
+    @property
+    def url(self):
+        """Return the url if linked."""
+        if self.context.linked:
+            return self.context.url
+        return ''
+
+    @property
+    def summary(self):
+        """Return the summary if linked."""
+        if self.context.linked:
+            return self.context.summary
+        return ''
+
 
 class Hierarchy(LaunchpadView):
     """The hierarchy part of the location bar on each page."""
@@ -639,7 +666,7 @@ class LaunchpadRootNavigation(Navigation):
                     raise NotFound(self.context, name)
                 # Only admins are permitted to see suspended users.
                 if person.account_status == AccountStatus.SUSPENDED:
-                    if not check_permission('launchpad.Admin', person):
+                    if not check_permission('launchpad.Moderate', person):
                         raise GoneError(
                             'User is suspended: %s' % name)
                 return person
@@ -707,7 +734,7 @@ class LaunchpadRootNavigation(Navigation):
             except NotFoundError:
                 raise NotFound(self.context, bug_number)
             if not check_permission("launchpad.View", bug):
-                raise Unauthorized("Bug %s is private" % bug_number)
+                return None
             # Empty the traversal stack, since we're redirecting.
             self.request.setTraversalStack([])
             # And perform a temporary redirect.

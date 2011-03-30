@@ -53,7 +53,7 @@
             <tal:releasefilesexist condition="release/files">
 
               <div class="top-portlet">
-                <h2 style="font-size: 1.2em;">
+                <h3>
                   <a tal:attributes="href release/fmt:url">
                     <span tal:replace="release/name_with_codename" /> release</a>
                   from the
@@ -62,7 +62,7 @@
                   <span
                      tal:attributes="title release/datereleased/fmt:datetime"
                      tal:content="release/datereleased/fmt:approximatedate" />
-                </h2>
+                </h3>
 
                 <div tal:attributes="id release/version/fmt:css-id/release-information-"
                      tal:condition="python: release.release_notes or release.changelog">

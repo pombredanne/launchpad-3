@@ -273,24 +273,6 @@ And there shouldn't be any translated entries
     >>> len(potmsgsets)
     0
 
-== relatives_by_name ==
-
-This property gives us an iterator of IPOTemplate objects that have the
-same name and are 'current'.
-
-This is the template we are working with:
-
-    >>> potemplate.title
-    u'Template "evolution-2.2" in Evolution trunk'
-
-And this is the list of templates related with this one based on its
-name:
-
-    >>> for relative_potemplate in potemplate.relatives_by_name:
-    ...     assert relative_potemplate.iscurrent
-    ...     print relative_potemplate.title
-    Template "evolution-2.2" in Ubuntu Hoary package "evolution"
-
 == relatives_by_source ==
 
 This property gives us an iterator of IPOTemplate objects that are in the

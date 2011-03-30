@@ -175,8 +175,7 @@ from canonical.launchpad.interfaces.message import (
     QuotaReachedError,
     )
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
-from canonical.launchpad.mailnotification import send_direct_contact_email
-from canonical.launchpad.validators.email import valid_email
+from lp.registry.mail.notification import send_direct_contact_email
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -224,6 +223,7 @@ from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
+from lp.app.validators.email import valid_email
 from lp.app.widgets.image import ImageChangeWidget
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
@@ -2120,10 +2120,6 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
         return False
 
     # Methods that customize the advanced search form.
-    def getAdvancedSearchPageHeading(self):
-        return (
-            "Bugs in %s: Advanced Search" % self.current_package.displayname)
-
     def getAdvancedSearchButtonLabel(self):
         return "Search bugs in %s" % self.current_package.displayname
 
@@ -2197,10 +2193,6 @@ class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
     def getSearchPageHeading(self):
         return "Bugs related to %s" % self.context.displayname
 
-    def getAdvancedSearchPageHeading(self):
-        return "Bugs Related to %s: Advanced Search" % (
-            self.context.displayname)
-
     def getAdvancedSearchButtonLabel(self):
         return "Search bugs related to %s" % self.context.displayname
 
@@ -2252,11 +2244,6 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
         """The header for the search page."""
         return "Bugs assigned to %s" % self.context.displayname
 
-    def getAdvancedSearchPageHeading(self):
-        """The header for the advanced search page."""
-        return "Bugs Assigned to %s: Advanced Search" % (
-            self.context.displayname)
-
     def getAdvancedSearchButtonLabel(self):
         """The Search button for the advanced search page."""
         return "Search bugs assigned to %s" % self.context.displayname
@@ -2297,11 +2284,6 @@ class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
     def getSearchPageHeading(self):
         """The header for the search page."""
         return "Bugs commented on by %s" % self.context.displayname
-
-    def getAdvancedSearchPageHeading(self):
-        """The header for the advanced search page."""
-        return "Bugs commented on by %s: Advanced Search" % (
-            self.context.displayname)
 
     def getAdvancedSearchButtonLabel(self):
         """The Search button for the advanced search page."""
@@ -2346,11 +2328,6 @@ class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
     def getSearchPageHeading(self):
         """The header for the search page."""
         return "Bugs reported by %s" % self.context.displayname
-
-    def getAdvancedSearchPageHeading(self):
-        """The header for the advanced search page."""
-        return "Bugs Reported by %s: Advanced Search" % (
-            self.context.displayname)
 
     def getAdvancedSearchButtonLabel(self):
         """The Search button for the advanced search page."""
@@ -2400,11 +2377,6 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
     def getSearchPageHeading(self):
         """The header for the search page."""
         return "Bugs %s is subscribed to" % self.context.displayname
-
-    def getAdvancedSearchPageHeading(self):
-        """The header for the advanced search page."""
-        return "Bugs %s is Cc'd to: Advanced Search" % (
-            self.context.displayname)
 
     def getAdvancedSearchButtonLabel(self):
         """The Search button for the advanced search page."""

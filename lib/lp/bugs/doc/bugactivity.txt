@@ -113,13 +113,18 @@ out these values: `target` and `attribute`.
     u'status'
 
 If the activity is not for a bug task, `target` is None, and `attribute` is
-the same as `whatchanged`.  For instance, look at the attributes on the
-previous activity.
+typically the same as `whatchanged`.  However, in some cases (ideally,
+whenever necessary), it is normalized to show the actual attribute name.
+For instance, look at the attributes on the previous activity.
 
     >>> print bug.activity[-2].target
     None
-    >>> bug.activity[-2].attribute
+    >>> bug.activity[-2].whatchanged
     u'summary'
+    >>> bug.activity[-2].attribute
+    'title'
+
+(This is covered more comprehensively in tests/test_bugchanges.py).
 
 Upstream product assignment edited
 ==================================

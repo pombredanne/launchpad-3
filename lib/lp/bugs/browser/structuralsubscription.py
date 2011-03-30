@@ -4,6 +4,10 @@
 __metaclass__ = type
 
 __all__ = [
+    'expose_enum_to_js',
+    'expose_user_administered_teams_to_js',
+    'expose_user_subscriptions_to_js',
+    'StructuralSubscriptionJSMixin',
     'StructuralSubscriptionMenuMixin',
     'StructuralSubscriptionTargetTraversalMixin',
     'StructuralSubscriptionView',
@@ -12,6 +16,10 @@ __all__ = [
 
 from operator import attrgetter
 
+from lazr.restful.interfaces import (
+    IJSONRequestCache,
+    IWebServiceClientRequest,
+    )
 from zope.component import getUtility
 from zope.formlib import form
 from zope.schema import (
@@ -22,6 +30,7 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
+from zope.traversing.browser import absoluteURL
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import Link
@@ -37,6 +46,10 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscription,
     IStructuralSubscriptionForm,
@@ -346,6 +359,88 @@ class StructuralSubscriptionMenuMixin:
             return Link('+subscribe', text, icon=icon, enabled=False)
         else:
             return Link('+subscribe', text, icon=icon, enabled=enabled)
+
+
+def expose_enum_to_js(request, enum, name):
+    """Make a list of enum titles and value available to JavaScript."""
+    info = []
+    for item in enum:
+        info.append(item.title)
+    IJSONRequestCache(request).objects[name] = info
+
+
+def expose_user_administered_teams_to_js(request, user,
+        absoluteURL=absoluteURL):
+    """Make the list of teams the user adminsters available to JavaScript."""
+    info = []
+    api_request = IWebServiceClientRequest(request)
+    if user is not None:
+        for team in user.getAdministratedTeams():
+            info.append({
+                'link': absoluteURL(team, api_request),
+                'title': team.title,
+            })
+    IJSONRequestCache(request).objects['administratedTeams'] = info
+
+
+def person_is_team_admin(person, team):
+    answer = False
+    admins = team.adminmembers
+    for admin in admins:
+        if person.inTeam(admin):
+            answer = True
+            break
+    return answer
+
+
+def expose_user_subscriptions_to_js(user, subscriptions, request):
+    """Make the user's subscriptions available to JavaScript."""
+    info = {}
+    api_request = IWebServiceClientRequest(request)
+    for subscription in subscriptions:
+        target = subscription.target
+        record = info.get(target)
+        if record is None:
+            record = dict(target_title=target.title,
+                          target_url=canonical_url(
+                            target, rootsite='mainsite'),
+                          filters=[])
+            info[target] = record
+        subscriber = subscription.subscriber
+        for filter in subscription.bug_filters:
+            is_team = subscriber.isTeam()
+            user_is_team_admin = (is_team and
+                                  person_is_team_admin(user, subscriber))
+            record['filters'].append(dict(
+                filter=filter,
+                subscriber_link=absoluteURL(subscriber, api_request),
+                subscriber_url = canonical_url(
+                    subscriber, rootsite='mainsite'),
+                subscriber_title=subscriber.title,
+                subscriber_is_team=is_team,
+                user_is_team_admin=user_is_team_admin,))
+    info = info.values()
+    info.sort(key=lambda item: item['target_url'])
+    IJSONRequestCache(request).objects['subscription_info'] = info
+
+
+class StructuralSubscriptionJSMixin:
+    """A mixin that exposes structural-subscription data in JS.
+
+    Descendants of this mixin must define a `subscriptions` property
+    that returns a list of the subscriptions to cache in the JS of the
+    page.
+    """
+
+    def initialize(self):
+        super(StructuralSubscriptionJSMixin, self).initialize()
+        expose_user_administered_teams_to_js(self.request, self.user)
+        expose_user_subscriptions_to_js(
+            self.user, self.subscriptions, self.request)
+        expose_enum_to_js(self.request, BugTaskImportance, 'importances')
+        expose_enum_to_js(self.request, BugTaskStatus, 'statuses')
+
+    subscriptions = None # Override this.
 
 
 class StructuralSubscribersPortletView(LaunchpadView):

@@ -353,6 +353,8 @@ class IBinaryPackageBuildSet(Interface):
                                         buildstate=None):
         """Return all builds related with the given list of source releases.
 
+        Eager loads the PackageBuild and BuildFarmJob records for the builds.
+
         :param sourcepackagerelease_ids: list of `ISourcePackageRelease`s;
         :param buildstate: option build state filter.
 

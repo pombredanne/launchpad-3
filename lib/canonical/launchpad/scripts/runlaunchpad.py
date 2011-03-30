@@ -18,13 +18,13 @@ from zope.app.server.main import main
 
 from canonical.config import config
 from canonical.launchpad.daemons import tachandler
-from canonical.launchpad.testing import googletestservice
 from canonical.lazr.pidfile import (
     make_pidfile,
     pidfile_path,
     )
 from lp.services.mailman import runmailman
 from lp.services.osutils import ensure_directory_exists
+from lp.services.googlesearch import googletestservice
 
 
 def make_abspath(path):

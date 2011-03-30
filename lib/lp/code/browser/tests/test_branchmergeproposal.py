@@ -726,7 +726,18 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         self.bmp.source_branch.linkBug(bug, self.bmp.registrant)
         self.bmp.target_branch.linkBug(bug, self.bmp.registrant)
         view = create_initialized_view(self.bmp, '+index')
-        self.assertEqual([], view.linked_bugs)
+        self.assertEqual([], view.linked_bugtasks)
+
+    def test_linked_bugs_excludes_private_bugs(self):
+        """List bugs that are linked to the source only."""
+        bug = self.factory.makeBug()
+        person = self.factory.makePerson()
+        private_bug = self.factory.makeBug(owner=person, private=True)
+        self.bmp.source_branch.linkBug(bug, self.bmp.registrant)
+        with person_logged_in(person):
+            self.bmp.source_branch.linkBug(private_bug, self.bmp.registrant)
+        view = create_initialized_view(self.bmp, '+index')
+        self.assertEqual([bug.default_bugtask], view.linked_bugtasks)
 
     def makeRevisionGroups(self):
         review_date = datetime(2009, 9, 10, tzinfo=pytz.UTC)

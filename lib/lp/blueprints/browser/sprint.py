@@ -158,7 +158,7 @@ class SprintSetFacets(StandardLaunchpadFacets):
     enable_only = ['overview', ]
 
 
-class SprintView(HasSpecificationsView, LaunchpadView):
+class SprintView(HasSpecificationsView):
 
     implements(IMajorHeadingView)
 
