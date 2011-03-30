@@ -97,24 +97,22 @@ class BugNotificationSet:
 
     def getNotificationsToSend(self):
         """See IBugNotificationSet."""
-        # Prevent circular import fun.
-        from lp.bugs.model.bug import Bug
-        # We preload the activity, the bug, the message, and the message's
-        # owner in order to try to reduce subsequent database calls: try
-        # to get it all at once.
+        # We preload the bug activity and the message in order to
+        # try to reduce subsequent database calls: try to get direct
+        # dependencies at once.  We could also get the person and the
+        # bug, but we expect those to be shared, so we don't get them here
+        # so we give Storm a better chance to cache.  We carefully look at
+        # bugID and the ownerID here so as not to load the data
+        # unnecessarily.
         store = IStore(BugNotification)
         source = store.using(BugNotification,
                              Join(Message,
                                   BugNotification.message==Message.id),
-                             Join(Person,
-                                  Message.owner==Person.id),
-                             Join(Bug,
-                                  BugNotification.bug==Bug.id),
                              LeftJoin(
                                 BugActivity,
                                 BugNotification.activity==BugActivity.id))
         results = list(source.find(
-            (BugNotification, BugActivity, Bug, Message, Person),
+            (BugNotification, BugActivity, Message),
             BugNotification.date_emailed == None).order_by(
             'BugNotification.bug', '-BugNotification.id'))
         interval = timedelta(
@@ -123,13 +121,13 @@ class BugNotificationSet:
             datetime.now(pytz.timezone('UTC')) - interval)
         last_omitted_notification = None
         pending_notifications = []
-        for notification, ignore, ignore, ignore, ignore in results:
+        for notification, ignore, ignore in results:
             if notification.message.datecreated > time_limit:
                 last_omitted_notification = notification
             elif (last_omitted_notification is not None and
-                notification.message.owner ==
-                   last_omitted_notification.message.owner and
-                notification.bug == last_omitted_notification.bug and
+                notification.message.ownerID ==
+                   last_omitted_notification.message.ownerID and
+                notification.bugID == last_omitted_notification.bugID and
                 last_omitted_notification.message.datecreated -
                 notification.message.datecreated < interval):
                 last_omitted_notification = notification
