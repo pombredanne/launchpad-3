@@ -301,34 +301,18 @@ class RevisionCachePruner(TunableLoop):
         transaction.commit()
 
 
-class CodeImportEventPruner(TunableLoop):
+class CodeImportEventPruner(BulkPruner):
     """Prune `CodeImportEvent`s that are more than a month old.
 
     Events that happened more than 30 days ago are really of no
     interest to us.
     """
-
-    maximum_chunk_size = 10000
-    minimum_chunk_size = 500
-
-    def isDone(self):
-        store = IMasterStore(CodeImportEvent)
-        events = store.find(
-            CodeImportEvent,
-            CodeImportEvent.date_created < THIRTY_DAYS_AGO)
-        return events.any() is None
-
-    def __call__(self, chunk_size):
-        chunk_size = int(chunk_size)
-        store = IMasterStore(CodeImportEvent)
-        event_ids = Select(
-            [CodeImportEvent.id],
-            CodeImportEvent.date_created < THIRTY_DAYS_AGO,
-            limit=chunk_size)
-        num_removed = store.find(
-            CodeImportEvent, CodeImportEvent.id.is_in(event_ids)).remove()
-        transaction.commit()
-        self.log.debug("Removed %d old CodeImportEvents" % num_removed)
+    target_table_class = CodeImportEvent
+    ids_to_prune_query = """
+        SELECT id FROM CodeImportEvent
+        WHERE date_created < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            - CAST('30 days' AS interval)
+        """
 
 
 class CodeImportResultPruner(TunableLoop):
