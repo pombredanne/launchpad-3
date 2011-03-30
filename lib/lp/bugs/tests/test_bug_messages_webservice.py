@@ -37,9 +37,7 @@ class TestMessageTraversal(TestCaseWithFactory):
         self.bug = self.factory.makeBug(owner=self.bugowner)
 
     def test_message_with_attachments(self):
-        # Traversal over bug messages with bugattachments has no failures.
-        
-        # Add some attachments to the bug.
+        # Traversal over bug messages attachments has no errors.
         expected_messages = []
         with person_logged_in(self.bugowner):
             for i in range(3):
