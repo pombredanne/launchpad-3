@@ -216,6 +216,7 @@ from lp.registry.interfaces.mailinglist import (
     IMailingListSet,
     MailingListStatus,
     PostedMessageStatus,
+    PURGE_STATES,
     )
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
@@ -246,7 +247,10 @@ from lp.registry.interfaces.ssh import (
     SSHKeyCompromisedError,
     SSHKeyType,
     )
-from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.registry.interfaces.teammembership import (
+    ITeamMembershipSet,
+    TeamMembershipStatus,
+    )
 from lp.registry.interfaces.wikiname import (
     IWikiName,
     IWikiNameSet,
@@ -3068,28 +3072,27 @@ class PersonSet:
             account = IMasterStore(Account).get(
                 Account, email_address.accountID)
             account_person = self.getByAccount(account)
-            # There is a `Person` linked to the `Account`, link the
+            if account_person is None:
+                # There is no associated `Person` to the email `Account`.
+                # This is probably because the account was created externally
+                # to Launchpad. Create just the `Person`, associate it with
+                # the `EmailAddress` and return it.
+                name = generate_nick(email)
+                account_person = self._newPerson(
+                    name, displayname, hide_email_addresses=True,
+                    rationale=rationale, comment=comment,
+                    registrant=registrant, account=email_address.account)
+            # There is (now) a `Person` linked to the `Account`, link the
             # `EmailAddress` to this `Person` and return it.
-            if account_person is not None:
-                master_email = IMasterStore(EmailAddress).get(
-                    EmailAddress, email_address.id)
-                master_email.personID = account_person.id
-                # Populate the previously empty 'preferredemail' cached
-                # property, so the Person record is up-to-date.
-                if master_email.status == EmailAddressStatus.PREFERRED:
-                    cache = get_property_cache(account_person)
-                    cache.preferredemail = master_email
-                return account_person
-            # There is no associated `Person` to the email `Account`.
-            # This is probably because the account was created externally
-            # to Launchpad. Create just the `Person`, associate it with
-            # the `EmailAddress` and return it.
-            name = generate_nick(email)
-            person = self._newPerson(
-                name, displayname, hide_email_addresses=True,
-                rationale=rationale, comment=comment, registrant=registrant,
-                account=email_address.account)
-            return person
+            master_email = IMasterStore(EmailAddress).get(
+                EmailAddress, email_address.id)
+            master_email.personID = account_person.id
+            # Populate the previously empty 'preferredemail' cached
+            # property, so the Person record is up-to-date.
+            if master_email.status == EmailAddressStatus.PREFERRED:
+                cache = get_property_cache(account_person)
+                cache.preferredemail = master_email
+            return account_person
 
         # Easy, return the `Person` associated with the existing
         # `EmailAddress`.
@@ -3800,44 +3803,63 @@ class PersonSet:
             WHERE id = %(to_id)d
             ''' % vars())
 
+    def _purgeUnmergableTeamArtifacts(self, from_team, to_team, reviewer):
+        """Purge team artifacts that cannot be merged, but can be removed."""
+        # A team cannot have more than one mailing list.
+        mailing_list = getUtility(IMailingListSet).get(from_team.name)
+        if mailing_list is not None:
+            if mailing_list.status in PURGE_STATES:
+                from_team.mailing_list.purge()
+            elif mailing_list.status != MailingListStatus.PURGED:
+                raise AssertionError(
+                    "Teams with active mailing lists cannot be merged.")
+        # Team email addresses are not transferable.
+        from_team.setContactAddress(None)
+        # Memberships in the team are not transferable because there
+        # is a high probablity there will be a CyclicTeamMembershipError.
+        comment = (
+            'Deactivating all members as this team is being merged into %s.'
+            % to_team.name)
+        membershipset = getUtility(ITeamMembershipSet)
+        membershipset.deactivateActiveMemberships(
+            from_team, comment, reviewer)
+        # Memberships in other teams are not transferable because there
+        # is a high probablity there will be a CyclicTeamMembershipError.
+        all_super_teams = set(from_team.teams_participated_in)
+        indirect_super_teams = set(
+            from_team.teams_indirectly_participated_in)
+        super_teams = all_super_teams - indirect_super_teams
+        naked_from_team = removeSecurityProxy(from_team)
+        for team in super_teams:
+            naked_from_team.retractTeamMembership(team, reviewer)
+        IStore(from_team).flush()
+
     def mergeAsync(self, from_person, to_person):
         """See `IPersonSet`."""
         return getUtility(IPersonMergeJobSource).create(
             from_person=from_person, to_person=to_person)
 
-    def merge(self, from_person, to_person):
+    def merge(self, from_person, to_person, reviewer=None):
         """See `IPersonSet`."""
-        # Sanity checks
-        if not IPerson.providedBy(from_person):
-            raise TypeError('from_person is not a person.')
-        if not IPerson.providedBy(to_person):
-            raise TypeError('to_person is not a person.')
-        # If the team has a mailing list, the mailing list better be in the
-        # purged state, otherwise the team can't be merged.
-        mailing_list = getUtility(IMailingListSet).get(from_person.name)
-        assert (mailing_list is None or
-                mailing_list.status == MailingListStatus.PURGED), (
-            "Can't merge teams which have mailing lists into other teams.")
-
-        if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
-            raise AssertionError('from_person still has email addresses.')
-
+        # since we are doing direct SQL manipulation, make sure all
+        # changes have been flushed to the database
+        store = Store.of(from_person)
+        store.flush()
+        if (from_person.is_team and not to_person.is_team
+            or not from_person.is_team and to_person.is_team):
+            raise AssertionError("Users cannot be merged with teams.")
+        if from_person.is_team and reviewer is None:
+            raise AssertionError("Team merged require a reviewer.")
         if getUtility(IArchiveSet).getPPAOwnedByPerson(
             from_person, statuses=[ArchiveStatus.ACTIVE,
                                    ArchiveStatus.DELETING]) is not None:
             raise AssertionError(
                 'from_person has a ppa in ACTIVE or DELETING status')
-
-        if from_person.is_team and from_person.allmembers.count() > 0:
-            raise AssertionError(
-                "Only teams without active members can be merged")
-
-        if from_person.is_team and from_person.super_teams.count() > 0:
-            raise AssertionError(
-                "Only teams without super teams can be merged.")
-        # since we are doing direct SQL manipulation, make sure all
-        # changes have been flushed to the database
-        store = Store.of(from_person)
+        if from_person.is_team:
+            self._purgeUnmergableTeamArtifacts(
+                from_person, to_person, reviewer)
+        if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
+            raise AssertionError('from_person still has email addresses.')
 
         # Get a database cursor.
         cur = cursor()

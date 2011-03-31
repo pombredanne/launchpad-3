@@ -64,6 +64,7 @@ from lp.registry.browser import (
     get_status_counts,
     RegistryDeleteViewMixin,
     )
+from lp.registry.browser import add_subscribe_link
 from lp.registry.browser.product import ProductDownloadFileMixin
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import (
@@ -140,14 +141,25 @@ class MilestoneLinkMixin(StructuralSubscriptionMenuMixin):
 class MilestoneContextMenu(ContextMenu, MilestoneLinkMixin):
     """The menu for this milestone."""
     usedfor = IMilestone
-    links = ['edit', 'subscribe', 'create_release']
+
+    @cachedproperty
+    def links(self):
+        links = ['edit']
+        add_subscribe_link(links)
+        links.append('create_release')
+        return links
 
 
 class MilestoneOverviewNavigationMenu(NavigationMenu, MilestoneLinkMixin):
     """Overview navigation menu for `IMilestone` objects."""
     usedfor = IMilestone
     facet = 'overview'
-    links = ('edit', 'delete', 'subscribe')
+
+    @cachedproperty
+    def links(self):
+        links = ['edit', 'delete']
+        add_subscribe_link(links)
+        return links
 
 
 class MilestoneOverviewMenu(ApplicationMenu, MilestoneLinkMixin):

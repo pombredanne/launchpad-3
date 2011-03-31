@@ -9,7 +9,10 @@ __all__ = [
     'DistroSeriesDifference',
     ]
 
-from debian.changelog import Changelog
+from debian.changelog import (
+    Changelog,
+    Version,
+    )
 from lazr.enum import DBItem
 from storm.expr import Desc
 from storm.locals import (
@@ -201,7 +204,17 @@ class DistroSeriesDifference(Storm):
         """Return the version ancestry for the given SPR, or None."""
         if spr.changelog is None:
             return None
-        return set(Changelog(spr.changelog.read()).versions)
+        versions = set()
+        # It would be nicer to use .versions() here, but it won't catch the
+        # ValueError from malformed versions, and we don't want them leaking
+        # into the ancestry.
+        for raw_version in Changelog(spr.changelog.read())._raw_versions():
+            try:
+                version = Version(raw_version)
+            except ValueError:
+                continue
+            versions.add(version)
+        return versions
 
     def _getPackageDiffURL(self, package_diff):
         """Check status and return URL if appropriate."""
@@ -263,6 +276,11 @@ class DistroSeriesDifference(Storm):
         clear_property_cache(self)
         self._updateType()
         updated = self._updateVersionsAndStatus()
+        # If the DSD has changed, we want to invalidate the diffs. The GC
+        # process for the Librarian will clean up after us.
+        if updated is True:
+            self.package_diff = None
+            self.parent_package_diff = None
         return updated
 
     def _updateType(self):

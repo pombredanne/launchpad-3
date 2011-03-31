@@ -53,7 +53,7 @@
     </dt>
     <dd>
       <ul class="package-diff-status">
-        <tal:source-diff-option condition="context/source_pub">
+        <tal:source-diff-option condition="view/display_child_diff">
           <li tal:condition="context/package_diff">
             <span tal:condition="context/package_diff/status/enumvalue:PENDING"
               class="sprite PENDING">

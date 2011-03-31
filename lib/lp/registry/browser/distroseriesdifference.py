@@ -133,6 +133,11 @@ class DistroSeriesDifferenceView(LaunchpadFormView):
             'launchpad.Edit', self.context)
 
     @property
+    def display_child_diff(self):
+        """Only show the child diff if we need to."""
+        return self.context.source_version != self.context.base_version
+  
+    @property
     def show_package_diffs_request_link(self):
         """Return whether package diffs can be requested.
 

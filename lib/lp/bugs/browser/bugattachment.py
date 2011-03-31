@@ -22,7 +22,6 @@ from zope.interface import implements
 from canonical.launchpad.browser.librarian import (
     FileNavigationMixin,
     ProxiedLibraryFileAlias,
-    SafeStreamOrRedirectLibraryFileAliasView,
     )
 from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAliasWithParent,
@@ -237,5 +236,3 @@ class BugAttachmentFileNavigation(Navigation, FileNavigationMixin):
     """Traversal to +files/${filename}."""
 
     usedfor = IBugAttachment
-
-    view_class = SafeStreamOrRedirectLibraryFileAliasView
