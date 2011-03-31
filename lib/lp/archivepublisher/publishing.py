@@ -501,6 +501,10 @@ class Publisher(object):
         release_file["Components"] = " ".join(
             reorder_components(all_components))
         release_file["Description"] = drsummary
+        if (pocket == PackagePublishingPocket.BACKPORTS and
+            distroseries.backports_not_automatic):
+            release_file["NotAutomatic"] = "yes"
+            release_file["ButAutomaticUpgrades"] = "yes"
 
         for filename in sorted(list(all_files), key=os.path.dirname):
             entry = self._readIndexFileContents(suite, filename)

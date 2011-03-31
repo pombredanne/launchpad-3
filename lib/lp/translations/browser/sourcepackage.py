@@ -34,20 +34,9 @@ from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
 from lp.translations.model.translationpackagingjob import TranslationMergeJob
-from lp.translations.utilities.translationsharinginfo import (
-    has_upstream_template,
-    get_upstream_sharing_info,
-    )
-
-
-class SharingDetailsPermissionsMixin:
-
-    def can_edit_sharing_details(self):
-        return check_permission('launchpad.Edit', self.context.distroseries)
 
 
 class SourcePackageTranslationsView(TranslationsMixin,
-                                    SharingDetailsPermissionsMixin,
                                     TranslationSharingDetailsMixin):
 
     @property
@@ -59,18 +48,13 @@ class SourcePackageTranslationsView(TranslationsMixin,
         return "Translations for %s" % self.context.displayname
 
     def is_sharing(self):
-        return has_upstream_template(self.context)
+        return self.sharing_productseries is not None
 
     @property
     def sharing_productseries(self):
-        infos = get_upstream_sharing_info(self.context)
-        if len(infos) == 0:
-            return None
+        return self.context.productseries
 
-        productseries, template = infos[0]
-        return productseries
-
-    def getTranslationTarget(self):
+    def getTranslationSourcePackage(self):
         """See `TranslationSharingDetailsMixin`."""
         return self.context
 
@@ -117,21 +101,22 @@ class SourcePackageTranslationsExportView(BaseExportView):
         return "Download translations for %s" % self.download_description
 
 
-class SourcePackageTranslationSharingDetailsView(
-                                            LaunchpadView,
-                                            SharingDetailsPermissionsMixin):
+class SourcePackageTranslationSharingDetailsView(LaunchpadView):
     """Details about translation sharing."""
 
     page_title = "Sharing details"
+
+    def is_sharing(self):
+        return self.context.has_sharing_translation_templates
+
+    def can_edit_sharing_details(self):
+        return check_permission('launchpad.Edit', self.context.productseries)
 
     def initialize(self):
         if not getFeatureFlag('translations.sharing_information.enabled'):
             raise NotFound(self.context, '+sharing-details')
         super(SourcePackageTranslationSharingDetailsView, self).initialize()
-        has_no_upstream_templates = (
-            self.is_configuration_complete and
-            not has_upstream_template(self.context))
-        if has_no_upstream_templates:
+        if self.is_configuration_complete and not self.is_sharing():
             self.request.response.addInfoNotification(
                 structured(
                 'No upstream templates have been found yet. Please follow '

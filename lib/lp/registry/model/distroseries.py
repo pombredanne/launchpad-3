@@ -69,7 +69,6 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from lp.app.enums import (
     service_uses_launchpad,
-    ServiceUsage,
     )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import IServiceUsage
@@ -84,6 +83,7 @@ from lp.blueprints.model.specification import (
     Specification,
     )
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
+from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
     get_bug_tags,
     get_bug_tags_open_count,
@@ -252,6 +252,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         foreignKey="LanguagePack", dbName="language_pack_proposed",
         notNull=False, default=None)
     language_pack_full_export_requested = BoolCol(notNull=True, default=False)
+    backports_not_automatic = BoolCol(notNull=True, default=False)
 
     language_packs = SQLMultipleJoin(
         'LanguagePack', joinColumn='distroseries', orderBy='-date_exported')
@@ -298,17 +299,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def translations_usage(self):
         """See `IServiceUsage.`"""
-        # If translations_usage is set for the Distribution, respect it.
-        usage = self.distribution.translations_usage
-        if usage != ServiceUsage.UNKNOWN:
-            return usage
-
-        # If not, usage is based on the presence of current translation
-        # templates for the series.
-        if self.getCurrentTranslationTemplates().count() > 0:
-            return ServiceUsage.LAUNCHPAD
-        else:
-            return ServiceUsage.UNKNOWN
+        return self.distribution.translations_usage
 
     @property
     def codehosting_usage(self):
@@ -479,21 +470,65 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         translatable messages, and the source package release's component.
         """
         find_spec = (
+            SQL("DISTINCT ON (score, sourcepackagename.name) "
+                "TRUE as _ignored"),
             SourcePackageName,
             SQL("""
                 coalesce(total_bug_heat, 0) + coalesce(po_messages, 0) +
-                CASE WHEN spr.component = 1 THEN 1000 ELSE 0 END AS score"""),
+                CASE WHEN component = 1 THEN 1000 ELSE 0 END AS score"""),
             SQL("coalesce(bug_count, 0) AS bug_count"),
             SQL("coalesce(total_messages, 0) AS total_messages"))
-        joins, conditions = self._current_sourcepackage_joins_and_conditions
-        origin = SQL(joins)
-        condition = SQL(conditions + "AND packaging.id IS NULL")
+        # This does not use _current_sourcepackage_joins_and_conditions
+        # because the two queries are working on different data sets -
+        # +needs-packaging was timing out and +packaging wasn't, and
+        # destabilising things unnecessarily is not good.
+        origin = SQL("""
+            SourcePackageName, (SELECT
+        spr.sourcepackagename,
+        spr.component,
+        bug_count,
+        total_bug_heat,
+        SUM(POTemplate.messagecount) * %(po_message_weight)s AS po_messages,
+        SUM(POTemplate.messagecount) AS total_messages
+    FROM
+        SourcePackageRelease AS spr
+        JOIN SourcePackagePublishingHistory AS spph
+            ON spr.id = spph.sourcepackagerelease
+        JOIN Archive
+            ON spph.archive = Archive.id
+        JOIN Section
+            ON spph.section = Section.id
+        JOIN DistroSeries
+            ON spph.distroseries = DistroSeries.id
+        LEFT OUTER JOIN DistributionSourcePackage AS dsp
+            ON dsp.sourcepackagename = spr.sourcepackagename
+                AND dsp.distribution = DistroSeries.distribution
+        LEFT OUTER JOIN POTemplate
+            ON POTemplate.sourcepackagename = spr.sourcepackagename
+                AND POTemplate.distroseries = DistroSeries.id
+    WHERE
+        DistroSeries.id = %(distroseries)s
+        AND spph.status IN %(active_status)s
+        AND Archive.purpose = %(primary)s
+        AND Section.name <> 'translations'
+        AND NOT EXISTS (
+            SELECT TRUE FROM Packaging
+            WHERE
+                Packaging.sourcepackagename = spr.sourcepackagename
+                AND Packaging.distroseries = spph.distroseries)
+    GROUP BY
+        spr.sourcepackagename, spr.component, bug_count, total_bug_heat
+    ) AS spn_info""" % sqlvalues(
+            po_message_weight=self._current_sourcepackage_po_weight,
+            distroseries=self,
+            active_status=active_publishing_status,
+            primary=ArchivePurpose.PRIMARY))
+        condition = SQL("sourcepackagename.id = spn_info.sourcepackagename")
         results = IStore(self).using(origin).find(find_spec, condition)
         results = results.order_by('score DESC', SourcePackageName.name)
-        results = results.config(distinct=True)
 
-        def decorator(result):
-            spn, score, bug_count, total_messages = result
+        def decorator(row):
+            _, spn, score, bug_count, total_messages = row
             return {
                 'package': SourcePackage(
                     sourcepackagename=spn, distroseries=self),
@@ -543,12 +578,23 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 ''')
 
     @property
-    def _current_sourcepackage_joins_and_conditions(self):
-        """The SQL joins and conditions to prioritize source packages."""
+    def _current_sourcepackage_po_weight(self):
+        """See getPrioritized*."""
         # Bugs and PO messages are heuristically scored. These queries
         # can easily timeout so filters and weights are used to create
         # an acceptable prioritization of packages that is fast to excecute.
-        po_message_weight = .5
+        return .5
+
+    @property
+    def _current_sourcepackage_joins_and_conditions(self):
+        """The SQL joins and conditions to prioritize source packages.
+
+        Used for getPrioritizedPackagings only.
+        """
+        # Bugs and PO messages are heuristically scored. These queries
+        # can easily timeout so filters and weights are used to create
+        # an acceptable prioritization of packages that is fast to excecute.
+        po_message_weight = self._current_sourcepackage_po_weight
         message_score = ("""
             LEFT JOIN (
                 SELECT
@@ -1869,6 +1915,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasTranslationTemplates`."""
         return TranslationTemplatesCollection().restrictDistroSeries(self)
 
+    def getSharingPartner(self):
+        """See `IHasTranslationTemplates`."""
+        # No sharing partner is defined for DistroSeries.
+        return None
+
     def getSuite(self, pocket):
         """See `IDistroSeries`."""
         if pocket == PackagePublishingPocket.RELEASE:
@@ -1937,6 +1988,25 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeriesPublic`."""
         return Store.of(self).find(
             DistroSeries, DistroSeries.parent_series == self)
+
+    def getBugTaskWeightFunction(self):
+        """Provide a weight function to determine optimal bug task.
+
+        Full weight is given to tasks for this distro series.
+
+        If the series isn't found, the distribution task is better than
+        others.
+        """
+        seriesID = self.id
+        distributionID = self.distributionID
+        def weight_function(bugtask):
+            if bugtask.distroseriesID == seriesID:
+                return OrderedBugTask(1, bugtask.id, bugtask)
+            elif bugtask.distributionID == distributionID:
+                return OrderedBugTask(2, bugtask.id, bugtask)
+            else:
+                return OrderedBugTask(3, bugtask.id, bugtask)
+        return weight_function
 
 
 class DistroSeriesSet:

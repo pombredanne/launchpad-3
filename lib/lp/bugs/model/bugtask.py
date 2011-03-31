@@ -25,10 +25,7 @@ import datetime
 from itertools import chain
 from operator import attrgetter
 
-from lazr.enum import (
-    DBItem,
-    Item,
-    )
+from lazr.enum import BaseItem
 import pytz
 from sqlobject import (
     ForeignKey,
@@ -170,8 +167,6 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services import features
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.enums import PackagePublishingStatus
-from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
 debbugsseveritymap = {
@@ -1015,8 +1010,11 @@ class BugTask(SQLBase, BugTaskMixin):
             # value.
             self.date_assigned = None
             # The bugtask is unassigned, so clear the _known_viewer cached
-            # property for the bug.
-            get_property_cache(self.bug)._known_viewers = set()
+            # property for the bug. Retain the current assignee as a viewer so
+            # that they are able to unassign themselves and get confirmation
+            # that that worked.
+            get_property_cache(self.bug)._known_viewers = set(
+                [self.assignee.id])
         if not self.assignee and assignee:
             # The task is going from not having an assignee to having
             # one, so record when this happened
@@ -1226,6 +1224,9 @@ class BugTask(SQLBase, BugTaskMixin):
         return (self._userIsPillarEditor(user) or
                 user == celebs.bug_watch_updater or
                 user == celebs.bug_importer)
+
+    def __repr__(self):
+        return "<BugTask for bug %s on %r>" % (self.bugID, self.target)
 
 
 def search_value_to_where_condition(search_value):
@@ -1588,7 +1589,7 @@ class BugTaskSet:
                 in status.query_values) + ')'
         elif zope_isinstance(status, not_equals):
             return '(NOT %s)' % self._buildStatusClause(status.value)
-        elif zope_isinstance(status, DBItem):
+        elif zope_isinstance(status, BaseItem):
             with_response = (
                 status == BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE)
             without_response = (
@@ -2035,7 +2036,7 @@ class BugTaskSet:
         if hw_clause is not None:
             extra_clauses.append(hw_clause)
 
-        if zope_isinstance(params.linked_branches, Item):
+        if zope_isinstance(params.linked_branches, BaseItem):
             if params.linked_branches == BugBranchSearch.BUGS_WITH_BRANCHES:
                 extra_clauses.append(
                     """EXISTS (
@@ -2322,16 +2323,25 @@ class BugTaskSet:
     def _buildBlueprintRelatedClause(self, params):
         """Find bugs related to Blueprints, or not."""
         linked_blueprints = params.linked_blueprints
-        if linked_blueprints == BugBlueprintSearch.BUGS_WITH_BLUEPRINTS:
-            return "EXISTS (%s)" % (
-                "SELECT 1 FROM SpecificationBug"
-                " WHERE SpecificationBug.bug = Bug.id")
-        elif linked_blueprints == BugBlueprintSearch.BUGS_WITHOUT_BLUEPRINTS:
-            return "NOT EXISTS (%s)" % (
-                "SELECT 1 FROM SpecificationBug"
-                " WHERE SpecificationBug.bug = Bug.id")
-        else:
+        if linked_blueprints is None:
             return None
+        elif zope_isinstance(linked_blueprints, BaseItem):
+            if linked_blueprints == BugBlueprintSearch.BUGS_WITH_BLUEPRINTS:
+                return "EXISTS (%s)" % (
+                    "SELECT 1 FROM SpecificationBug"
+                    " WHERE SpecificationBug.bug = Bug.id")
+            elif (linked_blueprints ==
+                  BugBlueprintSearch.BUGS_WITHOUT_BLUEPRINTS):
+                return "NOT EXISTS (%s)" % (
+                    "SELECT 1 FROM SpecificationBug"
+                    " WHERE SpecificationBug.bug = Bug.id")
+        else:
+            # A specific search term has been supplied.
+            return """EXISTS (
+                    SELECT TRUE FROM SpecificationBug
+                    WHERE SpecificationBug.bug=Bug.id AND
+                    SpecificationBug.specification %s)
+                """ % search_value_to_where_condition(linked_blueprints)
 
     def buildOrigin(self, join_tables, prejoin_tables, clauseTables):
         """Build the parameter list for Store.using().

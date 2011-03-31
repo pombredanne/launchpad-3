@@ -22,8 +22,13 @@ from canonical.database.enumcol import DBEnum
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad import searchbuilder
 from canonical.launchpad.interfaces.lpstorm import IStore
+from lazr.restful.error import expose
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.bugs.model.bugsubscriptionfilterimportance import (
     BugSubscriptionFilterImportance,
     )
@@ -58,7 +63,22 @@ class BugSubscriptionFilter(StormBase):
 
     other_parameters = Unicode()
 
-    description = Unicode()
+    _description = Unicode('description')
+
+    def _get_description(self):
+        return self._description
+
+    def _set_description(self, description):
+        has_html_chars = (
+            '<' in description or '>' in description or
+            '"' in description or '&' in description)
+        if has_html_chars:
+            raise expose(ValueError(
+                'BugSubscriptionFilter description cannot contain '
+                'any of <, >, " or &.'))
+        self._description = description
+
+    description = property(_get_description, _set_description)
 
     def _get_statuses(self):
         """Return a frozenset of statuses to filter on."""
@@ -73,8 +93,15 @@ class BugSubscriptionFilter(StormBase):
 
         The statuses must be from the `BugTaskStatus` enum, but can be
         bundled in any iterable.
+
+        Setting all statuses is equivalent to setting no statuses, and
+        is normalized that way.
         """
         statuses = frozenset(statuses)
+        if statuses == frozenset(BugTaskStatus.items):
+            # Setting all is the same as setting none, and setting none is
+            # cheaper for reading and storage.
+            statuses = frozenset()
         current_statuses = self.statuses
         store = IStore(BugSubscriptionFilterStatus)
         # Add additional statuses.
@@ -107,8 +134,15 @@ class BugSubscriptionFilter(StormBase):
 
         The importances must be from the `BugTaskImportance` enum, but can be
         bundled in any iterable.
+
+        Setting all importances is equivalent to setting no importances, and
+        is normalized that way.
         """
         importances = frozenset(importances)
+        if importances == frozenset(BugTaskImportance.items):
+            # Setting all is the same as setting none, and setting none is
+            # cheaper for reading and storage.
+            importances = frozenset()
         current_importances = self.importances
         store = IStore(BugSubscriptionFilterImportance)
         # Add additional importances.
@@ -209,15 +243,13 @@ class BugSubscriptionFilter(StormBase):
 
     def delete(self):
         """See `IBugSubscriptionFilter`."""
+        # This clears up all of the linked sub-records in the associated
+        # tables.
         self.importances = self.statuses = self.tags = ()
-        # Revert attributes to their default values from the interface.
-        for attribute in ['bug_notification_level', 'find_all_tags',
-                          'include_any_tags', 'exclude_any_tags']:
-            default_value = IBugSubscriptionFilter.getDescriptionFor(
-                attribute).default
-            setattr(self, attribute, default_value)
-
-        self.description = None
 
         if self._has_other_filters():
             Store.of(self).remove(self)
+        else:
+            # There are no other filters.  We can delete the parent
+            # subscription.
+            self.structural_subscription.delete()

@@ -2299,10 +2299,11 @@ class ViewArchiveSubscriber(AuthorizationBase):
     usedfor = IArchiveSubscriber
 
     def checkAuthenticated(self, user):
-        if user.inTeam(self.obj.subscriber):
-            return True
         auth_edit = EditArchiveSubscriber(self.obj)
-        return auth_edit.checkAuthenticated(user)
+        result = auth_edit.checkAuthenticated(user)
+        if not result:
+            result = user.inTeam(self.obj.subscriber)
+        return result
 
 
 class EditArchiveSubscriber(AuthorizationBase):

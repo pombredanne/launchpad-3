@@ -53,6 +53,7 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.parent.nominatedarchindep = self.parent_das
         getUtility(ISourcePackageFormatSelectionSet).add(
             self.parent, SourcePackageFormat.FORMAT_1_0)
+        self.parent.backports_not_automatic = True
         self._populate_parent()
 
     def _populate_parent(self):
@@ -153,13 +154,18 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             self.parent[self.parent_das.architecturetag],
             self.parent.main_archive)
         self.assertEqual(parent_udev.id, child_udev.id)
-        # We also inherient the permitted source formats from our parent
+        # We also inherit the permitted source formats from our parent
         self.assertTrue(
             child.isSourcePackageFormatPermitted(
             SourcePackageFormat.FORMAT_1_0))
+        # Other configuration bits are copied too.
+        self.assertTrue(child.backports_not_automatic)
 
-    def _full_initialise(self, arches=(), packagesets=(), rebuild=False):
-        child = self.factory.makeDistroSeries(parent_series=self.parent)
+    def _full_initialise(self, arches=(), packagesets=(), rebuild=False,
+                         distribution=None):
+        child = self.factory.makeDistroSeries(
+            parent_series=self.parent,
+            distribution=distribution)
         ids = InitialiseDistroSeries(child, arches, packagesets, rebuild)
         ids.check()
         ids.initialise()
@@ -232,6 +238,28 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             getUtility(IArchivePermissionSet).isSourceUploadAllowed(
                 child.main_archive, 'udev', uploader,
                 distroseries=child))
+
+    def test_packageset_owner_preserved_within_distro(self):
+        # When initialising a new series within a distro, the copied
+        # packagesets have ownership preserved.
+        ps_owner = self.factory.makePerson()
+        ps = getUtility(IPackagesetSet).new(
+            u'ps', u'packageset', ps_owner, distroseries=self.parent)
+        child = self._full_initialise(distribution=self.parent.distribution)
+        child_ps = getUtility(IPackagesetSet).getByName(
+            u'ps', distroseries=child)
+        self.assertEqual(ps_owner, child_ps.owner)
+
+    def test_packageset_owner_not_preserved_cross_distro(self):
+        # In the case of a cross-distro initialisation, the new
+        # packagesets are owned by the new distro owner.
+        ps = getUtility(IPackagesetSet).new(
+            u'ps', u'packageset', self.factory.makePerson(),
+            distroseries=self.parent)
+        child = self._full_initialise()
+        child_ps = getUtility(IPackagesetSet).getByName(
+            u'ps', distroseries=child)
+        self.assertEqual(child.owner, child_ps.owner)
 
     def test_copy_limit_packagesets(self):
         # If a parent series has packagesets, we can decide which ones we
@@ -334,4 +362,5 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.assertEqual(process.returncode, 0)
         self.assertTrue(
             "DEBUG   Committing transaction." in stderr.split('\n'))
+        transaction.commit()
         self.assertDistroSeriesInitialisedCorrectly(child)
