@@ -249,7 +249,16 @@ def get_bugs_clause(bugs):
     """
     if not bugs:
         return ''
-    return '[bug=%s]' % ','.join(str(bug.id) for bug in bugs)
+    bug_ids = []
+    for bug in bugs:
+        for task in bug.bug_tasks:
+            if (task.bug_target_name == 'launchpad'
+                and task.status not in ['Fix Committed', 'Fix Released']):
+                bug_ids.append(str(bug.id))
+                break
+    if not bug_ids:
+        return ''
+    return '[bug=%s]' % ','.join(bug_ids)
 
 
 def get_reviewer_handle(reviewer):
