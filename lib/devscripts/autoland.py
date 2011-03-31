@@ -67,16 +67,19 @@ class LaunchpadBranchLander:
         """Get the merge proposal from the branch."""
 
         lp_branch = self.get_lp_branch(branch)
-        proposals = lp_branch.landing_targets
+        proposals = [
+            mp for mp in lp_branch.landing_targets
+            if mp.queue_status in ('Needs review', 'Approved')]
         if len(proposals) == 0:
             raise BzrCommandError(
-                "The public branch has no source merge proposals.  "
+                "The public branch has no open source merge proposals.  "
                 "You must have a merge proposal before attempting to "
                 "land the branch.")
         elif len(proposals) > 1:
             raise BzrCommandError(
-                "The public branch has multiple source merge proposals.  "
-                "You must provide the URL to the one you wish to use.")
+                "The public branch has multiple open source merge "
+                "proposals.  You must provide the URL to the one you wish "
+                "to use.")
         return MergeProposal(proposals[0])
 
 
