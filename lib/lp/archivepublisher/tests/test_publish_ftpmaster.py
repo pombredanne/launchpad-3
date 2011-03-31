@@ -641,11 +641,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         script.runFinalizeParts()
         args, kwargs = script.runParts.calls[0]
         parts_dir, env = args
-        required_parameters = set([
-            "ARCHIVEROOTS",
-            "PRIMARY_ARCHIVEROOT",
-            "SECURITY_UPLOAD_ONLY",
-            ])
+        required_parameters = set(["ARCHIVEROOTS", "SECURITY_UPLOAD_ONLY"])
         missing_parameters = set(env.keys()).difference(required_parameters)
         self.assertEqual(set(), missing_parameters)
 

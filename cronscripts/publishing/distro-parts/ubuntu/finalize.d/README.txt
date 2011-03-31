@@ -14,10 +14,7 @@ SECURITY_UPLOAD_ONLY set to indicate which pass is in progress; see below.
 The following variables will be set for the script:
 
 ARCHIVEROOTS - the list of root directories for the distribution's archives.
-(e.g. /foo/ubuntu-archive/ubuntu/ /foo/ubuntu-archive/ubuntu-partner/ )
-
-PRIMARY_ARCHIVEROOT - the root directory for the distribution's main archive.
-(e.g. /srv/launchpad.net/ubuntu-archive/ubuntu/ )
+(e.g. "/srv/ubuntu-archive/ubuntu/ /srv/ubuntu-archive/ubuntu-partner/" )
 
 SECURITY_UPLOAD_ONLY - "yes" during the security pass, or "no" otherwise.
 
