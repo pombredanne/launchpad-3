@@ -6,12 +6,10 @@
 __metaclass__ = type
 __all__ = []
 
-import unittest
-
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.testing import WindmillTestCase
 from lp.testing.windmill import lpuser
-
+from lp.testing.windmill.constants import FOR_ELEMENT
 
 class TestNewProjectStep2(WindmillTestCase):
     """Test form for creating a new project."""
@@ -32,12 +30,11 @@ class TestNewProjectStep2(WindmillTestCase):
 
         # Perform step 1 of the project registration, using information
         # that will yield search results.
-        self.client.open(url=u'%s/projects/+new'
-                        % RegistryWindmillLayer.base_url)
+        client, start_url = self.getClientFor(
+            '/projects/+new', user=lpuser.SAMPLE_PERSON)
+        self.client.waits.forElement(
+            id='field.displayname', timeout=FOR_ELEMENT)
 
-        lpuser.SAMPLE_PERSON.ensure_login(self.client)
-
-        self.client.waits.forElement(id='field.displayname', timeout=u'20000')
         self.client.type(text=u'Badgers', id='field.displayname')
         self.client.type(text=u'badgers', id='field.name')
         self.client.type(text=u"There's the Badger", id='field.title')
@@ -87,7 +84,3 @@ class TestNewProjectStep2(WindmillTestCase):
         self.client.asserts.assertProperty(
             id=u'search-results',
             validator='className|lazr-closed')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
