@@ -132,6 +132,11 @@ class DistroSeriesDifferenceView(LaunchpadFormView):
         return self.request.is_ajax and check_permission(
             'launchpad.Edit', self.context)
 
+    @property
+    def display_child_diff(self):
+        """Only show the child diff if we need to."""
+        return (not self.context.source_version == self.context.base_version)
+
 
 class DistroSeriesDifferenceDisplayComment:
     """Used simply to provide `IComment` for rendering."""
