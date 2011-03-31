@@ -1347,7 +1347,7 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         """Return a dict of the 10 hottest tasks and a has_more_bugs flag."""
         has_more_bugs = False
         params = BugTaskSearchParams(
-            orderby='-heat', omit_dupes=True,
+            orderby=['-heat', 'task'], omit_dupes=True,
             user=self.user, status=any(*UNRESOLVED_BUGTASK_STATUSES))
         # Use 4x as many tasks as bugs that are needed to improve performance.
         bugtasks = self.context.searchTasks(params)[:40]
