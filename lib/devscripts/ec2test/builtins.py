@@ -326,7 +326,7 @@ class cmd_test(EC2Command):
             open_browser=open_browser, pqm_email=pqm_email,
             include_download_cache_changes=include_download_cache_changes,
             instance=instance, launchpad_login=instance._launchpad_login,
-            timeout=5)
+            timeout=480)
 
         instance.set_up_and_run(postmortem, attached, runner.run_tests)
 
