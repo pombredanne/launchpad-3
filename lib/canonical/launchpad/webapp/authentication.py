@@ -77,8 +77,7 @@ class PlacelessAuthUtility:
                     # This we treat each request as a separate
                     # login/logout.
                     notify(BasicAuthLoggedInEvent(
-                        request, login, principal
-                        ))
+                        request, login, principal))
                     return principal
 
     def _authenticateUsingCookieAuth(self, request):
@@ -196,7 +195,8 @@ class SSHADigestEncryptor:
         plaintext = str(plaintext)
         if salt is None:
             salt = self.generate_salt()
-        v = binascii.b2a_base64(hashlib.sha1(plaintext + salt).digest() + salt)
+        v = binascii.b2a_base64(
+                hashlib.sha1(plaintext + salt).digest() + salt)
         return v[:-1]
 
     def validate(self, plaintext, encrypted):
@@ -341,7 +341,9 @@ class LaunchpadPrincipal:
 # zope.app.apidoc expects our principals to be adaptable into IAnnotations, so
 # we use these dummy adapters here just to make that code not OOPS.
 class TemporaryPrincipalAnnotations(UserDict):
+
     implements(IAnnotations)
+
     adapts(ILaunchpadPrincipal, IPreferenceGroup)
 
     def __init__(self, principal, pref_group):
