@@ -8,7 +8,7 @@
 import _pythonpath
 
 from canonical.config import config
-from lp.soyuz.scripts.publish_ftpmaster import PublishFTPMaster
+from lp.archivepublisher.scripts.publish_ftpmaster import PublishFTPMaster
 
 
 if __name__ == '__main__':

@@ -26,6 +26,8 @@ from lp.soyuz.scripts.ftpmaster import LpQueryDistro
 from lp.soyuz.scripts.processaccepted import ProcessAccepted
 
 
+# XXX JeroenVermeulen 2011-03-31 bug=746229: to start publishing debug
+# archives, get rid of this list.
 ARCHIVES_TO_PUBLISH = [
     ArchivePurpose.PRIMARY,
     ArchivePurpose.PARTNER,
@@ -81,6 +83,9 @@ def find_run_parts_dir(distro, parts):
 class PublishFTPMaster(LaunchpadCronScript):
     """Publish a distro (update)."""
 
+    # Has the publication been done?  This indicates that the distsroots
+    # have been replaced with newly generated ones.  It has implications
+    # for cleanup.
     done_pub = False
 
     def add_my_options(self):
@@ -105,12 +110,17 @@ class PublishFTPMaster(LaunchpadCronScript):
         """
         self.logger.debug("Executing: %s" % command_line)
         retval = os.system(command_line)
-        if retval != 0 and failure is not None:
-            self.logger.debug("Command failed: %s" % failure)
-            raise failure
+        if retval != 0:
+            self.logger.debug("Command returned %d.", retval)
+            if failure is not None:
+                self.logger.debug("Command failed: %s", failure)
+                raise failure
 
     def getArchives(self):
         """Find archives for `self.distribution` that should be published."""
+        # XXX JeroenVermeulen 2011-03-31 bug=746229: to start publishing
+        # debug archives, change this to return
+        # list(self.distribution.all_distro_archives).
         return [
             archive
             for archive in self.distribution.all_distro_archives
@@ -253,17 +263,32 @@ class PublishFTPMaster(LaunchpadCronScript):
 
     def installDists(self):
         """Put the new dists into place, as near-atomically as possible."""
-        self.logger.debug("Placing the new dists into place...")
+        # Before we start moving directories around, make as nearly
+        # sure as possible that we can do either none or all of them.
+        self.logger.debug("Looking for impediments to publication.")
+        for purpose, archive_config in self.configs.iteritems():
+            old_distsroot = archive_config.distsroot + '.old'
+            if file_exists(old_distsroot):
+                raise LaunchpadScriptFailure(
+                    "Old %s distsroot %s is in the way."
+                    % (purpose.title, old_distsroot))
 
+        # Move the existing distsroots out of the way, and move the new
+        # ones in their place.
+        self.logger.debug("Placing the new dists into place...")
         for archive_config in self.configs.itervalues():
             distsroot = archive_config.distsroot
             os.rename(distsroot, distsroot + ".old")
             os.rename(distsroot + ".new", distsroot)
 
+        # Yay, we did it!  Mark the fact because it makes a difference
+        # to the cleanup procedure.
         self.done_pub = True
 
-        for archive_config in self.configs.itervalues():
+        for purpose, archive_config in self.configs.iteritems():
             dists = os.path.join(get_distscopyroot(archive_config), "dists")
+            self.logger.debug(
+                "Renaming old %s distsroot to %s." % (purpose.title, dists))
             os.rename(archive_config.distsroot + ".old", dists)
 
     def runCommercialCompat(self):

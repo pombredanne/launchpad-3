@@ -7,7 +7,6 @@ __metaclass__ = type
 
 import os
 from textwrap import dedent
-import transaction
 from zope.component import getUtility
 
 from canonical.config import config
@@ -28,7 +27,7 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
     )
-from lp.soyuz.scripts.publish_ftpmaster import (
+from lp.archivepublisher.scripts.publish_ftpmaster import (
     compose_env_string,
     compose_shell_boolean,
     find_run_parts_dir,
@@ -181,7 +180,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         if distro is None:
             distro = self.getDistro()
         script = PublishFTPMaster(test_args=["-d", distro.name])
-        script.txn = transaction
+        script.txn = self.layer.txn
         script.logger = DevNullLogger()
         return script
 
@@ -225,7 +224,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
 
     def test_script_runs_successfully(self):
         ubuntu = self.getDistro(use_ubuntu=True)
-        transaction.commit()
+        self.layer.txn.commit()
         stdout, stderr, retval = run_script(
             self.SCRIPT_PATH + " -d ubuntu")
         self.assertEqual(0, retval, "Script failure:\n" + stderr)
@@ -239,6 +238,21 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.makeScript(distro).main()
         self.assertTrue(
             path_exists(get_archive_root(get_pub_config(distro)), 'ls-lR.gz'))
+
+    def test_can_run_twice(self):
+        test_publisher = SoyuzTestPublisher()
+        distroseries = test_publisher.setUpDefaultDistroSeries()
+        distro = distroseries.distribution
+        pub_config = get_pub_config(distro)
+        self.factory.makeComponentSelection(
+            distroseries=distroseries, component="main")
+        self.factory.makeArchive(
+            distribution=distro, purpose=ArchivePurpose.PARTNER)
+        test_publisher.getPubSource()
+
+        self.setUpForScriptRun(distro)
+        self.makeScript(distro).main()
+        self.makeScript(distro).main()
 
     def test_publishes_package(self):
         test_publisher = SoyuzTestPublisher()
