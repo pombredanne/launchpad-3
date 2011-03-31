@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from apt_pkg import TagFile
 import os
 from textwrap import dedent
 from zope.component import getUtility
@@ -162,23 +163,29 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         pub_config.root_dir = unicode(
             self.makeTemporaryDirectory())
 
-    def getDistro(self, use_ubuntu=False):
-        """Obtain a `Distribution` for testing, and set up test directory.
+    def makeDistro(self):
+        """Create a `Distribution` for testing.
 
-        :param use_ubuntu: Use Ubuntu as the test distro?  If not,
-            create a new one.
+        The distribution will have a publishing directory set up, which
+        will be cleaned up after the test.
         """
-        if use_ubuntu:
-            distro = getUtility(ILaunchpadCelebrities).ubuntu
-        else:
-            distro = self.factory.makeDistribution()
-        self.setUpForScriptRun(distro)
-        return distro
+        return self.factory.makeDistribution(
+            publish_root_dir=unicode(self.makeTemporaryDirectory()))
+
+    def prepareUbuntu(self):
+        """Obtain a reference to Ubuntu, set up for testing.
+
+        A temporary publishing directory will be set up, and it will be
+        cleaned up after the test.
+        """
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        self.setUpForScriptRun(ubuntu)
+        return ubuntu
 
     def makeScript(self, distro=None):
         """Produce instance of the `PublishFTPMaster` script."""
         if distro is None:
-            distro = self.getDistro()
+            distro = self.makeDistro()
         script = PublishFTPMaster(test_args=["-d", distro.name])
         script.txn = self.layer.txn
         script.logger = DevNullLogger()
@@ -186,15 +193,9 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
 
     def readReleaseFile(self, filename):
         """Read a Release file, return as a keyword/value dict."""
-        lines = []
-        for line in file(filename):
-            if line.startswith(' '):
-                lines[-1] += line
-            else:
-                lines.append(line)
-        return dict(
-            (key, value.strip())
-            for key, value in [line.split(':', 1) for line in lines])
+        sections = list(TagFile(file(filename)))
+        self.assertEqual(1, len(sections))
+        return dict(sections[0])
 
     def writeMarkerFile(self, path, contents):
         """Write a marker file for checking direction movements.
@@ -223,18 +224,18 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.addCleanup(config.pop, "commercial-compat")
 
     def test_script_runs_successfully(self):
-        ubuntu = self.getDistro(use_ubuntu=True)
+        ubuntu = self.prepareUbuntu()
         self.layer.txn.commit()
         stdout, stderr, retval = run_script(
             self.SCRIPT_PATH + " -d ubuntu")
         self.assertEqual(0, retval, "Script failure:\n" + stderr)
 
     def test_script_is_happy_with_no_publications(self):
-        distro = self.getDistro()
+        distro = self.makeDistro()
         self.makeScript(distro).main()
 
     def test_produces_listings(self):
-        distro = self.getDistro()
+        distro = self.makeDistro()
         self.makeScript(distro).main()
         self.assertTrue(
             path_exists(get_archive_root(get_pub_config(distro)), 'ls-lR.gz'))
@@ -306,7 +307,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertEqual("source", main_release["Architecture"])
 
     def test_cleanup_moves_dists_to_new_if_not_published(self):
-        distro = self.getDistro()
+        distro = self.makeDistro()
         pub_config = get_pub_config(distro)
         dists_root = get_dists_root(pub_config)
         dists_copy_root = get_distscopy_root(pub_config)
@@ -323,7 +324,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
             self.readMarkerFile([dists_copy_root, "dists", "marker"]))
 
     def test_cleanup_moves_dists_to_old_if_published(self):
-        distro = self.getDistro()
+        distro = self.makeDistro()
         pub_config = get_pub_config(distro)
         dists_root = get_dists_root(pub_config)
         old_distsroot = dists_root + ".old"
@@ -347,7 +348,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertEqual([name_spph_suite(spph)], script.getDirtySuites())
 
     def test_getDirtySuites_returns_suites_with_pending_publications(self):
-        distro = self.getDistro()
+        distro = self.makeDistro()
         spphs = [
             self.factory.makeSourcePackagePublishingHistory(
                 distroseries=self.factory.makeDistroSeries(
@@ -368,7 +369,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertEqual([], script.getDirtySuites())
 
     def test_getDirtySecuritySuites_returns_security_suites(self):
-        distro = self.getDistro()
+        distro = self.makeDistro()
         spphs = [
             self.factory.makeSourcePackagePublishingHistory(
                 distroseries=self.factory.makeDistroSeries(
@@ -398,7 +399,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertEqual([], script.getDirtySecuritySuites())
 
     def test_rsync_copies_files(self):
-        distro = self.getDistro()
+        distro = self.makeDistro()
         script = self.makeScript(distro)
         script.setUp()
         dists_root = get_dists_root(get_pub_config(distro))
@@ -411,7 +412,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
             self.readMarkerFile([dists_root + ".new", "new-file"]))
 
     def test_rsync_cleans_up_obsolete_files(self):
-        distro = self.getDistro()
+        distro = self.makeDistro()
         script = self.makeScript(distro)
         script.setUp()
         dists_root = get_dists_root(get_pub_config(distro))
@@ -423,7 +424,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertFalse(path_exists(*old_file))
 
     def test_setUpDirs_creates_directory_structure(self):
-        distro = self.getDistro()
+        distro = self.makeDistro()
         pub_config = get_pub_config(distro)
         archive_root = get_archive_root(pub_config)
         dists_root = get_dists_root(pub_config)
@@ -439,7 +440,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertTrue(file_exists(dists_root + ".new"))
 
     def test_setUpDirs_does_not_mind_if_directories_already_exist(self):
-        distro = self.getDistro()
+        distro = self.makeDistro()
         script = self.makeScript(distro)
         script.setUp()
         script.setUpDirs()
@@ -447,7 +448,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertTrue(file_exists(get_archive_root(get_pub_config(distro))))
 
     def test_setUpDirs_moves_dists_to_dists_new(self):
-        distro = self.getDistro()
+        distro = self.makeDistro()
         dists_root = get_dists_root(get_pub_config(distro))
         script = self.makeScript(distro)
         script.setUp()
@@ -458,7 +459,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
             "X", self.readMarkerFile([dists_root + ".new", "marker"]))
 
     def test_publishDistroArchive_runs_parts(self):
-        distro = self.getDistro()
+        distro = self.makeDistro()
         script = self.makeScript(distro)
         script.setUp()
         script.setUpDirs()
@@ -470,7 +471,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertEqual("publish-distro.d", parts_dir)
 
     def test_runPublishDistroParts_passes_parameters(self):
-        distro = self.getDistro()
+        distro = self.makeDistro()
         script = self.makeScript(distro)
         script.setUp()
         script.setUpDirs()
@@ -491,7 +492,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertTrue(script.done_pub)
 
     def test_installDists_replaces_distsroot(self):
-        distro = self.getDistro()
+        distro = self.makeDistro()
         script = self.makeScript(distro)
         script.setUp()
         script.setUpDirs()
@@ -511,7 +512,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         # XXX JeroenVermeulen 2011-03-29 bug=741683: Retire
         # runCommercialCompat as soon as Dapper support ends.
         self.enableCommercialCompat()
-        script = self.makeScript(self.getDistro(use_ubuntu=True))
+        script = self.makeScript(self.prepareUbuntu())
         script.setUp()
         script.executeShell = FakeMethod()
         script.runCommercialCompat()
@@ -524,7 +525,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         # XXX JeroenVermeulen 2011-03-29 bug=741683: Retire
         # runCommercialCompat as soon as Dapper support ends.
         self.enableCommercialCompat()
-        script = self.makeScript(self.getDistro(use_ubuntu=False))
+        script = self.makeScript(self.makeDistro())
         script.setUp()
         script.executeShell = FakeMethod()
         script.runCommercialCompat()
@@ -533,14 +534,14 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
     def test_runCommercialCompat_runs_only_if_configured(self):
         # XXX JeroenVermeulen 2011-03-29 bug=741683: Retire
         # runCommercialCompat as soon as Dapper support ends.
-        script = self.makeScript(self.getDistro(use_ubuntu=True))
+        script = self.makeScript(self.prepareUbuntu())
         script.setUp()
         script.executeShell = FakeMethod()
         script.runCommercialCompat()
         self.assertEqual(0, script.executeShell.call_count)
 
     def test_generateListings_writes_ls_lR_gz(self):
-        distro = self.getDistro()
+        distro = self.makeDistro()
         script = self.makeScript(distro)
         script.setUp()
         script.setUpDirs()
@@ -548,7 +549,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         pass
 
     def test_clearEmptyDirs_cleans_up_empty_directories(self):
-        distro = self.getDistro()
+        distro = self.makeDistro()
         script = self.makeScript(distro)
         script.setUp()
         script.setUpDirs()
@@ -559,7 +560,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertFalse(file_exists(empty_dir))
 
     def test_clearEmptyDirs_does_not_clean_up_nonempty_directories(self):
-        distro = self.getDistro()
+        distro = self.makeDistro()
         script = self.makeScript(distro)
         script.setUp()
         script.setUpDirs()
@@ -571,7 +572,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertTrue(file_exists(nonempty_dir))
 
     def test_processOptions_finds_distribution(self):
-        distro = self.getDistro()
+        distro = self.makeDistro()
         script = self.makeScript(distro)
         script.processOptions()
         self.assertEqual(distro.name, script.options.distribution)
@@ -584,7 +585,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
 
     def test_runParts_runs_parts(self):
         self.enableRunParts()
-        script = self.makeScript(self.getDistro(use_ubuntu=True))
+        script = self.makeScript(self.prepareUbuntu())
         script.setUp()
         script.executeShell = FakeMethod()
         script.runParts("finalize.d", {})
@@ -598,7 +599,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
 
     def test_runParts_passes_parameters(self):
         self.enableRunParts()
-        script = self.makeScript(self.getDistro(use_ubuntu=True))
+        script = self.makeScript(self.prepareUbuntu())
         script.setUp()
         script.executeShell = FakeMethod()
         key = self.factory.getUniqueString()
@@ -609,7 +610,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertIn("%s=%s" % (key, value), command_line)
 
     def test_executeShell_executes_shell_command(self):
-        distro = self.getDistro()
+        distro = self.makeDistro()
         script = self.makeScript(distro)
         marker = os.path.join(
             get_pub_config(distro).root_dir, "marker")
@@ -617,7 +618,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertTrue(file_exists(marker))
 
     def test_executeShell_reports_failure_if_requested(self):
-        distro = self.getDistro()
+        distro = self.makeDistro()
         script = self.makeScript(distro)
 
         class ArbitraryFailure(Exception):
@@ -628,13 +629,13 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
             script.executeShell, "/bin/false", failure=ArbitraryFailure())
 
     def test_executeShell_does_not_report_failure_if_not_requested(self):
-        distro = self.getDistro()
+        distro = self.makeDistro()
         script = self.makeScript(distro)
         # The test is that this does not fail:
         script.executeShell("/bin/false")
 
     def test_runFinalizeParts_passes_parameters(self):
-        script = self.makeScript(self.getDistro(use_ubuntu=True))
+        script = self.makeScript(self.prepareUbuntu())
         script.setUp()
         script.runParts = FakeMethod()
         script.runFinalizeParts()
@@ -649,7 +650,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertEqual(set(), missing_parameters)
 
     def test_publishSecurityUploads_skips_pub_if_no_security_updates(self):
-        script = self.makeScript(self.getDistro())
+        script = self.makeScript(self.makeDistro())
         script.setUp()
         script.setUpDirs()
         script.installDists = FakeMethod()
@@ -657,7 +658,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertEqual(0, script.installDists.call_count)
 
     def test_publishSecurityUploads_runs_finalize_parts(self):
-        distro = self.getDistro()
+        distro = self.makeDistro()
         self.factory.makeSourcePackagePublishingHistory(
             distroseries=self.factory.makeDistroSeries(distribution=distro),
             pocket=PackagePublishingPocket.SECURITY)
@@ -671,7 +672,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertTrue(kwargs["security_only"])
 
     def test_publishAllUploads_publishes_all_distro_archives(self):
-        distro = self.getDistro()
+        distro = self.makeDistro()
         distroseries = self.factory.makeDistroSeries(distribution=distro)
         partner_archive = self.factory.makeArchive(
             distribution=distro, purpose=ArchivePurpose.PARTNER)
@@ -693,7 +694,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertIn(partner_archive, published_archives)
 
     def test_publishAllUploads_runs_finalize_parts(self):
-        distro = self.getDistro()
+        distro = self.makeDistro()
         script = self.makeScript(distro)
         script.setUp()
         script.setUpDirs()
