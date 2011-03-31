@@ -11,10 +11,11 @@ __all__ = [
     'DistroSeriesBreadcrumb',
     'DistroSeriesEditView',
     'DistroSeriesFacets',
+    'DistroSeriesInitializeView',
     'DistroSeriesLocalDifferences',
+    'DistroSeriesNavigation',
     'DistroSeriesPackageSearchView',
     'DistroSeriesPackagesView',
-    'DistroSeriesNavigation',
     'DistroSeriesView',
     ]
 
@@ -510,7 +511,7 @@ class DistroSeriesAdminView(LaunchpadEditFormView, SeriesStatusMixin):
 
 
 class DistroSeriesAddView(LaunchpadFormView):
-    """A view to creat an `IDistrobutionSeries`."""
+    """A view to create an `IDistroSeries`."""
     schema = IDistroSeries
     field_names = [
         'name', 'displayname', 'title', 'summary', 'description', 'version',
@@ -541,6 +542,46 @@ class DistroSeriesAddView(LaunchpadFormView):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
+
+
+class IDistroSeriesInitializeForm(Interface):
+
+    derived_from_series = Choice(
+        title=_('Derived from distribution series'),
+        default=None,
+        vocabulary="DistroSeriesDerivation",
+        description=_(
+            "Select the distribution series you "
+            "want to derive from."),
+        required=True)
+
+
+class DistroSeriesInitializeView(LaunchpadFormView):
+    """A view to initialize an `IDistroSeries`."""
+
+    schema = IDistroSeriesInitializeForm
+    field_names = [
+        "derived_from_series",
+        ]
+
+    custom_widget('derived_from_series', LaunchpadDropdownWidget)
+
+    label = 'Initialize series'
+    page_title = label
+
+    @action(u"Initialize Series", name='initialize')
+    def submit(self, action, data):
+        """Stub for the Javascript in the page to use."""
+
+    @property
+    def is_derived_series_feature_enabled(self):
+        return getFeatureFlag("soyuz.derived-series-ui.enabled") is not None
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class DistroSeriesPackagesView(LaunchpadView):
@@ -626,8 +667,7 @@ class DistroSeriesLocalDifferences(LaunchpadFormView, PackageCopyingMixin):
         for its own vocabulary, we set it up after all the others.
         """
         super(DistroSeriesLocalDifferences, self).setUpFields()
-        has_edit = check_permission('launchpad.Edit', self.context)
-
+        check_permission('launchpad.Edit', self.context)
         terms = [
             SimpleTerm(diff, diff.source_package_name.name,
                 diff.source_package_name.name)
