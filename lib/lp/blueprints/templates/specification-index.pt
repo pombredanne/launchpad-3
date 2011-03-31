@@ -330,13 +330,13 @@
             }
         });
         Y.on('lp:context:lifecycle_status:changed', function(e) {
-            Y.lp.ui.update_field('#lifecycle-status', e.new_value);
+            Y.lp.ui.update_field('#lifecycle-status', e.new_value_html);
         });
         Y.on('lp:context:is_started:changed', function(e) {
             var started = Y.one('#started-by');
             if (e.new_value) {
               started.removeClass('unseen');
-              started.one('dd').set('innerHTML', e.entry.getHTML('starter'));
+              started.one('dd').setContent(e.entry.getHTML('starter'));
               Y.lazr.anim.green_flash({node:started}).run();
             } else {
               started.addClass('unseen');
@@ -346,7 +346,7 @@
             var completed = Y.one('#completed-by');
             if (e.new_value) {
               completed.removeClass('unseen');
-              completed.one('dd').set('innerHTML', e.entry.getHTML('completer'));
+              completed.one('dd').setContent(e.entry.getHTML('completer'));
               Y.lazr.anim.green_flash({node:completed}).run();
             } else {
               completed.addClass('unseen');
