@@ -128,7 +128,7 @@ class LoopTuner:
 
                 if self._isTimedOut():
                     self.log.warn(
-                        "Task aborted after %d seconds." % self.abort_time)
+                        "Task aborted after %d seconds.", self.abort_time)
                     break
 
                 self.operation(chunk_size)
@@ -165,7 +165,7 @@ class LoopTuner:
             average_size = total_size/max(1, iteration)
             average_speed = total_size/max(1, total_time)
             self.log.debug2(
-                "Done. %d items in %d iterations, 3f seconds, "
+                "Done. %d items in %d iterations, %3f seconds, "
                 "average size %f (%s/s)",
                 total_size, iteration, total_time, average_size,
                 average_speed)
@@ -254,7 +254,7 @@ class DBLoopTuner(LoopTuner):
             if msg_counter % 60 == 1:
                 self.log.info(
                     "Database replication lagged %s. "
-                    "Sleeping up to 10 minutes." % lag)
+                    "Sleeping up to 10 minutes.", lag)
 
             transaction.abort() # Don't become a long running transaction!
             self._sleep(10)
@@ -288,8 +288,8 @@ class DBLoopTuner(LoopTuner):
             if msg_counter % 60 == 1:
                 for runtime, procpid, usename, datname, query in results:
                     self.log.info(
-                        "Blocked on %s old xact %s@%s/%d - %s."
-                        % (runtime, usename, datname, procpid, query))
+                        "Blocked on %s old xact %s@%s/%d - %s.",
+                        runtime, usename, datname, procpid, query)
                 self.log.info("Sleeping for up to 10 minutes.")
             transaction.abort() # Don't become a long running transaction!
             self._sleep(10)
