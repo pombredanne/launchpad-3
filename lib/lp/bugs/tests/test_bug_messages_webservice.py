@@ -10,7 +10,6 @@ import transaction
 from lazr.restfulclient.errors import HTTPError
 from zope.component import getUtility
 from zope.security.management import endInteraction
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -24,11 +23,12 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 
+
 class TestMessageTraversal(TestCaseWithFactory):
     """Tests safe traversal of bugs.
 
     See bug 607438."""
-    
+
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
@@ -49,12 +49,12 @@ class TestMessageTraversal(TestCaseWithFactory):
         lp_bug = lp.bugs[self.bug.id]
 
         attachments = lp_bug.attachments
-        messages = [a.message.subject for a in attachments if a.message is not None]
+        messages = [a.message.subject for a in attachments
+            if a.message is not None]
         self.assertEqual(
             sorted(messages),
             sorted(expected_messages))
 
-        
 
 class TestSetCommentVisibility(TestCaseWithFactory):
     """Tests who can successfully set comment visibility."""
