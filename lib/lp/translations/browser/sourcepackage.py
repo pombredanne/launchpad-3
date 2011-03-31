@@ -400,7 +400,7 @@ class SourcePackageTranslationSharingDetailsView(
 
         Variant for the status "not configured"
         """
-        id = 'upstream-translations-unconfigured'
+        id = 'upstream-translations-incomplete'
         return self.getConfigureTranslationsLink(id)
 
     @property
@@ -409,7 +409,7 @@ class SourcePackageTranslationSharingDetailsView(
 
         Variant for the status "configured"
         """
-        id = 'upstream-translations-configured'
+        id = 'upstream-translations-complete'
         return self.getConfigureTranslationsLink(id)
 
     def getTranslationSynchronisationLink(self, id):
@@ -436,7 +436,7 @@ class SourcePackageTranslationSharingDetailsView(
 
         Variant for the status "not configured"
         """
-        id = 'translation-synchronisation-unconfigured'
+        id = 'translation-synchronisation-incomplete'
         return self.getTranslationSynchronisationLink(id)
 
     @property
@@ -445,5 +445,5 @@ class SourcePackageTranslationSharingDetailsView(
 
         Variant for the status "configured"
         """
-        id = 'translation-synchronisation-configured'
+        id = 'translation-synchronisation-complete'
         return self.getTranslationSynchronisationLink(id)

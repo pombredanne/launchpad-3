@@ -14,6 +14,7 @@ from canonical.launchpad.testing.pages import (
     extract_text,
     find_tag_by_id,
     )
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -317,6 +318,186 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
                 },
             ]
         self.assertEqual(expected, self.view.template_info())
+
+    def _getExpectedTranslationSettingsLink(self, id, series, visible):
+        if series is None:
+            url = '#'
+        else:
+            url = '%s/+configure-translations' % canonical_url(series.product)
+        return (
+            '<a id="upstream-translations-%(id)s" class="sprite '
+            'edit%(seen)s" href="%(url)s"><span class="invisible-link">'
+            'Configure Upstream Translations</span></a>') % {
+            'id': id,
+            'url': url,
+            'seen': '' if visible else ' unseen',
+            }
+
+    def test_configure_translations_link__no_packaging_link(self):
+        # If no packaging link exists,
+        # configure_translations_link_unconfigured and
+        # configure_translations_link_configured return hidden dummy
+        # links.
+        expected = self._getExpectedTranslationSettingsLink(
+            id='incomplete', series=None, visible=False)
+        self.assertEqual(
+            expected,
+            self.view.configure_translations_link_unconfigured.escapedtext)
+        expected = self._getExpectedTranslationSettingsLink(
+            id='complete', series=None, visible=False)
+        self.assertEqual(
+            expected,
+            self.view.configure_translations_link_configured.escapedtext)
+
+    def test_configure_translations_link__packaging_link__anon_user(self):
+        # If a packaging link exists,
+        # configure_translations_link_unconfigured and
+        # configure_translations_link_configured return hidden links
+        # pointing to the configuration page for anonymous users.
+        self.configureSharing()
+        expected = self._getExpectedTranslationSettingsLink(
+            id='incomplete', series=self.productseries, visible=False)
+        self.assertEqual(
+            expected,
+            self.view.configure_translations_link_unconfigured.escapedtext)
+        expected = self._getExpectedTranslationSettingsLink(
+            id='complete', series=self.productseries, visible=False)
+        self.assertEqual(
+            expected,
+            self.view.configure_translations_link_configured.escapedtext)
+
+    def test_configure_translations_link__packaging_link__unprivileged_user(
+        self):
+        # If a packaging link exists,
+        # configure_translations_link_unconfigured and
+        # configure_translations_link_configured return hidden links
+        # pointing to the configuration page for users which cannot configure
+        # the product series.
+        self.configureSharing()
+        with person_logged_in(self.factory.makePerson()):
+            view = SourcePackageTranslationSharingDetailsView(
+                self.sourcepackage, LaunchpadTestRequest())
+            view.initialize()
+            expected = self._getExpectedTranslationSettingsLink(
+                id='incomplete', series=self.productseries, visible=False)
+            self.assertEqual(
+                expected,
+                view.configure_translations_link_unconfigured.escapedtext)
+            expected = self._getExpectedTranslationSettingsLink(
+                id='complete', series=self.productseries, visible=False)
+            self.assertEqual(
+                expected,
+                view.configure_translations_link_configured.escapedtext)
+
+    def test_configure_translations_link__packaging_link__privileged_user(
+        self):
+        # If a packaging link exists,
+        # configure_translations_link_unconfigured and
+        # configure_translations_link_configured return visible links
+        # pointing to the configuration page for users which can configure
+        # the product series.
+        self.configureSharing()
+        with person_logged_in(self.productseries.owner):
+            view = SourcePackageTranslationSharingDetailsView(
+                self.sourcepackage, LaunchpadTestRequest())
+            view.initialize()
+            expected = self._getExpectedTranslationSettingsLink(
+                id='incomplete', series=self.productseries, visible=True)
+            self.assertEqual(
+                expected,
+                view.configure_translations_link_unconfigured.escapedtext)
+            expected = self._getExpectedTranslationSettingsLink(
+                id='complete', series=self.productseries, visible=True)
+            self.assertEqual(
+                expected,
+                view.configure_translations_link_configured.escapedtext)
+
+    def _getExpectedTranslationSyncLink(self, id, series, visible):
+        if series is None:
+            url = '#'
+        else:
+            url = '%s/+translations-settings' % canonical_url(series)
+        return (
+        '<a id="translation-synchronisation-%(id)s" class="sprite '
+        'edit%(seen)s" href="%(url)s">'
+        '<span class="invisible-link">Configure Translation '
+        'Synchronisation</span></a>') % {
+            'id': id,
+            'url': url,
+            'seen': '' if visible else ' unseen',
+            }
+
+    def test_upstream_sync_link__no_packaging_link(self):
+        # If no packaging link exists, translation_sync_link_unconfigured
+        # and translation_sync_link_configured return hidden dummy links.
+        expected = self._getExpectedTranslationSyncLink(
+            id='incomplete', series=None, visible=False)
+        self.assertEqual(
+            expected,
+            self.view.translation_sync_link_unconfigured.escapedtext)
+        expected = self._getExpectedTranslationSyncLink(
+            id='complete', series=None, visible=False)
+        self.assertEqual(
+            expected,
+            self.view.translation_sync_link_configured.escapedtext)
+
+    def test_upstream_sync_link__packaging_link__anon_user(self):
+        # If a packaging link exists, translation_sync_link_unconfigured
+        # and translation_sync_link_configured return hidden links
+        # for anonymous users.
+        self.configureSharing()
+        expected = self._getExpectedTranslationSyncLink(
+            id='incomplete', series=self.productseries, visible=False)
+        self.assertEqual(
+            expected,
+            self.view.translation_sync_link_unconfigured.escapedtext)
+        expected = self._getExpectedTranslationSyncLink(
+            id='complete', series=self.productseries, visible=False)
+        self.assertEqual(
+            expected,
+            self.view.translation_sync_link_configured.escapedtext)
+
+    def test_upstream_sync_link__packaging_link__unprivileged_user(self):
+        # If a packaging link exists, translation_sync_link_unconfigured
+        # and translation_sync_link_configured return hidden links
+        # for users which don't have the permission to change the
+        # translation sync setting.
+        self.configureSharing()
+        with person_logged_in(self.factory.makePerson()):
+            view = SourcePackageTranslationSharingDetailsView(
+                self.sourcepackage, LaunchpadTestRequest())
+            view.initialize()
+            expected = self._getExpectedTranslationSyncLink(
+                id='incomplete', series=self.productseries, visible=False)
+            self.assertEqual(
+                expected,
+                view.translation_sync_link_unconfigured.escapedtext)
+            expected = self._getExpectedTranslationSyncLink(
+                id='complete', series=self.productseries, visible=False)
+            self.assertEqual(
+                expected,
+                view.translation_sync_link_configured.escapedtext)
+
+    def test_upstream_sync_link__packaging_link__privileged_user(self):
+        # If a packaging link exists, translation_sync_link_unconfigured
+        # and translation_sync_link_configured return visible links
+        # for users which have the permission to change the
+        # translation sync setting.
+        self.configureSharing()
+        with person_logged_in(self.productseries.owner):
+            view = SourcePackageTranslationSharingDetailsView(
+                self.sourcepackage, LaunchpadTestRequest())
+            view.initialize()
+            expected = self._getExpectedTranslationSyncLink(
+                id='incomplete', series=self.productseries, visible=True)
+            self.assertEqual(
+                expected,
+                view.translation_sync_link_unconfigured.escapedtext)
+            expected = self._getExpectedTranslationSyncLink(
+                id='complete', series=self.productseries, visible=True)
+            self.assertEqual(
+                expected,
+                view.translation_sync_link_configured.escapedtext)
 
 
 class TestSourcePackageSharingDetailsPage(BrowserTestCase,
@@ -684,117 +865,53 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         self.assertBranchLinks(
             browser.contents, real_links=True, enabled=True)
 
-    def assertConfigurationLink(self, contents, real_link, enabled, id,
-                                expected_url):
-        if real_link:
-
-            def link_matcher(url):
-                return re.search(expected_url, url)
-        else:
-            link_matcher = '#'
-        if enabled:
-            css_class = 'sprite edit'
-        else:
-            css_class = 'sprite edit unseen'
-        matcher = Tag(id, 'a', attrs={
-            'id': id,
-            'href': link_matcher,
-            'class': css_class})
-        self.assertThat(contents, HTMLContains(matcher))
-
-    def assertTranslationConfigurationLink(self, contents, real_link,
-                                           enabled, id):
-        expected_url = (
-            r'^http://translations.launchpad.dev/.*/'
-            '\+configure-translations$')
-        self.assertConfigurationLink(
-            contents, real_link, enabled, id, expected_url)
-
-    def assertAllTranslationConfigurationLinks(self, contents, real_link,
-                                               enabled):
-        self.assertTranslationConfigurationLink(
-            contents, real_link, enabled,
-            id='upstream-translations-unconfigured')
-        self.assertTranslationConfigurationLink(
-            contents, real_link, enabled,
-            id='upstream-translations-configured')
-
-    def test_configure_translations_link__no_packaging_link(self):
-        # If no packaging link exists,
-        # configure_translations_link_unconfigured and
-        # configure_translations_link_configured return hidden dummy
-        # links.
+    def test_configure_translations(self):
+        # The link to the translation configuration page of the
+        # upstream product is included twice in the page.
         sourcepackage = self._makeSourcePackage()
         browser = self._getSharingDetailsViewBrowser(sourcepackage)
-        self.assertAllTranslationConfigurationLinks(
-            browser.contents, real_link=False, enabled=False)
+        matcher = Tag(
+            'upstream-translations-incomplete', 'a',
+            attrs={
+                'id': 'upstream-translations-incomplete',
+                'href': '#',
+                'class': 'sprite edit unseen',
+                }
+            )
+        self.assertThat(browser.contents, HTMLContains(matcher))
+        matcher = Tag(
+            'upstream-translations-complete', 'a',
+            attrs={
+                'id': 'upstream-translations-complete',
+                'href': '#',
+                'class': 'sprite edit unseen',
+                }
+            )
+        self.assertThat(browser.contents, HTMLContains(matcher))
 
-    def test_configure_translations_link__packaging_link__anon_user(self):
-        # If no packaging link exists,
-        # configure_translations_link_unconfigured and
-        # configure_translations_link_configured return hidden links
-        # pointing to the configuration page for anonymous users.
-        packaging = self.factory.makePackagingLink(in_ubuntu=True)
-        self.configureUpstreamProject(
-            productseries=packaging.productseries)
-        browser = self._getSharingDetailsViewBrowser(packaging.sourcepackage)
-        self.assertAllTranslationConfigurationLinks(
-            browser.contents, real_link=True, enabled=False)
-
-    def test_configure_translations_link__packaging_link__unprivileged_user(
-        self):
-        # If no packaging link exists,
-        # configure_translations_link_unconfigured and
-        # configure_translations_link_configured return hidden links
-        # pointing to the configuration page for users which cannot configure
-        # the product series.
-        packaging = self.factory.makePackagingLink(in_ubuntu=True)
-        self.configureUpstreamProject(
-            productseries=packaging.productseries)
-        browser = self._getSharingDetailsViewBrowser(
-            packaging.sourcepackage, user=self.factory.makePerson())
-        self.assertAllTranslationConfigurationLinks(
-            browser.contents, real_link=True, enabled=False)
-
-    def test_configure_translations_link__packaging_link__privileged_user(
-        self):
-        # If no packaging link exists,
-        # configure_translations_link_unconfigured and
-        # configure_translations_link_configured return visible links
-        # pointing to the configuration page for users which can configure
-        # the product series.
-        packaging = self.factory.makePackagingLink(in_ubuntu=True)
-        self.configureUpstreamProject(
-            productseries=packaging.productseries)
-        browser = self._getSharingDetailsViewBrowser(
-            packaging.sourcepackage, user=packaging.productseries.owner)
-        self.assertAllTranslationConfigurationLinks(
-            browser.contents, real_link=True, enabled=True)
-
-    def assertTranslationSynchronisationLink(self, contents, real_link,
-                                             enabled, id):
-        expected_url = (
-            r'https://translations.launchpad.dev/.*/trunk'
-            '/+translations-settings')
-        self.assertConfigurationLink(
-            contents, real_link, enabled, id, expected_url)
-
-    def assertAllTranslationSynchronisationLinks(self, contents, real_link,
-                                               enabled):
-        self.assertTranslationSynchronisationLink(
-            contents, real_link, enabled,
-            id='translation-synchronisation-unconfigured')
-        self.assertTranslationSynchronisationLink(
-            contents, real_link, enabled,
-            id='translation-synchronisation-configured')
-
-    def test_upstream_sync_link__no_packaging_link(self):
-        # If no packaing link exists, translation_sync_link_unconfigured
-        # and translation_sync_link_configured return hidden dummy links.
+    def test_upstream_sync_link(self):
+        # The link to the translation synchronisation page of the
+        # upstream product series is included twice in the page.
         sourcepackage = self._makeSourcePackage()
         browser = self._getSharingDetailsViewBrowser(sourcepackage)
-        self.assertAllTranslationSynchronisationLinks(
-            browser.contents, real_link=False, enabled=False)
+        matcher = Tag(
+            'translation-synchronisation-incomplete', 'a',
+            attrs={
+                'id': 'translation-synchronisation-incomplete',
+                'href': '#',
+                'class': 'sprite edit unseen',
+                }
+            )
+        self.assertThat(browser.contents, HTMLContains(matcher))
+        matcher = Tag(
+            'translation-synchronisation-complete', 'a',
+            attrs={
+                'id': 'translation-synchronisation-complete',
+                'href': '#',
+                'class': 'sprite edit unseen',
+                }
+            )
+        self.assertThat(browser.contents, HTMLContains(matcher))
 
 
 class TestTranslationSharingDetailsViewNotifications(TestCaseWithFactory,
