@@ -85,7 +85,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             distroseries=ds_diff.derived_series,
             status=PackagePublishingStatus.PENDING)
 
-        self.assertEqual(pending_pub, ds_diff.latest_source_pub)
+        self.assertEqual(pending_pub, ds_diff.source_pub)
 
     def test_source_pub_returns_none(self):
         # None is returned when there is no source pub.
@@ -115,7 +115,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             distroseries=ds_diff.derived_series.parent_series,
             status=PackagePublishingStatus.PENDING)
 
-        self.assertEqual(pending_pub, ds_diff.parent_latest_source_pub)
+        self.assertEqual(pending_pub, ds_diff.parent_source_pub)
 
     def test_source_version(self):
         # The version of the source in the derived series is returned.
