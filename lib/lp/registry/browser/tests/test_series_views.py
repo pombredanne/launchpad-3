@@ -5,6 +5,7 @@ __metaclass__ = type
 
 from BeautifulSoup import BeautifulSoup
 from storm.zope.interfaces import IResultSet
+from testtools.matchers import EndsWith
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -296,7 +297,7 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
             derived_series, '+localpackagediffs')
         soup = BeautifulSoup(view())
         diff_table = soup.find('table', {'class': 'listing'})
-        row = diff_table.tbody.findAll('tr')[0]
+        row = diff_table.tbody.tr
         links = row.findAll('a', {'class': 'derived-version'})
 
         # The version displayed is the version attached to the
@@ -305,11 +306,11 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
         self.assertEqual(versions['derived'], links[0].string.strip())
 
         link = canonical_url(difference.source_pub.sourcepackagerelease)
-        self.assertTrue(link.endswith(new_version))
+        self.assertTrue(link, EndsWith(new_version))
         # The link points to the sourcepackagerelease referenced in the
         # difference.
         self.assertTrue(
-            links[0].get('href').endswith(difference.source_version))
+            links[0].get('href'), EndsWith(difference.source_version))
 
 
 class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):

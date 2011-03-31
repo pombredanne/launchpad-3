@@ -10,6 +10,7 @@ __all__ = [
     ]
 
 from lazr.restful.interfaces import IWebServiceClientRequest
+from storm.zope.interfaces import IResultSet
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.component import (
@@ -71,31 +72,28 @@ class DistroSeriesDifferenceNavigation(Navigation):
 
     @property
     def parent_source_package_url(self):
-        return self._package_url(parent=True)
+        return self._package_url(
+            self.context.derived_series.parent_series,
+            self.context.parent_source_version)
 
     @property
     def source_package_url(self):
-        return self._package_url()
+        return self._package_url(
+            self.context.derived_series,
+            self.context.source_version)
 
-    def _package_url(self, parent=False):
-        if parent:
-            distro_series = self.context.derived_series.parent_series
-            version = self.context.parent_source_version
-        else:
-            distro_series = self.context.derived_series
-            version = self.context.source_version
-
+    def _package_url(self, distro_series, version):
         pubs = distro_series.getPublishedSources(
             self.context.source_package_name, include_pending=True,
             version=version)
 
-        try:
-            url = canonical_url(
-                DistroSeriesSourcePackageRelease(
-                    distro_series, pubs[0].sourcepackagerelease))
-            return url
-        except IndexError:
+        pub = IResultSet(pubs).first()
+        if pub is None:
             return ''
+        else:
+            return canonical_url(
+                DistroSeriesSourcePackageRelease(
+                    distro_series, pub.sourcepackagerelease))
 
 
 class IDistroSeriesDifferenceForm(Interface):
