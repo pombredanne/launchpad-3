@@ -74,16 +74,12 @@ from lp.services.twistedsupport.tests.test_processmonitor import (
     makeFailure,
     ProcessTestsMixin,
     )
-from lp.services.twistedsupport.xmlrpc import fix_bug_2518
 from lp.testing import (
     login,
     logout,
     TestCase,
     )
 from lp.testing.factory import LaunchpadObjectFactory
-
-
-fix_bug_2518()
 
 
 class TestWorkerMonitorProtocol(ProcessTestsMixin, TestCase):

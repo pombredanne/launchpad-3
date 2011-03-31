@@ -5,23 +5,27 @@
 
 """Initialise a new distroseries from its parent series."""
 
-import _pythonpath
-
-import sys
 from optparse import OptionParser
+import sys
 
-from zope.component import getUtility
+import _pythonpath
 from contrib.glock import GlobalLock
+from zope.component import getUtility
 
 from canonical.config import config
-from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.scripts import (
-    execute_zcml_for_scripts, logger, logger_options)
+    execute_zcml_for_scripts,
+    logger,
+    logger_options,
+    )
 from canonical.lp import initZopeless
-
 from lp.app.errors import NotFoundError
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.scripts.initialise_distroseries import (
-    InitialisationError, InitialiseDistroSeries)
+    InitialisationError,
+    InitialiseDistroSeries,
+    )
+
 
 def main():
     # Parse command-line arguments
@@ -77,7 +81,12 @@ def main():
         arches = ()
         if options.arches is not None:
             arches = tuple(options.arches.split(','))
-        ids = InitialiseDistroSeries(distroseries, arches)
+        # InitialiseDistroSeries does not like it if the parent series is
+        # specified on the child, so we must unset it and pass it in. This is
+        # a temporary hack until confidence in InitialiseDistroSeriesJob is
+        # good, at which point this script will be obsolete.
+        parent, distroseries.parent_series = distroseries.parent_series, None
+        ids = InitialiseDistroSeries(parent, distroseries, arches)
         ids.check()
         log.debug('initialising from parent, copying publishing records.')
         ids.initialise()
@@ -99,4 +108,3 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
-
