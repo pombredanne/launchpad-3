@@ -48,7 +48,7 @@
         </span>
     </dt>
     <dt
-      tal:condition="python: not view.show_package_diffs_request_link">
+      tal:condition="not: view/show_package_diffs_request_link">
       Differences from last common version:
     </dt>
     <dd>
