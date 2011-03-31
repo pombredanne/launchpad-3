@@ -167,16 +167,13 @@ class TestMHonArchMRC(TestCase):
 
     layer = FunctionalLayer
 
-    def setUp(self):
-        super(TestMHonArchMRC, self).setUp()
+    def test_html_disabled(self):
+        # HTML messages are ignored because of CVE-2010-4524.
         mrc_path = os.path.join(
             config.root, 'lib', 'lp', 'services', 'mailman', 'monkeypatches',
             'lp-mhonarc-common.mrc')
         with open(mrc_path) as mrc_file:
             self.mrc = mrc_file.read()
-
-    def test_html_disabled(self):
-        # HTML messages are ignored because of CVE-2010-4524.
         mime_excs = (
             '<MIMEExcs> '
             'text/html '
