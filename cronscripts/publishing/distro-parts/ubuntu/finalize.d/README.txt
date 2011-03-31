@@ -20,3 +20,6 @@ PRIMARY_ARCHIVEROOT - the root directory for the distribution's main archive.
 (e.g. /srv/launchpad.net/ubuntu-archive/ubuntu/ )
 
 SECURITY_UPLOAD_ONLY - "yes" during the security pass, or "no" otherwise.
+
+The script's PATH will be extended with the Launchpad source tree's
+cronscripts/publishing directory.

@@ -361,8 +361,12 @@ class PublishFTPMaster(LaunchpadCronScript):
         if parts_dir is None:
             self.logger.debug("Skipping run-parts %s: not configured.", parts)
             return
+        total_env_string = ' '.join([
+            "PATH=\"$PATH:%s/cronscripts/publishing\"" % config.root,
+            compose_env_string(env),
+            ])
         self.executeShell(
-            "%s run-parts -- '%s'" % (compose_env_string(env), parts_dir),
+            "env %s run-parts -- '%s'" % (total_env_string, parts_dir),
             failure=LaunchpadScriptFailure(
                 "Failure while executing run-parts %s." % parts_dir))
 
