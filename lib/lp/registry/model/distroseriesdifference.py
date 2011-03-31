@@ -154,24 +154,14 @@ class DistroSeriesDifference(Storm):
             SourcePackageName.name == source_package_name).one()
 
     @cachedproperty
-    def latest_source_pub(self):
+    def source_pub(self):
         """See `IDistroSeriesDifference`."""
         return self._getLatestSourcePub()
 
     @cachedproperty
-    def source_pub(self):
-        """See `IDistroSeriesDifference`."""
-        return self._getSourcePub()
-
-    @cachedproperty
-    def parent_latest_source_pub(self):
-        """See `IDistroSeriesDifference`."""
-        return self._getLatestSourcePub(for_parent=True)
-
-    @cachedproperty
     def parent_source_pub(self):
         """See `IDistroSeriesDifference`."""
-        return self._getSourcePub(for_parent=True)
+        return self._getLatestSourcePub(for_parent=True)
 
     @cachedproperty
     def base_source_pub(self):
@@ -260,25 +250,6 @@ class DistroSeriesDifference(Storm):
         else:
             return self.parent_package_diff.status
 
-    def _getSourcePub(self, for_parent=False):
-        """Helper to get source_pub/parent_source_pub."""
-        if for_parent:
-            distro_series = self.derived_series.parent_series
-            version = self.parent_source_version
-        else:
-            distro_series = self.derived_series
-            version = self.source_version
-
-
-        pubs = distro_series.getPublishedSources(
-            self.source_package_name, include_pending=True,
-            version=version)
-
-        try:
-            return pubs[0]
-        except IndexError:
-            return None
-
     def _getLatestSourcePub(self, for_parent=False):
         """Helper to keep source_pub/parent_source_pub DRY."""
         distro_series = self.derived_series
@@ -335,19 +306,19 @@ class DistroSeriesDifference(Storm):
         """
         updated = False
         new_source_version = new_parent_source_version = None
-        if self.latest_source_pub:
-            new_source_version = self.latest_source_pub.source_package_version
+        if self.source_pub:
+            new_source_version = self.source_pub.source_package_version
             if self.source_version != new_source_version:
                 self.source_version = new_source_version
                 updated = True
-                # If the derived version has changed and the previous version
+                # If the derived version has change and the previous version
                 # was blacklisted, then we remove the blacklist now.
                 if self.status == (
                     DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT):
                     self.status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
-        if self.parent_latest_source_pub:
+        if self.parent_source_pub:
             new_parent_source_version = (
-                self.parent_latest_source_pub.source_package_version)
+                self.parent_source_pub.source_package_version)
             if self.parent_source_version != new_parent_source_version:
                 self.parent_source_version = new_parent_source_version
                 updated = True

@@ -119,12 +119,6 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
         ISourcePackagePublishingHistory,
         title=_("Derived source pub"), readonly=True,
         description=_(
-            "The published version in the derived series."))
-
-    latest_source_pub = Reference(
-        ISourcePackagePublishingHistory,
-        title=_("Latest derived source pub"), readonly=True,
-        description=_(
             "The most recent published version in the derived series."))
 
     source_version = TextLine(
@@ -136,12 +130,6 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
     parent_source_pub = Reference(
         ISourcePackagePublishingHistory,
         title=_("Parent source pub"), readonly=True,
-        description=_(
-            "The published version in the parent series."))
-
-    parent_latest_source_pub = Reference(
-        ISourcePackagePublishingHistory,
-        title=_("Parent latest source pub"), readonly=True,
         description=_(
             "The most recent published version in the parent series."))
 
