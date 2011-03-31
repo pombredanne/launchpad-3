@@ -27,15 +27,14 @@ from zope.schema.vocabulary import (
     )
 
 from canonical.launchpad.webapp import (
+    canonical_url,
     LaunchpadView,
     Navigation,
     stepthrough,
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.launchpadform import custom_widget
-from lp.app.browser.launchpadform import (
-    LaunchpadFormView,
-    )
+from lp.app.browser.launchpadform import LaunchpadFormView
 from lp.registry.enum import DistroSeriesDifferenceStatus
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
@@ -50,6 +49,9 @@ from lp.registry.model.distroseriesdifferencecomment import (
 from lp.services.comments.interfaces.conversation import (
     IComment,
     IConversation,
+    )
+from lp.soyuz.model.distroseriessourcepackagerelease import (
+    DistroSeriesSourcePackageRelease,
     )
 
 
@@ -66,6 +68,34 @@ class DistroSeriesDifferenceNavigation(Navigation):
         return getUtility(
             IDistroSeriesDifferenceCommentSource).getForDifference(
                 self.context, id)
+
+    @property
+    def parent_source_package_url(self):
+        return self._package_url(parent=True)
+
+    @property
+    def source_package_url(self):
+        return self._package_url()
+
+    def _package_url(self, parent=False):
+        if parent:
+            distro_series = self.context.derived_series.parent_series
+            version = self.context.parent_source_version
+        else:
+            distro_series = self.context.derived_series
+            version = self.context.source_version
+
+        pubs = distro_series.getPublishedSources(
+            self.context.source_package_name, include_pending=True,
+            version=version)
+
+        try:
+            url = canonical_url(
+                DistroSeriesSourcePackageRelease(
+                    distro_series, pubs[0].sourcepackagerelease))
+            return url
+        except IndexError:
+            return ''
 
 
 class IDistroSeriesDifferenceForm(Interface):

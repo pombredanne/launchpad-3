@@ -304,12 +304,12 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
         self.assertEqual(1, len(links))
         self.assertEqual(versions['derived'], links[0].string.strip())
 
+        link = canonical_url(difference.source_pub.sourcepackagerelease)
+        self.assertTrue(link.endswith(new_version))
         # The link points to the sourcepackagerelease referenced in the
         # difference.
-        link = canonical_url(
-            difference.source_pub.sourcepackagerelease).replace(
-                'http://launchpad.dev', '')
-        self.assertEqual(link, links[0].get('href'))
+        self.assertTrue(
+            links[0].get('href').endswith(difference.source_version))
 
 
 class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):

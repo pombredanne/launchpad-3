@@ -66,14 +66,15 @@
                 <a tal:attributes="href difference/fmt:url" class="toggle-extra"
                    tal:content="parent_source_pub/source_package_name">Foo</a>
               </td>
-              <td><a tal:attributes="href parent_source_pub/sourcepackagerelease/fmt:url">
+              <td><a tal:attributes="href difference/@@/parent_source_package_url"
+                     class="parent_version">
                     <tal:replace
-                    replace="parent_source_pub/sourcepackagerelease/version"/></a>
+                    replace="difference/parent_source_version"/></a>
               </td>
-              <td><a tal:attributes="href source_pub/sourcepackagerelease/fmt:url"
+              <td><a tal:attributes="href difference/@@/source_package_url"
                      class="derived-version">
                     <tal:replace
-                    replace="source_pub/sourcepackagerelease/version"/></a>
+                    replace="difference/source_version"/></a>
               </td>
               <td>
                   <span tal:attributes="title difference/source_pub/datepublished/fmt:datetime"
