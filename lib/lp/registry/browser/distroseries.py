@@ -11,10 +11,11 @@ __all__ = [
     'DistroSeriesBreadcrumb',
     'DistroSeriesEditView',
     'DistroSeriesFacets',
+    'DistroSeriesInitializeView',
     'DistroSeriesLocalDifferences',
+    'DistroSeriesNavigation',
     'DistroSeriesPackageSearchView',
     'DistroSeriesPackagesView',
-    'DistroSeriesNavigation',
     'DistroSeriesView',
     ]
 
@@ -75,10 +76,14 @@ from lp.blueprints.browser.specificationtarget import (
     )
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
-from lp.registry.browser import MilestoneOverlayMixin
+from lp.registry.browser import (
+    add_subscribe_link,
+    MilestoneOverlayMixin,
+    )
 from lp.registry.enum import DistroSeriesDifferenceStatus
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distroseriesdifference import (
@@ -186,9 +191,23 @@ class DistroSeriesOverviewMenu(
 
     usedfor = IDistroSeries
     facet = 'overview'
-    links = ['edit', 'reassign', 'driver', 'answers',
-             'packaging', 'needs_packaging', 'builds', 'queue',
-             'add_port', 'create_milestone', 'subscribe', 'admin']
+
+    @property
+    def links(self):
+        links = ['edit',
+                 'reassign',
+                 'driver',
+                 'answers',
+                 'packaging',
+                 'needs_packaging',
+                 'builds',
+                 'queue',
+                 'add_port',
+                 'create_milestone',
+                 ]
+        add_subscribe_link(links)
+        links.append('admin')
+        return links
 
     @enabled_with_permission('launchpad.Admin')
     def edit(self):
@@ -252,11 +271,14 @@ class DistroSeriesBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
 
     usedfor = IDistroSeries
     facet = 'bugs'
-    links = (
-        'cve',
-        'nominations',
-        'subscribe',
-        )
+
+    @property
+    def links(self):
+        links = ['cve',
+                 'nominations',
+                 ]
+        add_subscribe_link(links)
+        return links
 
     def cve(self):
         return Link('+cve', 'CVE reports', icon='cve')
@@ -327,12 +349,15 @@ class SeriesStatusMixin:
             self.context.datereleased = UTC_NOW
 
 
-class DistroSeriesView(MilestoneOverlayMixin):
+class DistroSeriesView(LaunchpadView, MilestoneOverlayMixin):
 
     def initialize(self):
+        super(DistroSeriesView, self).initialize()
         self.displayname = '%s %s' % (
             self.context.distribution.displayname,
             self.context.version)
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user)
 
     @property
     def page_title(self):
@@ -486,7 +511,7 @@ class DistroSeriesAdminView(LaunchpadEditFormView, SeriesStatusMixin):
 
 
 class DistroSeriesAddView(LaunchpadFormView):
-    """A view to creat an `IDistrobutionSeries`."""
+    """A view to create an `IDistroSeries`."""
     schema = IDistroSeries
     field_names = [
         'name', 'displayname', 'title', 'summary', 'description', 'version',
@@ -517,6 +542,46 @@ class DistroSeriesAddView(LaunchpadFormView):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
+
+
+class IDistroSeriesInitializeForm(Interface):
+
+    derived_from_series = Choice(
+        title=_('Derived from distribution series'),
+        default=None,
+        vocabulary="DistroSeriesDerivation",
+        description=_(
+            "Select the distribution series you "
+            "want to derive from."),
+        required=True)
+
+
+class DistroSeriesInitializeView(LaunchpadFormView):
+    """A view to initialize an `IDistroSeries`."""
+
+    schema = IDistroSeriesInitializeForm
+    field_names = [
+        "derived_from_series",
+        ]
+
+    custom_widget('derived_from_series', LaunchpadDropdownWidget)
+
+    label = 'Initialize series'
+    page_title = label
+
+    @action(u"Initialize Series", name='initialize')
+    def submit(self, action, data):
+        """Stub for the Javascript in the page to use."""
+
+    @property
+    def is_derived_series_feature_enabled(self):
+        return getFeatureFlag("soyuz.derived-series-ui.enabled") is not None
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class DistroSeriesPackagesView(LaunchpadView):
@@ -602,8 +667,7 @@ class DistroSeriesLocalDifferences(LaunchpadFormView, PackageCopyingMixin):
         for its own vocabulary, we set it up after all the others.
         """
         super(DistroSeriesLocalDifferences, self).setUpFields()
-        has_edit = check_permission('launchpad.Edit', self.context)
-
+        check_permission('launchpad.Edit', self.context)
         terms = [
             SimpleTerm(diff, diff.source_package_name.name,
                 diff.source_package_name.name)
