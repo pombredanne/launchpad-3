@@ -3,6 +3,8 @@
 
 """Tests for helpers that expose data about a user to on-page JavaScript."""
 
+from operator import itemgetter
+
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
@@ -108,7 +110,7 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
                 self.bug_super_team, self.bug_super_team.teamowner)
 
     def _sort(self, team_info, key='title'):
-        return sorted(team_info, cmp=lambda a,b: cmp(a[key], b[key]))
+        return sorted(team_info, key=itemgetter(key))
 
     def test_teams_for_non_distro(self):
         # The expose_user_administered_teams_to_js function loads some data
