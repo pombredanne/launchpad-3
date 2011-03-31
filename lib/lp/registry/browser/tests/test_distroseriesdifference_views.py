@@ -8,6 +8,8 @@ __metaclass__ = type
 import re
 
 from BeautifulSoup import BeautifulSoup
+import soupmatchers
+from testtools.matchers import Not
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -350,3 +352,25 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
         self.assertEqual(
             DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS,
             view.initial_values.get('blacklist_options'))
+
+    def test_package_diff_request_link(self):
+        # The link to compute package diffs is only shown to
+        # a user with lp.Edit persmission.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+        package_diff_request_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Request link', 'a',
+                text=re.compile(
+                    '\s*Compute differences from last common version\s*')))
+
+        with person_logged_in(self.factory.makePerson()):
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra')
+            self.assertFalse(view.show_package_diffs_request_link)
+            self.assertThat(view(), Not(package_diff_request_matcher))
+
+        with celebrity_logged_in('admin'):
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra')
+            self.assertThat(view(), package_diff_request_matcher)
+            self.assertTrue(view.show_package_diffs_request_link)
