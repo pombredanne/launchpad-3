@@ -96,6 +96,7 @@ h1, ul, ol, dl, li, dt, dd {
     display: none;
     }
 .batch-navigation-links {
+    text-align: right;
     padding-left: 24px;
     }
 .message-count-0 {
@@ -104,39 +105,26 @@ h1, ul, ol, dl, li, dt, dd {
 .message-count-0:before {
     content: "There are no messages in this mailing list archive.";
     }
+.back-to {
+    margin: 0 0 12px 0;
+    padding: 0 0 6px 0;
+    border-bottom: 1px solid #d2d2d2;
+    }
+.facetmenu {
+    margin-left: .5em;
+    }
 </style>
 <link rel="stylesheet" href="https://launchpad.net/+icing/style-3-0.css" />
 <link rel="shortcut icon" href="https://launchpad.net/@@/launchpad.png" /> 
 </head>
 <body>
-  <div id="watermark" class="watermark-apps-portlet">
-    <div class="flowed-block">
-      <img alt="" width="64" height="64" src="https://launchpad.net/@@/team-logo" />
-    </div>
-    <div class="flowed-block wide">
-      <h2>$ML-NAME$ team</h2>
-
-      <ul class="facetmenu">
-          <li class="overview active"
-              title="General information about $ML-NAME$"><span>Overview</span></li>
-          <li class="branches"
-              title="Bazaar Branches and revisions registered and authored by $ML-NAME$"><a
-        href="https://code.launchpad.net/~$ML-NAME$">Code</a></li>
-          <li class="bugs"
-              title="Bug reports that $ML-NAME$ is involved with"><a
-        href="https://bugs.launchpad.net/~$ML-NAME$">Bugs</a></li>
-          <li class="specifications"
-              title="Feature specifications that $ML-NAME$ is involved with"><a
-        href="https://blueprints.launchpad.net/~$ML-NAME$">Blueprints</a></li>
-          <li class="translations"
-              title="Software that $ML-NAME$ is involved in translating"><a
-        href="https://translations.launchpad.net/~$ML-NAME$">Translations</a></li>
-          <li class="answers"
-              title="Questions that $ML-NAME$ is involved with"><a
-        href="https://answers.launchpad.net/~$ML-NAME$">Answers</a></li>
-      </ul>
-    </div>
+  <div class="back-to">
+    <a href="https://launchpad.net/~$ML-NAME$">&larr;
+      Back to team overview</a>
   </div>
+  <h1>$ML-NAME$ team mailing list archive</h1>
+  <div id="watermark" class="watermark-apps-portlet">
+    <div class="flowed-block wide">
 </DefineVar>
 
 <DefineVar>
@@ -235,7 +223,13 @@ $PAGE-BOTTOM$
 <!-- Formatting for the start of thread page.
      See http://www.mhonarc.org/MHonArc/doc/resources/thead.html. -->
 <THEAD>
-<h1>Messages by thread</h1>
+      <ul class="facetmenu">
+          <li title="View messages by thread"
+            class="active"><span>Thread</span></li>
+          <li title="View messages by date"><a href="$IDXFNAME$">Date</a></li>
+      </ul>
+    </div>
+  </div>
 
 <ol class="breadcrumbs"> 
   <li>
@@ -243,12 +237,14 @@ $PAGE-BOTTOM$
     <a href="https://launchpad.net/~$ML-NAME$">$ML-NAME$ team</a>
   </li>
   <li>
-    <a href="https://lists.launchpad.net/$ML-NAME$/">Mailing list archive</a>
+    <a href="$TIDXFNAME$">Mailing list archive</a>
   </li>
   <li>
     Messages by thread
   </li> 
 </ol>
+
+<h2>Messages by thread</h2>
 
 <p>
 Messages sent to the $ML-NAME$ mailing list, ordered by thread from the
@@ -259,10 +255,8 @@ newest to oldest.
   <tr>
     <td>
       $NUMOFIDXMSG$ of $NUMOFMSG$ messages, page $PGLINKLIST(T5;T5)$
-      &bull;
-      <a href="$IDXFNAME$">$IDXLABEL$</a>
     </td>
-    <td class="batch-navigation-links" style="text-align: right;">
+    <td class="batch-navigation-links">
       $PGLINK(TPREV)$ &bull; $PGLINK(TNEXT)$
     </td>
   </tr>
@@ -277,10 +271,8 @@ newest to oldest.
   <tr>
     <td>
       $NUMOFIDXMSG$ of $NUMOFMSG$ messages, page $PGLINKLIST(T5;T5)$
-      &bull;
-      <a href="$IDXFNAME$">$IDXLABEL$</a>
     </td>
-    <td class="batch-navigation-links" style="text-align: right;">
+    <td class="batch-navigation-links">
       $PGLINK(TPREV)$ &bull; $PGLINK(TNEXT)$
     </td>
   </tr>
@@ -302,7 +294,12 @@ $PAGE-BOTTOM$
 <!-- Formatting for the start of list page.
      See http://www.mhonarc.org/MHonArc/doc/resources/listbegin.html. -->
 <LISTBEGIN>
-<h1>Messages by date</h1>
+    <ul class="facetmenu">
+        <li title="View messages by thread"><a href="$TIDXFNAME$">Thread</a></li>
+        <li title="View messages by date" class="active"><span>Date</span></li>
+    </ul>
+  </div>
+</div>
 
 <ol class="breadcrumbs"> 
   <li>
@@ -310,12 +307,14 @@ $PAGE-BOTTOM$
     <a href="https://launchpad.net/~$ML-NAME$">$ML-NAME$ team</a>
   </li>
   <li>
-    <a href="https://lists.launchpad.net/$ML-NAME$/">Mailing list archive</a>
+    <a href="$TIDXFNAME$">Mailing list archive</a>
   </li>
   <li>
     Messages by date
   </li> 
 </ol>
+
+<h2>Messages by date</h2>
 
 <p>
 Messages sent to the $ML-NAME$ mailing list, ordered by date from the
@@ -326,10 +325,8 @@ newest to oldest.
   <tr>
     <td>
       $NUMOFIDXMSG$ of $NUMOFMSG$ messages, page $PGLINKLIST(5;5)$
-      &bull;
-      <a href="$TIDXFNAME$">$TIDXLABEL$</a>
     </td>
-    <td class="batch-navigation-links" style="text-align: right;">
+    <td class="batch-navigation-links">
       $PGLINK(PREV)$ &bull; $PGLINK(NEXT)$
     </td>
   </tr>
@@ -344,10 +341,8 @@ newest to oldest.
   <tr>
     <td>
       $NUMOFIDXMSG$ of $NUMOFMSG$ messages, page $PGLINKLIST(5;5)$
-      &bull;
-      <a href="$TIDXFNAME$">$TIDXLABEL$</a>
     </td>
-    <td class="batch-navigation-links" style="text-align: right;">
+    <td class="batch-navigation-links">
       $PGLINK(PREV)$ &bull; $PGLINK(NEXT)$
     </td>
   </tr>
@@ -398,7 +393,13 @@ $PAGE-BOTTOM$
 
 <!-- Message navigation links -->
 <TopLinks>
-<h1>$SUBJECTNA$</h1>
+    <ul class="facetmenu">
+        <li title="View messages by thread"
+          class="active"><a href="$TIDXFNAME$">Thread</a></li>
+        <li title="View messages by date"><a href="$IDXFNAME$">Date</a></li>
+    </ul>
+  </div>
+</div>
 
 <ol class="breadcrumbs"> 
   <li>
@@ -406,21 +407,21 @@ $PAGE-BOTTOM$
     <a href="https://launchpad.net/~$ML-NAME$">$ML-NAME$ team</a>
   </li>
   <li>
-    <a href="https://lists.launchpad.net/$ML-NAME$/">Mailing list archive</a>
+    <a href="$TIDXFNAME$">Mailing list archive</a>
   </li>
   <li>
     Message #$MSGNUM$
   </li> 
 </ol>
 
+<h2>$SUBJECTNA$</h2>
+
 <table class="wide upper-batch-nav">
   <tr>
     <td>
-      <a href="$IDXFNAME$">$IDXLABEL$</a>
-      &bull;
-      <a href="$TIDXFNAME$">$TIDXLABEL$</a>
+      &nbsp;
     </td>
-    <td class="batch-navigation-links" style="text-align: right;">
+    <td class="batch-navigation-links">
       <a href="$MSG(TPREV)$">Thread Previous</a> &bull;
       <a href="$MSG(PREV)$">Date Previous</a> &bull;
       <a class="next" href="$MSG(NEXT)$">Date Next</a> &bull;
@@ -434,9 +435,7 @@ $PAGE-BOTTOM$
 <table class="wide lower-batch-nav">
   <tr>
     <td>
-      <a href="$IDXFNAME$">$IDXLABEL$</a>
-      &bull;
-      <a href="$TIDXFNAME$">$TIDXLABEL$</a>
+      &nbsp;
     </td>
     <td class="batch-navigation-links">
       <a href="$MSG(TPREV)$">Thread Previous</a> &bull;
