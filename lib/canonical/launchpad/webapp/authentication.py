@@ -30,6 +30,7 @@ from zope.component import (
 from zope.event import notify
 from zope.interface import implements
 from zope.preference.interfaces import IPreferenceGroup
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import ISession
 
@@ -121,10 +122,15 @@ class PlacelessAuthUtility:
         # To avoid confusion (hopefully), basic auth trumps cookie auth
         # totally, and all the time.  If there is any basic auth at all,
         # then cookie auth won't even be considered.
-
         # XXX daniels 2004-12-14: allow authentication scheme to be put into
         #     a view; for now, use basic auth by specifying ILoginPassword.
-        credentials = ILoginPassword(request, None)
+        try:
+            credentials = ILoginPassword(request, None)
+        except binascii.Error:
+            # We have probably been sent Basic auth credentials that aren't
+            # encoded properly. That's a client error, so we don't really
+            # care, and we're done.
+            raise Unauthorized("Bad Basic authentication.")
         if credentials is not None and credentials.getLogin() is not None:
             return self._authenticateUsingBasicAuth(credentials, request)
         else:
