@@ -50,8 +50,8 @@ DISTSROOT_PARTNER=$ARCHIVEROOT_PARTNER/dists
 DISTSCOPYROOT_PARTNER=$ARCHIVEROOT-partner-distscopy
 
 # Configuration options.
-LAUNCHPADROOT=$ARCHIVEPARENT/codelines/current
-LOCKFILE=$ARCHIVEPARENT/cron.daily.lock
+LAUNCHPADROOT=/srv/launchpad.net/codelines/current
+LOCKFILE=/srv/launchpad.net/ubuntu-archive/cron.daily.lock
 TRACEFILE=$ARCHIVEROOT/project/trace/$(hostname --fqdn)
 DSYNCLIST=$CACHEROOT/dsync.list
 MD5LIST=$INDICES/md5sums.gz
