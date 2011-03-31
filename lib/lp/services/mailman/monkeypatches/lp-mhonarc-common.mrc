@@ -251,7 +251,7 @@ $PAGE-BOTTOM$
 </ol>
 
 <p>
-Messages sent to the $ML-NAME$ mailing list, ordered by tread from the
+Messages sent to the $ML-NAME$ mailing list, ordered by thread from the
 newest to oldest.
 </p>
 
