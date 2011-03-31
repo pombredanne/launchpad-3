@@ -162,3 +162,10 @@ enough when you can merge, comment and reject those patches.
 Likewise, importing translations from an upstream is great, but it becomes
 much, much better when those translations can be improved in Launchpad and
 then sent back to the upstream.
+
+
+References
+==========
+
+* :doc:`vision`
+* :doc:`scope`

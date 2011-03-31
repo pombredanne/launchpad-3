@@ -18,6 +18,7 @@ Overview
 
    readme
    vision
+   scope
    values
 
 Technical
