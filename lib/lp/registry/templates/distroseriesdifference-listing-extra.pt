@@ -42,7 +42,10 @@
     <dt
       tal:condition="python: not(context.package_diff) or not(context.parent_package_diff)"
       class="package-diff-placeholder">
-        <a class="js-action sprite add" href="#">Compute differences from last common version</a>:
+        <span class="package-diff-compute-request">
+          <a class="js-action sprite add" href="">
+            Compute differences from last common version</a>:
+        </span>
     </dt>
     <dt
       tal:condition="python: context.package_diff and context.parent_package_diff">
