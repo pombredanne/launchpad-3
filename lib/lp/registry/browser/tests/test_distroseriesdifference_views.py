@@ -179,7 +179,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertEqual('0.1-1', ds_diff.base_version)
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
         soup = BeautifulSoup(view())
-        tags = soup.findAll('span')
+        tags = soup.find('ul', 'package-diff-status').findAll('span')
         self.assertEqual(2, len(tags))
 
     def test_do_not_display_child_diff(self):
@@ -199,7 +199,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertEqual('0.30-1', ds_diff.base_version)
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
         soup = BeautifulSoup(view())
-        tags = soup.findAll('span')
+        tags = soup.find('ul', 'package-diff-status').findAll('span')
         self.assertEqual(1, len(tags))
 
 
