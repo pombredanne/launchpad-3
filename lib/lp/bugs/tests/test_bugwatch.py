@@ -621,61 +621,7 @@ class TestBugWatchActivityPruner(TestCaseWithFactory):
         self.bug_watch = self.factory.makeBugWatch()
         for i in range(MAX_SAMPLE_SIZE + 1):
             self.bug_watch.addActivity()
-
-        self.pruner = BugWatchActivityPruner(BufferLogger())
         transaction.commit()
-
-    def test_getPrunableBugWatchIds(self):
-        # BugWatchActivityPruner.getPrunableBugWatchIds() will return a
-        # set containing the IDs of BugWatches whose activity can be
-        # pruned.
-        prunable_ids = self.pruner.getPrunableBugWatchIds(1)
-        self.assertEqual(1, len(prunable_ids))
-        self.failUnless(
-            self.bug_watch.id in prunable_ids,
-            "BugWatch ID not present in prunable_ids.")
-
-        # Even if we specify a bigger chunk size, only one result will
-        # be returned.
-        prunable_ids = self.pruner.getPrunableBugWatchIds(10)
-        self.assertEqual(1, len(prunable_ids))
-
-        # If we add another BugWatch with prunable activity, it too will
-        # be returned.
-        new_watch = self.factory.makeBugWatch()
-        for i in range(10):
-            new_watch.addActivity()
-
-        prunable_ids = self.pruner.getPrunableBugWatchIds(10)
-        self.assertEqual(2, len(prunable_ids))
-
-    def test_pruneBugWatchActivity(self):
-        # BugWatchActivityPruner.pruneBugWatchActivity() will prune the
-        # activity for all the BugWatches whose IDs are passed to it.
-        prunable_ids = self.pruner.getPrunableBugWatchIds(1)
-
-        self.layer.switchDbUser('garbo')
-        self.pruner.pruneBugWatchActivity(prunable_ids)
-
-        prunable_ids = self.pruner.getPrunableBugWatchIds(1)
-        self.assertEqual(0, len(prunable_ids))
-
-    def test_call_prunes_activity(self):
-        # BugWatchActivityPruner is a callable object. Calling it will
-        # cause it to prune the BugWatchActivity of prunable watches.
-        self.layer.switchDbUser('garbo')
-        self.pruner(chunk_size=1)
-
-        prunable_ids = self.pruner.getPrunableBugWatchIds(1)
-        self.assertEqual(0, len(prunable_ids))
-
-    def test_isDone(self):
-        # BugWatchActivityPruner.isDone() returns True when there are no
-        # more prunable BugWatches. Until then, it returns False.
-        self.layer.switchDbUser('garbo')
-        self.assertFalse(self.pruner.isDone())
-        self.pruner(chunk_size=1)
-        self.assertTrue(self.pruner.isDone())
 
     def test_pruneBugWatchActivity_leaves_most_recent(self):
         # BugWatchActivityPruner.pruneBugWatchActivity() will delete all
@@ -686,10 +632,22 @@ class TestBugWatchActivityPruner(TestCaseWithFactory):
         transaction.commit()
 
         self.layer.switchDbUser('garbo')
+        self.pruner = BugWatchActivityPruner(BufferLogger())
+        self.addCleanup(self.pruner.cleanUp)
+
+        # MAX_SAMPLE_SIZE + 1 created in setUp(), and 5 mire created
+        # just above.
         self.assertEqual(MAX_SAMPLE_SIZE + 6, self.bug_watch.activity.count())
-        self.pruner.pruneBugWatchActivity([self.bug_watch.id])
+
+        # Run the pruner
+        while not self.pruner.isDone():
+            self.pruner(chunk_size=3)
+
+        # Only MAX_SAMPLE_SIZE items should be left.
         self.assertEqual(MAX_SAMPLE_SIZE, self.bug_watch.activity.count())
 
+        # They should be the most recent items - the ones created at the
+        # start of this test.
         messages = [activity.message for activity in self.bug_watch.activity]
         for i in range(MAX_SAMPLE_SIZE):
             self.failUnless("Activity %s" % i in messages)
