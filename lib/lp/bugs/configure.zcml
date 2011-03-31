@@ -642,6 +642,17 @@
           set_schema=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes" />
     </class>
 
+    <!-- BugSubscriptionFilterMute -->
+    <class
+        class=".model.bugsubscriptionfilter.BugSubscriptionFilterMute">
+      <allow
+          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMute"/>
+      <require
+          permission="launchpad.Edit"
+          set_schema=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMute" />
+    </class>
+
+
     <!-- BugSubscriptionInfo -->
 
     <class class=".model.bug.BugSubscriptionInfo">
