@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from BeautifulSoup import BeautifulSoup
 from storm.zope.interfaces import IResultSet
 from zope.component import getUtility
@@ -549,7 +547,3 @@ class TestMilestoneBatchNavigatorAttribute(TestCaseWithFactory):
             for item in view.milestone_batch_navigator.currentBatch()]
         self.assertEqual(expected, milestone_names)
         config.pop('default-batch-size')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
