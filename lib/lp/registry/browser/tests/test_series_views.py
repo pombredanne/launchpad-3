@@ -267,7 +267,7 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
         self.assertEqual(difference.source_package_name.name, links[0].string)
 
     def test_diff_row_shows_version_attached(self):
-        # The +localpackagediffs page showis the version attached to the
+        # The +localpackagediffs page shows the version attached to the
         # DSD and not the last published version (bug=745776).
         package_name = 'package-1'
         derived_series = self.factory.makeDistroSeries(
