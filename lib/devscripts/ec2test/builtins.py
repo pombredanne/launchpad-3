@@ -10,7 +10,6 @@ from datetime import datetime
 import os
 import pdb
 import socket
-import subprocess
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.commands import Command
@@ -314,8 +313,7 @@ class cmd_test(EC2Command):
                 "supported")
 
         session_name = EC2SessionName.make(EC2TestRunner.name)
-        instance = EC2Instance.make(
-            session_name, instance_type, machine)
+        instance = EC2Instance.make(session_name, instance_type, machine)
 
         runner = EC2TestRunner(
             test_branch, email=email, file=file,
@@ -460,15 +458,33 @@ class cmd_land(EC2Command):
             print commit_message
             return
 
+        emails = mp.get_stakeholder_emails()
+
+        target_branch_name = mp.target_branch.split('/')[-1]
+        branches = [('launchpad', target_branch_name)]
+
         landing_command = self._get_landing_command(
             mp.source_branch, mp.target_branch, commit_message,
-            mp.get_stakeholder_emails(), attached)
+            emails, attached)
+
         if dry_run:
             print landing_command
-        else:
-            # XXX: JonathanLange 2009-09-24 bug=439348: Call EC2 APIs
-            # directly, rather than spawning a subprocess.
-            return subprocess.call(landing_command)
+            return
+
+        session_name = EC2SessionName.make(EC2TestRunner.name)
+        instance = EC2Instance.make(
+            session_name, instance_type, machine)
+
+        runner = EC2TestRunner(
+            mp.source_branch, email=emails,
+            headless=(not attached),
+            branches=branches, pqm_message=commit_message,
+            instance=instance,
+            launchpad_login=instance._launchpad_login,
+            test_options=DEFAULT_TEST_OPTIONS,
+            timeout=480)
+
+        instance.set_up_and_run(postmortem, attached, runner.run_tests)
 
 
 class cmd_demo(EC2Command):
