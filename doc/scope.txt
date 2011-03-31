@@ -336,6 +336,6 @@ Downstream
 References
 ==========
 
-* :doc:`vision`
+* :doc:`strategy`
 * :doc:`values`
 * `Feature checklist <https://dev.launchpad.net/FeatureChecklist>`_
