@@ -225,11 +225,11 @@ def create_series(parent, full_name, version, status):
     new_series = distribution.newSeries(name=name, title=title,
         displayname=displayname, summary='Ubuntu %s is good.' % version,
         description='%s is awesome.' % version, version=version,
-        parent_series=parent, owner=owner)
+        parent_series=None, owner=owner)
     new_series.status = status
     notify(ObjectCreatedEvent(new_series))
 
-    ids = InitialiseDistroSeries(new_series)
+    ids = InitialiseDistroSeries(parent, new_series)
     ids.initialise()
     return new_series
 
@@ -345,10 +345,7 @@ def create_ppa_user(username, options, approver, log):
     if person is None:
         have_email = (options.email != default_email)
         command_line = [
-            'utilities/make-lp-user',
-            username,
-            'ubuntu-team'
-            ]
+            'utilities/make-lp-user', username, 'ubuntu-team']
         if have_email:
             command_line += ['--email', options.email]
 

@@ -197,6 +197,9 @@ from lp.bugs.browser.bug import (
     BugTextView,
     BugViewMixin,
     )
+from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
+    )
 from lp.bugs.browser.bugcomment import (
     build_comments_from_chunks,
     group_comments_with_activity,
@@ -281,7 +284,7 @@ from lp.services.propertycache import (
 
 
 DISPLAY_BUG_STATUS_FOR_PATCHES = {
-    BugTaskStatus.NEW:  True,
+    BugTaskStatus.NEW: True,
     BugTaskStatus.INCOMPLETE: True,
     BugTaskStatus.INVALID: False,
     BugTaskStatus.WONTFIX: False,
@@ -291,7 +294,7 @@ DISPLAY_BUG_STATUS_FOR_PATCHES = {
     BugTaskStatus.FIXCOMMITTED: True,
     BugTaskStatus.FIXRELEASED: False,
     BugTaskStatus.UNKNOWN: False,
-    BugTaskStatus.EXPIRED: False
+    BugTaskStatus.EXPIRED: False,
     }
 
 
@@ -974,6 +977,13 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
                 self.context, target=self.context.distribution)
         else:
             return bugtask_heat_html(self.context)
+
+    @property
+    def privacy_notice_classes(self):
+        if not self.context.bug.private:
+            return 'hidden'
+        else:
+            return ''
 
 
 def calculate_heat_display(heat, max_bug_heat):
@@ -2223,11 +2233,6 @@ class BugTaskSearchListingMenu(NavigationMenu):
         return Link(
             '+securitycontact', 'Change security contact', icon='edit')
 
-    def subscribe(self):
-        user = getUtility(ILaunchBag).user
-        if self.context.userCanAlterBugSubscription(user):
-            return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
-
     def nominations(self):
         return Link('+nominations', 'Review nominations', icon='bug')
 
@@ -2363,6 +2368,9 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         # action. We pass an empty dict to _validate() because all the data
         # needing validation is already available internally to self.
         self._validate(None, {})
+
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user)
 
     @property
     def columns_to_show(self):

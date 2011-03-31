@@ -611,6 +611,14 @@ class TestFactory(TestCaseWithFactory):
             sequence='2000-1234', cvestate=CveStatus.DEPRECATED)
         self.assertEqual(CveStatus.DEPRECATED, cve.status)
 
+    # dir() support.
+    def test_dir(self):
+        # LaunchpadObjectFactory supports dir() even though all of its
+        # attributes are pseudo-attributes.
+        self.assertEqual(
+            dir(self.factory._factory),
+            dir(self.factory))
+
 
 class TestFactoryWithLibrarian(TestCaseWithFactory):
 
