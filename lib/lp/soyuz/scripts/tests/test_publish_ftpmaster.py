@@ -37,6 +37,7 @@ from lp.soyuz.scripts.publish_ftpmaster import (
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     run_script,
+    TestCase,
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
@@ -98,8 +99,7 @@ class HelpersMixin:
         self.addCleanup(config.pop, "run-parts")
 
 
-class TestPublishFTPMasterHelpers(TestCaseWithFactory, HelpersMixin):
-    layer = ZopelessDatabaseLayer
+class TestPublishFTPMasterHelpers(TestCase):
 
     def test_compose_env_string_iterates_env(self):
         env = {
@@ -114,6 +114,10 @@ class TestPublishFTPMasterHelpers(TestCaseWithFactory, HelpersMixin):
 
     def test_compose_shell_boolean_shows_False_as_no(self):
         self.assertEqual("no", compose_shell_boolean(False))
+
+
+class TestFindRunPartsDir(TestCaseWithFactory, HelpersMixin):
+    layer = ZopelessDatabaseLayer
 
     def test_find_run_parts_dir_finds_relative_runparts_directory(self):
         self.enableRunParts()
