@@ -616,6 +616,8 @@ class cmd_update_image(EC2Command):
         """
         # Do NOT accept environment variables via ssh connections.
         user_connection = instance.connect()
+        user_connection.perform('sudo apt-get -qqy update')
+        user_connection.perform('sudo apt-get -qqy upgrade')
         user_connection.perform(
             'sudo sed -i "s/^AcceptEnv/#AcceptEnv/" /etc/ssh/sshd_config')
         user_connection.perform(
