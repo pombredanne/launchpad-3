@@ -142,6 +142,8 @@ class MergeProposal:
                 continue
             reviewers = reviews.setdefault(vote.review_type, [])
             reviewers.append(vote.reviewer)
+        if self.is_approved and not reviews:
+            reviews[None] = [self._mp.reviewer]
         return reviews
 
     def get_bugs(self):
