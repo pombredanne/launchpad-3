@@ -635,7 +635,7 @@ class TestBugWatchActivityPruner(TestCaseWithFactory):
         self.pruner = BugWatchActivityPruner(BufferLogger())
         self.addCleanup(self.pruner.cleanUp)
 
-        # MAX_SAMPLE_SIZE + 1 created in setUp(), and 5 mire created
+        # MAX_SAMPLE_SIZE + 1 created in setUp(), and 5 more created
         # just above.
         self.assertEqual(MAX_SAMPLE_SIZE + 6, self.bug_watch.activity.count())
 
