@@ -150,7 +150,7 @@
             Y.lp.ui.update_field('#debian-version dd', e.new_value);
         });
         Y.on('lp:context:base_branch_link:changed', function(e) {
-            Y.lp.ui.update_field('#base-branch dd', e.entry.getHTML(e.name));
+            Y.lp.ui.update_field('#base-branch dd', e.new_value_html);
         });
 
         if(Y.UA.ie) {

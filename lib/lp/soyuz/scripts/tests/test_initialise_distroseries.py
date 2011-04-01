@@ -9,6 +9,8 @@ import os
 import subprocess
 import sys
 
+from testtools.content import Content
+from testtools.content_type import UTF8_TEXT
 import transaction
 from zope.component import getUtility
 
@@ -83,17 +85,11 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
                     pocket=PackagePublishingPocket.RELEASE,
                     status=PackagePublishingStatus.PUBLISHED)
 
-    def test_failure_with_no_parent_series(self):
-        # Initialising a new distro series requires a parent series to be set
-        ids = InitialiseDistroSeries(self.factory.makeDistroSeries())
-        self.assertRaisesWithContent(
-            InitialisationError, "Parent series required.", ids.check)
-
     def test_failure_for_already_released_distroseries(self):
         # Initialising a distro series that has already been used will error
-        child = self.factory.makeDistroSeries(parent_series=self.parent)
+        child = self.factory.makeDistroSeries()
         self.factory.makeDistroArchSeries(distroseries=child)
-        ids = InitialiseDistroSeries(child)
+        ids = InitialiseDistroSeries(self.parent, child)
         self.assertRaisesWithContent(
             InitialisationError,
             "Can not copy distroarchseries from parent, there are already "
@@ -105,9 +101,8 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             distroseries=self.parent,
             pocket=PackagePublishingPocket.RELEASE)
         source.createMissingBuilds()
-        child = self.factory.makeDistroSeries(
-            parent_series=self.parent)
-        ids = InitialiseDistroSeries(child)
+        child = self.factory.makeDistroSeries()
+        ids = InitialiseDistroSeries(self.parent, child)
         self.assertRaisesWithContent(
             InitialisationError, "Parent series has pending builds.",
             ids.check)
@@ -118,8 +113,8 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.parent.createQueueEntry(
             PackagePublishingPocket.RELEASE,
             'foo.changes', 'bar', self.parent.main_archive)
-        child = self.factory.makeDistroSeries(parent_series=self.parent)
-        ids = InitialiseDistroSeries(child)
+        child = self.factory.makeDistroSeries()
+        ids = InitialiseDistroSeries(self.parent, child)
         self.assertRaisesWithContent(
             InitialisationError, "Parent series queues are not empty.",
             ids.check)
@@ -160,10 +155,9 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
 
     def _full_initialise(self, arches=(), packagesets=(), rebuild=False,
                          distribution=None):
-        child = self.factory.makeDistroSeries(
-            parent_series=self.parent,
-            distribution=distribution)
-        ids = InitialiseDistroSeries(child, arches, packagesets, rebuild)
+        child = self.factory.makeDistroSeries(distribution=distribution)
+        ids = InitialiseDistroSeries(
+            self.parent, child, arches, packagesets, rebuild)
         ids.check()
         ids.initialise()
         return child
@@ -347,6 +341,11 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         test1.addSources('udev')
         getUtility(IArchivePermissionSet).newPackagesetUploader(
             self.parent.main_archive, uploader, test1)
+        # The child must have a parent series because initialise-from-parent
+        # expects it; this script supports the old-style derivation of
+        # distribution series where the parent series is specified at the time
+        # of adding the series. New-style derivation leaves the specification
+        # of the parent series until later.
         child = self.factory.makeDistroSeries(parent_series=self.parent)
         transaction.commit()
         ifp = os.path.join(
@@ -356,6 +355,8 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             [sys.executable, ifp, "-vv", "-d", child.parent.name,
             child.name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
+        self.addDetail("stdout", Content(UTF8_TEXT, lambda: stdout))
+        self.addDetail("stderr", Content(UTF8_TEXT, lambda: stderr))
         self.assertEqual(process.returncode, 0)
         self.assertTrue(
             "DEBUG   Committing transaction." in stderr.split('\n'))
