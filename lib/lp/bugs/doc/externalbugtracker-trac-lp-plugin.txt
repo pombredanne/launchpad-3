@@ -144,7 +144,7 @@ If authentication fails, a BugTrackerAuthenticationError will be raised.
     Traceback (most recent call last):
       ...
     BugTrackerAuthenticationError: http://example.com:
-    401 "Denied!"...
+    HTTP Error 401: Denied!
 
 
 == Current time ==

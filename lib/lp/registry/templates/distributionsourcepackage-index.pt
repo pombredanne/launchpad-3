@@ -16,6 +16,16 @@
               tal:attributes="src string:${lp_js}/soyuz/base.js"></script>
     </tal:archive_js>
   </tal:devmode>
+  <script type="text/javascript"
+      tal:condition="
+        request/features/malone.advanced-structural-subscriptions.enabled">
+    LPS.use('lp.registry.structural_subscription', function(Y) {
+        var module = Y.lp.registry.structural_subscription;
+        Y.on('domready', function() {
+          module.setup({content_box: "#structural-subscription-content-box"});
+        });
+    });
+  </script>
 </metal:block>
 
 <tal:side metal:fill-slot="side">
@@ -28,24 +38,28 @@
 </tal:side>
 
 <tal:main metal:fill-slot="main">
+  <div class="yui-u">
+    <div id="structural-subscription-content-box"></div>
+  </div>
   <div class="top-portlet" id="bugs-and-questions-summary"
        tal:define="newbugs context/new_bugtasks/count;
                    open_questions view/open_questions/count">
     <div id="summary"
       tal:content="structure context/summary/fmt:text-to-html" />
 
-    <p>
+    <p tal:condition="view/bugs_answers_usage/uses_either">
       This package has
-      <a tal:attributes="href view/menu:overview/new_bugs/url">
-        <strong>
-          <tal:newbugs content="newbugs"/> new bug<tal:plural content="string:s" condition="python: newbugs!=1"/>
-        </strong>
+      <a tal:attributes="href view/menu:overview/new_bugs/url"
+        tal:condition="view/bugs_answers_usage/uses_bugs"
+        ><tal:newbugs content="newbugs"/> new
+        bug<tal:plural content="string:s" condition="python: newbugs!=1"/>
       </a>
-      and
-      <a tal:attributes="href view/menu:overview/open_questions/url">
-      <strong>
-        <tal:openq content="open_questions"/> open question<tal:plural content="string:s" condition="python: open_questions!=1"/>.
-        </strong>
+      <tal:both condition="view/bugs_answers_usage/uses_both">and</tal:both>
+      <a tal:attributes="href view/menu:overview/open_questions/url"
+        tal:condition="view/bugs_answers_usage/uses_answers"
+        ><tal:openq content="open_questions"/> open
+        question<tal:plural content="string:s"
+          condition="python: open_questions!=1"/>.
       </a>
     </p>
   </div>
@@ -168,7 +182,7 @@
       <tr tal:attributes="id string:pub${pubid}" style="display: none">
         <td colspan="3">
           <div class="package-details"
-               tal:attributes="id string:pub${pubid}-container" />
+               tal:attributes="id string:pub${pubid}-container"></div>
         </td>
       </tr>
 

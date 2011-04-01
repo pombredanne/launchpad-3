@@ -83,9 +83,14 @@ from lp.blueprints.browser.specificationtarget import (
     )
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
+    StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
-from lp.registry.browser import RegistryEditFormView
+from lp.registry.browser import (
+    add_subscribe_link,
+    RegistryEditFormView,
+    )
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu,
@@ -104,6 +109,7 @@ from lp.registry.interfaces.distributionmirror import (
     MirrorSpeed,
     )
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.features import getFeatureFlag
 from lp.services.geoip.helpers import (
     ipaddress_from_request,
     request_country,
@@ -265,8 +271,8 @@ class DistributionMirrorsNavigationMenu(NavigationMenu):
         return Link('+unofficialmirrors', text, enabled=enabled, icon='info')
 
 
-class DistributionLinksMixin:
-    """A mixing to provide common links to menus."""
+class DistributionLinksMixin(StructuralSubscriptionMenuMixin):
+    """A mixin to provide common links to menus."""
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -278,7 +284,15 @@ class DistributionNavigationMenu(NavigationMenu, DistributionLinksMixin):
     """A menu of context actions."""
     usedfor = IDistribution
     facet = 'overview'
-    links = ['edit']
+
+    @cachedproperty
+    def links(self):
+        links = ['edit']
+        use_advanced_features = getFeatureFlag(
+            'malone.advanced-structural-subscriptions.enabled')
+        if use_advanced_features:
+            links.append('subscribe_to_bug_mail')
+        return links
 
 
 class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
@@ -448,13 +462,17 @@ class DistributionBugsMenu(PillarBugsMenu):
 
     usedfor = IDistribution
     facet = 'bugs'
-    links = (
-        'bugsupervisor',
-        'securitycontact',
-        'cve',
-        'filebug',
-        'subscribe',
-        )
+
+    @property
+    def links(self):
+        links = [
+            'bugsupervisor',
+            'securitycontact',
+            'cve',
+            'filebug',
+            ]
+        add_subscribe_link(links)
+        return links
 
 
 class DistributionSpecificationsMenu(NavigationMenu,
@@ -594,6 +612,11 @@ class DistributionPackageSearchView(PackageSearchViewBase):
 class DistributionView(HasAnnouncementsView, FeedsMixin):
     """Default Distribution view class."""
 
+    def initialize(self):
+        super(DistributionView, self).initialize()
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user)
+
     def linkedMilestonesForSeries(self, series):
         """Return a string of linkified milestones in the series."""
         # Listify to remove repeated queries.
@@ -714,7 +737,9 @@ class DistributionSetActionNavigationMenu(RegistryCollectionActionMenuBase):
     """Action menu for `DistributionSetView`."""
 
     usedfor = IDistributionSet
-    links = ['register_team', 'register_project', 'create_account']
+    links = [
+        'register_team', 'register_project', 'register_distribution',
+        'create_account']
 
 
 class DistributionSetView(LaunchpadView):

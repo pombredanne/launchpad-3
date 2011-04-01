@@ -7,6 +7,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'get_recipients',
     'generate_nick',
     'IrcID',
     'IrcIDSet',
@@ -57,6 +58,7 @@ from storm.expr import (
     And,
     Desc,
     Exists,
+    In,
     Join,
     LeftJoin,
     Min,
@@ -216,6 +218,7 @@ from lp.registry.interfaces.mailinglist import (
     IMailingListSet,
     MailingListStatus,
     PostedMessageStatus,
+    PURGE_STATES,
     )
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
@@ -247,7 +250,7 @@ from lp.registry.interfaces.ssh import (
     SSHKeyType,
     )
 from lp.registry.interfaces.teammembership import (
-    ACTIVE_STATES,
+    ITeamMembershipSet,
     TeamMembershipStatus,
     )
 from lp.registry.interfaces.wikiname import (
@@ -1215,7 +1218,7 @@ class Person(
     @cachedproperty
     def karma(self):
         """See `IPerson`."""
-        # May also be loaded from _all_members
+        # May also be loaded from _members
         cache = KarmaTotalCache.selectOneBy(person=self)
         if cache is None:
             # Newly created accounts may not be in the cache yet, meaning the
@@ -1547,89 +1550,6 @@ class Person(
         tm.dateexpires += timedelta(days=team.defaultrenewalperiod)
         tm.sendSelfRenewalNotification()
 
-    def deactivateAllMembers(self, comment, reviewer):
-        """Deactivate all members of this team.
-
-        This method circuments the TeamMembership.setStatus() method
-        to improve performance; therefore, it does not send out any
-        status change noticiations to the team admins.
-
-        :param comment: Explanation of the change.
-        :param reviewer: Person who made the change.
-        """
-        assert self.is_team, "This method is only available for teams."
-        now = datetime.now(pytz.timezone('UTC'))
-        store = Store.of(self)
-        cur = cursor()
-
-        # Deactivate the approved/admin team members.
-        # XXX: EdwinGrubbs 2009-07-08 bug=397072
-        # There are problems using storm to write an update
-        # statement using DBITems in the comparison.
-        cur.execute("""
-            UPDATE TeamMembership
-            SET status=%(status)s,
-                last_changed_by=%(last_changed_by)s,
-                last_change_comment=%(comment)s,
-                date_last_changed=%(date_last_changed)s
-            WHERE
-                TeamMembership.team = %(team)s
-                AND TeamMembership.status IN %(original_statuses)s
-            """,
-            dict(
-                status=TeamMembershipStatus.DEACTIVATED,
-                last_changed_by=reviewer.id,
-                comment=comment,
-                date_last_changed=now,
-                team=self.id,
-                original_statuses=(
-                    TeamMembershipStatus.ADMIN.value,
-                    TeamMembershipStatus.APPROVED.value)))
-
-        # Since we've updated the database behind Storm's back,
-        # flush its caches.
-        store.invalidate()
-
-        # Remove all indirect TeamParticipation entries resulting from this
-        # team. If this were just a select, it would be a complicated but
-        # feasible set of joins. Since it's a delete, we have to use
-        # some sub selects.
-        cur.execute('''
-            DELETE FROM TeamParticipation
-                WHERE
-                    -- The person needs to be a member of the team in question
-                    person IN
-                        (SELECT person from TeamParticipation WHERE
-                            team = %(team)s) AND
-
-                    -- The teams being deleted should be teams that this team
-                    -- is a member of.
-                    team IN
-                        (SELECT team from TeamMembership WHERE
-                            person = %(team)s) AND
-
-                    -- The person needs to not have direct membership in the
-                    -- team.
-                    NOT EXISTS
-                        (SELECT tm1.person from TeamMembership tm1
-                            WHERE
-                                tm1.person = TeamParticipation.person and
-                                tm1.team = TeamParticipation.team and
-                                tm1.status IN %(active_states)s);
-            ''', dict(team=self.id, active_states=ACTIVE_STATES))
-
-        # Since we've updated the database behind Storm's back yet again,
-        # we need to flush its caches, again.
-        store.invalidate()
-
-        # Remove all members from the TeamParticipation table
-        # except for the team, itself.
-        participants = store.find(
-            TeamParticipation,
-            TeamParticipation.teamID == self.id,
-            TeamParticipation.personID != self.id)
-        participants.remove()
-
     def setMembershipData(self, person, status, reviewer, expires=None,
                           comment=None):
         """See `IPerson`."""
@@ -1694,14 +1614,14 @@ class Person(
     @property
     def allmembers(self):
         """See `IPerson`."""
-        return self._all_members()
+        return self._members(direct=False)
 
     @property
     def all_members_prepopulated(self):
         """See `IPerson`."""
-        return self._all_members(need_karma=True, need_ubuntu_coc=True,
-            need_location=True, need_archive=True, need_preferred_email=True,
-            need_validity=True)
+        return self._members(direct=False, need_karma=True,
+            need_ubuntu_coc=True, need_location=True, need_archive=True,
+            need_preferred_email=True, need_validity=True)
 
     @staticmethod
     def _validity_queries(person_table=None):
@@ -1767,11 +1687,12 @@ class Person(
             tables=columns,
             decorators=decorators)
 
-    def _all_members(self, need_karma=False, need_ubuntu_coc=False,
+    def _members(self, direct, need_karma=False, need_ubuntu_coc=False,
         need_location=False, need_archive=False, need_preferred_email=False,
         need_validity=False):
         """Lookup all members of the team with optional precaching.
 
+        :param direct: If True only direct members are returned.
         :param need_karma: The karma attribute will be cached.
         :param need_ubuntu_coc: The is_ubuntu_coc_signer attribute will be
             cached.
@@ -1785,15 +1706,25 @@ class Person(
         #       The difference between the two is that
         #       getMembersWithPreferredEmails includes self, which is arguably
         #       wrong, but perhaps deliberate.
-        origin = [
-            Person,
-            Join(TeamParticipation, TeamParticipation.person == Person.id),
-            ]
-        conditions = And(
-            # Members of this team,
-            TeamParticipation.team == self.id,
-            # But not the team itself.
-            TeamParticipation.person != self.id)
+        origin = [Person]
+        if not direct:
+            origin.append(Join(
+                TeamParticipation, TeamParticipation.person == Person.id))
+            conditions = And(
+                # Members of this team,
+                TeamParticipation.team == self.id,
+                # But not the team itself.
+                TeamParticipation.person != self.id)
+        else:
+            origin.append(Join(
+                TeamMembership, TeamMembership.personID == Person.id))
+            conditions = And(
+                # Membership in this team,
+                TeamMembership.team == self.id,
+                # And approved or admin status
+                TeamMembership.status.is_in([
+                    TeamMembershipStatus.APPROVED,
+                    TeamMembershipStatus.ADMIN]))
         # Use a PersonSet object that is not security proxied to allow
         # manipulation of the object.
         person_set = PersonSet()
@@ -1898,6 +1829,13 @@ class Person(
         """See `IPerson`."""
         return self.approvedmembers.union(
             self.adminmembers, orderBy=self._sortingColumnsForSetOperations)
+
+    @property
+    def api_activemembers(self):
+        """See `IPerson`."""
+        return self._members(direct=True, need_karma=True,
+            need_ubuntu_coc=True, need_location=True, need_archive=True,
+            need_preferred_email=True, need_validity=True)
 
     @property
     def active_member_count(self):
@@ -2138,7 +2076,8 @@ class Person(
     def is_merge_pending(self):
         """See `IPublicPerson`."""
         return not getUtility(
-            IPersonMergeJobSource).find(from_person=self).is_empty()
+            IPersonMergeJobSource).find(
+                from_person=self, to_person=self, any_person=True).is_empty()
 
     def visibilityConsistencyWarning(self, new_value):
         """Warning used when changing the team's visibility.
@@ -2719,7 +2658,7 @@ class Person(
     @cachedproperty
     def is_ubuntu_coc_signer(self):
         """See `IPerson`."""
-        # Also assigned to by self._all_members.
+        # Also assigned to by self._members.
         store = Store.of(self)
         query = And(SignedCodeOfConduct.ownerID == self.id,
             Person._is_ubuntu_coc_signer_condition())
@@ -3135,28 +3074,27 @@ class PersonSet:
             account = IMasterStore(Account).get(
                 Account, email_address.accountID)
             account_person = self.getByAccount(account)
-            # There is a `Person` linked to the `Account`, link the
+            if account_person is None:
+                # There is no associated `Person` to the email `Account`.
+                # This is probably because the account was created externally
+                # to Launchpad. Create just the `Person`, associate it with
+                # the `EmailAddress` and return it.
+                name = generate_nick(email)
+                account_person = self._newPerson(
+                    name, displayname, hide_email_addresses=True,
+                    rationale=rationale, comment=comment,
+                    registrant=registrant, account=email_address.account)
+            # There is (now) a `Person` linked to the `Account`, link the
             # `EmailAddress` to this `Person` and return it.
-            if account_person is not None:
-                master_email = IMasterStore(EmailAddress).get(
-                    EmailAddress, email_address.id)
-                master_email.personID = account_person.id
-                # Populate the previously empty 'preferredemail' cached
-                # property, so the Person record is up-to-date.
-                if master_email.status == EmailAddressStatus.PREFERRED:
-                    cache = get_property_cache(account_person)
-                    cache.preferredemail = master_email
-                return account_person
-            # There is no associated `Person` to the email `Account`.
-            # This is probably because the account was created externally
-            # to Launchpad. Create just the `Person`, associate it with
-            # the `EmailAddress` and return it.
-            name = generate_nick(email)
-            person = self._newPerson(
-                name, displayname, hide_email_addresses=True,
-                rationale=rationale, comment=comment, registrant=registrant,
-                account=email_address.account)
-            return person
+            master_email = IMasterStore(EmailAddress).get(
+                EmailAddress, email_address.id)
+            master_email.personID = account_person.id
+            # Populate the previously empty 'preferredemail' cached
+            # property, so the Person record is up-to-date.
+            if master_email.status == EmailAddressStatus.PREFERRED:
+                cache = get_property_cache(account_person)
+                cache.preferredemail = master_email
+            return account_person
 
         # Easy, return the `Person` associated with the existing
         # `EmailAddress`.
@@ -3867,44 +3805,63 @@ class PersonSet:
             WHERE id = %(to_id)d
             ''' % vars())
 
+    def _purgeUnmergableTeamArtifacts(self, from_team, to_team, reviewer):
+        """Purge team artifacts that cannot be merged, but can be removed."""
+        # A team cannot have more than one mailing list.
+        mailing_list = getUtility(IMailingListSet).get(from_team.name)
+        if mailing_list is not None:
+            if mailing_list.status in PURGE_STATES:
+                from_team.mailing_list.purge()
+            elif mailing_list.status != MailingListStatus.PURGED:
+                raise AssertionError(
+                    "Teams with active mailing lists cannot be merged.")
+        # Team email addresses are not transferable.
+        from_team.setContactAddress(None)
+        # Memberships in the team are not transferable because there
+        # is a high probablity there will be a CyclicTeamMembershipError.
+        comment = (
+            'Deactivating all members as this team is being merged into %s.'
+            % to_team.name)
+        membershipset = getUtility(ITeamMembershipSet)
+        membershipset.deactivateActiveMemberships(
+            from_team, comment, reviewer)
+        # Memberships in other teams are not transferable because there
+        # is a high probablity there will be a CyclicTeamMembershipError.
+        all_super_teams = set(from_team.teams_participated_in)
+        indirect_super_teams = set(
+            from_team.teams_indirectly_participated_in)
+        super_teams = all_super_teams - indirect_super_teams
+        naked_from_team = removeSecurityProxy(from_team)
+        for team in super_teams:
+            naked_from_team.retractTeamMembership(team, reviewer)
+        IStore(from_team).flush()
+
     def mergeAsync(self, from_person, to_person):
         """See `IPersonSet`."""
         return getUtility(IPersonMergeJobSource).create(
             from_person=from_person, to_person=to_person)
 
-    def merge(self, from_person, to_person):
+    def merge(self, from_person, to_person, reviewer=None):
         """See `IPersonSet`."""
-        # Sanity checks
-        if not IPerson.providedBy(from_person):
-            raise TypeError('from_person is not a person.')
-        if not IPerson.providedBy(to_person):
-            raise TypeError('to_person is not a person.')
-        # If the team has a mailing list, the mailing list better be in the
-        # purged state, otherwise the team can't be merged.
-        mailing_list = getUtility(IMailingListSet).get(from_person.name)
-        assert (mailing_list is None or
-                mailing_list.status == MailingListStatus.PURGED), (
-            "Can't merge teams which have mailing lists into other teams.")
-
-        if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
-            raise AssertionError('from_person still has email addresses.')
-
+        # since we are doing direct SQL manipulation, make sure all
+        # changes have been flushed to the database
+        store = Store.of(from_person)
+        store.flush()
+        if (from_person.is_team and not to_person.is_team
+            or not from_person.is_team and to_person.is_team):
+            raise AssertionError("Users cannot be merged with teams.")
+        if from_person.is_team and reviewer is None:
+            raise AssertionError("Team merged require a reviewer.")
         if getUtility(IArchiveSet).getPPAOwnedByPerson(
             from_person, statuses=[ArchiveStatus.ACTIVE,
                                    ArchiveStatus.DELETING]) is not None:
             raise AssertionError(
                 'from_person has a ppa in ACTIVE or DELETING status')
-
-        if from_person.is_team and from_person.allmembers.count() > 0:
-            raise AssertionError(
-                "Only teams without active members can be merged")
-
-        if from_person.is_team and from_person.super_teams.count() > 0:
-            raise AssertionError(
-                "Only teams without super teams can be merged.")
-        # since we are doing direct SQL manipulation, make sure all
-        # changes have been flushed to the database
-        store = Store.of(from_person)
+        if from_person.is_team:
+            self._purgeUnmergableTeamArtifacts(
+                from_person, to_person, reviewer)
+        if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
+            raise AssertionError('from_person still has email addresses.')
 
         # Get a database cursor.
         cur = cursor()
@@ -4109,7 +4066,8 @@ class PersonSet:
 
         # Inform the user of the merge changes.
         if not to_person.isTeam():
-            mail_text = get_email_template('person-merged.txt')
+            mail_text = get_email_template(
+                'person-merged.txt', app='registry')
             mail_text = mail_text % {
                 'dupename': from_person.name,
                 'person': to_person.name,
@@ -4605,3 +4563,65 @@ def person_from_account(account):
     if person is None:
         raise ComponentLookupError()
     return person
+
+
+@ProxyFactory
+def get_recipients(person):
+    """Return a set of people who receive email for this Person (person/team).
+
+    If <person> has a preferred email, the set will contain only that
+    person.  If <person> doesn't have a preferred email but is a team,
+    the set will contain the preferred email address of each member of
+    <person>, including indirect members.
+
+    Finally, if <person> doesn't have a preferred email and is not a team,
+    the set will be empty.
+    """
+    if person.preferredemail:
+        return [person]
+    elif person.is_team:
+        # Get transitive members of team with a preferred email.
+        return _get_recipients_for_team(person)
+    else:
+        return []
+
+
+def _get_recipients_for_team(team):
+    """Given a team without a preferred email, return recipients.
+
+    Helper for get_recipients, divided out simply to make get_recipients
+    easier to understand in broad brush."""
+    store = IStore(Person)
+    source = store.using(TeamMembership,
+                         Join(Person,
+                              TeamMembership.personID==Person.id),
+                         LeftJoin(EmailAddress,
+                                  EmailAddress.person == Person.id))
+    pending_team_ids = [team.id]
+    recipient_ids = set()
+    seen = set()
+    while pending_team_ids:
+        intermediate_transitive_results = source.find(
+            (TeamMembership.personID, EmailAddress.personID),
+            In(TeamMembership.status,
+               [TeamMembershipStatus.ADMIN.value,
+                TeamMembershipStatus.APPROVED.value]),
+            In(TeamMembership.teamID, pending_team_ids),
+            Or(EmailAddress.status == EmailAddressStatus.PREFERRED,
+               And(Not(Person.teamownerID == None),
+                   EmailAddress.status == None))).config(distinct=True)
+        next_ids = []
+        for (person_id,
+             preferred_email_marker) in intermediate_transitive_results:
+            if preferred_email_marker is None:
+                # This is a team without a preferred email address.
+                if person_id not in seen:
+                    next_ids.append(person_id)
+                    seen.add(person_id)
+            else:
+                recipient_ids.add(person_id)
+        pending_team_ids = next_ids
+    return getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+        recipient_ids,
+        need_validity=True,
+        need_preferred_email=True)

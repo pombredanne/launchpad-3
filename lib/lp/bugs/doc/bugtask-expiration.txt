@@ -141,8 +141,10 @@ Let's also make some bugs that almost qualify for expiration.
 
     # A bug with two Ubuntu tasks, one assigned Incomplete, and one
     # Invalid task, is not expirable.
+    >>> ubuntu_alsa = ubuntu.getSourcePackage('alsa-utils')
     >>> another_assigned_bugtask = create_old_bug(
     ...     'assigned', 61, ubuntu, assignee=sample_person)
+    >>> another_assigned_bugtask.transitionToTarget(ubuntu_alsa)
     >>> ubuntu_evolution = ubuntu.getSourcePackage('evolution')
     >>> invalid_bugtask = bugtaskset.createTask(
     ...     bug=another_assigned_bugtask.bug, owner=sample_person,

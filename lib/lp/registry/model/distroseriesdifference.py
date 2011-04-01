@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for a difference between two distribution series."""
@@ -9,9 +9,14 @@ __all__ = [
     'DistroSeriesDifference',
     ]
 
+from debian.changelog import (
+    Changelog,
+    Version,
+    )
 from lazr.enum import DBItem
 from storm.expr import Desc
 from storm.locals import (
+    And,
     Int,
     Reference,
     Storm,
@@ -28,7 +33,6 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
-from lp.archivepublisher.debversion import Version
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
@@ -114,6 +118,7 @@ class DistroSeriesDifference(Storm):
     def getForDistroSeries(
         distro_series,
         difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
+        source_package_name_filter=None,
         status=None):
         """See `IDistroSeriesDifferenceSource`."""
         if status is None:
@@ -123,11 +128,20 @@ class DistroSeriesDifference(Storm):
         elif isinstance(status, DBItem):
             status = (status, )
 
-        return IStore(DistroSeriesDifference).find(
-            DistroSeriesDifference,
+        conditions = [
             DistroSeriesDifference.derived_series == distro_series,
             DistroSeriesDifference.difference_type == difference_type,
-            DistroSeriesDifference.status.is_in(status))
+            DistroSeriesDifference.status.is_in(status),
+        ]
+        if source_package_name_filter:
+            conditions.extend([
+                DistroSeriesDifference.source_package_name ==
+                    SourcePackageName.id,
+                SourcePackageName.name == source_package_name_filter])
+
+        return IStore(DistroSeriesDifference).find(
+            DistroSeriesDifference,
+            And(*conditions))
 
     @staticmethod
     def getByDistroSeriesAndName(distro_series, source_package_name):
@@ -153,14 +167,18 @@ class DistroSeriesDifference(Storm):
     def base_source_pub(self):
         """See `IDistroSeriesDifference`."""
         if self.base_version is not None:
-            pubs = self.derived_series.main_archive.getPublishedSources(
+            parent = self.derived_series.parent_series
+            result = parent.main_archive.getPublishedSources(
                 name=self.source_package_name.name,
-                version=self.base_version,
-                distroseries=self.derived_series)
-            # We know there is a base version published in the distroseries'
-            # main archive.
-            return pubs.first()
-
+                version=self.base_version).first()
+            if result is None:
+                # If the base version isn't in the parent, it may be
+                # published in the child distroseries.
+                child = self.derived_series
+                result = child.main_archive.getPublishedSources(
+                    name=self.source_package_name.name,
+                    version=self.base_version).first()
+            return result
         return None
 
     @property
@@ -182,6 +200,22 @@ class DistroSeriesDifference(Storm):
                     'source_version': self.source_version,
                     })
 
+    def getAncestry(self, spr):
+        """Return the version ancestry for the given SPR, or None."""
+        if spr.changelog is None:
+            return None
+        versions = set()
+        # It would be nicer to use .versions() here, but it won't catch the
+        # ValueError from malformed versions, and we don't want them leaking
+        # into the ancestry.
+        for raw_version in Changelog(spr.changelog.read())._raw_versions():
+            try:
+                version = Version(raw_version)
+            except ValueError:
+                continue
+            versions.add(version)
+        return versions
+
     def _getPackageDiffURL(self, package_diff):
         """Check status and return URL if appropriate."""
         if package_diff is None or (
@@ -199,6 +233,22 @@ class DistroSeriesDifference(Storm):
     def parent_package_diff_url(self):
         """See `IDistroSeriesDifference`."""
         return self._getPackageDiffURL(self.parent_package_diff)
+
+    @property
+    def package_diff_status(self):
+        """See `IDistroSeriesDifference`."""
+        if self.package_diff is None:
+            return None
+        else:
+            return self.package_diff.status
+
+    @property
+    def parent_package_diff_status(self):
+        """See `IDistroSeriesDifference`."""
+        if self.parent_package_diff is None:
+            return None
+        else:
+            return self.parent_package_diff.status
 
     def _getLatestSourcePub(self, for_parent=False):
         """Helper to keep source_pub/parent_source_pub DRY."""
@@ -226,6 +276,11 @@ class DistroSeriesDifference(Storm):
         clear_property_cache(self)
         self._updateType()
         updated = self._updateVersionsAndStatus()
+        # If the DSD has changed, we want to invalidate the diffs. The GC
+        # process for the Librarian will clean up after us.
+        if updated is True:
+            self.package_diff = None
+            self.parent_package_diff = None
         return updated
 
     def _updateType(self):
@@ -299,29 +354,19 @@ class DistroSeriesDifference(Storm):
             DistroSeriesDifferenceType.DIFFERENT_VERSIONS):
             return False
 
-        # Find all source package releases for the derived and parent
-        # series and get the most recent common version.
-        derived_sprs = self.source_pub.meta_sourcepackage.distinctreleases
-        derived_versions = [
-            Version(spr.version) for spr in derived_sprs]
+        ancestry = self.getAncestry(self.source_pub.sourcepackagerelease)
+        parent_ancestry = self.getAncestry(
+            self.parent_source_pub.sourcepackagerelease)
 
-        parent_sourcepkg = self.parent_source_pub.meta_sourcepackage
-        parent_sprs = parent_sourcepkg.distinctreleases
-        parent_versions = [
-            Version(spr.version) for spr in parent_sprs]
-
-        common_versions = list(
-            set(derived_versions).intersection(parent_versions))
-        if common_versions:
-            common_versions.sort()
-            self.base_version = unicode(common_versions.pop())
-            return True
-
-        if self.base_version is None:
-            return False
-        else:
-            self.base_version = None
-            return True
+        # If the ancestry for the parent and the descendant is available, we
+        # can reliably work out the most recent common ancestor using set
+        # arithmetic.
+        if ancestry is not None and parent_ancestry is not None:
+            intersection = ancestry.intersection(parent_ancestry)
+            if len(intersection) > 0:
+                self.base_version = unicode(max(intersection))
+                return True
+        return False
 
     def addComment(self, commenter, comment):
         """See `IDistroSeriesDifference`."""

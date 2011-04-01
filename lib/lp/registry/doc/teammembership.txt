@@ -895,8 +895,9 @@ teams for which the person/team has admin rights.
 If a team is merged it will not show up in the set of administered teams.
 
     >>> login('foo.bar@canonical.com')
-    >>> cprov_team.deactivateAllMembers("Merging", foobar)
-    >>> personset.merge(cprov_team, guadamen_team)
+    >>> membershipset.deactivateActiveMemberships(
+    ...     cprov_team, "Merging", foobar)
+    >>> personset.merge(cprov_team, guadamen_team, cprov_team.teamowner)
     >>> [team.name for team in cprov.getAdministratedTeams()]
     [u'canonical-partner-dev', u'guadamen', u'launchpad-buildd-admins']
 

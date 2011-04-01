@@ -24,6 +24,7 @@ from textwrap import dedent
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
+    export_read_operation,
     export_write_operation,
     exported,
     mutator_for,
@@ -35,6 +36,7 @@ from lazr.restful.declarations import (
 from lazr.restful.fields import (
     CollectionField,
     Reference,
+    ReferenceChoice,
     )
 from lazr.restful.interface import copy_field
 from zope.interface import (
@@ -46,6 +48,7 @@ from zope.schema import (
     Choice,
     Datetime,
     Int,
+    List,
     Text,
     TextLine,
     )
@@ -166,24 +169,17 @@ class ISourcePackageRecipeView(Interface):
     def performDailyBuild():
         """Perform a build into the daily build archive."""
 
-
-class ISourcePackageRecipeEdit(Interface):
-    """ISourcePackageRecipe methods that require launchpad.Edit permission."""
-
-    @mutator_for(ISourcePackageRecipeView['recipe_text'])
+    @export_read_operation()
     @operation_for_version("devel")
-    @operation_parameters(
-        recipe_text=copy_field(
-            ISourcePackageRecipeView['recipe_text']))
-    @export_write_operation()
-    def setRecipeText(recipe_text):
-        """Set the text of the recipe."""
+    def getPendingBuildInfo():
+        """Find distroseries and archive data for pending builds.
 
-    def destroySelf():
-        """Remove this SourcePackageRecipe from the database.
-
-        This requires deleting any rows with non-nullable foreign key
-        references to this object.
+        Return a list of dict(
+        distroseries:distroseries.displayname
+        archive:archive.token)
+        The archive token is the same as that defined by the archive vocab:
+        archive.owner.name/archive.name
+        This information is used to construct the request builds popup form.
         """
 
 
@@ -205,13 +201,17 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
             vocabulary='UserTeamsParticipationPlusSelf',
             description=_("The person or team who can edit this recipe.")))
 
-    distroseries = CollectionField(
-        Reference(IDistroSeries), title=_("The distroseries this recipe will"
-            " build a source package for"),
-        readonly=False)
+    distroseries = exported(List(
+        ReferenceChoice(schema=IDistroSeries,
+            vocabulary='BuildableDistroSeries'),
+        title=_("Default distribution series"),
+        description=_("If built daily, these are the distribution "
+            "versions that the recipe will be built for."),
+        readonly=True))
     build_daily = exported(Bool(
         title=_("Built daily"),
-        description=_("Automatically build each day, if the source has changed.")))
+        description=_(
+            "Automatically build each day, if the source has changed.")))
 
     name = exported(TextLine(
             title=_("Name"), required=True,
@@ -230,6 +230,34 @@ class ISourcePackageRecipeEditableAttributes(IHasOwner):
     is_stale = Bool(title=_('Recipe is stale.'))
 
 
+class ISourcePackageRecipeEdit(Interface):
+    """ISourcePackageRecipe methods that require launchpad.Edit permission."""
+
+    @mutator_for(ISourcePackageRecipeView['recipe_text'])
+    @operation_for_version("devel")
+    @operation_parameters(
+        recipe_text=copy_field(
+            ISourcePackageRecipeView['recipe_text']))
+    @export_write_operation()
+    def setRecipeText(recipe_text):
+        """Set the text of the recipe."""
+
+    @mutator_for(ISourcePackageRecipeEditableAttributes['distroseries'])
+    @operation_parameters(distroseries=copy_field(
+        ISourcePackageRecipeEditableAttributes['distroseries']))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def updateSeries(distroseries):
+        """Replace this recipe's distro series."""
+
+    def destroySelf():
+        """Remove this SourcePackageRecipe from the database.
+
+        This requires deleting any rows with non-nullable foreign key
+        references to this object.
+        """
+
+
 class ISourcePackageRecipe(ISourcePackageRecipeData,
     ISourcePackageRecipeEdit, ISourcePackageRecipeEditableAttributes,
     ISourcePackageRecipeView):
@@ -246,7 +274,7 @@ class ISourcePackageRecipeSource(Interface):
     """
 
     def new(registrant, owner, distroseries, name,
-            builder_recipe, description):
+            builder_recipe, description, date_created):
         """Create an `ISourcePackageRecipe`."""
 
     def exists(owner, name):

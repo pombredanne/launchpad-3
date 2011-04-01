@@ -141,7 +141,7 @@ need to log in here because the event object is security proxied.
     >>> login("foo.bar@canonical.com")
 
     >>> bug.addTask(owner=params.owner, target=jukebox)
-    <BugTask at ...>
+    <BugTask ...>
 
     >>> from zope.event import notify
     >>> notify(event)
@@ -689,13 +689,14 @@ And for a specific distribution series.
 
 Also for a specific distribution source package.
 
-    >>> linux_source = ubuntu.getSourcePackage('linux-source-2.6.15')
+    >>> tubuntu = factory.makeDistribution(name='tubuntu')
+    >>> linux_source = tubuntu.getSourcePackage('linux-source-2.6.15')
     >>> linux_task = firefox_bug.addTask(
     ...     owner=foobar, target=linux_source)
     >>> notify(ObjectCreatedEvent(linux_task))
 
     >>> print linux_task.bugtargetname
-    linux-source-2.6.15 (Ubuntu)
+    linux-source-2.6.15 (Tubuntu)
 
 And for a distro series source package.
 
@@ -983,7 +984,7 @@ You can get the set of bugtasks for at bug with the 'bugtasks' attribute:
     Tomcat
     Ubuntu
     Hoary
-    mozilla-firefox in debian
+    mozilla-firefox in Debian
     mozilla-firefox in Debian Woody
 
 You can also get a list of the "LP pillars" affected by a particular bug.
@@ -1018,7 +1019,7 @@ use getBugTask() to get it.
     >>> mozilla_in_debian = debian.getSourcePackage('mozilla-firefox')
     >>> mozilla_in_debian_task = bug_two.getBugTask(mozilla_in_debian)
     >>> mozilla_in_debian_task.target.displayname
-    u'mozilla-firefox in debian'
+    u'mozilla-firefox in Debian'
 
     >>> debian_woody = debian.getSeries('woody')
     >>> mozilla_in_woody = debian_woody.getSourcePackage('mozilla-firefox')

@@ -38,6 +38,9 @@
               tal:attributes="href productseries/fmt:url"
               tal:content="productseries/title">Evolution trunk</a>.
             </p>
+            <a tal:replace="structure view/sharing_details">
+              View sharing details
+            </a>
           </div>
         </div>
         <div class="yui-u">

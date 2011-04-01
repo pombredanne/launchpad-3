@@ -9,9 +9,9 @@ __metaclass__ = type
 __all__ = [
     'ANONYMOUS',
     'anonymous_logged_in',
+    'api_url',
     'build_yui_unittest_suite',
     'BrowserTestCase',
-    'capture_events',
     'celebrity_logged_in',
     'FakeTime',
     'get_lsb_information',
@@ -28,7 +28,7 @@ __all__ = [
     'normalize_whitespace',
     'oauth_access_token_for',
     'person_logged_in',
-    'quote_jquery_expression'
+    'quote_jquery_expression',
     'record_statements',
     'run_with_login',
     'run_with_storm_debug',
@@ -71,11 +71,11 @@ import tempfile
 import time
 import unittest
 
+from bzrlib import trace
 from bzrlib.bzrdir import (
     BzrDir,
     format_registry,
     )
-from bzrlib import trace
 from bzrlib.transport import get_transport
 import fixtures
 import pytz
@@ -152,6 +152,7 @@ from lp.testing._login import (
 # XXX: JonathanLange 2010-01-01: Why?!
 from lp.testing._tales import test_tales
 from lp.testing._webservice import (
+    api_url,
     launchpadlib_credentials_for,
     launchpadlib_for,
     oauth_access_token_for,
@@ -159,7 +160,10 @@ from lp.testing._webservice import (
 from lp.testing.fixture import ZopeEventHandlerFixture
 from lp.testing.karma import KarmaRecorder
 from lp.testing.matchers import Provides
-from lp.testing.windmill import constants, lpuser
+from lp.testing.windmill import (
+    constants,
+    lpuser,
+    )
 
 
 class FakeTime:
@@ -793,10 +797,13 @@ class WindmillTestCase(TestCaseWithFactory):
 class WebServiceTestCase(TestCaseWithFactory):
     """Test case optimized for testing the web service using launchpadlib."""
 
-    #avoid circular imports
-    from canonical.testing.layers import AppServerLayer
-
-    layer = AppServerLayer
+    @property
+    def layer(self):
+        # XXX wgrant 2011-03-09 bug=505913:
+        # TestTwistedJobRunner.test_timeout fails if this is at the
+        # module level. There is probably some hidden circular import.
+        from canonical.testing.layers import AppServerLayer
+        return AppServerLayer
 
     def setUp(self):
         super(WebServiceTestCase, self).setUp()
@@ -832,8 +839,20 @@ class YUIUnitTestCase(WindmillTestCase):
 
     _yui_results = None
 
+    def __init__(self):
+        """Create a new test case without a choice of test method name.
+
+        Preventing the choice of test method ensures that we can safely
+        provide a test ID based on the file path.
+        """
+        super(YUIUnitTestCase, self).__init__("checkResults")
+
     def initialize(self, test_path):
         self.test_path = test_path
+
+    def id(self):
+        """Return an ID for this test based on the file path."""
+        return self.test_path
 
     def setUp(self):
         super(YUIUnitTestCase, self).setUp()
@@ -866,7 +885,12 @@ class YUIUnitTestCase(WindmillTestCase):
             self._yui_results[test_name] = dict(
                 result=result, message=message)
 
-    def runTest(self):
+    def checkResults(self):
+        """Check the results.
+
+        The tests are run during `setUp()`, but failures need to be reported
+        from here.
+        """
         if self._yui_results is None or len(self._yui_results) == 0:
             self.fail("Test harness or js failed.")
         for test_name in self._yui_results:
@@ -960,6 +984,7 @@ class EventRecorder:
     This prevents the events from propagating to their normal subscribers.
     The recorded events can be accessed via the 'events' list.
     """
+
     def __init__(self):
         self.events = []
         self.old_subscribers = None
@@ -979,13 +1004,13 @@ class EventRecorder:
 def feature_flags():
     """Provide a context in which feature flags work."""
     empty_request = LaunchpadTestRequest()
-    old_features = getattr(features.per_thread, 'features', None)
-    features.per_thread.features = FeatureController(
-        ScopesFromRequest(empty_request).lookup)
+    old_features = features.get_relevant_feature_controller()
+    features.install_feature_controller(FeatureController(
+        ScopesFromRequest(empty_request).lookup))
     try:
         yield
     finally:
-        features.per_thread.features = old_features
+        features.install_feature_controller(old_features)
 
 
 def get_lsb_information():
@@ -1094,12 +1119,12 @@ def set_feature_flag(name, value, scope=u'default', priority=1):
     """Set a feature flag to the specified value.
 
     In order to access the flag, use the feature_flags context manager or
-    populate features.per_thread.features some other way.
+    set the feature controller in some other way.
     :param name: The name of the flag.
     :param value: The value of the flag.
     :param scope: The scope in which the specified value applies.
     """
-    assert getattr(features.per_thread, 'features', None) is not None
+    assert features.get_relevant_feature_controller() is not None
     flag = FeatureFlag(
         scope=scope, flag=name, value=value, priority=priority)
     store = getFeatureStore()

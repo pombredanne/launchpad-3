@@ -33,9 +33,11 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
+from canonical.launchpad.utilities.looptuner import TunableLoop
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.services.scripts.base import LaunchpadScript
 from lp.soyuz.interfaces.publishing import active_publishing_status
 
@@ -188,7 +190,7 @@ def drop_table(store, table):
     store.execute("DROP TABLE IF EXISTS %s" % quote_identifier(table))
 
 
-def populate_distroseriesdiff(derived_distroseries):
+def populate_distroseriesdiff(logger, derived_distroseries):
     """Compare `derived_distroseries` to parent, and register differences.
 
     The differences are registered by creating `DistroSeriesDifference`
@@ -201,6 +203,9 @@ def populate_distroseriesdiff(derived_distroseries):
     store.execute("CREATE TEMP TABLE %s AS %s" % (
         quote_identifier(temp_table),
         compose_sql_find_differences(derived_distroseries)))
+    logger.info(
+        "Found %d potential difference(s).",
+        store.execute("SELECT count(*) FROM %s" % temp_table).get_one()[0])
     store.execute(
         compose_sql_populate_distroseriesdiff(
             derived_distroseries, temp_table))
@@ -219,6 +224,59 @@ def find_derived_series():
         Parent.id == DistroSeries.parent_seriesID,
         Parent.distributionID != DistroSeries.distributionID).order_by(
             (DistroSeries.parent_seriesID, DistroSeries.id))
+
+
+class BaseVersionFixer(TunableLoop):
+    """Fix up `DistroSeriesDifference.base_version` in the database.
+
+    The code that creates `DistroSeriesDifference`s does not set the
+    `base_version`.  In cases where there may actually be a real base
+    version, this needs to be fixed up.
+
+    Since this is likely to be much, much slower than the rest of the
+    work of creating and initializing `DistroSeriesDifference`s, it is
+    done in a `DBLoopTuner`.
+    """
+
+    def __init__(self, log, store, commit, ids):
+        """See `TunableLoop`.
+
+        :param log: A logger.
+        :param store: Database store to work on.
+        :param commit: A commit function to call after each batch.
+        :param ids: Sequence of `DistroSeriesDifference` ids to fix.
+        """
+        super(BaseVersionFixer, self).__init__(log)
+        self.minimum_chunk_size = 2
+        self.maximum_chunk_size = 1000
+        self.store = store
+        self.commit = commit
+        self.ids = sorted(ids, reverse=True)
+
+    def isDone(self):
+        """See `ITunableLoop`."""
+        return len(self.ids) == 0
+
+    def _cutChunk(self, chunk_size):
+        """Cut a chunk of up to `chunk_size` items from the remaining work.
+
+        Removes the items to be processed in this chunk from the list of
+        remaining work, and returns those.
+        """
+        todo = self.ids[-chunk_size:]
+        self.ids = self.ids[:-chunk_size]
+        return todo
+
+    def _getBatch(self, ids):
+        """Retrieve a batch of `DistroSeriesDifference`s with given ids."""
+        return self.store.find(
+            DistroSeriesDifference, DistroSeriesDifference.id.is_in(ids))
+
+    def __call__(self, chunk_size):
+        """See `ITunableLoop`."""
+        for dsd in self._getBatch(self._cutChunk(int(chunk_size))):
+            dsd._updateBaseVersion()
+        self.commit()
 
 
 class PopulateDistroSeriesDiff(LaunchpadScript):
@@ -264,7 +322,10 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
     def processDistroSeries(self, distroseries):
         """Generate `DistroSeriesDifference`s for `distroseries`."""
         self.logger.info("Looking for differences in %s.", distroseries)
-        populate_distroseriesdiff(distroseries)
+        populate_distroseriesdiff(self.logger, distroseries)
+        self.commit()
+        self.logger.info("Updating base_versions.")
+        self.fixBaseVersions(distroseries)
         self.commit()
         self.logger.info("Done with %s.", distroseries)
 
@@ -288,10 +349,10 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
         specified_series = (self.options.series is not None)
         if specified_distro != specified_series:
             raise OptionValueError(
-                "Specify neither a distribution or a series, or both.")
+                "Specify both a distribution and a series, or use --all.")
         if specified_distro == self.options.all:
             raise OptionValueError(
-                "Either specify a distribution series, or use --all.")
+                "Either specify a distribution and series, or use --all.")
 
     def main(self):
         """Do the script's work."""
@@ -307,3 +368,26 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
 
         for series in self.getDistroSeries():
             self.processDistroSeries(series)
+
+    def fixBaseVersions(self, distroseries):
+        """Fix up `DistroSeriesDifference.base_version` where appropriate.
+
+        The `DistroSeriesDifference` records we create don't have their
+        `base_version` fields set yet.  This is a shame because it's the
+        only thing we need to figure out python-side.
+
+        Only instances where the source package is published in both the
+        parent series and the derived series need to have this done.
+        """
+        self.logger.info(
+            "Fixing up base_versions for %s.", distroseries.title)
+        store = IStore(distroseries)
+        dsd_ids = store.find(
+            DistroSeriesDifference.id,
+            DistroSeriesDifference.derived_series == distroseries,
+            DistroSeriesDifference.status ==
+                DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+            DistroSeriesDifference.difference_type ==
+                DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
+            DistroSeriesDifference.base_version == None)
+        BaseVersionFixer(self.logger, store, self.commit, dsd_ids).run()
