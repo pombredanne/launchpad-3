@@ -111,11 +111,12 @@ h1, ul, ol, dl, li, dt, dd {
     border-bottom: 1px solid #d2d2d2;
     }
 .facetmenu {
+    margin-top: 4px;
     margin-left: .5em;
     }
 </style>
 <link rel="stylesheet" href="https://launchpad.net/+icing/style-3-0.css" />
-<link rel="shortcut icon" href="https://launchpad.net/@@/launchpad.png" /> 
+<link rel="shortcut icon" href="https://launchpad.net/@@/launchpad.png" />
 </head>
 <body>
   <div class="back-to">
@@ -132,7 +133,9 @@ PAGE-BOTTOM
   <div id="footer" class="footer">
     <div class="lp-arcana">
         <div class="lp-branding">
-          <a href="https://launchpad.net/"><img src="https://launchpad.net/@@/launchpad-logo-and-name-hierarchy.png" alt="Launchpad" /></a>
+          <a href="https://launchpad.net/"><img
+         src="https://launchpad.net/@@/launchpad-logo-and-name-hierarchy.png"
+         alt="Launchpad" /></a>
           &nbsp;&bull;&nbsp;
           <a href="https://launchpad.net/+tour">Take the tour</a>
           &nbsp;&bull;&nbsp;
@@ -145,7 +148,8 @@ PAGE-BOTTOM
                 accept-charset="UTF-8"
                 action="https://launchpad.net/+search">
             <input type="search" id="search-text" name="field.text" />
-            <input type="submit" value="" class="icon-only sprite search-icon" />
+            <input type="submit" value=""
+              class="icon-only sprite search-icon" />
           </form>
         </div>
     </div>
@@ -193,19 +197,23 @@ Thread index
 </TPREVPGLINKIA>
 
 <NEXTPGLINK>
-<a class="next" href="$PG(NEXT)$">Previous</a> &bull; <a href="$PG(LAST)$">First</a>
+<a class="next" href="$PG(NEXT)$">Previous</a>
+  &bull; <a href="$PG(LAST)$">First</a>
 </NEXTPGLINK>
 
 <NEXTPGLINKIA>
-<span class="next inactive">Previous</span> &bull; <span class="inactive">First</span>
+<span class="next inactive">Previous</span>
+  &bull; <span class="inactive">First</span>
 </NEXTPGLINKIA>
 
 <TNEXTPGLINK>
-<a class="next" href="$PG(TNEXT)$">Previous</a> &bull; <a href="$PG(TLAST)$">First</a>
+<a class="next" href="$PG(TNEXT)$">Previous</a>
+   &bull; <a href="$PG(TLAST)$">First</a>
 </TNEXTPGLINK>
 
 <TNEXTPGLINKIA>
-<span class="next inactive">Previous</span> &bull;<span class="inactive">First</span>
+<span class="next inactive">Previous</span>
+  &bull;<span class="inactive">First</span>
 </TNEXTPGLINKIA>
 
 
@@ -231,7 +239,7 @@ $PAGE-BOTTOM$
     </div>
   </div>
 
-<ol class="breadcrumbs"> 
+<ol class="breadcrumbs">
   <li>
     <img src="https://launchpad.net/@@/team" alt=""/>
     <a href="https://launchpad.net/~$ML-NAME$">$ML-NAME$ team</a>
@@ -241,7 +249,7 @@ $PAGE-BOTTOM$
   </li>
   <li>
     Messages by thread
-  </li> 
+  </li>
 </ol>
 
 <h2>Messages by thread</h2>
@@ -295,13 +303,17 @@ $PAGE-BOTTOM$
      See http://www.mhonarc.org/MHonArc/doc/resources/listbegin.html. -->
 <LISTBEGIN>
     <ul class="facetmenu">
-        <li title="View messages by thread"><a href="$TIDXFNAME$">Thread</a></li>
-        <li title="View messages by date" class="active"><span>Date</span></li>
+        <li title="View messages by thread">
+            <a href="$TIDXFNAME$">Thread</a>
+        </li>
+        <li title="View messages by date" class="active">
+          <span>Date</span>
+        </li>
     </ul>
   </div>
 </div>
 
-<ol class="breadcrumbs"> 
+<ol class="breadcrumbs">
   <li>
     <img src="https://launchpad.net/@@/team" alt=""/>
     <a href="https://launchpad.net/~$ML-NAME$">$ML-NAME$ team</a>
@@ -311,7 +323,7 @@ $PAGE-BOTTOM$
   </li>
   <li>
     Messages by date
-  </li> 
+  </li>
 </ol>
 
 <h2>Messages by date</h2>
@@ -401,7 +413,7 @@ $PAGE-BOTTOM$
   </div>
 </div>
 
-<ol class="breadcrumbs"> 
+<ol class="breadcrumbs">
   <li>
     <img src="https://launchpad.net/@@/team" alt=""/>
     <a href="https://launchpad.net/~$ML-NAME$">$ML-NAME$ team</a>
@@ -411,7 +423,7 @@ $PAGE-BOTTOM$
   </li>
   <li>
     Message #$MSGNUM$
-  </li> 
+  </li>
 </ol>
 
 <h2>$SUBJECTNA$</h2>
