@@ -83,6 +83,7 @@ from lp.blueprints.model.specification import (
     Specification,
     )
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
+from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
     get_bug_tags,
     get_bug_tags_open_count,
@@ -251,6 +252,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         foreignKey="LanguagePack", dbName="language_pack_proposed",
         notNull=False, default=None)
     language_pack_full_export_requested = BoolCol(notNull=True, default=False)
+    backports_not_automatic = BoolCol(notNull=True, default=False)
 
     language_packs = SQLMultipleJoin(
         'LanguagePack', joinColumn='distroseries', orderBy='-date_exported')
@@ -1967,25 +1969,45 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             child = distribution.newSeries(
                 name=name, displayname=displayname, title=title,
                 summary=summary, description=description,
-                version=version, parent_series=self, registrant=user)
+                version=version, parent_series=None, registrant=user)
             IStore(self).add(child)
         else:
-            if child.parent_series is not self:
+            if child.parent_series is not None:
                 raise DerivationError(
-                    "DistroSeries %s parent series isn't %s" % (
+                    "DistroSeries %s parent series is %s, "
+                    "but it must not be set" % (
                         child.name, self.name))
-        initialise_series = InitialiseDistroSeries(child)
+        initialise_series = InitialiseDistroSeries(self, child)
         try:
             initialise_series.check()
         except InitialisationError, e:
             raise DerivationError(e)
         getUtility(IInitialiseDistroSeriesJobSource).create(
-            child, architectures, packagesets, rebuild)
+            self, child, architectures, packagesets, rebuild)
 
     def getDerivedSeries(self):
         """See `IDistroSeriesPublic`."""
         return Store.of(self).find(
             DistroSeries, DistroSeries.parent_series == self)
+
+    def getBugTaskWeightFunction(self):
+        """Provide a weight function to determine optimal bug task.
+
+        Full weight is given to tasks for this distro series.
+
+        If the series isn't found, the distribution task is better than
+        others.
+        """
+        seriesID = self.id
+        distributionID = self.distributionID
+        def weight_function(bugtask):
+            if bugtask.distroseriesID == seriesID:
+                return OrderedBugTask(1, bugtask.id, bugtask)
+            elif bugtask.distributionID == distributionID:
+                return OrderedBugTask(2, bugtask.id, bugtask)
+            else:
+                return OrderedBugTask(3, bugtask.id, bugtask)
+        return weight_function
 
 
 class DistroSeriesSet:

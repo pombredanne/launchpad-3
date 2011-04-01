@@ -113,6 +113,7 @@ from lp.blueprints.model.specification import (
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
+from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
     BugSet,
     get_bug_tags,
@@ -1331,6 +1332,22 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             SourcePackageRecipeData.base_branch == Branch.id,
             Branch.product == self)
 
+    def getBugTaskWeightFunction(self):
+        """Provide a weight function to determine optimal bug task.
+
+        Full weight is given to tasks for this product.
+
+        Given that there must be a product task for a series of that product
+        to have a task, we give no more weighting to a productseries task than
+        any other.
+        """
+        productID = self.id
+        def weight_function(bugtask):
+            if bugtask.productID == productID:
+                return OrderedBugTask(1, bugtask.id, bugtask)
+            return OrderedBugTask(2, bugtask.id, bugtask)
+        return weight_function
+
 
 class ProductSet:
     implements(IProductSet)
@@ -1361,10 +1378,14 @@ class ProductSet:
 
     @property
     def all_active(self):
-        results = Product.selectBy(
-            active=True, orderBy="-Product.datecreated")
-        # The main product listings include owner, so we prejoin it.
-        return results.prejoin(["_owner"])
+        result = IStore(Product).find(Product, Product.active
+            ).order_by(Desc(Product.datecreated))
+        def eager_load(rows):
+            owner_ids = set(map(operator.attrgetter('_ownerID'), rows))
+            # +detailed-listing renders the person with team branding.
+            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                owner_ids, need_validity=True, need_icon=True))
+        return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
     def get(self, productid):
         """See `IProductSet`."""

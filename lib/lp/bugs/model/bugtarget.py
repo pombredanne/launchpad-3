@@ -51,6 +51,7 @@ from lp.bugs.interfaces.bugtask import (
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
     )
+from lp.bugs.interfaces.bugtaskfilter import simple_weight_calculator
 from lp.bugs.model.bugtask import (
     BugTaskSet,
     get_bug_privacy_filter,
@@ -233,6 +234,10 @@ class HasBugsBase:
         counts = cur.fetchone()
         return dict(zip(statuses, counts))
 
+    def getBugTaskWeightFunction(self):
+        """Default weight function is the simple one."""
+        return simple_weight_calculator
+
 
 class BugTargetBase(HasBugsBase):
     """Standard functionality for IBugTargets.
@@ -304,7 +309,7 @@ class HasBugHeatMixin:
                       AND ProductSeries.product = %s
                       ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
         elif IProjectGroup.providedBy(self):
-            sql = ["""SELECT heat
+            sql = ["""SELECT Bug.heat
                       FROM Bug, Bugtask, Product
                       WHERE Bugtask.bug = Bug.id
                       AND Bugtask.product = Product.id

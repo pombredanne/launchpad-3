@@ -99,7 +99,7 @@ from lp.app.widgets.product import (
 from lp.bugs.browser.bugrole import BugRoleMixin
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from lp.bugs.browser.structuralsubscription import (
-    StructuralSubscriptionJSMixin,
+    expose_structural_subscription_data_to_js,
     )
 from lp.bugs.browser.widgets.bug import (
     BugTagsWidget,
@@ -1308,10 +1308,12 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         return 'Bugs in %s' % self.context.title
 
     def initialize(self):
-        BugTaskSearchListingView.initialize(self)
+        super(BugTargetBugsView, self).initialize()
         bug_statuses_to_show = list(UNRESOLVED_BUGTASK_STATUSES)
         if IDistroSeries.providedBy(self.context):
             bug_statuses_to_show.append(BugTaskStatus.FIXRELEASED)
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user)
 
     @property
     def can_have_external_bugtracker(self):
@@ -1345,7 +1347,7 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         """Return a dict of the 10 hottest tasks and a has_more_bugs flag."""
         has_more_bugs = False
         params = BugTaskSearchParams(
-            orderby='-heat', omit_dupes=True,
+            orderby=['-heat', 'task'], omit_dupes=True,
             user=self.user, status=any(*UNRESOLVED_BUGTASK_STATUSES))
         # Use 4x as many tasks as bugs that are needed to improve performance.
         bugtasks = self.context.searchTasks(params)[:40]
@@ -1565,8 +1567,13 @@ class BugsPatchesView(LaunchpadView):
         return ProxiedLibraryFileAlias(patch.libraryfile, patch).http_url
 
 
-class TargetSubscriptionView(StructuralSubscriptionJSMixin, LaunchpadView):
+class TargetSubscriptionView(LaunchpadView):
     """A view to show all a person's structural subscriptions to a target."""
+
+    def initialize(self):
+        super(TargetSubscriptionView, self).initialize()
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user, self.subscriptions)
 
     @property
     def subscriptions(self):

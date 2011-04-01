@@ -57,7 +57,7 @@ DSYNCLIST=$CACHEROOT/dsync.list
 MD5LIST=$INDICES/md5sums.gz
 
 # Mirrors to push at the end of the publishing run.
-MASTERMIRRORS="syowa frei scandium"
+MASTERMIRRORS="syowa frei wahoo scandium"
 
 # Manipulate the environment.
 export GNUPGHOME

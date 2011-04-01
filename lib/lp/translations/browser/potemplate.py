@@ -354,19 +354,13 @@ class POTemplateView(LaunchpadView,
     def sharing_template(self):
         return self.context.getOtherSidePOTemplate()
 
-    def getTranslationTarget(self):
+    def getTranslationSourcePackage(self):
         """See `TranslationSharingDetailsMixin`."""
         if self.is_upstream_template:
-            return self.context.productseries
+            productseries = self.context.productseries
+            return productseries.getUbuntuTranslationFocusPackage()
         else:
             return self.context.sourcepackage
-
-    def can_edit_sharing_details(self):
-        if self.is_upstream_template:
-            obj = self.context.productseries
-        else:
-            obj = self.context.distroseries
-        return check_permission('launchpad.Edit', obj)
 
 
 class POTemplateUploadView(LaunchpadView, TranslationsMixin):

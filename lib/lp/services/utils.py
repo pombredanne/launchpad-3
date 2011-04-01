@@ -16,6 +16,7 @@ __all__ = [
     'decorate_with',
     'docstring_dedent',
     'file_exists',
+    'iter_list_chunks',
     'iter_split',
     'run_capturing_output',
     'synchronize',
@@ -120,6 +121,15 @@ def iter_split(string, splitter):
     tokens = string.split(splitter)
     for i in reversed(range(1, len(tokens) + 1)):
         yield splitter.join(tokens[:i]), splitter.join(tokens[i:])
+
+
+def iter_list_chunks(a_list, size):
+    """Iterate over `a_list` in chunks of size `size`.
+
+    I'm amazed this isn't in itertools (mwhudson).
+    """
+    for i in range(0, len(a_list), size):
+        yield a_list[i:i+size]
 
 
 def synchronize(source, target, add, remove):

@@ -23,10 +23,12 @@ __all__ = [
     'ArchiveView',
     'ArchiveViewBase',
     'make_archive_vocabulary',
+    'PackageCopyingMixin',
     'traverse_named_ppa',
     ]
 
 
+from cgi import escape
 from datetime import (
     datetime,
     timedelta,
@@ -61,7 +63,6 @@ from canonical.launchpad.browser.librarian import FileNavigationMixin
 from canonical.launchpad.components.tokens import create_token
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp import (
     canonical_url,
     enabled_with_permission,
@@ -106,6 +107,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.browser_helpers import get_user_agent_distroseries
+from lp.services.database.bulk import load
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.adapters.archivedependencies import (
@@ -1211,6 +1213,89 @@ class DestinationSeriesDropdownWidget(LaunchpadDropdownWidget):
     _messageNoValue = _("vocabulary-copy-to-same-series", "The same series")
 
 
+class PackageCopyingMixin:
+    """A mixin class that adds helpers for package copying."""
+
+    def do_copy(self, sources_field_name, source_pubs, dest_archive,
+                dest_series, dest_pocket, include_binaries,
+                dest_url=None, dest_display_name=None):
+        """Copy packages and add appropriate feedback to the browser page.
+
+        :param sources_field_name: The name of the form field to set errors
+            on when the copy fails
+        :param source_pubs: A list of SourcePackagePublishingHistory to copy
+        :param dest_archive: The destination IArchive
+        :param dest_series: The destination IDistroSeries
+        :param dest_pocket: The destination PackagePublishingPocket
+        :param include_binaries: Boolean, whether to copy binaries with the
+            sources
+        :param dest_url: The URL of the destination to display in the
+            notification box.  Defaults to the target archive and will be
+            automatically escaped for inclusion in the output.
+        :param dest_display_name: The text to use for the dest_url link.
+            Defaults to the target archive's display name and will be
+            automatically escaped for inclusion in the output.
+
+        :return: True if the copying worked, False otherwise.
+        """
+        try:
+            copies = do_copy(
+                source_pubs, dest_archive, dest_series,
+                dest_pocket, include_binaries)
+        except CannotCopy, error:
+            messages = []
+            error_lines = str(error).splitlines()
+            if len(error_lines) == 1:
+                messages.append(
+                    "<p>The following source cannot be copied:</p>")
+            else:
+                messages.append(
+                    "<p>The following sources cannot be copied:</p>")
+            messages.append('<ul>')
+            messages.append(
+                "\n".join('<li>%s</li>' % escape(line)
+                    for line in error_lines))
+            messages.append('</ul>')
+
+            self.setFieldError(
+                sources_field_name, structured('\n'.join(messages)))
+            return False
+
+        # Preload BPNs to save queries when calculating display names.
+        load(BinaryPackageName, (
+            copy.binarypackagerelease.binarypackagenameID for copy in copies
+            if isinstance(copy, BinaryPackagePublishingHistory)))
+
+        # Present a page notification describing the action.
+        messages = []
+        if dest_url is None:
+            dest_url = escape(
+                canonical_url(dest_archive) + '/+packages',
+                quote=True)
+        if dest_display_name is None:
+            dest_display_name = escape(dest_archive.displayname)
+        if len(copies) == 0:
+            messages.append(
+                '<p>All packages already copied to '
+                '<a href="%s">%s</a>.</p>' % (
+                    dest_url,
+                    dest_display_name))
+        else:
+            messages.append(
+                '<p>Packages copied to <a href="%s">%s</a>:</p>' % (
+                    dest_url,
+                    dest_display_name))
+            messages.append('<ul>')
+            messages.append(
+                "\n".join(['<li>%s</li>' % escape(copy.displayname)
+                           for copy in copies]))
+            messages.append('</ul>')
+
+        notification = "\n".join(messages)
+        self.request.response.addNotification(structured(notification))
+        return True
+
+
 def make_archive_vocabulary(archives):
     terms = []
     for archive in archives:
@@ -1220,7 +1305,8 @@ def make_archive_vocabulary(archives):
     return SimpleVocabulary(terms)
 
 
-class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
+class ArchivePackageCopyingView(ArchiveSourceSelectionFormView,
+                                PackageCopyingMixin):
     """Archive package copying view class.
 
     This view presents a package selection slot in a POST form implementing
@@ -1371,61 +1457,14 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
             self.setFieldError('selected_sources', 'No sources selected.')
             return
 
-        try:
-            copies = do_copy(
-                selected_sources, destination_archive, destination_series,
-                destination_pocket, include_binaries)
-        except CannotCopy, error:
-            messages = []
-            error_lines = str(error).splitlines()
-            if len(error_lines) == 1:
-                messages.append(
-                    "<p>The following source cannot be copied:</p>")
-            else:
-                messages.append(
-                    "<p>The following sources cannot be copied:</p>")
-            messages.append('<ul>')
-            messages.append(
-                "\n".join('<li>%s</li>' % line for line in error_lines))
-            messages.append('</ul>')
-
-            self.setFieldError(
-                'selected_sources', structured('\n'.join(messages)))
-            return
-
-        # Preload BPNs to save queries when calculating display names.
-        needed_bpn_ids = set(
-            copy.binarypackagerelease.binarypackagenameID for copy in copies
-            if isinstance(copy, BinaryPackagePublishingHistory))
-        if needed_bpn_ids:
-            list(IStore(BinaryPackageName).find(
-                BinaryPackageName,
-                BinaryPackageName.id.is_in(needed_bpn_ids)))
-
-        # Present a page notification describing the action.
-        messages = []
-        destination_url = canonical_url(destination_archive) + '/+packages'
-        if len(copies) == 0:
-            messages.append(
-                '<p>All packages already copied to '
-                '<a href="%s">%s</a>.</p>' % (
-                    destination_url,
-                    destination_archive.displayname))
-        else:
-            messages.append(
-                '<p>Packages copied to <a href="%s">%s</a>:</p>' % (
-                    destination_url,
-                    destination_archive.displayname))
-            messages.append('<ul>')
-            messages.append(
-                "\n".join(['<li>%s</li>' % copy.displayname
-                           for copy in copies]))
-            messages.append('</ul>')
-
-        notification = "\n".join(messages)
-        self.request.response.addNotification(structured(notification))
-
-        self.setNextURL()
+        # PackageCopyingMixin.do_copy() does the work of copying and
+        # setting up on-page notifications.
+        if self.do_copy(
+            'selected_sources', selected_sources, destination_archive,
+            destination_series, destination_pocket, include_binaries):
+            # The copy worked so we can redirect back to the page to
+            # show the result.
+            self.setNextURL()
 
 
 class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):

@@ -118,6 +118,7 @@ from lp.code.interfaces.codeimport import (
     ICodeImportSet,
     )
 from lp.registry.browser import (
+    add_subscribe_link,
     BaseRdfView,
     MilestoneOverlayMixin,
     RegistryDeleteViewMixin,
@@ -128,6 +129,7 @@ from lp.registry.browser.pillar import (
     PillarView,
     )
 from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
@@ -279,19 +281,23 @@ class ProductSeriesOverviewMenu(
     """The overview menu."""
     usedfor = IProductSeries
     facet = 'overview'
-    links = [
-        'configure_bugtracker',
-        'create_milestone',
-        'create_release',
-        'delete',
-        'driver',
-        'edit',
-        'link_branch',
-        'rdf',
-        'set_branch',
-        'subscribe',
-        'ubuntupkg',
-        ]
+
+    @cachedproperty
+    def links(self):
+        links = [
+            'configure_bugtracker',
+            'create_milestone',
+            'create_release',
+            'delete',
+            'driver',
+            'edit',
+            'link_branch',
+            'rdf',
+            'set_branch',
+            ]
+        add_subscribe_link(links)
+        links.append('ubuntupkg')
+        return links
 
     @enabled_with_permission('launchpad.Edit')
     def configure_bugtracker(self):
@@ -380,11 +386,12 @@ class ProductSeriesBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
     """The bugs menu."""
     usedfor = IProductSeries
     facet = 'bugs'
-    links = (
-        'new',
-        'nominations',
-        'subscribe',
-        )
+
+    @cachedproperty
+    def links(self):
+        links = ['new', 'nominations']
+        add_subscribe_link(links)
+        return links
 
     def new(self):
         """Return a link to report a bug in this series."""
@@ -438,6 +445,11 @@ def get_series_branch_error(product, branch):
 
 class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
     """A view to show a series with translations."""
+
+    def initialize(self):
+        super(ProductSeriesView, self).initialize()
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user)
 
     @property
     def page_title(self):
