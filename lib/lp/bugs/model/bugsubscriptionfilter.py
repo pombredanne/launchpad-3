@@ -272,13 +272,14 @@ class BugSubscriptionFilterMute(StormBase):
     implements(IBugSubscriptionFilterMute)
 
     __storm_table__ = "BugSubscriptionFilterMute"
-    __storm_primary__ = 'person', 'filter'
 
     person_id = Int("person", allow_none=False, validator=validate_person)
     person = Reference(person_id, "Person.id")
 
     filter_id = Int("filter", allow_none=False)
     filter = Reference(filter_id, "StructuralSubscription.id")
+
+    __storm_primary__ = 'person', 'filter'
 
     date_created = DateTime(
         "date_created", allow_none=False, default=UTC_NOW,
