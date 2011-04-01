@@ -25,7 +25,6 @@ from canonical.launchpad.webapp.interfaces import (
     MASTER_FLAVOR,
     )
 from canonical.lazr.utils import safe_hasattr
-from lp.services.log.loglevels import DEBUG2
 
 
 class LoopTuner:
@@ -129,7 +128,7 @@ class LoopTuner:
 
                 if self._isTimedOut():
                     self.log.warn(
-                        "Task aborted after %d seconds." % self.abort_time)
+                        "Task aborted after %d seconds.", self.abort_time)
                     break
 
                 self.operation(chunk_size)
@@ -138,11 +137,7 @@ class LoopTuner:
                 time_taken = new_clock - last_clock
                 last_clock = new_clock
 
-                # XXX JeroenVermeulen 2011-03-24 bug=741650: call debug2
-                # log method once we've ensured that the root logger has
-                # it.
-                self.log.log(
-                    DEBUG2,
+                self.log.debug2(
                     "Iteration %d (size %.1f): %.3f seconds",
                     iteration, chunk_size, time_taken)
 
@@ -169,11 +164,8 @@ class LoopTuner:
             total_time = last_clock - self.start_time
             average_size = total_size/max(1, iteration)
             average_speed = total_size/max(1, total_time)
-            # XXX JeroenVermeulen 2011-03-24 bug=741650: call debug2 log
-            # method once we've ensured that the root logger has it.
-            self.log.log(
-                DEBUG2,
-                "Done. %d items in %d iterations, 3f seconds, "
+            self.log.debug2(
+                "Done. %d items in %d iterations, %3f seconds, "
                 "average size %f (%s/s)",
                 total_size, iteration, total_time, average_size,
                 average_speed)
@@ -262,7 +254,7 @@ class DBLoopTuner(LoopTuner):
             if msg_counter % 60 == 1:
                 self.log.info(
                     "Database replication lagged %s. "
-                    "Sleeping up to 10 minutes." % lag)
+                    "Sleeping up to 10 minutes.", lag)
 
             transaction.abort() # Don't become a long running transaction!
             self._sleep(10)
@@ -296,8 +288,8 @@ class DBLoopTuner(LoopTuner):
             if msg_counter % 60 == 1:
                 for runtime, procpid, usename, datname, query in results:
                     self.log.info(
-                        "Blocked on %s old xact %s@%s/%d - %s."
-                        % (runtime, usename, datname, procpid, query))
+                        "Blocked on %s old xact %s@%s/%d - %s.",
+                        runtime, usename, datname, procpid, query)
                 self.log.info("Sleeping for up to 10 minutes.")
             transaction.abort() # Don't become a long running transaction!
             self._sleep(10)

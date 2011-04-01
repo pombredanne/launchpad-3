@@ -228,7 +228,7 @@ comprises of the official tags of all targets for which the bug has a task.
     >>> product2.official_bug_tags = [u'miney', u'moe']
     >>> bug = factory.makeBug(product=product1)
     >>> bug.addTask(target=product2, owner=factory.makePerson())
-    <BugTask at ...>
+    <BugTask ...>
     >>> bug_url = canonical_url(bug)
     >>> transaction.commit()
     >>> logout()

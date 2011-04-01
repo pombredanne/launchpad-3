@@ -79,3 +79,5 @@ configs/testrunner-appserver_*
 doc/_build
 .idea
 run.gdb
+lib/canonical/launchpad/icing/icon-sprites
+lib/canonical/launchpad/icing/icon-sprites.positioning

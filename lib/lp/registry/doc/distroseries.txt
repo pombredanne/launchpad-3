@@ -317,8 +317,8 @@ again" type set of assertions.
     >>> login("foo.bar@canonical.com")
     >>> humpy = ubuntu.newSeries('humpy', 'Humpy Hippo',
     ...                          'The Humpy Hippo', 'Fat', 'Yo Momma',
-    ...                          '99.2',hoary, hoary.owner)
-    >>> ids = InitialiseDistroSeries(humpy)
+    ...                          '99.2', None, hoary.owner)
+    >>> ids = InitialiseDistroSeries(hoary, humpy)
     >>> ids.initialise()
     >>> hoary.getPublishedSources('pmount').count()
     1
@@ -351,8 +351,8 @@ one coherent published source + binary, mozilla-firefox)
 
     >>> bumpy = ubuntu.newSeries('bumpy', 'Bumpy',
     ...                          'The Bumpy', 'Fat', 'Boom',
-    ...                          '99.3', warty, warty.owner)
-    >>> ids = InitialiseDistroSeries(bumpy)
+    ...                          '99.3', None, warty.owner)
+    >>> ids = InitialiseDistroSeries(warty, bumpy)
     >>> ids.initialise()
 
 Build a new ISourcePackage based in the new distroseries:
