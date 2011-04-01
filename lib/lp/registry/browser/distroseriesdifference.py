@@ -84,12 +84,13 @@ class DistroSeriesDifferenceNavigation(Navigation):
 
     def _package_url(self, distro_series, version):
         pubs = distro_series.getPublishedSources(
-            self.context.source_package_name, include_pending=True,
+            self.context.source_package_name,
             version=version)
 
-        pub = IResultSet(pubs).first()
+        # There is only one or zero published source.
+        pub = IResultSet(pubs).one()
         if pub is None:
-            return ''
+            return None
         else:
             return canonical_url(
                 DistroSeriesSourcePackageRelease(

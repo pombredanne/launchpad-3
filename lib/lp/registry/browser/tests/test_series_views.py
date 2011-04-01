@@ -32,7 +32,10 @@ from lp.services.features.model import (
     FeatureFlag,
     getFeatureStore,
     )
-from lp.soyuz.enums import SourcePackageFormat
+from lp.soyuz.enums import (
+    PackagePublishingStatus,
+    SourcePackageFormat,
+    )
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
@@ -311,6 +314,48 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
         # difference.
         self.assertTrue(
             links[0].get('href'), EndsWith(difference.source_version))
+
+    def test_diff_row_no_published_version(self):
+        # The +localpackagediffs page shows only the version (no link)
+        # if we fail to fetch the published version.
+        package_name = 'package-1'
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
+        versions = {
+            'base': u'1.0',
+            'derived': u'1.0derived1',
+            'parent': u'1.0-1',
+        }
+        new_version = u'1.2'
+
+        difference = self.factory.makeDistroSeriesDifference(
+            versions=versions,
+            source_package_name_str=package_name,
+            derived_series=derived_series)
+
+        # Delete the publications.
+        difference.source_pub.status = PackagePublishingStatus.DELETED
+        difference.parent_source_pub.status = PackagePublishingStatus.DELETED
+
+        set_derived_series_ui_feature_flag(self)
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs')
+        soup = BeautifulSoup(view())
+        diff_table = soup.find('table', {'class': 'listing'})
+        row = diff_table.tbody.tr
+
+        # The table feature a simple span since we were unable to retrieve a
+        # published sourcepackage.
+        derived_span = row.findAll('span', {'class': 'derived-version'})
+        parent_span = row.findAll('span', {'class': 'parent-version'})
+        self.assertEqual(1, len(derived_span))
+        self.assertEqual(1, len(parent_span))
+
+        # The version displayed is the version attached to the
+        # difference.
+        self.assertEqual(versions['derived'], derived_span[0].string.strip())
+        self.assertEqual(versions['parent'], parent_span[0].string.strip())
 
 
 class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
