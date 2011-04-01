@@ -105,10 +105,13 @@ class IBugSubscriptionFilterAttributes(Interface):
             required=True, default=frozenset(),
             value_type=SearchTag()))
 
+    @call_with(person=REQUEST_USER)
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=True))
     @export_read_operation()
     @operation_for_version('devel')
-    def isMuteAllowed():
-        """Return True if this filter can be muted."""
+    def isMuteAllowed(person):
+        """Return True if this filter can be muted for `person`."""
 
     @call_with(person=REQUEST_USER)
     @operation_parameters(

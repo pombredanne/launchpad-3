@@ -26,6 +26,7 @@ from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugsubscriptionfilter import (
     BugSubscriptionFilter,
     BugSubscriptionFilterMute,
+    MuteNotAllowed,
     )
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
@@ -704,7 +705,7 @@ class TestBugSubscriptionFilterMute(TestCaseWithFactory):
     def test_isMuteAllowed_returns_true_for_team_subscriptions(self):
         # BugSubscriptionFilter.isMuteAllowed() will return True for
         # subscriptions where the owner of the subscription is a team.
-        self.assertTrue(self.filter.isMuteAllowed())
+        self.assertTrue(self.filter.isMuteAllowed(self.team_member))
 
     def test_isMuteAllowed_returns_false_for_non_team_subscriptions(self):
         # BugSubscriptionFilter.isMuteAllowed() will return False for
@@ -714,7 +715,13 @@ class TestBugSubscriptionFilterMute(TestCaseWithFactory):
             non_team_subscription = self.target.addBugSubscription(
                 person, person)
         filter = non_team_subscription.bug_filters.one()
-        self.assertFalse(filter.isMuteAllowed())
+        self.assertFalse(filter.isMuteAllowed(person))
+
+    def test_isMuteAllowed_returns_false_for_non_team_members(self):
+        # BugSubscriptionFilter.isMuteAllowed() will return False if the
+        # user passed to it is not a member of the subscribing team.
+        non_team_person = self.factory.makePerson()
+        self.assertFalse(self.filter.isMuteAllowed(non_team_person))
 
     def test_mute_adds_mute(self):
         # BugSubscriptionFilter.mute() adds a mute for the filter.
@@ -764,3 +771,21 @@ class TestBugSubscriptionFilterMute(TestCaseWithFactory):
         self.assertTrue(mutes.is_empty())
         self.filter.unmute(self.team_member)
         self.assertTrue(mutes.is_empty())
+
+    def test_mute_raises_error_for_non_team_subscriptions(self):
+        # BugSubscriptionFilter.mute() will raise an error if called on
+        # a non-team subscription.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            non_team_subscription = self.target.addBugSubscription(
+                person, person)
+        filter = non_team_subscription.bug_filters.one()
+        self.assertFalse(filter.isMuteAllowed(person))
+        self.assertRaises(MuteNotAllowed, filter.mute, person)
+
+    def test_mute_raises_error_for_non_team_members(self):
+        # BugSubscriptionFilter.mute() will raise an error if called on
+        # a subscription of which the calling person is not a member.
+        non_team_person = self.factory.makePerson()
+        self.assertFalse(self.filter.isMuteAllowed(non_team_person))
+        self.assertRaises(MuteNotAllowed, self.filter.mute, non_team_person)
