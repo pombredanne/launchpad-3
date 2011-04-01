@@ -559,6 +559,8 @@ class IDistroSeriesPublic(
                             archive=None):
         """Return the SourcePackagePublishingHistory(s)
 
+        Deprecated.  Use IArchive.getPublishedSources instead.
+
         Given a ISourcePackageName or name.
 
         If pocket is not specified, we look in all pockets.
