@@ -271,7 +271,7 @@ class BugSubscriptionFilterMute(StormBase):
 
     implements(IBugSubscriptionFilterMute)
 
-    __storm_table__ = "BugSubscriptionFilter"
+    __storm_table__ = "BugSubscriptionFilterMute"
 
     id = Int(primary=True)
 
