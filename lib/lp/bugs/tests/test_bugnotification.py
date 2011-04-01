@@ -266,10 +266,12 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
         BugNotificationFilter(
             bug_notification=notification2,
             bug_subscription_filter=bug_filter2)
-        # Perform the test.
         sources = list(self.notification.recipients)
         sources.extend(notification2.recipients)
-        assert(len(sources)==2)
+        # This first check is really just for the internal consistency of the
+        # test.
+        self.assertEqual(len(sources), 2)
+        # Perform the test.
         self.assertEqual(
             {self.subscriber: {'sources': sources,
              'filter descriptions': ['Another Filter!', 'Special Filter!']}},

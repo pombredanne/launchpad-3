@@ -180,9 +180,10 @@ class BugNotificationSet:
         if not notifications or not recipient_to_sources:
             # This is a shortcut that will remove some error conditions.
             return {}
-        # This makes two calls to the database to get all the
-        # information we need. The first call gets the filter ids and
-        # descriptions for each recipient.
+        # This makes one call to the database to get all the information
+        # we need. We get the filter ids and descriptions for each
+        # source, and then we divide up the information per recipient.
+        # First we get some intermediate data structures set up.
         source_person_id_map = {}
         recipient_id_map = {}
         for recipient, sources in recipient_to_sources.items():
@@ -205,6 +206,7 @@ class BugNotificationSet:
                             'filters': {}}
                     source_person_id_map[person_id] = data
                 data['sources'].add(source)
+        # Now we actually look for the filters.
         store = IStore(BugSubscriptionFilter)
         source = store.using(
             BugSubscriptionFilter,
@@ -223,16 +225,18 @@ class BugNotificationSet:
             In(StructuralSubscription.subscriberID,
                source_person_id_map.keys()))
         filter_ids = []
+        # Record the filters for each source.
         for source_person_id, filter_id, filter_description in filter_data:
             source_person_id_map[source_person_id]['filters'][filter_id] = (
                 filter_description)
             filter_ids.append(filter_id)
+        # Assign the filters to each recipient.
         for recipient_data in recipient_id_map.values():
             for source_person_id in recipient_data['source person ids']:
                 recipient_data['filters'].update(
                     source_person_id_map[source_person_id]['filters'])
         # Now recipient_id_map has all the information we need.  Let's
-        # build the final result.
+        # build the final result and return it.
         result = {}
         for recipient_data in recipient_id_map.values():
             filter_descriptions = [
