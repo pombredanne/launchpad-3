@@ -421,7 +421,10 @@ def expose_user_subscriptions_to_js(user, subscriptions, request):
     """Make the user's subscriptions available to JavaScript."""
     info = {}
     api_request = IWebServiceClientRequest(request)
-    administered_teams = user.getAdministratedTeams()
+    if user is None:
+        administered_teams = []
+    else:
+        administered_teams = user.getAdministratedTeams()
     for subscription in subscriptions:
         target = subscription.target
         record = info.get(target)
