@@ -15,6 +15,12 @@
 <TREVERSE>
 <NODOC>
 
+<!-- text/plain only. CVE-2010-4524 -->
+<MIMEExcs>
+text/html
+text/x-html
+</MIMEExcs>
+
 <!-- Use multi-page indexes.
      See http://www.mhonarc.org/MHonArc/doc/resources/multipg.html -->
 <MULTIPG>
