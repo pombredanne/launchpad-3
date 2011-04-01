@@ -3072,28 +3072,27 @@ class PersonSet:
             account = IMasterStore(Account).get(
                 Account, email_address.accountID)
             account_person = self.getByAccount(account)
-            # There is a `Person` linked to the `Account`, link the
+            if account_person is None:
+                # There is no associated `Person` to the email `Account`.
+                # This is probably because the account was created externally
+                # to Launchpad. Create just the `Person`, associate it with
+                # the `EmailAddress` and return it.
+                name = generate_nick(email)
+                account_person = self._newPerson(
+                    name, displayname, hide_email_addresses=True,
+                    rationale=rationale, comment=comment,
+                    registrant=registrant, account=email_address.account)
+            # There is (now) a `Person` linked to the `Account`, link the
             # `EmailAddress` to this `Person` and return it.
-            if account_person is not None:
-                master_email = IMasterStore(EmailAddress).get(
-                    EmailAddress, email_address.id)
-                master_email.personID = account_person.id
-                # Populate the previously empty 'preferredemail' cached
-                # property, so the Person record is up-to-date.
-                if master_email.status == EmailAddressStatus.PREFERRED:
-                    cache = get_property_cache(account_person)
-                    cache.preferredemail = master_email
-                return account_person
-            # There is no associated `Person` to the email `Account`.
-            # This is probably because the account was created externally
-            # to Launchpad. Create just the `Person`, associate it with
-            # the `EmailAddress` and return it.
-            name = generate_nick(email)
-            person = self._newPerson(
-                name, displayname, hide_email_addresses=True,
-                rationale=rationale, comment=comment, registrant=registrant,
-                account=email_address.account)
-            return person
+            master_email = IMasterStore(EmailAddress).get(
+                EmailAddress, email_address.id)
+            master_email.personID = account_person.id
+            # Populate the previously empty 'preferredemail' cached
+            # property, so the Person record is up-to-date.
+            if master_email.status == EmailAddressStatus.PREFERRED:
+                cache = get_property_cache(account_person)
+                cache.preferredemail = master_email
+            return account_person
 
         # Easy, return the `Person` associated with the existing
         # `EmailAddress`.

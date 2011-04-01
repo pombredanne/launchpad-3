@@ -149,7 +149,7 @@ inplace: build logs clean_logs
 	chmod 777 $(CODEHOSTING_ROOT)/rewrite.log
 	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
 
-build: compile apidoc jsbuild css_combine
+build: compile apidoc jsbuild css_combine sprite_image
 
 css_combine: sprite_css bin/combine-css
 	${SHHH} bin/combine-css
@@ -159,7 +159,9 @@ sprite_css: ${LP_BUILT_JS_ROOT}/sprite.css
 ${LP_BUILT_JS_ROOT}/sprite.css: bin/sprite-util ${ICING}/sprite.css.in ${ICING}/icon-sprites.positioning
 	${SHHH} bin/sprite-util create-css
 
-sprite_image:
+sprite_image: ${ICING}/icon-sprites
+
+${ICING}/icon-sprites: bin/sprite-util ${ICING}/icon-sprites.positioning
 	${SHHH} bin/sprite-util create-image
 
 # We absolutely do not want to include the lazr.testing module and

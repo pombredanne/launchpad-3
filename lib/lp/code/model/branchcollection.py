@@ -264,7 +264,46 @@ class GenericBranchCollection:
     def getMergeProposals(self, statuses=None, for_branches=None,
                           target_branch=None, merged_revnos=None):
         """See `IBranchCollection`."""
-        # teams = SQL("teams as (SELECT team from teamparticipation where person=%s)" % sqlvalues
+        if (self._asymmetric_filter_expressions or for_branches or
+            target_branch or merged_revnos):
+            return self._naiveGetMergeProposals(statuses, for_branches,
+                target_branch, merged_revnos)
+        else:
+            # When examining merge proposals in a scope, this is a moderately
+            # effective set of constrained queries. It is not effective when
+            # unscoped or when tight constraints on branches are present.
+            return self._scopedGetMergeProposals(statuses)
+
+    def _naiveGetMergeProposals(self, statuses=None, for_branches=None,
+        target_branch=None, merged_revnos=None):
+        Target = ClassAlias(Branch, "target")
+        extra_tables = list(set(
+            self._tables.values() + self._asymmetric_tables.values()))
+        tables = [Branch] + extra_tables + [
+            Join(BranchMergeProposal, And(
+                Branch.id==BranchMergeProposal.source_branchID,
+                *(self._branch_filter_expressions +
+                  self._asymmetric_filter_expressions))),
+            Join(Target, Target.id==BranchMergeProposal.target_branchID)
+            ]
+        expressions = self._getBranchVisibilityExpression()
+        expressions.extend(self._getBranchVisibilityExpression(Target))
+        if for_branches is not None:
+            branch_ids = [branch.id for branch in for_branches]
+            expressions.append(
+                BranchMergeProposal.source_branchID.is_in(branch_ids))
+        if target_branch is not None:
+            expressions.append(
+                BranchMergeProposal.target_branch == target_branch)
+        if merged_revnos is not None:
+            expressions.append(
+                BranchMergeProposal.merged_revno.is_in(merged_revnos))
+        if statuses is not None:
+            expressions.append(
+                BranchMergeProposal.queue_status.is_in(statuses))
+        return self.store.using(*tables).find(BranchMergeProposal, *expressions)
+
+    def _scopedGetMergeProposals(self, statuses):
         scope_tables = [Branch] + self._tables.values()
         scope_expressions = self._branch_filter_expressions
         select = self.store.using(*scope_tables).find(
@@ -283,16 +322,6 @@ class GenericBranchCollection:
                 BranchMergeProposal.source_branchID == Branch.id)
             tables.append(Branch)
             tables.extend(self._asymmetric_tables.values())
-        if for_branches is not None:
-            branch_ids = [branch.id for branch in for_branches]
-            expressions.append(
-                BranchMergeProposal.source_branchID.is_in(branch_ids))
-        if target_branch is not None:
-            expressions.append(
-                BranchMergeProposal.target_branch == target_branch)
-        if merged_revnos is not None:
-            expressions.append(
-                BranchMergeProposal.merged_revno.is_in(merged_revnos))
         if statuses is not None:
             expressions.append(
                 BranchMergeProposal.queue_status.is_in(statuses))

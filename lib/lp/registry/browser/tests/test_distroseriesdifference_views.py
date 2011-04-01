@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for the DistroSeriesDifference views."""
@@ -6,14 +6,13 @@
 __metaclass__ = type
 
 from BeautifulSoup import BeautifulSoup
+import re
+import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
+from canonical.testing import LaunchpadFunctionalLayer
 from lp.registry.browser.distroseriesdifference import (
     DistroSeriesDifferenceDisplayComment,
     )
@@ -22,12 +21,16 @@ from lp.registry.enum import (
     DistroSeriesDifferenceType,
     )
 from lp.registry.interfaces.distroseriesdifference import (
-    IDistroSeriesDifferenceSource)
+    IDistroSeriesDifferenceSource,
+    )
 from lp.services.comments.interfaces.conversation import (
     IComment,
     IConversation,
     )
-from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.enums import (
+    PackageDiffStatus,
+    PackagePublishingStatus,
+    )
 from lp.testing import (
     celebrity_logged_in,
     person_logged_in,
@@ -38,7 +41,7 @@ from lp.testing.views import create_initialized_view
 
 class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_provides_conversation(self):
         # The DSDView provides a conversation implementation.
@@ -158,19 +161,67 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             ds_diff, '+listing-distroseries-extra', request=request)
         self.assertFalse(view.show_edit_options)
 
+    def test_does_display_child_diff(self):
+        # If the child's latest published version is not the same as the base
+        # version, we display two links to two diffs.
+        changelog_lfa = self.factory.makeChangelog(
+            'foo', ['0.1-1derived1', '0.1-1'])
+        parent_changelog_lfa = self.factory.makeChangelog(
+            'foo', ['0.1-2', '0.1-1'])
+        transaction.commit() # Yay, librarian.
+        ds_diff = self.factory.makeDistroSeriesDifference(versions={
+            'derived': '0.1-1derived1',
+            'parent': '0.1-2',
+            }, changelogs={
+            'derived': changelog_lfa,
+            'parent': parent_changelog_lfa})
+
+        self.assertEqual('0.1-1', ds_diff.base_version)
+        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+        soup = BeautifulSoup(view())
+        tags = soup.find('ul', 'package-diff-status').findAll('span')
+        self.assertEqual(2, len(tags))
+
+    def test_do_not_display_child_diff(self):
+        # If the child's latest published version is the same as the base
+        # version, we don't display the link to the diff.
+        changelog_lfa = self.factory.makeChangelog('foo', ['0.30-1'])
+        parent_changelog_lfa = self.factory.makeChangelog(
+            'foo', ['0.32-1', '0.30-1'])
+        transaction.commit() # Yay, librarian.
+        ds_diff = self.factory.makeDistroSeriesDifference(versions={
+            'derived': '0.30-1',
+            'parent': '0.32-1',
+            }, changelogs={
+            'derived': changelog_lfa,
+            'parent': parent_changelog_lfa})
+
+        self.assertEqual('0.30-1', ds_diff.base_version)
+        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+        soup = BeautifulSoup(view())
+        tags = soup.find('ul', 'package-diff-status').findAll('span')
+        self.assertEqual(1, len(tags))
+
 
 class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def number_of_request_diff_texts(self, html):
-        """Check that the html doesn't include the request diff text."""
-        soup = BeautifulSoup(html)
-        return len(soup.findAll('li', 'request-derived-diff'))
+    def number_of_request_diff_texts(self, html_or_soup):
+        """Returns the number of request diff text."""
+        if not(isinstance(html_or_soup, BeautifulSoup)):
+            soup = BeautifulSoup(html_or_soup)
+        else:
+            soup = html_or_soup
+        class_dict = {'class': re.compile('request-derived-diff')}
+        return len(soup.findAll('span', class_dict))
 
-    def contains_one_link_to_diff(self, html, package_diff):
+    def contains_one_link_to_diff(self, html_or_soup, package_diff):
         """Return whether the html contains a link to the diff content."""
-        soup = BeautifulSoup(html)
+        if not(isinstance(html_or_soup, BeautifulSoup)):
+            soup = BeautifulSoup(html_or_soup)
+        else:
+            soup = html_or_soup
         return 1 == len(soup.findAll(
             'a', href=package_diff.diff_content.http_url))
 
@@ -192,11 +243,58 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
             ds_diff.package_diff = self.factory.makePackageDiff()
 
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+        html = view()
         # The text for the parent diff remains, but the source package
         # diff is now a link.
-        self.assertEqual(1, self.number_of_request_diff_texts(view()))
+        self.assertEqual(1, self.number_of_request_diff_texts(html))
         self.assertTrue(
-            self.contains_one_link_to_diff(view(), ds_diff.package_diff))
+            self.contains_one_link_to_diff(html, ds_diff.package_diff))
+
+    def test_source_diff_rendering_diff_no_link(self):
+        # The status of the package is shown if the package diff is in a
+        # PENDING or FAILED state.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+
+        statuses_and_classes = [
+            (PackageDiffStatus.PENDING, 'PENDING'),
+            (PackageDiffStatus.FAILED, 'FAILED')]
+        for status, css_class in statuses_and_classes:
+            with person_logged_in(ds_diff.derived_series.owner):
+                ds_diff.package_diff = self.factory.makePackageDiff(
+                     status=status)
+
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra')
+            soup = BeautifulSoup(view())
+            # Only one link since the other package diff is not COMPLETED.
+            self.assertEqual(1, self.number_of_request_diff_texts(soup))
+            # The diff has a css_class class.
+            self.assertEqual(
+                1,
+                len(soup.findAll('span', {'class': re.compile(css_class)})))
+
+    def test_parent_source_diff_rendering_diff_no_link(self):
+        # The status of the package is shown if the parent package diff is
+        # in a PENDING or FAILED state.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+
+        statuses_and_classes = [
+            (PackageDiffStatus.PENDING, 'PENDING'),
+            (PackageDiffStatus.FAILED, 'FAILED')]
+        for status, css_class in statuses_and_classes:
+            with person_logged_in(ds_diff.derived_series.owner):
+                ds_diff.parent_package_diff = self.factory.makePackageDiff(
+                     status=status)
+
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra')
+            soup = BeautifulSoup(view())
+            # Only one link since the other package diff is not COMPLETED.
+            self.assertEqual(1, self.number_of_request_diff_texts(soup))
+            # The diff has a css_class class.
+            self.assertEqual(
+                1,
+                len(soup.findAll('span', {'class': re.compile(css_class)})))
 
     def test_source_diff_rendering_no_source(self):
         # If there is no source pub for this difference, then we don't
@@ -219,10 +317,11 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
         # The text for the source diff remains, but the parent package
         # diff is now a link.
-        self.assertEqual(1, self.number_of_request_diff_texts(view()))
+        html = view()
+        self.assertEqual(1, self.number_of_request_diff_texts(html))
         self.assertTrue(
             self.contains_one_link_to_diff(
-                view(), ds_diff.parent_package_diff))
+                html, ds_diff.parent_package_diff))
 
     def test_parent_source_diff_rendering_no_source(self):
         # If there is no source pub for this difference, then we don't
