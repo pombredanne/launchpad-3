@@ -21,39 +21,34 @@ from lp.testing import (
     launchpadlib_for,
     person_logged_in,
     TestCaseWithFactory,
+    WebServiceTestCase,
     )
 
 
-class TestMessageTraversal(TestCaseWithFactory):
+class TestMessageTraversal(WebServiceTestCase):
     """Tests safe traversal of bugs.
 
     See bug 607438."""
 
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(TestMessageTraversal, self).setUp()
-        self.bugowner = self.factory.makePerson()
-        self.bug = self.factory.makeBug(owner=self.bugowner)
-
     def test_message_with_attachments(self):
+        bugowner = self.factory.makePerson()
+        bug = self.factory.makeBug(owner=bugowner)
         # Traversal over bug messages attachments has no errors.
         expected_messages = []
-        with person_logged_in(self.bugowner):
+        with person_logged_in(bugowner):
             for i in range(3):
-                att = self.factory.makeBugAttachment(self.bug)
+                att = self.factory.makeBugAttachment(bug)
                 expected_messages.append(att.message.subject)
 
         lp_user = self.factory.makePerson()
-        lp = launchpadlib_for("test", lp_user, version="devel")
-        lp_bug = lp.bugs[self.bug.id]
+        lp_bug = self.wsObject(bug, lp_user)
 
         attachments = lp_bug.attachments
         messages = [a.message.subject for a in attachments
             if a.message is not None]
-        self.assertEqual(
-            sorted(messages),
-            sorted(expected_messages))
+        self.assertContentEqual(
+            messages,
+            expected_messages)
 
 
 class TestSetCommentVisibility(TestCaseWithFactory):
