@@ -1,0 +1,8 @@
+#!/bin/sh -e
+
+echo "$(date -R): Copying the indices into place."
+
+INDICES="$ARCHIVEROOT/indices"
+
+rm -f -- "$INDICES/override"
+cp -- "$OVERRIDEROOT"/override.* "$INDICES/"
