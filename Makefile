@@ -78,7 +78,8 @@ hosted_branches: $(PY)
 $(API_INDEX): $(BZR_VERSION_INFO) $(PY)
 	rm -rf $(APIDOC_DIR) $(APIDOC_DIR).tmp
 	mkdir -p $(APIDOC_DIR).tmp
-	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py --force "$(WADL_TEMPLATE)"
+	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py \
+	    --force "$(WADL_TEMPLATE)"
 	mv $(APIDOC_DIR).tmp $(APIDOC_DIR)
 
 apidoc: compile $(API_INDEX)
@@ -156,12 +157,13 @@ css_combine: sprite_css bin/combine-css
 
 sprite_css: ${LP_BUILT_JS_ROOT}/sprite.css
 
-${LP_BUILT_JS_ROOT}/sprite.css: bin/sprite-util ${ICING}/sprite.css.in ${ICING}/icon-sprites.positioning
+${LP_BUILT_JS_ROOT}/sprite.css: bin/sprite-util ${ICING}/sprite.css.in \
+		${ICING}/icon-sprites.positioning
 	${SHHH} bin/sprite-util create-css
 
-sprite_image: ${ICING}/icon-sprites
+sprite_image: ${ICING}/icon-sprites ${ICING}/icon-sprites.positioning
 
-${ICING}/icon-sprites: bin/sprite-util ${ICING}/icon-sprites.positioning
+${ICING}/icon-sprites.positioning ${ICING}/icon-sprites: bin/sprite-util
 	${SHHH} bin/sprite-util create-image
 
 # We absolutely do not want to include the lazr.testing module and
@@ -410,7 +412,9 @@ clean: clean_js clean_buildout clean_logs
 			  /var/tmp/testkeyserver
 	# /var/tmp/launchpad_mailqueue is created read-only on ec2test
 	# instances.
-	if [ -w /var/tmp/launchpad_mailqueue ]; then $(RM) -rf /var/tmp/launchpad_mailqueue; fi
+	if [ -w /var/tmp/launchpad_mailqueue ]; then \
+		$(RM) -rf /var/tmp/launchpad_mailqueue; \
+	fi
 
 
 realclean: clean
@@ -474,10 +478,11 @@ pydoctor:
 		--docformat restructuredtext --verbose-about epytext-summary \
 		$(PYDOCTOR_OPTIONS)
 
-.PHONY: apidoc buildout_bin check doc tags TAGS zcmldocs realclean clean debug \
-	stop start run ftest_build ftest_inplace test_build test_inplace \
-	pagetests check schema default launchpad.pot pull_branches \
-	scan_branches sync_branches reload-apache hosted_branches \
-	check_mailman check_config jsbuild jsbuild_lazr clean_js \
-	clean_buildout buildonce_eggs build_eggs sprite_css sprite_image \
-	css_combine compile check_schema pydoctor clean_logs \
+.PHONY: apidoc buildout_bin check doc tags TAGS zcmldocs realclean \
+	clean debug stop start run ftest_build ftest_inplace \
+	test_build test_inplace pagetests check schema default \
+	launchpad.pot pull_branches scan_branches sync_branches	\
+	reload-apache hosted_branches check_mailman check_config \
+	jsbuild jsbuild_lazr clean_js clean_buildout buildonce_eggs \
+	build_eggs sprite_css sprite_image css_combine compile \
+	check_schema pydoctor clean_logs 

@@ -10,6 +10,7 @@ __all__ = [
     ]
 
 from lazr.restful.interfaces import IWebServiceClientRequest
+from storm.zope.interfaces import IResultSet
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.component import (
@@ -27,15 +28,14 @@ from zope.schema.vocabulary import (
     )
 
 from canonical.launchpad.webapp import (
+    canonical_url,
     LaunchpadView,
     Navigation,
     stepthrough,
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.launchpadform import custom_widget
-from lp.app.browser.launchpadform import (
-    LaunchpadFormView,
-    )
+from lp.app.browser.launchpadform import LaunchpadFormView
 from lp.registry.enum import DistroSeriesDifferenceStatus
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
@@ -50,6 +50,10 @@ from lp.registry.model.distroseriesdifferencecomment import (
 from lp.services.comments.interfaces.conversation import (
     IComment,
     IConversation,
+    )
+from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.model.distroseriessourcepackagerelease import (
+    DistroSeriesSourcePackageRelease,
     )
 
 
@@ -66,6 +70,35 @@ class DistroSeriesDifferenceNavigation(Navigation):
         return getUtility(
             IDistroSeriesDifferenceCommentSource).getForDifference(
                 self.context, id)
+
+    @property
+    def parent_source_package_url(self):
+        return self._package_url(
+            self.context.derived_series.parent_series,
+            self.context.parent_source_version)
+
+    @property
+    def source_package_url(self):
+        return self._package_url(
+            self.context.derived_series,
+            self.context.source_version)
+
+    def _package_url(self, distro_series, version):
+        pubs = distro_series.main_archive.getPublishedSources(
+            name=self.context.source_package_name.name,
+            version=version,
+            status=PackagePublishingStatus.PUBLISHED,
+            distroseries=distro_series,
+            exact_match=True)
+
+        # There is only one or zero published package.
+        pub = IResultSet(pubs).one()
+        if pub is None:
+            return None
+        else:
+            return canonical_url(
+                DistroSeriesSourcePackageRelease(
+                    distro_series, pub.sourcepackagerelease))
 
 
 class IDistroSeriesDifferenceForm(Interface):
@@ -136,6 +169,20 @@ class DistroSeriesDifferenceView(LaunchpadFormView):
     def display_child_diff(self):
         """Only show the child diff if we need to."""
         return self.context.source_version != self.context.base_version
+  
+    @property
+    def show_package_diffs_request_link(self):
+        """Return whether package diffs can be requested.
+
+        At least one of the package diffs for this dsd must be missing
+        and the user must have lp.Edit.
+
+        This method is used in the template to show the package diff
+        request link.
+        """
+        return (check_permission('launchpad.Edit', self.context) and
+                (not self.context.package_diff or
+                 not self.context.parent_package_diff))
 
 
 class DistroSeriesDifferenceDisplayComment:
