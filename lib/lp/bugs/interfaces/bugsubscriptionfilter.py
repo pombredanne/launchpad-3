@@ -105,6 +105,10 @@ class IBugSubscriptionFilterAttributes(Interface):
             required=True, default=frozenset(),
             value_type=SearchTag()))
 
+
+class IBugSubscriptionFilterMethodsPublic(Interface):
+    """Methods on `IBugSubscriptionFilter` that can be called by anyone."""
+
     @call_with(person=REQUEST_USER)
     @operation_parameters(
         person=Reference(IPerson, title=_('Person'), required=True))
@@ -130,8 +134,8 @@ class IBugSubscriptionFilterAttributes(Interface):
         """Remove any mute for `person` to this filter."""
 
 
-class IBugSubscriptionFilterMethods(Interface):
-    """Methods of `IBugSubscriptionFilter`."""
+class IBugSubscriptionFilterMethodsProtected(Interface):
+    """Methods of `IBugSubscriptionFilter` that require launchpad.Edit."""
 
     @export_destructor_operation()
     def delete():
@@ -142,7 +146,8 @@ class IBugSubscriptionFilterMethods(Interface):
 
 
 class IBugSubscriptionFilter(
-    IBugSubscriptionFilterAttributes, IBugSubscriptionFilterMethods):
+    IBugSubscriptionFilterAttributes, IBugSubscriptionFilterMethodsProtected,
+    IBugSubscriptionFilterMethodsPublic):
     """A bug subscription filter."""
     export_as_webservice_entry()
 
