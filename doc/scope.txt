@@ -182,10 +182,10 @@ often need to acknowledge and work around differences thrown up by hardware.
 We don't care if you use Launchpad, sort of
 -------------------------------------------
 
-Many other forges exist to become more successful.  Although we love our users
-and welcome every new user, Launchpad does not judge its success by the number
-of users.  If one project wishes to host its development on another platform,
-Launchpad acts as a front-end to that platform.
+Many other forges define their success by how many users they have.  Although
+we love our users and welcome every new user, Launchpad does not judge its
+success by the number of users.  If one project wishes to host its development
+on another platform, Launchpad acts as a front-end to that platform.
 
 
 One project, many communities
