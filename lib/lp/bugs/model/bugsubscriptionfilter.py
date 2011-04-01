@@ -279,7 +279,7 @@ class BugSubscriptionFilterMute(StormBase):
     filter_id = Int("filter", allow_none=False)
     filter = Reference(filter_id, "StructuralSubscription.id")
 
-    __storm_primary__ = 'person', 'filter'
+    __storm_primary__ = 'person_id', 'filter_id'
 
     date_created = DateTime(
         "date_created", allow_none=False, default=UTC_NOW,
