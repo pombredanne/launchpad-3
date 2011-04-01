@@ -8,27 +8,28 @@ __all__ = [
     "DistributionJobDerived",
 ]
 
+from lazr.delegates import delegates
 import simplejson
-
-from storm.locals import And, Int, Reference, Unicode
-
+from storm.locals import (
+    And,
+    Int,
+    Reference,
+    Unicode,
+    )
 from zope.interface import implements
 
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces.lpstorm import IStore
-
-from lazr.delegates import delegates
-
 from lp.app.errors import NotFoundError
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
+from lp.services.database.stormbase import StormBase
+from lp.services.job.model.job import Job
+from lp.services.job.runner import BaseRunnableJob
 from lp.soyuz.interfaces.distributionjob import (
     DistributionJobType,
     IDistributionJob,
     )
-from lp.services.job.model.job import Job
-from lp.services.job.runner import BaseRunnableJob
-from lp.services.database.stormbase import StormBase
 
 
 class DistributionJob(StormBase):
@@ -106,7 +107,7 @@ class DistributionJobDerived(BaseRunnableJob):
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
-        vars = BaseRunnableJob.getOopsVars(self)
+        vars = super(DistributionJobDerived, self).getOopsVars()
         vars.extend([
             ('distribution_id', self.context.distribution.id),
             ('distroseries_id', self.context.distroseries.id),

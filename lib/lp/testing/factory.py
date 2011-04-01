@@ -36,19 +36,19 @@ from operator import (
     isSequenceType,
     )
 import os
-from pytz import UTC
 from random import randint
 from StringIO import StringIO
 from textwrap import dedent
 from threading import local
-import transaction
 from types import InstanceType
 import warnings
 
 from bzrlib.merge_directive import MergeDirective2
 from bzrlib.plugins.builder.recipe import BaseRecipeBranch
 import pytz
+from pytz import UTC
 import simplejson
+import transaction
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import (
     ComponentLookupError,
@@ -280,10 +280,8 @@ from lp.testing import (
     time_counter,
     )
 from lp.translations.enums import RosettaImportStatus
-from lp.translations.interfaces.side import (
-    TranslationSide,
-    )
 from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
     )
@@ -4017,6 +4015,12 @@ class LaunchpadObjectFactory:
             return guarded_method
         else:
             return attr
+
+    def __dir__(self):
+        """Enumerate the attributes and methods of the wrapped object factory.
+
+        This is especially useful for interactive users."""
+        return dir(self._factory)
 
 
 def remove_security_proxy_and_shout_at_engineer(obj):

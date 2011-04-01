@@ -22,6 +22,7 @@ from lazr.restful.declarations import (
     export_read_operation,
     export_write_operation,
     exported,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
@@ -352,9 +353,8 @@ class IPackageset(IPackagesetViewOnly, IPackagesetEdit):
     export_as_webservice_entry(publish_web_link=False)
 
 
-class IPackagesetSet(Interface):
-    """An interface for multiple package sets."""
-    export_as_webservice_collection(IPackageset)
+class IPackagesetSetEdit(Interface):
+    """Multiple package sets operations requiring `launchpad.Edit`."""
 
     @operation_parameters(
         name=TextLine(title=_('Valid package set name'), required=True),
@@ -389,6 +389,11 @@ class IPackagesetSet(Interface):
             exists in `distroseries` already.
         :return: a newly created `IPackageset`.
         """
+
+
+class IPackagesetSet(IPackagesetSetEdit):
+    """An interface for multiple package sets."""
+    export_as_webservice_collection(IPackageset)
 
     @operation_parameters(
         name=TextLine(title=_('Package set name'), required=True),
@@ -425,6 +430,22 @@ class IPackagesetSet(Interface):
         """
 
     @operation_parameters(
+        distroseries=copy_field(
+            IPackageset['distroseries'], description=_(
+                "The distribution series to which the packagesets "
+                "are related.")))
+    @operation_returns_collection_of(IPackageset)
+    @export_read_operation()
+    @operation_for_version("beta")
+    def getBySeries(distroseries):
+        """Return the package sets associated with the given distroseries.
+
+        :param distroseries: A `DistroSeries`.
+
+        :return: An iterable collection of `IPackageset` instances.
+        """
+
+    @operation_parameters(
         sourcepackagename=TextLine(
             title=_('Source package name'), required=True),
         distroseries=copy_field(IPackageset['distroseries'], required=False),
@@ -454,4 +475,3 @@ class IPackagesetSet(Interface):
 
     def __getitem__(name):
         """Retrieve a package set by name."""
-
