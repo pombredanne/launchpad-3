@@ -745,3 +745,22 @@ class TestBugSubscriptionFilterMute(TestCaseWithFactory):
         self.filter.unmute(self.team_member)
         store.flush()
         self.assertTrue(mutes.is_empty())
+
+    def test_mute_is_idempotent(self):
+        # Muting works even if the user is already muted.
+        store = Store.of(self.filter)
+        mute = self.filter.mute(self.team_member)
+        store.flush()
+        second_mute = self.filter.mute(self.team_member)
+        self.assertEqual(mute, second_mute)
+
+    def test_unmute_is_idempotent(self):
+        # Unmuting works even if the user is not muted
+        store = Store.of(self.filter)
+        mutes = store.find(
+            BugSubscriptionFilterMute,
+            BugSubscriptionFilterMute.filter == self.filter.id,
+            BugSubscriptionFilterMute.person == self.team_member.id)
+        self.assertTrue(mutes.is_empty())
+        self.filter.unmute(self.team_member)
+        self.assertTrue(mutes.is_empty())
