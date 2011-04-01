@@ -330,7 +330,7 @@
             }
         });
         Y.on('lp:context:lifecycle_status:changed', function(e) {
-            Y.lp.ui.update_field('#lifecycle-status', e.new_value_html);
+            Y.lp.ui.update_field('#lifecycle-status', e.new_value);
         });
         Y.on('lp:context:is_started:changed', function(e) {
             var started = Y.one('#started-by');
