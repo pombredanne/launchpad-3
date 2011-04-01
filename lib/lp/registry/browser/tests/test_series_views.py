@@ -345,14 +345,14 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
         diff_table = soup.find('table', {'class': 'listing'})
         row = diff_table.tbody.tr
 
-        # The table feature a simple span since we were unable to retrieve a
+        # The table feature a simple span since we were unable to fetch a
         # published sourcepackage.
         derived_span = row.findAll('span', {'class': 'derived-version'})
         parent_span = row.findAll('span', {'class': 'parent-version'})
         self.assertEqual(1, len(derived_span))
         self.assertEqual(1, len(parent_span))
 
-        # The version displayed is the version attached to the
+        # The versions displayed are the versions attached to the
         # difference.
         self.assertEqual(versions['derived'], derived_span[0].string.strip())
         self.assertEqual(versions['parent'], parent_span[0].string.strip())

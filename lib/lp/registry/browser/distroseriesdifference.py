@@ -51,6 +51,7 @@ from lp.services.comments.interfaces.conversation import (
     IComment,
     IConversation,
     )
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease,
     )
@@ -83,11 +84,14 @@ class DistroSeriesDifferenceNavigation(Navigation):
             self.context.source_version)
 
     def _package_url(self, distro_series, version):
-        pubs = distro_series.getPublishedSources(
-            self.context.source_package_name,
-            version=version)
+        pubs = distro_series.main_archive.getPublishedSources(
+            name=self.context.source_package_name.name,
+            version=version,
+            status=PackagePublishingStatus.PUBLISHED,
+            distroseries=distro_series,
+            exact_match=True)
 
-        # There is only one or zero published source.
+        # There is only one or zero published package.
         pub = IResultSet(pubs).one()
         if pub is None:
             return None
