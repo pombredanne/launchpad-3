@@ -136,6 +136,16 @@ def LayeredDocFileSuite(*args, **kw):
     suite = doctest.DocFileSuite(*args, **kw)
     if layer is not None:
         suite.layer = layer
+
+    # DocFileTest insists on using the basename of the file as the test
+    # ID. This causes conflicts when two doctests have the same filename, so
+    # we patch the id() method on the test cases.
+    for test in suite:
+        # DocFileTest is a function that returns a DocFileCase.
+        if isinstance(test, doctest.DocFileCase):
+            # DocFileCase.__repr__ returns the test filename.
+            test.id = test.__repr__
+
     return suite
 
 
