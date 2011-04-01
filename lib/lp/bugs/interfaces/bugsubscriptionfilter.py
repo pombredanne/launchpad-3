@@ -119,7 +119,6 @@ class IBugSubscriptionFilter(
 class IBugSubscriptionFilterMute(Interface):
     """A mute on an IBugSubscriptionFilter."""
 
-    id = Int(required=True, readonly=True)
     person = PersonChoice(
         title=_('Person'), required=True, vocabulary='ValidPersonOrTeam',
         readonly=True, description=_("The person subscribed."))
