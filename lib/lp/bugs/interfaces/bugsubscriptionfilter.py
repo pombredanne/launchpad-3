@@ -11,9 +11,15 @@ __all__ = [
 
 
 from lazr.restful.declarations import (
+    call_with,
     export_as_webservice_entry,
     export_destructor_operation,
+    export_read_operation,
+    export_write_operation,
     exported,
+    operation_for_version,
+    operation_parameters,
+    REQUEST_USER,
     )
 from lazr.restful.fields import Reference
 from zope.interface import Interface
@@ -35,6 +41,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscription,
     )
+from lp.registry.interfaces.person import IPerson
 from lp.services.fields import (
     PersonChoice,
     SearchTag,
@@ -97,6 +104,27 @@ class IBugSubscriptionFilterAttributes(Interface):
             title=_("The tags interested in"),
             required=True, default=frozenset(),
             value_type=SearchTag()))
+
+    @export_read_operation()
+    @operation_for_version('devel')
+    def isMuteAllowed():
+        """Return True if this filter can be muted."""
+
+    @call_with(person=REQUEST_USER)
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @export_write_operation()
+    @operation_for_version('devel')
+    def mute(person):
+        """Add a mute for `person` to this filter."""
+
+    @call_with(person=REQUEST_USER)
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @export_write_operation()
+    @operation_for_version('devel')
+    def unmute(person):
+        """Remove any mute for `person` to this filter."""
 
 
 class IBugSubscriptionFilterMethods(Interface):

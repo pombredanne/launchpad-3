@@ -237,6 +237,10 @@ class BugSubscriptionFilter(StormBase):
         _get_tags, _set_tags, doc=(
             "A frozenset of tags filtered on."))
 
+    def isMuteAllowed(self):
+        """See `IBugSubscriptionFilter`."""
+        return self.structural_subscription.subscriber.isTeam()
+
     def _has_other_filters(self):
         """Are there other filters for parent `StructuralSubscription`?"""
         store = Store.of(self)
@@ -265,6 +269,31 @@ class BugSubscriptionFilter(StormBase):
             # subscription.
             self.structural_subscription.delete()
 
+    def mute(self, person):
+        """See `IBugSubscriptionFilter`."""
+        store = Store.of(self)
+        existing_mutes = store.find(
+            BugSubscriptionFilterMute,
+            BugSubscriptionFilterMute.filter_id == self.id,
+            BugSubscriptionFilterMute.person_id == person.id)
+        if not existing_mutes.is_empty():
+            return existing_mutes.one()
+        else:
+            mute = BugSubscriptionFilterMute()
+            mute.person = person
+            mute.filter = self.id
+            store.add(mute)
+            return mute
+
+    def unmute(self, person):
+        """See `IBugSubscriptionFilter`."""
+        store = Store.of(self)
+        existing_mutes = store.find(
+            BugSubscriptionFilterMute,
+            BugSubscriptionFilterMute.filter_id == self.id,
+            BugSubscriptionFilterMute.person_id == person.id)
+        existing_mutes.remove()
+
 
 class BugSubscriptionFilterMute(StormBase):
     """A filter to specialize a *structural* subscription."""
@@ -272,13 +301,14 @@ class BugSubscriptionFilterMute(StormBase):
     implements(IBugSubscriptionFilterMute)
 
     __storm_table__ = "BugSubscriptionFilterMute"
-    __storm_primary__ = 'person', 'filter'
 
     person_id = Int("person", allow_none=False, validator=validate_person)
     person = Reference(person_id, "Person.id")
 
     filter_id = Int("filter", allow_none=False)
     filter = Reference(filter_id, "StructuralSubscription.id")
+
+    __storm_primary__ = 'person_id', 'filter_id'
 
     date_created = DateTime(
         "date_created", allow_none=False, default=UTC_NOW,
