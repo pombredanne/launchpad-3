@@ -119,6 +119,8 @@ class IBugSubscriptionFilter(
 class IBugSubscriptionFilterMute(Interface):
     """A mute on an IBugSubscriptionFilter."""
 
+    export_as_webservice_entry()
+
     person = PersonChoice(
         title=_('Person'), required=True, vocabulary='ValidPersonOrTeam',
         readonly=True, description=_("The person subscribed."))
