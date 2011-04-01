@@ -385,7 +385,7 @@ class PublishFTPMaster(LaunchpadCronScript):
         self.logger.debug("Expediting security uploads.")
         security_suites = self.getDirtySecuritySuites()
         if len(security_suites) == 0:
-            self.logger.info("Nothing to do for security publisher.")
+            self.logger.debug("Nothing to do for security publisher.")
             return
         partner_archive = self.distribution.getArchive("partner")
         if partner_archive is not None:
