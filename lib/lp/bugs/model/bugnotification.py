@@ -219,7 +219,7 @@ class BugNotificationSet:
         filter_data = source.find(
             (StructuralSubscription.subscriberID,
              BugSubscriptionFilter.id,
-             BugSubscriptionFilter._description),
+             BugSubscriptionFilter.description),
             In(BugNotificationFilter.bug_notification_id,
                [notification.id for notification in notifications]),
             In(StructuralSubscription.subscriberID,
