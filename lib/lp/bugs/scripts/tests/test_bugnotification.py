@@ -269,7 +269,6 @@ class TestGetEmailNotifications(unittest.TestCase):
         sm = getSiteManager()
         sm.unregisterUtility(self._fake_utility)
         sm.registerUtility(self._original_utility)
-        
 
     def _getAndCheckSentNotifications(self, notifications_to_send):
         """Return the notifications that were successfully sent.

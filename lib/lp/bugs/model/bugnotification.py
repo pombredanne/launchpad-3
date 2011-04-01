@@ -57,8 +57,6 @@ from lp.bugs.model.bugactivity import BugActivity
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
 from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.model.person import Person
-from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.stormbase import StormBase
 
 
@@ -233,8 +231,8 @@ class BugNotificationSet:
             for source_person_id in recipient_data['source person ids']:
                 recipient_data['filters'].update(
                     source_person_id_map[source_person_id]['filters'])
-        # Now recipient_id_map has all the information we need.  Let's build the
-        # final result.
+        # Now recipient_id_map has all the information we need.  Let's
+        # build the final result.
         result = {}
         for recipient_data in recipient_id_map.values():
             filter_descriptions = [

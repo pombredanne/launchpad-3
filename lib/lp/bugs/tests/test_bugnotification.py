@@ -233,8 +233,7 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
             {self.subscriber: {'sources': sources,
                                'filter descriptions': []}},
             BugNotificationSet().getRecipientFilterData(
-                {self.subscriber: sources}, [self.notification])
-            )
+                {self.subscriber: sources}, [self.notification]))
 
     def test_getRecipientFilterData_match(self):
         # When there are bug filters for the recipient,
