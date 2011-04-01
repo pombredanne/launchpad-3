@@ -272,6 +272,7 @@ class BugSubscriptionFilterMute(StormBase):
     implements(IBugSubscriptionFilterMute)
 
     __storm_table__ = "BugSubscriptionFilterMute"
+    __storm_primary__ = 'person', 'filter'
 
     person_id = Int("person", allow_none=False, validator=validate_person)
     person = Reference(person_id, "Person.id")
