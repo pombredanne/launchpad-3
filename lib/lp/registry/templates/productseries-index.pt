@@ -14,6 +14,16 @@
     <script id="milestone-script" type="text/javascript"
       tal:condition="context/menu:overview/create_milestone/enabled"
       tal:content="view/register_milestone_script"></script>
+    <script type="text/javascript"
+        tal:condition="
+          request/features/malone.advanced-structural-subscriptions.enabled">
+        LPS.use('lp.registry.structural_subscription', function(Y) {
+            var module = Y.lp.registry.structural_subscription;
+            Y.on('domready', function() {
+              module.setup({content_box: "#structural-subscription-content-box"});
+            });
+        });
+    </script>
   </metal:block>
 
     <tal:heading metal:fill-slot="heading">
@@ -178,12 +188,17 @@
             </ul>
           </div>
         </div>
+        <div class="yui-u">
+          <div id="structural-subscription-content-box"></div>
+        </div>
       </div>
     </div>
 
     <tal:side metal:fill-slot="side"
-      define="overview_menu context/menu:overview">
-      <div id="global-actions" class="portlet">
+      define="overview_menu context/menu:overview;
+              feature_flag request/features/malone.advanced-structural-subscriptions.enabled">
+      <div id="global-actions" class="portlet"
+        tal:condition="overview_menu/subscribe_to_bug_mail/enabled|overview_menu/subscribe/enabled">
         <ul>
           <li tal:condition="overview_menu/edit/enabled">
             <a tal:replace="structure overview_menu/edit/fmt:link" />
@@ -191,12 +206,20 @@
           <li tal:condition="overview_menu/delete/enabled">
             <a tal:replace="structure overview_menu/delete/fmt:link" />
           </li>
-          <li>
-            <a tal:replace="structure overview_menu/subscribe/fmt:link" />
-          </li>
+          <tal:advanced-structural-subscriptions
+             condition="feature_flag">
+            <li tal:condition="overview_menu/subscribe_to_bug_mail/enabled|nothing">
+              <a tal:replace="structure overview_menu/subscribe_to_bug_mail/fmt:link" />
+            </li>
+          </tal:advanced-structural-subscriptions>
+          <tal:not-advanced-structural-subscriptions
+             condition="not: feature_flag">
+            <li tal:condition="overview_menu/subscribe/enabled|nothing">
+              <a tal:replace="structure overview_menu/subscribe/fmt:link" />
+            </li>
+          </tal:not-advanced-structural-subscriptions>
         </ul>
       </div>
-
 
       <div id="downloads" class="top-portlet downloads"
         tal:define="release view/latest_release_with_download_files">

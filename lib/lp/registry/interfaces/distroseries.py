@@ -32,6 +32,7 @@ from lazr.restful.declarations import (
     webservice_error,
     )
 from lazr.restful.fields import (
+    CollectionField,
     Reference,
     ReferenceChoice,
     )
@@ -241,7 +242,8 @@ class IDistroSeriesPublic(
             title=_("Parent series"),
             description=_("The series from which this one was branched."),
             required=True, schema=Interface, # Really IDistroSeries, see below
-            vocabulary='DistroSeries'))
+            vocabulary='DistroSeries'),
+        readonly=True)
     registrant = exported(
         PublicPersonChoice(
             title=_("Registrant"), vocabulary='ValidPersonOrTeam'))
@@ -403,7 +405,11 @@ class IDistroSeriesPublic(
         """
 
     # DistroArchSeries lookup properties/methods.
-    architectures = Attribute("All architectures in this series.")
+    architectures = exported(
+        CollectionField(
+            title=_("All architectures in this series."),
+            value_type=Reference(schema=Interface), # IDistroArchSeries.
+            readonly=True))
 
     enabled_architectures = Attribute(
         "All architectures in this series with the 'enabled' flag set.")

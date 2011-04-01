@@ -9,6 +9,8 @@ import os
 import subprocess
 import sys
 
+from testtools.content import Content
+from testtools.content_type import UTF8_TEXT
 import transaction
 from zope.component import getUtility
 
@@ -84,17 +86,11 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
                     pocket=PackagePublishingPocket.RELEASE,
                     status=PackagePublishingStatus.PUBLISHED)
 
-    def test_failure_with_no_parent_series(self):
-        # Initialising a new distro series requires a parent series to be set
-        ids = InitialiseDistroSeries(self.factory.makeDistroSeries())
-        self.assertRaisesWithContent(
-            InitialisationError, "Parent series required.", ids.check)
-
     def test_failure_for_already_released_distroseries(self):
         # Initialising a distro series that has already been used will error
-        child = self.factory.makeDistroSeries(parent_series=self.parent)
+        child = self.factory.makeDistroSeries()
         self.factory.makeDistroArchSeries(distroseries=child)
-        ids = InitialiseDistroSeries(child)
+        ids = InitialiseDistroSeries(self.parent, child)
         self.assertRaisesWithContent(
             InitialisationError,
             "Can not copy distroarchseries from parent, there are already "
@@ -106,9 +102,8 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             distroseries=self.parent,
             pocket=PackagePublishingPocket.RELEASE)
         source.createMissingBuilds()
-        child = self.factory.makeDistroSeries(
-            parent_series=self.parent)
-        ids = InitialiseDistroSeries(child)
+        child = self.factory.makeDistroSeries()
+        ids = InitialiseDistroSeries(self.parent, child)
         self.assertRaisesWithContent(
             InitialisationError, "Parent series has pending builds.",
             ids.check)
@@ -119,8 +114,8 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         self.parent.createQueueEntry(
             PackagePublishingPocket.RELEASE,
             'foo.changes', 'bar', self.parent.main_archive)
-        child = self.factory.makeDistroSeries(parent_series=self.parent)
-        ids = InitialiseDistroSeries(child)
+        child = self.factory.makeDistroSeries()
+        ids = InitialiseDistroSeries(self.parent, child)
         self.assertRaisesWithContent(
             InitialisationError, "Parent series queues are not empty.",
             ids.check)
@@ -161,9 +156,11 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         # Other configuration bits are copied too.
         self.assertTrue(child.backports_not_automatic)
 
-    def _full_initialise(self, arches=(), packagesets=(), rebuild=False):
-        child = self.factory.makeDistroSeries(parent_series=self.parent)
-        ids = InitialiseDistroSeries(child, arches, packagesets, rebuild)
+    def _full_initialise(self, arches=(), packagesets=(), rebuild=False,
+                         distribution=None):
+        child = self.factory.makeDistroSeries(distribution=distribution)
+        ids = InitialiseDistroSeries(
+            self.parent, child, arches, packagesets, rebuild)
         ids.check()
         ids.initialise()
         return child
@@ -235,6 +232,28 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             getUtility(IArchivePermissionSet).isSourceUploadAllowed(
                 child.main_archive, 'udev', uploader,
                 distroseries=child))
+
+    def test_packageset_owner_preserved_within_distro(self):
+        # When initialising a new series within a distro, the copied
+        # packagesets have ownership preserved.
+        ps_owner = self.factory.makePerson()
+        ps = getUtility(IPackagesetSet).new(
+            u'ps', u'packageset', ps_owner, distroseries=self.parent)
+        child = self._full_initialise(distribution=self.parent.distribution)
+        child_ps = getUtility(IPackagesetSet).getByName(
+            u'ps', distroseries=child)
+        self.assertEqual(ps_owner, child_ps.owner)
+
+    def test_packageset_owner_not_preserved_cross_distro(self):
+        # In the case of a cross-distro initialisation, the new
+        # packagesets are owned by the new distro owner.
+        ps = getUtility(IPackagesetSet).new(
+            u'ps', u'packageset', self.factory.makePerson(),
+            distroseries=self.parent)
+        child = self._full_initialise()
+        child_ps = getUtility(IPackagesetSet).getByName(
+            u'ps', distroseries=child)
+        self.assertEqual(child.owner, child_ps.owner)
 
     def test_copy_limit_packagesets(self):
         # If a parent series has packagesets, we can decide which ones we
@@ -325,6 +344,11 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
         test1.addSources('udev')
         getUtility(IArchivePermissionSet).newPackagesetUploader(
             self.parent.main_archive, uploader, test1)
+        # The child must have a parent series because initialise-from-parent
+        # expects it; this script supports the old-style derivation of
+        # distribution series where the parent series is specified at the time
+        # of adding the series. New-style derivation leaves the specification
+        # of the parent series until later.
         child = self.factory.makeDistroSeries(parent_series=self.parent)
         transaction.commit()
         ifp = os.path.join(
@@ -334,6 +358,8 @@ class TestInitialiseDistroSeries(TestCaseWithFactory):
             [sys.executable, ifp, "-vv", "-d", child.parent.name,
             child.name], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
+        self.addDetail("stdout", Content(UTF8_TEXT, lambda: stdout))
+        self.addDetail("stderr", Content(UTF8_TEXT, lambda: stderr))
         self.assertEqual(process.returncode, 0)
         self.assertTrue(
             "DEBUG   Committing transaction." in stderr.split('\n'))
