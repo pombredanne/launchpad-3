@@ -54,10 +54,7 @@ from lp.bugs.interfaces.bugnotification import (
     IBugNotificationSet,
     )
 from lp.bugs.model.bugactivity import BugActivity
-from lp.bugs.model.bugsubscriptionfilter import (
-    BugSubscriptionFilter,
-    BugSubscriptionFilterMute,
-    )
+from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
 from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.model.person import Person
@@ -240,14 +237,13 @@ class BugNotificationSet:
         # final result.
         result = {}
         for recipient_data in recipient_id_map.values():
-            if recipient_data['filters']:
-                filter_descriptions = [
-                    description for description
-                    in recipient_data['filters'].values() if description]
-                filter_descriptions.sort() # This is good for tests.
-                result[recipient_data['principal']] = {
-                    'sources': recipient_data['sources'],
-                    'filter descriptions': filter_descriptions}
+            filter_descriptions = [
+                description for description
+                in recipient_data['filters'].values() if description]
+            filter_descriptions.sort() # This is good for tests.
+            result[recipient_data['principal']] = {
+                'sources': recipient_data['sources'],
+                'filter descriptions': filter_descriptions}
         return result
 
 
