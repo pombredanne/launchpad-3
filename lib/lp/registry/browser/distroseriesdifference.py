@@ -33,10 +33,11 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.launchpadform import custom_widget
-from lp.app.browser.launchpadform import (
-    LaunchpadFormView,
+from lp.app.browser.launchpadform import LaunchpadFormView
+from lp.registry.enum import (
+    DistroSeriesDifferenceStatus,
+    DistroSeriesDifferenceType,
     )
-from lp.registry.enum import DistroSeriesDifferenceStatus
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
     )
@@ -136,7 +137,13 @@ class DistroSeriesDifferenceView(LaunchpadFormView):
     def display_child_diff(self):
         """Only show the child diff if we need to."""
         return self.context.source_version != self.context.base_version
-  
+
+    @property
+    def can_have_packages_diffs(self):
+        """Return whether this dsd could have packages diffs."""
+        diff_versions = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
+        return self.context.difference_type == diff_versions
+
     @property
     def show_package_diffs_request_link(self):
         """Return whether package diffs can be requested.

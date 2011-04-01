@@ -463,6 +463,36 @@ class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
             'Invalid value', view.errors[1].error_name)
 
 
+class DistroSerieMissingPackageDiffsTestCase(TestCaseWithFactory):
+    """Test the distroseries +missingpackages view."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_missingpackages_differences(self):
+        # The view fetches the differences with type
+        # MISSING_FROM_DERIVED_SERIES.
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
+
+        missing_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
+        missing_blacklisted_diff = self.factory.makeDistroSeriesDifference(
+            difference_type=missing_type,
+            derived_series=derived_series,
+            status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
+
+        missing_diff = self.factory.makeDistroSeriesDifference(
+            difference_type=missing_type,
+            derived_series=derived_series,
+            status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION)
+
+        view = create_initialized_view(
+            derived_series, '+missingpackages')
+
+        self.assertContentEqual(
+            [missing_diff], view.cached_differences.batch)
+
+
 class TestMilestoneBatchNavigatorAttribute(TestCaseWithFactory):
     """Test the series.milestone_batch_navigator attribute."""
 

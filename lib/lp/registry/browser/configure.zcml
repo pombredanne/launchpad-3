@@ -161,6 +161,12 @@
         class="canonical.launchpad.browser.AskAQuestionButtonView"
         permission="zope.Public"/>
     <browser:page
+        name="+missingpackages"
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.registry.browser.distroseries.DistroSeriesMissingPackages"
+        template="../templates/distroseries-localdifferences.pt"
+        permission="zope.Public"/>
+    <browser:page
         name="+localpackagediffs"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         class="lp.registry.browser.distroseries.DistroSeriesLocalDifferences"
