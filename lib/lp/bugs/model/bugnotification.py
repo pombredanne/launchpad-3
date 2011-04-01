@@ -54,7 +54,10 @@ from lp.bugs.interfaces.bugnotification import (
     IBugNotificationSet,
     )
 from lp.bugs.model.bugactivity import BugActivity
-from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
+from lp.bugs.model.bugsubscriptionfilter import (
+    BugSubscriptionFilter,
+    BugSubscriptionFilterMute,
+    )
 from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.database.stormbase import StormBase
@@ -238,21 +241,33 @@ class BugNotificationSet:
             source_person_id_map[source_person_id]['filters'][filter_id] = (
                 filter_description)
             filter_ids.append(filter_id)
+        no_filter_marker = -1 # This is only necessary while production and
+        # sample data have structural subscriptions without filters.
         for recipient_data in recipient_id_map.values():
             for source_person_id in recipient_data['source person ids']:
                 recipient_data['filters'].update(
-                    source_person_id_map[source_person_id]['filters'])
+                    source_person_id_map[source_person_id]['filters']
+                    or {no_filter_marker: None})
+        if filter_ids:
+            mute_data = store.find(
+                (BugSubscriptionFilterMute.person_id,
+                 BugSubscriptionFilterMute.filter_id),
+                In(BugSubscriptionFilterMute.person_id, recipient_id_map.keys()),
+                In(BugSubscriptionFilterMute.filter_id, filter_ids))
+            for person_id, filter_id in mute_data:
+                del recipient_id_map[person_id]['filters'][filter_id]
         # Now recipient_id_map has all the information we need.  Let's
         # build the final result.
         result = {}
         for recipient_data in recipient_id_map.values():
-            filter_descriptions = [
-                description for description
-                in recipient_data['filters'].values() if description]
-            filter_descriptions.sort() # This is good for tests.
-            result[recipient_data['principal']] = {
-                'sources': recipient_data['sources'],
-                'filter descriptions': filter_descriptions}
+            if recipient_data['filters']:
+                filter_descriptions = [
+                    description for description
+                    in recipient_data['filters'].values() if description]
+                filter_descriptions.sort() # This is good for tests.
+                result[recipient_data['principal']] = {
+                    'sources': recipient_data['sources'],
+                    'filter descriptions': filter_descriptions}
         return result
 
 
