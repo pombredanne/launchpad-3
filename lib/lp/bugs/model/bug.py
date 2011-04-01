@@ -703,7 +703,7 @@ BugMessage""" % sqlvalues(self.id))
             days_old, getUtility(ILaunchpadCelebrities).janitor, bug=self)
         return bugtasks.count() > 0
 
-    @property
+    @cachedproperty
     def initial_message(self):
         """See `IBug`."""
         store = Store.of(self)
