@@ -10,11 +10,13 @@ import unittest
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from storm.store import Store
 from testtools.matchers import Not
 from zope.event import notify
 from zope.interface import providedBy
 
 from canonical.config import config
+from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.message import MessageSet
 from canonical.launchpad.ftests import login
 from canonical.testing import (
@@ -145,10 +147,33 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
     def setUp(self):
         super(TestNotificationsLinkToFilters, self).setUp()
         self.bug = self.factory.makeBug()
+        self.subscriber = self.factory.makePerson()
+        self.subscription = self.bug.default_bugtask.target.addSubscription(
+            self.subscriber, self.subscriber)
+        self.notification = self.addNotification(self.subscriber)
+
+    def addNotificationRecipient(self, notification, person):
+        # Manually insert BugNotificationRecipient for
+        # construct_email_notifications to work.
+        # Not sure why using SQLObject constructor doesn't work (it
+        # tries to insert a row with only the ID which fails).
+        Store.of(notification).execute("""
+            INSERT INTO BugNotificationRecipient
+              (bug_notification, person, reason_header, reason_body)
+              VALUES (%s, %s, %s, %s)""" % sqlvalues(
+                          notification, person,
+                          u'reason header', u'reason body'))
+
+    def addNotification(self, person):
+        # Add a notification along with recipient data.
+        # This is generally done with BugTaskSet.addNotification()
+        # but that requires a more complex set-up.
         message = self.factory.makeMessage()
-        self.notification = BugNotification(
-            message=message, activity=None, bug=self.bug, is_comment=False,
-            date_emailed=None)
+        notification = BugNotification(
+            message=message, activity=None, bug=self.bug,
+            is_comment=False, date_emailed=None)
+        self.addNotificationRecipient(notification, person)
+        return notification
 
     def test_bug_filters_empty(self):
         # When there are no linked bug filters, it returns a ResultSet
@@ -157,25 +182,18 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
 
     def test_bug_filters_single(self):
         # With a linked BugSubscriptionFilter, it is returned.
-        subscriber=self.factory.makePerson()
-        subscription = self.bug.default_bugtask.target.addSubscription(
-            subscriber, subscriber)
-        bug_filter = subscription.newBugFilter()
+        bug_filter = self.subscription.bug_filters.one()
         BugNotificationFilter(
             bug_notification=self.notification,
             bug_subscription_filter=bug_filter)
-
         self.assertContentEqual([bug_filter],
                                 self.notification.bug_filters)
 
     def test_bug_filters_multiple(self):
         # We can have more than one filter matched up with a single
         # notification.
-        subscriber=self.factory.makePerson()
-        subscription = self.bug.default_bugtask.target.addSubscription(
-            subscriber, subscriber)
-        bug_filter1 = subscription.newBugFilter()
-        bug_filter2 = subscription.newBugFilter()
+        bug_filter1 = self.subscription.bug_filters.one()
+        bug_filter2 = self.subscription.newBugFilter()
         BugNotificationFilter(
             bug_notification=self.notification,
             bug_subscription_filter=bug_filter1)
@@ -186,72 +204,78 @@ class TestNotificationsLinkToFilters(TestCaseWithFactory):
         self.assertContentEqual([bug_filter1, bug_filter2],
                                 self.notification.bug_filters)
 
-    def test_getFiltersByRecipient_empty(self):
-        # When there are no linked bug filters, it returns a ResultSet
-        # with no entries.
-        subscriber = self.factory.makePerson()
-        self.assertTrue(
-            BugNotificationSet().getFiltersByRecipient(
-                [self.notification], subscriber).is_empty())
+    def test_getRecipientFilterData_empty(self):
+        # When there is empty input, there is empty output.
+        self.assertEqual(
+            BugNotificationSet().getRecipientFilterData({}, []),
+            {})
+        self.assertEqual(
+            BugNotificationSet().getRecipientFilterData(
+                {}, [self.notification]),
+            {})
 
-    def test_getFiltersByRecipient_other_persons(self):
-        # When there is no bug filter for the recipient,
-        # it returns a ResultSet with no entries.
-        recipient = self.factory.makePerson()
-        subscriber = self.factory.makePerson()
-        subscription = self.bug.default_bugtask.target.addSubscription(
-            subscriber, subscriber)
-        bug_filter = subscription.newBugFilter()
+    def test_getRecipientFilterData_other_persons(self):
+        # When there is no named bug filter for the recipient,
+        # it returns the recipient but with no filter descriptions.
+        BugNotificationFilter(
+            bug_notification=self.notification,
+            bug_subscription_filter=self.subscription.bug_filters.one())
+        subscriber2 = self.factory.makePerson()
+        subscription2 = self.bug.default_bugtask.target.addSubscription(
+            subscriber2, subscriber2)
+        bug_filter = subscription2.bug_filters.one()
+        bug_filter.description = u'Special Filter!'
         BugNotificationFilter(
             bug_notification=self.notification,
             bug_subscription_filter=bug_filter)
-        self.assertTrue(
-            BugNotificationSet().getFiltersByRecipient(
-                [self.notification], recipient).is_empty())
+        sources = list(self.notification.recipients)
+        self.assertEqual(
+            {self.subscriber: {'sources': sources,
+                               'filter descriptions': []}},
+            BugNotificationSet().getRecipientFilterData(
+                {self.subscriber: sources}, [self.notification]))
 
-    def test_getFiltersByRecipient_match(self):
+    def test_getRecipientFilterData_match(self):
         # When there are bug filters for the recipient,
         # only those filters are returned.
-        subscriber = self.factory.makePerson()
-        subscription = self.bug.default_bugtask.target.addSubscription(
-            subscriber, subscriber)
-        bug_filter = subscription.newBugFilter()
+        bug_filter = self.subscription.bug_filters.one()
+        bug_filter.description = u'Special Filter!'
         BugNotificationFilter(
             bug_notification=self.notification,
             bug_subscription_filter=bug_filter)
-        self.assertContentEqual(
-            [bug_filter],
-            BugNotificationSet().getFiltersByRecipient(
-                [self.notification], subscriber))
+        sources = list(self.notification.recipients)
+        self.assertEqual(
+            {self.subscriber: {'sources': sources,
+             'filter descriptions': ['Special Filter!']}},
+            BugNotificationSet().getRecipientFilterData(
+                {self.subscriber: sources}, [self.notification]))
 
-    def test_getFiltersByRecipients_multiple_notifications_match(self):
+    def test_getRecipientFilterData_multiple_notifications_match(self):
         # When there are bug filters for the recipient for multiple
         # notifications, return filters for all the notifications.
         # Set up first notification and filter.
-        subscriber = self.factory.makePerson()
-        subscription = self.bug.default_bugtask.target.addSubscription(
-            subscriber, subscriber)
-        bug_filter = subscription.newBugFilter()
+        bug_filter = self.subscription.bug_filters.one()
+        bug_filter.description = u'Special Filter!'
         BugNotificationFilter(
             bug_notification=self.notification,
             bug_subscription_filter=bug_filter)
-        # set up second notification and filter.
-        bug2 = self.factory.makeBug()
-        message2 = self.factory.makeMessage()
-        notification2 = BugNotification(
-            message=message2, activity=None, bug=bug2, is_comment=False,
-            date_emailed=None)
-        subscription2 = bug2.default_bugtask.target.addSubscription(
-            subscriber, subscriber)
-        bug_filter2 = subscription2.newBugFilter()
+        # Set up second notification and filter.
+        notification2 = self.addNotification(self.subscriber)
+        bug_filter2 = self.subscription.newBugFilter()
+        bug_filter2.description = u'Another Filter!'
         BugNotificationFilter(
             bug_notification=notification2,
             bug_subscription_filter=bug_filter2)
         # Perform the test.
-        self.assertContentEqual(
-            set([bug_filter, bug_filter2]),
-            set(BugNotificationSet().getFiltersByRecipient(
-                [self.notification, notification2], subscriber)))
+        sources = list(self.notification.recipients)
+        sources.extend(notification2.recipients)
+        assert(len(sources)==2)
+        self.assertEqual(
+            {self.subscriber: {'sources': sources,
+             'filter descriptions': ['Another Filter!', 'Special Filter!']}},
+            BugNotificationSet().getRecipientFilterData(
+                {self.subscriber: sources},
+                [self.notification, notification2]))
 
 
 class TestNotificationProcessingWithoutRecipients(TestCaseWithFactory):
