@@ -166,8 +166,10 @@ class FakeBugNotificationSetUtility:
 
     implements(IBugNotificationSet)
 
-    def getFiltersByRecipient(self, notifications, recipient):
-        return []
+    def getRecipientFilterData(self, recipient_to_sources, notifications):
+        return dict(
+            (recipient, {'sources': sources, 'filter descriptions': []})
+            for recipient, sources in recipient_to_sources.items())
 
 
 class MockBugActivity:
@@ -267,7 +269,6 @@ class TestGetEmailNotifications(unittest.TestCase):
         sm = getSiteManager()
         sm.unregisterUtility(self._fake_utility)
         sm.registerUtility(self._original_utility)
-        
 
     def _getAndCheckSentNotifications(self, notifications_to_send):
         """Return the notifications that were successfully sent.
