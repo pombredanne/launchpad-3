@@ -57,8 +57,6 @@ from lp.bugs.model.bugactivity import BugActivity
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
 from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.model.person import Person
-from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.stormbase import StormBase
 
 
@@ -177,8 +175,38 @@ class BugNotificationSet:
             VALUES %s;""" % ', '.join(sql_values))
         return bug_notification
 
-    def getFiltersByRecipient(self, notifications, recipient):
+    def getRecipientFilterData(self, recipient_to_sources, notifications):
         """See `IBugNotificationSet`."""
+        if not notifications or not recipient_to_sources:
+            # This is a shortcut that will remove some error conditions.
+            return {}
+        # This makes one call to the database to get all the information
+        # we need. We get the filter ids and descriptions for each
+        # source, and then we divide up the information per recipient.
+        # First we get some intermediate data structures set up.
+        source_person_id_map = {}
+        recipient_id_map = {}
+        for recipient, sources in recipient_to_sources.items():
+            source_person_ids = set()
+            recipient_id_map[recipient.id] = {
+                'principal': recipient,
+                'filters': {},
+                'source person ids': source_person_ids,
+                'sources': sources,
+                }
+            for source in sources:
+                person_id = source.person.id
+                source_person_ids.add(person_id)
+                data = source_person_id_map.get(person_id)
+                if data is None:
+                    # The "filters" key is the only one we actually use.  The
+                    # rest are useful for debugging and introspecting.
+                    data = {'sources': set(),
+                            'person': source.person,
+                            'filters': {}}
+                    source_person_id_map[person_id] = data
+                data['sources'].add(source)
+        # Now we actually look for the filters.
         store = IStore(BugSubscriptionFilter)
         source = store.using(
             BugSubscriptionFilter,
@@ -187,15 +215,38 @@ class BugNotificationSet:
                     BugNotificationFilter.bug_subscription_filter_id),
             Join(StructuralSubscription,
                  BugSubscriptionFilter.structural_subscription_id ==
-                    StructuralSubscription.id),
-            Join(TeamParticipation,
-                 TeamParticipation.teamID ==
-                    StructuralSubscription.subscriberID))
-        return source.find(
-            BugSubscriptionFilter,
+                    StructuralSubscription.id))
+        filter_data = source.find(
+            (StructuralSubscription.subscriberID,
+             BugSubscriptionFilter.id,
+             BugSubscriptionFilter.description),
             In(BugNotificationFilter.bug_notification_id,
                [notification.id for notification in notifications]),
-            TeamParticipation.personID == recipient.id)
+            In(StructuralSubscription.subscriberID,
+               source_person_id_map.keys()))
+        filter_ids = []
+        # Record the filters for each source.
+        for source_person_id, filter_id, filter_description in filter_data:
+            source_person_id_map[source_person_id]['filters'][filter_id] = (
+                filter_description)
+            filter_ids.append(filter_id)
+        # Assign the filters to each recipient.
+        for recipient_data in recipient_id_map.values():
+            for source_person_id in recipient_data['source person ids']:
+                recipient_data['filters'].update(
+                    source_person_id_map[source_person_id]['filters'])
+        # Now recipient_id_map has all the information we need.  Let's
+        # build the final result and return it.
+        result = {}
+        for recipient_data in recipient_id_map.values():
+            filter_descriptions = [
+                description for description
+                in recipient_data['filters'].values() if description]
+            filter_descriptions.sort() # This is good for tests.
+            result[recipient_data['principal']] = {
+                'sources': recipient_data['sources'],
+                'filter descriptions': filter_descriptions}
+        return result
 
 
 class BugNotificationRecipient(SQLBase):
