@@ -58,6 +58,9 @@ from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionForm,
     IStructuralSubscriptionTarget,
     )
+from lp.registry.interfaces.distribution import (
+    IDistribution,
+    )
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
@@ -376,7 +379,7 @@ class StructuralSubscriptionMenuMixin:
 def expose_structural_subscription_data_to_js(context, request,
                                               user, subscriptions=None):
     """Expose all of the data for a structural subscription to JavaScript."""
-    expose_user_administered_teams_to_js(request, user)
+    expose_user_administered_teams_to_js(request, user, context)
     expose_enum_to_js(request, BugTaskImportance, 'importances')
     expose_enum_to_js(request, BugTaskStatus, 'statuses')
     if subscriptions is None:
@@ -393,13 +396,20 @@ def expose_enum_to_js(request, enum, name):
     IJSONRequestCache(request).objects[name] = info
 
 
-def expose_user_administered_teams_to_js(request, user,
+def expose_user_administered_teams_to_js(request, user, context,
         absoluteURL=absoluteURL):
-    """Make the list of teams the user adminsters available to JavaScript."""
+    """Make the list of teams the user administers available to JavaScript."""
     info = []
     api_request = IWebServiceClientRequest(request)
+    is_distro = IDistribution.providedBy(context)
     if user is not None:
         for team in user.getAdministratedTeams():
+            # If the context is a distro AND a bug supervisor is set AND
+            # the admininistered team is not a member of the bug supervisor
+            # team THEN skip it.
+            if (is_distro and context.bug_supervisor is not None and
+                not team.inTeam(context.bug_supervisor)):
+                continue
             info.append({
                 'link': absoluteURL(team, api_request),
                 'title': team.title,

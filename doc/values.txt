@@ -1,23 +1,24 @@
-=================
-Launchpad: Values
-=================
+================
+Launchpad Values
+================
 
 Whenever we are thinking about what Launchpad should be, or how we should
 implement a change, or whether something is a good idea or not, we have
-recourse to two distinct sets of guidelines.
+recourse to three distinct sets of guidelines.
 
-The first is the Launchpad Vision <vision>.  It can help us answer questions
-such as, "Is this in scope?", "How does this help Launchpad meet its goals?".
-It tries to sort out the 'matter' of Launchpad.
+The first is :doc:`strategy`, which reminds us why we are making Launchpad and
+helps us answer questions such as "How does this help Launchpad meet its
+goals?".  The second is :doc:`scope`, which helps us answer questions like "Is
+this in scope?".  Together, they sort out the 'matter' of Launchpad.
 
-The second is this document, the Launchpad Values.  It tries to address the
+The third is this document, the Launchpad Values.  It tries to address the
 'manner' of Launchpad.  It, perhaps, will not answer specific questions for
 you.  Rather, it will rule out certain options and decisions before they are
 even considered.
 
-Like the Vision, this document is living: it should be changed and improved as
-we learn more about how to make Launchpad.  It is also aspirational: not all
-of Launchpad lives up to these values.
+Like the :doc:`strategy`, this document is living: it should be changed and
+improved as we learn more about how to make Launchpad.  It is also
+aspirational: not all of Launchpad lives up to these values.
 
 
 Better tools help
@@ -162,3 +163,10 @@ enough when you can merge, comment and reject those patches.
 Likewise, importing translations from an upstream is great, but it becomes
 much, much better when those translations can be improved in Launchpad and
 then sent back to the upstream.
+
+
+References
+==========
+
+* :doc:`strategy`
+* :doc:`scope`

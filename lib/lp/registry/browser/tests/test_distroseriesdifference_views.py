@@ -8,6 +8,9 @@ __metaclass__ = type
 import re
 
 from BeautifulSoup import BeautifulSoup
+import soupmatchers
+from testtools.matchers import Not
+import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -44,7 +47,7 @@ from lp.testing.views import create_initialized_view
 
 class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_provides_conversation(self):
         # The DSDView provides a conversation implementation.
@@ -163,6 +166,47 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         view = create_initialized_view(
             ds_diff, '+listing-distroseries-extra', request=request)
         self.assertFalse(view.show_edit_options)
+
+    def test_does_display_child_diff(self):
+        # If the child's latest published version is not the same as the base
+        # version, we display two links to two diffs.
+        changelog_lfa = self.factory.makeChangelog(
+            'foo', ['0.1-1derived1', '0.1-1'])
+        parent_changelog_lfa = self.factory.makeChangelog(
+            'foo', ['0.1-2', '0.1-1'])
+        transaction.commit() # Yay, librarian.
+        ds_diff = self.factory.makeDistroSeriesDifference(versions={
+            'derived': '0.1-1derived1',
+            'parent': '0.1-2',
+            }, changelogs={
+            'derived': changelog_lfa,
+            'parent': parent_changelog_lfa})
+
+        self.assertEqual('0.1-1', ds_diff.base_version)
+        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+        soup = BeautifulSoup(view())
+        tags = soup.find('ul', 'package-diff-status').findAll('span')
+        self.assertEqual(2, len(tags))
+
+    def test_do_not_display_child_diff(self):
+        # If the child's latest published version is the same as the base
+        # version, we don't display the link to the diff.
+        changelog_lfa = self.factory.makeChangelog('foo', ['0.30-1'])
+        parent_changelog_lfa = self.factory.makeChangelog(
+            'foo', ['0.32-1', '0.30-1'])
+        transaction.commit() # Yay, librarian.
+        ds_diff = self.factory.makeDistroSeriesDifference(versions={
+            'derived': '0.30-1',
+            'parent': '0.32-1',
+            }, changelogs={
+            'derived': changelog_lfa,
+            'parent': parent_changelog_lfa})
+
+        self.assertEqual('0.30-1', ds_diff.base_version)
+        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+        soup = BeautifulSoup(view())
+        tags = soup.find('ul', 'package-diff-status').findAll('span')
+        self.assertEqual(1, len(tags))
 
 
 class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
@@ -350,3 +394,25 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
         self.assertEqual(
             DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS,
             view.initial_values.get('blacklist_options'))
+
+    def test_package_diff_request_link(self):
+        # The link to compute package diffs is only shown to
+        # a user with lp.Edit persmission.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+        package_diff_request_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Request link', 'a',
+                text=re.compile(
+                    '\s*Compute differences from last common version\s*')))
+
+        with person_logged_in(self.factory.makePerson()):
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra')
+            self.assertFalse(view.show_package_diffs_request_link)
+            self.assertThat(view(), Not(package_diff_request_matcher))
+
+        with celebrity_logged_in('admin'):
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra')
+            self.assertThat(view(), package_diff_request_matcher)
+            self.assertTrue(view.show_package_diffs_request_link)

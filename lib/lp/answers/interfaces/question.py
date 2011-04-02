@@ -15,6 +15,20 @@ __all__ = [
     'IQuestionLinkFAQForm',
     ]
 
+
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    exported,
+    export_write_operation,
+    operation_for_version,
+    operation_parameters,
+    REQUEST_USER,
+    )
+from lazr.restful.fields import (
+    CollectionField,
+    Reference,
+    )
 from zope.interface import (
     Attribute,
     Interface,
@@ -53,20 +67,25 @@ class InvalidQuestionStateError(Exception):
 class IQuestion(IHasOwner):
     """A single question, often a support request."""
 
-    id = Int(
+    export_as_webservice_entry(as_of="devel")
+
+    id = exported(Int(
         title=_('Question Number'), required=True, readonly=True,
-        description=_("The tracking number for this question."))
-    title = TextLine(
+        description=_("The tracking number for this question.")),
+        as_of="devel")
+    title = exported(TextLine(
         title=_('Summary'), required=True, description=_(
-        "A one-line summary of the issue or problem."))
+        "A one-line summary of the issue or problem.")),
+        as_of="devel")
     description = Text(
         title=_('Description'), required=True, description=_(
         "Include as much detail as possible: what "
         u"you\N{right single quotation mark}re trying to achieve, what steps "
         "you take, what happens, and what you think should happen instead."))
-    status = Choice(
+    status = exported(Choice(
         title=_('Status'), vocabulary=QuestionStatus,
-        default=QuestionStatus.OPEN, readonly=True)
+        default=QuestionStatus.OPEN, readonly=True),
+        as_of="devel")
     priority = Choice(
         title=_('Priority'), vocabulary=QuestionPriority,
         default=QuestionPriority.NORMAL)
@@ -75,19 +94,23 @@ class IQuestion(IHasOwner):
     language = Choice(
         title=_('Language'), vocabulary='Language',
         description=_('The language in which this question is written.'))
-    owner = PublicPersonChoice(
+    owner = exported(PublicPersonChoice(
         title=_('Owner'), required=True, readonly=True,
-        vocabulary='ValidPersonOrTeam')
-    assignee = PublicPersonChoice(
+        vocabulary='ValidPersonOrTeam'),
+        as_of="devel")
+    assignee = exported(PublicPersonChoice(
         title=_('Assignee'), required=False,
         description=_("The person responsible for helping to resolve the "
         "question."),
-        vocabulary='ValidPersonOrTeam')
-    answerer = PublicPersonChoice(
+        vocabulary='ValidPersonOrTeam'),
+        as_of="devel")
+    answerer = exported(PublicPersonChoice(
         title=_('Answered By'), required=False,
         description=_("The person who last provided a response intended to "
         "resolve the question."),
-        vocabulary='ValidPersonOrTeam')
+        vocabulary='ValidPersonOrTeam'),
+        as_of="devel",
+        readonly=True)
     answer = Object(
         title=_('Answer'), required=False,
         description=_("The IQuestionMessage that contains the answer "
@@ -422,6 +445,7 @@ class IQuestion(IHasOwner):
 
         :return: A list of persons sorted by displayname.
         """
+
     def getIndirectSubscribers():
         """Return the persons who are implicitly subscribed to this question.
 
@@ -453,6 +477,21 @@ class IQuestion(IHasOwner):
 
         :return: An `INotificationRecipientSet` containing the persons to
             notify along the rationale for doing so.
+        """
+
+    @operation_parameters(
+        comment_number=Int(
+            title=_('The number of the comment in the list of messages.'),
+            required=True),
+        visible=Bool(title=_('Show this comment?'), required=True))
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def setCommentVisibility(user, comment_number, visible):
+        """Set the visible attribute on a question message.
+        
+        This is restricted to Launchpad admins and registry members, and will
+        return a HTTP Error 401: Unauthorized error for non-admin callers.
         """
 
 

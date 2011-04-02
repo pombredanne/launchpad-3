@@ -67,9 +67,6 @@ class IBugNotification(IHasOwner):
     bug_filters = Attribute(
         "List of bug filters that caused this notification.")
 
-    def getFiltersByRecipient(person):
-        """Return filters for a particular recipient."""
-
 
 class IBugNotificationSet(Interface):
     """The set of bug notifications."""
@@ -83,6 +80,9 @@ class IBugNotificationSet(Interface):
         Create a new `BugNotification` object and the corresponding
         `BugNotificationRecipient` objects.
         """
+
+    def getFiltersByRecipient(notifications, person):
+        """Return filters for a particular recipient."""
 
 
 class IBugNotificationRecipient(Interface):

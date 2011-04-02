@@ -195,6 +195,9 @@
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.distroseries.IDistroSeriesEditRestricted"/>
         <require
+            permission="launchpad.Admin"
+            set_attributes="parent_series"/>
+        <require
             permission="launchpad.TranslationsAdmin"
             set_attributes="hide_all_translations defer_translation_imports"/>
         <require

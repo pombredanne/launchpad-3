@@ -14,9 +14,11 @@ from datetime import (
     timedelta,
     )
 from fixtures import TempDir
+import multiprocessing
 import os
 import signal
 import subprocess
+import threading
 import time
 
 from psycopg2 import IntegrityError
@@ -27,7 +29,6 @@ from storm.locals import (
     Count,
     Max,
     Min,
-    Select,
     SQL,
     )
 import transaction
@@ -36,7 +37,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database import postgresql
-from canonical.database.constants import THIRTY_DAYS_AGO
 from canonical.database.sqlbase import (
     cursor,
     session_store,
@@ -65,13 +65,12 @@ from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
 from lp.bugs.model.bugnotification import BugNotification
-from lp.bugs.model.bugwatch import BugWatch
+from lp.bugs.model.bugwatch import BugWatchActivity
 from lp.bugs.scripts.checkwatches.scheduler import (
     BugWatchScheduler,
     MAX_SAMPLE_SIZE,
     )
 from lp.code.interfaces.revision import IRevisionSet
-from lp.code.model.branchjob import BranchJob
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.model.revision import (
@@ -149,16 +148,23 @@ class BulkPruner(TunableLoop):
         """
         return IMasterStore(self.target_table_class)
 
+    _unique_counter = 0
+
     def __init__(self, log, abort_time=None):
         super(BulkPruner, self).__init__(log, abort_time)
 
         self.store = self.getStore()
         self.target_table_name = self.target_table_class.__storm_table__
 
+        self._unique_counter += 1
+        self.cursor_name = (
+            'bulkprunerid_%s_%d'
+            % (self.__class__.__name__, self._unique_counter)).lower()
+
         # Open the cursor.
         self.store.execute(
-            "DECLARE bulkprunerid NO SCROLL CURSOR WITH HOLD FOR %s"
-            % self.ids_to_prune_query)
+            "DECLARE %s NO SCROLL CURSOR WITH HOLD FOR %s"
+            % (self.cursor_name, self.ids_to_prune_query))
 
     _num_removed = None
 
@@ -172,17 +178,17 @@ class BulkPruner(TunableLoop):
             DELETE FROM %s
             WHERE %s IN (
                 SELECT id FROM
-                cursor_fetch('bulkprunerid', %d) AS f(id %s))
+                cursor_fetch('%s', %d) AS f(id %s))
             """
             % (
                 self.target_table_name, self.target_table_key,
-                chunk_size, self.target_table_key_type))
+                self.cursor_name, chunk_size, self.target_table_key_type))
         self._num_removed = result.rowcount
         transaction.commit()
 
     def cleanUp(self):
         """See `ITunableLoop`."""
-        self.store.execute("CLOSE bulkprunerid")
+        self.store.execute("CLOSE %s" % self.cursor_name)
 
 
 class POTranslationPruner(BulkPruner):
@@ -279,40 +285,17 @@ class DuplicateSessionPruner(SessionPruner):
         """
 
 
-class OAuthNoncePruner(TunableLoop):
+class OAuthNoncePruner(BulkPruner):
     """An ITunableLoop to prune old OAuthNonce records.
 
     We remove all OAuthNonce records older than 1 day.
     """
-    maximum_chunk_size = 6*60*60 # 6 hours in seconds.
-
-    def __init__(self, log, abort_time=None):
-        super(OAuthNoncePruner, self).__init__(log, abort_time)
-        self.store = IMasterStore(OAuthNonce)
-        self.oldest_age = self.store.execute("""
-            SELECT COALESCE(EXTRACT(EPOCH FROM
-                CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-                - MIN(request_timestamp)), 0)
-            FROM OAuthNonce
-            """).get_one()[0]
-
-    def isDone(self):
-        return self.oldest_age <= ONE_DAY_IN_SECONDS
-
-    def __call__(self, chunk_size):
-        self.oldest_age = max(
-            ONE_DAY_IN_SECONDS, self.oldest_age - chunk_size)
-
-        self.log.debug(
-            "Removed OAuthNonce rows older than %d seconds"
-            % self.oldest_age)
-
-        self.store.find(
-            OAuthNonce,
-            OAuthNonce.request_timestamp < SQL(
-                "CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%d seconds'"
-                % self.oldest_age)).remove()
-        transaction.commit()
+    target_table_class = OAuthNonce
+    ids_to_prune_query = """
+        SELECT id FROM OAuthNonce
+        WHERE request_timestamp
+            < CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - CAST('1 day' AS interval)
+        """
 
 
 class OpenIDConsumerNoncePruner(TunableLoop):
@@ -398,90 +381,39 @@ class RevisionCachePruner(TunableLoop):
         transaction.commit()
 
 
-class CodeImportEventPruner(TunableLoop):
+class CodeImportEventPruner(BulkPruner):
     """Prune `CodeImportEvent`s that are more than a month old.
 
     Events that happened more than 30 days ago are really of no
     interest to us.
     """
-
-    maximum_chunk_size = 10000
-    minimum_chunk_size = 500
-
-    def isDone(self):
-        store = IMasterStore(CodeImportEvent)
-        events = store.find(
-            CodeImportEvent,
-            CodeImportEvent.date_created < THIRTY_DAYS_AGO)
-        return events.any() is None
-
-    def __call__(self, chunk_size):
-        chunk_size = int(chunk_size)
-        store = IMasterStore(CodeImportEvent)
-        event_ids = Select(
-            [CodeImportEvent.id],
-            CodeImportEvent.date_created < THIRTY_DAYS_AGO,
-            limit=chunk_size)
-        num_removed = store.find(
-            CodeImportEvent, CodeImportEvent.id.is_in(event_ids)).remove()
-        transaction.commit()
-        self.log.debug("Removed %d old CodeImportEvents" % num_removed)
+    target_table_class = CodeImportEvent
+    ids_to_prune_query = """
+        SELECT id FROM CodeImportEvent
+        WHERE date_created < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            - CAST('30 days' AS interval)
+        """
 
 
-class CodeImportResultPruner(TunableLoop):
+class CodeImportResultPruner(BulkPruner):
     """A TunableLoop to prune unwanted CodeImportResult rows.
 
     Removes CodeImportResult rows if they are older than 30 days
     and they are not one of the most recent results for that
     CodeImport.
     """
-    maximum_chunk_size = 1000
-
-    def __init__(self, log, abort_time=None):
-        super(CodeImportResultPruner, self).__init__(log, abort_time)
-        self.store = IMasterStore(CodeImportResult)
-
-        self.min_code_import = self.store.find(
-            Min(CodeImportResult.code_importID)).one()
-        self.max_code_import = self.store.find(
-            Max(CodeImportResult.code_importID)).one()
-
-        self.next_code_import_id = self.min_code_import
-
-    def isDone(self):
-        return (
-            self.min_code_import is None
-            or self.next_code_import_id > self.max_code_import)
-
-    def __call__(self, chunk_size):
-        self.log.debug(
-            "Removing expired CodeImportResults for CodeImports %d -> %d" % (
-                self.next_code_import_id,
-                self.next_code_import_id + chunk_size - 1))
-
-        self.store.execute("""
-            DELETE FROM CodeImportResult
-            WHERE
-                CodeImportResult.date_created
-                    < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-                        - interval '30 days'
-                AND CodeImportResult.code_import >= %s
-                AND CodeImportResult.code_import < %s + %s
-                AND CodeImportResult.id NOT IN (
-                    SELECT LatestResult.id
-                    FROM CodeImportResult AS LatestResult
-                    WHERE
-                        LatestResult.code_import
-                            = CodeImportResult.code_import
-                    ORDER BY LatestResult.date_created DESC
-                    LIMIT %s)
-            """ % sqlvalues(
-                self.next_code_import_id,
-                self.next_code_import_id,
-                chunk_size,
-                config.codeimport.consecutive_failure_limit - 1))
-        self.next_code_import_id += chunk_size
-        transaction.commit()
+    target_table_class = CodeImportResult
+    ids_to_prune_query = """
+        SELECT id FROM (
+            SELECT id, date_created, rank() OVER w AS rank
+            FROM CodeImportResult
+            WINDOW w AS (PARTITION BY code_import ORDER BY date_created DESC)
+            ) AS whatever
+        WHERE
+            rank > %s
+            AND date_created < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - CAST('30 days' AS interval)
+            """ % sqlvalues(config.codeimport.consecutive_failure_limit - 1)
 
 
 class RevisionAuthorEmailLinker(TunableLoop):
@@ -729,63 +661,35 @@ class PersonPruner(TunableLoop):
                 % chunk_size)
 
 
-class BugNotificationPruner(TunableLoop):
+class BugNotificationPruner(BulkPruner):
     """Prune `BugNotificationRecipient` records no longer of interest.
 
     We discard all rows older than 30 days that have been sent. We
     keep 30 days worth or records to help diagnose email delivery issues.
     """
-    maximum_chunk_size = 10000
-
-    def _to_remove(self):
-        return IMasterStore(BugNotification).find(
-            BugNotification.id,
-            BugNotification.date_emailed < THIRTY_DAYS_AGO)
-
-    def isDone(self):
-        return self._to_remove().any() is None
-
-    def __call__(self, chunk_size):
-        chunk_size = int(chunk_size)
-        ids_to_remove = list(self._to_remove()[:chunk_size])
-        num_removed = IMasterStore(BugNotification).find(
-            BugNotification,
-            BugNotification.id.is_in(ids_to_remove)).remove()
-        transaction.commit()
-        self.log.debug("Removed %d rows" % num_removed)
+    target_table_class = BugNotification
+    ids_to_prune_query = """
+        SELECT BugNotification.id FROM BugNotification
+        WHERE date_emailed < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+            - CAST('30 days' AS interval)
+        """
 
 
-class BranchJobPruner(TunableLoop):
+class BranchJobPruner(BulkPruner):
     """Prune `BranchJob`s that are in a final state and more than a month old.
 
     When a BranchJob is completed, it gets set to a final state.  These jobs
     should be pruned from the database after a month.
     """
-
-    maximum_chunk_size = 10000
-    minimum_chunk_size = 500
-
-    _is_done = False
-
-    def isDone(self):
-        return self._is_done
-
-    def __call__(self, chunk_size):
-        chunk_size = int(chunk_size)
-        store = IMasterStore(BranchJob)
-        ids_to_remove = list(store.find(
-            Job.id,
-            BranchJob.job == Job.id,
-            Job.date_finished < THIRTY_DAYS_AGO)[:chunk_size])
-        if len(ids_to_remove) > 0:
-            # BranchJob is removed too, as the BranchJob.job foreign key
-            # constraint is ON DELETE CASCADE.
-            IMasterStore(Job).find(
-                Job,
-                Job.id.is_in(ids_to_remove)).remove()
-        else:
-            self._is_done = True
-        transaction.commit()
+    target_table_class = Job
+    ids_to_prune_query = """
+        SELECT DISTINCT Job.id
+        FROM Job, BranchJob
+        WHERE
+            Job.id = BranchJob.job
+            AND Job.date_finished < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - CAST('30 days' AS interval)
+        """
 
 
 class BugHeatUpdater(TunableLoop):
@@ -839,61 +743,22 @@ class BugHeatUpdater(TunableLoop):
         transaction.commit()
 
 
-class BugWatchActivityPruner(TunableLoop):
+class BugWatchActivityPruner(BulkPruner):
     """A TunableLoop to prune BugWatchActivity entries."""
-
-    maximum_chunk_size = 1000
-
-    def getPrunableBugWatchIds(self, chunk_size):
-        """Return the set of BugWatch IDs whose activity is prunable."""
-        query = """
-            SELECT
-                watch_activity.id
-            FROM (
-                SELECT
-                    BugWatch.id AS id,
-                    COUNT(BugWatchActivity.id) as activity_count
-                FROM BugWatch, BugWatchActivity
-                WHERE BugWatchActivity.bug_watch = BugWatch.id
-                GROUP BY BugWatch.id) AS watch_activity
-            WHERE watch_activity.activity_count > %s
-            LIMIT %s;
-        """ % sqlvalues(MAX_SAMPLE_SIZE, chunk_size)
-        store = IMasterStore(BugWatch)
-        results = store.execute(query)
-        return set(result[0] for result in results)
-
-    def pruneBugWatchActivity(self, bug_watch_ids):
-        """Prune the BugWatchActivity for bug_watch_ids."""
-        query = """
-            DELETE FROM BugWatchActivity
-            WHERE id IN (
-                SELECT id
-                FROM BugWatchActivity
-                WHERE bug_watch = %s
-                ORDER BY id DESC
-                OFFSET %s);
-        """
-        store = IMasterStore(BugWatch)
-        for bug_watch_id in bug_watch_ids:
-            results = store.execute(
-                query % sqlvalues(bug_watch_id, MAX_SAMPLE_SIZE))
-            self.log.debug(
-                "Pruned %s BugWatchActivity entries for watch %s" %
-                (results.rowcount, bug_watch_id))
-
-    def __call__(self, chunk_size):
-        transaction.begin()
-        prunable_ids = self.getPrunableBugWatchIds(chunk_size)
-        self.pruneBugWatchActivity(prunable_ids)
-        transaction.commit()
-
-    def isDone(self):
-        """Return True if there are no watches left to prune."""
-        return len(self.getPrunableBugWatchIds(1)) == 0
+    target_table_class = BugWatchActivity
+    # For each bug_watch, remove all but the most recent MAX_SAMPLE_SIZE
+    # entries.
+    ids_to_prune_query = """
+        SELECT id FROM (
+            SELECT id, rank() OVER w AS rank
+            FROM BugWatchActivity
+            WINDOW w AS (PARTITION BY bug_watch ORDER BY id DESC)
+            ) AS whatever
+        WHERE rank > %s
+        """ % sqlvalues(MAX_SAMPLE_SIZE)
 
 
-class ObsoleteBugAttachmentDeleter(TunableLoop):
+class ObsoleteBugAttachmentPruner(BulkPruner):
     """Delete bug attachments without a LibraryFileContent record.
 
     Our database schema allows LibraryFileAlias records that have no
@@ -902,28 +767,14 @@ class ObsoleteBugAttachmentDeleter(TunableLoop):
     This class deletes bug attachments that reference such "content free"
     and thus completely useless LFA records.
     """
-
-    maximum_chunk_size = 1000
-
-    def __init__(self, log, abort_time=None):
-        super(ObsoleteBugAttachmentDeleter, self).__init__(log, abort_time)
-        self.store = IMasterStore(BugAttachment)
-
-    def _to_remove(self):
-        return self.store.find(
-            BugAttachment.id,
-            BugAttachment.libraryfile == LibraryFileAlias.id,
-            LibraryFileAlias.content == None)
-
-    def isDone(self):
-        return self._to_remove().any() is None
-
-    def __call__(self, chunk_size):
-        chunk_size = int(chunk_size)
-        ids_to_remove = list(self._to_remove()[:chunk_size])
-        self.store.find(
-            BugAttachment, BugAttachment.id.is_in(ids_to_remove)).remove()
-        transaction.commit()
+    target_table_class = BugAttachment
+    ids_to_prune_query = """
+        SELECT BugAttachment.id
+        FROM BugAttachment, LibraryFileAlias
+        WHERE
+            BugAttachment.libraryfile = LibraryFileAlias.id
+            AND LibraryFileAlias.content IS NULL
+        """
 
 
 class OldTimeLimitedTokenDeleter(TunableLoop):
@@ -1127,56 +978,101 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
             default=False, action="store_true",
             help="Run experimental jobs. Normally this is just for staging.")
         self.parser.add_option("--abort-script",
-            dest="abort_script", default=None, action="store", type="int",
+            dest="abort_script", default=None, action="store", type="float",
             metavar="SECS", help="Abort script after SECS seconds.")
         self.parser.add_option("--abort-task",
-            dest="abort_task", default=None, action="store", type="int",
+            dest="abort_task", default=None, action="store", type="float",
             metavar="SECS", help="Abort a task if it runs over SECS seconds.")
+        self.parser.add_option("--threads",
+            dest="threads", default=multiprocessing.cpu_count(),
+            action="store", type="int", metavar='NUM',
+            help="Run NUM tasks in parallel [Default %d]."
+            % multiprocessing.cpu_count())
 
     def main(self):
         start_time = time.time()
-        failure_count = 0
+
+        # Stores the number of failed tasks.
+        self.failure_count = 0
 
         if self.options.experimental:
-            tunable_loops = (
+            tunable_loops = list(
                 self.tunable_loops + self.experimental_tunable_loops)
         else:
-            tunable_loops = self.tunable_loops
+            tunable_loops = list(self.tunable_loops)
 
         a_very_long_time = 31536000 # 1 year
         abort_task = self.options.abort_task or a_very_long_time
         abort_script = self.options.abort_script or a_very_long_time
 
-        for tunable_loop in tunable_loops:
-            self.logger.info("Running %s" % tunable_loop.__name__)
+        def worker():
+            self.logger.debug(
+                "Worker thread %s running.", threading.currentThread().name)
+            self.login()
+            while True:
+                try:
+                    tunable_loop_class = tunable_loops.pop(0)
+                except IndexError:
+                    break
 
-            if abort_script <= 0:
-                self.logger.warn(
-                    "Script aborted after %d seconds." % abort_script)
+                if start_time + abort_script - time.time() <= 0:
+                    # Exit silently. We warn later.
+                    self.logger.debug(
+                        "Worker thread %s detected script timeout.",
+                        threading.currentThread().name)
+                    break
+
+                self.logger.info("Running %s", tunable_loop_class.__name__)
+
+                abort_time = min(
+                    abort_task,
+                    abort_script + start_time - time.time())
+
+                tunable_loop = tunable_loop_class(
+                    abort_time=abort_time, log=self.logger)
+
+                if self._maximum_chunk_size is not None:
+                    tunable_loop.maximum_chunk_size = self._maximum_chunk_size
+
+                try:
+                    tunable_loop.run()
+                    self.logger.debug(
+                        "%s completed sucessfully.",
+                        tunable_loop_class.__name__)
+                except Exception:
+                    self.logger.exception("Unhandled exception")
+                    self.failure_count += 1
+                finally:
+                    transaction.abort()
+
+        threads = set()
+        for count in range(0, self.options.threads):
+            thread = threading.Thread(
+                target=worker,name='Worker-%d' % (count+1,))
+            thread.start()
+            threads.add(thread)
+
+        # Block until all the worker threads have completed. We block
+        # until the script timeout is hit, plus 60 seconds. We wait the
+        # extra time because the loops are supposed to shut themselves
+        # down when the script timeout is hit, and the extra time is to
+        # give them a chance to clean up.
+        for thread in threads:
+            time_to_go = min(
+                abort_task,
+                start_time + abort_script - time.time()) + 60
+            if time_to_go > 0:
+                thread.join(time_to_go)
+            else:
                 break
 
-            abort_time = min(
-                abort_task, abort_script + start_time - time.time())
+        # If the script ran out of time, warn.
+        if start_time + abort_script - time.time() < 0:
+            self.logger.warn(
+                "Script aborted after %d seconds.", abort_script)
 
-            tunable_loop = tunable_loop(
-                abort_time=abort_time, log=self.logger)
-
-            if self._maximum_chunk_size is not None:
-                tunable_loop.maximum_chunk_size = self._maximum_chunk_size
-
-            try:
-                tunable_loop.run()
-            except (KeyboardInterrupt, SystemExit):
-                raise
-            except:
-                if not self.continue_on_failure:
-                    raise
-                self.logger.exception("Unhandled exception")
-                failure_count += 1
-                transaction.abort()
-            transaction.abort()
-        if failure_count:
-            raise SilentLaunchpadScriptFailure(failure_count)
+        if self.failure_count:
+            raise SilentLaunchpadScriptFailure(self.failure_count)
 
 
 class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
@@ -1212,7 +1108,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         CodeImportEventPruner,
         CodeImportResultPruner,
         HWSubmissionEmailLinker,
-        ObsoleteBugAttachmentDeleter,
+        ObsoleteBugAttachmentPruner,
         OldTimeLimitedTokenDeleter,
         RevisionAuthorEmailLinker,
         SuggestiveTemplatesCacheUpdater,
