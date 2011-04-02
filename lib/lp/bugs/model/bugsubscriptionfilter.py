@@ -259,6 +259,14 @@ class BugSubscriptionFilter(StormBase):
             self.structural_subscription.subscriber.isTeam() and
             person.inTeam(self.structural_subscription.subscriber))
 
+    def isMuted(self, person):
+        store = Store.of(self)
+        existing_mutes = store.find(
+            BugSubscriptionFilterMute,
+            BugSubscriptionFilterMute.filter_id == self.id,
+            BugSubscriptionFilterMute.person_id == person.id)
+        return not existing_mutes.is_empty()
+
     def mute(self, person):
         """See `IBugSubscriptionFilter`."""
         if not self.isMuteAllowed(person):

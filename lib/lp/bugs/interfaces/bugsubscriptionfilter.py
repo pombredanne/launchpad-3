@@ -120,6 +120,14 @@ class IBugSubscriptionFilterMethodsPublic(Interface):
     @call_with(person=REQUEST_USER)
     @operation_parameters(
         person=Reference(IPerson, title=_('Person'), required=True))
+    @export_read_operation()
+    @operation_for_version('devel')
+    def isMuted(person):
+        """Return True if this filter is muted for `person`."""
+
+    @call_with(person=REQUEST_USER)
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=True))
     @export_write_operation()
     @operation_for_version('devel')
     def mute(person):
