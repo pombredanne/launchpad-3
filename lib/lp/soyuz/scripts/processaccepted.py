@@ -30,7 +30,10 @@ from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.scripts.base import LaunchpadScript
+from lp.services.scripts.base import (
+    LaunchpadScript,
+    LaunchpadScriptFailure,
+    )
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageUploadStatus,
@@ -241,6 +244,9 @@ class ProcessAccepted(LaunchpadScript):
         try:
             self.logger.debug("Finding distribution %s." % distro_name)
             distribution = getUtility(IDistributionSet).getByName(distro_name)
+            if distribution is None:
+                raise LaunchpadScriptFailure(
+                    "Distribution '%s' not found." % distro_name)
 
             # target_archives is a tuple of (archive, description).
             if self.options.ppa:

@@ -256,11 +256,15 @@ from lp.soyuz.interfaces.archive import (
     )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.component import (
+    IComponent,
+    IComponentSet,
+    )
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import IPublishingSet
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.model.files import (
     BinaryPackageFile,
     SourcePackageReleaseFile,
@@ -2402,6 +2406,23 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if name is None:
             name = self.getUniqueString()
         return getUtility(IComponentSet).ensure(name)
+
+    def makeComponentSelection(self, distroseries=None, component=None):
+        """Make a new `ComponentSelection`.
+
+        :param distroseries: Optional `DistroSeries`.  If none is given,
+            one will be created.
+        :param component: Optional `Component` or a component name.  If
+            none is given, one will be created.
+        """
+        if distroseries is None:
+            distroseries = self.makeDistroSeries()
+
+        if not IComponent.providedBy(component):
+            component = self.makeComponent(component)
+
+        return ComponentSelection(
+            distroseries=distroseries, component=component)
 
     def makeArchive(self, distribution=None, owner=None, name=None,
                     purpose=None, enabled=True, private=False,

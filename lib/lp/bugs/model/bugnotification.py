@@ -254,6 +254,8 @@ class BugNotificationSet:
                     source_person_id_map[source_person_id]['filters']
                     or {no_filter_marker: None})
         if filter_ids:
+            # Now we get the information about subscriptions that might be
+            # filtered and take that into account.
             mute_data = store.find(
                 (BugSubscriptionFilterMute.person_id,
                  BugSubscriptionFilterMute.filter_id),
