@@ -9,7 +9,6 @@ __all__ = [
     "IBugSubscriptionFilterMute",
     ]
 
-
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
@@ -110,32 +109,25 @@ class IBugSubscriptionFilterMethodsPublic(Interface):
     """Methods on `IBugSubscriptionFilter` that can be called by anyone."""
 
     @call_with(person=REQUEST_USER)
-    @operation_parameters(
-        person=Reference(IPerson, title=_('Person'), required=True))
     @export_read_operation()
     @operation_for_version('devel')
     def isMuteAllowed(person):
         """Return True if this filter can be muted for `person`."""
 
     @call_with(person=REQUEST_USER)
-    @operation_parameters(
-        person=Reference(IPerson, title=_('Person'), required=True))
     @export_read_operation()
     @operation_for_version('devel')
-    def isMuted(person):
-        """Return True if this filter is muted for `person`."""
+    def muted(person):
+        """Return date muted if this filter was muted for `person`, or None.
+        """
 
     @call_with(person=REQUEST_USER)
-    @operation_parameters(
-        person=Reference(IPerson, title=_('Person'), required=True))
     @export_write_operation()
     @operation_for_version('devel')
     def mute(person):
         """Add a mute for `person` to this filter."""
 
     @call_with(person=REQUEST_USER)
-    @operation_parameters(
-        person=Reference(IPerson, title=_('Person'), required=True))
     @export_write_operation()
     @operation_for_version('devel')
     def unmute(person):
@@ -163,13 +155,12 @@ class IBugSubscriptionFilter(
 class IBugSubscriptionFilterMute(Interface):
     """A mute on an IBugSubscriptionFilter."""
 
-    export_as_webservice_entry()
-
     person = PersonChoice(
         title=_('Person'), required=True, vocabulary='ValidPersonOrTeam',
         readonly=True, description=_("The person subscribed."))
     filter = Reference(
         IBugSubscriptionFilter, title=_("Subscription filter"),
+        required=True, readonly=True,
         description=_("The subscription filter to be muted."))
     date_created = Datetime(
         title=_("The date on which the mute was created."), required=False,

@@ -259,13 +259,14 @@ class BugSubscriptionFilter(StormBase):
             self.structural_subscription.subscriber.isTeam() and
             person.inTeam(self.structural_subscription.subscriber))
 
-    def isMuted(self, person):
+    def muted(self, person):
         store = Store.of(self)
         existing_mutes = store.find(
             BugSubscriptionFilterMute,
             BugSubscriptionFilterMute.filter_id == self.id,
             BugSubscriptionFilterMute.person_id == person.id)
-        return not existing_mutes.is_empty()
+        if not existing_mutes.is_empty():
+            return existing_mutes.one().date_created
 
     def mute(self, person):
         """See `IBugSubscriptionFilter`."""
@@ -278,14 +279,11 @@ class BugSubscriptionFilter(StormBase):
             BugSubscriptionFilterMute,
             BugSubscriptionFilterMute.filter_id == self.id,
             BugSubscriptionFilterMute.person_id == person.id)
-        if not existing_mutes.is_empty():
-            return existing_mutes.one()
-        else:
+        if existing_mutes.is_empty():
             mute = BugSubscriptionFilterMute()
             mute.person = person
             mute.filter = self.id
             store.add(mute)
-            return mute
 
     def unmute(self, person):
         """See `IBugSubscriptionFilter`."""

@@ -448,7 +448,7 @@ def expose_user_subscriptions_to_js(user, subscriptions, request):
                 subscriber_is_team=is_team,
                 user_is_team_admin=user_is_team_admin,
                 can_mute=filter.isMuteAllowed(user),
-                is_muted=filter.isMuted(user)))
+                is_muted=filter.muted(user) is not None))
     info = info.values()
     info.sort(key=lambda item: item['target_url'])
     IJSONRequestCache(request).objects['subscription_info'] = info

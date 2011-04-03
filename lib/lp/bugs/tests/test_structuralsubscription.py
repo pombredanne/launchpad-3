@@ -733,9 +733,9 @@ class TestBugSubscriptionFilterMute(TestCaseWithFactory):
             BugSubscriptionFilterMute.filter == filter_id,
             BugSubscriptionFilterMute.person == person_id)
         self.assertTrue(mutes.is_empty())
-        self.assertFalse(self.filter.isMuted(self.team_member))
+        self.assertFalse(self.filter.muted(self.team_member))
         self.filter.mute(self.team_member)
-        self.assertTrue(self.filter.isMuted(self.team_member))
+        self.assertTrue(self.filter.muted(self.team_member))
         store.flush()
         self.assertFalse(mutes.is_empty())
 
@@ -752,9 +752,9 @@ class TestBugSubscriptionFilterMute(TestCaseWithFactory):
             BugSubscriptionFilterMute.filter == filter_id,
             BugSubscriptionFilterMute.person == person_id)
         self.assertFalse(mutes.is_empty())
-        self.assertTrue(self.filter.isMuted(self.team_member))
+        self.assertTrue(self.filter.muted(self.team_member))
         self.filter.unmute(self.team_member)
-        self.assertFalse(self.filter.isMuted(self.team_member))
+        self.assertFalse(self.filter.muted(self.team_member))
         store.flush()
         self.assertTrue(mutes.is_empty())
 
