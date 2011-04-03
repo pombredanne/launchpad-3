@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from BeautifulSoup import BeautifulSoup
 import soupmatchers
 from storm.zope.interfaces import IResultSet
