@@ -725,8 +725,8 @@ class POFileUploadView(POFileView):
             'should be imported, it will be reviewed manually by an '
             'administrator in the coming few days.  You can track '
             'your upload\'s status in the '
-            '<a href="%s/+imports">Translation Import Queue</a>' %(
-            canonical_url(self.context.potemplate.translationtarget))))
+            '<a href="%s/+imports">Translation Import Queue</a>',
+            canonical_url(self.context.potemplate.translationtarget)))
 
 
 class POFileBatchNavigator(BatchNavigator):

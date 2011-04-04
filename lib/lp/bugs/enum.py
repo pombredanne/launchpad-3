@@ -57,18 +57,18 @@ HIDDEN_BUG_NOTIFICATION_LEVELS = [BugNotificationLevel.NOTHING]
 
 class BugNotificationStatus(DBEnumeratedType):
     """The status of a bug notification.
-    
+
     A notification may be pending, sent, or omitted."""
 
     PENDING = DBItem(10, """
         Pending
-        
+
         The notification has not yet been sent.
         """)
 
     OMITTED = DBItem(20, """
         Omitted
-        
+
         The system considered sending the notification, but omitted it.
         This is generally because the action reported by the notification
         was immediately undone.
@@ -76,6 +76,6 @@ class BugNotificationStatus(DBEnumeratedType):
 
     SENT = DBItem(30, """
         Sent
-        
+
         The notification has been sent.
         """)

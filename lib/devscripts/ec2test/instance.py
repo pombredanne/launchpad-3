@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code to represent a single machine instance in EC2."""
@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 import code
+import errno
 import glob
 import os
 import select
@@ -622,7 +623,11 @@ class EC2InstanceConnection:
         session.exec_command(cmd)
         session.shutdown_write()
         while 1:
-            select.select([session], [], [], 0.5)
+            try:
+                select.select([session], [], [], 0.5)
+            except (IOError, select.error), e:
+                if e.errno == errno.EINTR:
+                    continue
             if session.recv_ready():
                 data = session.recv(4096)
                 if data:

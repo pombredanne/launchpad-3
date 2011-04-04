@@ -466,6 +466,31 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         self.assertEqual('1.1', ds_diff.base_version)
 
+    def test_base_version_invalid(self):
+        # If the maximum base version is invalid, it is discarded and not
+        # set as the base version.
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+        source_package_name = self.factory.getOrMakeSourcePackageName('foo')
+        # Create changelogs for both.
+        changelog_lfa = self.factory.makeChangelog(
+            'foo', ['1:2.0-1', 'a1:1.8.8-070403-1~priv1', '1:1.7-1'])
+        parent_changelog_lfa = self.factory.makeChangelog(
+            'foo', ['1:2.0-2', 'a1:1.8.8-070403-1~priv1', '1:1.7-1'])
+        transaction.commit() # Yay, librarian.
+
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series, source_package_name_str='foo',
+            versions={
+                'derived': '1:2.0-1',
+                'parent': '1:2.0-2',
+                },
+            changelogs={
+                'derived': changelog_lfa,
+                'parent': parent_changelog_lfa})
+
+        self.assertEqual('1:1.7-1', ds_diff.base_version)
+
     def test_base_source_pub_none(self):
         # None is simply returned if there is no base version.
         ds_diff = self.factory.makeDistroSeriesDifference()
@@ -550,7 +575,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
     def test_requestPackageDiffs(self):
         # IPackageDiffs are created for the corresponding versions.
-        dervied_changelog = self.factory.makeChangelog(
+        derived_changelog = self.factory.makeChangelog(
             versions=['1.0', '1.2'])
         parent_changelog = self.factory.makeChangelog(
             versions=['1.0', '1.3'])
@@ -561,7 +586,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             'base': '1.0',
             },
             changelogs={
-                'derived': dervied_changelog,
+                'derived': derived_changelog,
                 'parent': parent_changelog,
             })
 
@@ -576,6 +601,29 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             '1.0', ds_diff.package_diff.from_source.version)
         self.assertEqual(
             '1.0', ds_diff.parent_package_diff.from_source.version)
+
+    def test_requestPackageDiffs_child_is_base(self):
+        # When the child has the same version as the base version, when
+        # diffs are requested, child diffs aren't.
+        derived_changelog = self.factory.makeChangelog(versions=['0.1-1'])
+        parent_changelog = self.factory.makeChangelog(
+            versions=['0.1-2', '0.1-1'])
+        transaction.commit() # Yay, librarian.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            versions={
+                'derived': '0.1-1',
+                'parent': '0.1-2',
+                'base': '0.1-1',
+            },
+            changelogs={
+                'derived': derived_changelog,
+                'parent': parent_changelog,
+            })
+
+        with person_logged_in(ds_diff.owner):
+            ds_diff.requestPackageDiffs(ds_diff.owner)
+        self.assertIs(None, ds_diff.package_diff)
+        self.assertIsNot(None, ds_diff.parent_package_diff)
 
     def test_package_diff_urls_none(self):
         # URLs to the package diffs are only present when the diffs
