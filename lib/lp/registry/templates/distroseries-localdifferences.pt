@@ -6,6 +6,15 @@
   metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad">
   <body>
+
+    <metal:block fill-slot="head_epilogue">
+      <style type="text/css">
+        .distroseries-localdiff-search-filter input[type="radio"] {
+          margin-left: 0;
+        }
+      </style>
+    </metal:block>
+
     <tal:heading metal:fill-slot="heading">
       <h1 tal:content="view/label">Package differences between ...</h1>
     </tal:heading>
@@ -64,16 +73,27 @@
                    tal:content="parent_source_pub/source_package_name">Foo</a>
               </td>
               <td tal:condition="view/show_parent_version">
-                <a tal:attributes="href parent_source_pub/sourcepackagerelease/fmt:url">
-                    <tal:replace
-                    replace="parent_source_pub/sourcepackagerelease/version"/></a>
+                <a tal:condition="difference/@@/parent_source_package_url"
+                   tal:attributes="href difference/@@/parent_source_package_url"
+                   class="parent-version">
+                   <tal:replace
+                        replace="difference/parent_source_version"/></a>
+                <span tal:condition="not: difference/@@/parent_source_package_url"
+                      class="parent-version"
+                      tal:content="difference/parent_source_version">
+                </span>
               </td>
               <td tal:condition="view/show_derived_version">
-                <a tal:attributes="href source_pub/sourcepackagerelease/fmt:url"
-                     class="derived-version">
-                    <tal:replace
-                    replace="source_pub/sourcepackagerelease/version"/></a>
-              </td>
+                <a tal:condition="difference/@@/source_package_url"
+                   tal:attributes="href difference/@@/source_package_url"
+                   class="derived-version">
+                   <tal:replace
+                        replace="difference/source_version"/></a>
+                <span tal:condition="not: difference/@@/source_package_url"
+                    class="derived-version"
+                    tal:content="difference/source_version">
+                </span>
+               </td>
               <td tal:condition="view/show_parent_packagesets"
                   class="parent-packagesets">
                 <tal:replace replace="difference/@@/parent_packageset_names"/>

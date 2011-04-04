@@ -244,8 +244,13 @@ class IDistroSeriesPublic(
             required=True, schema=Interface, # Really IDistroSeries, see below
             vocabulary='DistroSeries'),
         readonly=True)
-    owner = exported(
-        PublicPersonChoice(title=_("Owner"), vocabulary='ValidOwner'))
+    registrant = exported(
+        PublicPersonChoice(
+            title=_("Registrant"), vocabulary='ValidPersonOrTeam'))
+    owner = exported(Reference(
+        IPerson, title=_("Owning team of the derived series"), readonly=True,
+        description=_(
+            "This attribute mirrors the owner of the distribution.")))
     date_created = exported(
         Datetime(title=_("The date this series was registered.")))
     driver = exported(
@@ -340,6 +345,14 @@ class IDistroSeriesPublic(
 
     language_packs = Attribute(
         "All language packs associated with this distribution series.")
+
+    backports_not_automatic = Bool(
+        title=_("Don't upgrade to backports automatically"), required=True,
+        description=_("""
+            Set NotAutomatic: yes and ButAutomaticUpgrades: yes in Release
+            files generated for the backports pocket. This tells apt to
+            automatically upgrade within backports, but not into it.
+            """))
 
     # other properties
     previous_series = Attribute("Previous series from the same "
@@ -558,6 +571,8 @@ class IDistroSeriesPublic(
                             include_pending=False, exclude_pocket=None,
                             archive=None):
         """Return the SourcePackagePublishingHistory(s)
+
+        Deprecated.  Use IArchive.getPublishedSources instead.
 
         Given a ISourcePackageName or name.
 

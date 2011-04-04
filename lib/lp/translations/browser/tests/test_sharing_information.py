@@ -1,15 +1,15 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the POTemplate recipe view classes and templates."""
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_tag_by_id,
     )
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (

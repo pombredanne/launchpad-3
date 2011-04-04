@@ -251,7 +251,8 @@ class IDistroSeriesDifferenceSource(Interface):
         distro_series,
         difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
         source_package_name_filter=None,
-        status=None):
+        status=None,
+        child_version_higher=False):
         """Return differences for the derived distro series.
 
         :param distro_series: The derived distribution series which is to be
@@ -265,6 +266,9 @@ class IDistroSeriesDifferenceSource(Interface):
         :param status: Only differences matching the status(es) will be
             included.
         :type status: `DistroSeriesDifferenceStatus`.
+        :param child_version_higher: Only differences for which the child's
+            version is higher than the parent's version will be included.
+        :type child_version_higher: bool.
         :return: A result set of differences.
         """
 

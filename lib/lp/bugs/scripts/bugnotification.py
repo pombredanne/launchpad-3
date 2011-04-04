@@ -105,14 +105,25 @@ def construct_email_notifications(bug_notifications):
             old_values[key] != new_values[key]):
             # We will report this notification.
             filtered_notifications.append(notification)
-            for recipient in notification.recipients:
-                email_people = get_recipients(recipient.person)
-                for email_person in email_people:
-                    recipients_for_person = recipients.get(email_person)
-                    if recipients_for_person is None:
-                        recipients_for_person = []
-                        recipients[email_person] = recipients_for_person
-                    recipients_for_person.append(recipient)
+            for subscription_source in notification.recipients:
+                for recipient in get_recipients(
+                    subscription_source.person):
+                    # The subscription_source.person may be a person or a
+                    # team.  The get_recipients function gives us everyone
+                    # who should actually get an email for that person.
+                    # If subscription_source.person is a person or a team
+                    # with a preferred email address, then the people to
+                    # be emailed will only be subscription_source.person.
+                    # However, if it is a team without a preferred email
+                    # address, then this list will be the people and teams
+                    # that comprise the team, transitively, stopping the walk
+                    # at each person and at each team with a preferred email
+                    # address.
+                    sources_for_person = recipients.get(recipient)
+                    if sources_for_person is None:
+                        sources_for_person = []
+                        recipients[recipient] = sources_for_person
+                    sources_for_person.append(subscription_source)
         else:
             omitted_notifications.append(notification)
 
@@ -162,45 +173,24 @@ def construct_email_notifications(bug_notifications):
     content = '\n\n'.join(text_notifications)
     from_address = get_bugmail_from_address(actor, bug)
     bug_notification_builder = BugNotificationBuilder(bug, actor)
+    recipients = getUtility(IBugNotificationSet).getRecipientFilterData(
+        recipients, filtered_notifications)
     sorted_recipients = sorted(
         recipients.items(), key=lambda t: t[0].preferredemail.email)
-    cached_filters = {}
 
-    bug_notification_set = getUtility(IBugNotificationSet)
-
-    def get_filter_descriptions(recipients):
-        "Given a list of recipients, return the filter descriptions for them."
-        descriptions = set()
-        people_seen = set()
-        for recipient in recipients:
-            person = recipient.person
-            if person in people_seen:
-                continue
-            people_seen.add(person)
-            recipient_filters = cached_filters.get(person)
-            if recipient_filters is None:
-                recipient_filters = set(
-                    filter.description for filter
-                    in bug_notification_set.getFiltersByRecipient(
-                        filtered_notifications, person)
-                    if filter.description)
-                cached_filters[recipient] = recipient_filters
-            descriptions.update(recipient_filters)
-        return descriptions
-
-    for email_person, recipients in sorted_recipients:
+    for email_person, data in sorted_recipients:
         address = str(email_person.preferredemail.email)
-        # Choosing the first recipient is a bit arbitrary, but it
+        # Choosing the first source is a bit arbitrary, but it
         # is simple for the user to understand.  We may want to reconsider
         # this in the future.
-        reason = recipients[0].reason_body
-        rationale = recipients[0].reason_header
+        reason = data['sources'][0].reason_body
+        rationale = data['sources'][0].reason_header
 
-        filters = get_filter_descriptions(recipients)
-        if filters:
-            # There are some filters as well, add it to the email body.
+        if data['filter descriptions']:
+            # There are some filter descriptions as well. Add them to
+            # the email body.
             filters_text = u"\nMatching subscriptions: %s" % ", ".join(
-                filters)
+                data['filter descriptions'])
         else:
             filters_text = u""
         # XXX deryck 2009-11-17 Bug #484319
@@ -246,7 +236,7 @@ def construct_email_notifications(bug_notifications):
         body = (body_template % body_data).strip()
         msg = bug_notification_builder.build(
             from_address, address, body, subject, email_date,
-            rationale, references, msgid, filters=filters)
+            rationale, references, msgid, filters=data['filter descriptions'])
         messages.append(msg)
 
     return filtered_notifications, omitted_notifications, messages
