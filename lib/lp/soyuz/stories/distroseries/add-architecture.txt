@@ -27,6 +27,16 @@ and/or has PPA support.
     >>> print admin_browser.title
     ia64 : Hoary (5.04) : Ubuntu
 
+Architecture tag is restricted to the usual Launchpad name format.
+
+    >>> admin_browser.open('http://launchpad.dev/ubuntu/hoary')
+    >>> admin_browser.getLink('Add architecture').click()
+    >>> admin_browser.getControl('Architecture Tag').value = 'foo bar'
+    >>> admin_browser.getControl('Continue').click()
+    >>> print "\n".join(get_feedback_messages(admin_browser.contents))
+    There is 1 error.
+    Invalid name 'foo bar'. ...
+
 Other users won't see the link nor the page where a new port can be
 registered.
 

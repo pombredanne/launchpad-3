@@ -362,7 +362,7 @@ Files published are accessible via the files property:
     >>> [(pub_file.libraryfilealias.filename, pub_file.file_type_name,
     ...   pub_file.archive_url) for pub_file in spph.files]
     [(u'alsa-utils_1.0.8-1ubuntu1.dsc', 'dsc',
-      u'http://ftpmaster.internal/ubuntu/pool/main/a/alsa-utils/alsa-utils_1.0.8-1ubuntu1.dsc')]
+      u'http://archive.launchpad.dev/ubuntu/pool/main/a/alsa-utils/alsa-utils_1.0.8-1ubuntu1.dsc')]
 
 
 Deletion and obsolescence
@@ -952,8 +952,11 @@ Generating respective "Packages" stanzas:
     >>> [pub_file.libraryfilealias.filename for pub_file in bpph.files]
     [u'mozilla-firefox_0.9_i386.deb']
 
+    >>> debian = bpph.distroarchseries.distroseries.distribution
+    >>> discard = factory.makePublisherConfig(
+    ...     distribution=debian, base_url=u"http://archive.launchpad.dev")
     >>> [pub_file.archive_url for pub_file in bpph.files]
-    [u'http://ftpmaster.internal/debian/pool/universe/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb']
+    [u'http://archive.launchpad.dev/debian/pool/universe/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb']
 
 Binary publishing records also have a download count, which contains
 the number of downloads of this binary package release in this archive.

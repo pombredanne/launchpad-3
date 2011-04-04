@@ -6,6 +6,15 @@
   metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad">
   <body>
+
+    <metal:block fill-slot="head_epilogue">
+      <style type="text/css">
+        .distroseries-localdiff-search-filter input[type="radio"] {
+          margin-left: 0;
+        }
+      </style>
+    </metal:block>
+
     <tal:heading metal:fill-slot="heading">
       <h1 tal:content="view/label">Package differences between ...</h1>
     </tal:heading>
@@ -64,17 +73,30 @@
                     id string:field.selected_differences.${src_name}"/>
 
                 <a tal:attributes="href difference/fmt:url" class="toggle-extra"
-                   tal:content="parent_source_pub/source_package_name">Foo</a>
+                    tal:content="parent_source_pub/source_package_name">Foo</a>
               </td>
-              <td><a tal:attributes="href parent_source_pub/sourcepackagerelease/fmt:url">
+              <td tal:define="parent_source_pck_url difference/@@/parent_source_package_url">
+                <a tal:condition="parent_source_pck_url"
+                    tal:attributes="href difference/@@/parent_source_package_url"
+                    class="parent-version">
                     <tal:replace
-                    replace="parent_source_pub/sourcepackagerelease/version"/></a>
+                        replace="difference/parent_source_version"/></a>
+                <span tal:condition="not: parent_source_pck_url"
+                    class="parent-version"
+                    tal:content="difference/parent_source_version">
+                </span>
               </td>
-              <td><a tal:attributes="href source_pub/sourcepackagerelease/fmt:url"
-                     class="derived-version">
+              <td tal:define="source_pck_url difference/@@/source_package_url">
+                <a tal:condition="source_pck_url"
+                    tal:attributes="href difference/@@/source_package_url"
+                    class="derived-version">
                     <tal:replace
-                    replace="source_pub/sourcepackagerelease/version"/></a>
-              </td>
+                        replace="difference/source_version"/></a>
+                <span tal:condition="not: source_pck_url"
+                    class="derived-version"
+                    tal:content="difference/source_version">
+                </span>
+               </td>
               <td>
                   <span tal:attributes="title difference/source_pub/datepublished/fmt:datetime"
                         tal:content="difference/source_pub/datepublished/fmt:approximatedate">2005-09-16</span>
