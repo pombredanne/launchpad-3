@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from BeautifulSoup import BeautifulSoup
 import soupmatchers
 from storm.zope.interfaces import IResultSet
@@ -397,7 +395,6 @@ class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
 class DistroSeriesLocalPackageDiffsFunctionalTestCase(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
-
 
     def test_higher_radio_mentions_parent(self):
         set_derived_series_ui_feature_flag(self)

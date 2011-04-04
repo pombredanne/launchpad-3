@@ -678,7 +678,6 @@ class DistroSeriesDifferenceBase(LaunchpadFormView,
     def initialize_sync_label(self, label):
         self.__class__.actions.byname['actions.sync'].label = label
 
-
     @property
     def label(self):
         return NotImplementedError()
