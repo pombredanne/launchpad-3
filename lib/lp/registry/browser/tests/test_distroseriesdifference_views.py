@@ -9,7 +9,10 @@ import re
 
 from BeautifulSoup import BeautifulSoup
 import soupmatchers
-from testtools.matchers import Not
+from testtools.matchers import (
+    MatchesAny,
+    Not,
+    )
 import transaction
 from zope.component import getUtility
 
@@ -416,3 +419,48 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
                 ds_diff, '+listing-distroseries-extra')
             self.assertThat(view(), package_diff_request_matcher)
             self.assertTrue(view.show_package_diffs_request_link)
+
+    def test_package_diff_no_base_version(self):
+        # If diff's base_version is None packages diffs are not displayed
+        # and neither is the link to compute them.
+        versions={
+            'base': None, # No base version.
+            'derived': '0.1-1derived1',
+            'parent': '0.1-2'}
+        ds_diff = self.factory.makeDistroSeriesDifference(versions=versions)
+        package_diff_request_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Request link', 'a',
+                text=re.compile(
+                    '\s*Compute differences from last common version\s*')))
+
+        pending_package_diff_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Pending package diff', 'span',
+                attrs={'class': 'PENDING'}))
+
+        package_diff_header_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Package diffs header', 'dt',
+                text=re.compile(
+                    '\s*Differences from last common version:')))
+
+        unknown_base_version = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Unknown base version', 'dd',
+                text=re.compile(
+                    '\s*Unknown')))
+
+        with celebrity_logged_in('admin'):
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra')
+            html = view()
+            self.assertFalse(view.show_package_diffs_request_link)
+            self.assertThat(html, unknown_base_version)
+            self.assertThat(
+                html,
+                Not(
+                    MatchesAny(
+                        package_diff_request_matcher,
+                        pending_package_diff_matcher,
+                        package_diff_header_matcher)))

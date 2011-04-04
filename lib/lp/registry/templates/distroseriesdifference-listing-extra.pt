@@ -48,10 +48,13 @@
         </span>
     </dt>
     <dt
-      tal:condition="not: view/show_package_diffs_request_link">
+      tal:condition="python: not(view.show_package_diffs_request_link) and context.base_version">
       Differences from last common version:
     </dt>
-    <dd>
+    <dd class="greyed-out" tal:condition="not: context/base_version">
+    Unknown
+    </dd>
+    <dd tal:condition="context/base_version">
       <ul class="package-diff-status">
         <tal:source-diff-option condition="view/display_child_diff">
           <li tal:condition="context/package_diff">
