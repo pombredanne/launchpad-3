@@ -107,6 +107,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     UNRESOLVED_BUGTASK_STATUSES,
     )
+from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
     BugSet,
     get_bug_tags,
@@ -207,9 +208,6 @@ from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
 from lp.translations.model.translationpolicy import TranslationPolicyMixin
-from lp.translations.utilities.translationsharinginfo import (
-    has_upstream_template,
-    )
 
 
 class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
@@ -242,6 +240,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     domainname = StringCol(notNull=True)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
+        storm_validator=validate_public_person, notNull=True)
+    registrant = ForeignKey(
+        dbName='registrant', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     bug_supervisor = ForeignKey(
         dbName='bug_supervisor', foreignKey='Person',
@@ -478,8 +479,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             arch_mirrors = list(Store.of(self).find(
                 (MirrorDistroArchSeries.distribution_mirrorID,
                  Max(MirrorDistroArchSeries.freshness)),
-                MirrorDistroArchSeries.distribution_mirrorID.is_in(mirror_ids)
-            ).group_by(MirrorDistroArchSeries.distribution_mirrorID))
+                MirrorDistroArchSeries.distribution_mirrorID.is_in(
+                    mirror_ids)).group_by(
+                        MirrorDistroArchSeries.distribution_mirrorID))
             arch_mirror_freshness = {}
             arch_mirror_freshness.update(
                 [(mirror_id, MirrorFreshness.items[mirror_freshness]) for
@@ -778,7 +780,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def getCurrentSourceReleases(self, source_package_names):
         """See `IDistribution`."""
         return getUtility(IDistributionSet).getCurrentSourceReleases(
-            {self:source_package_names})
+            {self: source_package_names})
 
     @property
     def has_any_specifications(self):
@@ -1776,7 +1778,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return user.inTeam(self.owner) or user.inTeam(admins)
 
     def newSeries(self, name, displayname, title, summary,
-                  description, version, parent_series, owner):
+                  description, version, parent_series, registrant):
         """See `IDistribution`."""
         series = DistroSeries(
             distribution=self,
@@ -1788,10 +1790,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             version=version,
             status=SeriesStatus.EXPERIMENTAL,
             parent_series=parent_series,
-            owner=owner)
-        if owner.inTeam(self.driver) and not owner.inTeam(self.owner):
+            registrant=registrant)
+        if (registrant.inTeam(self.driver)
+            and not registrant.inTeam(self.owner)):
             # This driver is a release manager.
-            series.driver = owner
+            series.driver = registrant
 
         # May wish to add this to the series rather than clearing the cache --
         # RBC 20100816.
@@ -1824,7 +1827,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         assert sourcepackage is not None, (
             "Translations sharing policy requires a SourcePackage.")
 
-        if not has_upstream_template(sourcepackage):
+        if not sourcepackage.has_sharing_translation_templates:
             # There is no known upstream template or series.  Take the
             # uploader's word for whether these are upstream translations
             # (in which case they're shared) or not.
@@ -1839,8 +1842,24 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # translations for upstream.
             return purportedly_upstream
 
-        upstream_product = sourcepackage.productseries.product
-        return upstream_product.invitesTranslationEdits(person, language)
+        productseries = sourcepackage.productseries
+        return productseries.product.invitesTranslationEdits(person, language)
+
+    def getBugTaskWeightFunction(self):
+        """Provide a weight function to determine optimal bug task.
+
+        Full weight is given to tasks for this distribution.
+
+        Given that there must be a distribution task for a series of that
+        distribution to have a task, we give no more weighting to a
+        distroseries task than any other.
+        """
+        distributionID = self.id
+        def weight_function(bugtask):
+            if bugtask.distributionID == distributionID:
+                return OrderedBugTask(1, bugtask.id, bugtask)
+            return OrderedBugTask(2, bugtask.id, bugtask)
+        return weight_function
 
 
 class DistributionSet:
@@ -1882,7 +1901,7 @@ class DistributionSet:
         return pillar
 
     def new(self, name, displayname, title, description, summary, domainname,
-            members, owner, mugshot=None, logo=None, icon=None):
+            members, owner, registrant, mugshot=None, logo=None, icon=None):
         """See `IDistributionSet`."""
         distro = Distribution(
             name=name,
@@ -1894,6 +1913,7 @@ class DistributionSet:
             members=members,
             mirror_admin=owner,
             owner=owner,
+            registrant=registrant,
             mugshot=mugshot,
             logo=logo,
             icon=icon)

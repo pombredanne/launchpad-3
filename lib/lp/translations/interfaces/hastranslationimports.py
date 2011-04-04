@@ -11,6 +11,7 @@ __all__ = [
 from lazr.restful.declarations import (
     export_as_webservice_entry,
     export_read_operation,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     )
@@ -51,6 +52,7 @@ class IHasTranslationImports(Interface):
     # _schema_circular_imports.py.
     @operation_returns_collection_of(Interface)
     @export_read_operation()
+    @operation_for_version('beta')
     def getTranslationImportQueueEntries(import_status=None,
                                          file_extension=None):
         """Return entries in the translation import queue for this entity.

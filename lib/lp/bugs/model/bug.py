@@ -171,7 +171,7 @@ from lp.bugs.model.bugtask import (
     )
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (
-    get_all_structural_subscriptions,
+    get_structural_subscriptions_for_bug,
     get_structural_subscribers,
     )
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
@@ -703,7 +703,7 @@ BugMessage""" % sqlvalues(self.id))
             days_old, getUtility(ILaunchpadCelebrities).janitor, bug=self)
         return bugtasks.count() > 0
 
-    @property
+    @cachedproperty
     def initial_message(self):
         """See `IBug`."""
         store = Store.of(self)
@@ -780,6 +780,9 @@ BugMessage""" % sqlvalues(self.id))
         """See `IBug`."""
         # Drop cached subscription info.
         clear_property_cache(self)
+        # Ensure the unsubscriber is in the _known_viewer cache for the bug so
+        # that the permissions are such that the operation can succeed.
+        get_property_cache(self)._known_viewers = set([unsubscribed_by.id])
         if person is None:
             person = unsubscribed_by
 
@@ -1002,10 +1005,6 @@ BugMessage""" % sqlvalues(self.id))
             BugSubscription.person == person,
             BugSubscription.bug == self).one()
 
-    def getStructuralSubscriptionsForPerson(self, person):
-        """See `IBug`."""
-        return get_all_structural_subscriptions(self.bugtasks, person)
-
     def getAlsoNotifiedSubscribers(self, recipients=None, level=None):
         """See `IBug`.
 
@@ -1152,14 +1151,8 @@ BugMessage""" % sqlvalues(self.id))
             distribution = target.distribution
             source_package_name = target.sourcepackagename
         if ISourcePackage.providedBy(target):
-            if target.distroseries is not None:
-                distro_series = target.distroseries
-                source_package_name = target.sourcepackagename
-            elif target.distribution is not None:
-                distribution = target.distribution
-                source_package_name = target.sourcepackagename
-            else:
-                source_package_name = target.sourcepackagename
+            distro_series = target.distroseries
+            source_package_name = target.sourcepackagename
 
         new_task = getUtility(IBugTaskSet).createTask(
             self, owner=owner, product=product,
@@ -1791,7 +1784,7 @@ BugMessage""" % sqlvalues(self.id))
         bug_message_set = getUtility(IBugMessageSet)
         bug_message = bug_message_set.getByBugAndMessage(
             self, self.messages[comment_number])
-        bug_message.visible = visible
+        bug_message.message.visible = visible
 
     @cachedproperty
     def _known_viewers(self):
@@ -2233,7 +2226,7 @@ class BugSubscriptionInfo:
     @freeze(StructuralSubscriptionSet)
     def structural_subscriptions(self):
         """Structural subscriptions to the bug's targets."""
-        return get_all_structural_subscriptions(self.bug.bugtasks)
+        return get_structural_subscriptions_for_bug(self.bug)
 
     @cachedproperty
     @freeze(BugSubscriberSet)

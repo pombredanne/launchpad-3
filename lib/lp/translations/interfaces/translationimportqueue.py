@@ -335,7 +335,8 @@ class ITranslationImportQueue(Interface):
 
     def addOrUpdateEntriesFromTarball(content, by_maintainer, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
-        potemplate=None, filename_filter=None, approver_factory=None):
+        potemplate=None, filename_filter=None, approver_factory=None,
+        only_templates=False):
         """Add all .po or .pot files from the tarball at :content:.
 
         :arg content: is a tarball stream.
@@ -350,6 +351,8 @@ class ITranslationImportQueue(Interface):
         :arg approver_factory: is a factory that can be called to create an
             approver.  The method invokes the approver on any queue entries
             that it creates. If this is None, no approval is performed.
+        :arg only_templates: Flag to indicate that only translation templates
+            in the tarball should be used.
         :return: A tuple of the number of successfully processed files and a
             list of those filenames that could not be processed correctly.
 

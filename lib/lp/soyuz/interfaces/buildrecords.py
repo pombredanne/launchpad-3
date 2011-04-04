@@ -19,6 +19,7 @@ from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
     call_with,
     export_read_operation,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     rename_parameters_as,
@@ -59,6 +60,7 @@ class IHasBuildRecords(Interface):
     # Really a IBuild see _schema_circular_imports.
     @operation_returns_collection_of(Interface)
     @export_read_operation()
+    @operation_for_version('beta')
     def getBuildRecords(build_state=None, name=None, pocket=None,
                         arch_tag=None, user=None, binary_only=True):
         """Return build records in the context it is implemented.
