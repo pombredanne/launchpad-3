@@ -16,6 +16,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.code.interfaces.branchlookup import BRANCH_ID_ALIAS
 from lp.codehosting.rewrite import BranchRewriter
 from lp.codehosting.vfs import branch_id_to_path
 from lp.services.log.logger import BufferLogger
@@ -90,6 +91,54 @@ class TestBranchRewriter(TestCaseWithFactory):
             ['http://localhost:8080/%s/changes' % unique_name,
              'http://localhost:8080/%s/.bzr' % unique_name],
             output)
+
+    def test_rewriteLine_id_alias_found_dot_bzr(self):
+        # Requests for /+branch-id/$id/.bzr/... are redirected to where the
+        # branches are served from by ID if they are public.
+        rewriter = self.makeRewriter()
+        branches = [
+            self.factory.makeProductBranch(private=False),
+            self.factory.makePersonalBranch(private=False),
+            self.factory.makePackageBranch(private=False)]
+        transaction.commit()
+        output = [
+            rewriter.rewriteLine("/%s/%s/.bzr/README" % (
+                    BRANCH_ID_ALIAS, branch.id))
+            for branch in branches]
+        expected = [
+            'file:///var/tmp/bazaar.launchpad.dev/mirrors/%s/.bzr/README'
+            % branch_id_to_path(branch.id)
+            for branch in branches]
+        self.assertEqual(expected, output)
+
+    def test_rewriteLine_id_alias_private(self):
+        # All requests for /+branch-id/$id/... for private branches return
+        # 'NULL'.  This is translated by apache to a 404.
+        rewriter = self.makeRewriter()
+        branch = self.factory.makeAnyBranch(private=True)
+        path = '/%s/%s' % (BRANCH_ID_ALIAS,  removeSecurityProxy(branch).id)
+        transaction.commit()
+        output = [
+            rewriter.rewriteLine("%s/changes" % path),
+            rewriter.rewriteLine("%s/.bzr" % path)
+            ]
+        self.assertEqual(['NULL', 'NULL'], output)
+
+    def test_rewriteLine_id_alias_logs_cache_hit(self):
+        # The second request for a branch using the alias hits the cache.
+        rewriter = self.makeRewriter()
+        branch = self.factory.makeAnyBranch()
+        transaction.commit()
+        path = "/%s/%s/.bzr/README" % (BRANCH_ID_ALIAS, branch.id)
+        rewriter.rewriteLine(path)
+        rewriter.rewriteLine(path)
+        logging_output_lines = self.getLoggerOutput(rewriter).strip().split('\n')
+        self.assertEqual(2, len(logging_output_lines))
+        self.assertIsNot(
+            None,
+            re.match("INFO .* -> .* (.*s, cache: HIT)",
+                     logging_output_lines[-1]),
+            "No hit found in %r" % logging_output_lines[-1])
 
     def test_rewriteLine_static(self):
         # Requests to /static are rewritten to codebrowse urls.
