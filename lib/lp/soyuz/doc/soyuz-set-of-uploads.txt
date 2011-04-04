@@ -81,9 +81,9 @@ for the ubuntutest distribution.
   >>> ubuntutest = Distribution.byName('ubuntutest')
   >>> breezy = ubuntutest.newSeries(
   ...     'breezy', 'Breezy Badger', 'The Breezy Badger',
-  ...     'Black and White', 'Someone', '5.10', breezy_autotest,
+  ...     'Black and White', 'Someone', '5.10', None,
   ...     breezy_autotest.owner)
-  >>> ids = InitialiseDistroSeries(breezy)
+  >>> ids = InitialiseDistroSeries(breezy_autotest, breezy)
   >>> ids.initialise()
   >>> breezy.changeslist = 'breezy-changes@ubuntu.com'
   >>> fake_chroot = LibraryFileAlias.get(1)

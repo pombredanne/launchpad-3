@@ -7,6 +7,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'get_recipients',
     'generate_nick',
     'IrcID',
     'IrcIDSet',
@@ -57,6 +58,7 @@ from storm.expr import (
     And,
     Desc,
     Exists,
+    In,
     Join,
     LeftJoin,
     Min,
@@ -4564,3 +4566,65 @@ def person_from_account(account):
     if person is None:
         raise ComponentLookupError()
     return person
+
+
+@ProxyFactory
+def get_recipients(person):
+    """Return a set of people who receive email for this Person (person/team).
+
+    If <person> has a preferred email, the set will contain only that
+    person.  If <person> doesn't have a preferred email but is a team,
+    the set will contain the preferred email address of each member of
+    <person>, including indirect members.
+
+    Finally, if <person> doesn't have a preferred email and is not a team,
+    the set will be empty.
+    """
+    if person.preferredemail:
+        return [person]
+    elif person.is_team:
+        # Get transitive members of team with a preferred email.
+        return _get_recipients_for_team(person)
+    else:
+        return []
+
+
+def _get_recipients_for_team(team):
+    """Given a team without a preferred email, return recipients.
+
+    Helper for get_recipients, divided out simply to make get_recipients
+    easier to understand in broad brush."""
+    store = IStore(Person)
+    source = store.using(TeamMembership,
+                         Join(Person,
+                              TeamMembership.personID==Person.id),
+                         LeftJoin(EmailAddress,
+                                  EmailAddress.person == Person.id))
+    pending_team_ids = [team.id]
+    recipient_ids = set()
+    seen = set()
+    while pending_team_ids:
+        intermediate_transitive_results = source.find(
+            (TeamMembership.personID, EmailAddress.personID),
+            In(TeamMembership.status,
+               [TeamMembershipStatus.ADMIN.value,
+                TeamMembershipStatus.APPROVED.value]),
+            In(TeamMembership.teamID, pending_team_ids),
+            Or(EmailAddress.status == EmailAddressStatus.PREFERRED,
+               And(Not(Person.teamownerID == None),
+                   EmailAddress.status == None))).config(distinct=True)
+        next_ids = []
+        for (person_id,
+             preferred_email_marker) in intermediate_transitive_results:
+            if preferred_email_marker is None:
+                # This is a team without a preferred email address.
+                if person_id not in seen:
+                    next_ids.append(person_id)
+                    seen.add(person_id)
+            else:
+                recipient_ids.add(person_id)
+        pending_team_ids = next_ids
+    return getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+        recipient_ids,
+        need_validity=True,
+        need_preferred_email=True)

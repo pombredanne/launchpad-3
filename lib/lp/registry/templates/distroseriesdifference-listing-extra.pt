@@ -40,17 +40,20 @@
     <dt>Last common version:</dt>
     <dd tal:content="context/base_version">1.2.1</dd>
     <dt
-      tal:condition="python: not(context.package_diff) or not(context.parent_package_diff)"
+      tal:condition="view/show_package_diffs_request_link"
       class="package-diff-placeholder">
-        <a class="js-action sprite add" href="#">Compute differences from last common version</a>:
+        <span class="package-diff-compute-request">
+          <a class="js-action sprite add" href="">
+            Compute differences from last common version</a>:
+        </span>
     </dt>
     <dt
-      tal:condition="python: context.package_diff and context.parent_package_diff">
+      tal:condition="not: view/show_package_diffs_request_link">
       Differences from last common version:
     </dt>
     <dd>
       <ul class="package-diff-status">
-        <tal:source-diff-option condition="context/source_pub">
+        <tal:source-diff-option condition="view/display_child_diff">
           <li tal:condition="context/package_diff">
             <span tal:condition="context/package_diff/status/enumvalue:PENDING"
               class="sprite PENDING">

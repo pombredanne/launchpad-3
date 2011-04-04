@@ -48,3 +48,8 @@ class QuestionMessage(SQLBase):
         """See IMessage."""
         # Delegates do not proxy __ methods, because of the name mangling.
         return iter(self.chunks)
+
+    @property
+    def visible(self):
+        """See `IQuestionMessage.`"""
+        return self.message.visible
