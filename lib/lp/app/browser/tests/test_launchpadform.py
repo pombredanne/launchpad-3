@@ -52,7 +52,7 @@ class TestHasStructuredDoc(TestCase):
         request = LaunchpadTestRequest()
         view = TestView(None, request)
         view.initialize()
-        normal_widget, structured_widget = list(view.widgets)
+        normal_widget, structured_widget = view.widgets
         self.assertIs(None, self._widget_annotation(normal_widget))
         self.assertTrue(self._widget_annotation(structured_widget))
 
@@ -66,7 +66,7 @@ class TestQueryTalesForHasStructuredDoc(TestCase):
         request = LaunchpadTestRequest()
         view = TestView(None, request)
         view.initialize()
-        normal_widget, structured_widget = list(view.widgets)
+        normal_widget, structured_widget = view.widgets
         self.assertIs(None, test_tales(
                 'widget/query:has-structured-doc', widget=normal_widget))
         self.assertTrue(test_tales(
@@ -76,9 +76,9 @@ class TestQueryTalesForHasStructuredDoc(TestCase):
 class TestHelpLinksInterface(Interface):
     """Test interface for the view below."""
 
-    nickname = Text(title=u'name')
+    nickname = Text(title=u'nickname')
 
-    displayname = Text(title=u'name')
+    displayname = Text(title=u'displayname')
 
 
 class TestHelpLinksView(LaunchpadFormView):
@@ -106,7 +106,7 @@ class TestHelpLinks(TestCaseWithFactory):
         request = LaunchpadTestRequest()
         view = TestHelpLinksView(None, request)
         view.initialize()
-        nickname_widget, displayname_widget = list(view.widgets)
+        nickname_widget, displayname_widget = view.widgets
         self.assertEqual(
             u"http://widget.example.com/name",
             nickname_widget.help_link)
