@@ -29,6 +29,7 @@ from lazr.enum import BaseItem
 import pytz
 from sqlobject import (
     ForeignKey,
+    IntCol,
     SQLObjectNotFound,
     StringCol,
     )
@@ -544,6 +545,7 @@ class BugTask(SQLBase, BugTaskMixin):
         storm_validator=validate_conjoined_attribute)
     date_left_closed = UtcDateTimeCol(notNull=False, default=None,
         storm_validator=validate_conjoined_attribute)
+    heat = IntCol(notNull=True, default=0)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
@@ -2917,6 +2919,7 @@ class BugTaskSet:
             # Local import of Bug to avoid import loop.
             from lp.bugs.model.bug import Bug
             BugTaskSet._ORDERBY_COLUMN = {
+                "task": BugTask.id,
                 "id": BugTask.bugID,
                 "importance": BugTask.importance,
                 # TODO: sort by their name?
@@ -2932,7 +2935,7 @@ class BugTaskSet:
                 "number_of_duplicates": Bug.number_of_duplicates,
                 "message_count": Bug.message_count,
                 "users_affected_count": Bug.users_affected_count,
-                "heat": Bug.heat,
+                "heat": BugTask.heat,
                 "latest_patch_uploaded": Bug.latest_patch_uploaded,
                 }
         return BugTaskSet._ORDERBY_COLUMN[col_name]
@@ -2957,14 +2960,18 @@ class BugTaskSet:
         # This set contains columns which are, in practical terms,
         # unique. When these columns are used as sort keys, they ensure
         # the sort will be consistent. These columns will be used to
-        # decide whether we need to add the BugTask.bug and BugTask.id
+        # decide whether we need to add the BugTask.bug or BugTask.id
         # columns to make the sort consistent over runs -- which is good
         # for the user and essential for the test suite.
         unambiguous_cols = set([
+            Bug.date_last_updated,
+            Bug.datecreated,
+            Bug.id,
+            BugTask.bugID,
             BugTask.date_assigned,
             BugTask.datecreated,
-            Bug.datecreated,
-            Bug.date_last_updated])
+            BugTask.id,
+            ])
         # Bug ID is unique within bugs on a product or source package.
         if (params.product or
             (params.distribution and params.sourcepackagename) or

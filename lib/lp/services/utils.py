@@ -15,6 +15,8 @@ __all__ = [
     'compress_hash',
     'decorate_with',
     'docstring_dedent',
+    'file_exists',
+    'iter_list_chunks',
     'iter_split',
     'run_capturing_output',
     'synchronize',
@@ -24,6 +26,7 @@ __all__ = [
     ]
 
 from itertools import tee
+import os
 from StringIO import StringIO
 import string
 import sys
@@ -47,6 +50,7 @@ def AutoDecorate(*decorators):
     """
 
     class AutoDecorateMetaClass(type):
+
         def __new__(cls, class_name, bases, class_dict):
             new_class_dict = {}
             for name, value in class_dict.items():
@@ -117,6 +121,15 @@ def iter_split(string, splitter):
     tokens = string.split(splitter)
     for i in reversed(range(1, len(tokens) + 1)):
         yield splitter.join(tokens[:i]), splitter.join(tokens[i:])
+
+
+def iter_list_chunks(a_list, size):
+    """Iterate over `a_list` in chunks of size `size`.
+
+    I'm amazed this isn't in itertools (mwhudson).
+    """
+    for i in range(0, len(a_list), size):
+        yield a_list[i:i+size]
 
 
 def synchronize(source, target, add, remove):
@@ -207,11 +220,15 @@ class CachingIterator:
 
 def decorate_with(context_factory, *args, **kwargs):
     """Create a decorator that runs decorated functions with 'context'."""
+
     def decorator(function):
+
         def decorated(*a, **kw):
             with context_factory(*args, **kwargs):
                 return function(*a, **kw)
+
         return mergeFunctionMetadata(function, decorated)
+
     return decorator
 
 
@@ -224,6 +241,11 @@ def docstring_dedent(s):
     # Make sure there is at least one newline so the split works.
     first, rest = (s+'\n').split('\n', 1)
     return (first + '\n' + dedent(rest)).strip()
+
+
+def file_exists(filename):
+    """Does `filename` exist?"""
+    return os.access(filename, os.F_OK)
 
 
 class CapturedOutput(Fixture):

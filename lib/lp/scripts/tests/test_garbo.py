@@ -819,7 +819,7 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         self.assertEqual(store.find(BranchJob).count(), 1)
 
-    def test_ObsoleteBugAttachmentDeleter(self):
+    def test_ObsoleteBugAttachmentPruner(self):
         # Bug attachments without a LibraryFileContent record are removed.
 
         LaunchpadZopelessLayer.switchDbUser('testadmin')

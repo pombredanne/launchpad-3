@@ -227,7 +227,7 @@ class LaunchpadScript:
     # Convenience or death
     #
     @log_unhandled_exception_and_exit
-    def login(self, user):
+    def login(self, user=ANONYMOUS):
         """Super-convenience method that avoids the import."""
         setupInteractionByEmail(user)
 
