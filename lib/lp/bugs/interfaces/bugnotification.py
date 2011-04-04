@@ -22,7 +22,6 @@ from zope.schema import (
     Bool,
     Choice,
     Datetime,
-    Int,
     TextLine,
     )
 
@@ -81,8 +80,15 @@ class IBugNotificationSet(Interface):
         `BugNotificationRecipient` objects.
         """
 
-    def getFiltersByRecipient(notifications, person):
-        """Return filters for a particular recipient."""
+    def getRecipientFilterData(recipient_to_sources, notifications):
+        """Get non-muted recipients mapped to sources & filter descriptions.
+
+        :param recipient_to_sources:
+            A dict of people who are to receive the email to the sources
+            (BugNotificationRecipients) that represent the subscriptions that
+            caused the notifications to be sent.
+        :param notifications: the notifications that are being communicated.
+        """
 
 
 class IBugNotificationRecipient(Interface):

@@ -309,7 +309,7 @@ class HasBugHeatMixin:
                       AND ProductSeries.product = %s
                       ORDER BY Bug.heat DESC LIMIT 1""" % sqlvalues(self)]
         elif IProjectGroup.providedBy(self):
-            sql = ["""SELECT heat
+            sql = ["""SELECT Bug.heat
                       FROM Bug, Bugtask, Product
                       WHERE Bugtask.bug = Bug.id
                       AND Bugtask.product = Product.id

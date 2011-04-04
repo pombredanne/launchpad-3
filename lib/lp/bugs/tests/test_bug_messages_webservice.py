@@ -11,14 +11,44 @@ from lazr.restfulclient.errors import HTTPError
 from zope.component import getUtility
 from zope.security.management import endInteraction
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
     launchpadlib_for,
     person_logged_in,
     TestCaseWithFactory,
+    WebServiceTestCase,
     )
+
+
+class TestMessageTraversal(WebServiceTestCase):
+    """Tests safe traversal of bugs.
+
+    See bug 607438."""
+
+    def test_message_with_attachments(self):
+        bugowner = self.factory.makePerson()
+        bug = self.factory.makeBug(owner=bugowner)
+        # Traversal over bug messages attachments has no errors.
+        expected_messages = []
+        with person_logged_in(bugowner):
+            for i in range(3):
+                att = self.factory.makeBugAttachment(bug)
+                expected_messages.append(att.message.subject)
+
+        lp_user = self.factory.makePerson()
+        lp_bug = self.wsObject(bug, lp_user)
+
+        attachments = lp_bug.attachments
+        messages = [a.message.subject for a in attachments
+            if a.message is not None]
+        self.assertContentEqual(
+            messages,
+            expected_messages)
 
 
 class TestSetCommentVisibility(TestCaseWithFactory):
@@ -61,7 +91,7 @@ class TestSetCommentVisibility(TestCaseWithFactory):
         with person_logged_in(self.admin):
             bug_message = bug_msg_set.getByBugAndMessage(
                 self.bug, self.message)
-            self.assertFalse(bug_message.visible)
+            self.assertFalse(bug_message.message.visible)
 
     def test_random_user_cannot_set_visible(self):
         # Logged in users without privs can't set bug comment

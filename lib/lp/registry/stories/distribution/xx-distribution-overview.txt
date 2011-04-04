@@ -89,7 +89,9 @@ its main 'heading'.
 
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'registration'))
-    registered by Ubuntu Team on 2006-10-16
+    Registered by
+    Registry Administrators
+    on 2006-10-16
 
     >>> print extract_text(find_main_content(anon_browser.contents))
     Ubuntu Linux
