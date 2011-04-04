@@ -25,6 +25,9 @@ from lp.testing.windmill.constants import (
 from lp.testing.windmill.widgets import (
     search_and_select_picker_widget,
 )
+from lp.translations.interfaces.translations import (
+    TranslationsBranchImportMode,
+)
 from lp.translations.windmill.testing import (
     TranslationsWindmillLayer,
 )
@@ -58,7 +61,18 @@ class TestSharingDetails(WindmillTestCase):
         self.client.click(xpath='//*[@id="branch-incomplete-picker"]/a')
         search_and_select_picker_widget(self.client, 'product-branch', 1)
         self.client.waits.forElementProperty(
-            id='branch-incomplete', option='className|sprite no unseen',
+            xpath='//*[@id="upstream-sync-incomplete-picker"]/a',
+            option='className|sprite edit', timeout=FOR_ELEMENT)
+        self.client.click(
+            xpath='//*[@id="upstream-sync-incomplete-picker"]/a')
+        self.client.click(id='field.translations_autoimport_mode.2')
+        self.client.click(xpath='//input[@value="Submit"]')
+        self.client.waits.forElementProperty(
+            id='upstream-sync-incomplete', option='className|sprite no unseen',
             timeout=FOR_ELEMENT)
         transaction.commit()
+        self.assertEqual(sourcepackage.productseries, productseries)
         self.assertEqual(branch, productseries.branch)
+        self.assertEqual(
+            TranslationsBranchImportMode.IMPORT_TRANSLATIONS,
+            productseries.translations_autoimport_mode)
