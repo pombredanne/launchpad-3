@@ -103,7 +103,7 @@ class BranchRewriter:
                 resource_location)
             if branch_id is None:
                 if resource_location.startswith('/' + BRANCH_ID_ALIAS):
-                    return 'NULL'
+                    r = 'NULL'
                 else:
                     r = self._codebrowse_url(resource_location)
             else:
