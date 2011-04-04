@@ -10,7 +10,6 @@ from psycopg2 import ProgrammingError
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
-from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.scripts.tests import run_script
 from canonical.testing.layers import (
@@ -36,7 +35,6 @@ from lp.soyuz.model.distroseriesdifferencejob import (
     make_metadata,
     may_require_job,
     )
-from lp.soyuz.model.packagesetgroup import PackagesetGroup
 from lp.testing import TestCaseWithFactory
 
 
