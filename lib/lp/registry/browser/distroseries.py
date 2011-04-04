@@ -518,7 +518,7 @@ class IDistroSeriesAddForm(Interface):
     displayname = copy_field(
         IDistroSeries["displayname"], description=_(
             "The name of the new series as it would "
-            "appear in a paragraph"))
+            "appear in a paragraph."))
 
     summary = copy_field(IDistroSeries["summary"])
 
@@ -533,7 +533,11 @@ class DistroSeriesAddView(LaunchpadFormView):
         'summary',
         ]
 
-    label = 'Register a series'
+    help_links = {
+        "name": u"/+help/distribution-add-series.html#codename",
+        }
+
+    label = 'Add a series'
     page_title = label
 
     def validate(self, data):
@@ -551,7 +555,7 @@ class DistroSeriesAddView(LaunchpadFormView):
                     deprecated_field_names_found))
         super(DistroSeriesAddView, self).validate(data)
 
-    @action(_('Create Series'), name='create')
+    @action(_('Add Series'), name='create')
     def createAndAdd(self, action, data):
         """Create and add a new Distribution Series"""
         registrant = getUtility(ILaunchBag).user
