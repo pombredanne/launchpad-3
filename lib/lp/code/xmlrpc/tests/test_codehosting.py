@@ -41,6 +41,7 @@ from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codehosting import (
     BRANCH_ALIAS_PREFIX,
+    BRANCH_ID_ALIAS_PREFIX,
     BRANCH_TRANSPORT,
     CONTROL_TRANSPORT,
     )
@@ -990,6 +991,49 @@ class CodehostingTest(TestCaseWithFactory):
         # bzr will look for it and we don't have a global bzr dir.
         requester = self.factory.makePerson()
         self.assertNotFound(requester, '/%s/.bzr' % BRANCH_ALIAS_PREFIX)
+
+    def test_translatePath_branch_id_alias_bzrdir_content(self):
+        # translatePath('/+branch-id/.bzr/.*') *must* return not found, otherwise
+        # bzr will look for it and we don't have a global bzr dir.
+        requester = self.factory.makePerson()
+        self.assertNotFound(
+            requester, '/%s/.bzr/branch-format' % BRANCH_ID_ALIAS_PREFIX)
+
+    def test_translatePath_branch_id_alias_bzrdir(self):
+        # translatePath('/+branch-id/.bzr') *must* return not found, otherwise
+        # bzr will look for it and we don't have a global bzr dir.
+        requester = self.factory.makePerson()
+        self.assertNotFound(requester, '/%s/.bzr' % BRANCH_ID_ALIAS_PREFIX)
+
+    def test_translatePath_branch_id_alias_owned(self):
+        # Even if the the requester is the owner, the branch is read only.
+        requester = self.factory.makePerson()
+        branch = self.factory.makeAnyBranch(
+            branch_type=BranchType.HOSTED, owner=requester)
+        path = escape(u'/%s/%s' % (BRANCH_ID_ALIAS_PREFIX, branch.id))
+        translation = self.codehosting_api.translatePath(requester.id, path)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            translation)
+
+    def test_translatePath_branch_id_alias_private_branch(self):
+        requester = self.factory.makePerson()
+        branch = removeSecurityProxy(
+            self.factory.makeAnyBranch(
+                branch_type=BranchType.HOSTED, private=True, owner=requester))
+        path = escape(u'/%s/%s' % (BRANCH_ID_ALIAS_PREFIX, branch.id))
+        translation = self.codehosting_api.translatePath(requester.id, path)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, ''),
+            translation)
+
+    def test_translatePath_branch_id_alias_private_branch_no_access(self):
+        requester = self.factory.makePerson()
+        branch = removeSecurityProxy(
+            self.factory.makeAnyBranch(
+                branch_type=BranchType.HOSTED, private=True))
+        path = escape(u'/%s/%s' % (BRANCH_ID_ALIAS_PREFIX, branch.id))
+        self.assertPermissionDenied(requester, path)
 
     def assertTranslationIsControlDirectory(self, translation,
                                             default_stacked_on,
