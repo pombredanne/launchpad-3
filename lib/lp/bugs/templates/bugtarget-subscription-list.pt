@@ -17,9 +17,11 @@
           request/features/malone.advanced-structural-subscriptions.enabled">
       LPS.use('lp.registry.structural_subscription', function(Y) {
           var module = Y.lp.registry.structural_subscription;
+          var config = {content_box: "#structural-subscription-content-box"};
           Y.on('domready', function() {
-              module.setup_bug_subscriptions(
-                  {content_box: "#structural-subscription-content-box"})
+              module.setup_bug_subscriptions(config);
+              module.setup_subscription_link(
+                  config, '#create-new-subscription');
           });
       });
     </script>
@@ -31,6 +33,12 @@
 
     <div id="maincontent">
       <div id="nonportlets" class="readable">
+        <div tal:condition="
+            features/malone.advanced-structural-subscriptions.enabled">
+          <a class="sprite add" id="create-new-subscription"
+             href="#">Add a subscription</a>
+        </div>
+
         <div id="subscription-listing"></div>
 
             <div id="structural-subscription-content-box"></div>
