@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for DistroSeriesDifferences."""
@@ -67,6 +67,29 @@ class DistroSeriesDifferenceNavigation(Navigation):
         return getUtility(
             IDistroSeriesDifferenceCommentSource).getForDifference(
                 self.context, id)
+
+    @property
+    def parent_packageset_names(self):
+        """Return the formatted list of packagesets for the related
+        sourcepackagename in the parent.
+        """
+        packagesets = self.context.getParentPackageSets()
+        return self._format_packageset(packagesets)
+
+    @property
+    def packageset_names(self):
+        """Return the formatted list of packagesets for the related
+        sourcepackagename in the derived series.
+        """
+        packagesets = self.context.getPackageSets()
+        return self._format_packageset(packagesets)
+
+    def _format_packageset(self, packagesets):
+        """Format a list of packagesets to display in the UI."""
+        if packagesets is not None:
+            return ', '.join([p.name for p in packagesets])
+        else:
+            return None
 
 
 class IDistroSeriesDifferenceForm(Interface):

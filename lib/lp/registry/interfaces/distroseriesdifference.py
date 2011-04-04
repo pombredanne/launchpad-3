@@ -175,6 +175,16 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
     def getComments():
         """Return a result set of the comments for this difference."""
 
+    def getPackageSets():
+        """Return a result set of the derived series packagesets for the
+        sourcepackagename of this difference.
+        """
+
+    def getParentPackageSets():
+        """Return a result set of the parent packagesets for the
+        sourcepackagename of this difference.
+        """
+
 
 class IDistroSeriesDifferenceEdit(Interface):
     """Difference attributes requiring launchpad.Edit."""

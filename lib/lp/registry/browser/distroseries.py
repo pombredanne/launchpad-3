@@ -645,6 +645,9 @@ class DistroSeriesDifferenceBase(LaunchpadFormView,
     show_parent_version = True
     show_derived_version = True
     show_package_diffs = True
+    # Packagesets display.
+    show_parent_packagesets = False
+    show_packagesets = False
 
     def initialize(self):
         """Redirect to the derived series if the feature is not enabled."""
@@ -788,6 +791,7 @@ class DistroSeriesLocalDifferences(DistroSeriesDifferenceBase,
     """Present differences between a derived series and its parent."""
     page_title = 'Local package differences'
     differences_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
+    show_parent_packagesets = True
 
     def initialize(self):
         # Update the label for sync action.
@@ -843,6 +847,7 @@ class DistroSeriesMissingPackages(DistroSeriesDifferenceBase,
     differences_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
     show_derived_version = False
     show_package_diffs = False
+    show_parent_packagesets = True
 
     def initialize(self):
         # Update the label for sync action.
@@ -856,7 +861,7 @@ class DistroSeriesMissingPackages(DistroSeriesDifferenceBase,
     def explanation(self):
         return (
             "Packages that are listed here are those that have been added to "
-            "the specific packages %s that were used to create %s . They are "
+            "the specific packages %s that were used to create %s. They are "
             "listed here so you can consider including them in %s." % (
                 self.context.parent_series.displayname,
                 self.context.displayname,

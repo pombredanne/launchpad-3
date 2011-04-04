@@ -34,10 +34,16 @@
             <tr>
               <th>Source</th>
               <th tal:condition="view/show_parent_version">
-                <tal:replace replace="parent_name" />version</th>
+                <tal:replace replace="parent_name" /> version</th>
               <th tal:condition="view/show_derived_version">
-                <tal:replace replace="series_name" />version</th>
-              <th>Last uploaded</th>
+                <tal:replace replace="series_name" /> version</th>
+              <th tal:condition="view/show_parent_packagesets">
+                Parent package-sets
+              </th>
+              <th tal:condition="view/show_packagesets">
+                Package-sets
+              </th>
+               <th>Last uploaded</th>
               <th>Latest comment</th>
             </tr>
           </thead>
@@ -45,8 +51,7 @@
             <tal:difference repeat="difference differences/batch">
             <tr tal:define="parent_source_pub difference/parent_source_pub;
                             source_pub difference/source_pub;
-                            src_name difference/source_package_name/name;
-                            signer source_pub/sourcepackagerelease/uploader;"
+                            src_name difference/source_package_name/name;"
                 tal:attributes="class parent_source_pub/source_package_name">
               <td>
                 <input tal:condition="view/canPerformSync"
@@ -69,12 +74,29 @@
                     <tal:replace
                     replace="source_pub/sourcepackagerelease/version"/></a>
               </td>
+              <td tal:condition="view/show_parent_packagesets"
+                  class="parent-packagesets">
+                <tal:replace replace="difference/@@/parent_packageset_names"/>
+              </td>
+              <td tal:condition="view/show_packagesets"
+                  class="packagesets">
+                <tal:replace replace="difference/@@/packageset_names" />
+              </td>
               <td>
-                  <span tal:attributes="title difference/source_pub/datepublished/fmt:datetime"
-                        tal:content="difference/source_pub/datepublished/fmt:approximatedate">2005-09-16</span>
-                  <tal:signer condition="signer">
-                   by <a tal:replace="structure signer/fmt:link">Steph Smith</a>
-                  </tal:signer>
+                  <tal:parent condition="not: view/show_derived_version">
+                    <span tal:attributes="title difference/parent_source_pub/datepublished/fmt:datetime"
+                          tal:content="difference/parent_source_pub/datepublished/fmt:approximatedate">2005-09-16</span>
+                    <tal:signer condition="parent_source_pub/sourcepackagerelease/uploader">
+                      by <a tal:replace="structure parent_source_pub/sourcepackagerelease/uploader/fmt:link">Steph Smith</a>
+                    </tal:signer>
+                  </tal:parent>
+                  <tal:derived condition="view/show_derived_version">
+                    <span tal:attributes="title difference/parent_source_pub/datepublished/fmt:datetime"
+                          tal:content="difference/parent_source_pub/datepublished/fmt:approximatedate">2005-09-16</span>
+                    <tal:signer condition="source_pub/sourcepackagerelease/uploader">
+                      by <a tal:replace="structure source_pub/sourcepackagerelease/uploader/fmt:link">Steph Smith</a>
+                    </tal:signer>
+                  </tal:derived>
               </td>
               <td>
                 <tal:comment tal:define="comment python:difference.getComments().first();"

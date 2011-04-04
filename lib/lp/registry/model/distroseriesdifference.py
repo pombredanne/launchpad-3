@@ -57,6 +57,7 @@ from lp.services.propertycache import (
     clear_property_cache,
     )
 from lp.soyuz.enums import PackageDiffStatus
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 
 
 class DistroSeriesDifference(Storm):
@@ -233,6 +234,24 @@ class DistroSeriesDifference(Storm):
     def parent_package_diff_url(self):
         """See `IDistroSeriesDifference`."""
         return self._getPackageDiffURL(self.parent_package_diff)
+
+    def getPackageSets(self):
+        """See `IDistroSeriesDifference`."""
+        if self.derived_series is not None:
+            return getUtility(IPackagesetSet).setsIncludingSource(
+                self.source_package_name, self.derived_series)
+        else:
+            return []
+
+    def getParentPackageSets(self):
+        """See `IDistroSeriesDifference`."""
+        if self.derived_series is not None and (
+            self.derived_series.parent_series is not None):
+                return getUtility(IPackagesetSet).setsIncludingSource(
+                    self.source_package_name,
+                    self.derived_series.parent_series)
+        else:
+            return []
 
     @property
     def package_diff_status(self):

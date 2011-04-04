@@ -4,11 +4,10 @@
 __metaclass__ = type
 
 from BeautifulSoup import BeautifulSoup
+import soupmatchers
 from storm.zope.interfaces import IResultSet
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
-
-import unittest
 
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -17,32 +16,31 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
-    LaunchpadZopelessLayer,
     LaunchpadFunctionalLayer,
+    LaunchpadZopelessLayer,
     )
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
+    )
+from lp.services.features import (
+    getFeatureFlag,
+    install_feature_controller,
     )
 from lp.services.features.flags import FeatureController
 from lp.services.features.model import (
     FeatureFlag,
     getFeatureStore,
     )
-from lp.services.features import (
-    getFeatureFlag,
-    install_feature_controller,
-    )
+from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
-from lp.soyuz.enums import (
-    SourcePackageFormat,
-    )
 from lp.testing import (
-    TestCaseWithFactory,
+    celebrity_logged_in,
     login_person,
     person_logged_in,
+    TestCaseWithFactory,
     )
 from lp.testing.views import create_initialized_view
 
@@ -135,6 +133,32 @@ class DistroSeriesLocalPackageDiffsPageTestCase(TestCaseWithFactory):
             None,
             find_tag_by_id(view(), 'distroseries-localdiff-search-filter'),
             "Form filter should not be shown when there are no differences.")
+
+    def test_parent_packagesets_localpackagediffs(self):
+        # +localpackagediffs displays the parent packagesets.
+        pckset_names = [u'pack2', u'pack1', u'aa']
+        sorted_pckset_names = [u'aa', u'pack1', u'pack2']
+        ds_diff = self.factory.makeDistroSeriesDifference()
+        with celebrity_logged_in('admin'):
+            for pckset_name in pckset_names:
+                ps = self.factory.makePackageset(
+                    name=pckset_name,
+                    packages=[ds_diff.source_package_name],
+                    distroseries=ds_diff.derived_series.parent_series)
+
+        with person_logged_in(self.simple_user):
+            view = create_initialized_view(
+                ds_diff.derived_series,
+                '+localpackagediffs',
+                principal=self.simple_user)
+            html = view()
+
+        parent_packagesets = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Parent packagesets', 'td',
+                attrs={'class': 'parent-packagesets'}))
+
+        self.assertThat(html, parent_packagesets)
 
 
 class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
@@ -493,6 +517,46 @@ class DistroSerieMissingPackageDiffsTestCase(TestCaseWithFactory):
             [missing_diff], view.cached_differences.batch)
 
 
+class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory):
+    """Test the distroseries +missingpackages page."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(DistroSeriesMissingPackagesPageTestCase,
+              self).setUp('foo.bar@canonical.com')
+        set_derived_series_ui_feature_flag(self)
+        self.simple_user = self.factory.makePerson()
+        missing_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
+        self.ds_diff = self.factory.makeDistroSeriesDifference(
+            difference_type=missing_type)
+
+    def test_parent_packagesets_missingpackages(self):
+        # +missingpackages displays the packagesets in the parent.
+        pckset_names = [u'pack2', u'pack1', u'aa']
+        sorted_pckset_names = [u'aa', u'pack1', u'pack2']
+        with celebrity_logged_in('admin'):
+            for pckset_name in pckset_names:
+                ps = self.factory.makePackageset(
+                    name=pckset_name,
+                    packages=[self.ds_diff.source_package_name],
+                    distroseries=self.ds_diff.derived_series.parent_series)
+
+        with person_logged_in(self.simple_user):
+            view = create_initialized_view(
+                self.ds_diff.derived_series,
+                '+missingpackages',
+                principal=self.simple_user)
+            html = view()
+
+        parent_packagesets = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Packagesets', 'td',
+                attrs={'class': 'parent-packagesets'}))
+
+        self.assertThat(html, parent_packagesets)
+
+
 class TestMilestoneBatchNavigatorAttribute(TestCaseWithFactory):
     """Test the series.milestone_batch_navigator attribute."""
 
@@ -534,7 +598,3 @@ class TestMilestoneBatchNavigatorAttribute(TestCaseWithFactory):
             for item in view.milestone_batch_navigator.currentBatch()]
         self.assertEqual(expected, milestone_names)
         config.pop('default-batch-size')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

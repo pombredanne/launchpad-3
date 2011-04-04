@@ -206,8 +206,8 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertEqual(1, len(tags))
 
     def test_packagediffs_display(self):
-        # The packages diffs slots are displayed only of type
-        # DIFFERENT_VERSIONS.
+        # The packages diffs slots are displayed only when the diff
+        # is of type DIFFERENT_VERSIONS.
         pck_diff_type = (
             DistroSeriesDifferenceType.DIFFERENT_VERSIONS,)
         non_pck_diff_type = (
