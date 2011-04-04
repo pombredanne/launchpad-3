@@ -41,12 +41,12 @@ from lp.code.errors import (
     NoSuchBranch,
     )
 from lp.code.interfaces.branchlookup import (
-    BRANCH_ID_ALIAS,
     IBranchLookup,
     ILinkedBranchTraversable,
     ILinkedBranchTraverser,
     )
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
+from lp.code.interfaces.codehosting import BRANCH_ID_ALIAS_PREFIX
 from lp.code.interfaces.linkedbranch import get_linked_to_branch
 from lp.code.model.branch import Branch
 from lp.registry.errors import (
@@ -330,7 +330,7 @@ class BranchLookup:
         else:
             store = IMasterStore(Branch)
         path = path.lstrip('/')
-        if path.startswith(BRANCH_ID_ALIAS):
+        if path.startswith(BRANCH_ID_ALIAS_PREFIX):
             return self._getIdAndTrailingPathByIdAlias(store, path)
         else:
             return self._getIdAndTrailingPathByUniqueName(store, path)

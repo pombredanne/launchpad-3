@@ -10,10 +10,8 @@ from bzrlib import urlutils
 from zope.component import getUtility
 
 from canonical.config import config
-from lp.code.interfaces.branchlookup import (
-    BRANCH_ID_ALIAS,
-    IBranchLookup,
-    )
+from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.code.interfaces.codehosting import BRANCH_ID_ALIAS_PREFIX
 from lp.codehosting.vfs import branch_id_to_path
 from lp.services.utils import iter_split
 
@@ -102,7 +100,7 @@ class BranchRewriter:
             branch_id, trailing, cached = self._getBranchIdAndTrailingPath(
                 resource_location)
             if branch_id is None:
-                if resource_location.startswith('/' + BRANCH_ID_ALIAS):
+                if resource_location.startswith('/' + BRANCH_ID_ALIAS_PREFIX):
                     r = 'NULL'
                 else:
                     r = self._codebrowse_url(resource_location)

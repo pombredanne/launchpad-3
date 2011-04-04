@@ -16,7 +16,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.code.interfaces.branchlookup import BRANCH_ID_ALIAS
+from lp.code.interfaces.codehosting import BRANCH_ID_ALIAS_PREFIX
 from lp.codehosting.rewrite import BranchRewriter
 from lp.codehosting.vfs import branch_id_to_path
 from lp.services.log.logger import BufferLogger
@@ -103,7 +103,7 @@ class TestBranchRewriter(TestCaseWithFactory):
         transaction.commit()
         output = [
             rewriter.rewriteLine("/%s/%s/.bzr/README" % (
-                    BRANCH_ID_ALIAS, branch.id))
+                    BRANCH_ID_ALIAS_PREFIX, branch.id))
             for branch in branches]
         expected = [
             'file:///var/tmp/bazaar.launchpad.dev/mirrors/%s/.bzr/README'
@@ -116,7 +116,8 @@ class TestBranchRewriter(TestCaseWithFactory):
         # 'NULL'.  This is translated by apache to a 404.
         rewriter = self.makeRewriter()
         branch = self.factory.makeAnyBranch(private=True)
-        path = '/%s/%s' % (BRANCH_ID_ALIAS,  removeSecurityProxy(branch).id)
+        path = '/%s/%s' % (
+            BRANCH_ID_ALIAS_PREFIX, removeSecurityProxy(branch).id)
         transaction.commit()
         output = [
             rewriter.rewriteLine("%s/changes" % path),
@@ -129,10 +130,11 @@ class TestBranchRewriter(TestCaseWithFactory):
         rewriter = self.makeRewriter()
         branch = self.factory.makeAnyBranch()
         transaction.commit()
-        path = "/%s/%s/.bzr/README" % (BRANCH_ID_ALIAS, branch.id)
+        path = "/%s/%s/.bzr/README" % (BRANCH_ID_ALIAS_PREFIX, branch.id)
         rewriter.rewriteLine(path)
         rewriter.rewriteLine(path)
-        logging_output_lines = self.getLoggerOutput(rewriter).strip().split('\n')
+        logging_output_lines = self.getLoggerOutput(
+            rewriter).strip().split('\n')
         self.assertEqual(2, len(logging_output_lines))
         self.assertIsNot(
             None,

@@ -7,16 +7,12 @@
 
 __metaclass__ = type
 __all__ = [
-    'BRANCH_ID_ALIAS',
     'IBranchLookup',
     'ILinkedBranchTraversable',
     'ILinkedBranchTraverser',
     ]
 
 from zope.interface import Interface
-
-
-BRANCH_ID_ALIAS = '+branch-id'
 
 
 class ILinkedBranchTraversable(Interface):
