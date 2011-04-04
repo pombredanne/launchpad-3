@@ -156,7 +156,10 @@ from lp.bugs.browser.bugtask import (
 from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
 from lp.code.browser.branchref import BranchRef
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
-from lp.registry.browser import BaseRdfView
+from lp.registry.browser import (
+    add_subscribe_link,
+    BaseRdfView,
+    )
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.browser.menu import (
@@ -169,6 +172,7 @@ from lp.registry.browser.pillar import (
     )
 from lp.registry.browser.productseries import get_series_branch_error
 from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
@@ -577,7 +581,12 @@ class ProductActionNavigationMenu(NavigationMenu, ProductEditLinksMixin):
     usedfor = IProductActionMenu
     facet = 'overview'
     title = 'Actions'
-    links = ('edit', 'review_license', 'administer', 'subscribe')
+
+    @cachedproperty
+    def links(self):
+        links = ['edit', 'review_license', 'administer']
+        add_subscribe_link(links)
+        return links
 
 
 class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin,
@@ -672,15 +681,19 @@ class ProductBugsMenu(PillarBugsMenu,
 
     usedfor = IProduct
     facet = 'bugs'
-    links = (
-        'filebug',
-        'bugsupervisor',
-        'securitycontact',
-        'cve',
-        'subscribe',
-        'configure_bugtracker',
-        )
     configurable_bugtracker = True
+
+    @cachedproperty
+    def links(self):
+        links = [
+            'filebug',
+            'bugsupervisor',
+            'securitycontact',
+            'cve',
+            ]
+        add_subscribe_link(links)
+        links.append('configure_bugtracker')
+        return links
 
 
 class ProductSpecificationsMenu(NavigationMenu, ProductEditLinksMixin,
@@ -987,6 +1000,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         self.form = request.form_ng
 
     def initialize(self):
+        super(ProductView, self).initialize()
         self.status_message = None
         product = self.context
         title_field = IProduct['title']
@@ -1006,6 +1020,8 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         self.show_programming_languages = bool(
             self.context.programminglang or
             check_permission('launchpad.Edit', self.context))
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user)
 
     @property
     def show_license_status(self):

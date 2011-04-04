@@ -58,6 +58,7 @@ from lazr.restful.declarations import (
     export_write_operation,
     exported,
     LAZR_WEBSERVICE_EXPORTED,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
@@ -1010,6 +1011,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         build_daily=Bool(),
         )
     @export_factory_operation(Interface, [])
+    @operation_for_version("beta")
     def createRecipe(name, description, recipe_text, distroseries,
                      registrant, daily_build_archive=None, build_daily=False):
         """Create a SourcePackageRecipe owned by this person.
@@ -1027,6 +1029,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
     @operation_parameters(name=TextLine(required=True))
     @operation_returns_entry(Interface) # Really ISourcePackageRecipe.
     @export_read_operation()
+    @operation_for_version("beta")
     def getRecipe(name):
         """Return the person's recipe with the given name."""
 
@@ -1035,6 +1038,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
 
     @call_with(requester=REQUEST_USER)
     @export_read_operation()
+    @operation_for_version("beta")
     def getArchiveSubscriptionURLs(requester):
         """Return private archive URLs that this person can see.
 
@@ -1047,6 +1051,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
     @operation_parameters(
         archive=Reference(schema=Interface)) # Really IArchive
     @export_write_operation()
+    @operation_for_version("beta")
     def getArchiveSubscriptionURL(requester, archive):
         """Get a text line that is suitable to be used for a sources.list
         entry.
@@ -1076,6 +1081,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
 
     @operation_returns_collection_of(Interface)
     @export_read_operation()
+    @operation_for_version("beta")
     def getBugSubscriberPackages():
         """Return the packages for which this person is a bug subscriber.
 
@@ -1369,6 +1375,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         name=TextLine(required=True, constraint=name_validator))
     @operation_returns_entry(Interface) # Really IArchive.
     @export_read_operation()
+    @operation_for_version("beta")
     def getPPAByName(name):
         """Return a PPA with the given name if it exists.
 
@@ -1383,6 +1390,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         displayname=TextLine(required=False),
         description=TextLine(required=False))
     @export_factory_operation(Interface, []) # Really IArchive.
+    @operation_for_version("beta")
     def createPPA(name=None, displayname=None, description=None):
         """Create a PPA.
 
@@ -1420,10 +1428,12 @@ class IPersonViewRestricted(Interface):
         "The number of real people who are members of this team.")
     # activemembers.value_type.schema will be set to IPerson once
     # IPerson is defined.
-    activemembers = exported(
+    activemembers = Attribute('List of direct members with ADMIN or APPROVED status')
+    # For the API we need eager loading
+    api_activemembers = exported(
         doNotSnapshot(
             CollectionField(
-                title=_("List of members with ADMIN or APPROVED status"),
+                title=_("List of direct members with ADMIN or APPROVED status"),
                 value_type=Reference(schema=Interface))),
         exported_as='members')
     adminmembers = exported(
@@ -1551,6 +1561,7 @@ class IPersonViewRestricted(Interface):
     @operation_parameters(status=copy_field(ITeamMembership['status']))
     @operation_returns_collection_of(Interface) # Really IPerson
     @export_read_operation()
+    @operation_for_version("beta")
     def getMembersByStatus(status, orderby=None):
         """Return the people whose membership on this team match :status:.
 
@@ -1564,6 +1575,7 @@ class IPersonEditRestricted(Interface):
     @call_with(requester=REQUEST_USER)
     @operation_parameters(team=copy_field(ITeamMembership['team']))
     @export_write_operation()
+    @operation_for_version("beta")
     def join(team, requester=None, may_subscribe_to_list=True):
         """Join the given team if its subscriptionpolicy is not RESTRICTED.
 
@@ -1590,6 +1602,7 @@ class IPersonEditRestricted(Interface):
 
     @operation_parameters(team=copy_field(ITeamMembership['team']))
     @export_write_operation()
+    @operation_for_version("beta")
     def leave(team):
         """Leave the given team.
 
@@ -1603,6 +1616,7 @@ class IPersonEditRestricted(Interface):
     @operation_parameters(
         visible=copy_field(ILocationRecord['visible'], required=True))
     @export_write_operation()
+    @operation_for_version("beta")
     def setLocationVisibility(visible):
         """Specify the visibility of a person's location and time zone."""
 
@@ -1626,6 +1640,7 @@ class IPersonEditRestricted(Interface):
         status=copy_field(ITeamMembership['status']),
         comment=Text(required=False))
     @export_write_operation()
+    @operation_for_version("beta")
     def addMember(person, reviewer, status=TeamMembershipStatus.APPROVED,
                   comment=None, force_team_add=False,
                   may_subscribe_to_list=True):
@@ -1666,6 +1681,7 @@ class IPersonEditRestricted(Interface):
         team=copy_field(ITeamMembership['team']),
         comment=Text())
     @export_write_operation()
+    @operation_for_version("beta")
     def acceptInvitationToBeMemberOf(team, comment):
         """Accept an invitation to become a member of the given team.
 
@@ -1678,6 +1694,7 @@ class IPersonEditRestricted(Interface):
         team=copy_field(ITeamMembership['team']),
         comment=Text())
     @export_write_operation()
+    @operation_for_version("beta")
     def declineInvitationToBeMemberOf(team, comment):
         """Decline an invitation to become a member of the given team.
 
@@ -1691,6 +1708,7 @@ class IPersonEditRestricted(Interface):
         team=copy_field(ITeamMembership['team']),
         comment=Text(required=False))
     @export_write_operation()
+    @operation_for_version("beta")
     def retractTeamMembership(team, user, comment=None):
         """Retract this team's membership in the given team.
 
@@ -2034,6 +2052,7 @@ class IPersonSet(Interface):
     @export_factory_operation(
         ITeam, ['name', 'displayname', 'teamdescription',
                 'defaultmembershipperiod', 'defaultrenewalperiod'])
+    @operation_for_version("beta")
     def newTeam(teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
                 defaultmembershipperiod=None, defaultrenewalperiod=None):
@@ -2046,6 +2065,7 @@ class IPersonSet(Interface):
         email=TextLine(required=True, constraint=email_validator))
     @operation_returns_entry(IPerson)
     @export_read_operation()
+    @operation_for_version("beta")
     def getByEmail(email):
         """Return the person with the given email address.
 
@@ -2079,6 +2099,7 @@ class IPersonSet(Interface):
         text=TextLine(title=_("Search text"), default=u""))
     @operation_returns_collection_of(IPerson)
     @export_read_operation()
+    @operation_for_version("beta")
     def find(text=""):
         """Return all non-merged Persons and Teams whose name, displayname or
         email address match <text>.
@@ -2101,6 +2122,7 @@ class IPersonSet(Interface):
         )
     @operation_returns_collection_of(IPerson)
     @export_read_operation()
+    @operation_for_version("beta")
     def findPerson(text="", exclude_inactive_accounts=True,
                    must_have_email=False,
                    created_after=None, created_before=None):
@@ -2132,6 +2154,7 @@ class IPersonSet(Interface):
         text=TextLine(title=_("Search text"), default=u""))
     @operation_returns_collection_of(IPerson)
     @export_read_operation()
+    @operation_for_version("beta")
     def findTeam(text=""):
         """Return all Teams whose name, displayname or email address
         match <text>.
@@ -2375,7 +2398,7 @@ class NoSuchPerson(NameLookupFailed):
 # Fix value_type.schema of IPersonViewRestricted attributes.
 for name in [
     'all_members_prepopulated',
-    'activemembers',
+    'api_activemembers',
     'adminmembers',
     'proposedmembers',
     'invited_members',

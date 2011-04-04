@@ -87,12 +87,6 @@ from lp.translations.interfaces.translationimporter import (
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
-from lp.translations.utilities.translationsharinginfo import (
-    has_ubuntu_template,
-    get_ubuntu_sharing_info,
-    has_upstream_template,
-    get_upstream_sharing_info,
-    )
 
 
 class POTemplateNavigation(Navigation):
@@ -353,43 +347,20 @@ class POTemplateView(LaunchpadView,
         return self.context.translation_side == TranslationSide.UPSTREAM
 
     def is_sharing(self):
-        if self.is_upstream_template:
-            return has_ubuntu_template(
-                productseries=self.context.productseries,
-                templatename=self.context.name)
-        else:
-            return has_upstream_template(
-                sourcepackage=self.context.sourcepackage,
-                templatename=self.context.name)
+        potemplate = self.context.getOtherSidePOTemplate()
+        return potemplate is not None
 
     @property
     def sharing_template(self):
-        if self.is_upstream_template:
-            infos = get_ubuntu_sharing_info(
-                productseries=self.context.productseries,
-                templatename=self.context.name)
-        else:
-            infos = get_upstream_sharing_info(
-                sourcepackage=self.context.sourcepackage,
-                templatename=self.context.name)
-        if len(infos) == 0:
-            return None
-        obj, template = infos[0]
-        return template
+        return self.context.getOtherSidePOTemplate()
 
-    def getTranslationTarget(self):
+    def getTranslationSourcePackage(self):
         """See `TranslationSharingDetailsMixin`."""
         if self.is_upstream_template:
-            return self.context.productseries
+            productseries = self.context.productseries
+            return productseries.getUbuntuTranslationFocusPackage()
         else:
             return self.context.sourcepackage
-
-    def can_edit_sharing_details(self):
-        if self.is_upstream_template:
-            obj = self.context.productseries
-        else:
-            obj = self.context.distroseries
-        return check_permission('launchpad.Edit', obj)
 
 
 class POTemplateUploadView(LaunchpadView, TranslationsMixin):
@@ -479,8 +450,8 @@ class POTemplateUploadView(LaunchpadView, TranslationsMixin):
                     'should be imported, it will be reviewed manually by an '
                     'administrator in the coming few days.  You can track '
                     'your upload\'s status in the '
-                    '<a href="%s/+imports">Translation Import Queue</a>' %(
-                        canonical_url(self.context.translationtarget))))
+                    '<a href="%s/+imports">Translation Import Queue</a>',
+                        canonical_url(self.context.translationtarget)))
 
         elif helpers.is_tar_filename(filename):
             # Add the whole tarball to the import queue.
@@ -501,7 +472,7 @@ class POTemplateUploadView(LaunchpadView, TranslationsMixin):
                     itthey = 'they'
                 self.request.response.addInfoNotification(
                     structured(
-                    'Thank you for your upload. %d file%s from the tarball '
+                    'Thank you for your upload. %s file%s from the tarball '
                     'will be automatically '
                     'reviewed in the next few hours.  If that is not enough '
                     'to determine whether and where your file%s should '
@@ -517,26 +488,26 @@ class POTemplateUploadView(LaunchpadView, TranslationsMixin):
                             "A file could not be uploaded because its "
                             "name matched multiple existing uploads, for "
                             "different templates.")
-                        ul_conflicts = (
+                        ul_conflicts = structured(
                             "The conflicting file name was:<br /> "
-                            "<ul><li>%s</li></ul>" % cgi.escape(conflicts[0]))
+                            "<ul><li>%s</li></ul>", conflicts[0])
                     else:
-                        warning = (
-                            "%d files could not be uploaded because their "
+                        warning = structured(
+                            "%s files could not be uploaded because their "
                             "names matched multiple existing uploads, for "
-                            "different templates." % len(conflicts))
-                        ul_conflicts = (
+                            "different templates.", len(conflicts))
+                        ul_conflicts = structured(
                             "The conflicting file names were:<br /> "
                             "<ul><li>%s</li></ul>" % (
                             "</li><li>".join(map(cgi.escape, conflicts))))
                     self.request.response.addWarningNotification(
                         structured(
-                        warning + "  This makes it "
+                        "%s  This makes it "
                         "impossible to determine which template the new "
                         "upload was for.  Try uploading to a specific "
                         "template: visit the page for the template that you "
                         "want to upload to, and select the upload option "
-                        "from there.<br />"+ ul_conflicts))
+                        "from there.<br />%s", warning, ul_conflicts))
             else:
                 if len(conflicts) == 0:
                     self.request.response.addWarningNotification(

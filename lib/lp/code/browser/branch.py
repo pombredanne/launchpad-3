@@ -360,7 +360,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
 
     def source(self):
         """Return a link to the branch's file listing on codebrowse."""
-        text = 'View the branch content'
+        text = 'Browse the code'
         enabled = self.context.code_is_browseable
         url = self.context.codebrowse_url('files')
         return Link(url, text, icon='info', enabled=enabled)

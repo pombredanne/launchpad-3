@@ -1,15 +1,15 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the POTemplate recipe view classes and templates."""
 
 __metaclass__ = type
 
-from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_tag_by_id,
     )
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.enums import ServiceUsage
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
@@ -66,9 +66,17 @@ class TestSharingInfoMixin:
         """Get a user that is authorized to edit sharing details on obj."""
         raise NotImplementedError
 
-    SHARING_DETAILS_INFO = "View sharing details"
-    SHARING_DETAILS_SETUP = "Set up sharing"
-    SHARING_DETAILS_EDIT = "Edit sharing details"
+    def getAuthorizedUserForProductseries(self, productseries):
+        """Get a user that has Edit rights on productseries.
+
+        If productseries is None, return an arbritrary user. Used by
+        implementations of getAuthorizedUser.
+        """
+        logged_in_user = self.factory.makePerson(password='test')
+        if productseries is not None:
+            with celebrity_logged_in('admin'):
+                productseries.product.owner = logged_in_user
+        return logged_in_user
 
     def _test_sharing_information(self, obj,
                                   id_under_test, expected_text,
@@ -91,15 +99,26 @@ class TestSharingInfoMixin:
             self.assertTextMatchesExpressionIgnoreWhitespace(
                 expected_text, extract_text(sharing_info))
 
-    def test_not_sharing(self):
+    def test_not_sharing_info(self):
         self._test_sharing_information(
             self.makeNotSharingObject(),
             'sharing-information', self.NOT_SHARING_TEXT)
 
-    def test_sharing(self):
+    def test_sharing_info(self):
         self._test_sharing_information(
             self.makeSharingObject(),
             'sharing-information', self.SHARING_TEXT)
+
+
+class TestSharingDetailsLinkMixin:
+    """Test that the link to the sharing details page is present.
+
+    Requires TestSharingInfoMixin.
+    """
+
+    SHARING_DETAILS_INFO = "View sharing details"
+    SHARING_DETAILS_SETUP = "Set up sharing"
+    SHARING_DETAILS_EDIT = "Edit sharing details"
 
     def test_sharing_details_info(self):
         # For unauthorized users, the link to the sharing details page is
@@ -126,7 +145,8 @@ class TestSharingInfoMixin:
 
 
 class TestUpstreamPOTemplateSharingInfo(BrowserTestCase,
-                                        TestSharingInfoMixin):
+                                        TestSharingInfoMixin,
+                                        TestSharingDetailsLinkMixin):
     """Test display of template sharing info."""
 
     layer = DatabaseFunctionalLayer
@@ -145,8 +165,11 @@ class TestUpstreamPOTemplateSharingInfo(BrowserTestCase,
     SHARING_TEXT = """
         This template is sharing translations with .*"""
 
+    SHARING_DETAILS_SETUP = None
+
     def getAuthorizedUser(self, potemplate):
-        return potemplate.productseries.product.owner
+        productseries = potemplate.productseries
+        return self.getAuthorizedUserForProductseries(productseries)
 
 
 class TestPOFileSharingInfo(BrowserTestCase, TestSharingInfoMixin):
@@ -172,10 +195,6 @@ class TestPOFileSharingInfo(BrowserTestCase, TestSharingInfoMixin):
     def getAuthorizedUser(self, productseries):
         return None
 
-    SHARING_DETAILS_INFO = None
-    SHARING_DETAILS_SETUP = None
-    SHARING_DETAILS_EDIT = None
-
 
 class TestDummyPOFileSharingInfo(BrowserTestCase, TestSharingInfoMixin):
     """Test display of DummyPOFile sharing info."""
@@ -196,15 +215,10 @@ class TestDummyPOFileSharingInfo(BrowserTestCase, TestSharingInfoMixin):
     SHARING_TEXT = """
         These translations are shared with .*"""
 
-    def getAuthorizedUser(self, productseries):
-        return None
 
-    SHARING_DETAILS_INFO = None
-    SHARING_DETAILS_SETUP = None
-    SHARING_DETAILS_EDIT = None
-
-
-class TestUpstreamSharingInfo(BrowserTestCase, TestSharingInfoMixin):
+class TestUpstreamSharingInfo(BrowserTestCase,
+                              TestSharingInfoMixin,
+                              TestSharingDetailsLinkMixin):
     """Test display of product series sharing info."""
 
     layer = DatabaseFunctionalLayer
@@ -219,17 +233,22 @@ class TestUpstreamSharingInfo(BrowserTestCase, TestSharingInfoMixin):
         package."""
 
     def makeSharingObject(self):
-        template = self._makePackagingAndTemplates(TranslationSide.UPSTREAM)
-        return template.productseries
+        packaging = self.factory.makePackagingLink(in_ubuntu=True)
+        set_translations_usage(packaging.productseries.product)
+        return packaging.productseries
 
     SHARING_TEXT = """
         This project series is sharing translations with .*"""
 
+    SHARING_DETAILS_SETUP = None
+
     def getAuthorizedUser(self, productseries):
-        return productseries.product.owner
+        return self.getAuthorizedUserForProductseries(productseries)
 
 
-class TestUbuntuPOTemplateSharingInfo(BrowserTestCase, TestSharingInfoMixin):
+class TestUbuntuPOTemplateSharingInfo(BrowserTestCase,
+                                      TestSharingInfoMixin,
+                                      TestSharingDetailsLinkMixin):
     """Test display of template sharing info in an Ubuntu source package."""
 
     layer = DatabaseFunctionalLayer
@@ -252,13 +271,13 @@ class TestUbuntuPOTemplateSharingInfo(BrowserTestCase, TestSharingInfoMixin):
         This template is sharing translations with .*"""
 
     def getAuthorizedUser(self, potemplate):
-        with celebrity_logged_in('admin'):
-            potemplate.distroseries.owner = self.factory.makePerson(
-                password='test')
-        return potemplate.distroseries.owner
+        productseries = potemplate.sourcepackage.productseries
+        return self.getAuthorizedUserForProductseries(productseries)
 
 
-class TestUbuntuSharingInfo(BrowserTestCase, TestSharingInfoMixin):
+class TestUbuntuSharingInfo(BrowserTestCase,
+                            TestSharingInfoMixin,
+                            TestSharingDetailsLinkMixin):
     """Test display of source package sharing info."""
 
     layer = DatabaseFunctionalLayer
@@ -274,15 +293,12 @@ class TestUbuntuSharingInfo(BrowserTestCase, TestSharingInfoMixin):
         project."""
 
     def makeSharingObject(self):
-        template = self._makePackagingAndTemplates(TranslationSide.UBUNTU)
-        enable_translations_on_distroseries(template.distroseries)
-        return template.sourcepackage
+        packaging = self.factory.makePackagingLink(in_ubuntu=True)
+        return packaging.sourcepackage
 
     SHARING_TEXT = """
         This source package is sharing translations with .*"""
 
     def getAuthorizedUser(self, sourcepackage):
-        with celebrity_logged_in('admin'):
-            sourcepackage.distroseries.owner = self.factory.makePerson(
-                password='test')
-        return sourcepackage.distroseries.owner
+        productseries = sourcepackage.productseries
+        return self.getAuthorizedUserForProductseries(productseries)

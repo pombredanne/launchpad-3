@@ -85,7 +85,7 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,
     IBinaryPackageBuildSet,
     )
-from lp.soyuz.interfaces.distroseriesdifferencejob import (
+from lp.soyuz.interfaces.distributionjob import (
     IDistroSeriesDifferenceJobSource,
     )
 from lp.soyuz.interfaces.publishing import (
@@ -336,6 +336,12 @@ class ArchivePublisherBase:
         self.datesuperseded = UTC_NOW
         self.removed_by = removed_by
         self.removal_comment = removal_comment
+        if ISourcePackagePublishingHistory.providedBy(self):
+            if self.archive == self.distroseries.main_archive:
+                dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
+                dsd_job_source.createForPackagePublication(
+                    self.distroseries,
+                    self.sourcepackagerelease.sourcepackagename)
 
     def requestObsolescence(self):
         """See `IArchivePublisher`."""
@@ -1426,9 +1432,10 @@ class PublishingSet:
             ancestor=ancestor)
         DistributionSourcePackage.ensure(pub)
 
-        dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
-        dsd_job_source.createForPackagePublication(
-            distroseries, sourcepackagerelease.sourcepackagename)
+        if archive == distroseries.main_archive:
+            dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
+            dsd_job_source.createForPackagePublication(
+                distroseries, sourcepackagerelease.sourcepackagename)
         return pub
 
     def getBuildsForSourceIds(

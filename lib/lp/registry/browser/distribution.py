@@ -21,6 +21,8 @@ __all__ = [
     'DistributionPPASearchView',
     'DistributionPackageSearchView',
     'DistributionPendingReviewMirrorsView',
+    'DistributionPublisherConfigView',
+    'DistributionReassignmentView',
     'DistributionSeriesView',
     'DistributionSeriesMirrorsRSSView',
     'DistributionSeriesMirrorsView',
@@ -40,6 +42,7 @@ import datetime
 
 from zope.component import getUtility
 from zope.event import notify
+from zope.formlib import form
 from zope.interface import implements
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
@@ -78,20 +81,30 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.errors import NotFoundError
 from lp.app.widgets.image import ImageChangeWidget
+from lp.archivepublisher.interfaces.publisherconfig import (
+    IPublisherConfig,
+    IPublisherConfigSet,
+    )
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
     )
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
+    StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
-from lp.registry.browser import RegistryEditFormView
+from lp.registry.browser import (
+    add_subscribe_link,
+    RegistryEditFormView,
+    )
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu,
     RegistryCollectionActionMenuBase,
     )
 from lp.registry.browser.pillar import PillarBugsMenu
+from lp.registry.browser.objectreassignment import ObjectReassignmentView
 from lp.registry.interfaces.distribution import (
     IDerivativeDistribution,
     IDistribution,
@@ -104,6 +117,7 @@ from lp.registry.interfaces.distributionmirror import (
     MirrorSpeed,
     )
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.features import getFeatureFlag
 from lp.services.geoip.helpers import (
     ipaddress_from_request,
     request_country,
@@ -265,8 +279,8 @@ class DistributionMirrorsNavigationMenu(NavigationMenu):
         return Link('+unofficialmirrors', text, enabled=enabled, icon='info')
 
 
-class DistributionLinksMixin:
-    """A mixing to provide common links to menus."""
+class DistributionLinksMixin(StructuralSubscriptionMenuMixin):
+    """A mixin to provide common links to menus."""
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -278,7 +292,20 @@ class DistributionNavigationMenu(NavigationMenu, DistributionLinksMixin):
     """A menu of context actions."""
     usedfor = IDistribution
     facet = 'overview'
-    links = ['edit']
+
+    @enabled_with_permission("launchpad.Admin")
+    def pubconf(self):
+        text = "Configure publisher"
+        return Link("+pubconf", text, icon="edit")
+
+    @cachedproperty
+    def links(self):
+        links = ['edit', 'pubconf']
+        use_advanced_features = getFeatureFlag(
+            'malone.advanced-structural-subscriptions.enabled')
+        if use_advanced_features:
+            links.append('subscribe_to_bug_mail')
+        return links
 
 
 class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
@@ -325,7 +352,7 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
 
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
-        text = 'Change registrant'
+        text = 'Change maintainer'
         return Link('+reassign', text, icon='edit')
 
     def newmirror(self):
@@ -448,13 +475,17 @@ class DistributionBugsMenu(PillarBugsMenu):
 
     usedfor = IDistribution
     facet = 'bugs'
-    links = (
-        'bugsupervisor',
-        'securitycontact',
-        'cve',
-        'filebug',
-        'subscribe',
-        )
+
+    @property
+    def links(self):
+        links = [
+            'bugsupervisor',
+            'securitycontact',
+            'cve',
+            'filebug',
+            ]
+        add_subscribe_link(links)
+        return links
 
 
 class DistributionSpecificationsMenu(NavigationMenu,
@@ -593,6 +624,11 @@ class DistributionPackageSearchView(PackageSearchViewBase):
 
 class DistributionView(HasAnnouncementsView, FeedsMixin):
     """Default Distribution view class."""
+
+    def initialize(self):
+        super(DistributionView, self).initialize()
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user)
 
     def linkedMilestonesForSeries(self, series):
         """Return a string of linkified milestones in the series."""
@@ -770,6 +806,7 @@ class DistributionAddView(LaunchpadFormView):
             domainname=data['domainname'],
             members=data['members'],
             owner=self.user,
+            registrant=self.user,
             )
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)
@@ -1081,3 +1118,62 @@ class DistributionDisabledMirrorsView(DistributionMirrorsAdminView):
     @cachedproperty
     def mirrors(self):
         return self.context.disabled_mirrors
+
+
+class DistributionReassignmentView(ObjectReassignmentView):
+    """View class for changing distribution maintainer."""
+    ownerOrMaintainerName = 'maintainer'
+
+
+class DistributionPublisherConfigView(LaunchpadFormView):
+    """View class for configuring publisher options for a DistroSeries.
+
+    It redirects to the main distroseries page after a successful edit.
+    """
+    schema = IPublisherConfig
+    field_names = ['root_dir', 'base_url', 'copy_base_url']
+
+    @property
+    def label(self):
+        """See `LaunchpadFormView`."""
+        return 'Publisher configuration for %s' % self.context.title
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
+    @property
+    def initial_values(self):
+        """If the config already exists, set up the fields with data."""
+        config = getUtility(
+            IPublisherConfigSet).getByDistribution(self.context)
+        values = {}
+        if config is not None:
+            for name in self.field_names:
+                values[name] = getattr(config, name)
+
+        return values
+
+    @action("Save")
+    def save_action(self, action, data):
+        """Update the context and redirect to its overview page."""
+        config = getUtility(IPublisherConfigSet).getByDistribution(
+            self.context)
+        if config is None:
+            config = getUtility(IPublisherConfigSet).new(
+                distribution=self.context,
+                root_dir=data['root_dir'],
+                base_url=data['base_url'],
+                copy_base_url=data['copy_base_url'])
+        else:
+            form.applyChanges(config, self.form_fields, data, self.adapters)
+
+        self.request.response.addInfoNotification(
+            'Your changes have been applied.')
+        self.next_url = canonical_url(self.context)

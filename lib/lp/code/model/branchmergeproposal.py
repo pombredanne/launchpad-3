@@ -881,10 +881,10 @@ class BranchMergeProposal(SQLBase):
         entries.extend(
             ((revision.date_created, branch_revision.sequence),
                 branch_revision)
-            for branch_revision, revision, revision_author in revisions)
+            for branch_revision, revision in revisions)
         entries.sort()
         current_group = []
-        for date, entry in entries:
+        for sortkey, entry in entries:
             if IBranchRevision.providedBy(entry):
                 current_group.append(entry)
             else:

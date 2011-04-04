@@ -98,6 +98,9 @@ from lp.app.widgets.product import (
     )
 from lp.bugs.browser.bugrole import BugRoleMixin
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
+from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
+    )
 from lp.bugs.browser.widgets.bug import (
     BugTagsWidget,
     LargeBugTagsWidget,
@@ -127,7 +130,7 @@ from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.bugs.interfaces.securitycontact import IHasSecurityContact
 from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.structuralsubscription import (
-    get_all_structural_subscriptions_for_target,
+    get_structural_subscriptions_for_target,
     )
 from lp.bugs.utilities.filebugdataparser import FileBugData
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
@@ -1305,10 +1308,12 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         return 'Bugs in %s' % self.context.title
 
     def initialize(self):
-        BugTaskSearchListingView.initialize(self)
+        super(BugTargetBugsView, self).initialize()
         bug_statuses_to_show = list(UNRESOLVED_BUGTASK_STATUSES)
         if IDistroSeries.providedBy(self.context):
             bug_statuses_to_show.append(BugTaskStatus.FIXRELEASED)
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user)
 
     @property
     def can_have_external_bugtracker(self):
@@ -1342,7 +1347,7 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         """Return a dict of the 10 hottest tasks and a has_more_bugs flag."""
         has_more_bugs = False
         params = BugTaskSearchParams(
-            orderby='-heat', omit_dupes=True,
+            orderby=['-heat', 'task'], omit_dupes=True,
             user=self.user, status=any(*UNRESOLVED_BUGTASK_STATUSES))
         # Use 4x as many tasks as bugs that are needed to improve performance.
         bugtasks = self.context.searchTasks(params)[:40]
@@ -1565,13 +1570,18 @@ class BugsPatchesView(LaunchpadView):
 class TargetSubscriptionView(LaunchpadView):
     """A view to show all a person's structural subscriptions to a target."""
 
+    def initialize(self):
+        super(TargetSubscriptionView, self).initialize()
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user, self.subscriptions)
+
+    @property
+    def subscriptions(self):
+        return get_structural_subscriptions_for_target(
+            self.context, self.user)
+
     @property
     def label(self):
         return "Your subscriptions to %s" % (self.context.displayname,)
 
     page_title = label
-
-    @property
-    def structural_subscriptions(self):
-        return get_all_structural_subscriptions_for_target(
-            self.context, self.user)
