@@ -44,7 +44,6 @@ class BugMessage(SQLBase):
     bugwatch = ForeignKey(dbName='bugwatch', foreignKey='BugWatch',
         notNull=False, default=None)
     remote_comment_id = StringCol(notNull=False, default=None)
-    visible = BoolCol(notNull=True, default=True)
     # -- The index of the message is cached in the DB.
     index = IntCol(notNull=True)
 

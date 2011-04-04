@@ -133,12 +133,17 @@ class InitialiseDistroSeries:
 
     def initialise(self):
         self._set_parent()
+        self._copy_configuration()
         self._copy_architectures()
         self._copy_packages()
         self._copy_packagesets()
 
     def _set_parent(self):
         self.distroseries.parent_series = self.parent
+
+    def _copy_configuration(self):
+        self.distroseries.backports_not_automatic = \
+            self.parent.backports_not_automatic
 
     def _copy_architectures(self):
         include = ''
