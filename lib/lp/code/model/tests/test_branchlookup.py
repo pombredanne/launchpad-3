@@ -21,6 +21,7 @@ from lp.code.errors import (
     NoSuchBranch,
     )
 from lp.code.interfaces.branchlookup import (
+    BRANCH_ID_ALIAS,
     IBranchLookup,
     ILinkedBranchTraverser,
     )
@@ -38,6 +39,7 @@ from lp.registry.interfaces.product import (
     )
 from lp.registry.interfaces.productseries import NoSuchProductSeries
 from lp.testing import (
+    person_logged_in,
     run_with_login,
     TestCaseWithFactory,
     )
@@ -117,6 +119,42 @@ class TestGetIdAndTrailingPath(TestCaseWithFactory):
         result = self.branch_set.getIdAndTrailingPath(
             '/' + branch.unique_name + '/' + path)
         self.assertEqual((branch.id, '/' + path), result)
+
+    def test_branch_id_alias(self):
+        path = BRANCH_ID_ALIAS
+        result = self.branch_set.getIdAndTrailingPath('/' + path)
+        self.assertEqual((None, None), result)
+
+    def test_branch_id_alias_not_int(self):
+        path = BRANCH_ID_ALIAS + '/foo'
+        result = self.branch_set.getIdAndTrailingPath('/' + path)
+        self.assertEqual((None, None), result)
+
+    def test_branch_id_alias_private(self):
+        owner = self.factory.makePerson()
+        branch = self.factory.makeAnyBranch(owner=owner, private=True)
+        with person_logged_in(owner):
+            path = '/%s/%s' % (BRANCH_ID_ALIAS, branch.id)
+        result = self.branch_set.getIdAndTrailingPath(path)
+        self.assertEqual((None, None), result)
+
+    def test_branch_id_alias_public(self):
+        branch = self.factory.makeAnyBranch()
+        path = '/%s/%s' % (BRANCH_ID_ALIAS, branch.id)
+        result = self.branch_set.getIdAndTrailingPath(path)
+        self.assertEqual((branch.id, ''), result)
+
+    def test_branch_id_alias_public_slash(self):
+        branch = self.factory.makeAnyBranch()
+        path = '/%s/%s/' % (BRANCH_ID_ALIAS, branch.id)
+        result = self.branch_set.getIdAndTrailingPath(path)
+        self.assertEqual((branch.id, '/'), result)
+
+    def test_branch_id_alias_public_with_path(self):
+        branch = self.factory.makeAnyBranch()
+        path = '/%s/%s/foo' % (BRANCH_ID_ALIAS, branch.id)
+        result = self.branch_set.getIdAndTrailingPath(path)
+        self.assertEqual((branch.id, '/foo'), result)
 
 
 class TestGetByPath(TestCaseWithFactory):

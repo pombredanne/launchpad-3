@@ -41,6 +41,7 @@ from lp.code.errors import (
     NoSuchBranch,
     )
 from lp.code.interfaces.branchlookup import (
+    BRANCH_ID_ALIAS,
     IBranchLookup,
     ILinkedBranchTraversable,
     ILinkedBranchTraverser,
@@ -288,14 +289,29 @@ class BranchLookup:
             return None
         return self._getBranchInNamespace(namespace_data, branch_name)
 
-    def getIdAndTrailingPath(self, path, from_slave=False):
-        """See `IBranchLookup`. """
-        if from_slave:
-            store = ISlaveStore(Branch)
+    def _getIdAndTrailingPathByIdAlias(self, store, path):
+        """Query by the integer id."""
+        parts = path.split('/', 2)
+        try:
+            branch_id = int(parts[1])
+        except (ValueError, IndexError):
+            return None, None
+        result = store.find(
+            (Branch.id),
+            Branch.id == branch_id,
+            Branch.private == False).one()
+        if result is None:
+            return None, None
         else:
-            store = IMasterStore(Branch)
+            try:
+                return branch_id, '/' + parts[2]
+            except IndexError:
+                return branch_id, ''
+
+    def _getIdAndTrailingPathByUniqueName(self, store, path):
+        """Query based on the unique name."""
         prefixes = []
-        for first, second in iter_split(path[1:], '/'):
+        for first, second in iter_split(path, '/'):
             prefixes.append(first)
         result = store.find(
             (Branch.id, Branch.unique_name),
@@ -304,8 +320,20 @@ class BranchLookup:
             return None, None
         else:
             branch_id, unique_name = result
-            trailing = path[len(unique_name) + 1:]
+            trailing = path[len(unique_name):]
             return branch_id, trailing
+
+    def getIdAndTrailingPath(self, path, from_slave=False):
+        """See `IBranchLookup`. """
+        if from_slave:
+            store = ISlaveStore(Branch)
+        else:
+            store = IMasterStore(Branch)
+        path = path.lstrip('/')
+        if path.startswith(BRANCH_ID_ALIAS):
+            return self._getIdAndTrailingPathByIdAlias(store, path)
+        else:
+            return self._getIdAndTrailingPathByUniqueName(store, path)
 
     def _getBranchInNamespace(self, namespace_data, branch_name):
         if namespace_data['product'] == '+junk':
