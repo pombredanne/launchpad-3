@@ -40,7 +40,6 @@ from canonical.launchpad import (
     _,
     helpers,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.webapp import (
     action,
     custom_widget,
@@ -558,9 +557,6 @@ class DistroSeriesAddView(LaunchpadFormView):
     @action(_('Add Series'), name='create')
     def createAndAdd(self, action, data):
         """Create and add a new Distribution Series"""
-        registrant = getUtility(ILaunchBag).user
-
-        assert registrant is not None
         distroseries = self.context.newSeries(
             name=data['name'],
             displayname=data['displayname'],
@@ -569,7 +565,7 @@ class DistroSeriesAddView(LaunchpadFormView):
             description=u"",
             version=data['version'],
             parent_series=None,
-            registrant=registrant)
+            registrant=self.user)
         notify(ObjectCreatedEvent(distroseries))
         self.next_url = canonical_url(distroseries)
         return distroseries
