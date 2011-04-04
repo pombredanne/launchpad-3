@@ -296,7 +296,7 @@ affects are subscribed to it.
     >>> reporter = factory.makePerson(displayname=u'Bug Reporter')
     >>> bug = factory.makeBug(product=product, owner=reporter)
     >>> bug.addTask(owner=reporter, target=distribution)
-    <BugTask at ...>
+    <BugTask ...>
     >>> old_state = Snapshot(bug, providing=IBug)
     >>> bug.setSecurityRelated(True)
     True

@@ -49,7 +49,6 @@ from datetime import (
     timedelta,
     )
 from itertools import (
-    chain,
     groupby,
     )
 from math import (
@@ -119,7 +118,10 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import isinstance as zope_isinstance
+from zope.security.proxy import (
+    isinstance as zope_isinstance,
+    removeSecurityProxy,
+    )
 from zope.traversing.interfaces import IPathAdapter
 
 from canonical.config import config
@@ -192,6 +194,9 @@ from lp.bugs.browser.bug import (
     BugContextMenu,
     BugTextView,
     BugViewMixin,
+    )
+from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
     )
 from lp.bugs.browser.bugcomment import (
     build_comments_from_chunks,
@@ -273,12 +278,11 @@ from lp.registry.vocabularies import MilestoneVocabulary
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import (
     cachedproperty,
-    get_property_cache,
     )
 
 
 DISPLAY_BUG_STATUS_FOR_PATCHES = {
-    BugTaskStatus.NEW:  True,
+    BugTaskStatus.NEW: True,
     BugTaskStatus.INCOMPLETE: True,
     BugTaskStatus.INVALID: False,
     BugTaskStatus.WONTFIX: False,
@@ -288,7 +292,7 @@ DISPLAY_BUG_STATUS_FOR_PATCHES = {
     BugTaskStatus.FIXCOMMITTED: True,
     BugTaskStatus.FIXRELEASED: False,
     BugTaskStatus.UNKNOWN: False,
-    BugTaskStatus.EXPIRED: False
+    BugTaskStatus.EXPIRED: False,
     }
 
 
@@ -330,8 +334,8 @@ def get_comments_for_bugtask(bugtask, truncate=False, for_display=False,
 
     :param for_display: If true, the zeroth comment is given an empty body so
         that it will be filtered by get_visible_comments.
-    :param slice_info: If not None, defines a list of slices of the comments to
-        retrieve.
+    :param slice_info: If not None, defines a list of slices of the comments
+        to retrieve.
     """
     comments = build_comments_from_chunks(bugtask, truncate=truncate,
         slice_info=slice_info)
@@ -676,11 +680,11 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             edit_url=canonical_url(self.context, view_name='+edit'))
 
         # XXX 2010-10-05 gmb bug=655597:
-        #     This line of code keeps the view's query count down,
-        #     possibly using witchcraft. It should be rewritten to be
-        #     useful or removed in favour of making other queries more
-        #     efficient. The witchcraft is because the subscribers are accessed
-        #     in the initial page load, so the data is actually used.
+        # This line of code keeps the view's query count down,
+        # possibly using witchcraft. It should be rewritten to be
+        # useful or removed in favour of making other queries more
+        # efficient. The witchcraft is because the subscribers are accessed
+        # in the initial page load, so the data is actually used.
         if self.user is not None:
             list(bug.getSubscribersForPerson(self.user))
 
@@ -836,7 +840,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
                     # There is a gap here, record it.
                     separator = {
                         'date': prev_comment.datecreated,
-                        'num_hidden': comment.index - prev_comment.index
+                        'num_hidden': comment.index - prev_comment.index,
                         }
                     events.insert(index, separator)
                     index += 1
@@ -971,6 +975,13 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
                 self.context, target=self.context.distribution)
         else:
             return bugtask_heat_html(self.context)
+
+    @property
+    def privacy_notice_classes(self):
+        if not self.context.bug.private:
+            return 'hidden'
+        else:
+            return ''
 
 
 def calculate_heat_display(heat, max_bug_heat):
@@ -1442,8 +1453,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         milestone_cleared = None
         milestone_ignored = False
         if (IUpstreamBugTask.providedBy(bugtask) and
-            (bugtask.product != new_values.get("product")) and
-            'milestone' in field_names):
+            (bugtask.product != new_values.get("product"))):
             # We clear the milestone value if one was already set. We ignore
             # the milestone value if it was currently None, and the user tried
             # to set a milestone value while also changing the product. This
@@ -1453,12 +1463,14 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
             elif new_values.get('milestone') is not None:
                 milestone_ignored = True
 
-            bugtask.milestone = None
+            # Regardless of the user's permission, the milestone
+            # must be cleared because the milestone is unique to a product.
+            removeSecurityProxy(bugtask).milestone = None
             # Remove the "milestone" field from the list of fields
             # whose changes we want to apply, because we don't want
             # the form machinery to try and set this value back to
             # what it was!
-            del data_to_apply["milestone"]
+            data_to_apply.pop('milestone', None)
 
         # We special case setting assignee and status, because there's
         # a workflow associated with changes to these fields.
@@ -1776,6 +1788,13 @@ class BugsInfoMixin:
         else:
             return get_buglisting_search_filter_url(assignee=self.user.name)
 
+    @property
+    def my_reported_bugs_url(self):
+        """A URL to a list of bugs reported by the user, or None."""
+        if self.user is None:
+            return None
+        return get_buglisting_search_filter_url(bug_reporter=self.user.name)
+
 
 class BugsStatsMixin(BugsInfoMixin):
     """Contains properties giving bug stats.
@@ -1906,6 +1925,15 @@ class BugsStatsMixin(BugsInfoMixin):
             return self.context.searchTasks(params).count()
 
     @property
+    def my_reported_bugs_count(self):
+        """A count of bugs reported by the user, or None."""
+        if self.user is None:
+            return None
+        params = get_default_search_params(self.user)
+        params.bug_reporter = self.user
+        return self.context.searchTasks(params).count()
+
+    @property
     def bugs_with_patches_count(self):
         """A count of unresolved bugs with patches."""
         return self._bug_stats['with_patch']
@@ -1921,7 +1949,7 @@ class BugListingPortletStatsView(LaunchpadView, BugsStatsMixin):
 
 def get_buglisting_search_filter_url(
         assignee=None, importance=None, status=None, status_upstream=None,
-        has_patches=None):
+        has_patches=None, bug_reporter=None):
     """Return the given URL with the search parameters specified."""
     search_params = []
 
@@ -1935,6 +1963,8 @@ def get_buglisting_search_filter_url(
         search_params.append(('field.status_upstream', status_upstream))
     if has_patches is not None:
         search_params.append(('field.has_patch', 'on'))
+    if bug_reporter is not None:
+        search_params.append(('field.bug_reporter', bug_reporter))
 
     query_string = urllib.urlencode(search_params, doseq=True)
 
@@ -2184,11 +2214,6 @@ class BugTaskSearchListingMenu(NavigationMenu):
         return Link(
             '+securitycontact', 'Change security contact', icon='edit')
 
-    def subscribe(self):
-        user = getUtility(ILaunchBag).user
-        if self.context.userCanAlterBugSubscription(user):
-            return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
-
     def nominations(self):
         return Link('+nominations', 'Review nominations', icon='bug')
 
@@ -2324,6 +2349,9 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         # action. We pass an empty dict to _validate() because all the data
         # needing validation is already available internally to self.
         self._validate(None, {})
+
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user)
 
     @property
     def columns_to_show(self):
@@ -3119,7 +3147,8 @@ class BugTasksAndNominationsView(LaunchpadView):
             distro_packages))
         distro_series_set = getUtility(IDistroSeriesSet)
         self.target_releases.update(
-            distro_series_set.getCurrentSourceReleases(distro_series_packages))
+            distro_series_set.getCurrentSourceReleases(
+                distro_series_packages))
         ids = set()
         for release_person_ids in map(attrgetter('creatorID', 'maintainerID'),
             self.target_releases.values()):
@@ -3174,7 +3203,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         # Hint to optimize when there are many bugtasks.
         view.many_bugtasks = self.many_bugtasks
         return view
-    
+
     def getBugTaskAndNominationViews(self):
         """Return the IBugTasks and IBugNominations views for this bug.
 

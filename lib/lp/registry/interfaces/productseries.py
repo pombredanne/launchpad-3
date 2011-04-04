@@ -137,6 +137,7 @@ class IProductSeriesPublic(
         ReferenceChoice(title=_('Project'), required=True,
             vocabulary='Product', schema=Interface), # really IProduct
         exported_as='project')
+    productID = Attribute('The product ID.')
 
     status = exported(
         Choice(
@@ -239,10 +240,7 @@ class IProductSeriesPublic(
         vocabulary=TranslationsBranchImportMode,
         required=True,
         description=_("Specify which files will be imported from the "
-                      "source code branch.")),
-        ('devel', {'exported': True}),
-        exported=False
-        )
+                      "source code branch.")), as_of="devel")
 
     potemplate_count = Int(
         title=_("The total number of POTemplates in this series."),
@@ -275,6 +273,10 @@ class IProductSeriesPublic(
         distroseries. This will use a Packaging record if one exists, but
         it will also work through the ancestry of the distroseries to try
         to find a Packaging entry that may be relevant."""
+
+    def getUbuntuTranslationFocusPackage():
+        """Return the SourcePackage that packages this project in Ubuntu's
+        translation focus or current series or any series, in that order."""
 
     def setPackaging(distroseries, sourcepackagename, owner):
         """Create or update a Packaging record for this product series,

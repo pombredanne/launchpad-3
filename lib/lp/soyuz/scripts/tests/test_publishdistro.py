@@ -17,6 +17,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from lp.archivepublisher.config import getPubConfig
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.log.logger import BufferLogger
@@ -274,13 +275,15 @@ class TestPublishDistro(TestNativePublishingBase):
             self.runPublishDistro, ['--primary-debug'])
 
         # The DEBUG repository path was not created.
+        ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+        root_dir = getUtility(
+            IPublisherConfigSet).getByDistribution(ubuntutest).root_dir
         repo_path = os.path.join(
-            config.archivepublisher.root, 'ubuntutest-debug')
+            root_dir, 'ubuntutest-debug')
         self.assertNotExists(repo_path)
 
         # We will create the DEBUG archive for ubuntutest, so it can
         # be published.
-        ubuntutest = getUtility(IDistributionSet)['ubuntutest']
         debug_archive = getUtility(IArchiveSet).new(
             purpose=ArchivePurpose.DEBUG, owner=ubuntutest.owner,
             distribution=ubuntutest)
@@ -319,8 +322,10 @@ class TestPublishDistro(TestNativePublishingBase):
         copy_archive_name = 'test-copy-publish'
 
         # The COPY repository path is not created yet.
+        root_dir = getUtility(
+            IPublisherConfigSet).getByDistribution(ubuntutest).root_dir
         repo_path = os.path.join(
-            config.archivepublisher.root,
+            root_dir,
             ubuntutest.name + '-' + copy_archive_name,
             ubuntutest.name)
         self.assertNotExists(repo_path)

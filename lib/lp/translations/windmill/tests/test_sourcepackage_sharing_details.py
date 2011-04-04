@@ -36,6 +36,8 @@ class TestSharingDetails(WindmillTestCase):
 
     def test_set_branch(self):
         packaging = self.factory.makePackagingLink()
+        branch = self.factory.makeProductBranch(
+            product=packaging.productseries.product, name='product-branch')
         self.useContext(feature_flags())
         set_feature_flag(u'translations.sharing_information.enabled', u'on')
         transaction.commit()
@@ -48,10 +50,9 @@ class TestSharingDetails(WindmillTestCase):
         self.client.waits.forElement(
             id='branch-incomplete', timeout=FOR_ELEMENT)
         self.client.click(xpath='//*[@id="branch-incomplete-picker"]/a')
-        search_and_select_picker_widget(self.client, 'firefox', 1)
+        search_and_select_picker_widget(self.client, 'product-branch', 1)
         self.client.waits.forElementProperty(
-            classname="unseen", option='id|branch-incomplete',
+            id='branch-incomplete', option='className|sprite no unseen',
             timeout=FOR_ELEMENT)
         transaction.commit()
-        branch = packaging.productseries.branch
-        self.assertEqual('~name12/firefox/main', branch.unique_name)
+        self.assertEqual(branch, packaging.productseries.branch)

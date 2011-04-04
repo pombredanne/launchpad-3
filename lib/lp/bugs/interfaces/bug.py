@@ -382,7 +382,7 @@ class IBug(IPrivacy, IHasLinkedBranches):
         title=_('Heat Last Updated'), required=False, readonly=True)
 
     # Adding related BugMessages provides a hook for getting at
-    # BugMessage.visible when building bug comments.
+    # BugMessage.message.visible when building bug comments.
     bug_messages = Attribute('The bug messages related to this object.')
     comment_count = Attribute(
         "The number of comments on this bug, not including the initial "
@@ -433,11 +433,11 @@ class IBug(IPrivacy, IHasLinkedBranches):
     def newMessage(owner, subject, content):
         """Create a new message, and link it to this object."""
 
+    # The level actually uses BugNotificationLevel as its vocabulary,
+    # but due to circular import problems we fix that in
+    # _schema_circular_imports.py rather than here.
     @operation_parameters(
         person=Reference(IPerson, title=_('Person'), required=True),
-        # level actually uses BugNotificationLevel as its vocabulary,
-        # but due to circular import problems we fix that in
-        # _schema_circular_imports.py rather than here.
         level=Choice(
             vocabulary=DBEnumeratedType, required=False,
             title=_('Level')))
@@ -548,12 +548,6 @@ class IBug(IPrivacy, IHasLinkedBranches):
         """Return the `BugSubscription` for a `Person` to this `Bug`.
 
         If no such `BugSubscription` exists, return None.
-        """
-
-    def getStructuralSubscriptionsForPerson(person):
-        """Return the `StructuralSubscription`s for a `Person` to this `Bug`.
-
-        This disregards filters.
         """
 
     def getSubscriptionInfo(level):

@@ -32,7 +32,6 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.constants import (
-    DEFAULT,
     UTC_NOW,
     )
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -624,11 +623,13 @@ class SourcePackageRelease(SQLBase):
 
         queue = getUtility(ITranslationImportQueue)
 
+        only_templates=self.sourcepackage.has_sharing_translation_templates
         queue.addOrUpdateEntriesFromTarball(
             tarball, by_maintainer, importer,
             sourcepackagename=self.sourcepackagename,
             distroseries=self.upload_distroseries,
-            filename_filter=_filter_ubuntu_translation_file)
+            filename_filter=_filter_ubuntu_translation_file,
+            only_templates=only_templates)
 
     def getDiffTo(self, to_sourcepackagerelease):
         """See ISourcePackageRelease."""

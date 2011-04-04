@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'Branch',
     'BranchSet',
-    'filter_one_task_per_bug',
     ]
 
 from datetime import datetime
@@ -75,6 +74,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     IBugTaskSet,
     )
+from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.bzr import (
     BranchFormat,
@@ -139,6 +139,7 @@ from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
     )
+from lp.services.database.bulk import load_related
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
@@ -315,7 +316,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         tasks = shortlist(getUtility(IBugTaskSet).search(params), 1000)
         # Post process to discard irrelevant tasks: we only return one task per
         # bug, and cannot easily express this in sql (yet).
-        return filter_one_task_per_bug(self, tasks)
+        return filter_bugtasks_by_context(self.target.context, tasks)
 
     def linkBug(self, bug, registrant):
         """See `IBranch`."""
@@ -579,17 +580,19 @@ class Branch(SQLBase, BzrIdentityMixin):
         if end_date is not None:
             date_clause = And(date_clause, Revision.revision_date <= end_date)
         result = Store.of(self).find(
-            (BranchRevision, Revision, RevisionAuthor),
+            (BranchRevision, Revision),
             BranchRevision.branch == self,
             BranchRevision.sequence != None,
             BranchRevision.revision == Revision.id,
-            Revision.revision_author == RevisionAuthor.id,
             date_clause)
         if oldest_first:
             result = result.order_by(BranchRevision.sequence)
         else:
             result = result.order_by(Desc(BranchRevision.sequence))
-        return result
+        def eager_load(rows):
+            revisions = map(operator.itemgetter(1), rows)
+            load_related(RevisionAuthor, revisions, ['revision_author_id'])
+        return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
     def getRevisionsSince(self, timestamp):
         """See `IBranch`."""
@@ -612,7 +615,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         else:
             return True
 
-    @property
+    @cachedproperty
     def code_import(self):
         from lp.code.model.codeimport import CodeImportSet
         return CodeImportSet().getByBranch(self)
@@ -1387,27 +1390,3 @@ def branch_modified_subscriber(branch, event):
     """
     update_trigger_modified_fields(branch)
     send_branch_modified_notifications(branch, event)
-
-
-def filter_one_task_per_bug(branch, tasks):
-    """Given bug tasks for a branch, discard irrelevant ones.
-
-    Cannot easily be expressed in SQL yet, so we need this helper method.
-    """
-    order = {}
-    bugtarget = branch.target.context
-    # First pass calculates the order and selects the bugtasks that match
-    # our target.
-    # Second pass selects the earliest bugtask where the bug has no task on
-    # our target.
-    for pos, task in enumerate(tasks):
-        bug = task.bug
-        if bug not in order:
-            order[bug] = [pos, None]
-        if task.target == bugtarget:
-            order[bug][1] = task
-    for task in tasks:
-        index = order[task.bug]
-        if index[1] is None:
-            index[1] = task
-    return [task for pos, task in sorted(order.values())]

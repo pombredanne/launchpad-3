@@ -68,7 +68,7 @@ def build_comments_from_chunks(bugtask, truncate=False, slice_info=None):
         bug_comment = comments.get(message.id)
         if bug_comment is None:
             bug_comment = BugComment(bugmessage.index, message, bugtask,
-                visible=bugmessage.visible)
+                visible=message.visible)
             comments[message.id] = bug_comment
             # This code path is currently only used from BugTask view which
             # have already loaded all the bug watches. If we start lazy loading

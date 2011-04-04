@@ -129,13 +129,6 @@
         template="../templates/distroseries-needs-packaging.pt"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        permission="launchpad.Admin"
-        facet="overview"
-        class="canonical.launchpad.browser.ObjectReassignmentView"
-        name="+reassign"
-        template="../../../canonical/launchpad/templates/object-reassignment.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.distroseries.IDistroSeries"
         permission="launchpad.Edit"
         name="+edit"
         class="lp.registry.browser.distroseries.DistroSeriesEditView"
@@ -1443,9 +1436,6 @@
         <browser:page
             name="+listing-for-review"
             template="../templates/product-listing-for-review.pt"/>
-        <browser:page
-            name="+listing-detailed"
-            template="../templates/product-listing-detailed.pt"/>
 
         <!-- Products Portlets -->
 
@@ -1482,6 +1472,12 @@
         name="+packages"
         facet="overview"
         template="../templates/product-packages.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        permission="zope.Public"
+        class="canonical.launchpad.webapp.LaunchpadView"
+        name="+listing-detailed"
+        template="../templates/product-listing-detailed.pt"/>
     <browser:renamed-page
         name="+distributions"
         for="lp.registry.interfaces.product.IProduct"
@@ -1948,11 +1944,13 @@
         for="lp.registry.interfaces.distribution.IDistribution"
         permission="launchpad.Edit"
         facet="overview"
-        class="canonical.launchpad.browser.ObjectReassignmentView">
+        class="lp.registry.browser.distribution.DistributionReassignmentView">
         <browser:page
             name="+reassign"
             template="../../../canonical/launchpad/templates/object-reassignment.pt"/>
     </browser:pages>
+
+    <!-- DistroSeries create and initialize. -->
     <browser:page
         name="+addseries"
         for="lp.registry.interfaces.distribution.IDistribution"
@@ -1961,7 +1959,6 @@
         permission="launchpad.Admin"
         template="../../app/templates/generic-edit.pt">
     </browser:page>
-
     <browser:page
         name="+addseries"
         for="lp.registry.interfaces.distribution.IDerivativeDistribution"
@@ -1969,6 +1966,14 @@
         facet="overview"
         permission="launchpad.Append"
         template="../../app/templates/generic-edit.pt">
+    </browser:page>
+    <browser:page
+        name="+initseries"
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.registry.browser.distroseries.DistroSeriesInitializeView"
+        facet="overview"
+        permission="launchpad.Admin"
+        template="../templates/distroseries-initialize.pt">
     </browser:page>
 
     <browser:page
@@ -1992,6 +1997,13 @@
         facet="overview"
         permission="launchpad.Edit"
         template="../../app/templates/generic-edit.pt"/>
+    <browser:page
+        name="+pubconf"
+        for="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.registry.browser.distribution.DistributionPublisherConfigView"
+        template="../../app/templates/generic-edit.pt"
+        facet="overview"
+        permission="launchpad.Admin"/>
     <browser:defaultView
         for="lp.registry.interfaces.distribution.IDistributionSet"
         name="+index"/>
