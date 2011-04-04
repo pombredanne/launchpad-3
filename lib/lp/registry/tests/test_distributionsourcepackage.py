@@ -32,7 +32,8 @@ class TestDistributionSourcePackage(TestCaseWithFactory):
         distribution = distribution_set.new(name='wart',
             displayname='wart', title='wart', description='lots of warts',
             summary='lots of warts', domainname='wart.dumb',
-            members=self.factory.makeTeam(), owner=self.factory.makePerson())
+            members=self.factory.makeTeam(), owner=self.factory.makePerson(),
+            registrant=self.factory.makePerson())
         naked_distribution = removeSecurityProxy(distribution)
         self.factory.makeSourcePackage(distroseries=distribution)
         dsp = naked_distribution.getSourcePackage(name='pmount')

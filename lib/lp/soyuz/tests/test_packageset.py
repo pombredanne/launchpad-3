@@ -121,6 +121,20 @@ class TestPackagesetSet(TestCaseWithFactory):
             'kernel', distroseries=self.distroseries_experimental)
         self.assertEqual(pset2, pset_found)
 
+    def test_get_by_distroseries(self):
+        # IPackagesetSet.getBySeries() will return those package sets
+        # associated with the given distroseries.
+        pset1 = self.packageset_set.new(
+            u'timmy', u'Timmy Mallett', self.person1)
+        pset2 = self.packageset_set.new(
+            u'savile', u'Jimmy Savile', self.person1)
+        self.packageset_set.new(
+            u'hoskins', u'Bob Hoskins', self.person1,
+            distroseries=self.distroseries_experimental)
+        self.assertContentEqual(
+            [pset1, pset2],
+            self.packageset_set.getBySeries(self.distroseries_current))
+
 
 class TestPackageset(TestCaseWithFactory):
 
