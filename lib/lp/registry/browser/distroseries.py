@@ -19,6 +19,7 @@ __all__ = [
     'DistroSeriesView',
     ]
 
+from lazr.restful.interface import copy_field
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
@@ -504,9 +505,27 @@ class DistroSeriesAdminView(LaunchpadEditFormView, SeriesStatusMixin):
         self.next_url = canonical_url(self.context)
 
 
+class IDistroSeriesAddForm(Interface):
+
+    name = copy_field(
+        IDistroSeries["name"], description=_(
+            "The name of this series as used for URLs."))
+
+    version = copy_field(
+        IDistroSeries["version"], description=_(
+            "The version of the new series."))
+
+    displayname = copy_field(
+        IDistroSeries["displayname"], description=_(
+            "The name of the new series as it would "
+            "appear in a paragraph"))
+
+    summary = copy_field(IDistroSeries["summary"])
+
+
 class DistroSeriesAddView(LaunchpadFormView):
     """A view to create an `IDistroSeries`."""
-    schema = IDistroSeries
+    schema = IDistroSeriesAddForm
     field_names = [
         'name',
         'version',
