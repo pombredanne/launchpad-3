@@ -3965,6 +3965,9 @@ class PersonSet:
         self._mergeBugNotificationRecipient(cur, from_id, to_id)
         skip.append(('bugnotificationrecipient', 'person'))
 
+        # We ignore BugSubscriptionFilterMutes.
+        skip.append(('bugsubscriptionfiltermute', 'person'))
+
         self._mergePackageBugSupervisor(cur, from_id, to_id)
         skip.append(('packagebugsupervisor', 'bug_supervisor'))
 
