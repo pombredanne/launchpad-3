@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Distribution."""
@@ -6,14 +6,22 @@
 __metaclass__ = type
 
 from lazr.lifecycle.snapshot import Snapshot
+import soupmatchers
+from testtools.matchers import (
+    MatchesAny,
+    Not,
+    )
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.tests.test_distroseries import (
     TestDistroSeriesCurrentSourceReleases,
@@ -22,7 +30,11 @@ from lp.services.propertycache import get_property_cache
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    login_person,
+    TestCaseWithFactory,
+    )
+from lp.testing.views import create_initialized_view
 
 
 class TestDistribution(TestCaseWithFactory):
@@ -97,7 +109,7 @@ class TestDistributionCurrentSourceReleases(
         distribution.newSeries(
             name='bar', displayname='Bar', title='Bar', summary='',
             description='', version='1', parent_series=None,
-            owner=self.factory.makePerson())
+            registrant=self.factory.makePerson())
         self.assertNotIn("series", cache)
 
         # New cached value.
@@ -174,3 +186,99 @@ class DistroSnapshotTestCase(TestCaseWithFactory):
             self.assertFalse(
                 hasattr(snapshot, attribute),
                 "Snapshot should not include %s." % attribute)
+
+
+class TestDistributionPage(TestCaseWithFactory):
+    """A TestCase for the distribution page."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDistributionPage, self).setUp('foo.bar@canonical.com')
+        self.distro = self.factory.makeDistribution(
+            name="distro", displayname=u'distro')
+        self.admin = getUtility(IPersonSet).getByEmail(
+            'admin@canonical.com')
+        self.simple_user = self.factory.makePerson()
+
+    def test_distributionpage_addseries_link(self):
+        """ Verify that an admin sees the +addseries link."""
+        login_person(self.admin)
+        view = create_initialized_view(
+            self.distro, '+index', principal=self.admin)
+        series_matches = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'link to add a series', 'a',
+                attrs={'href':
+                    canonical_url(self.distro, view_name='+addseries')},
+                text='Add series'),
+            soupmatchers.Tag(
+                'Series and milestones widget', 'h2',
+                text='Series and milestones'),
+            )
+        self.assertThat(view.render(), series_matches)
+
+    def test_distributionpage_addseries_link_noadmin(self):
+        """Verify that a non-admin does not see the +addseries link
+        nor the series header (since there is no series yet).
+        """
+        login_person(self.simple_user)
+        view = create_initialized_view(
+            self.distro, '+index', principal=self.simple_user)
+        add_series_match = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'link to add a series', 'a',
+                attrs={'href':
+                    canonical_url(self.distro, view_name='+addseries')},
+                text='Add series'))
+        series_header_match = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Series and milestones widget', 'h2',
+                text='Series and milestones'))
+        self.assertThat(
+            view.render(),
+            Not(MatchesAny(add_series_match, series_header_match)))
+
+    def test_distributionpage_series_list_noadmin(self):
+        """Verify that a non-admin does see the series list
+        when there is a series.
+        """
+        self.factory.makeDistroSeries(distribution=self.distro,
+            status=SeriesStatus.CURRENT)
+        login_person(self.simple_user)
+        view = create_initialized_view(
+            self.distro, '+index', principal=self.simple_user)
+        add_series_match = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'link to add a series', 'a',
+                attrs={'href':
+                    canonical_url(self.distro, view_name='+addseries')},
+                text='Add series'))
+        series_header_match = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Series and milestones widget', 'h2',
+                text='Series and milestones'))
+        self.assertThat(view.render(), series_header_match)
+        self.assertThat(view.render(), Not(add_series_match))
+
+
+class DistroRegistrantTestCase(TestCaseWithFactory):
+    """A TestCase for registrants and owners of a distribution.
+
+    The registrant is the creator of the distribution (read-only field).
+    The owner is really the maintainer.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(DistroRegistrantTestCase, self).setUp()
+        self.owner = self.factory.makePerson()
+        self.registrant = self.factory.makePerson()
+
+    def test_distro_registrant_owner_differ(self):
+        distribution = self.factory.makeDistribution(
+            name="boobuntu", owner=self.owner, registrant=self.registrant)
+        self.assertNotEqual(distribution.owner, distribution.registrant)
+        self.assertEqual(distribution.owner, self.owner)
+        self.assertEqual(distribution.registrant, self.registrant)

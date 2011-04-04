@@ -6,6 +6,8 @@ __metaclass__ = type
 __all__ = [
     "DistributionJobType",
     "IDistributionJob",
+    "IDistroSeriesDifferenceJob",
+    "IDistroSeriesDifferenceJobSource",
     "IInitialiseDistroSeriesJob",
     "IInitialiseDistroSeriesJobSource",
     "ISyncPackageJob",
@@ -133,3 +135,20 @@ class ISyncPackageJob(IRunnableJob):
     include_binaries = Bool(
             title=_("Copy binaries"),
             required=False, readonly=True)
+
+
+class IDistroSeriesDifferenceJob(IRunnableJob):
+        """A Job that performs actions related to DSDs."""
+
+
+class IDistroSeriesDifferenceJobSource(IJobSource):
+    """An `IJob` for creating `DistroSeriesDifference`s."""
+
+    def createForPackagePublication(distroseries, sourcepackagename):
+        """Create jobs as appropriate for a given status publication.
+
+        :param distroseries: A `DistroSeries` that is assumed to be
+            derived from another one.
+        :param sourcepackagename: A `SourcePackageName` that is being
+            published in `distroseries`.
+        """

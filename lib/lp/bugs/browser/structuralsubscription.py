@@ -4,6 +4,10 @@
 __metaclass__ = type
 
 __all__ = [
+    'expose_enum_to_js',
+    'expose_structural_subscription_data_to_js',
+    'expose_user_administered_teams_to_js',
+    'expose_user_subscriptions_to_js',
     'StructuralSubscriptionMenuMixin',
     'StructuralSubscriptionTargetTraversalMixin',
     'StructuralSubscriptionView',
@@ -12,6 +16,10 @@ __all__ = [
 
 from operator import attrgetter
 
+from lazr.restful.interfaces import (
+    IJSONRequestCache,
+    IWebServiceClientRequest,
+    )
 from zope.component import getUtility
 from zope.formlib import form
 from zope.schema import (
@@ -22,9 +30,13 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
+from zope.traversing.browser import absoluteURL
 
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.menu import Link
+from canonical.launchpad.webapp.menu import (
+    enabled_with_permission,
+    Link,
+    )
 from canonical.launchpad.webapp.publisher import (
     canonical_url,
     LaunchpadView,
@@ -37,10 +49,17 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscription,
     IStructuralSubscriptionForm,
     IStructuralSubscriptionTarget,
+    )
+from lp.registry.interfaces.distribution import (
+    IDistribution,
     )
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -316,6 +335,14 @@ class StructuralSubscriptionTargetTraversalMixin:
 class StructuralSubscriptionMenuMixin:
     """Mix-in class providing the subscription add/edit menu link."""
 
+    def _getSST(self):
+        if IStructuralSubscriptionTarget.providedBy(self.context):
+            sst = self.context
+        else:
+            # self.context is a view, and the target is its context
+            sst = self.context.context
+        return sst
+
     def subscribe(self):
         """The subscribe menu link.
 
@@ -324,28 +351,105 @@ class StructuralSubscriptionMenuMixin:
         and displays the edit icon. Otherwise, the link offers to subscribe
         and displays the add icon.
         """
-        if IStructuralSubscriptionTarget.providedBy(self.context):
-            sst = self.context
-        else:
-            # self.context is a view, and the target is its context
-            sst = self.context.context
+        sst = self._getSST()
 
         # ProjectGroup milestones aren't really structural subscription
         # targets as they're not real milestones, so you can't subscribe to
         # them.
         enabled = not IProjectGroupMilestone.providedBy(sst)
-
         if sst.userHasBugSubscriptions(self.user):
             text = 'Edit bug mail subscription'
             icon = 'edit'
         else:
             text = 'Subscribe to bug mail'
             icon = 'add'
-        if enabled == False or (
+        if not enabled or (
             not sst.userCanAlterBugSubscription(self.user, self.user)):
-            return Link('+subscribe', text, icon=icon, enabled=False)
-        else:
-            return Link('+subscribe', text, icon=icon, enabled=enabled)
+            enabled = False
+        return Link('+subscribe', text, icon=icon, enabled=enabled)
+
+    @enabled_with_permission('launchpad.AnyPerson')
+    def subscribe_to_bug_mail(self):
+        sst = self._getSST()
+        enabled = sst.userCanAlterBugSubscription(self.user, self.user)
+        text = 'Subscribe to bug mail'
+        return Link('#', text, icon='add', hidden=True, enabled=enabled)
+
+
+def expose_structural_subscription_data_to_js(context, request,
+                                              user, subscriptions=None):
+    """Expose all of the data for a structural subscription to JavaScript."""
+    expose_user_administered_teams_to_js(request, user, context)
+    expose_enum_to_js(request, BugTaskImportance, 'importances')
+    expose_enum_to_js(request, BugTaskStatus, 'statuses')
+    if subscriptions is None:
+        subscriptions = []
+    expose_user_subscriptions_to_js(
+        user, subscriptions, request)
+
+
+def expose_enum_to_js(request, enum, name):
+    """Make a list of enum titles and value available to JavaScript."""
+    info = []
+    for item in enum:
+        info.append(item.title)
+    IJSONRequestCache(request).objects[name] = info
+
+
+def expose_user_administered_teams_to_js(request, user, context,
+        absoluteURL=absoluteURL):
+    """Make the list of teams the user administers available to JavaScript."""
+    info = []
+    api_request = IWebServiceClientRequest(request)
+    is_distro = IDistribution.providedBy(context)
+    if user is not None:
+        for team in user.getAdministratedTeams():
+            # If the context is a distro AND a bug supervisor is set AND
+            # the admininistered team is not a member of the bug supervisor
+            # team THEN skip it.
+            if (is_distro and context.bug_supervisor is not None and
+                not team.inTeam(context.bug_supervisor)):
+                continue
+            info.append({
+                'link': absoluteURL(team, api_request),
+                'title': team.title,
+            })
+    IJSONRequestCache(request).objects['administratedTeams'] = info
+
+
+def expose_user_subscriptions_to_js(user, subscriptions, request):
+    """Make the user's subscriptions available to JavaScript."""
+    info = {}
+    api_request = IWebServiceClientRequest(request)
+    if user is None:
+        administered_teams = []
+    else:
+        administered_teams = user.getAdministratedTeams()
+    for subscription in subscriptions:
+        target = subscription.target
+        record = info.get(target)
+        if record is None:
+            record = dict(target_title=target.title,
+                          target_url=canonical_url(
+                            target, rootsite='mainsite'),
+                          filters=[])
+            info[target] = record
+        subscriber = subscription.subscriber
+        for filter in subscription.bug_filters:
+            is_team = subscriber.isTeam()
+            user_is_team_admin = (is_team and
+                                  subscriber in administered_teams)
+            record['filters'].append(dict(
+                filter=filter,
+                subscriber_link=absoluteURL(subscriber, api_request),
+                subscriber_url = canonical_url(
+                    subscriber, rootsite='mainsite'),
+                subscriber_title=subscriber.title,
+                subscriber_is_team=is_team,
+                user_is_team_admin=user_is_team_admin,))
+    info = info.values()
+    info.sort(key=lambda item: item['target_url'])
+    IJSONRequestCache(request).objects['subscription_info'] = info
 
 
 class StructuralSubscribersPortletView(LaunchpadView):

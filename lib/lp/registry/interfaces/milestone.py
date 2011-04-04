@@ -24,6 +24,7 @@ from lazr.restful.declarations import (
     export_operation_as,
     export_read_operation,
     exported,
+    operation_for_version,
     operation_parameters,
     operation_returns_entry,
     rename_parameters_as,
@@ -181,6 +182,7 @@ class IMilestone(IHasBugs, IStructuralSubscriptionTarget,
     @export_factory_operation(
         IProductRelease,
         ['datereleased', 'changelog', 'release_notes'])
+    @operation_for_version('beta')
     def createProductRelease(owner, datereleased,
                              changelog=None, release_notes=None):
         """Create a new ProductRelease.
@@ -203,6 +205,7 @@ class IMilestone(IHasBugs, IStructuralSubscriptionTarget,
 
     @export_destructor_operation()
     @export_operation_as('delete')
+    @operation_for_version('beta')
     def destroySelf():
         """Delete this milestone.
 
@@ -279,6 +282,7 @@ class ICanGetMilestonesDirectly(Interface):
         name=TextLine(title=_("Name"), required=True))
     @operation_returns_entry(IMilestone)
     @export_read_operation()
+    @operation_for_version('beta')
     def getMilestone(name):
         """Return a milestone with the given name for this object, or None."""
 

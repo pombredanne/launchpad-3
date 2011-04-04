@@ -15,6 +15,7 @@ __all__ = [
     ]
 
 import doctest
+from functools import partial
 import logging
 import os
 import pdb
@@ -136,6 +137,13 @@ def LayeredDocFileSuite(*args, **kw):
     suite = doctest.DocFileSuite(*args, **kw)
     if layer is not None:
         suite.layer = layer
+
+    # DocFileTest insists on using the basename of the file as the test
+    # ID. This causes conflicts when two doctests have the same filename, so
+    # we patch the id() method on the test cases.
+    for test in suite:
+        test.id = partial(os.path.normpath, test._dt_test.filename)
+
     return suite
 
 

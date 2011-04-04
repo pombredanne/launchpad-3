@@ -118,15 +118,8 @@
             <dt>Daily build archive:</dt>
             <dd tal:content="structure view/archive_picker"/>
           </dl>
-
-          <dl id="distros">
-            <dt>Distribution series:</dt>
-            <dd>
-              <ul>
-                  <li tal:repeat="curseries context/distroseries"
-                      tal:content="structure curseries/fmt:link" />
-              </ul>
-            </dd>
+          <dl id="distroseries">
+            <tal:distroseries tal:replace="structure view/distroseries_widget"/>
           </dl>
         </div>
       </div>
@@ -157,7 +150,7 @@
             Y.lp.ui.update_field('#debian-version dd', e.new_value);
         });
         Y.on('lp:context:base_branch_link:changed', function(e) {
-            Y.lp.ui.update_field('#base-branch dd', e.entry.getHTML(e.name));
+            Y.lp.ui.update_field('#base-branch dd', e.new_value_html);
         });
 
         if(Y.UA.ie) {

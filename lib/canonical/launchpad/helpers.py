@@ -200,43 +200,20 @@ def simple_popen2(command, input, env=None, in_bufsize=1024, out_bufsize=128):
     return output
 
 
-def emailPeople(person):
-    """Return a set of people to who receive email for this Person.
-
-    If <person> has a preferred email, the set will contain only that
-    person.  If <person> doesn't have a preferred email but is a team,
-    the set will contain the preferred email address of each member of
-    <person>, including indirect members.
-
-    Finally, if <person> doesn't have a preferred email and is not a team,
-    the set will be empty.
-    """
-    pending_people = [person]
-    people = set()
-    seen = set()
-    while len(pending_people) > 0:
-        person = pending_people.pop()
-        if person in seen:
-            continue
-        seen.add(person)
-        if person.preferredemail is not None:
-            people.add(person)
-        elif person.isTeam():
-            pending_people.extend(person.activemembers)
-    return people
-
-
 def get_contact_email_addresses(person):
     """Return a set of email addresses to contact this Person.
 
-    In general, it is better to use emailPeople instead.
+    In general, it is better to use lp.registry.model.person.get_recipients
+    instead.
     """
     # Need to remove the security proxy of the email address because the
     # logged in user may not have permission to see it.
     from zope.security.proxy import removeSecurityProxy
+    # Circular imports force this import.
+    from lp.registry.model.person import get_recipients
     return set(
         str(removeSecurityProxy(mail_person.preferredemail).email)
-        for mail_person in emailPeople(person))
+        for mail_person in get_recipients(person))
 
 
 replacements = {0: {'.': ' |dot| ',

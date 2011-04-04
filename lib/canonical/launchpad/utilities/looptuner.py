@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -128,7 +128,7 @@ class LoopTuner:
 
                 if self._isTimedOut():
                     self.log.warn(
-                        "Task aborted after %d seconds." % self.abort_time)
+                        "Task aborted after %d seconds.", self.abort_time)
                     break
 
                 self.operation(chunk_size)
@@ -136,8 +136,10 @@ class LoopTuner:
                 new_clock = self._time()
                 time_taken = new_clock - last_clock
                 last_clock = new_clock
-                self.log.debug("Iteration %d (size %.1f): %.3f seconds" %
-                            (iteration, chunk_size, time_taken))
+
+                self.log.debug2(
+                    "Iteration %d (size %.1f): %.3f seconds",
+                    iteration, chunk_size, time_taken)
 
                 last_clock = self._coolDown(last_clock)
 
@@ -162,12 +164,11 @@ class LoopTuner:
             total_time = last_clock - self.start_time
             average_size = total_size/max(1, iteration)
             average_speed = total_size/max(1, total_time)
-            self.log.debug(
-                "Done. %d items in %d iterations, "
-                "%.3f seconds, "
-                "average size %f (%s/s)" %
-                    (total_size, iteration, total_time, average_size,
-                    average_speed))
+            self.log.debug2(
+                "Done. %d items in %d iterations, %3f seconds, "
+                "average size %f (%s/s)",
+                total_size, iteration, total_time, average_size,
+                average_speed)
         finally:
             if safe_hasattr(self.operation, 'cleanUp'):
                 self.operation.cleanUp()
@@ -253,7 +254,7 @@ class DBLoopTuner(LoopTuner):
             if msg_counter % 60 == 1:
                 self.log.info(
                     "Database replication lagged %s. "
-                    "Sleeping up to 10 minutes." % lag)
+                    "Sleeping up to 10 minutes.", lag)
 
             transaction.abort() # Don't become a long running transaction!
             self._sleep(10)
@@ -287,8 +288,8 @@ class DBLoopTuner(LoopTuner):
             if msg_counter % 60 == 1:
                 for runtime, procpid, usename, datname, query in results:
                     self.log.info(
-                        "Blocked on %s old xact %s@%s/%d - %s."
-                        % (runtime, usename, datname, procpid, query))
+                        "Blocked on %s old xact %s@%s/%d - %s.",
+                        runtime, usename, datname, procpid, query)
                 self.log.info("Sleeping for up to 10 minutes.")
             transaction.abort() # Don't become a long running transaction!
             self._sleep(10)

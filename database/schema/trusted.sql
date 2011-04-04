@@ -1954,6 +1954,20 @@ LANGUAGE plpythonu STABLE RETURNS NULL ON NULL INPUT AS $$
     return int(total_heat)
 $$;
 
+CREATE OR REPLACE FUNCTION bug_update_heat_copy_to_bugtask()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+BEGIN
+    IF NEW.heat != OLD.heat THEN
+        UPDATE bugtask SET heat=NEW.heat WHERE bugtask.bug=NEW.id;
+    END IF;
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
+
+COMMENT ON FUNCTION bug_update_heat_copy_to_bugtask() IS
+'Copies bug heat to bugtasks when the bug is changed. Runs on UPDATE only because INSERTs do not have bugtasks at the point of insertion.';
+
 -- This function is not STRICT, since it needs to handle
 -- dateexpected when it is NULL.
 CREATE OR REPLACE FUNCTION milestone_sort_key(

@@ -8,6 +8,7 @@ __all__ = [
     'BooleanChoiceWidget',
     'EnumChoiceWidget',
     'InlineEditPickerWidget',
+    'InlineMultiCheckboxWidget',
     'standard_text_html_representation',
     'TextAreaEditorWidget',
     'TextLineEditorWidget',
@@ -19,7 +20,10 @@ import simplejson
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.security.checker import canAccess, canWrite
-from zope.schema.interfaces import IVocabulary
+from zope.schema.interfaces import (
+    ICollection,
+    IVocabulary,
+    )
 from zope.schema.vocabulary import getVocabularyRegistry
 
 from lazr.enum import IEnumeratedType
@@ -299,6 +303,114 @@ class InlineEditPickerWidget(WidgetBase):
         vocabulary = self.vocabulary
         user = getUtility(ILaunchBag).user
         return user and user in vocabulary
+
+
+class InlineMultiCheckboxWidget(WidgetBase):
+    """Wrapper for the lazr-js multicheckbox widget."""
+
+    __call__ = ViewPageTemplateFile(
+                        '../templates/inline-multicheckbox-widget.pt')
+
+    def __init__(self, context, exported_field,
+                 label, label_tag="span", attribute_type="default",
+                 vocabulary=None, header=None,
+                 empty_display_value="None", selected_items=list(),
+                 items_tag="span", items_style='',
+                 content_box_id=None, edit_view="+edit", edit_url=None,
+                 edit_title=''):
+        """Create a widget wrapper.
+
+        :param context: The object that is being edited.
+        :param exported_field: The attribute being edited. This should be
+            a field from an interface of the form ISomeInterface['fieldname']
+        :param label: The label text to display above the checkboxes
+        :param label_tag: The tag in which to wrap the label text.
+        :param attribute_type: The attribute type. Currently only "reference"
+            is supported. Used to determine whether to linkify the selected
+            checkbox item values. So ubuntu/hoary becomes
+            http://launchpad.net/devel/api/ubuntu/hoary
+        :param vocabulary: The name of the vocabulary which provides the
+            items or a vocabulary instance.
+        :param header: The text to display as the title of the popup form.
+        :param empty_display_value: The text to display if no items are
+            selected.
+        :param selected_items: The currently selected items.
+        :param items_tag: The tag in which to wrap the items checkboxes.
+        :param items_style: The css style to use for each item checkbox.
+        :param content_box_id: The HTML id to use for this widget.
+            Automatically generated if this is not provided.
+        :param edit_view: The view name to use to generate the edit_url if
+            one is not specified.
+        :param edit_url: The URL to use for editing when the user isn't logged
+            in and when JS is off.  Defaults to the edit_view on the context.
+        :param edit_title: Used to set the title attribute of the anchor.
+
+        """
+        super(InlineMultiCheckboxWidget, self).__init__(
+            context, exported_field, content_box_id,
+            edit_view, edit_url, edit_title)
+
+        linkify_items = attribute_type == "reference"
+
+        if header is None:
+            header = self.exported_field.title+":"
+        self.header = header,
+        self.empty_display_value = empty_display_value
+        self.label = label
+        self.label_open_tag = "<%s>" % label_tag
+        self.label_close_tag = "</%s>" % label_tag
+        self.items = selected_items
+        self.items_open_tag = ("<%s id='%s'>" %
+            (items_tag, self.content_box_id+"-items"))
+        self.items_close_tag = "</%s>" % items_tag
+        self.linkify_items = linkify_items
+
+        if vocabulary is None:
+            if ICollection.providedBy(exported_field):
+                vocabulary = exported_field.value_type.vocabularyName
+            else:
+                vocabulary = exported_field.vocabularyName
+
+
+        if isinstance(vocabulary, basestring):
+            vocabulary = getVocabularyRegistry().get(context, vocabulary)
+
+        # Construct checkbox data dict for each item in the vocabulary.
+        items = []
+        style = ';'.join(['font-weight: normal', items_style])
+        for item in vocabulary:
+            item_value = item.value if safe_hasattr(item, 'value') else item
+            checked = item_value in selected_items
+            if linkify_items:
+                save_value = canonical_url(item_value, force_local_path=True)
+            else:
+                save_value = item_value.name
+            new_item = {
+                'name': item.title,
+                'token': item.token,
+                'style': style,
+                'checked': checked,
+                'value': save_value}
+            items.append(new_item)
+        self.has_choices = len(items)
+
+        # JSON encoded attributes.
+        self.json_content_box_id = simplejson.dumps(self.content_box_id)
+        self.json_attribute = simplejson.dumps(self.api_attribute)
+        self.json_attribute_type = simplejson.dumps(attribute_type)
+        self.json_items = simplejson.dumps(items)
+        self.json_description = simplejson.dumps(
+            self.exported_field.description)
+
+    @property
+    def config(self):
+        return dict(
+            header=self.header,
+            )
+
+    @property
+    def json_config(self):
+        return simplejson.dumps(self.config)
 
 
 def vocabulary_to_choice_edit_items(

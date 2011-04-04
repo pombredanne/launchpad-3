@@ -19,7 +19,10 @@ from lazr.restful.declarations import (
     exported,
     )
 from lazr.restful.fields import Reference
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
     Choice,
     Datetime,
@@ -61,7 +64,8 @@ class IArchiveSubscriberView(Interface):
         title=_("Subscriber"), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam',
         description=_("The person who is subscribed.")))
-
+    subscriber_id = Attribute('database ID of the subscriber.')
+    
     date_expires = exported(Datetime(
         title=_("Date of Expiration"), required=False,
         description=_("The timestamp when the subscription will expire.")))
