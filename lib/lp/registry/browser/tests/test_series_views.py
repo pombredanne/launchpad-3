@@ -3,6 +3,8 @@
 
 __metaclass__ = type
 
+import re
+
 from BeautifulSoup import BeautifulSoup
 import soupmatchers
 from storm.zope.interfaces import IResultSet
@@ -163,10 +165,12 @@ class DistroSeriesLocalPackageDiffsPageTestCase(TestCaseWithFactory):
                 principal=self.simple_user)
             html = view()
 
+        pck_set_text = re.compile('\s*' + ', '.join(sorted_pckset_names))
         parent_packagesets = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'Parent packagesets', 'td',
-                attrs={'class': 'parent-packagesets'}))
+                attrs={'class': 'parent-packagesets'},
+                text=pck_set_text))
 
         self.assertThat(html, parent_packagesets)
 
@@ -755,10 +759,12 @@ class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory):
                 principal=self.simple_user)
             html = view()
 
+        pck_set_text = re.compile('\s*' + ', '.join(sorted_pckset_names))
         parent_packagesets = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'Packagesets', 'td',
-                attrs={'class': 'parent-packagesets'}))
+                attrs={'class': 'parent-packagesets'},
+                text=pck_set_text))
 
         self.assertThat(html, parent_packagesets)
 
