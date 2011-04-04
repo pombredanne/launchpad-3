@@ -508,11 +508,29 @@ class DistroSeriesAddView(LaunchpadFormView):
     """A view to create an `IDistroSeries`."""
     schema = IDistroSeries
     field_names = [
-        'name', 'displayname', 'title', 'summary', 'description', 'version',
-        'parent_series']
+        'name',
+        'version',
+        'displayname',
+        'summary',
+        ]
 
     label = 'Register a series'
     page_title = label
+
+    def validate(self, data):
+        # XXX: Rip this out before landing.
+        deprecated_field_names = [
+            'field.title',
+            'field.description',
+            'field.parent_series',
+            ]
+        deprecated_field_names_found = set(
+            self.request).intersection(deprecated_field_names)
+        if len(deprecated_field_names_found) > 0:
+            raise AssertionError(
+                "Deprecated fields: %s" % " ".join(
+                    deprecated_field_names_found))
+        super(DistroSeriesAddView, self).validate(data)
 
     @action(_('Create Series'), name='create')
     def createAndAdd(self, action, data):
@@ -523,11 +541,11 @@ class DistroSeriesAddView(LaunchpadFormView):
         distroseries = self.context.newSeries(
             name=data['name'],
             displayname=data['displayname'],
-            title=data['title'],
+            title=data['displayname'],
             summary=data['summary'],
-            description=data['description'],
+            description=u"",
             version=data['version'],
-            parent_series=data['parent_series'],
+            parent_series=None,
             registrant=registrant)
         notify(ObjectCreatedEvent(distroseries))
         self.next_url = canonical_url(distroseries)
