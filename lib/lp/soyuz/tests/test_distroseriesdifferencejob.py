@@ -236,7 +236,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         self.factory.makePackageset(distroseries=parent_series)
         package = self.factory.makeSourcePackageName()
         # Package is not in the packageset _but_ both the parent and
-        # derived series both have it.
+        # derived series have it.
         self.factory.makeSourcePackagePublishingHistory(
             distroseries=parent_series, sourcepackagename=package)
         self.factory.makeSourcePackagePublishingHistory(
