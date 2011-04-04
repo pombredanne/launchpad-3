@@ -17,7 +17,9 @@
           request/features/malone.advanced-structural-subscriptions.enabled">
       LPS.use('lp.registry.structural_subscription', function(Y) {
           var module = Y.lp.registry.structural_subscription;
-          var config = {content_box: "#structural-subscription-content-box"};
+          var config = {
+              content_box: "#structural-subscription-content-box",
+              add_filter_description: true};
           Y.on('domready', function() {
               module.setup_bug_subscriptions(config);
               module.setup_subscription_link(
