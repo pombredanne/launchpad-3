@@ -124,7 +124,7 @@
             <tal:help-link condition="widget_help_link">
               <a tal:attributes="href widget_help_link"
                  target="help" class="sprite maybe">
-                &nbsp;<span class="invisible-link">Tag help</span>
+                &nbsp;<span class="invisible-link">(?)</span>
               </a>
             </tal:help-link>
           </div>
@@ -151,7 +151,7 @@
             <tal:help-link condition="widget_help_link">
               <a tal:attributes="href widget_help_link"
                  target="help" class="sprite maybe">
-                &nbsp;<span class="invisible-link">Tag help</span>
+                &nbsp;<span class="invisible-link">(?)</span>
               </a>
             </tal:help-link>
             <div
@@ -176,7 +176,7 @@
           <tal:help-link condition="widget_help_link">
             <a tal:attributes="href widget_help_link"
                target="help" class="sprite maybe">
-              &nbsp;<span class="invisible-link">Tag help</span>
+              &nbsp;<span class="invisible-link">(?)</span>
             </a>
           </tal:help-link>
           <div
