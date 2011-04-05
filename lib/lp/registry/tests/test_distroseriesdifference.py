@@ -338,7 +338,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             diff_comment = ds_diff.addComment(
                 ds_diff.derived_series.owner, "Boo")
 
-    def _setup_packagesets(self, ds_diff, distroseries, nb_packagesets):
+    def _setupPackageSets(self, ds_diff, distroseries, nb_packagesets):
         # Helper method to create packages sets.
         packagesets = []
         with celebrity_logged_in('admin'):
@@ -352,7 +352,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
     def test_getParentPackageSets(self):
         # All parent's packagesets are returned ordered alphabetically.
         ds_diff = self.factory.makeDistroSeriesDifference()
-        packagesets = self._setup_packagesets(
+        packagesets = self._setupPackageSets(
             ds_diff, ds_diff.derived_series.parent_series, 5)
         parent_packagesets = ds_diff.getParentPackageSets()
         self.assertEquals(
@@ -362,7 +362,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
     def test_getPackageSets(self):
         # All the packagesets are returned ordered alphabetically.
         ds_diff = self.factory.makeDistroSeriesDifference()
-        packagesets = self._setup_packagesets(
+        packagesets = self._setupPackageSets(
             ds_diff, ds_diff.derived_series, 5)
         self.assertEquals(
             sorted([packageset.name for packageset in packagesets]),
