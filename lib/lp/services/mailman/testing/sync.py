@@ -44,10 +44,11 @@ class SyncDetails:
     def cleanup(self):
         """Clean up all artifacts of the sync."""
         shutil.rmtree(self.source_dir)
-        shutil.rmtree(self.mhonarc_path)
+        if os.path.isdir(self.mhonarc_path):
+            shutil.rmtree(self.mhonarc_path)
 
 
-def prepare_for_sync():
+def prepare_for_sync(team=None):
     """Prepare a sync'd directory for mlist-sync.py.
 
     This simulates what happens in the real-world: the production Launchpad
@@ -92,17 +93,17 @@ def prepare_for_sync():
             mailing_list.Save()
         finally:
             mailing_list.Unlock()
+    mhonarc_path = os.path.join(mm_cfg.VAR_PREFIX, 'mhonarc', 'fake-team')
     # Create a mailing list that exists only in Mailman.  The sync script will
     # end up deleting this because it represents a race condition between when
     # the production database was copied and when the Mailman data was copied.
-    mlist = MailList()
-    try:
-        mhonarc_path = os.path.join(mm_cfg.VAR_PREFIX, 'mhonarc', 'fake-team')
-        mlist.Create('fake-team', mm_cfg.SITE_LIST_OWNER, ' no password ')
-        mlist.Save()
-        os.makedirs(mhonarc_path)
-    finally:
-        mlist.Unlock()
+#    mlist = MailList()
+#    try:
+#        mlist.Create('fake-team', mm_cfg.SITE_LIST_OWNER, ' no password ')
+#        mlist.Save()
+#        os.makedirs(mhonarc_path)
+#    finally:
+#        mlist.Unlock()
     # Create a directory in which to put the simulated production database,
     # then copy our current Mailman stuff to it, lock, stock, and barrel.
     tempdir = tempfile.mkdtemp()
@@ -117,7 +118,9 @@ def prepare_for_sync():
             continue
         email = removeSecurityProxy(
             email_set.getByEmail(list_name + '@lists.launchpad.dev'))
-        email.email = list_name + '@lists.prod.launchpad.dev'
+        if email is not None:
+            # Inactive/purged mailing lists may not have email addresses.
+            email.email = list_name + '@lists.prod.launchpad.dev'
     logout()
     commit()
     return SyncDetails(source_dir, mhonarc_path)
@@ -128,17 +131,21 @@ def dump_list_info():
     # Print interesting information about each mailing list.
     flush_database_caches()
     login('foo.bar@canonical.com')
+    list_info = []
     for list_name in sorted(list_names()):
         if list_name == mm_cfg.MAILMAN_SITE_LIST:
             continue
         mailing_list = MailList(list_name, lock=False)
-        print mailing_list.internal_name()
-        print '   ', mailing_list.host_name, mailing_list.web_page_url
         team = getUtility(IPersonSet).getByName(list_name)
+        emails = []
         if team is None:
-            print '    No Launchpad team:', list_name
+            emails.append('No Launchpad team: %s' % list_name)
         else:
             mlist_addresses = getUtility(IEmailAddressSet).getByPerson(team)
             for email in sorted(email.email for email in mlist_addresses):
-                print '   ', email
+                emails.append(email)
+        list_info.append(
+            (mailing_list.internal_name(), mailing_list.host_name,
+             mailing_list.web_page_url, ' '.join(emails)))
     logout()
+    return list_info
