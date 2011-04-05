@@ -101,7 +101,22 @@ def set_derived_series_ui_feature_flag(test_case):
     test_case.addCleanup(install_feature_controller, None)
 
 
-class DistroSeriesLocalPackageDiffsPageTestCase(TestCaseWithFactory):
+class DistroSeriesDifferenceMixin():
+    """A helper class for testing differences pages"""
+
+    def _test_packagesets(self, html, packageset_text,
+                          packageset_class, msg_text):
+        parent_packagesets = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                msg_text, 'td',
+                attrs={'class': packageset_class},
+                text=packageset_text))
+
+        self.assertThat(html, parent_packagesets)
+
+
+class DistroSeriesLocalPackageDiffsPageTestCase(DistroSeriesDifferenceMixin,
+                                                TestCaseWithFactory):
     """Test the distroseries +localpackagediffs page."""
 
     layer = DatabaseFunctionalLayer
@@ -154,20 +169,16 @@ class DistroSeriesLocalPackageDiffsPageTestCase(TestCaseWithFactory):
                 packages=[ds_diff.source_package_name],
                 distroseries=ds_diff.derived_series.parent_series)
 
-        packageset_text = re.compile('\s*' + ps.name)
         with person_logged_in(self.simple_user):
             view = create_initialized_view(
                 ds_diff.derived_series,
                 '+localpackagediffs',
                 principal=self.simple_user)
             html = view()
-            parent_packagesets = soupmatchers.HTMLContains(
-                soupmatchers.Tag(
-                    'Parent packagesets names', 'td',
-                    attrs={'class': 'parent-packagesets'},
-                    text=packageset_text))
 
-            self.assertThat(html, parent_packagesets)
+        packageset_text = re.compile('\s*' + ps.name)
+        self._test_packagesets(
+            html, packageset_text, 'parent-packagesets', 'Parent packagesets')
 
     def test_parent_packagesets_localpackagediffs_sorts(self):
         # Multiple packagesets are sorted in a comma separated list.
@@ -180,21 +191,17 @@ class DistroSeriesLocalPackageDiffsPageTestCase(TestCaseWithFactory):
                     packages=[ds_diff.source_package_name],
                     distroseries=ds_diff.derived_series.parent_series)
 
-        packageset_text = re.compile(
-            '\s*' + ', '.join(sorted(unsorted_names)))
         with person_logged_in(self.simple_user):
             view = create_initialized_view(
                 ds_diff.derived_series,
                 '+localpackagediffs',
                 principal=self.simple_user)
             html = view()
-            parent_packagesets = soupmatchers.HTMLContains(
-                soupmatchers.Tag(
-                    'Sorted parent packagesets names', 'td',
-                    attrs={'class': 'parent-packagesets'},
-                    text=packageset_text))
 
-            self.assertThat(html, parent_packagesets)
+        packageset_text = re.compile(
+            '\s*' + ', '.join(sorted(unsorted_names)))
+        self._test_packagesets(
+            html, packageset_text, 'parent-packagesets', 'Parent packagesets')
 
 
 class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
@@ -767,7 +774,8 @@ class DistroSerieMissingPackageDiffsTestCase(TestCaseWithFactory):
             [], view.cached_differences.batch)
 
 
-class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory):
+class DistroSeriesMissingPackagesPageTestCase(DistroSeriesDifferenceMixin,
+                                              TestCaseWithFactory):
     """Test the distroseries +missingpackages page."""
 
     layer = DatabaseFunctionalLayer
@@ -777,12 +785,13 @@ class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory):
               self).setUp('foo.bar@canonical.com')
         set_derived_series_ui_feature_flag(self)
         self.simple_user = self.factory.makePerson()
+
+    def test_parent_packagesets_missingpackages(self):
+        # +missingpackages displays the packagesets in the parent.
         missing_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
         self.ds_diff = self.factory.makeDistroSeriesDifference(
             difference_type=missing_type)
 
-    def test_parent_packagesets_missingpackages(self):
-        # +missingpackages displays the packagesets in the parent.
         with celebrity_logged_in('admin'):
             ps = self.factory.makePackageset(
                 packages=[self.ds_diff.source_package_name],
@@ -796,13 +805,9 @@ class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory):
             html = view()
 
         packageset_text = re.compile('\s*' + ps.name)
-        parent_packagesets = soupmatchers.HTMLContains(
-            soupmatchers.Tag(
-                'Packagesets', 'td',
-                attrs={'class': 'parent-packagesets'},
-                text=packageset_text))
 
-        self.assertThat(html, parent_packagesets)
+        self._test_packagesets(
+            html, packageset_text, 'parent-packagesets', 'Parent packagesets')
 
 
 class TestMilestoneBatchNavigatorAttribute(TestCaseWithFactory):
