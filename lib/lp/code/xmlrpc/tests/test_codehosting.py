@@ -1005,11 +1005,22 @@ class CodehostingTest(TestCaseWithFactory):
         requester = self.factory.makePerson()
         self.assertNotFound(requester, '/%s/.bzr' % BRANCH_ID_ALIAS_PREFIX)
 
+    def test_translatePath_branch_id_alias_trailing(self):
+        # Make sure the trailing path is returned.
+        requester = self.factory.makePerson()
+        branch = removeSecurityProxy(self.factory.makeAnyBranch())
+        path = escape(u'/%s/%s/foo/bar' % (BRANCH_ID_ALIAS_PREFIX, branch.id))
+        translation = self.codehosting_api.translatePath(requester.id, path)
+        self.assertEqual(
+            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, 'foo/bar'),
+            translation)
+
     def test_translatePath_branch_id_alias_owned(self):
         # Even if the the requester is the owner, the branch is read only.
         requester = self.factory.makePerson()
-        branch = self.factory.makeAnyBranch(
-            branch_type=BranchType.HOSTED, owner=requester)
+        branch = removeSecurityProxy(
+            self.factory.makeAnyBranch(
+                branch_type=BranchType.HOSTED, owner=requester))
         path = escape(u'/%s/%s' % (BRANCH_ID_ALIAS_PREFIX, branch.id))
         translation = self.codehosting_api.translatePath(requester.id, path)
         self.assertEqual(
