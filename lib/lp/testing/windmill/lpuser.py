@@ -8,8 +8,6 @@ __all__ = []
 
 import windmill
 
-from lp.testing.windmill import constants
-
 
 def get_basic_login_url(email, password):
     """Return the constructed url to login a user."""
@@ -27,54 +25,8 @@ class LaunchpadUser:
         self.email = email
         self.password = password
 
-    def ensure_login(self, client):
-        """Ensure that this user is logged on the page under windmill."""
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        lookup_user = (
-            """lookupNode({xpath: '//div[@id="logincontrol"]//a'}).text""")
-        result = client.commands.execJS(code=lookup_user)
-        if (result['result'] is not None and
-            result['result'].strip() == self.display_name):
-            # We are logged in as that user already.
-            return
-
-        current_url = client.commands.execJS(
-            code='windmill.testWin().location;')['result']['href']
-        client.open(url=get_basic_login_url(self.email, self.password))
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        client.open(url=current_url)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-
-
-class AnonymousUser:
-    """Object representing the anonymous user."""
-
-    def ensure_login(self, client):
-        """Ensure that the user is surfing anonymously."""
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        result = client.asserts.assertNode(
-            link=u'Log in / Register', assertion=False)
-        if result['result']:
-            return
-
-        # Open a page with invalid HTTP Basic Auth credentials just to
-        # invalidate the ones previously used.
-        current_url = client.commands.execJS(
-            code='windmill.testWin().location;')['result']['href']
-        current_url = current_url.replace('http://', 'http://foo:foo@')
-        client.open(url=current_url)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-
-
-def login_person(person, email, password, client):
-    """Create a LaunchpadUser for a person and password."""
-    user = LaunchpadUser(person.displayname, email, password)
-    user.ensure_login(client)
-
 
 # Well Known Users
-ANONYMOUS = AnonymousUser()
-
 SAMPLE_PERSON = LaunchpadUser(
     'Sample Person', 'test@canonical.com', 'test')
 

@@ -6,8 +6,6 @@
 __metaclass__ = type
 __all__ = []
 
-import unittest
-
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.testing import WindmillTestCase
 from lp.testing.windmill import (
@@ -28,7 +26,7 @@ class TestProductIndexPage(WindmillTestCase):
             expected_value='Mozilla Firefox',
             new_value='The awesome Mozilla Firefox',
             name='test_title_inline_edit',
-            suite=__name__,
+            suite_name=__name__,
             user=lpuser.SAMPLE_PERSON)
         test()
 
@@ -40,10 +38,6 @@ class TestProductIndexPage(WindmillTestCase):
             expected_value='Not yet specified',
             new_value='C++',
             name='test_proglang_inline_edit',
-            suite=__name__,
+            suite_name=__name__,
             user=lpuser.SAMPLE_PERSON)
         test()
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
