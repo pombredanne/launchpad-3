@@ -173,7 +173,7 @@ class SoyuzTestPublisher:
 
         return package_upload
 
-    def getPubSource(self, sourcename=None, version='666', component='main',
+    def getPubSource(self, sourcename=None, version=None, component='main',
                      filename=None, section='base',
                      filecontent='I do not care about sources.',
                      changes_file_content="Fake: fake changes file content",
@@ -196,6 +196,8 @@ class SoyuzTestPublisher:
         """
         if sourcename is None:
             sourcename = self.default_package_name
+        if version is None:
+            version = '666'
         spn = getUtility(ISourcePackageNameSet).getOrCreateByName(sourcename)
 
         component = getUtility(IComponentSet)[component]
@@ -292,7 +294,7 @@ class SoyuzTestPublisher:
                        distroseries=None,
                        archive=None,
                        pub_source=None,
-                       version='666',
+                       version=None,
                        architecturespecific=False,
                        builder=None,
                        component='main',
