@@ -338,45 +338,35 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             diff_comment = ds_diff.addComment(
                 ds_diff.derived_series.owner, "Boo")
 
+    def _setup_packagesets(self, ds_diff, distroseries, nb_packagesets):
+        # Helper method to create packages sets.
+        packagesets = []
+        with celebrity_logged_in('admin'):
+            for i in range(nb_packagesets):
+                ps = self.factory.makePackageset(
+                    packages=[ds_diff.source_package_name],
+                    distroseries=distroseries)
+                packagesets.append(ps)
+        return packagesets
+
     def test_getParentPackageSets(self):
         # All parent's packagesets are returned ordered alphabetically.
         ds_diff = self.factory.makeDistroSeriesDifference()
-
-        self.factory.makePackageset()
-        self.factory.makePackageset(
-            packages=[ds_diff.source_package_name],
-            distroseries=ds_diff.derived_series)
-        pckset_names = [u'pack2', u'pack1', u'aa']
-        sorted_pckset_names = [u'aa', u'pack1', u'pack2']
-        with celebrity_logged_in('admin'):
-            for pckset_name in pckset_names:
-                ps = self.factory.makePackageset(
-                    name=pckset_name,
-                    packages=[ds_diff.source_package_name],
-                    distroseries=ds_diff.derived_series.parent_series)
+        packagesets = self._setup_packagesets(
+            ds_diff, ds_diff.derived_series.parent_series, 5)
+        parent_packagesets = ds_diff.getParentPackageSets()
         self.assertEquals(
-            sorted_pckset_names,
-            [ps.name for ps in ds_diff.getParentPackageSets()])
+            sorted([packageset.name for packageset in packagesets]),
+            [packageset.name for packageset in parent_packagesets])
 
     def test_getPackageSets(self):
         # All the packagesets are returned ordered alphabetically.
         ds_diff = self.factory.makeDistroSeriesDifference()
-
-        self.factory.makePackageset()
-        self.factory.makePackageset(
-            packages=[ds_diff.source_package_name],
-            distroseries=ds_diff.derived_series.parent_series)
-        pckset_names = [u'pack2', u'pack1', u'aa']
-        sorted_pckset_names = [u'aa', u'pack1', u'pack2']
-        with celebrity_logged_in('admin'):
-            for pckset_name in pckset_names:
-                ps = self.factory.makePackageset(
-                    name=pckset_name,
-                    packages=[ds_diff.source_package_name],
-                    distroseries=ds_diff.derived_series)
+        packagesets = self._setup_packagesets(
+            ds_diff, ds_diff.derived_series, 5)
         self.assertEquals(
-            sorted_pckset_names,
-            [ps.name for ps in ds_diff.getPackageSets()])
+            sorted([packageset.name for packageset in packagesets]),
+            [packageset.name for packageset in ds_diff.getPackageSets()])
 
     def test_blacklist_not_public(self):
         # Differences cannot be blacklisted without edit access.

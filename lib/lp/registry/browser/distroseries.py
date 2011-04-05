@@ -856,11 +856,10 @@ class DistroSeriesLocalDifferences(DistroSeriesDifferenceBase,
             "versions (and the diff if necessary) before syncing the %s "
             'version (<a href="/+help/soyuz/derived-series-syncing.html" '
             'target="help">Read more about syncing from the parent series'
-            '</a>).' % (
-                self.context.displayname,
-                self.context.parent_series.fullseriesname,
-                self.context.parent_series.displayname,
-                ))
+            '</a>).',
+            self.context.displayname,
+            self.context.parent_series.fullseriesname,
+            self.context.parent_series.displayname).escapedtext
 
     @property
     def label(self):
@@ -906,11 +905,10 @@ class DistroSeriesMissingPackages(DistroSeriesDifferenceBase,
         return structured(
             "Packages that are listed here are those that have been added to "
             "the specific packages %s that were used to create %s. They are "
-            "listed here so you can consider including them in %s." % (
-                self.context.parent_series.displayname,
-                self.context.displayname,
-                self.context.displayname,
-                ))
+            "listed here so you can consider including them in %s.",
+            self.context.parent_series.displayname,
+            self.context.displayname,
+            self.context.displayname).escapedtext
 
     @property
     def label(self):

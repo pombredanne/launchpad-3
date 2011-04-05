@@ -73,50 +73,50 @@
                    tal:content="parent_source_pub/source_package_name">Foo</a>
               </td>
               <td tal:condition="view/show_parent_version">
-                <a tal:condition="difference/@@/parent_source_package_url"
-                   tal:attributes="href difference/@@/parent_source_package_url"
+                <a tal:condition="difference/parent_source_package_release"
+                   tal:attributes="href difference/parent_source_package_release/fmt:url"
                    class="parent-version">
                    <tal:replace
                         replace="difference/parent_source_version"/></a>
-                <span tal:condition="not: difference/@@/parent_source_package_url"
+                <span tal:condition="not: difference/parent_source_package_release"
                       class="parent-version"
                       tal:content="difference/parent_source_version">
                 </span>
               </td>
               <td tal:condition="view/show_derived_version">
-                <a tal:condition="difference/@@/source_package_url"
-                   tal:attributes="href difference/@@/source_package_url"
+                <a tal:condition="difference/source_package_release"
+                   tal:attributes="href difference/source_package_release/fmt:url"
                    class="derived-version">
                    <tal:replace
                         replace="difference/source_version"/></a>
-                <span tal:condition="not: difference/@@/source_package_url"
+                <span tal:condition="not: difference/source_package_release"
                     class="derived-version"
                     tal:content="difference/source_version">
                 </span>
                </td>
               <td tal:condition="view/show_parent_packagesets"
                   class="parent-packagesets">
-                <tal:replace replace="difference/@@/parent_packageset_names"/>
+                <tal:replace replace="difference/getParentPackageSetsNames"/>
               </td>
               <td tal:condition="view/show_packagesets"
                   class="packagesets">
-                <tal:replace replace="difference/@@/packageset_names" />
+                <tal:replace replace="difference/getPackageSetsNames" />
               </td>
               <td>
-                  <tal:parent condition="not: view/show_derived_version">
-                    <span tal:attributes="title difference/parent_source_pub/datepublished/fmt:datetime"
-                          tal:content="difference/parent_source_pub/datepublished/fmt:approximatedate">2005-09-16</span>
-                    <tal:signer condition="parent_source_pub/sourcepackagerelease/uploader">
-                      by <a tal:replace="structure parent_source_pub/sourcepackagerelease/uploader/fmt:link">Steph Smith</a>
-                    </tal:signer>
-                  </tal:parent>
-                  <tal:derived condition="view/show_derived_version">
-                    <span tal:attributes="title difference/source_pub/datepublished/fmt:datetime"
-                          tal:content="difference/source_pub/datepublished/fmt:approximatedate">2005-09-16</span>
-                    <tal:signer condition="source_pub/sourcepackagerelease/uploader">
-                      by <a tal:replace="structure source_pub/sourcepackagerelease/uploader/fmt:link">Steph Smith</a>
-                    </tal:signer>
-                  </tal:derived>
+                <tal:parent condition="not: view/show_derived_version">
+                  <span tal:attributes="title difference/parent_source_pub/datepublished/fmt:datetime"
+                        tal:content="difference/parent_source_pub/datepublished/fmt:approximatedate">2005-09-16</span>
+                  <tal:signer condition="parent_source_pub/sourcepackagerelease/uploader">
+                    by <a tal:replace="structure parent_source_pub/sourcepackagerelease/uploader/fmt:link">Steph Smith</a>
+                  </tal:signer>
+                </tal:parent>
+                <tal:derived condition="view/show_derived_version">
+                  <span tal:attributes="title difference/source_pub/datepublished/fmt:datetime"
+                        tal:content="difference/source_pub/datepublished/fmt:approximatedate">2005-09-16</span>
+                  <tal:signer condition="source_pub/sourcepackagerelease/uploader">
+                    by <a tal:replace="structure source_pub/sourcepackagerelease/uploader/fmt:link">Steph Smith</a>
+                  </tal:signer>
+                </tal:derived>
               </td>
               <td>
                 <tal:comment tal:define="comment python:difference.getComments().first();"

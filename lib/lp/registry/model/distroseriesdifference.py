@@ -22,6 +22,7 @@ from storm.locals import (
     Reference,
     Storm,
     )
+from storm.zope.interfaces import IResultSet
 from zope.component import getUtility
 from zope.interface import (
     classProvides,
@@ -56,8 +57,14 @@ from lp.services.propertycache import (
     cachedproperty,
     clear_property_cache,
     )
-from lp.soyuz.enums import PackageDiffStatus
+from lp.soyuz.enums import (
+    PackageDiffStatus,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.model.distroseriessourcepackagerelease import (
+    DistroSeriesSourcePackageRelease,
+    )
 
 
 class DistroSeriesDifference(Storm):
@@ -252,13 +259,33 @@ class DistroSeriesDifference(Storm):
 
     def getParentPackageSets(self):
         """See `IDistroSeriesDifference`."""
-        if self.derived_series is not None and (
-            self.derived_series.parent_series is not None):
-                return getUtility(IPackagesetSet).setsIncludingSource(
-                    self.source_package_name,
-                    self.derived_series.parent_series)
+        has_parent_series = self.derived_series is not None and (
+            self.derived_series.parent_series is not None)
+        if has_parent_series:
+            return getUtility(IPackagesetSet).setsIncludingSource(
+                self.source_package_name,
+                self.derived_series.parent_series)
         else:
             return []
+
+    @property
+    def getParentPackageSetsNames(self):
+        """See `IDistroSeriesDifference`."""
+        packagesets = self.getParentPackageSets()
+        return self._format_packageset(packagesets)
+
+    @property
+    def getPackageSetsNames(self):
+        """See `IDistroSeriesDifference`."""
+        packagesets = self.getPackageSets()
+        return self._format_packageset(packagesets)
+
+    def _format_packageset(self, packagesets):
+        """Format a list of packagesets to display in the UI."""
+        if packagesets is not None:
+            return ', '.join([p.name for p in packagesets])
+        else:
+            return None
 
     @property
     def package_diff_status(self):
@@ -290,6 +317,34 @@ class DistroSeriesDifference(Storm):
             return pubs[0]
         except IndexError:
             return None
+
+    @property
+    def parent_source_package_release(self):
+        return self._package_release(
+            self.derived_series.parent_series,
+            self.parent_source_version)
+
+    @property
+    def source_package_release(self):
+        return self._package_release(
+            self.derived_series,
+            self.source_version)
+
+    def _package_release(self, distro_series, version):
+        pubs = distro_series.main_archive.getPublishedSources(
+            name=self.source_package_name.name,
+            version=version,
+            status=PackagePublishingStatus.PUBLISHED,
+            distroseries=distro_series,
+            exact_match=True)
+
+        # There is only one or zero published package.
+        pub = IResultSet(pubs).one()
+        if pub is None:
+            return None
+        else:
+            return DistroSeriesSourcePackageRelease(
+                distro_series, pub.sourcepackagerelease)
 
     def update(self):
         """See `IDistroSeriesDifference`."""

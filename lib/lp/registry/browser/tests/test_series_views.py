@@ -728,8 +728,7 @@ class DistroSerieMissingPackageDiffsTestCase(TestCaseWithFactory):
         # The view fetches the differences with type
         # MISSING_FROM_DERIVED_SERIES.
         derived_series = self.factory.makeDistroSeries(
-            name='derilucid', parent_series=self.factory.makeDistroSeries(
-                name='lucid'))
+            parent_series=self.factory.makeDistroSeries())
 
         missing_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
         missing_blacklisted_diff = self.factory.makeDistroSeriesDifference(
@@ -747,6 +746,25 @@ class DistroSerieMissingPackageDiffsTestCase(TestCaseWithFactory):
 
         self.assertContentEqual(
             [missing_diff], view.cached_differences.batch)
+
+    def test_missingpackages_differences_empty(self):
+        # The view is empty if there is no differences with type
+        # MISSING_FROM_DERIVED_SERIES.
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+
+        not_missing_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
+
+        missing_diff = self.factory.makeDistroSeriesDifference(
+            difference_type=not_missing_type,
+            derived_series=derived_series,
+            status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION)
+
+        view = create_initialized_view(
+            derived_series, '+missingpackages')
+
+        self.assertContentEqual(
+            [], view.cached_differences.batch)
 
 
 class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory):
