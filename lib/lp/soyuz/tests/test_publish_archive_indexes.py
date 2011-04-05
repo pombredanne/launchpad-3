@@ -14,9 +14,7 @@ from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 
 
 def get_field(stanza_fields, name):
-    for key, value in stanza_fields.fields:
-        if key == name:
-            return value
+    return dict(stanza_fields.fields).get(name)
 
 
 class TestNativeArchiveIndexes(TestNativePublishingBase):
