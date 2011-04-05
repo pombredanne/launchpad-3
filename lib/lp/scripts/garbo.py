@@ -1058,7 +1058,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
         threads = set()
         for count in range(0, self.options.threads):
             thread = threading.Thread(
-                target=worker,name='Worker-%d' % (count+1,))
+                target=worker, name='Worker-%d' % (count+1,))
             thread.start()
             threads.add(thread)
 
