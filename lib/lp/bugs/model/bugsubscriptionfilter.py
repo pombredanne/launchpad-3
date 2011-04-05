@@ -4,12 +4,18 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['BugSubscriptionFilter']
+__all__ = [
+    'BugSubscriptionFilter',
+    'BugSubscriptionFilterMute',
+    ]
+
+import pytz
 
 from itertools import chain
 
 from storm.locals import (
     Bool,
+    DateTime,
     Int,
     Reference,
     SQL,
@@ -18,12 +24,16 @@ from storm.locals import (
     )
 from zope.interface import implements
 
+from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad import searchbuilder
 from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.bugs.enum import BugNotificationLevel
-from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
+from lp.bugs.interfaces.bugsubscriptionfilter import (
+    IBugSubscriptionFilter,
+    IBugSubscriptionFilterMute,
+    )
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
@@ -35,6 +45,7 @@ from lp.bugs.model.bugsubscriptionfilterstatus import (
     BugSubscriptionFilterStatus,
     )
 from lp.bugs.model.bugsubscriptionfiltertag import BugSubscriptionFilterTag
+from lp.registry.interfaces.person import validate_person
 from lp.services.database.stormbase import StormBase
 
 
@@ -237,3 +248,23 @@ class BugSubscriptionFilter(StormBase):
             # There are no other filters.  We can delete the parent
             # subscription.
             self.structural_subscription.delete()
+
+
+class BugSubscriptionFilterMute(StormBase):
+    """A filter to specialize a *structural* subscription."""
+
+    implements(IBugSubscriptionFilterMute)
+
+    __storm_table__ = "BugSubscriptionFilterMute"
+
+    person_id = Int("person", allow_none=False, validator=validate_person)
+    person = Reference(person_id, "Person.id")
+
+    filter_id = Int("filter", allow_none=False)
+    filter = Reference(filter_id, "StructuralSubscription.id")
+
+    __storm_primary__ = 'person_id', 'filter_id'
+
+    date_created = DateTime(
+        "date_created", allow_none=False, default=UTC_NOW,
+        tzinfo=pytz.UTC)

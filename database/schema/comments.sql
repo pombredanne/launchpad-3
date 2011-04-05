@@ -231,6 +231,12 @@ COMMENT ON COLUMN BugSubscriptionFilterTag.filter IS 'The subscription filter of
 COMMENT ON COLUMN BugSubscriptionFilterTag.tag IS 'A bug tag.';
 COMMENT ON COLUMN BugSubscriptionFilterTag.include IS 'If True, send only messages for bugs having this tag, else send only messages for bugs which do not have this tag.';
 
+-- BugSubscriptionFilterMute
+COMMENT ON TABLE BugSubscriptionFilterMute IS 'Mutes for subscription filters.';
+COMMENT ON COLUMN BugSubscriptionFilterMute.person IS 'The person that muted their subscription to this filter.';
+COMMENT ON COLUMN BugSubscriptionFilterMute.filter IS 'The subscription filter of this record';
+COMMENT ON COLUMN BugSubscriptionFilterMute.date_created IS 'The date at which this mute was created.';
+
 -- BugTag
 COMMENT ON TABLE BugTag IS 'Attaches simple text tags to a bug.';
 COMMENT ON COLUMN BugTag.bug IS 'The bug the tags is attached to.';

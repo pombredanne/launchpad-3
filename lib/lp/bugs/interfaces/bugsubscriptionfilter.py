@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     "IBugSubscriptionFilter",
+    "IBugSubscriptionFilterMute",
     ]
 
 
@@ -19,6 +20,7 @@ from zope.interface import Interface
 from zope.schema import (
     Bool,
     Choice,
+    Datetime,
     FrozenSet,
     Int,
     Text,
@@ -33,7 +35,10 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscription,
     )
-from lp.services.fields import SearchTag
+from lp.services.fields import (
+    PersonChoice,
+    SearchTag,
+    )
 
 
 class IBugSubscriptionFilterAttributes(Interface):
@@ -109,3 +114,17 @@ class IBugSubscriptionFilter(
     IBugSubscriptionFilterAttributes, IBugSubscriptionFilterMethods):
     """A bug subscription filter."""
     export_as_webservice_entry()
+
+
+class IBugSubscriptionFilterMute(Interface):
+    """A mute on an IBugSubscriptionFilter."""
+
+    person = PersonChoice(
+        title=_('Person'), required=True, vocabulary='ValidPersonOrTeam',
+        readonly=True, description=_("The person subscribed."))
+    filter = Reference(
+        IBugSubscriptionFilter, title=_("Subscription filter"),
+        description=_("The subscription filter to be muted."))
+    date_created = Datetime(
+        title=_("The date on which the mute was created."), required=False,
+        readonly=True)
