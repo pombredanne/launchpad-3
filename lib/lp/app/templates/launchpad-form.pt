@@ -105,7 +105,7 @@
                   error_class python:error and 'error' or None;
                   show_optional python:view.showOptionalMarker(field_name);
                   widget_class widget/widget_class|nothing;
-                  widget_help_link widget_help_link|nothing">
+                  widget_help_link widget_help_link|widget/help_link|nothing">
     <tal:is-visible condition="widget/visible">
       <tr
         tal:condition="python: view.isSingleLineLayout(field_name)"
@@ -124,7 +124,7 @@
             <tal:help-link condition="widget_help_link">
               <a tal:attributes="href widget_help_link"
                  target="help" class="sprite maybe">
-                &nbsp;<span class="invisible-link">Tag help</span>
+                &nbsp;<span class="invisible-link">(?)</span>
               </a>
             </tal:help-link>
           </div>
@@ -148,6 +148,12 @@
             <span tal:condition="show_optional"
                   class="fieldRequired">(Optional)</span>
             </tal:showlabel>
+            <tal:help-link condition="widget_help_link">
+              <a tal:attributes="href widget_help_link"
+                 target="help" class="sprite maybe">
+                &nbsp;<span class="invisible-link">(?)</span>
+              </a>
+            </tal:help-link>
             <div
               tal:condition="error"
               tal:content="structure error"
@@ -170,7 +176,7 @@
           <tal:help-link condition="widget_help_link">
             <a tal:attributes="href widget_help_link"
                target="help" class="sprite maybe">
-              &nbsp;<span class="invisible-link">Tag help</span>
+              &nbsp;<span class="invisible-link">(?)</span>
             </a>
           </tal:help-link>
           <div
