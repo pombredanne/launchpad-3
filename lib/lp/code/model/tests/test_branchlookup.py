@@ -121,16 +121,19 @@ class TestGetIdAndTrailingPath(TestCaseWithFactory):
         self.assertEqual((branch.id, '/' + path), result)
 
     def test_branch_id_alias(self):
+        # The prefix by itself returns no branch, and no path.
         path = BRANCH_ID_ALIAS_PREFIX
         result = self.branch_set.getIdAndTrailingPath('/' + path)
         self.assertEqual((None, None), result)
 
     def test_branch_id_alias_not_int(self):
+        # The prefix followed by a non-integer returns no branch and no path.
         path = BRANCH_ID_ALIAS_PREFIX + '/foo'
         result = self.branch_set.getIdAndTrailingPath('/' + path)
         self.assertEqual((None, None), result)
 
     def test_branch_id_alias_private(self):
+        # Private branches are not found at all (this is for anonymous access)
         owner = self.factory.makePerson()
         branch = self.factory.makeAnyBranch(owner=owner, private=True)
         with person_logged_in(owner):
@@ -139,18 +142,21 @@ class TestGetIdAndTrailingPath(TestCaseWithFactory):
         self.assertEqual((None, None), result)
 
     def test_branch_id_alias_public(self):
+        # Public branches can be accessed.
         branch = self.factory.makeAnyBranch()
         path = '/%s/%s' % (BRANCH_ID_ALIAS_PREFIX, branch.id)
         result = self.branch_set.getIdAndTrailingPath(path)
         self.assertEqual((branch.id, ''), result)
 
     def test_branch_id_alias_public_slash(self):
+        # A trailing slash is returned as the extra path.
         branch = self.factory.makeAnyBranch()
         path = '/%s/%s/' % (BRANCH_ID_ALIAS_PREFIX, branch.id)
         result = self.branch_set.getIdAndTrailingPath(path)
         self.assertEqual((branch.id, '/'), result)
 
     def test_branch_id_alias_public_with_path(self):
+        # All the path after the number is returned as the trailing path.
         branch = self.factory.makeAnyBranch()
         path = '/%s/%s/foo' % (BRANCH_ID_ALIAS_PREFIX, branch.id)
         result = self.branch_set.getIdAndTrailingPath(path)
