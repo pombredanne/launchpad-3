@@ -375,6 +375,14 @@ class StructuralSubscriptionMenuMixin:
         text = 'Subscribe to bug mail'
         return Link('#', text, icon='add', hidden=True, enabled=enabled)
 
+    @enabled_with_permission('launchpad.AnyPerson')
+    def edit_bug_mail(self):
+        sst = self._getSST()
+        enabled = sst.userCanAlterBugSubscription(self.user, self.user)
+        text = 'Edit bug mail'
+        return Link('+subscriptions', text, icon='edit', site='bugs',
+                    enabled=enabled)
+
 
 def expose_structural_subscription_data_to_js(context, request,
                                               user, subscriptions=None):
@@ -417,20 +425,14 @@ def expose_user_administered_teams_to_js(request, user, context,
     IJSONRequestCache(request).objects['administratedTeams'] = info
 
 
-def person_is_team_admin(person, team):
-    answer = False
-    admins = team.adminmembers
-    for admin in admins:
-        if person.inTeam(admin):
-            answer = True
-            break
-    return answer
-
-
 def expose_user_subscriptions_to_js(user, subscriptions, request):
     """Make the user's subscriptions available to JavaScript."""
     info = {}
     api_request = IWebServiceClientRequest(request)
+    if user is None:
+        administered_teams = []
+    else:
+        administered_teams = user.getAdministratedTeams()
     for subscription in subscriptions:
         target = subscription.target
         record = info.get(target)
@@ -444,7 +446,7 @@ def expose_user_subscriptions_to_js(user, subscriptions, request):
         for filter in subscription.bug_filters:
             is_team = subscriber.isTeam()
             user_is_team_admin = (is_team and
-                                  person_is_team_admin(user, subscriber))
+                                  subscriber in administered_teams)
             record['filters'].append(dict(
                 filter=filter,
                 subscriber_link=absoluteURL(subscriber, api_request),

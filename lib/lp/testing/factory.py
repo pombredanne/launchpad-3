@@ -101,6 +101,7 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.sorting import sorted_version_numbers
 from lp.app.enums import ServiceUsage
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.uploadpolicy import BuildDaemonUploadPolicy
 from lp.blueprints.enums import (
@@ -2221,8 +2222,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return library_file_alias
 
     def makeDistribution(self, name=None, displayname=None, owner=None,
-                         members=None, title=None, aliases=None,
-                         bug_supervisor=None):
+                         registrant=None, members=None, title=None,
+                         aliases=None, bug_supervisor=None,
+                         publish_root_dir=None, publish_base_url=None,
+                         publish_copy_base_url=None, no_pubconf=False):
         """Make a new distribution."""
         if name is None:
             name = self.getUniqueString(prefix="distribution")
@@ -2233,23 +2236,30 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         description = self.getUniqueString()
         summary = self.getUniqueString()
         domainname = self.getUniqueString()
+        if registrant is None:
+            registrant = self.makePerson()
         if owner is None:
             owner = self.makePerson()
         if members is None:
             members = self.makeTeam(owner)
         distro = getUtility(IDistributionSet).new(
             name, displayname, title, description, summary, domainname,
-            members, owner)
+            members, owner, registrant)
         if aliases is not None:
             removeSecurityProxy(distro).setAliases(aliases)
         if bug_supervisor is not None:
             naked_distro = removeSecurityProxy(distro)
             naked_distro.bug_supervisor = bug_supervisor
+        if not no_pubconf:
+            self.makePublisherConfig(
+                distro, publish_root_dir, publish_base_url,
+                publish_copy_base_url)
         return distro
 
     def makeDistroRelease(self, distribution=None, version=None,
                           status=SeriesStatus.DEVELOPMENT,
-                          parent_series=None, name=None, displayname=None):
+                          parent_series=None, name=None, displayname=None,
+                          registrant=None):
         """Make a new distro release."""
         if distribution is None:
             distribution = self.makeDistribution()
@@ -2259,6 +2269,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             displayname = name.capitalize()
         if version is None:
             version = "%s.0" % self.getUniqueInteger()
+        if registrant is None:
+            registrant = distribution.owner
 
         # We don't want to login() as the person used to create the product,
         # so we remove the security proxy before creating the series.
@@ -2269,7 +2281,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             displayname=displayname,
             title=self.getUniqueString(), summary=self.getUniqueString(),
             description=self.getUniqueString(),
-            parent_series=parent_series, owner=distribution.owner)
+            parent_series=parent_series, registrant=registrant)
         series.status = status
 
         return ProxyFactory(series)
@@ -3605,7 +3617,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(ISectionSet).ensure(name)
 
     def makePackageset(self, name=None, description=None, owner=None,
-                       packages=(), distroseries=None):
+                       packages=(), distroseries=None, related_set=None):
         """Make an `IPackageset`."""
         if name is None:
             name = self.getUniqueString(u'package-set-name')
@@ -3618,7 +3630,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         ps_set = getUtility(IPackagesetSet)
         package_set = run_with_login(
             techboard.teamowner,
-            lambda: ps_set.new(name, description, owner, distroseries))
+            lambda: ps_set.new(
+                name, description, owner, distroseries, related_set))
         run_with_login(owner, lambda: package_set.add(packages))
         return package_set
 
@@ -3904,6 +3917,20 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if description is None:
             description = self.getUniqueString()
         return getUtility(ICveSet).new(sequence, description, cvestate)
+
+    def makePublisherConfig(self, distribution=None, root_dir=None,
+                            base_url=None, copy_base_url=None):
+        """Create a new `PublisherConfig` record."""
+        if distribution is None:
+            distribution = self.makeDistribution()
+        if root_dir is None:
+            root_dir = self.getUniqueUnicode()
+        if base_url is None:
+            base_url = self.getUniqueUnicode()
+        if copy_base_url is None:
+            copy_base_url = self.getUniqueUnicode()
+        return getUtility(IPublisherConfigSet).new(
+            distribution, root_dir, base_url, copy_base_url)
 
 
 # Some factory methods return simple Python types. We don't add

@@ -87,7 +87,10 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
-from canonical.launchpad.database.librarian import LibraryFileAlias
+from canonical.launchpad.database.librarian import (
+    LibraryFileAlias,
+    LibraryFileContent,
+    )
 from canonical.launchpad.database.message import (
     Message,
     MessageChunk,
@@ -449,7 +452,7 @@ class Bug(SQLBase):
         # value (in the absence of slices)
         return self._indexed_messages(include_content=True)
 
-    def _indexed_messages(self, include_content=False, include_parents=True):
+    def _indexed_messages(self, include_content=False, include_parents=False):
         """Get the bugs messages, indexed.
 
         :param include_content: If True retrieve the content for the messages
@@ -1784,7 +1787,7 @@ BugMessage""" % sqlvalues(self.id))
         bug_message_set = getUtility(IBugMessageSet)
         bug_message = bug_message_set.getByBugAndMessage(
             self, self.messages[comment_number])
-        bug_message.visible = visible
+        bug_message.message.visible = visible
 
     @cachedproperty
     def _known_viewers(self):
@@ -1935,10 +1938,11 @@ BugMessage""" % sqlvalues(self.id))
         # See bug 542274 for more details.
         store = Store.of(self)
         return store.find(
-            (BugAttachment, LibraryFileAlias),
+            (BugAttachment, LibraryFileAlias, LibraryFileContent),
             BugAttachment.bug == self,
-            BugAttachment.libraryfile == LibraryFileAlias.id,
-            LibraryFileAlias.content != None).order_by(BugAttachment.id)
+            BugAttachment.libraryfileID == LibraryFileAlias.id,
+            LibraryFileContent.id == LibraryFileAlias.contentID,
+            ).order_by(BugAttachment.id)
 
     @property
     def attachments(self):

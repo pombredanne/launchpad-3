@@ -227,8 +227,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     datereleased = UtcDateTimeCol(notNull=False, default=None)
     parent_series = ForeignKey(
         dbName='parent_series', foreignKey='DistroSeries', notNull=False)
-    owner = ForeignKey(
-        dbName='owner', foreignKey='Person',
+    registrant = ForeignKey(
+        dbName='registrant', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
@@ -252,6 +252,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         foreignKey="LanguagePack", dbName="language_pack_proposed",
         notNull=False, default=None)
     language_pack_full_export_requested = BoolCol(notNull=True, default=False)
+    backports_not_automatic = BoolCol(notNull=True, default=False)
 
     language_packs = SQLMultipleJoin(
         'LanguagePack', joinColumn='distroseries', orderBy='-date_exported')
@@ -394,6 +395,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def parent(self):
         """See `IDistroSeries`."""
         return self.distribution
+
+    @property
+    def owner(self):
+        """See `IDistroSeries`."""
+        return self.distribution.owner
 
     @property
     def sortkey(self):
@@ -1965,7 +1971,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             child = distribution.newSeries(
                 name=name, displayname=displayname, title=title,
                 summary=summary, description=description,
-                version=version, parent_series=None, owner=user)
+                version=version, parent_series=None, registrant=user)
             IStore(self).add(child)
         else:
             if child.parent_series is not None:

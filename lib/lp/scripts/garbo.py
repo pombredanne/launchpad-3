@@ -85,6 +85,7 @@ from lp.services.scripts.base import (
     LaunchpadCronScript,
     SilentLaunchpadScriptFailure,
     )
+from lp.services.session.model import SessionData
 from lp.soyuz.model.files import SourcePackageReleaseFile
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.interfaces.potemplate import IPOTemplateSet
@@ -124,9 +125,13 @@ class BulkPruner(TunableLoop):
     # from. Must be overridden.
     target_table_class = None
 
-    # The column name in target_table we use as the integer key. May be
-    # overridden.
+    # The column name in target_table we use as the key. The type must
+    # match that returned by the ids_to_prune_query and the
+    # target_table_key_type. May be overridden.
     target_table_key = 'id'
+
+    # SQL type of the target_table_key. May be overridden.
+    target_table_key_type = 'integer'
 
     # An SQL query returning a list of ids to remove from target_table.
     # The query must return a single column named 'id' and should not
@@ -136,12 +141,19 @@ class BulkPruner(TunableLoop):
     # See `TunableLoop`. May be overridden.
     maximum_chunk_size = 10000
 
+    def getStore(self):
+        """The master Store for the table we are pruning.
+
+        May be overridden.
+        """
+        return IMasterStore(self.target_table_class)
+
     _unique_counter = 0
 
     def __init__(self, log, abort_time=None):
         super(BulkPruner, self).__init__(log, abort_time)
 
-        self.store = IMasterStore(self.target_table_class)
+        self.store = self.getStore()
         self.target_table_name = self.target_table_class.__storm_table__
 
         self._unique_counter += 1
@@ -163,12 +175,14 @@ class BulkPruner(TunableLoop):
     def __call__(self, chunk_size):
         """See `ITunableLoop`."""
         result = self.store.execute("""
-            DELETE FROM %s WHERE %s IN (
+            DELETE FROM %s
+            WHERE %s IN (
                 SELECT id FROM
-                cursor_fetch('%s', %d) AS f(id integer))
-            """ % (
+                cursor_fetch('%s', %d) AS f(id %s))
+            """
+            % (
                 self.target_table_name, self.target_table_key,
-                self.cursor_name, chunk_size))
+                self.cursor_name, chunk_size, self.target_table_key_type))
         self._num_removed = result.rowcount
         transaction.commit()
 
@@ -182,9 +196,7 @@ class POTranslationPruner(BulkPruner):
 
     XXX bug=723596 StuartBishop: This job only needs to run once per month.
     """
-
     target_table_class = POTranslation
-
     ids_to_prune_query = """
         SELECT POTranslation.id AS id FROM POTranslation
         EXCEPT (
@@ -208,6 +220,68 @@ class POTranslationPruner(BulkPruner):
             UNION ALL SELECT msgstr5 FROM TranslationMessage
                 WHERE msgstr5 IS NOT NULL
             )
+        """
+
+
+class SessionPruner(BulkPruner):
+    """Base class for session removal."""
+
+    target_table_class = SessionData
+    target_table_key = 'client_id'
+    target_table_key_type = 'text'
+
+
+class AntiqueSessionPruner(SessionPruner):
+    """Remove sessions not accessed for 60 days"""
+
+    ids_to_prune_query = """
+        SELECT client_id AS id FROM SessionData
+        WHERE last_accessed < CURRENT_TIMESTAMP - CAST('60 days' AS interval)
+        """
+
+
+class UnusedSessionPruner(SessionPruner):
+    """Remove sessions older than 1 day with no authentication credentials."""
+
+    ids_to_prune_query = """
+        SELECT client_id AS id FROM SessionData
+        WHERE
+            last_accessed < CURRENT_TIMESTAMP - CAST('1 day' AS interval)
+            AND client_id NOT IN (
+                SELECT client_id
+                FROM SessionPkgData
+                WHERE
+                    product_id = 'launchpad.authenticateduser'
+                    AND key='logintime')
+        """
+
+
+class DuplicateSessionPruner(SessionPruner):
+    """Remove all but the most recent 6 authenticated sessions for a user.
+
+    We sometimes see users with dozens or thousands of authenticated
+    sessions. To limit exposure to replay attacks, we remove all but
+    the most recent 6 of them for a given user.
+    """
+
+    ids_to_prune_query = """
+        SELECT client_id AS id
+        FROM (
+            SELECT
+                sessiondata.client_id,
+                last_accessed,
+                rank() OVER pickle AS rank
+            FROM SessionData, SessionPkgData
+            WHERE
+                SessionData.client_id = SessionPkgData.client_id
+                AND product_id = 'launchpad.authenticateduser'
+                AND key='accountid'
+            WINDOW pickle AS (PARTITION BY pickle ORDER BY last_accessed DESC)
+            ) AS whatever
+        WHERE
+            rank > 6
+            AND last_accessed < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - CAST('1 hour' AS interval)
         """
 
 
@@ -1010,6 +1084,9 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         RevisionCachePruner,
         BugHeatUpdater,
         BugWatchScheduler,
+        AntiqueSessionPruner,
+        UnusedSessionPruner,
+        DuplicateSessionPruner,
         PopulateSPRChangelogs,
         ]
     experimental_tunable_loops = []

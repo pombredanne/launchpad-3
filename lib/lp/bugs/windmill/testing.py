@@ -17,6 +17,7 @@ class BugsWindmillLayer(BaseWindmillLayer):
 
     @classmethod
     def setUp(cls):
-        cls.base_url = cls.appserver_root_url('bugs')
+        cls.facet = 'bugs'
+        cls.base_url = cls.appserver_root_url(cls.facet)
         super(BugsWindmillLayer, cls).setUp()
 

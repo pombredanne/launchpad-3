@@ -14,13 +14,13 @@ from debian.changelog import (
     Version,
     )
 from lazr.enum import DBItem
+from sqlobject import StringCol
 from storm.expr import Desc
 from storm.locals import (
     And,
     Int,
     Reference,
     Storm,
-    Unicode,
     )
 from zope.component import getUtility
 from zope.interface import (
@@ -90,10 +90,10 @@ class DistroSeriesDifference(Storm):
                     enum=DistroSeriesDifferenceStatus)
     difference_type = DBEnum(name='difference_type', allow_none=False,
                              enum=DistroSeriesDifferenceType)
-    source_version = Unicode(name='source_version', allow_none=True)
-    parent_source_version = Unicode(name='parent_source_version',
-                                    allow_none=True)
-    base_version = Unicode(name='base_version', allow_none=True)
+    source_version = StringCol(dbName='source_version', notNull=False)
+    parent_source_version = StringCol(dbName='parent_source_version',
+                                      notNull=False)
+    base_version = StringCol(dbName='base_version', notNull=False)
 
     @staticmethod
     def new(derived_series, source_package_name):
@@ -119,7 +119,8 @@ class DistroSeriesDifference(Storm):
         distro_series,
         difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
         source_package_name_filter=None,
-        status=None):
+        status=None,
+        child_version_higher=False):
         """See `IDistroSeriesDifferenceSource`."""
         if status is None:
             status = (
@@ -133,11 +134,17 @@ class DistroSeriesDifference(Storm):
             DistroSeriesDifference.difference_type == difference_type,
             DistroSeriesDifference.status.is_in(status),
         ]
+
         if source_package_name_filter:
             conditions.extend([
                 DistroSeriesDifference.source_package_name ==
                     SourcePackageName.id,
                 SourcePackageName.name == source_package_name_filter])
+
+        if child_version_higher:
+            conditions.extend([
+                DistroSeriesDifference.source_version >
+                    DistroSeriesDifference.parent_source_version])
 
         return IStore(DistroSeriesDifference).find(
             DistroSeriesDifference,
@@ -400,10 +407,14 @@ class DistroSeriesDifference(Storm):
             raise DistroSeriesDifferenceError(
                 "A derived, parent and base version are required to "
                 "generate package diffs.")
+        if self.status == DistroSeriesDifferenceStatus.RESOLVED:
+            raise DistroSeriesDifferenceError(
+                "Can not generate package diffs for a resolved difference.")
         base_spr = self.base_source_pub.sourcepackagerelease
         derived_spr = self.source_pub.sourcepackagerelease
         parent_spr = self.parent_source_pub.sourcepackagerelease
-        self.package_diff = base_spr.requestDiffTo(
-            requestor, to_sourcepackagerelease=derived_spr)
+        if self.source_version != self.base_version:
+            self.package_diff = base_spr.requestDiffTo(
+                requestor, to_sourcepackagerelease=derived_spr)
         self.parent_package_diff = base_spr.requestDiffTo(
             requestor, to_sourcepackagerelease=parent_spr)
