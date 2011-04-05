@@ -23,6 +23,7 @@ from lp.testing.windmill.constants import (
     PAGE_LOAD,
 )
 from lp.testing.windmill.widgets import (
+    OnPageWidget,
     search_and_select_picker_widget,
 )
 from lp.translations.interfaces.translations import (
@@ -66,7 +67,9 @@ class TestSharingDetails(WindmillTestCase):
         self.client.click(
             xpath='//*[@id="upstream-sync-incomplete-picker"]/a')
         self.client.click(id='field.translations_autoimport_mode.2')
-        self.client.click(xpath='//input[@value="Submit"]')
+        overlay = OnPageWidget(self.client, 'yui3-lazr-formoverlay')
+        self.client.click(
+            xpath=overlay.visible_xpath + '//input[@value="Submit"]')
         self.client.waits.forElementProperty(
             id='upstream-sync-incomplete', option='className|sprite no unseen',
             timeout=FOR_ELEMENT)

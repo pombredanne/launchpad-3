@@ -72,8 +72,10 @@
             </li>
             <li tal:attributes="class view/translations_disabled_class"
                 id="translation-incomplete">
-              Translations are not enabled on the upstream project.
-              <a tal:replace="structure view/configure_translations_link_unconfigured/escapedtext" />
+                Translations are not enabled on the upstream project.
+              <span id="translation-incomplete-picker">
+                  <a tal:replace="structure view/configure_translations_link_unconfigured/escapedtext" />
+              </span>
             </li>
             <li tal:attributes="class view/translations_enabled_class"
                 id="translation-complete">
