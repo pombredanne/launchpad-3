@@ -45,7 +45,7 @@ class TestMakeStoryTest(unittest.TestCase):
         bar_test, story = iter_suite_tests(suite)
 
         # The unnumbered file appears as an independent test.
-        self.assertEqual(os.path.basename(bar_test.id()), 'xx-bar_txt')
+        self.assertEqual(os.path.basename(bar_test.id()), 'xx-bar.txt')
 
         # The two numbered tests become a story, which appears as a
         # single test case rather than a test suite.

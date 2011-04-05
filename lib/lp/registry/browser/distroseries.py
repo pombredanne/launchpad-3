@@ -25,7 +25,6 @@ from zope.formlib import form
 from zope.interface import Interface
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import (
-    Bool,
     Choice,
     List,
     TextLine,
@@ -70,6 +69,7 @@ from lp.app.errors import NotFoundError
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadDropdownWidget,
+    LaunchpadRadioWidget,
     )
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin,
@@ -195,7 +195,6 @@ class DistroSeriesOverviewMenu(
     @property
     def links(self):
         links = ['edit',
-                 'reassign',
                  'driver',
                  'answers',
                  'packaging',
@@ -219,11 +218,6 @@ class DistroSeriesOverviewMenu(
         text = 'Appoint driver'
         summary = 'Someone with permission to set goals for this series'
         return Link('+driver', text, summary, icon='edit')
-
-    @enabled_with_permission('launchpad.Admin')
-    def reassign(self):
-        text = 'Change registrant'
-        return Link('+reassign', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def create_milestone(self):
@@ -523,9 +517,9 @@ class DistroSeriesAddView(LaunchpadFormView):
     @action(_('Create Series'), name='create')
     def createAndAdd(self, action, data):
         """Create and add a new Distribution Series"""
-        owner = getUtility(ILaunchBag).user
+        registrant = getUtility(ILaunchBag).user
 
-        assert owner is not None
+        assert registrant is not None
         distroseries = self.context.newSeries(
             name=data['name'],
             displayname=data['displayname'],
@@ -534,7 +528,7 @@ class DistroSeriesAddView(LaunchpadFormView):
             description=data['description'],
             version=data['version'],
             parent_series=data['parent_series'],
-            owner=owner)
+            registrant=registrant)
         notify(ObjectCreatedEvent(distroseries))
         self.next_url = canonical_url(distroseries)
         return distroseries
@@ -599,6 +593,32 @@ class DistroSeriesPackagesView(LaunchpadView):
         return navigator
 
 
+# A simple vocabulary for package filtering on the source package
+# differences page
+NON_BLACKLISTED = 'non-blacklisted'
+BLACKLISTED = 'blacklisted'
+HIGHER_VERSION_THAN_PARENT = 'higher-than-parent'
+RESOLVED = 'resolved'
+
+DEFAULT_PACKAGE_TYPE = NON_BLACKLISTED
+
+
+def make_package_type_vocabulary(parent_name):
+    return SimpleVocabulary((
+        SimpleTerm(
+            NON_BLACKLISTED, NON_BLACKLISTED, 'Non blacklisted packages'),
+        SimpleTerm(BLACKLISTED, BLACKLISTED, 'Blacklisted packages'),
+        SimpleTerm(
+            HIGHER_VERSION_THAN_PARENT,
+            HIGHER_VERSION_THAN_PARENT,
+            "Blacklisted packages with a higher version than in '%s'"
+                % parent_name),
+        SimpleTerm(
+            RESOLVED,
+            RESOLVED,
+            "Resolved packages")))
+
+
 class DistroSeriesNeedsPackagesView(LaunchpadView):
     """A View to show series package to upstream package relationships."""
 
@@ -618,10 +638,6 @@ class IDifferencesFormSchema(Interface):
     name_filter = TextLine(
         title=_("Package name contains"), required=False)
 
-    include_blacklisted_filter = Bool(
-        title=_("include blacklisted packages"),
-        required=False, default=False)
-
     selected_differences = List(
         title=_('Selected differences'),
         value_type=Choice(vocabulary=SimpleVocabulary([])),
@@ -634,6 +650,7 @@ class DistroSeriesLocalDifferences(LaunchpadFormView, PackageCopyingMixin):
     schema = IDifferencesFormSchema
     field_names = ['selected_differences']
     custom_widget('selected_differences', LabeledMultiCheckBoxWidget)
+    custom_widget('package_type', LaunchpadRadioWidget)
 
     page_title = 'Local package differences'
 
@@ -649,6 +666,7 @@ class DistroSeriesLocalDifferences(LaunchpadFormView, PackageCopyingMixin):
                 self.context.parent_series.displayname,
                 self.context.displayname,
                 ))
+
         super(DistroSeriesLocalDifferences, self).initialize()
 
     @property
@@ -660,6 +678,14 @@ class DistroSeriesLocalDifferences(LaunchpadFormView, PackageCopyingMixin):
                 self.context.parent_series.displayname,
                 ))
 
+    def setupPackageFilterRadio(self):
+        return form.Fields(Choice(
+            __name__='package_type',
+            vocabulary=make_package_type_vocabulary(
+                self.context.parent_series.displayname),
+            default=DEFAULT_PACKAGE_TYPE,
+            required=True))
+
     def setUpFields(self):
         """Add the selected differences field.
 
@@ -667,6 +693,9 @@ class DistroSeriesLocalDifferences(LaunchpadFormView, PackageCopyingMixin):
         for its own vocabulary, we set it up after all the others.
         """
         super(DistroSeriesLocalDifferences, self).setUpFields()
+        self.form_fields = (
+            self.setupPackageFilterRadio() +
+            self.form_fields)
         check_permission('launchpad.Edit', self.context)
         terms = [
             SimpleTerm(diff, diff.source_package_name.name,
@@ -736,33 +765,44 @@ class DistroSeriesLocalDifferences(LaunchpadFormView, PackageCopyingMixin):
             return None
 
     @property
-    def specified_include_blacklisted_filter(self):
-        """If specified, return the 'blacklisted' filter from the GET form
+    def specified_package_type(self):
+        """If specified, return the package type filter from the GET form
         data.
         """
-        include_blacklisted_filter = self.request.query_string_params.get(
-            'field.include_blacklisted_filter')
-
-        if include_blacklisted_filter and include_blacklisted_filter[0]:
-            return include_blacklisted_filter[0]
+        package_type = self.request.query_string_params.get(
+            'field.package_type')
+        if package_type and package_type[0]:
+            return package_type[0]
         else:
-            return None
+            return DEFAULT_PACKAGE_TYPE
 
     @cachedproperty
     def cached_differences(self):
         """Return a batch navigator of filtered results."""
-        if self.specified_include_blacklisted_filter:
-            status=(
-                DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
-                DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
-        else:
+        if self.specified_package_type == NON_BLACKLISTED:
             status=(
                 DistroSeriesDifferenceStatus.NEEDS_ATTENTION,)
+            child_version_higher = False
+        elif self.specified_package_type == BLACKLISTED:
+            status=(
+                DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
+            child_version_higher = False
+        elif self.specified_package_type == HIGHER_VERSION_THAN_PARENT:
+            status=(
+                DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
+            child_version_higher = True
+        elif self.specified_package_type == RESOLVED:
+            status=DistroSeriesDifferenceStatus.RESOLVED
+            child_version_higher = False
+        else:
+            raise AssertionError('specified_package_type unknown')
+
         differences = getUtility(
             IDistroSeriesDifferenceSource).getForDistroSeries(
                 self.context,
                 source_package_name_filter=self.specified_name_filter,
-                status=status)
+                status=status,
+                child_version_higher=child_version_higher)
         return BatchNavigator(differences, self.request)
 
     @cachedproperty

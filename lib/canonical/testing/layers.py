@@ -1985,6 +1985,7 @@ class BaseWindmillLayer(AppServerLayer):
     http://bugs.launchpad.dev:8085/).
     """
 
+    facet = None
     base_url = None
     shell_objects = None
     config_file = None
