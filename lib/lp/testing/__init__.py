@@ -793,7 +793,8 @@ class WindmillTestCase(TestCaseWithFactory):
             url = obj
         else:
             url = canonical_url(
-                obj, view_name=view_name, force_local_path=True)
+                obj, view_name=view_name, rootsite=self.layer.facet,
+                force_local_path=True)
         if base_url is None:
             base_url = self.layer.base_url
         obj_url = base_url + url

@@ -17,6 +17,7 @@ class TranslationsWindmillLayer(BaseWindmillLayer):
 
     @classmethod
     def setUp(cls):
-        cls.base_url = cls.appserver_root_url('translations')
+        cls.facet = 'translations'
+        cls.base_url = cls.appserver_root_url(cls.facet)
         super(TranslationsWindmillLayer, cls).setUp()
 
