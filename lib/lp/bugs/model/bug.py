@@ -452,7 +452,7 @@ class Bug(SQLBase):
         # value (in the absence of slices)
         return self._indexed_messages(include_content=True)
 
-    def _indexed_messages(self, include_content=False, include_parents=False):
+    def _indexed_messages(self, include_content=False, include_parents=True):
         """Get the bugs messages, indexed.
 
         :param include_content: If True retrieve the content for the messages
