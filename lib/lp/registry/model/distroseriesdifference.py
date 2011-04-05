@@ -268,13 +268,11 @@ class DistroSeriesDifference(Storm):
         else:
             return []
 
-    @property
     def getParentPackageSetsNames(self):
         """See `IDistroSeriesDifference`."""
         packagesets = self.getParentPackageSets()
         return self._format_packageset(packagesets)
 
-    @property
     def getPackageSetsNames(self):
         """See `IDistroSeriesDifference`."""
         packagesets = self.getPackageSets()
