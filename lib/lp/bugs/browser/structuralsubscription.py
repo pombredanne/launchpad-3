@@ -413,6 +413,7 @@ def expose_user_administered_teams_to_js(request, user, context,
             info.append({
                 'link': absoluteURL(team, api_request),
                 'title': team.title,
+                'url': canonical_url(team),
             })
     IJSONRequestCache(request).objects['administratedTeams'] = info
 
