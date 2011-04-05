@@ -647,7 +647,7 @@ ADMIN_TEAMS_SUBSCRIBED_TO_PRIMARY = (
 # These are the owner variations.
 _OWNER = ("the owner of the $(pillar_type) "
           "<a href='$(pillar_url)'>$(pillar_name)</a>, which has no bug "
-          "supervisor."
+          "supervisor.")
 YOU_OWNER = _BECAUSE_YOU_ARE + _OWNER
 TEAM_OWNER = _BECAUSE_TEAM_IS + _OWNER
 ADMIN_TEAM_OWNER = _ADMIN_BECAUSE_TEAM_IS + _OWNER
@@ -656,69 +656,6 @@ TEAMS_OWNER = _BECAUSE_TEAMS_ARE + _OWNER
 # That's 27 options.
 # Also: "You are not subscribed to this bug." or similar.
 # Also: "You have muted all email from this bug."
-
-# Actions for a person
-# "Control the email you receive about bug #XXXX"
-MUTE_ACTION = ( # Always present.
-    ('title', "Mute all email from bug #$(bug_id)s"),
-    ('description', "You will receive no further email about the bug."))
-CHANGE_SUBSCRIPTION_ACTION = ( # If you are subscribed directly.
-    ('title', 'Change your subscription to bug #$(bug_id)s'),
-    ('description', 'Change which events will trigger an email.'))
-UNSUBSCRIBE_ACTION = ( # If you are subscribed directly.
-    # WARNING: IF THIS IS A PRIVATE BUG, YOU ARE TAKING AWAY THE PRIVILEGES
-    # TO SEE THE BUG. XXX
-    ('title', 'Unsubscribe from bug #$(bug_id)s'),
-    ('description', "You will no longer receive email about this bug."))
-REPORTER_UNSUBSCRIBE_ACTION = ( # If you are subscribed directly and reporter.
-    # WARNING: IF THIS IS A PRIVATE BUG, YOU ARE TAKING AWAY THE PRIVILEGES
-    # TO SEE THE BUG. XXX
-    ('title', 'Unsubscribe from bug #$(bug_id)s'),
-    ('description', "You will no longer receive email about this bug. It "
-                    "will still show in the list of bugs you've reported."))
-MUTE_COMMENTS_ACTION = ( # If you are not subscribed directly
-    ('title', 'Mute emails from bug #$(bug_id)s that only contain comments.'),
-    ('description', 'Add a direct subscription to the bug that limits the '
-                    'emails you receive about it.'))
-MUTE_ALL_BUT_CLOSE_ACTION = ( # If you are not subscribed directly
-    ('title': 'Mute all emails from bug #$(bug_id)s except when it closes.'),
-    ('description', 'Add a direct subscription to the bug that limits the '
-                    'emails you receive about it.'))
-"""
-
-
-  * Unsubscribe from duplicate — subscribed from duplicate
-
-    * ACTION: Unsubscribe from bug #XXXX
-
-    * DESCRIPTION: You subscribed to a bug that was later marked as a duplicate of another bug. You will receive no further email about this bug but you'll still receive email about the other bug.
-
-GROUP "Control the email you and others receive about bug #XXXX"
-
-  * Unsubscribe team from the bug — indirectly through team as team admin
-
-    * ACTION: Unsubscribe $TEAM from bug #XXX
-
-    * DESCRIPTION: This team will no longer receive email about this bug. This will not affect individual subscriptions made by team members.
-
-  * Unsubscribe team from the duplicate — admin of a team subscribed to the duplicate
-
-    * ACTION: Unsubscribe $TEAM from bug #XXXX
-
-    * DESCRIPTION: You subscribed this team to a bug that was later marked as a duplicate of another bug. The team will receive no further email about this bug but will still receive email about the other bug.
-
-  * Change team subscription level — indirectly through team as team admin
-
-    * ACTION: Change $TEAM's subscription to bug #XXXX
-
-    * DESCRIPTION: Change which events will trigger an email to this team.
-
-  * Set the bug supervisor — no bug supervisor, you are the product owner
-
-    * ACTION: Set $PROJECT's bug supervisor
-
-    * DESCRIPTION: Choose an individual or team who will manage bug reports for this project.
-"""
 
 class BugSubscriptionListView(LaunchpadView):
     """A view to show all a person's subscriptions to a bug."""

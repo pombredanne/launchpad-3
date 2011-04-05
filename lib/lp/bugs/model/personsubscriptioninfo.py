@@ -61,9 +61,9 @@ class AbstractSubscriptionInfoCollection:
 
     implements(IAbstractSubscriptionInfoCollection)
 
-    def __init__(self, person, is_team_admin):
+    def __init__(self, person, administrated_teams):
         self.person = person
-        self._is_team_admin = is_team_admin
+        self.administrated_teams = administrated_teams
         self._personal = []
         self.as_team_member = []
         self.as_team_admin = []
@@ -78,7 +78,7 @@ class AbstractSubscriptionInfoCollection:
             collection = self._personal
         else:
             assert principal.isTeam(), (principal, self.person)
-            if self._is_team_admin(principal):
+            if principal in self.administrated_teams:
                 collection = self.as_team_admin
             else:
                 collection = self.as_team_member
@@ -94,9 +94,9 @@ class VirtualSubscriptionInfoCollection(AbstractSubscriptionInfoCollection):
 
     implements(IVirtualSubscriptionInfoCollection)
 
-    def __init__(self, person, is_team_admin):
+    def __init__(self, person, administrated_teams):
         super(VirtualSubscriptionInfoCollection, self).__init__(
-            person, is_team_admin)
+            person, administrated_teams)
         self._principal_pillar_to_info = {}
 
     def _add_item_to_collection(self,
@@ -114,9 +114,9 @@ class AbstractRealSubscriptionInfoCollection(
     AbstractSubscriptionInfoCollection):
     """Core functionality for Duplicate and Direct"""
 
-    def __init__(self, person, is_team_admin):
+    def __init__(self, person, administrated_teams):
         super(AbstractRealSubscriptionInfoCollection, self).__init__(
-            person, is_team_admin)
+            person, administrated_teams)
         self._principal_bug_to_infos = {}
 
     def _add_item_to_collection(self, collection, principal, bug, subscription):
@@ -200,9 +200,9 @@ class PersonSubscriptions(object):
             TeamParticipation.teamID == Person.id)
 
         direct = DirectSubscriptionInfoCollection(
-            self.person, self.is_team_admin)
+            self.person, self.administrated_teams)
         duplicates = DuplicateSubscriptionInfoCollection(
-            self.person, self.is_team_admin)
+            self.person, self.administrated_teams)
         bugs = set()
         for subscription, subscribed_bug, subscriber in info:
             bugs.add(subscribed_bug)
@@ -240,22 +240,10 @@ class PersonSubscriptions(object):
             pillar = target
         return pillar
 
-    def is_team_admin(self, team):
-        answer = self._is_team_admin.get(team)
-        if answer is None:
-            answer = False
-            admins = team.adminmembers
-            for admin in admins:
-                if self.person.inTeam(admin):
-                    answer = True
-                    break
-            self._is_team_admin[team] = answer
-        return answer
-
     def loadSubscriptionsFor(self, person, bug):
         self.person = person
+        self.administrated_teams = person.getAdministratedTeams()
         self.bug = bug
-        self._is_team_admin = {} # team to bool answer
 
         # First get direct and duplicate real subscriptions.
         direct, from_duplicate = (
@@ -263,9 +251,9 @@ class PersonSubscriptions(object):
 
         # Then get owner and assignee virtual subscriptions.
         as_owner = VirtualSubscriptionInfoCollection(
-            self.person, self.is_team_admin)
+            self.person, self.administrated_teams)
         as_assignee = VirtualSubscriptionInfoCollection(
-            self.person, self.is_team_admin)
+            self.person, self.administrated_teams)
         for bugtask in bug.bugtasks:
             pillar = self._get_pillar(bugtask.target)
             owner = pillar.owner
