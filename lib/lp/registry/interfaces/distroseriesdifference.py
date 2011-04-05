@@ -120,21 +120,21 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
 
     source_package_release = Reference(
         IDistroSeriesSourcePackageRelease,
-        title=_("The "), readonly=True,
+        title=_("Derived source pub"), readonly=True,
         description=_(
             "The published version in the derived series with version "
             "source_version."))
 
     parent_source_package_release = Reference(
         IDistroSeriesSourcePackageRelease,
-        title=_("The "), readonly=True,
+        title=_("Parent source pub"), readonly=True,
         description=_(
             "The published version in the derived series with version "
             "parent_source_version."))
 
     source_pub = Reference(
         ISourcePackagePublishingHistory,
-        title=_("Derived source pub"), readonly=True,
+        title=_("Latest derived source pub"), readonly=True,
         description=_(
             "The most recent published version in the derived series."))
 
@@ -146,7 +146,7 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
 
     parent_source_pub = Reference(
         ISourcePackagePublishingHistory,
-        title=_("Parent source pub"), readonly=True,
+        title=_("Latest parent source pub"), readonly=True,
         description=_(
             "The most recent published version in the parent series."))
 
