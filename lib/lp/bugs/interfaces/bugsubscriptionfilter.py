@@ -17,7 +17,6 @@ from lazr.restful.declarations import (
     export_write_operation,
     exported,
     operation_for_version,
-    operation_parameters,
     REQUEST_USER,
     )
 from lazr.restful.fields import Reference
@@ -40,7 +39,6 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscription,
     )
-from lp.registry.interfaces.person import IPerson
 from lp.services.fields import (
     PersonChoice,
     SearchTag,
