@@ -54,6 +54,7 @@ from canonical.launchpad.webapp.menu import (
     enabled_with_permission,
     Link,
     NavigationMenu,
+    structured,
     )
 from canonical.launchpad.webapp.publisher import (
     canonical_url,
@@ -829,7 +830,9 @@ class DistroSeriesDifferenceBase(LaunchpadFormView,
 
 class DistroSeriesLocalDifferences(DistroSeriesDifferenceBase,
                                    LaunchpadFormView):
-    """Present differences between a derived series and its parent."""
+    """Present differences of type DIFFERENT_VERSIONS between
+    a derived series and its parent.
+    """
     page_title = 'Local package differences'
     differences_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
     show_parent_packagesets = True
@@ -846,7 +849,7 @@ class DistroSeriesLocalDifferences(DistroSeriesDifferenceBase,
 
     @property
     def explanation(self):
-        return (
+        return structured(
             "Source packages shown here are present in both %s "
             "and the parent series, %s, but are different somehow. "
             "Changes could be in either or both series so check the "
@@ -868,10 +871,6 @@ class DistroSeriesLocalDifferences(DistroSeriesDifferenceBase,
                 self.context.parent_series.displayname,
                 ))
 
-    @property
-    def has_available_actions(self):
-        return False#self.has_differences
-
     @action(_("Update"), name="update")
     def update_action(self, action, data):
         """Simply re-issue the form with the new values."""
@@ -885,6 +884,9 @@ class DistroSeriesLocalDifferences(DistroSeriesDifferenceBase,
 
 class DistroSeriesMissingPackages(DistroSeriesDifferenceBase,
                                    LaunchpadFormView):
+    """Present differences of type MISSING_FROM_DERIVED_SERIES between
+    a derived series and its parent.
+    """
     page_title = 'Missing packages'
     differences_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
     show_derived_version = False
@@ -901,7 +903,7 @@ class DistroSeriesMissingPackages(DistroSeriesDifferenceBase,
 
     @property
     def explanation(self):
-        return (
+        return structured(
             "Packages that are listed here are those that have been added to "
             "the specific packages %s that were used to create %s. They are "
             "listed here so you can consider including them in %s." % (

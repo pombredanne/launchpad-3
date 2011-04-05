@@ -205,28 +205,35 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         tags = soup.find('ul', 'package-diff-status').findAll('span')
         self.assertEqual(1, len(tags))
 
-    def test_packagediffs_display(self):
-        # The packages diffs slots are displayed only when the diff
+    def _makeDistroSeriesDifferenceView(self, difference_type):
+        # Helper method to create a view with the specified
+        # difference_type.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            difference_type=difference_type)
+        view = create_initialized_view(
+            ds_diff, '+listing-distroseries-extra')
+        return view
+
+    def test_packagediffs_display_diff_version(self):
+        # The packages diffs slots are displayed when the diff
         # is of type DIFFERENT_VERSIONS.
-        pck_diff_type = (
-            DistroSeriesDifferenceType.DIFFERENT_VERSIONS,)
-        non_pck_diff_type = (
-            DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES,
+        view = self._makeDistroSeriesDifferenceView(
+            DistroSeriesDifferenceType.DIFFERENT_VERSIONS)
+        self.assertTrue(view.can_have_packages_diffs)
+
+    def test_packagediffs_display_missing_from_derived(self):
+        # The packages diffs slots are not displayed when the diff
+        # is of type MISSING_FROM_DERIVED_SERIES.
+        view = self._makeDistroSeriesDifferenceView(
+            DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES)
+        self.assertFalse(view.can_have_packages_diffs)
+
+    def test_packagediffs_display_unique_to_derived(self):
+        # The packages diffs slots are not displayed when the diff
+        # is of type UNIQUE_TO_DERIVED_SERIES.
+        view = self._makeDistroSeriesDifferenceView(
             DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES)
-
-        for ptype in pck_diff_type:
-            ds_diff = self.factory.makeDistroSeriesDifference(
-                difference_type=ptype)
-            view = create_initialized_view(
-                ds_diff, '+listing-distroseries-extra')
-            self.assertTrue(view.can_have_packages_diffs)
-
-        for ptype in non_pck_diff_type:
-            ds_diff = self.factory.makeDistroSeriesDifference(
-                difference_type=ptype)
-            view = create_initialized_view(
-                ds_diff, '+listing-distroseries-extra')
-            self.assertFalse(view.can_have_packages_diffs)
+        self.assertFalse(view.can_have_packages_diffs)
 
 
 class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):

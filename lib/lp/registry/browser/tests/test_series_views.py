@@ -148,31 +148,53 @@ class DistroSeriesLocalPackageDiffsPageTestCase(TestCaseWithFactory):
 
     def test_parent_packagesets_localpackagediffs(self):
         # +localpackagediffs displays the parent packagesets.
-        pckset_names = [u'pack2', u'pack1', u'aa']
-        sorted_pckset_names = [u'aa', u'pack1', u'pack2']
         ds_diff = self.factory.makeDistroSeriesDifference()
         with celebrity_logged_in('admin'):
-            for pckset_name in pckset_names:
-                ps = self.factory.makePackageset(
-                    name=pckset_name,
-                    packages=[ds_diff.source_package_name],
-                    distroseries=ds_diff.derived_series.parent_series)
+            ps = self.factory.makePackageset(
+                packages=[ds_diff.source_package_name],
+                distroseries=ds_diff.derived_series.parent_series)
 
+        packageset_text = re.compile('\s*' + ps.name)
         with person_logged_in(self.simple_user):
             view = create_initialized_view(
                 ds_diff.derived_series,
                 '+localpackagediffs',
                 principal=self.simple_user)
             html = view()
+            parent_packagesets = soupmatchers.HTMLContains(
+                soupmatchers.Tag(
+                    'Parent packagesets names', 'td',
+                    attrs={'class': 'parent-packagesets'},
+                    text=packageset_text))
 
-        pck_set_text = re.compile('\s*' + ', '.join(sorted_pckset_names))
-        parent_packagesets = soupmatchers.HTMLContains(
-            soupmatchers.Tag(
-                'Parent packagesets', 'td',
-                attrs={'class': 'parent-packagesets'},
-                text=pck_set_text))
+            self.assertThat(html, parent_packagesets)
 
-        self.assertThat(html, parent_packagesets)
+    def test_parent_packagesets_localpackagediffs_sorts(self):
+        # Multiple packagesets are sorted in a comma separated list.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+        unsorted_names = [u"zzz", u"aaa"]
+        with celebrity_logged_in('admin'):
+            for name in unsorted_names:
+                ps = self.factory.makePackageset(
+                    name=name,
+                    packages=[ds_diff.source_package_name],
+                    distroseries=ds_diff.derived_series.parent_series)
+
+        packageset_text = re.compile(
+            '\s*' + ', '.join(sorted(unsorted_names)))
+        with person_logged_in(self.simple_user):
+            view = create_initialized_view(
+                ds_diff.derived_series,
+                '+localpackagediffs',
+                principal=self.simple_user)
+            html = view()
+            parent_packagesets = soupmatchers.HTMLContains(
+                soupmatchers.Tag(
+                    'Sorted parent packagesets names', 'td',
+                    attrs={'class': 'parent-packagesets'},
+                    text=packageset_text))
+
+            self.assertThat(html, parent_packagesets)
 
 
 class DistroSeriesLocalPackageDiffsTestCase(TestCaseWithFactory):
@@ -743,14 +765,10 @@ class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory):
 
     def test_parent_packagesets_missingpackages(self):
         # +missingpackages displays the packagesets in the parent.
-        pckset_names = [u'pack2', u'pack1', u'aa']
-        sorted_pckset_names = [u'aa', u'pack1', u'pack2']
         with celebrity_logged_in('admin'):
-            for pckset_name in pckset_names:
-                ps = self.factory.makePackageset(
-                    name=pckset_name,
-                    packages=[self.ds_diff.source_package_name],
-                    distroseries=self.ds_diff.derived_series.parent_series)
+            ps = self.factory.makePackageset(
+                packages=[self.ds_diff.source_package_name],
+                distroseries=self.ds_diff.derived_series.parent_series)
 
         with person_logged_in(self.simple_user):
             view = create_initialized_view(
@@ -759,12 +777,12 @@ class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory):
                 principal=self.simple_user)
             html = view()
 
-        pck_set_text = re.compile('\s*' + ', '.join(sorted_pckset_names))
+        packageset_text = re.compile('\s*' + ps.name)
         parent_packagesets = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'Packagesets', 'td',
                 attrs={'class': 'parent-packagesets'},
-                text=pck_set_text))
+                text=packageset_text))
 
         self.assertThat(html, parent_packagesets)
 
