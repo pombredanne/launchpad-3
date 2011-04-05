@@ -320,12 +320,13 @@ class CodehostingAPI(LaunchpadXMLRPCView):
         if default_branch is None:
             return
         try:
-            unique_name = default_branch.unique_name
+            branch_id = default_branch.id
         except Unauthorized:
             return
+        path = '/%s/%s' % (BRANCH_ID_ALIAS_PREFIX, branch_id)
         return (
             CONTROL_TRANSPORT,
-            {'default_stack_on': escape('/' + unique_name)},
+            {'default_stack_on': escape(path)},
             trailing_path)
 
     def _translateBranchIdAlias(self, requester, path):
