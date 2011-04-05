@@ -202,12 +202,12 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
         sourcepackagename of this difference.
         """
 
-    def getParentPackageSetsNames(self):
+    def getParentPackageSetsNames():
         """Return the formatted list of packagesets for the related
         sourcepackagename in the parent.
         """
 
-    def getPackageSetsNames(self):
+    def getPackageSetsNames():
         """Return the formatted list of packagesets for the related
         sourcepackagename in the derived series.
         """
