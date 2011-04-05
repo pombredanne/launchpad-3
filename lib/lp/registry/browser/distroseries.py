@@ -539,21 +539,6 @@ class DistroSeriesAddView(LaunchpadFormView):
     label = 'Add a series'
     page_title = label
 
-    def validate(self, data):
-        # XXX: Rip this out before landing.
-        deprecated_field_names = [
-            'field.title',
-            'field.description',
-            'field.parent_series',
-            ]
-        deprecated_field_names_found = set(
-            self.request).intersection(deprecated_field_names)
-        if len(deprecated_field_names_found) > 0:
-            raise AssertionError(
-                "Deprecated fields: %s" % " ".join(
-                    deprecated_field_names_found))
-        super(DistroSeriesAddView, self).validate(data)
-
     @action(_('Add Series'), name='create')
     def createAndAdd(self, action, data):
         """Create and add a new Distribution Series"""
