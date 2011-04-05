@@ -11,7 +11,6 @@ import soupmatchers
 from storm.zope.interfaces import IResultSet
 from testtools.matchers import EndsWith
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -61,7 +60,7 @@ from lp.testing.views import create_initialized_view
 
 def set_derived_series_ui_feature_flag(test_case):
     # Helper to set the feature flag enabling the derived series ui.
-    ignore = getFeatureStore().add(FeatureFlag(
+    getFeatureStore().add(FeatureFlag(
         scope=u'default', flag=u'soyuz.derived-series-ui.enabled',
         value=u'on', priority=1))
 
@@ -233,7 +232,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory):
         derived_series = self.factory.makeDistroSeries(
             name='derilucid', parent_series=self.factory.makeDistroSeries(
                 name='lucid'))
-        current_difference = self.factory.makeDistroSeriesDifference(
+        self.factory.makeDistroSeriesDifference(
             derived_series=derived_series)
 
         view = create_initialized_view(
@@ -305,7 +304,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
                 name='lucid'))
         current_difference = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series)
-        old_difference = self.factory.makeDistroSeriesDifference(
+        self.factory.makeDistroSeriesDifference(
             derived_series=derived_series,
             status=DistroSeriesDifferenceStatus.RESOLVED)
 
@@ -322,7 +321,7 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
                 name='lucid'))
         different_versions_diff = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series)
-        unique_diff = self.factory.makeDistroSeriesDifference(
+        self.factory.makeDistroSeriesDifference(
             derived_series=derived_series,
             difference_type=(
                 DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES))
@@ -451,7 +450,6 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
             'derived': u'1.0derived1',
             'parent': u'1.0-1',
         }
-        new_version = u'1.2'
 
         difference = self.factory.makeDistroSeriesDifference(
             versions=versions,
@@ -492,7 +490,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
             name='lucid', displayname='Lucid')
         derived_series = self.factory.makeDistroSeries(
             name='derilucid', parent_series=parent_series)
-        diff1 = self.factory.makeDistroSeriesDifference(
+        self.factory.makeDistroSeriesDifference(
             derived_series=derived_series,
             source_package_name_str="my-src-package")
         view = create_initialized_view(
@@ -553,7 +551,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         diff2 = self.factory.makeDistroSeriesDifference(
             derived_series=derived_series,
             source_package_name_str="my-second-src-package")
-        blacklisted_diff = self.factory.makeDistroSeriesDifference(
+        self.factory.makeDistroSeriesDifference(
             derived_series=derived_series,
             status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
 
@@ -605,7 +603,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
             derived_series=derived_series,
             status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
             versions={'base': '1.1', 'parent': '1.3', 'derived': '1.10'})
-        blacklisted_diff_not_higher = self.factory.makeDistroSeriesDifference(
+        self.factory.makeDistroSeriesDifference(
             derived_series=derived_series,
             status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
             versions={'base': '1.1', 'parent': '1.12', 'derived': '1.10'})
@@ -632,10 +630,10 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
             name='derilucid', parent_series=self.factory.makeDistroSeries(
                 name='lucid'))
 
-        diff1 = self.factory.makeDistroSeriesDifference(
+        self.factory.makeDistroSeriesDifference(
             derived_series=derived_series,
             source_package_name_str="my-src-package")
-        diff2 = self.factory.makeDistroSeriesDifference(
+        self.factory.makeDistroSeriesDifference(
             derived_series=derived_series,
             source_package_name_str="my-second-src-package")
         resolved_diff = self.factory.makeDistroSeriesDifference(
@@ -655,7 +653,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         derived_series = self.factory.makeDistroSeries(
             name='derilucid', parent_series=self.factory.makeDistroSeries(
                 name='lucid'))
-        difference = self.factory.makeDistroSeriesDifference(
+        self.factory.makeDistroSeriesDifference(
             derived_series=derived_series)
 
         set_derived_series_ui_feature_flag(self)
@@ -670,7 +668,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         derived_series = self.factory.makeDistroSeries(
             name='derilucid', parent_series=self.factory.makeDistroSeries(
                 name='lucid'))
-        difference = self.factory.makeDistroSeriesDifference(
+        self.factory.makeDistroSeriesDifference(
             derived_series=derived_series)
 
         set_derived_series_ui_feature_flag(self)
@@ -740,7 +738,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
         derived_series = self.factory.makeDistroSeries(
             name='derilucid', parent_series=self.factory.makeDistroSeries(
                 name='lucid'))
-        difference = self.factory.makeDistroSeriesDifference(
+        self.factory.makeDistroSeriesDifference(
             source_package_name_str='my-src-name',
             derived_series=derived_series)
 
@@ -763,7 +761,7 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory):
             name='derilucid', parent_series=self.factory.makeDistroSeries(
                 name='lucid'))
         self._set_source_selection(derived_series)
-        difference = self.factory.makeDistroSeriesDifference(
+        self.factory.makeDistroSeriesDifference(
             source_package_name_str='my-src-name',
             derived_series=derived_series)
 
@@ -792,7 +790,6 @@ class TestDistroSeriesNeedsPackagesView(TestCaseWithFactory):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         distroseries = self.factory.makeDistroSeries(distribution=ubuntu)
         view = create_initialized_view(distroseries, '+needs-packaging')
-        naked_packages = removeSecurityProxy(view.cached_unlinked_packages)
         self.assertTrue(
             IResultSet.providedBy(
                 view.cached_unlinked_packages.currentBatch().list),
