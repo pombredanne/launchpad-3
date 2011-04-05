@@ -61,7 +61,6 @@ from storm.expr import And, Count, Select
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
-    clear_current_connection_cache,
     flush_database_updates,
     sqlvalues,
     )
