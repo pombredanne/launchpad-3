@@ -205,7 +205,7 @@ class TestBugScaling(TestCaseWithFactory):
         store.flush()
         store.reset()
         response = webservice.get(url)
-        self.assertThat(collector, HasQueryCount(LessThan(23)))
+        self.assertThat(collector, HasQueryCount(LessThan(24)))
         with_2_count = collector.count
         self.failUnlessEqual(response.status, 200)
         login(USER_EMAIL)
@@ -241,7 +241,7 @@ class TestBugScaling(TestCaseWithFactory):
         store.flush()
         store.reset()
         response = webservice.get(url)
-        self.assertThat(collector, HasQueryCount(LessThan(23)))
+        self.assertThat(collector, HasQueryCount(LessThan(24)))
         with_2_count = collector.count
         self.failUnlessEqual(response.status, 200)
         login(USER_EMAIL)
