@@ -288,6 +288,7 @@ class TestIntegrationExposeUserSubscriptionsToJS(TestCaseWithFactory):
             canonical_url(team, rootsite='mainsite'))
 
     def test_muted_team_member_subscription(self):
+        # Show that a muted team subscription is correctly represented.
         user = self.factory.makePerson()
         target = self.factory.makeProduct()
         request = LaunchpadTestRequest()
