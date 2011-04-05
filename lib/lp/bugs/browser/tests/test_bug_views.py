@@ -16,7 +16,6 @@ from lp.services.features import get_relevant_feature_controller
 from lp.testing import (
     feature_flags,
     person_logged_in,
-    set_feature_flag,
     TestCaseWithFactory,
     )
 from lp.testing.views import create_initialized_view
