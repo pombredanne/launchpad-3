@@ -10,6 +10,9 @@ __metaclass__ = type
 import transaction
 
 from canonical.launchpad.webapp import canonical_url
+from lp.app.enums import (
+    ServiceUsage,
+    )
 from lp.testing import (
     feature_flags,
     set_feature_flag,
@@ -64,10 +67,17 @@ class TestSharingDetails(WindmillTestCase):
         self.client.waits.forElementProperty(
             xpath='//*[@id="upstream-sync-incomplete-picker"]/a',
             option='className|sprite edit', timeout=FOR_ELEMENT)
+        overlay = OnPageWidget(self.client, 'yui3-lazr-formoverlay')
+        self.client.click(xpath='//*[@id="translation-incomplete-picker"]/a')
+        self.client.click(id='field.translations_usage.1')
+        self.client.click(
+            xpath=overlay.visible_xpath + '//input[@value="Submit"]')
+        self.client.waits.forElementProperty(
+            id='translation-incomplete', option='className|sprite no unseen',
+            timeout=FOR_ELEMENT)
         self.client.click(
             xpath='//*[@id="upstream-sync-incomplete-picker"]/a')
         self.client.click(id='field.translations_autoimport_mode.2')
-        overlay = OnPageWidget(self.client, 'yui3-lazr-formoverlay')
         self.client.click(
             xpath=overlay.visible_xpath + '//input[@value="Submit"]')
         self.client.waits.forElementProperty(
@@ -76,6 +86,8 @@ class TestSharingDetails(WindmillTestCase):
         transaction.commit()
         self.assertEqual(sourcepackage.productseries, productseries)
         self.assertEqual(branch, productseries.branch)
+        self.assertEqual(
+            ServiceUsage.LAUNCHPAD, productseries.product.translations_usage)
         self.assertEqual(
             TranslationsBranchImportMode.IMPORT_TRANSLATIONS,
             productseries.translations_autoimport_mode)
