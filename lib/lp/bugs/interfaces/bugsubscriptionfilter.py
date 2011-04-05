@@ -11,9 +11,15 @@ __all__ = [
 
 
 from lazr.restful.declarations import (
+    call_with,
     export_as_webservice_entry,
     export_destructor_operation,
+    export_read_operation,
+    export_write_operation,
     exported,
+    operation_for_version,
+    operation_parameters,
+    REQUEST_USER,
     )
 from lazr.restful.fields import Reference
 from zope.interface import Interface
@@ -35,6 +41,7 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscription,
     )
+from lp.registry.interfaces.person import IPerson
 from lp.services.fields import (
     PersonChoice,
     SearchTag,
@@ -99,8 +106,36 @@ class IBugSubscriptionFilterAttributes(Interface):
             value_type=SearchTag()))
 
 
-class IBugSubscriptionFilterMethods(Interface):
-    """Methods of `IBugSubscriptionFilter`."""
+class IBugSubscriptionFilterMethodsPublic(Interface):
+    """Methods on `IBugSubscriptionFilter` that can be called by anyone."""
+
+    @call_with(person=REQUEST_USER)
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @export_read_operation()
+    @operation_for_version('devel')
+    def isMuteAllowed(person):
+        """Return True if this filter can be muted for `person`."""
+
+    @call_with(person=REQUEST_USER)
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @export_write_operation()
+    @operation_for_version('devel')
+    def mute(person):
+        """Add a mute for `person` to this filter."""
+
+    @call_with(person=REQUEST_USER)
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=True))
+    @export_write_operation()
+    @operation_for_version('devel')
+    def unmute(person):
+        """Remove any mute for `person` to this filter."""
+
+
+class IBugSubscriptionFilterMethodsProtected(Interface):
+    """Methods of `IBugSubscriptionFilter` that require launchpad.Edit."""
 
     @export_destructor_operation()
     def delete():
@@ -111,13 +146,16 @@ class IBugSubscriptionFilterMethods(Interface):
 
 
 class IBugSubscriptionFilter(
-    IBugSubscriptionFilterAttributes, IBugSubscriptionFilterMethods):
+    IBugSubscriptionFilterAttributes, IBugSubscriptionFilterMethodsProtected,
+    IBugSubscriptionFilterMethodsPublic):
     """A bug subscription filter."""
     export_as_webservice_entry()
 
 
 class IBugSubscriptionFilterMute(Interface):
     """A mute on an IBugSubscriptionFilter."""
+
+    export_as_webservice_entry()
 
     person = PersonChoice(
         title=_('Person'), required=True, vocabulary='ValidPersonOrTeam',

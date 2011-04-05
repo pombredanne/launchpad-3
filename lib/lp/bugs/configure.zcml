@@ -636,9 +636,11 @@
         class=".model.bugsubscriptionfilter.BugSubscriptionFilter">
       <allow
           interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes"/>
+      <allow
+          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMethodsPublic"/>
       <require
           permission="launchpad.Edit"
-          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMethods"
+          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMethodsProtected"
           set_schema=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes" />
     </class>
 
