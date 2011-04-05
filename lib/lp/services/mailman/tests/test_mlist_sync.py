@@ -58,6 +58,7 @@ class TestMListSync(MailmanTestCase):
             self.mailing_list = self.factory.makeMailingList(
                 self.team, self.team.teamowner)
             self.mm_list = self.makeMailmanList(self.mailing_list)
+            self.mm_list.Unlock()
         self.naked_email_address_set = EmailAddressSet()
 
     def tearDown(self):
@@ -70,8 +71,7 @@ class TestMListSync(MailmanTestCase):
         source_dir = os.path.join(tempdir, 'production')
         shutil.copytree(
             config.mailman.build_var_dir, source_dir, symlinks=True)
-        mhonarc_path = os.path.join(
-            mm_cfg.VAR_PREFIX, 'mhonarc', 'fake-team')
+        self.addCleanup(shutil.rmtree, source_dir)
         return source_dir
 
     def runMListSync(self, source_dir):
@@ -111,15 +111,31 @@ class TestMListSync(MailmanTestCase):
     def test_staging_sync(self):
         # List is synced with updated URLs and email addresses.
         source_dir = self.setupProductionFiles()
-        self.addCleanup(shutil.rmtree, source_dir)
         returncode, stderr = self.runMListSync(source_dir)
         self.assertEqual(0, returncode, stderr)
         list_summary = [(
             'team-1',
             'lists.launchpad.dev',
             'http://lists.launchpad.dev/mailman/',
-            'team-1@lists.launchpad.dev'),
-            ]
+            'team-1@lists.launchpad.dev')]
+        self.assertEqual(list_summary, self.getListInfo())
+
+    def test_staging_sync_list_without_team(self):
+        # Lists without a team are not synced.
+        with production_config(self.host_name):
+            mlist = self.makeMailmanListWithoutTeam('no-team', 'ex@eg.dom')
+            mlist.Unlock()
+            os.makedirs(os.path.join(
+                mm_cfg.VAR_PREFIX, 'mhonarc', 'no-team'))
+        self.addCleanup(self.cleanMailmanList, None, 'no-team')
+        source_dir = self.setupProductionFiles()
+        returncode, stderr = self.runMListSync(source_dir)
+        self.assertEqual(0, returncode, stderr)
+        list_summary = [(
+            'team-1',
+            'lists.launchpad.dev',
+            'http://lists.launchpad.dev/mailman/',
+            'team-1@lists.launchpad.dev')]
         self.assertEqual(list_summary, self.getListInfo())
 
     def test_staging_sync_with_team_address(self):
@@ -128,15 +144,13 @@ class TestMListSync(MailmanTestCase):
         with production_config(self.host_name):
             self.team.setContactAddress(email)
         source_dir = self.setupProductionFiles()
-        self.addCleanup(shutil.rmtree, source_dir)
         returncode, stderr = self.runMListSync(source_dir)
         self.assertEqual(0, returncode, stderr)
         list_summary = [(
             'team-1',
             'lists.launchpad.dev',
             'http://lists.launchpad.dev/mailman/',
-            'team-1@lists.launchpad.dev'),
-            ]
+            'team-1@lists.launchpad.dev')]
         self.assertEqual(list_summary, self.getListInfo())
         with person_logged_in(self.team.teamowner):
             self.assertEqual('team-1@eg.dom', self.team.preferredemail.email)

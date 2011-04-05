@@ -60,9 +60,9 @@ class MailmanTestCase(TestCaseWithFactory):
     def makeMailmanList(self, lp_mailing_list):
         team = lp_mailing_list.team
         owner_email = removeSecurityProxy(team.teamowner).preferredemail.email
-        self.makeMailmanListWithOutTeam(team.name, owner_email)
+        return self.makeMailmanListWithoutTeam(team.name, owner_email)
 
-    def makeMailmanListWithOutTeam(self, list_name, owner_email):
+    def makeMailmanListWithoutTeam(self, list_name, owner_email):
         # This utility is based on mailman/tests/TestBase.py.
         self.cleanMailmanList(None, list_name)
         mlist = MailList.MailList()
@@ -87,6 +87,7 @@ class MailmanTestCase(TestCaseWithFactory):
             'archives/private/%s.mbox',
             'archives/public/%s',
             'archives/public/%s.mbox',
+            'mhonarc/%s',
             ]
         for dirtmpl in paths:
             list_dir = os.path.join(mm_cfg.VAR_PREFIX, dirtmpl % list_name)
