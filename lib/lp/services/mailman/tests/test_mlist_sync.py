@@ -18,29 +18,25 @@ from Mailman import mm_cfg
 from Mailman.MailList import MailList
 from Mailman.Utils import list_names
 
-from zope.component import getUtility
-
 from canonical.config import config
-from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+from canonical.launchpad.database.emailaddress import EmailAddressSet
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.registry.interfaces.person import IPersonSet
 from lp.services.mailman.testing import MailmanTestCase
-from lp.testing import celebrity_logged_in
+from lp.testing import person_logged_in
 
 
 @contextmanager
-def production_config():
+def production_config(host_name):
     """Simulate a production Launchpad and mailman config."""
-    host = 'lists.production.launchpad.dev'
     config.push('production', dedent("""\
         [mailman]
         build_host_name: %s
-        """ % host))
+        """ % host_name))
     default_email_host = mm_cfg.DEFAULT_EMAIL_HOST
-    mm_cfg.DEFAULT_EMAIL_HOST = host
+    mm_cfg.DEFAULT_EMAIL_HOST = host_name
     default_url_host = mm_cfg.DEFAULT_URL_HOST
-    mm_cfg.DEFAULT_URL_HOST = host
+    mm_cfg.DEFAULT_URL_HOST = host_name
     try:
         yield
     finally:
@@ -56,13 +52,13 @@ class TestMListSync(MailmanTestCase):
 
     def setUp(self):
         super(TestMListSync, self).setUp()
-        with production_config():
+        self.host_name = 'lists.production.launchpad.dev'
+        with production_config(self.host_name):
             self.team = self.factory.makeTeam(name='team-1')
             self.mailing_list = self.factory.makeMailingList(
                 self.team, self.team.teamowner)
             self.mm_list = self.makeMailmanList(self.mailing_list)
-        self.email_address_set = getUtility(IEmailAddressSet)
-        self.person_set = getUtility(IPersonSet)
+        self.naked_email_address_set = EmailAddressSet()
 
     def tearDown(self):
         super(TestMListSync, self).tearDown()
@@ -80,11 +76,13 @@ class TestMListSync(MailmanTestCase):
 
     def runMListSync(self, source_dir):
         """Run mlist-sync.py."""
-        IStore(self.team).flush()
+        store = IStore(self.team)
+        store.flush()
         commit()
+        store.invalidate()
         proc = Popen(
             ('scripts/mlist-sync.py', '--hostname',
-             'lists.prod.launchpad.dev', source_dir),
+             self.host_name, source_dir),
             stdout=PIPE, stderr=PIPE,
             cwd=config.root,
             env=dict(LPCONFIG=DatabaseFunctionalLayer.appserver_config_name,
@@ -99,19 +97,15 @@ class TestMListSync(MailmanTestCase):
         for list_name in sorted(list_names()):
             if list_name == mm_cfg.MAILMAN_SITE_LIST:
                 continue
-            team = self.person_set.getByName(list_name)
-            emails = []
-            if team is None:
-                emails.append('No Launchpad team: %s' % list_name)
-            else:
-                addresses = self.email_address_set.getByPerson(team)
-                with celebrity_logged_in('admin'):
-                    for email in sorted(email.email for email in addresses):
-                        emails.append(email)
             mailing_list = MailList(list_name, lock=False)
+            list_address = mailing_list.getListAddress()
+            if self.naked_email_address_set.getByEmail(list_address) is None:
+                email = '%s not found' % list_address
+            else:
+                email = list_address
             list_info.append(
                 (mailing_list.internal_name(), mailing_list.host_name,
-                 mailing_list.web_page_url, ' '.join(emails)))
+                 mailing_list.web_page_url, email))
         return list_info
 
     def test_staging_sync(self):
@@ -120,8 +114,6 @@ class TestMListSync(MailmanTestCase):
         self.addCleanup(shutil.rmtree, source_dir)
         returncode, stderr = self.runMListSync(source_dir)
         self.assertEqual(0, returncode, stderr)
-        #rollback()
-        IStore(self.team).invalidate()
         list_summary = [(
             'team-1',
             'lists.launchpad.dev',
@@ -129,3 +121,22 @@ class TestMListSync(MailmanTestCase):
             'team-1@lists.launchpad.dev'),
             ]
         self.assertEqual(list_summary, self.getListInfo())
+
+    def test_staging_sync_with_team_address(self):
+        # The team's other address is not updated by the sync process.
+        email = self.factory.makeEmail('team-1@eg.dom', self.team)
+        with production_config(self.host_name):
+            self.team.setContactAddress(email)
+        source_dir = self.setupProductionFiles()
+        self.addCleanup(shutil.rmtree, source_dir)
+        returncode, stderr = self.runMListSync(source_dir)
+        self.assertEqual(0, returncode, stderr)
+        list_summary = [(
+            'team-1',
+            'lists.launchpad.dev',
+            'http://lists.launchpad.dev/mailman/',
+            'team-1@lists.launchpad.dev'),
+            ]
+        self.assertEqual(list_summary, self.getListInfo())
+        with person_logged_in(self.team.teamowner):
+            self.assertEqual('team-1@eg.dom', self.team.preferredemail.email)
