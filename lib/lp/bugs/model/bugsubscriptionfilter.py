@@ -49,6 +49,10 @@ from lp.registry.interfaces.person import validate_person
 from lp.services.database.stormbase import StormBase
 
 
+class MuteNotAllowed(Exception):
+    """Raised when someone tries to mute a filter that can't be muted."""
+
+
 class BugSubscriptionFilter(StormBase):
     """A filter to specialize a *structural* subscription."""
 
@@ -248,6 +252,41 @@ class BugSubscriptionFilter(StormBase):
             # There are no other filters.  We can delete the parent
             # subscription.
             self.structural_subscription.delete()
+
+    def isMuteAllowed(self, person):
+        """See `IBugSubscriptionFilter`."""
+        return (
+            self.structural_subscription.subscriber.isTeam() and
+            person.inTeam(self.structural_subscription.subscriber))
+
+    def mute(self, person):
+        """See `IBugSubscriptionFilter`."""
+        if not self.isMuteAllowed(person):
+            raise MuteNotAllowed(
+                "This subscription cannot be muted for %s" % person.name)
+
+        store = Store.of(self)
+        existing_mutes = store.find(
+            BugSubscriptionFilterMute,
+            BugSubscriptionFilterMute.filter_id == self.id,
+            BugSubscriptionFilterMute.person_id == person.id)
+        if not existing_mutes.is_empty():
+            return existing_mutes.one()
+        else:
+            mute = BugSubscriptionFilterMute()
+            mute.person = person
+            mute.filter = self.id
+            store.add(mute)
+            return mute
+
+    def unmute(self, person):
+        """See `IBugSubscriptionFilter`."""
+        store = Store.of(self)
+        existing_mutes = store.find(
+            BugSubscriptionFilterMute,
+            BugSubscriptionFilterMute.filter_id == self.id,
+            BugSubscriptionFilterMute.person_id == person.id)
+        existing_mutes.remove()
 
 
 class BugSubscriptionFilterMute(StormBase):
