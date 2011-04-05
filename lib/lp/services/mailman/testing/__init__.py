@@ -58,12 +58,15 @@ class MailmanTestCase(TestCaseWithFactory):
         self.cleanMailmanList(self.mm_list)
 
     def makeMailmanList(self, lp_mailing_list):
-        # This utility is based on mailman/tests/TestBase.py.
-        mlist = MailList.MailList()
         team = lp_mailing_list.team
-        self.cleanMailmanList(None, team.name)
         owner_email = removeSecurityProxy(team.teamowner).preferredemail.email
-        mlist.Create(team.name, owner_email, 'password')
+        self.makeMailmanListWithOutTeam(team.name, owner_email)
+
+    def makeMailmanListWithOutTeam(self, list_name, owner_email):
+        # This utility is based on mailman/tests/TestBase.py.
+        self.cleanMailmanList(None, list_name)
+        mlist = MailList.MailList()
+        mlist.Create(list_name, owner_email, 'password')
         mlist.host_name = mm_cfg.DEFAULT_URL_HOST
         mlist.web_page_url = 'http://%s/mailman/' % mm_cfg.DEFAULT_URL_HOST
         mlist.personalize = 1
