@@ -3638,7 +3638,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(ISectionSet).ensure(name)
 
     def makePackageset(self, name=None, description=None, owner=None,
-                       packages=(), distroseries=None):
+                       packages=(), distroseries=None, related_set=None):
         """Make an `IPackageset`."""
         if name is None:
             name = self.getUniqueString(u'package-set-name')
@@ -3651,7 +3651,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         ps_set = getUtility(IPackagesetSet)
         package_set = run_with_login(
             techboard.teamowner,
-            lambda: ps_set.new(name, description, owner, distroseries))
+            lambda: ps_set.new(
+                name, description, owner, distroseries, related_set))
         run_with_login(owner, lambda: package_set.add(packages))
         return package_set
 
