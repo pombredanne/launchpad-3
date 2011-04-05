@@ -100,6 +100,14 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         self.assertEqual(result, None,
                          'Invalid root node not detected')
 
+    def _getLastOopsTime(self):
+        try:
+            last_oops_time = globalErrorUtility.getLastOopsReport().time
+        except AttributeError:
+            # There haven't been any oopses in this test run
+            last_oops_time = None
+        return last_oops_time
+
     def test_bad_data_does_not_oops(self):
         # If the processing cronscript gets bad data, it should log it, but
         # it should not create an Oops.
@@ -110,13 +118,12 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         # Add the OopsHandler to the log, because we want to make sure this
         # doesn't create an Oops report.
         logging.getLogger('test_hwdb_submission_parser').addHandler(OopsHandler(self.log.name))
-        last_oops_time = globalErrorUtility.getLastOopsReport().time
         result, submission_id = self.runValidator(sample_data)
-
+        last_oops_time = self._getLastOopsTime()
         # We use the class method here, because it's been overrided for the
         # other tests in this test case.
         TestCase.assertEqual(self,
-            globalErrorUtility.getLastOopsReport().time,
+            self._getLastOopsTime(),
             last_oops_time)
 
     def testInvalidFormatVersion(self):
