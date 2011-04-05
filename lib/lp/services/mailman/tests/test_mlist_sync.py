@@ -5,17 +5,43 @@
 __metaclass__ = type
 __all__ = []
 
+from contextlib import contextmanager
 import os
 import sys
+from textwrap import dedent
+from transaction import commit
 from subprocess import Popen, PIPE
 
+from Mailman import mm_cfg
+
 from canonical.config import config
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.database.sqlbase import rollback
 from lp.services.mailman.testing import (
     MailmanTestCase,
     sync,
     )
+
+
+@contextmanager
+def production_config():
+    """Simulate a production Launchpad and mailman config."""
+    host = 'lists.production.launchpad.dev'
+    config.push('production', dedent("""\
+        [mailman]
+        build_host_name: %s
+        """ % host))
+    default_email_host = mm_cfg.DEFAULT_EMAIL_HOST
+    mm_cfg.DEFAULT_EMAIL_HOST = host
+    default_url_host = mm_cfg.DEFAULT_URL_HOST
+    mm_cfg.DEFAULT_URL_HOST = host
+    try:
+        yield
+    finally:
+        mm_cfg.DEFAULT_URL_HOST = default_url_host
+        mm_cfg.DEFAULT_EMAIL_HOST = default_email_host
+        config.pop('production')
 
 
 class TestMListSync(MailmanTestCase):
@@ -25,9 +51,11 @@ class TestMListSync(MailmanTestCase):
 
     def setUp(self):
         super(TestMListSync, self).setUp()
-        self.team, self.mailing_list = self.factory.makeTeamAndMailingList(
-            'team-1', 'team-1-owner')
-        self.mm_list = self.makeMailmanList(self.mailing_list)
+        with production_config():
+            self.team = self.factory.makeTeam(name='team-1')
+            self.mailing_list = self.factory.makeMailingList(
+                self.team, self.team.teamowner)
+            self.mm_list = self.makeMailmanList(self.mailing_list)
 
     def tearDown(self):
         super(TestMListSync, self).tearDown()
@@ -35,6 +63,8 @@ class TestMListSync(MailmanTestCase):
 
     def runMListSync(self, sync_details):
         """Run mlist-sync.py."""
+        IStore(self.team).flush()
+        commit()
         proc = Popen(
             ('scripts/mlist-sync.py', '--hostname',
              'lists.prod.launchpad.dev', sync_details.source_dir),
@@ -47,12 +77,13 @@ class TestMListSync(MailmanTestCase):
         return proc.returncode, stderr
 
     def test_staging_sync(self):
-        # List is synced with pdated URLs and email addresses.
-        sync_details = sync.prepare_for_sync(team=self.team)
+        # List is synced with updated URLs and email addresses.
+        sync_details = sync.prepare_for_sync()
         self.addCleanup(sync_details.cleanup)
         returncode, stderr = self.runMListSync(sync_details)
         self.assertEqual(0, returncode, stderr)
-        rollback()
+        #rollback()
+        IStore(self.team).invalidate()
         list_summary = [(
             'team-1',
             'lists.launchpad.dev',

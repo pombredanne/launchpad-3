@@ -83,16 +83,16 @@ def prepare_for_sync(team=None):
     # before we copy so that the production copy will have the busted values.
     # pylint: disable-msg=F0401
     team_names = list_names()
-    for list_name in team_names:
-        if list_name == mm_cfg.MAILMAN_SITE_LIST:
-            continue
-        mailing_list = MailList(list_name)
-        try:
-            mailing_list.host_name = 'lists.prod.launchpad.dev'
-            mailing_list.web_page_url = 'http://lists.prod.launchpad.dev'
-            mailing_list.Save()
-        finally:
-            mailing_list.Unlock()
+#    for list_name in team_names:
+#        if list_name == mm_cfg.MAILMAN_SITE_LIST:
+#            continue
+#        mailing_list = MailList(list_name)
+#        try:
+#            mailing_list.host_name = 'lists.prod.launchpad.dev'
+#            mailing_list.web_page_url = 'http://lists.prod.launchpad.dev'
+#            mailing_list.Save()
+#        finally:
+#            mailing_list.Unlock()
     mhonarc_path = os.path.join(mm_cfg.VAR_PREFIX, 'mhonarc', 'fake-team')
     # Create a mailing list that exists only in Mailman.  The sync script will
     # end up deleting this because it represents a race condition between when
@@ -111,18 +111,18 @@ def prepare_for_sync(team=None):
     shutil.copytree(config.mailman.build_var_dir, source_dir, symlinks=True)
     # Now, we have to mess up the production database by tweaking the email
     # addresses of all the mailing lists.
-    login('foo.bar@canonical.com')
-    email_set = getUtility(IEmailAddressSet)
-    for list_name in team_names:
-        if list_name == mm_cfg.MAILMAN_SITE_LIST:
-            continue
-        email = removeSecurityProxy(
-            email_set.getByEmail(list_name + '@lists.launchpad.dev'))
-        if email is not None:
-            # Inactive/purged mailing lists may not have email addresses.
-            email.email = list_name + '@lists.prod.launchpad.dev'
-    logout()
-    commit()
+#    login('foo.bar@canonical.com')
+#    email_set = getUtility(IEmailAddressSet)
+#    for list_name in team_names:
+#        if list_name == mm_cfg.MAILMAN_SITE_LIST:
+#            continue
+#        email = removeSecurityProxy(
+#            email_set.getByEmail(list_name + '@lists.launchpad.dev'))
+#        if email is not None:
+#            # Inactive/purged mailing lists may not have email addresses.
+#            email.email = list_name + '@lists.prod.launchpad.dev'
+#    logout()
+#    commit()
     return SyncDetails(source_dir, mhonarc_path)
 
 
