@@ -9,6 +9,7 @@ __all__ = [
     'DevNullLogger',
     'FakeLogger',
     'LaunchpadLogger',
+    'PrefixFilter',
     ]
 
 import logging
@@ -70,6 +71,21 @@ class LaunchpadLogger(logging.Logger):
     def debug9(self, msg, *args, **kwargs):
         if self.isEnabledFor(loglevels.DEBUG9):
             self._log(loglevels.DEBUG9, msg, args, **kwargs)
+
+
+class PrefixFilter:
+    """A logging Filter that inserts a prefix into messages.
+
+    If no static prefix is provided, the Logger's name is used.
+    """
+
+    def __init__(self, prefix=None):
+        self.prefix = prefix
+
+    def filter(self, record):
+        prefix = self.prefix or record.name
+        record.msg = '[%s] %s' % (prefix, record.msg)
+        return True
 
 
 class FakeLogger:
