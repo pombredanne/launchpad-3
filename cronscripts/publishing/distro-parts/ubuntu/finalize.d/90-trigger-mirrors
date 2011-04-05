@@ -2,7 +2,7 @@
 
 # Prod the master mirrors to propagate the update.
 
-MASTERMIRRORS="syowa frei scandium"
+MASTERMIRRORS="syowa frei wahoo scandium"
 echo "$(date -R): Triggering master mirrors..."
 
 for HOST in $MASTERMIRRORS
