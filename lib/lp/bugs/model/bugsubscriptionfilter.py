@@ -296,6 +296,12 @@ class BugSubscriptionFilterMute(StormBase):
 
     __storm_table__ = "BugSubscriptionFilterMute"
 
+    def __init__(self, person=None, filter=None):
+        if person is not None:
+            self.person = person
+        if filter is not None:
+            self.filter = filter.id
+
     person_id = Int("person", allow_none=False, validator=validate_person)
     person = Reference(person_id, "Person.id")
 
