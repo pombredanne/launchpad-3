@@ -407,6 +407,9 @@ class DistroSeriesDifference(Storm):
             raise DistroSeriesDifferenceError(
                 "A derived, parent and base version are required to "
                 "generate package diffs.")
+        if self.status == DistroSeriesDifferenceStatus.RESOLVED:
+            raise DistroSeriesDifferenceError(
+                "Can not generate package diffs for a resolved difference.")
         base_spr = self.base_source_pub.sourcepackagerelease
         derived_spr = self.source_pub.sourcepackagerelease
         parent_spr = self.parent_source_pub.sourcepackagerelease

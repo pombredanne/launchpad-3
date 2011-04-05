@@ -22,7 +22,10 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
-from lp.registry.errors import NotADerivedSeriesError
+from lp.registry.errors import (
+    DistroSeriesDifferenceError,
+    NotADerivedSeriesError,
+    )
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifference,
     IDistroSeriesDifferenceSource,
@@ -624,6 +627,27 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             ds_diff.requestPackageDiffs(ds_diff.owner)
         self.assertIs(None, ds_diff.package_diff)
         self.assertIsNot(None, ds_diff.parent_package_diff)
+
+    def test_requestPackageDiffs_with_resolved_DSD(self):
+        # Diffs can't be requested for DSDs that are RESOLVED.
+        changelog_lfa = self.factory.makeChangelog(versions=['0.1-1'])
+        transaction.commit() # Yay, librarian.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            status=DistroSeriesDifferenceStatus.RESOLVED,
+            versions={
+                'derived': '0.1-1',
+                'parent': '0.1-1',
+                'base': '0.1-1',
+            },
+            changelogs={
+                'derived': changelog_lfa,
+                'parent': changelog_lfa,
+            })
+        with person_logged_in(ds_diff.owner):
+            self.assertRaisesWithContent(
+                DistroSeriesDifferenceError,
+                "Can not generate package diffs for a resolved difference.",
+                ds_diff.requestPackageDiffs, ds_diff.owner)
 
     def test_package_diff_urls_none(self):
         # URLs to the package diffs are only present when the diffs
