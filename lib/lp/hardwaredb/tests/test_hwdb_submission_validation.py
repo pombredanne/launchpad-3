@@ -11,10 +11,10 @@ from unittest import (
     TestCase,
     TestLoader,
     )
-
 from zope.testing.loghandler import Handler
 
 from canonical.config import config
+from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.launchpad.scripts.logger import OopsHandler
 from canonical.testing.layers import BaseLayer
 from lp.hardwaredb.scripts.hwdbsubmissions import SubmissionParser
@@ -103,7 +103,6 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
     def test_bad_data_does_not_oops(self):
         # If the processing cronscript gets bad data, it should log it, but
         # it should not create an Oops.
-
         sample_data_path = os.path.join(
             config.root, 'lib', 'canonical', 'launchpad', 'scripts',
             'tests', 'baddatahardwaretest.xml')
@@ -111,7 +110,14 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         # Add the OopsHandler to the log, because we want to make sure this
         # doesn't create an Oops report.
         logging.getLogger('test_hwdb_submission_parser').addHandler(OopsHandler(self.log.name))
+        last_oops_time = globalErrorUtility.getLastOopsReport().time
         result, submission_id = self.runValidator(sample_data)
+
+        # We use the class method here, because it's been overrided for the
+        # other tests in this test case.
+        TestCase.assertEqual(self,
+            globalErrorUtility.getLastOopsReport().time,
+            last_oops_time)
 
     def testInvalidFormatVersion(self):
         """The attribute `format` of the root node must be `1.0`."""
