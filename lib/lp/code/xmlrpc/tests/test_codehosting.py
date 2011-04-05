@@ -1028,6 +1028,8 @@ class CodehostingTest(TestCaseWithFactory):
             translation)
 
     def test_translatePath_branch_id_alias_private_branch(self):
+        # Private branches are accessible but read-only even if you are the
+        # owner.
         requester = self.factory.makePerson()
         branch = removeSecurityProxy(
             self.factory.makeAnyBranch(
@@ -1039,6 +1041,7 @@ class CodehostingTest(TestCaseWithFactory):
             translation)
 
     def test_translatePath_branch_id_alias_private_branch_no_access(self):
+        # Private branches you don't have access to raise permission denied.
         requester = self.factory.makePerson()
         branch = removeSecurityProxy(
             self.factory.makeAnyBranch(
