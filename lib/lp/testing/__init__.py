@@ -10,14 +10,15 @@ __all__ = [
     'ANONYMOUS',
     'anonymous_logged_in',
     'api_url',
-    'build_yui_unittest_suite',
     'BrowserTestCase',
+    'build_yui_unittest_suite',
     'celebrity_logged_in',
+    'ConditionalStormStatementRecorder',
     'FakeTime',
     'get_lsb_information',
     'is_logged_in',
-    'launchpadlib_for',
     'launchpadlib_credentials_for',
+    'launchpadlib_for',
     'login',
     'login_as',
     'login_celebrity',
@@ -30,13 +31,13 @@ __all__ = [
     'person_logged_in',
     'quote_jquery_expression',
     'record_statements',
+    'run_script',
     'run_with_login',
     'run_with_storm_debug',
-    'run_script',
     'StormStatementRecorder',
+    'test_tales',
     'TestCase',
     'TestCaseWithFactory',
-    'test_tales',
     'time_counter',
     'unlink_source_packages',
     'validate_mock_class',
@@ -165,6 +166,26 @@ from lp.testing.windmill import (
     lpuser,
     )
 
+# The following names have been imported for the purpose of being
+# exported. They are referred to here to silence lint warnings.
+anonymous_logged_in
+api_url
+celebrity_logged_in
+is_logged_in
+launchpadlib_credentials_for
+launchpadlib_for
+login_as
+login_celebrity
+login_person
+login_team
+oauth_access_token_for
+person_logged_in
+run_with_login
+test_tales
+with_anonymous_login
+with_celebrity_logged_in
+with_person_logged_in
+
 
 class FakeTime:
     """Provides a controllable implementation of time.time().
@@ -282,9 +303,9 @@ class StormStatementRecorder:
         remove_tracer_type(StormStatementRecorder)
         return False
 
-    def connection_raw_execute(self, ignored, raw_cursor, statement, params):
+    def connection_raw_execute(
+        self, connection, raw_cursor, statement, params):
         """Increment the counter.  We don't care about the args."""
-
         raw_params = []
         for param in params:
             if isinstance(param, Variable):
@@ -293,6 +314,42 @@ class StormStatementRecorder:
                 raw_params.append(param)
         raw_params = tuple(raw_params)
         self.statements.append("%r, %r" % (statement, raw_params))
+
+
+class ConditionalStormStatementRecorder(StormStatementRecorder):
+    """A `StormStatementRecorder` that conditionally records queries.
+
+    Neither, either or both of `record` and `pattern` can be specified. If
+    both are given, both must match.
+
+    :param pattern: A compiled or uncompiled regular expression. Will be
+        `match`ed against the statement.
+    :param record: A function that takes a single argument - the statement -
+        and returns a boolean indicating if it should be recorded or not.
+    """
+
+    def __init__(self, pattern=None, record=None):
+        super(ConditionalStormStatementRecorder, self).__init__()
+        if isinstance(pattern, (unicode, str)):
+            pattern = re.compile(pattern)
+        if record is None and pattern is None:
+            self.record = lambda statement: True
+        elif record is not None:
+            self.record = record
+        elif pattern is not None:
+            self.record = lambda statement: (
+                pattern.match(statement) is not None)
+        else:
+            self.record = lambda statement: (
+                pattern.match(statement) is not None and
+                record(statement))
+
+    def connection_raw_execute(
+        self, connection, raw_cursor, statement, params):
+        if self.record(statement):
+            up = super(ConditionalStormStatementRecorder, self)
+            up.connection_raw_execute(
+                connection, raw_cursor, statement, params)
 
 
 def record_statements(function, *args, **kwargs):
