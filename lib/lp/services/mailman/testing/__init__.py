@@ -64,8 +64,8 @@ class MailmanTestCase(TestCaseWithFactory):
         self.cleanMailmanList(None, team.name)
         owner_email = removeSecurityProxy(team.teamowner).preferredemail.email
         mlist.Create(team.name, owner_email, 'password')
-        mlist.host_name = 'lists.launchpad.dev'
-        mlist.web_page_url = 'http://lists.launchpad.dev/mailman/'
+        mlist.host_name = mm_cfg.DEFAULT_URL_HOST
+        mlist.web_page_url = 'http://%s/mailman/' % mm_cfg.DEFAULT_URL_HOST
         mlist.personalize = 1
         mlist.include_rfc2369_headers = False
         mlist.use_dollar_strings = True
