@@ -244,6 +244,8 @@ Notifications are diplayed between the breadcrumbs and the page content.
     >>> print str(body_tag)
     <div id="maincontent" ...
       ...
-      <div class="informational message">I cannot do that Dave.</div>
+      <div id="request-notifications">
+        <div class="informational message">I cannot do that Dave.</div>
+      </div>
       <div class="top-portlet">
       ...
