@@ -10,7 +10,6 @@ import os
 import shutil
 import sys
 import tempfile
-from textwrap import dedent
 from transaction import commit
 from subprocess import Popen, PIPE
 
@@ -29,10 +28,10 @@ from lp.testing import person_logged_in
 @contextmanager
 def production_config(host_name):
     """Simulate a production Launchpad and mailman config."""
-    config.push('production', dedent("""\
+    config.push('production', """\
         [mailman]
         build_host_name: %s
-        """ % host_name))
+        """ % host_name)
     default_email_host = mm_cfg.DEFAULT_EMAIL_HOST
     mm_cfg.DEFAULT_EMAIL_HOST = host_name
     default_url_host = mm_cfg.DEFAULT_URL_HOST
