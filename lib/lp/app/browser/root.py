@@ -13,6 +13,7 @@ import re
 import time
 
 import feedparser
+from lazr.batchnavigator import ListRangeFactory
 from lazr.batchnavigator.z3batching import batch
 from zope.component import getUtility
 from zope.schema.interfaces import TooLong
@@ -560,6 +561,7 @@ class WindowedListBatch(batch._Batch):
 class GoogleBatchNavigator(BatchNavigator):
     """A batch navigator with a fixed size of 20 items per batch."""
 
+    _batch_factory = WindowedListBatch
     # Searches generally don't show the 'Last' link when there is a
     # good chance of getting over 100,000 results.
     show_last_link = False
@@ -567,7 +569,9 @@ class GoogleBatchNavigator(BatchNavigator):
     singular_heading = 'page'
     plural_heading = 'pages'
 
-    def __init__(self, results, request, start=0, size=20, callback=None):
+    def __init__(self, results, request, start=0, size=20, callback=None,
+                 transient_parameters=None, force_start=False,
+                 range_factory=None):
         """See `BatchNavigator`.
 
         :param results: A `PageMatches` object that contains the matching
@@ -583,20 +587,68 @@ class GoogleBatchNavigator(BatchNavigator):
         # pylint: disable-msg=W0231
         results = WindowedList(results, start, results.total)
         self.request = request
-        request_start = request.get(self.start_variable_name, None)
-        if request_start is None:
+        local = (self.batch_variable_name, self.start_variable_name,
+            self.memo_variable_name, self.direction_variable_name)
+        self.transient_parameters = set(local)
+        if transient_parameters is not None:
+            self.transient_parameters.update(transient_parameters)
+
+        # For backwards compatibility (as in the past a work-around has been
+        # to include the url batch params in hidden fields within posted
+        # forms), if the request is a POST request, and either the 'start'
+        # or 'batch' params are included then revert to the default behaviour
+        # of using the request (which automatically gets the params from the
+        # request.form dict).
+        if request.method == 'POST' and (
+            self.start_variable_name in request.form or
+            self.batch_variable_name in request.form):
+            batch_params_source = request
+        else:
+            # We grab the request variables directly from the requests
+            # query_string_parameters so that they will be recognized
+            # even during post operations.
+            batch_params_source = dict(
+                (k, v[0]) for k, v
+                in self.query_string_parameters.items() if k in local)
+
+        # In this code we ignore invalid request variables since it
+        # probably means the user finger-fumbled it in the request. We
+        # could raise UnexpectedFormData, but is there a good reason?
+        def param_var(name):
+            return batch_params_source.get(name, None)
+        # -- start
+        request_start = param_var(self.start_variable_name)
+        if force_start or request_start is None:
             self.start = start
         else:
             try:
                 self.start = int(request_start)
             except (ValueError, TypeError):
                 self.start = start
-
+        # -- size
         self.default_size = 20
+        size = self.default_size
+        # -- direction
+        direction = param_var(self.direction_variable_name)
+        if direction == 'backwards':
+            direction = False
+        else:
+            direction = None
+        # -- memo
+        memo = param_var(self.memo_variable_name)
+        if direction is not None and memo is None:
+            # Walking backwards from the end - the only case where we generate
+            # a url with no memo but a direction (and the only case where we
+            # need it: from the start with no memo is equivalent to a simple
+            # list slice anyway).
+            memo = ''
 
-        self.transient_parameters = [self.start_variable_name]
-
-        self.batch = WindowedListBatch(
-            results, start=self.start, size=self.default_size)
+        if range_factory is None:
+            range_factory = ListRangeFactory(results)
+        self.batch = self._batch_factory(results, range_factory,
+            start=self.start, size=size, range_forwards=direction,
+            range_memo=memo)
+        if callback is not None:
+            callback(self, self.batch)
         self.setHeadings(
             self.default_singular_heading, self.default_plural_heading)
