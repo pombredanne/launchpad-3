@@ -58,11 +58,11 @@ class TestMListSync(MailmanTestCase):
                 self.team, self.team.teamowner)
             self.mm_list = self.makeMailmanList(self.mailing_list)
             self.mm_list.Unlock()
+        self.addCleanup(self.cleanMailmanList, None, self.mm_list)
+        archive_dir = os.path.join(mm_cfg.VAR_PREFIX, 'mhonarc')
+        os.makedirs(os.path.join(archive_dir, self.team.name))
+        self.addCleanup(shutil.rmtree, archive_dir)
         self.naked_email_address_set = EmailAddressSet()
-
-    def tearDown(self):
-        super(TestMListSync, self).tearDown()
-        self.cleanMailmanList(self.mm_list)
 
     def setupProductionFiles(self):
         "Setup a production file structure to sync."
