@@ -15,9 +15,12 @@ from debian.changelog import (
     )
 from lazr.enum import DBItem
 from sqlobject import StringCol
-from storm.expr import Desc
-from storm.locals import (
+from storm.expr import (
     And,
+    Desc,
+    SQL,
+    )
+from storm.locals import (
     Int,
     Reference,
     Storm,
@@ -29,6 +32,9 @@ from zope.interface import (
     )
 
 from canonical.database.enumcol import DBEnum
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
@@ -48,6 +54,7 @@ from lp.registry.interfaces.distroseriesdifference import (
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceCommentSource,
     )
+from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distroseriesdifferencecomment import (
     DistroSeriesDifferenceComment,
     )
@@ -55,8 +62,54 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.propertycache import (
     cachedproperty,
     clear_property_cache,
+    get_property_cache,
     )
-from lp.soyuz.enums import PackageDiffStatus
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackageDiffStatus,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+
+
+def eager_load_history(dsds, parent):
+    distinct_on = "DistroSeriesDifference.source_package_name"
+    columns = (
+        # XXX: GavinPanella 2010-04-06 bug=374777: This SQL(...) is a hack; it
+        # does not seem to be possible to express DISTINCT ON with Storm.
+        SQL("DISTINCT ON (%s) 0 AS ignore" % distinct_on),
+        DistroSeriesDifference.source_package_name_id,
+        SourcePackagePublishingHistory,
+        )
+    conditions = (
+        DistroSeriesDifference.id.is_in(dsd.id for dsd in dsds),
+        DistroSeries.id == DistroSeriesDifference.derived_series_id,
+        Archive.distributionID == DistroSeries.distributionID,
+        Archive.purpose == ArchivePurpose.PRIMARY,
+        SourcePackagePublishingHistory.archiveID == Archive.id,
+        SourcePackagePublishingHistory.sourcepackagereleaseID == (
+            SourcePackageRelease.id),
+        SourcePackagePublishingHistory.status.is_in(
+            (PackagePublishingStatus.PENDING,
+             PackagePublishingStatus.PUBLISHED)),
+        SourcePackageRelease.sourcepackagenameID == (
+            DistroSeriesDifference.source_package_name_id),
+        )
+    order_by = (
+        DistroSeriesDifference.source_package_name_id,
+        # This must be descending so that the DISTINCT ON clause selects the
+        # most recent publication (i.e. the one with the highest id).
+        Desc(SourcePackagePublishingHistory.id),
+        )
+    store = IStore(SourcePackagePublishingHistory)
+    recent_publications_by_spn_id = dict(
+        (spn_id, pub) for (ignore, spn_id, pub) in store.find(
+            columns, *conditions).order_by(*order_by))
+    for dsd in dsds:
+        get_property_cache(dsd).source_pub = (
+            recent_publications_by_spn_id[dsd.source_package_name_id])
 
 
 class DistroSeriesDifference(Storm):
@@ -146,9 +199,12 @@ class DistroSeriesDifference(Storm):
                 DistroSeriesDifference.source_version >
                     DistroSeriesDifference.parent_source_version])
 
-        return IStore(DistroSeriesDifference).find(
+        differences = IStore(DistroSeriesDifference).find(
             DistroSeriesDifference,
             And(*conditions))
+
+        return DecoratedResultSet(
+            differences, pre_iter_hook=eager_load_history)
 
     @staticmethod
     def getByDistroSeriesAndName(distro_series, source_package_name):

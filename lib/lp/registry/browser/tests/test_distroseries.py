@@ -9,7 +9,10 @@ from BeautifulSoup import BeautifulSoup
 from lxml import html
 import soupmatchers
 from storm.zope.interfaces import IResultSet
-from testtools.matchers import EndsWith
+from testtools.matchers import (
+    EndsWith,
+    Equals,
+    )
 from zope.component import getUtility
 
 from canonical.config import config
@@ -49,12 +52,14 @@ from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
 from lp.testing import (
+    ConditionalStormStatementRecorder,
     feature_flags,
     login_person,
     person_logged_in,
     set_feature_flag,
     TestCaseWithFactory,
     )
+from lp.testing.matchers import HasQueryCount
 from lp.testing.views import create_initialized_view
 
 
@@ -258,6 +263,21 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory):
             None,
             find_tag_by_id(view(), 'distroseries-localdiff-search-filter'),
             "Form filter should not be shown when there are no differences.")
+
+    def test_spph_queries(self):
+        login_person(self.simple_user)
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+        for ignore in xrange(5):
+            self.factory.makeDistroSeriesDifference(
+                derived_series=derived_series)
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs', principal=self.simple_user)
+        recorder = ConditionalStormStatementRecorder(
+            pattern='SELECT SourcePackagePublishingHistory[.]')
+        with recorder:
+            view()
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
 
 
 class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
