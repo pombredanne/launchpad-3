@@ -261,7 +261,7 @@ Most distributions are an `IDerivativeDistribution`.
 
     >>> login_person(yo_driver)
     >>> view = create_view(youbuntu, name='+addseries')
-    >>> check_permission('launchpad.Driver', view)
+    >>> check_permission('launchpad.Moderate', view)
     True
 
     >>> yo_form = dict(form)
