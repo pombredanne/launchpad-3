@@ -14,6 +14,7 @@ from debian.changelog import (
     Version,
     )
 from lazr.enum import DBItem
+from operator import itemgetter
 from sqlobject import StringCol
 from storm.expr import (
     And,
@@ -75,23 +76,17 @@ from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
-def most_recent_publications(dsds, in_parent):
+def most_recent_publications(dsds, in_parent, include_pending):
     """The most recent publications for the given `DistroSeriesDifference`s.
 
-    Yields (`SourcePackageName.id`, `SourcePackagePublishingHistory`) tuples.
+    Returns an `IResultSet` that yields two columns: `SourcePackageName.id`
+    and `SourcePackagePublishingHistory`.
 
     :param dsds: An iterable of `DistroSeriesDifference` instances.
     :param in_parent: A boolean indicating if we should look in the parent
         series' archive instead of the derived series' archive.
     """
-    distinct_on = "DistroSeriesDifference.source_package_name"
-    columns = (
-        # XXX: GavinPanella 2010-04-06 bug=374777: This SQL(...) is a hack; it
-        # does not seem to be possible to express DISTINCT ON with Storm.
-        SQL("DISTINCT ON (%s) 0 AS ignore" % distinct_on),
-        DistroSeriesDifference.source_package_name_id,
-        SourcePackagePublishingHistory,
-        )
+    # Check in the parent archive or the child?
     if in_parent:
         ParentDistroSeries = ClassAlias(DistroSeries)
         archive_conditions = And(
@@ -104,18 +99,35 @@ def most_recent_publications(dsds, in_parent):
             Archive.distributionID == DistroSeries.distributionID,
             Archive.purpose == ArchivePurpose.PRIMARY,
             )
+    # Include pending publications, or just published?
+    if include_pending:
+        publication_conditions = (
+            SourcePackagePublishingHistory.status.is_in(
+                (PackagePublishingStatus.PUBLISHED,
+                 PackagePublishingStatus.PENDING)))
+    else:
+        publication_conditions = (
+            SourcePackagePublishingHistory.status == (
+                    PackagePublishingStatus.PUBLISHED))
+    # Put everything together.
+    distinct_on = "DistroSeriesDifference.source_package_name"
+    columns = (
+        # XXX: GavinPanella 2010-04-06 bug=374777: This SQL(...) is a hack; it
+        # does not seem to be possible to express DISTINCT ON with Storm.
+        SQL("DISTINCT ON (%s) 0 AS ignore" % distinct_on),
+        DistroSeriesDifference.source_package_name_id,
+        SourcePackagePublishingHistory,
+        )
     conditions = (
+        archive_conditions,
+        publication_conditions,
         DistroSeriesDifference.id.is_in(dsd.id for dsd in dsds),
         DistroSeries.id == DistroSeriesDifference.derived_series_id,
         SourcePackagePublishingHistory.archiveID == Archive.id,
         SourcePackagePublishingHistory.sourcepackagereleaseID == (
             SourcePackageRelease.id),
-        SourcePackagePublishingHistory.status.is_in(
-            (PackagePublishingStatus.PENDING,
-             PackagePublishingStatus.PUBLISHED)),
         SourcePackageRelease.sourcepackagenameID == (
             DistroSeriesDifference.source_package_name_id),
-        archive_conditions,
         )
     order_by = (
         DistroSeriesDifference.source_package_name_id,
@@ -125,8 +137,7 @@ def most_recent_publications(dsds, in_parent):
         )
     store = IStore(SourcePackagePublishingHistory)
     results = store.find(columns, *conditions).order_by(*order_by)
-    for (ignore, spn_id, pub) in results:
-        yield spn_id, pub
+    return DecoratedResultSet(results, itemgetter(1, 2))
 
 
 class DistroSeriesDifference(Storm):
@@ -222,9 +233,11 @@ class DistroSeriesDifference(Storm):
 
         def eager_load(dsds):
             source_pubs = dict(
-                most_recent_publications(dsds, in_parent=False))
+                most_recent_publications(
+                    dsds, in_parent=False, include_pending=True))
             parent_source_pubs = dict(
-                most_recent_publications(dsds, in_parent=True))
+                most_recent_publications(
+                    dsds, in_parent=True, include_pending=True))
             for dsd in dsds:
                 spn_id = dsd.source_package_name_id
                 cache = get_property_cache(dsd)
