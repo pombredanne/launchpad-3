@@ -209,6 +209,11 @@ class NotFoundView(SystemErrorView):
         """
         referrer = self.request.get('HTTP_REFERER')
         if referrer:
+            # Since this is going to be included in the page template it will
+            # be coerced into unicode.  The byte string representation
+            # 'should' be ascii, but often it isn't.  The only use for this is
+            # to show a link back to the referring site, so we can't use
+            # replace or ignore.  Best to just pretent it doesn't exist.
             try:
                 return unicode(referrer)
             except UnicodeDecodeError:
