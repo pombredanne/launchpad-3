@@ -805,7 +805,6 @@ class DistroSeriesMissingPackagesPageTestCase(DistroSeriesDifferenceMixin,
             html = view()
 
         packageset_text = re.compile('\s*' + ps.name)
-
         self._test_packagesets(
             html, packageset_text, 'parent-packagesets', 'Parent packagesets')
 

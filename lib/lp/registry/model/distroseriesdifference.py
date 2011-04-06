@@ -268,23 +268,6 @@ class DistroSeriesDifference(Storm):
         else:
             return []
 
-    def getParentPackageSetsNames(self):
-        """See `IDistroSeriesDifference`."""
-        packagesets = self.getParentPackageSets()
-        return self._formatPackageset(packagesets)
-
-    def getPackageSetsNames(self):
-        """See `IDistroSeriesDifference`."""
-        packagesets = self.getPackageSets()
-        return self._formatPackageset(packagesets)
-
-    def _formatPackageset(self, packagesets):
-        """Format a list of packagesets to display in the UI."""
-        if packagesets is not None:
-            return ', '.join([p.name for p in packagesets])
-        else:
-            return None
-
     @property
     def package_diff_status(self):
         """See `IDistroSeriesDifference`."""

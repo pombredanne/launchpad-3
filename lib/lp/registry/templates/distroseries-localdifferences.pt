@@ -24,7 +24,7 @@
       tal:define="differences view/cached_differences;
                   series_name context/displayname;
                   parent_name context/parent_series/displayname;">
-      <p><tal:replace replace="structure view/explanation" /></p>
+      <p><tal:replace replace="structure view/explanation/escapedtext" /></p>
 
       <tal:distroseries_localdiff_search_form
         tal:condition="view/has_differences">
@@ -96,11 +96,11 @@
                </td>
               <td tal:condition="view/show_parent_packagesets"
                   class="parent-packagesets">
-                <tal:replace replace="difference/getParentPackageSetsNames"/>
+                <tal:replace replace="difference/@@/parent_packagesets_names"/>
               </td>
               <td tal:condition="view/show_packagesets"
                   class="packagesets">
-                <tal:replace replace="difference/getPackageSetsNames" />
+                <tal:replace replace="difference/@@/packagesets_names" />
               </td>
               <td>
                 <tal:parent condition="not: view/show_derived_version">

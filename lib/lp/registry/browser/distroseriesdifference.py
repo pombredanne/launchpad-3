@@ -68,6 +68,29 @@ class DistroSeriesDifferenceNavigation(Navigation):
             IDistroSeriesDifferenceCommentSource).getForDifference(
                 self.context, id)
 
+    @property
+    def parent_packagesets_names(self):
+        """Return the formatted list of packagesets for the related
+        sourcepackagename in the parent.
+        """
+        packagesets = self.context.getParentPackageSets()
+        return self._formatPackageSets(packagesets)
+
+    @property
+    def packagesets_names(self):
+        """Return the formatted list of packagesets for the related
+        sourcepackagename in the derived series.
+        """
+        packagesets = self.context.getPackageSets()
+        return self._formatPackageSets(packagesets)
+
+    def _formatPackageSets(self, packagesets):
+        """Format a list of packagesets to display in the UI."""
+        if packagesets is not None:
+            return ', '.join([packageset.name for packageset in packagesets])
+        else:
+            return None
+
 
 class IDistroSeriesDifferenceForm(Interface):
     """An interface used in the browser only for displaying form elements."""

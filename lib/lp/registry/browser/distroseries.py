@@ -859,7 +859,7 @@ class DistroSeriesLocalDifferences(DistroSeriesDifferenceBase,
             '</a>).',
             self.context.displayname,
             self.context.parent_series.fullseriesname,
-            self.context.parent_series.displayname).escapedtext
+            self.context.parent_series.displayname)
 
     @property
     def label(self):
@@ -908,7 +908,7 @@ class DistroSeriesMissingPackages(DistroSeriesDifferenceBase,
             "listed here so you can consider including them in %s.",
             self.context.parent_series.displayname,
             self.context.displayname,
-            self.context.displayname).escapedtext
+            self.context.displayname)
 
     @property
     def label(self):
