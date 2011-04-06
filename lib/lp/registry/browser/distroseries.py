@@ -927,3 +927,42 @@ class DistroSeriesMissingPackages(DistroSeriesDifferenceBase,
             condition='canPerformSync')
     def sync_sources(self, action, data):
         self._sync_sources(action, data)
+
+
+class DistroSeriesUniquePackages(DistroSeriesDifferenceBase,
+                                 LaunchpadFormView):
+    """Present differences of type UNIQUE_TO_DERIVED_SERIES between
+    a derived series and its parent.
+    """
+    page_title = 'Unique packages'
+    differences_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
+    show_parent_version = False
+    show_package_diffs = False
+    show_packagesets = True
+
+    def initialize(self):
+        super(DistroSeriesUniquePackages, self).initialize()
+
+    @property
+    def explanation(self):
+        return structured(
+            "Packages that are listed here are those that have been added to "
+            "%s but are not yet part of the parent series %s.",
+            self.context.displayname,
+            self.context.parent_series.displayname)
+
+    @property
+    def label(self):
+        return (
+            "Packages in '%s' but not in parent series '%s'" % (
+                self.context.displayname,
+                self.context.parent_series.displayname,
+                ))
+
+    @action(_("Update"), name="update")
+    def update_action(self, action, data):
+        """Simply re-issue the form with the new values."""
+        pass
+
+    def canPerformSync(self, *args):
+        return False
