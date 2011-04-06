@@ -14,6 +14,7 @@ from lp.testing import (
     )
 from lp.translations.browser.pofile import POExportView
 from lp.translations.browser.potemplate import POTemplateExportView
+from lp.translations.interfaces.side import TranslationSide
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
 from lp.translations.model.poexportrequest import POExportRequest
@@ -223,18 +224,36 @@ class TestPOExportView(TestCaseWithFactory):
             [(pofile.potemplate, pofile, TranslationFileFormat.MO)],
             get_poexportrequests(include_format=True))
 
-    def test_pochanged_option_available(self):
-        # The option for partial exports is only available if a POFile can
-        # be found on the other side.
+    def test_pochanged_option_available_ubuntu(self):
+        # The option for partial exports is always available on a source
+        # package.
         ubuntu_potemplate, ubuntu_pofile = self._makeUbuntuTemplateAndPOFile()
         view = self._createView(ubuntu_pofile)
 
         self.assertTrue(view.has_pochanged_option)
 
-    def test_pochanged_option_not_available(self):
-        # The option for partial exports is not available if no POFile can
-        # be found on the other side.
+    def test_pochanged_option_available_ubuntu_no_upstream(self):
+        # The option for partial exports is always available on a source
+        # package, even if there is no upstream pofile.
+        ubuntu_pofile = self.factory.makePOFile(side=TranslationSide.UBUNTU)
+        view = self._createView(ubuntu_pofile)
+
+        self.assertTrue(view.has_pochanged_option)
+
+    def test_pochanged_option_available_upstream(self):
+        # The option for partial exports is only available upstream if a
+        # POFile can be found in Ubuntu.
+        upstream_pofile = self.factory.makePOFile()
+        self._makeUbuntuTemplateAndPOFile(upstream_pofile)
+        view = self._createView(upstream_pofile)
+
+        self.assertTrue(view.has_pochanged_option)
+
+    def test_pochanged_option_not_available_upstream(self):
+        # The option for partial exports is not available upstream if no
+        # POFile can be found in Ubuntu.
         pofile = self.factory.makePOFile()
         view = self._createView(pofile)
 
         self.assertFalse(view.has_pochanged_option)
+
