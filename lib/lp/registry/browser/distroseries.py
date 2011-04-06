@@ -648,8 +648,8 @@ class IDifferencesFormSchema(Interface):
         required=True)
 
 
-class DistroSeriesDifferenceBase(LaunchpadFormView,
-                                 PackageCopyingMixin):
+class DistroSeriesDifferenceBaseView(LaunchpadFormView,
+                                     PackageCopyingMixin):
     """Base class for all pages presenting differences between
     a derived series and its parent."""
     schema = IDifferencesFormSchema
@@ -674,7 +674,7 @@ class DistroSeriesDifferenceBase(LaunchpadFormView,
             self.request.response.redirect(canonical_url(self.context))
             return
 
-        super(DistroSeriesDifferenceBase, self).initialize()
+        super(DistroSeriesDifferenceBaseView, self).initialize()
 
     def initialize_sync_label(self, label):
         self.__class__.actions.byname['actions.sync'].label = label
@@ -698,7 +698,7 @@ class DistroSeriesDifferenceBase(LaunchpadFormView,
         As this field depends on other search/filtering field values
         for its own vocabulary, we set it up after all the others.
         """
-        super(DistroSeriesDifferenceBase, self).setUpFields()
+        super(DistroSeriesDifferenceBaseView, self).setUpFields()
         self.form_fields = (
             self.setupPackageFilterRadio() +
             self.form_fields)
@@ -828,8 +828,8 @@ class DistroSeriesDifferenceBase(LaunchpadFormView,
             return not differences.is_empty()
 
 
-class DistroSeriesLocalDifferences(DistroSeriesDifferenceBase,
-                                   LaunchpadFormView):
+class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
+                                       LaunchpadFormView):
     """Present differences of type DIFFERENT_VERSIONS between
     a derived series and its parent.
     """
@@ -845,7 +845,7 @@ class DistroSeriesLocalDifferences(DistroSeriesDifferenceBase,
                 self.context.parent_series.displayname,
                 self.context.displayname,
                 ))
-        super(DistroSeriesLocalDifferences, self).initialize()
+        super(DistroSeriesLocalDifferencesView, self).initialize()
 
     @property
     def explanation(self):
@@ -881,8 +881,8 @@ class DistroSeriesLocalDifferences(DistroSeriesDifferenceBase,
         self._sync_sources(action, data)
 
 
-class DistroSeriesMissingPackages(DistroSeriesDifferenceBase,
-                                   LaunchpadFormView):
+class DistroSeriesMissingPackagesView(DistroSeriesDifferenceBaseView,
+                                      LaunchpadFormView):
     """Present differences of type MISSING_FROM_DERIVED_SERIES between
     a derived series and its parent.
     """
@@ -898,7 +898,7 @@ class DistroSeriesMissingPackages(DistroSeriesDifferenceBase,
             "Include Selected packages into into %s" % (
                 self.context.displayname,
                 ))
-        super(DistroSeriesMissingPackages, self).initialize()
+        super(DistroSeriesMissingPackagesView, self).initialize()
 
     @property
     def explanation(self):
@@ -929,8 +929,8 @@ class DistroSeriesMissingPackages(DistroSeriesDifferenceBase,
         self._sync_sources(action, data)
 
 
-class DistroSeriesUniquePackages(DistroSeriesDifferenceBase,
-                                 LaunchpadFormView):
+class DistroSeriesUniquePackagesView(DistroSeriesDifferenceBaseView,
+                                     LaunchpadFormView):
     """Present differences of type UNIQUE_TO_DERIVED_SERIES between
     a derived series and its parent.
     """
@@ -941,7 +941,7 @@ class DistroSeriesUniquePackages(DistroSeriesDifferenceBase,
     show_packagesets = True
 
     def initialize(self):
-        super(DistroSeriesUniquePackages, self).initialize()
+        super(DistroSeriesUniquePackagesView, self).initialize()
 
     @property
     def explanation(self):
