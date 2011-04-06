@@ -21,12 +21,11 @@ from storm.exceptions import DisconnectionError
 from storm.zope.interfaces import IZStorm
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
-from zope.interface import (
-    directlyProvides,
-    noLongerProvides,
+from zope.interface import directlyProvides
+from zope.publisher.interfaces import (
+    NotFound,
+    Retry,
     )
-from zope.publisher.interfaces import Retry
-from zope.publisher.interfaces.browser import IBrowserRequest
 
 from canonical.config import dbconfig
 from canonical.launchpad.database.emailaddress import EmailAddress
@@ -438,6 +437,20 @@ class TestBlockingOffsitePosts(TestCase):
             method='POST', environ=dict(PATH_INFO=path_info))
         # this call shouldn't raise an exception
         maybe_block_offsite_form_post(request)
+
+
+class TestEncodedReferer(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_not_found(self):
+        browser = self.getUserBrowser()
+        browser.addHeader('Referer', '/whut\xe7foo')
+        self.assertRaises(
+            NotFound,
+            browser.open,
+            'http://launchpad.dev/missing')
+        self.assertEqual(1, len(self.oopses))
 
 
 def test_suite():
