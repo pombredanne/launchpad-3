@@ -6,6 +6,7 @@ __all__ = [
     'LaunchpadCronScript',
     'LaunchpadScript',
     'LaunchpadScriptFailure',
+    'disable_oops_handler',
     'SilentLaunchpadScriptFailure',
     ]
 
