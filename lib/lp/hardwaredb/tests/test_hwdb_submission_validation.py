@@ -65,7 +65,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         """
         insert_position = data.find(where)
         if after:
-            insert_postion += len(where)
+            insert_position += len(where)
         return data[:insert_position] + insert_text + data[insert_position:]
 
     def replaceSampledata(self, data, replace_text, from_text, to_text):
@@ -118,7 +118,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             insert_text=('<dmi>'
                 '/sys/class/dmi/id/bios_vendor:Dell Inc.'
                 '/sys/class/dmi/id/bios_version:A12'
-                '</dmi>')
+                '</dmi>'),
             where = '<hardware>',
             after=True)
         # Add the OopsHandler to the log, because we want to make sure this
