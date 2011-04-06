@@ -67,7 +67,9 @@ class TestPersonMergeJob(TestCaseWithFactory):
         # The to_person admins are the recipients.
         to_team = self.factory.makeTeam()
         from_team = self.factory.makeTeam()
-        job = self.job_source.create(from_person=from_team, to_person=to_team)
+        job = self.job_source.create(
+            from_person=from_team, to_person=to_team,
+            reviewer=to_team.teamowner)
         self.assertEqual(
             to_team.getTeamAdminsEmailAddresses(), job.getErrorRecipients())
 

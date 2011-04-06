@@ -33,7 +33,7 @@ class TestPersonNotification(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestPersonNotificationManager, self).setUp()
+        super(TestPersonNotification, self).setUp()
         self.notification_set = getUtility(IPersonNotificationSet)
 
     def test_to_addresses_user(self):
@@ -41,8 +41,9 @@ class TestPersonNotification(TestCaseWithFactory):
         user = self.factory.makePerson()
         notification = self.notification_set.addNotification(
             user, 'subject', 'body')
-        self.assertEqual(
-            [user.preferredemail.email], notification.to_addresses)
+        email = '%s <%s>' % (
+            user.displayname, removeSecurityProxy(user.preferredemail).email)
+        self.assertEqual([email], notification.to_addresses)
         self.assertTrue(notification.can_send)
 
     def test_to_addresses_user_without_address(self):
@@ -59,8 +60,8 @@ class TestPersonNotification(TestCaseWithFactory):
         team = self.factory.makeTeam()
         notification = self.notification_set.addNotification(
             team, 'subject', 'body')
-        self.assertEqual(
-            [team.teamowner.preferredemail.email], notification.to_addresses)
+        email = removeSecurityProxy(team.teamowner.preferredemail).email
+        self.assertEqual([email], notification.to_addresses)
         self.assertTrue(notification.can_send)
 
 
