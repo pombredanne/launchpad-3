@@ -156,13 +156,19 @@
     <browser:page
         name="+missingpackages"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="lp.registry.browser.distroseries.DistroSeriesMissingPackages"
+        class="lp.registry.browser.distroseries.DistroSeriesMissingPackagesView"
         template="../templates/distroseries-localdifferences.pt"
         permission="zope.Public"/>
     <browser:page
+        name="+uniquepackages"
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.registry.browser.distroseries.DistroSeriesUniquePackagesView"
+        template="../templates/distroseries-localdifferences.pt"
+        permission="zope.Public"/>
+     <browser:page
         name="+localpackagediffs"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="lp.registry.browser.distroseries.DistroSeriesLocalDifferences"
+        class="lp.registry.browser.distroseries.DistroSeriesLocalDifferencesView"
         template="../templates/distroseries-localdifferences.pt"
         permission="zope.Public"/>
     <browser:url
