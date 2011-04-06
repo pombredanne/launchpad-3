@@ -241,7 +241,8 @@
                     conjoined_slave
                     subscribe
                     getConjoinedMaster
-                    findSimilarBugs"/>
+                    findSimilarBugs
+                    isContributor"/>
             <require
                 permission="launchpad.Edit"
                 attributes="
@@ -1037,9 +1038,6 @@
     <subscriber
         for="lp.bugs.interfaces.bugtask.IBugTask                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.bugtask.notify_bugtask_edited"/>
-    <subscriber
-        for="lp.bugs.interfaces.bugtask.IBugTask                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
-        handler="lp.bugs.browser.bugtask.bugtask_assignee_changed_listener"/>
     <subscriber
         for="lp.bugs.interfaces.bugtask.IBugTask                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="canonical.launchpad.subscribers.karma.bugtask_modified"/>

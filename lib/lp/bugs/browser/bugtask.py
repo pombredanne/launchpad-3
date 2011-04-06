@@ -73,7 +73,6 @@ from lazr.restful.interfaces import (
     IReference,
     IWebServiceClientRequest,
     )
-from lazr.restful.utils import get_current_web_service_request
 from lazr.uri import URI
 from pytz import utc
 from simplejson import dumps
@@ -126,7 +125,6 @@ from zope.security.proxy import (
 from zope.traversing.interfaces import IPathAdapter
 
 from canonical.config import config
-from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad import (
     _,
     helpers,
@@ -1518,14 +1516,33 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         # from the form.
         missing = object()
         new_status = new_values.pop("status", missing)
+        new_assignee = new_values.pop("assignee", missing)
         if new_status is not missing and bugtask.status != new_status:
             changed = True
             bugtask.transitionToStatus(new_status, self.user)
 
-        new_assignee = new_values.pop("assignee", missing)
         if new_assignee is not missing and bugtask.assignee != new_assignee:
-            bugtask_assignee_changed(
-                self.request, self.user, bugtask, new_assignee)
+            if new_assignee is not None and new_assignee != self.user:
+                is_contributor = new_assignee.isBugContributorInTarget(
+                    user=self.user, target=bugtask.pillar)
+                if not is_contributor:
+                    # If we have a new assignee who isn't a bug
+                    # contributor in this pillar, we display a warning
+                    # to the user, in case they made a mistake.
+                    self.request.response.addWarningNotification(
+                        structured(
+                        """<a href="%s">%s</a>
+                        did not previously have any assigned bugs in
+                        <a href="%s">%s</a>.
+                        <br /><br />
+                        If this bug was assigned by mistake,
+                        you may <a href="%s/+editstatus"
+                        >change the assignment</a>.""" % (
+                        canonical_url(new_assignee),
+                        new_assignee.displayname,
+                        canonical_url(bugtask.pillar),
+                        bugtask.pillar.title,
+                        canonical_url(bugtask))))
             changed = True
             bugtask.transitionToAssignee(new_assignee)
 
@@ -1599,42 +1616,6 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
     def save_action(self, action, data):
         """Update the bugtask with the form data."""
         self.updateContextFromData(data)
-
-
-@block_implicit_flushes
-def bugtask_assignee_changed_listener(bugtask, event):
-    task_delta = event.object.getDelta(event.object_before_modification)
-    if task_delta is None or task_delta.assignee is None:
-        return
-    new_assignee = task_delta.assignee["new"]
-    user = IPerson(event.user)
-    request = get_current_web_service_request()
-    bugtask_assignee_changed(request, user, event.object, new_assignee)
-
-
-def bugtask_assignee_changed(request, user, bugtask, new_assignee):
-    if new_assignee is not None and new_assignee != user:
-        is_contributor = new_assignee.isBugContributorInTarget(
-            user=user, target=bugtask.pillar)
-        if not is_contributor:
-            # If we have a new assignee who isn't a bug
-            # contributor in this pillar, we display a warning
-            # to the user, in case they made a mistake.
-            if request is not None:
-                request.response.addWarningNotification(
-                    structured(
-                    """<a href="%s">%s</a>
-                    did not previously have any assigned bugs in
-                    <a href="%s">%s</a>.
-                    <br /><br />
-                    If this bug was assigned by mistake,
-                    you may <a href="%s/+editstatus"
-                    >change the assignment</a>.""" % (
-                    canonical_url(new_assignee),
-                    new_assignee.displayname,
-                    canonical_url(bugtask.pillar),
-                    bugtask.pillar.title,
-                    canonical_url(bugtask))))
 
 
 class BugTaskStatusView(LaunchpadView):

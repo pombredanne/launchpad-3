@@ -658,6 +658,10 @@ class BugTask(SQLBase, BugTaskMixin):
                     bugtask.sourcepackagenameID == self.sourcepackagenameID):
                     bugtask.sourcepackagenameID = PassthroughValue(new_spnid)
 
+    def isContributor(self, user, person):
+        """See `IBugTask`."""
+        return person.isBugContributorInTarget(user, self.pillar)
+
     def getConjoinedMaster(self, bugtasks, bugtasks_by_package=None):
         """See `IBugTask`."""
         conjoined_master = None
@@ -3122,7 +3126,7 @@ class BugTaskSet:
         distro_series_ids = set()
         product_ids = set()
         product_series_ids = set()
-        
+
         # Gather all the ids that might have milestones to preload for the
         # for the milestone vocabulary
         for task in bugtasks:
@@ -3132,11 +3136,11 @@ class BugTaskSet:
             product_ids.add(task.productID)
             product_series_ids.add(task.productseriesID)
 
-        distro_ids.discard(None) 
-        distro_series_ids.discard(None) 
-        product_ids.discard(None) 
-        product_series_ids.discard(None) 
-        
+        distro_ids.discard(None)
+        distro_series_ids.discard(None)
+        product_ids.discard(None)
+        product_series_ids.discard(None)
+
         milestones = store.find(
             Milestone,
             Or(
@@ -3154,7 +3158,7 @@ class BugTaskSet:
             Product, Product.id.is_in(product_ids)))
         list(store.find(
             ProductSeries, ProductSeries.id.is_in(product_series_ids)))
-            
+
         return milestones
 
-        
+

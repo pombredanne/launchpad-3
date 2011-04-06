@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from lp.bugs.windmill.testing import BugsWindmillLayer
@@ -6,12 +6,7 @@ from lp.testing import WindmillTestCase
 from lp.testing.windmill import lpuser
 from lp.testing.windmill.constants import (
     FOR_ELEMENT,
-    SLEEP,
     )
-
-
-SUBSCRIPTION_LINK = u'//div[@id="portlet-subscribers"]/div/div/a'
-PERSON_LINK = u'//div[@id="subscribers-links"]/div/a[@name="%s"]'
 
 
 class TestInlineAssignment(WindmillTestCase):
@@ -34,7 +29,37 @@ class TestInlineAssignment(WindmillTestCase):
         client.waits.forElement(jquery=ASSIGN_BUTTON, timeout=FOR_ELEMENT)
         client.click(jquery=ASSIGN_BUTTON+'[0]')
 
-        client.type(jquery="ss", "fred")
-        client.click(jquery="ss", "fred")
+        VISIBLE_PICKER_OVERLAY = (
+            u'//div[contains(@class, "yui3-picker ") and '
+             'not(contains(@class, "yui3-picker-hidden"))]')
 
-        client.waits.forElement(jquery="aaa", timeout=FOR_ELEMENT)
+        def full_picker_element_xpath(element_path):
+            return VISIBLE_PICKER_OVERLAY + element_path
+
+        client.waits.forElement(
+            xpath=VISIBLE_PICKER_OVERLAY, timeout=FOR_ELEMENT)
+
+        client.type(xpath=full_picker_element_xpath(
+            "//input[@class='yui3-picker-search']"), text='fred')
+        client.click(xpath=full_picker_element_xpath(
+            "//div[@class='yui3-picker-search-box']/button"))
+#        client.waits.forElement(
+#            jquery=u'(.yui-picker-assign-me-button)', timeout=FOR_ELEMENT)
+#        client.type(jquery=u'(.yui3-picker-search)', text='fred')
+#        client.click(jquery=u'(button.lazr-search)[0]')
+#        client.click(jquery=u'(button.lazr-search)[0]')
+#        client.waits.forElement(
+#            jquery='u(ul.yui3-picker-results)[0]', timeout=FOR_ELEMENT)
+
+        PICKER_RESULT = full_picker_element_xpath(
+            "//ul[@class='yui3-picker-results']/li[1]/span")
+
+        client.waits.forElement(xpath=PICKER_RESULT, timeout=FOR_ELEMENT)
+        client.click(xpath=PICKER_RESULT)
+
+        WARNING_NOTIFICATION = ("//div[contains(@class, 'warning') and "
+            "contains(@class, 'message')]")
+        client.waits.forElement(xpath=WARNING_NOTIFICATION, timeout=60000)
+        self.client.asserts.assertTextIn(
+            xpath=WARNING_NOTIFICATION,
+            validator="Fred did not previously have any assigned bugs")

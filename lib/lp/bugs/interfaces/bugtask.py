@@ -62,6 +62,7 @@ from lazr.restful.declarations import (
     export_write_operation,
     exported,
     mutator_for,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     rename_parameters_as,
@@ -653,6 +654,23 @@ class IBugTask(IHasDateCreated, IHasBug):
     @export_read_operation()
     def findSimilarBugs(user, limit=10):
         """Return the list of possible duplicates for this BugTask."""
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(person=copy_field(assignee))
+    @export_read_operation()
+    @operation_for_version("beta")
+    def isContributor(user, person):
+        """Is the person a contributor to bugs in this task's pillar?
+
+        Return True if the user has any bugs assigned to him in the
+        context of this bug task's pillar, either directly or by team
+        participation.
+
+        :user: The user doing the search. Private bugs that this
+            user doesn't have access to won't be included in the
+            count.
+        :person: The person to check to see if they are a contributor.
+        """
 
     def getConjoinedMaster(bugtasks, bugtasks_by_package=None):
         """Return the conjoined master in the given bugtasks, if any.
@@ -1623,7 +1641,7 @@ class IBugTaskSet(Interface):
 
     def buildUpstreamClause(params):
         """Create a SQL clause to do upstream checks in a bug search.
-        
+
         :return: A string SQL expression.
         """
 
