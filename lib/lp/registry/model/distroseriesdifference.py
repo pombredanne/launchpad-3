@@ -74,7 +74,7 @@ from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
-def eager_load_history(dsds, parent):
+def eager_load_history(dsds):
     distinct_on = "DistroSeriesDifference.source_package_name"
     columns = (
         # XXX: GavinPanella 2010-04-06 bug=374777: This SQL(...) is a hack; it
