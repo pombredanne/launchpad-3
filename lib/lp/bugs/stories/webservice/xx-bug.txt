@@ -434,6 +434,11 @@ The milestone can only be set by appropriately privileged users.
   >>> print webservice.get(bugtask_path).jsonBody()['milestone_link']
   http://.../debian/+milestone/3.1
 
+We need to ensure the milestone we try and set is different to the current
+value because lazr restful now discards attempts to patch an attribute with an
+unchanged value.
+  >>> patch = {u'milestone_link': webservice.getAbsoluteUrl(
+  ...                                 '/debian/+milestone/3.1-rc1')}
   >>> print user_webservice.patch(
   ...     bugtask_path, 'application/json', dumps(patch))
   HTTP/1.1 401 Unauthorized...

@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = []
 
-import unittest
 
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.testing import WindmillTestCase
@@ -37,7 +36,3 @@ class TestProductEditPeople(WindmillTestCase):
             result_index=1,
             new_value='guadamen')
         test()
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

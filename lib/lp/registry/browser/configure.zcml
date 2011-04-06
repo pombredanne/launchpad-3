@@ -154,6 +154,12 @@
         class="canonical.launchpad.browser.AskAQuestionButtonView"
         permission="zope.Public"/>
     <browser:page
+        name="+missingpackages"
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.registry.browser.distroseries.DistroSeriesMissingPackages"
+        template="../templates/distroseries-localdifferences.pt"
+        permission="zope.Public"/>
+    <browser:page
         name="+localpackagediffs"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         class="lp.registry.browser.distroseries.DistroSeriesLocalDifferences"
@@ -1957,7 +1963,7 @@
         class="lp.registry.browser.distroseries.DistroSeriesAddView"
         facet="overview"
         permission="launchpad.Admin"
-        template="../../app/templates/generic-edit.pt">
+        template="../templates/distroseries-add.pt">
     </browser:page>
     <browser:page
         name="+addseries"
@@ -1965,7 +1971,7 @@
         class="lp.registry.browser.distroseries.DistroSeriesAddView"
         facet="overview"
         permission="launchpad.Append"
-        template="../../app/templates/generic-edit.pt">
+        template="../templates/distroseries-add.pt">
     </browser:page>
     <browser:page
         name="+initseries"
