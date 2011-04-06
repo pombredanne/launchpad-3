@@ -13,6 +13,7 @@ __all__ = [
     ]
 
 
+import functools
 import StringIO
 import sys
 
@@ -21,16 +22,17 @@ from twisted.internet import (
     threads,
     reactor as default_reactor,
     )
-from twisted.python.util import mergeFunctionMetadata
+from twisted.python.failure import Failure
 
 
 def defer_to_thread(function):
     """Run in a thread and return a Deferred that fires when done."""
 
+    @functools.wraps(function)
     def decorated(*args, **kwargs):
         return threads.deferToThread(function, *args, **kwargs)
 
-    return mergeFunctionMetadata(function, decorated)
+    return decorated
 
 
 def gatherResults(deferredList):
@@ -63,6 +65,7 @@ def suppress_stderr(function):
         sys.stderr = stream
         return result
 
+    @functools.wraps(function)
     def wrapper(*arguments, **keyword_arguments):
         saved_stderr = sys.stderr
         ignored_stream = StringIO.StringIO()
@@ -70,7 +73,7 @@ def suppress_stderr(function):
         d = defer.maybeDeferred(function, *arguments, **keyword_arguments)
         return d.addBoth(set_stderr, saved_stderr)
 
-    return mergeFunctionMetadata(function, wrapper)
+    return wrapper
 
 
 def extract_result(deferred):
@@ -114,3 +117,19 @@ def cancel_on_timeout(d, timeout, reactor=None):
         return passthrough
     return d.addBoth(cancel_timeout)
 
+
+def no_traceback_failures(func):
+    """Decorator to return traceback-less Failures instead of raising errors.
+    
+    This is useful for functions used as callbacks or errbacks for a Deferred.
+    Traceback-less failures are much faster than the automatic Failures
+    Deferred constructs internally.
+    """
+    @functools.wraps(func)
+    def wrapped(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except BaseException, e:
+            return Failure(e)
+
+    return wrapped

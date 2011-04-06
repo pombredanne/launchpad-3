@@ -9,7 +9,6 @@ __metaclass__ = type
 
 import transaction
 
-from canonical.launchpad.webapp import canonical_url
 from lp.testing import (
     feature_flags,
     set_feature_flag,
@@ -20,7 +19,6 @@ from lp.testing.windmill import (
 )
 from lp.testing.windmill.constants import (
     FOR_ELEMENT,
-    PAGE_LOAD,
 )
 from lp.testing.windmill.widgets import (
     search_and_select_picker_widget,
@@ -45,29 +43,26 @@ class TestSharingDetails(WindmillTestCase):
         self.useContext(feature_flags())
         set_feature_flag(u'translations.sharing_information.enabled', u'on')
         transaction.commit()
-        url = canonical_url(
-            sourcepackage, rootsite='translations',
+        client, start_url = self.getClientFor(
+            sourcepackage, user=lpuser.TRANSLATIONS_ADMIN,
             view_name='+sharing-details')
-        self.client.open(url=url)
-        self.client.waits.forPageLoad(timeout=PAGE_LOAD)
-        lpuser.TRANSLATIONS_ADMIN.ensure_login(self.client)
-        self.client.waits.forElement(
+        client.waits.forElement(
             id='branch-incomplete', timeout=FOR_ELEMENT)
-        self.client.click(xpath='//*[@id="packaging-incomplete-picker"]/a')
+        client.click(xpath='//*[@id="packaging-incomplete-picker"]/a')
         search_and_select_picker_widget(self.client, 'my-ps-name', 1)
-        self.client.waits.forElementProperty(
+        client.waits.forElementProperty(
             id='packaging-incomplete', option='className|sprite no unseen',
             timeout=FOR_ELEMENT)
-        self.client.click(xpath='//*[@id="branch-incomplete-picker"]/a')
+        client.click(xpath='//*[@id="branch-incomplete-picker"]/a')
         search_and_select_picker_widget(self.client, 'product-branch', 1)
-        self.client.waits.forElementProperty(
+        client.waits.forElementProperty(
             xpath='//*[@id="upstream-sync-incomplete-picker"]/a',
             option='className|sprite edit', timeout=FOR_ELEMENT)
-        self.client.click(
+        client.click(
             xpath='//*[@id="upstream-sync-incomplete-picker"]/a')
-        self.client.click(id='field.translations_autoimport_mode.2')
-        self.client.click(xpath='//input[@value="Submit"]')
-        self.client.waits.forElementProperty(
+        client.click(id='field.translations_autoimport_mode.2')
+        client.click(xpath='//input[@value="Submit"]')
+        client.waits.forElementProperty(
             id='upstream-sync-incomplete', option='className|sprite no unseen',
             timeout=FOR_ELEMENT)
         transaction.commit()

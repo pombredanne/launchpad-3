@@ -14,10 +14,6 @@
     <script type="text/javascript"
             tal:condition="devmode"
             tal:content="string:var yui_base='${yui}';"></script>
-    <script type="text/javascript"
-            tal:condition="devmode"
-            tal:define="lp_js string:${icingroot}/build"
-            tal:attributes="src string:${lp_js}/bugs/filebug-dupefinder.js"></script>
 
     <script type="text/javascript" tal:condition="view/user_is_muted">
         LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.bug_subscription',
