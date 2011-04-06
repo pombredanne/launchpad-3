@@ -76,7 +76,7 @@ from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
-def most_recent_publications(dsds, in_parent, include_pending):
+def most_recent_publications(dsds, in_parent, include_pending, match_version):
     """The most recent publications for the given `DistroSeriesDifference`s.
 
     Returns an `IResultSet` that yields two columns: `SourcePackageName.id`
@@ -85,31 +85,13 @@ def most_recent_publications(dsds, in_parent, include_pending):
     :param dsds: An iterable of `DistroSeriesDifference` instances.
     :param in_parent: A boolean indicating if we should look in the parent
         series' archive instead of the derived series' archive.
+
+    :param include_pending: A boolean indicating if pending publications
+        should be considered. If not only published publications are
+        considered.
+    :param match_version: Whether or not to match the against
+        `DistroSeriesDifference.base_version`.
     """
-    # Check in the parent archive or the child?
-    if in_parent:
-        ParentDistroSeries = ClassAlias(DistroSeries)
-        archive_conditions = And(
-            ParentDistroSeries.id == DistroSeries.parent_seriesID,
-            Archive.distributionID == ParentDistroSeries.distributionID,
-            Archive.purpose == ArchivePurpose.PRIMARY,
-            )
-    else:
-        archive_conditions = And(
-            Archive.distributionID == DistroSeries.distributionID,
-            Archive.purpose == ArchivePurpose.PRIMARY,
-            )
-    # Include pending publications, or just published?
-    if include_pending:
-        publication_conditions = (
-            SourcePackagePublishingHistory.status.is_in(
-                (PackagePublishingStatus.PUBLISHED,
-                 PackagePublishingStatus.PENDING)))
-    else:
-        publication_conditions = (
-            SourcePackagePublishingHistory.status == (
-                    PackagePublishingStatus.PUBLISHED))
-    # Put everything together.
     distinct_on = "DistroSeriesDifference.source_package_name"
     columns = (
         # XXX: GavinPanella 2010-04-06 bug=374777: This SQL(...) is a hack; it
@@ -118,9 +100,7 @@ def most_recent_publications(dsds, in_parent, include_pending):
         DistroSeriesDifference.source_package_name_id,
         SourcePackagePublishingHistory,
         )
-    conditions = (
-        archive_conditions,
-        publication_conditions,
+    conditions = And(
         DistroSeriesDifference.id.is_in(dsd.id for dsd in dsds),
         DistroSeries.id == DistroSeriesDifference.derived_series_id,
         SourcePackagePublishingHistory.archiveID == Archive.id,
@@ -129,14 +109,51 @@ def most_recent_publications(dsds, in_parent, include_pending):
         SourcePackageRelease.sourcepackagenameID == (
             DistroSeriesDifference.source_package_name_id),
         )
+    # Check in the parent archive or the child?
+    if in_parent:
+        ParentDistroSeries = ClassAlias(DistroSeries)
+        conditions = And(
+            conditions,
+            ParentDistroSeries.id == DistroSeries.parent_seriesID,
+            Archive.distributionID == ParentDistroSeries.distributionID,
+            Archive.purpose == ArchivePurpose.PRIMARY,
+            )
+    else:
+        conditions = And(
+            conditions,
+            Archive.distributionID == DistroSeries.distributionID,
+            Archive.purpose == ArchivePurpose.PRIMARY,
+            )
+    # Include pending publications, or just published?
+    if include_pending:
+        conditions = And(
+            conditions,
+            SourcePackagePublishingHistory.status.is_in(
+                (PackagePublishingStatus.PUBLISHED,
+                 PackagePublishingStatus.PENDING)),
+            )
+    else:
+        conditions = And(
+            conditions,
+            SourcePackagePublishingHistory.status == (
+                PackagePublishingStatus.PUBLISHED),
+            )
+    # Match on base version.
+    if match_version:
+        conditions = And(
+            conditions,
+            DistroSeriesDifference.base_version != None,
+            SourcePackageRelease.version == (
+                DistroSeriesDifference.base_version),
+            )
+    # The sort order is critical so that the DISTINCT ON clause selects the
+    # most recent publication (i.e. the one with the highest id).
     order_by = (
         DistroSeriesDifference.source_package_name_id,
-        # This must be descending so that the DISTINCT ON clause selects the
-        # most recent publication (i.e. the one with the highest id).
         Desc(SourcePackagePublishingHistory.id),
         )
     store = IStore(SourcePackagePublishingHistory)
-    results = store.find(columns, *conditions).order_by(*order_by)
+    results = store.find(columns, conditions).order_by(*order_by)
     return DecoratedResultSet(results, itemgetter(1, 2))
 
 
@@ -234,10 +251,12 @@ class DistroSeriesDifference(Storm):
         def eager_load(dsds):
             source_pubs = dict(
                 most_recent_publications(
-                    dsds, in_parent=False, include_pending=True))
+                    dsds, in_parent=False, include_pending=True,
+                    match_version=False))
             parent_source_pubs = dict(
                 most_recent_publications(
-                    dsds, in_parent=True, include_pending=True))
+                    dsds, in_parent=True, include_pending=True,
+                    match_version=False))
             for dsd in dsds:
                 spn_id = dsd.source_package_name_id
                 cache = get_property_cache(dsd)
