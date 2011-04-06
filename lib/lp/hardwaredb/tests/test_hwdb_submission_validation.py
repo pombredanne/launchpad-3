@@ -57,13 +57,15 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
                                                                submission_id)
         return result, submission_id
 
-    def insertSampledata(self, data, insert_text, where):
+    def insertSampledata(self, data, insert_text, where, after=False):
         """Insert text into the sample data `data`.
 
         Insert the text `insert_text` before the first occurrence of
         `where` in `data`.
         """
         insert_position = data.find(where)
+        if after:
+            insert_postion += len(where)
         return data[:insert_position] + insert_text + data[insert_position:]
 
     def replaceSampledata(self, data, replace_text, from_text, to_text):
@@ -111,10 +113,14 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
     def test_bad_data_does_not_oops(self):
         # If the processing cronscript gets bad data, it should log it, but
         # it should not create an Oops.
-        sample_data_path = os.path.join(
-            config.root, 'lib', 'canonical', 'launchpad', 'scripts',
-            'tests', 'baddatahardwaretest.xml')
-        sample_data = file(sample_data_path).read()
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text=('<dmi>'
+                '/sys/class/dmi/id/bios_vendor:Dell Inc.'
+                '/sys/class/dmi/id/bios_version:A12'
+                '</dmi>')
+            where = '<hardware>',
+            after=True)
         # Add the OopsHandler to the log, because we want to make sure this
         # doesn't create an Oops report.
         logging.getLogger('test_hwdb_submission_parser').addHandler(OopsHandler(self.log.name))
