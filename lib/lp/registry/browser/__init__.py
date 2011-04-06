@@ -77,6 +77,7 @@ def add_subscribe_link(links):
         'malone.advanced-structural-subscriptions.enabled')
     if use_advanced_features:
         links.append('subscribe_to_bug_mail')
+        links.append('edit_bug_mail')
     else:
         links.append('subscribe')
 

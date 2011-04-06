@@ -19,6 +19,7 @@ __all__ = [
     'DistroSeriesView',
     ]
 
+from lazr.restful.interface import copy_field
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
@@ -39,7 +40,6 @@ from canonical.launchpad import (
     _,
     helpers,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.webapp import (
     action,
     custom_widget,
@@ -504,31 +504,53 @@ class DistroSeriesAdminView(LaunchpadEditFormView, SeriesStatusMixin):
         self.next_url = canonical_url(self.context)
 
 
+class IDistroSeriesAddForm(Interface):
+
+    name = copy_field(
+        IDistroSeries["name"], description=_(
+            "The name of this series as used for URLs."))
+
+    version = copy_field(
+        IDistroSeries["version"], description=_(
+            "The version of the new series."))
+
+    displayname = copy_field(
+        IDistroSeries["displayname"], description=_(
+            "The name of the new series as it would "
+            "appear in a paragraph."))
+
+    summary = copy_field(IDistroSeries["summary"])
+
+
 class DistroSeriesAddView(LaunchpadFormView):
     """A view to create an `IDistroSeries`."""
-    schema = IDistroSeries
+    schema = IDistroSeriesAddForm
     field_names = [
-        'name', 'displayname', 'title', 'summary', 'description', 'version',
-        'parent_series']
+        'name',
+        'version',
+        'displayname',
+        'summary',
+        ]
 
-    label = 'Register a series'
+    help_links = {
+        "name": u"/+help/distribution-add-series.html#codename",
+        }
+
+    label = 'Add a series'
     page_title = label
 
-    @action(_('Create Series'), name='create')
+    @action(_('Add Series'), name='create')
     def createAndAdd(self, action, data):
         """Create and add a new Distribution Series"""
-        registrant = getUtility(ILaunchBag).user
-
-        assert registrant is not None
         distroseries = self.context.newSeries(
             name=data['name'],
             displayname=data['displayname'],
-            title=data['title'],
+            title=data['displayname'],
             summary=data['summary'],
-            description=data['description'],
+            description=u"",
             version=data['version'],
-            parent_series=data['parent_series'],
-            registrant=registrant)
+            parent_series=None,
+            registrant=self.user)
         notify(ObjectCreatedEvent(distroseries))
         self.next_url = canonical_url(distroseries)
         return distroseries

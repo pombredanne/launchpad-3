@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import unittest
-
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import WindmillTestCase
 from lp.testing.windmill import (
@@ -22,7 +20,8 @@ class TestBugAlsoAffects(WindmillTestCase):
 
     def setUp(self):
         WindmillTestCase.setUp(self)
-        lpuser.SAMPLE_PERSON.ensure_login(self.client)
+        self.client, start_url = self.getClientFor(
+            '/', user=lpuser.SAMPLE_PERSON)
         self.choose_affected_url = (
                             '%s/tomcat/+bug/3/+choose-affected-product'
                             % BugsWindmillLayer.base_url)
@@ -59,7 +58,3 @@ class TestBugAlsoAffects(WindmillTestCase):
         search_picker_widget(client, 'nonexistant')
         client.waits.forElement(
             link=u'Register it', timeout=constants.FOR_ELEMENT)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

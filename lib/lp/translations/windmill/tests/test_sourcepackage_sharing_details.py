@@ -9,7 +9,6 @@ __metaclass__ = type
 
 import transaction
 
-from canonical.launchpad.webapp import canonical_url
 from lp.testing import (
     feature_flags,
     set_feature_flag,
@@ -20,7 +19,6 @@ from lp.testing.windmill import (
 )
 from lp.testing.windmill.constants import (
     FOR_ELEMENT,
-    PAGE_LOAD,
 )
 from lp.testing.windmill.widgets import (
     search_and_select_picker_widget,
@@ -41,17 +39,15 @@ class TestSharingDetails(WindmillTestCase):
         self.useContext(feature_flags())
         set_feature_flag(u'translations.sharing_information.enabled', u'on')
         transaction.commit()
-        url = canonical_url(
-            packaging.sourcepackage, rootsite='translations',
+
+        client, start_url = self.getClientFor(
+            packaging.sourcepackage, user=lpuser.TRANSLATIONS_ADMIN,
             view_name='+sharing-details')
-        self.client.open(url=url)
-        self.client.waits.forPageLoad(timeout=PAGE_LOAD)
-        lpuser.TRANSLATIONS_ADMIN.ensure_login(self.client)
-        self.client.waits.forElement(
+        client.waits.forElement(
             id='branch-incomplete', timeout=FOR_ELEMENT)
-        self.client.click(xpath='//*[@id="branch-incomplete-picker"]/a')
-        search_and_select_picker_widget(self.client, 'product-branch', 1)
-        self.client.waits.forElementProperty(
+        client.click(xpath='//*[@id="branch-incomplete-picker"]/a')
+        search_and_select_picker_widget(client, 'product-branch', 1)
+        client.waits.forElementProperty(
             id='branch-incomplete', option='className|sprite no unseen',
             timeout=FOR_ELEMENT)
         transaction.commit()
