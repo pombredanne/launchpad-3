@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import unittest
-
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import WindmillTestCase
 from lp.testing.windmill import (
@@ -22,12 +20,10 @@ class TestFilebugExtras(WindmillTestCase):
         This test ensures that, with Javascript enabled, the extra options
         expander starts closed, and contains several fields when opened.
         """
-        client = self.client
 
         # Open a +filebug page and wait for it to finish loading.
-        client.open(url=u'%s/firefox/+filebug' % BugsWindmillLayer.base_url)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        lpuser.SAMPLE_PERSON.ensure_login(client)
+        client, start_url = self.getClientFor(
+            '/firefox/+filebug', user=lpuser.SAMPLE_PERSON)
 
         # Search for a possible duplicate.
         client.waits.forElement(
@@ -61,7 +57,3 @@ def _test_expander(client):
 
     # The collapsible area is expanded and does display.
     client.asserts.assertNode(xpath=form_opened)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

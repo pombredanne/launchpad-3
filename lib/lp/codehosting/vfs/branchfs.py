@@ -116,6 +116,7 @@ from lp.codehosting.vfs.transport import (
     get_readonly_transport,
     TranslationError,
     )
+from lp.services.twistedsupport import no_traceback_failures
 from lp.services.twistedsupport.xmlrpc import (
     DeferredBlockingProxy,
     trap_fault,
@@ -399,17 +400,18 @@ class _BaseLaunchpadServer(AsyncVirtualServer):
         deferred = self._branchfs_client.translatePath(
             '/' + virtual_url_fragment)
 
-        def path_not_translated(failure):
+        def path_not_translated(fail):
             trap_fault(
-                failure, faults.PathTranslationError, faults.PermissionDenied)
-            raise NoSuchFile(virtual_url_fragment)
+                fail, faults.PathTranslationError, faults.PermissionDenied)
+            return failure.Failure(NoSuchFile(virtual_url_fragment))
 
-        def unknown_transport_type(failure):
-            failure.trap(UnknownTransportType)
-            raise NoSuchFile(virtual_url_fragment)
+        def unknown_transport_type(fail):
+            fail.trap(UnknownTransportType)
+            return failure.Failure(NoSuchFile(virtual_url_fragment))
 
         deferred.addCallbacks(
-            self._transport_dispatch.makeTransport, path_not_translated)
+            no_traceback_failures(self._transport_dispatch.makeTransport),
+            path_not_translated)
         deferred.addErrback(unknown_transport_type)
         return deferred
 
@@ -480,6 +482,7 @@ class DirectDatabaseLaunchpadServer(AsyncVirtualServer):
             getUtility(IBranchLookup).getIdAndTrailingPath(
                 virtual_url_fragment))
 
+        @no_traceback_failures
         def process_result((branch_id, trailing)):
             if branch_id is None:
                 raise NoSuchFile(virtual_url_fragment)
@@ -511,11 +514,13 @@ class AsyncLaunchpadTransport(AsyncVirtualTransport):
         deferred = AsyncVirtualTransport._getUnderylingTransportAndPath(
             self, relpath)
 
+        @no_traceback_failures
         def maybe_make_branch_in_db(failure):
             # Looks like we are trying to make a branch.
             failure.trap(NoSuchFile)
             return self.server.createBranch(self._abspath(relpath))
 
+        @no_traceback_failures
         def real_mkdir((transport, path)):
             return getattr(transport, 'mkdir')(path, mode)
 
@@ -532,8 +537,9 @@ class AsyncLaunchpadTransport(AsyncVirtualTransport):
         else:
             deferred = defer.succeed(None)
         deferred = deferred.addCallback(
-            lambda ignored: AsyncVirtualTransport.rename(
-                self, rel_from, rel_to))
+            no_traceback_failures(
+                lambda ignored: AsyncVirtualTransport.rename(
+                    self, rel_from, rel_to)))
         return deferred
 
     def rmdir(self, relpath):
@@ -607,7 +613,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
         """
         deferred = self._branchfs_client.createBranch(virtual_url_fragment)
 
-        def translate_fault(failure):
+        def translate_fault(fail):
             # We turn faults.NotFound into a PermissionDenied, even
             # though one might think that it would make sense to raise
             # NoSuchFile. Sadly, raising that makes the client do "clever"
@@ -616,11 +622,12 @@ class LaunchpadServer(_BaseLaunchpadServer):
             # exist. You may supply --create-prefix to create all leading
             # parent directories", which is just misleading.
             fault = trap_fault(
-                failure, faults.NotFound, faults.PermissionDenied)
+                fail, faults.NotFound, faults.PermissionDenied)
             faultString = fault.faultString
             if isinstance(faultString, unicode):
                 faultString = faultString.encode('utf-8')
-            raise PermissionDenied(virtual_url_fragment, faultString)
+            return failure.Failure(
+                PermissionDenied(virtual_url_fragment, faultString))
 
         return deferred.addErrback(translate_fault)
 
@@ -671,6 +678,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
         deferred = self._branchfs_client.translatePath(
             '/' + virtual_url_fragment)
 
+        @no_traceback_failures
         def got_path_info((transport_type, data, trailing_path)):
             if transport_type != BRANCH_TRANSPORT:
                 raise NotABranchPath(virtual_url_fragment)
@@ -699,6 +707,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
                 data['id'], stacked_on_url, last_revision,
                 control_string, branch_string, repository_string)
 
+        @no_traceback_failures
         def handle_error(failure=None, **kw):
             # It gets really confusing if we raise an exception from this
             # method (the branch remains locked, but this isn't obvious to
