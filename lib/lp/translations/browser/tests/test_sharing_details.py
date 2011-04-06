@@ -917,7 +917,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
                 'href': '#',
                 'class': 'sprite edit unseen',
                 }
-            )
+        )
         self.assertThat(browser.contents, HTMLContains(matcher))
         matcher = Tag(
             'upstream-translations-complete', 'a',
@@ -926,7 +926,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
                 'href': '#',
                 'class': 'sprite edit unseen',
                 }
-            )
+        )
         self.assertThat(browser.contents, HTMLContains(matcher))
 
     def test_upstream_sync_link(self):
@@ -941,7 +941,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
                 'href': '#',
                 'class': 'sprite edit unseen',
                 }
-            )
+        )
         self.assertThat(browser.contents, HTMLContains(matcher))
         matcher = Tag(
             'translation-synchronisation-complete', 'a',
@@ -950,7 +950,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
                 'href': '#',
                 'class': 'sprite edit unseen',
                 }
-            )
+        )
         self.assertThat(browser.contents, HTMLContains(matcher))
 
 
