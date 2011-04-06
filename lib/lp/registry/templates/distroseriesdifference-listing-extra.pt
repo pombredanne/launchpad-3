@@ -37,6 +37,7 @@
         <li tal:repeat="summary view/binary_summaries">
           <tal:description replace="summary" /></li>
       </ul></dd>
+    <tal:package-diffs tal:condition="view/can_have_packages_diffs">
     <dt>Last common version:</dt>
     <dd tal:content="context/base_version">1.2.1</dd>
     <dt
@@ -111,6 +112,7 @@
 
       </ul>
     </dd>
+    </tal:package-diffs>
   </dl>
 
   <h2>Comments:</h2>
