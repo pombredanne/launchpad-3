@@ -20,6 +20,7 @@ from storm.expr import (
     Desc,
     SQL,
     )
+from storm.info import ClassAlias
 from storm.locals import (
     Int,
     Reference,
@@ -74,7 +75,15 @@ from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
-def eager_load_history(dsds):
+def most_recent_publications(dsds, in_parent):
+    """The most recent publications for the given `DistroSeriesDifference`s.
+
+    Yields (`SourcePackageName.id`, `SourcePackagePublishingHistory`) tuples.
+
+    :param dsds: An iterable of `DistroSeriesDifference` instances.
+    :param in_parent: A boolean indicating if we should look in the parent
+        series' archive instead of the derived series' archive.
+    """
     distinct_on = "DistroSeriesDifference.source_package_name"
     columns = (
         # XXX: GavinPanella 2010-04-06 bug=374777: This SQL(...) is a hack; it
@@ -83,11 +92,21 @@ def eager_load_history(dsds):
         DistroSeriesDifference.source_package_name_id,
         SourcePackagePublishingHistory,
         )
+    if in_parent:
+        ParentDistroSeries = ClassAlias(DistroSeries)
+        archive_conditions = And(
+            ParentDistroSeries.id == DistroSeries.parent_seriesID,
+            Archive.distributionID == ParentDistroSeries.distributionID,
+            Archive.purpose == ArchivePurpose.PRIMARY,
+            )
+    else:
+        archive_conditions = And(
+            Archive.distributionID == DistroSeries.distributionID,
+            Archive.purpose == ArchivePurpose.PRIMARY,
+            )
     conditions = (
         DistroSeriesDifference.id.is_in(dsd.id for dsd in dsds),
         DistroSeries.id == DistroSeriesDifference.derived_series_id,
-        Archive.distributionID == DistroSeries.distributionID,
-        Archive.purpose == ArchivePurpose.PRIMARY,
         SourcePackagePublishingHistory.archiveID == Archive.id,
         SourcePackagePublishingHistory.sourcepackagereleaseID == (
             SourcePackageRelease.id),
@@ -96,6 +115,7 @@ def eager_load_history(dsds):
              PackagePublishingStatus.PUBLISHED)),
         SourcePackageRelease.sourcepackagenameID == (
             DistroSeriesDifference.source_package_name_id),
+        archive_conditions,
         )
     order_by = (
         DistroSeriesDifference.source_package_name_id,
@@ -104,12 +124,9 @@ def eager_load_history(dsds):
         Desc(SourcePackagePublishingHistory.id),
         )
     store = IStore(SourcePackagePublishingHistory)
-    recent_publications_by_spn_id = dict(
-        (spn_id, pub) for (ignore, spn_id, pub) in store.find(
-            columns, *conditions).order_by(*order_by))
-    for dsd in dsds:
-        get_property_cache(dsd).source_pub = (
-            recent_publications_by_spn_id[dsd.source_package_name_id])
+    results = store.find(columns, *conditions).order_by(*order_by)
+    for (ignore, spn_id, pub) in results:
+        yield spn_id, pub
 
 
 class DistroSeriesDifference(Storm):
@@ -203,8 +220,19 @@ class DistroSeriesDifference(Storm):
             DistroSeriesDifference,
             And(*conditions))
 
+        def eager_load(dsds):
+            source_pubs = dict(
+                most_recent_publications(dsds, in_parent=False))
+            parent_source_pubs = dict(
+                most_recent_publications(dsds, in_parent=True))
+            for dsd in dsds:
+                spn_id = dsd.source_package_name_id
+                cache = get_property_cache(dsd)
+                cache.source_pub = source_pubs[spn_id]
+                cache.parent_source_pub = parent_source_pubs[spn_id]
+
         return DecoratedResultSet(
-            differences, pre_iter_hook=eager_load_history)
+            differences, pre_iter_hook=eager_load)
 
     @staticmethod
     def getByDistroSeriesAndName(distro_series, source_package_name):
