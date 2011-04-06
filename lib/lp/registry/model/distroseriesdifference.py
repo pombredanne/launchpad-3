@@ -254,6 +254,21 @@ class DistroSeriesDifference(Storm):
         """See `IDistroSeriesDifference`."""
         return self._getLatestSourcePub(for_parent=True)
 
+    def _getLatestSourcePub(self, for_parent=False):
+        """Helper to keep source_pub/parent_source_pub DRY."""
+        distro_series = self.derived_series
+        if for_parent:
+            distro_series = self.derived_series.parent_series
+
+        pubs = distro_series.getPublishedSources(
+            self.source_package_name, include_pending=True)
+
+        # The most recent published source is the first one.
+        try:
+            return pubs[0]
+        except IndexError:
+            return None
+
     @cachedproperty
     def base_source_pub(self):
         """See `IDistroSeriesDifference`."""
@@ -340,21 +355,6 @@ class DistroSeriesDifference(Storm):
             return None
         else:
             return self.parent_package_diff.status
-
-    def _getLatestSourcePub(self, for_parent=False):
-        """Helper to keep source_pub/parent_source_pub DRY."""
-        distro_series = self.derived_series
-        if for_parent:
-            distro_series = self.derived_series.parent_series
-
-        pubs = distro_series.getPublishedSources(
-            self.source_package_name, include_pending=True)
-
-        # The most recent published source is the first one.
-        try:
-            return pubs[0]
-        except IndexError:
-            return None
 
     def update(self):
         """See `IDistroSeriesDifference`."""
