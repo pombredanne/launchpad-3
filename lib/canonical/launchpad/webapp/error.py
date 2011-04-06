@@ -209,7 +209,10 @@ class NotFoundView(SystemErrorView):
         """
         referrer = self.request.get('HTTP_REFERER')
         if referrer:
-            return referrer
+            try:
+                return unicode(referrer)
+            except UnicodeDecodeError:
+                return None
         else:
             return None
 

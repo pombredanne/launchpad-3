@@ -444,6 +444,7 @@ class TestEncodedReferer(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_not_found(self):
+        # The only oops should be a NotFound.
         browser = self.getUserBrowser()
         browser.addHeader('Referer', '/whut\xe7foo')
         self.assertRaises(
@@ -451,6 +452,7 @@ class TestEncodedReferer(TestCaseWithFactory):
             browser.open,
             'http://launchpad.dev/missing')
         self.assertEqual(1, len(self.oopses))
+        self.assertEqual('NotFound', self.oopses[0].type)
 
 
 def test_suite():
