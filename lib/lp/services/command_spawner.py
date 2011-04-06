@@ -224,9 +224,7 @@ class OutputLineHandler:
         Any trailing text not (yet) terminated with a newline is buffered.
         """
         lines = (self.incomplete_buffer + output).split("\n")
-        if output.endswith("\n"):
-            self.incomplete_buffer = ''
-        elif len(lines) > 0:
+        if len(lines) > 0:
             self.incomplete_buffer = lines[-1]
             lines = lines[:-1]
         for line in lines:
