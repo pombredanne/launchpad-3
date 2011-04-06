@@ -12,16 +12,19 @@
   <metal:block fill-slot="head_epilogue">
     <meta tal:condition="not: view/bug_tracking_usage/enumvalue:LAUNCHPAD"
           name="robots" content="noindex,nofollow" />
-    <script type="text/javascript"
-        tal:condition="
-          request/features/malone.advanced-structural-subscriptions.enabled">
-      LPS.use('lp.registry.structural_subscription', function(Y) {
-          var module = Y.lp.registry.structural_subscription;
-          Y.on('domready', function() {
-            module.setup({content_box: "#structural-subscription-content-box"});
-          });
-      });
-    </script>
+    <tal:uses_launchpad_bugtracker
+       condition="view/bug_tracking_usage/enumvalue:LAUNCHPAD">
+      <script type="text/javascript"
+          tal:condition="
+            request/features/malone.advanced-structural-subscriptions.enabled">
+        LPS.use('lp.registry.structural_subscription', function(Y) {
+            var module = Y.lp.registry.structural_subscription;
+            Y.on('domready', function() {
+              module.setup({content_box: "#structural-subscription-content-box"});
+            });
+        });
+      </script>
+    </tal:uses_launchpad_bugtracker>
     <style type="text/css">
       p#more-hot-bugs {float:right; margin-top:7px;}
     </style>
@@ -177,6 +180,10 @@
 
         <p id="no-bugs-report"><a href="+filebug">Report a bug.</a></p>
       </tal:no_hot_bugs>
+      <div class="yui-u">
+        <div id="structural-subscription-content-box"></div>
+      </div>
+
     </tal:uses_launchpad_bugtracker>
 
     <p id="no-malone"
@@ -222,10 +229,6 @@
           tal:attributes="href string:${context/fmt:url/+edit}">
           Enable bug tracking.</a>
       </p>
-    </div>
-
-    <div class="yui-u">
-      <div id="structural-subscription-content-box"></div>
     </div>
 
     </div><!-- main -->
