@@ -916,7 +916,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
                 'id': 'upstream-translations-incomplete',
                 'href': '#',
                 'class': 'sprite edit unseen',
-                }
+                },
         )
         self.assertThat(browser.contents, HTMLContains(matcher))
         matcher = Tag(
@@ -925,7 +925,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
                 'id': 'upstream-translations-complete',
                 'href': '#',
                 'class': 'sprite edit unseen',
-                }
+                },
         )
         self.assertThat(browser.contents, HTMLContains(matcher))
 
@@ -940,7 +940,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
                 'id': 'translation-synchronisation-incomplete',
                 'href': '#',
                 'class': 'sprite edit unseen',
-                }
+                },
         )
         self.assertThat(browser.contents, HTMLContains(matcher))
         matcher = Tag(
@@ -949,7 +949,7 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
                 'id': 'translation-synchronisation-complete',
                 'href': '#',
                 'class': 'sprite edit unseen',
-                }
+                },
         )
         self.assertThat(browser.contents, HTMLContains(matcher))
 
