@@ -25,6 +25,6 @@ class TestPPAInlineEditing(unittest.TestCase):
             new_value="Celso's default PPA",
             name='test_ppa_displayname_inline_edit',
             user=lpuser.FOO_BAR,
-            suite=__name__)
+            suite_name=__name__)
 
         ppa_displayname_inline_edit_test()

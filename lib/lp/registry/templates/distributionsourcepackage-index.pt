@@ -10,12 +10,6 @@
 <body>
 
 <metal:block fill-slot="head_epilogue">
-  <tal:devmode condition="devmode">
-    <tal:archive_js define="lp_js string:${icingroot}/build">
-      <script type="text/javascript"
-              tal:attributes="src string:${lp_js}/soyuz/base.js"></script>
-    </tal:archive_js>
-  </tal:devmode>
   <script type="text/javascript"
       tal:condition="
         request/features/malone.advanced-structural-subscriptions.enabled">
