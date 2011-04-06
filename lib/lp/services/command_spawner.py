@@ -226,9 +226,8 @@ class OutputLineHandler:
         lines = (self.incomplete_buffer + output).split("\n")
         if len(lines) > 0:
             self.incomplete_buffer = lines[-1]
-            lines = lines[:-1]
-        for line in lines:
-            self.process_line(line)
+            for line in lines[:-1]:
+                self.process_line(line)
 
     def finalize(self):
         """Process the remaining incomplete line, if any."""
