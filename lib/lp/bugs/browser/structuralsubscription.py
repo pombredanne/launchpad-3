@@ -375,6 +375,14 @@ class StructuralSubscriptionMenuMixin:
         text = 'Subscribe to bug mail'
         return Link('#', text, icon='add', hidden=True, enabled=enabled)
 
+    @enabled_with_permission('launchpad.AnyPerson')
+    def edit_bug_mail(self):
+        sst = self._getSST()
+        enabled = sst.userCanAlterBugSubscription(self.user, self.user)
+        text = 'Edit bug mail'
+        return Link('+subscriptions', text, icon='edit', site='bugs',
+                    enabled=enabled)
+
 
 def expose_structural_subscription_data_to_js(context, request,
                                               user, subscriptions=None):

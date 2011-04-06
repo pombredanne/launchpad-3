@@ -20,7 +20,10 @@ from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.bugs.browser.bugtask import (
     BugTaskEditView,
     BugTasksAndNominationsView,
@@ -30,11 +33,15 @@ from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import (
+    celebrity_logged_in,
     person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
-from lp.testing.matchers import HasQueryCount
+from lp.testing.matchers import (
+    BrowsesWithQueryLimit,
+    HasQueryCount,
+    )
 from lp.testing.sampledata import (
     ADMIN_EMAIL,
     NO_PRIVILEGE_EMAIL,
@@ -45,7 +52,7 @@ from lp.testing.views import create_initialized_view
 
 class TestBugTaskView(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def invalidate_caches(self, obj):
         store = Store.of(obj)
@@ -83,6 +90,24 @@ class TestBugTaskView(TestCaseWithFactory):
         self.assertThat(recorder, HasQueryCount(
             LessThan(count_with_no_teams + 3),
             ))
+
+    def test_rendered_query_counts_constant_with_attachments(self):
+        with celebrity_logged_in('admin'):
+            browses_under_limit = BrowsesWithQueryLimit(
+                71, self.factory.makePerson())
+
+            # First test with a single attachment.
+            task = self.factory.makeBugTask()
+            self.factory.makeBugAttachment(bug=task.bug)
+        self.assertThat(task, browses_under_limit)
+
+        with celebrity_logged_in('admin'):
+            # And now with 10.
+            task = self.factory.makeBugTask()
+            self.factory.makeBugTask(bug=task.bug)
+            for i in range(10):
+                self.factory.makeBugAttachment(bug=task.bug)
+        self.assertThat(task, browses_under_limit)
 
     def test_interesting_activity(self):
         # The interesting_activity property returns a tuple of interesting

@@ -13,9 +13,7 @@ from canonical.launchpad.webapp.interaction import ANONYMOUS
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.testing.pages import (
-    first_tag_by_class,
-    )
+from canonical.launchpad.testing.pages import first_tag_by_class
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.registry.interfaces.person import IPersonSet
@@ -35,7 +33,40 @@ from lp.testing.views import (
     )
 
 
-class _TestStructSubs(TestCaseWithFactory):
+class _TestResultsMixin:
+    """Mixin to provide common result checking helper methods."""
+
+    @property
+    def old_link(self):
+        return first_tag_by_class(
+            self.contents, 'menu-link-subscribe')
+
+    @property
+    def new_subscribe_link(self):
+        return first_tag_by_class(
+            self.contents, 'menu-link-subscribe_to_bug_mail')
+
+    @property
+    def new_edit_link(self):
+        return first_tag_by_class(
+            self.contents, 'menu-link-edit_bug_mail')
+
+    def assertOldLinkMissing(self):
+        self.assertEqual(None, self.old_link)
+
+    def assertOldLinkPresent(self):
+        self.assertNotEqual(None, self.old_link)
+
+    def assertNewLinksMissing(self):
+        self.assertEqual(None, self.new_subscribe_link)
+        self.assertEqual(None, self.new_edit_link)
+
+    def assertNewLinksPresent(self):
+        self.assertNotEqual(None, self.new_subscribe_link)
+        self.assertNotEqual(None, self.new_edit_link)
+
+
+class _TestStructSubs(TestCaseWithFactory, _TestResultsMixin):
     """Test structural subscriptions base class.
 
     The link to structural subscriptions is controlled by the feature flag
@@ -56,11 +87,6 @@ class _TestStructSubs(TestCaseWithFactory):
             with FeatureFixture({self.feature_flag: flag}):
                 view = self.create_view(user)
                 self.contents = view.render()
-                old_link = first_tag_by_class(
-                    self.contents, 'menu-link-subscribe')
-                new_link = first_tag_by_class(
-                    self.contents, 'menu-link-subscribe_to_bug_mail')
-                return old_link, new_link
 
     def create_view(self, user):
         request = LaunchpadTestRequest(
@@ -72,44 +98,38 @@ class _TestStructSubs(TestCaseWithFactory):
             request=request, current_request=False)
 
     def test_subscribe_link_feature_flag_off_owner(self):
-        old_link, new_link = self._create_scenario(
-            self.target.owner, None)
-        self.assertNotEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self._create_scenario(self.target.owner, None)
+        self.assertOldLinkPresent()
+        self.assertNewLinksMissing()
 
     def test_subscribe_link_feature_flag_on_owner(self):
         # Test the new subscription link.
-        old_link, new_link = self._create_scenario(
-            self.target.owner, 'on')
-        self.assertEqual(None, old_link)
-        self.assertNotEqual(None, new_link)
+        self._create_scenario(self.target.owner, 'on')
+        self.assertOldLinkMissing()
+        self.assertNewLinksPresent()
 
     def test_subscribe_link_feature_flag_off_user(self):
-        old_link, new_link = self._create_scenario(
-            self.regular_user, None)
-        self.assertNotEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self._create_scenario(self.regular_user, None)
+        self.assertNotEqual(None, self.old_link)
+        self.assertNewLinksMissing()
 
     def test_subscribe_link_feature_flag_on_user(self):
-        old_link, new_link = self._create_scenario(
-            self.regular_user, 'on')
-        self.assertEqual(None, old_link)
-        self.assertNotEqual(None, new_link)
+        self._create_scenario(self.regular_user, 'on')
+        self.assertOldLinkMissing()
+        self.assertNewLinksPresent()
 
     def test_subscribe_link_feature_flag_off_anonymous(self):
-        old_link, new_link = self._create_scenario(
-            ANONYMOUS, None)
+        self._create_scenario(ANONYMOUS, None)
         # The old subscribe link is actually shown to anonymous users but the
         # behavior has changed with the new link.
-        self.assertNotEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self.assertNotEqual(None, self.old_link)
+        self.assertNewLinksMissing()
 
     def test_subscribe_link_feature_flag_on_anonymous(self):
-        old_link, new_link = self._create_scenario(
-            ANONYMOUS, 'on')
+        self._create_scenario(ANONYMOUS, 'on')
         # The subscribe link is not shown to anonymous.
-        self.assertEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self.assertOldLinkMissing()
+        self.assertNewLinksMissing()
 
 
 class TestProductViewStructSubs(_TestStructSubs):
@@ -201,7 +221,7 @@ class TestDistributionSourcePackageBugsStructSubs(
     view = '+bugs'
 
 
-class TestDistroViewStructSubs(BrowserTestCase):
+class TestDistroViewStructSubs(BrowserTestCase, _TestResultsMixin):
     """Test structural subscriptions on the distribution view.
 
     Distributions are special.  They are IStructuralSubscriptionTargets but
@@ -235,38 +255,34 @@ class TestDistroViewStructSubs(BrowserTestCase):
                     no_login=no_login,
                     user=logged_in_user)
                 self.contents = browser.contents
-                soup = BeautifulSoup(self.contents)
-                href = canonical_url(
-                    self.target, rootsite=self.rootsite,
-                    view_name='+subscribe')
-                old_link = soup.find('a', href=href)
-                new_link = first_tag_by_class(
-                    self.contents, 'menu-link-subscribe_to_bug_mail')
-                return old_link, new_link
+
+    @property
+    def old_link(self):
+        href = canonical_url(
+            self.target, rootsite=self.rootsite,
+            view_name='+subscribe')
+        soup = BeautifulSoup(self.contents)
+        return soup.find('a', href=href)
 
     def test_subscribe_link_feature_flag_off_owner(self):
-        old_link, new_link = self._create_scenario(
-            self.target.owner, None)
-        self.assertEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self._create_scenario(self.target.owner, None)
+        self.assertOldLinkMissing()
+        self.assertNewLinksMissing()
 
     def test_subscribe_link_feature_flag_on_owner(self):
-        old_link, new_link = self._create_scenario(
-            self.target.owner, 'on')
-        self.assertEqual(None, old_link)
-        self.assertNotEqual(None, new_link)
+        self._create_scenario(self.target.owner, 'on')
+        self.assertOldLinkMissing()
+        self.assertNewLinksPresent()
 
     def test_subscribe_link_feature_flag_off_user(self):
-        old_link, new_link = self._create_scenario(
-            self.regular_user, None)
-        self.assertEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self._create_scenario(self.regular_user, None)
+        self.assertOldLinkMissing()
+        self.assertNewLinksMissing()
 
     def test_subscribe_link_feature_flag_on_user_no_bug_super(self):
-        old_link, new_link = self._create_scenario(
-            self.regular_user, 'on')
-        self.assertEqual(None, old_link)
-        self.assertNotEqual(None, new_link)
+        self._create_scenario(self.regular_user, 'on')
+        self.assertOldLinkMissing()
+        self.assertNewLinksPresent()
 
     def test_subscribe_link_feature_flag_on_user_with_bug_super(self):
         with celebrity_logged_in('admin'):
@@ -274,57 +290,50 @@ class TestDistroViewStructSubs(BrowserTestCase):
             supervisor = self.factory.makePerson()
             self.target.setBugSupervisor(
                 supervisor, admin)
-        old_link, new_link = self._create_scenario(
-            self.regular_user, 'on')
-        self.assertEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self._create_scenario(self.regular_user, 'on')
+        self.assertOldLinkMissing()
+        self.assertNewLinksMissing()
 
     def test_subscribe_link_feature_flag_off_anonymous(self):
-        old_link, new_link = self._create_scenario(
-            ANONYMOUS, None)
-        self.assertEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self._create_scenario(ANONYMOUS, None)
+        self.assertOldLinkMissing()
+        self.assertNewLinksMissing()
 
     def test_subscribe_link_feature_flag_on_anonymous(self):
-        old_link, new_link = self._create_scenario(
-            ANONYMOUS, 'on')
-        self.assertEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self._create_scenario(ANONYMOUS, 'on')
+        self.assertOldLinkMissing()
+        self.assertNewLinksMissing()
 
     def test_subscribe_link_feature_flag_off_bug_super(self):
         with celebrity_logged_in('admin'):
             admin = getUtility(ILaunchBag).user
             self.target.setBugSupervisor(
                 self.regular_user, admin)
-        old_link, new_link = self._create_scenario(
-            self.regular_user, None)
-        self.assertEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self._create_scenario(self.regular_user, None)
+        self.assertOldLinkMissing()
+        self.assertNewLinksMissing()
 
     def test_subscribe_link_feature_flag_on_bug_super(self):
         with celebrity_logged_in('admin'):
             admin = getUtility(ILaunchBag).user
             self.target.setBugSupervisor(
                 self.regular_user, admin)
-        old_link, new_link = self._create_scenario(
-            self.regular_user, 'on')
-        self.assertEqual(None, old_link)
-        self.assertNotEqual(None, new_link)
+        self._create_scenario(self.regular_user, 'on')
+        self.assertOldLinkMissing()
+        self.assertNewLinksPresent()
 
     def test_subscribe_link_feature_flag_off_admin(self):
         admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
-        old_link, new_link = self._create_scenario(
-            admin, None)
-        self.assertEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self._create_scenario(admin, None)
+        self.assertOldLinkMissing()
+        self.assertNewLinksMissing()
 
     def test_subscribe_link_feature_flag_on_admin(self):
         from lp.testing.sampledata import ADMIN_EMAIL
         admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
-        old_link, new_link = self._create_scenario(
-            admin, 'on')
-        self.assertEqual(None, old_link)
-        self.assertNotEqual(None, new_link)
+        self._create_scenario(admin, 'on')
+        self.assertOldLinkMissing()
+        self.assertNewLinksPresent()
 
 
 class TestDistroBugsStructSubs(TestDistroViewStructSubs):
@@ -334,28 +343,24 @@ class TestDistroBugsStructSubs(TestDistroViewStructSubs):
     view = '+bugs-index'
 
     def test_subscribe_link_feature_flag_off_owner(self):
-        old_link, new_link = self._create_scenario(
-            self.target.owner, None)
-        self.assertNotEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self._create_scenario(self.target.owner, None)
+        self.assertNotEqual(None, self.old_link)
+        self.assertNewLinksMissing()
 
     def test_subscribe_link_feature_flag_on_owner(self):
-        old_link, new_link = self._create_scenario(
-            self.target.owner, 'on')
-        self.assertEqual(None, old_link)
-        self.assertNotEqual(None, new_link)
+        self._create_scenario(self.target.owner, 'on')
+        self.assertOldLinkMissing()
+        self.assertNewLinksPresent()
 
     def test_subscribe_link_feature_flag_off_user(self):
-        old_link, new_link = self._create_scenario(
-            self.regular_user, None)
-        self.assertNotEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self._create_scenario(self.regular_user, None)
+        self.assertNotEqual(None, self.old_link)
+        self.assertNewLinksMissing()
 
     def test_subscribe_link_feature_flag_on_user_no_bug_super(self):
-        old_link, new_link = self._create_scenario(
-            self.regular_user, 'on')
-        self.assertEqual(None, old_link)
-        self.assertNotEqual(None, new_link)
+        self._create_scenario(self.regular_user, 'on')
+        self.assertOldLinkMissing()
+        self.assertNewLinksPresent()
 
     def test_subscribe_link_feature_flag_on_user_with_bug_super(self):
         with celebrity_logged_in('admin'):
@@ -363,57 +368,50 @@ class TestDistroBugsStructSubs(TestDistroViewStructSubs):
             supervisor = self.factory.makePerson()
             self.target.setBugSupervisor(
                 supervisor, admin)
-        old_link, new_link = self._create_scenario(
-            self.regular_user, 'on')
-        self.assertEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self._create_scenario(self.regular_user, 'on')
+        self.assertOldLinkMissing()
+        self.assertNewLinksMissing()
 
     def test_subscribe_link_feature_flag_off_anonymous(self):
-        old_link, new_link = self._create_scenario(
-            ANONYMOUS, None)
-        self.assertNotEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self._create_scenario(ANONYMOUS, None)
+        self.assertNotEqual(None, self.old_link)
+        self.assertNewLinksMissing()
 
     def test_subscribe_link_feature_flag_on_anonymous(self):
-        old_link, new_link = self._create_scenario(
-            ANONYMOUS, 'on')
-        self.assertEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self._create_scenario(ANONYMOUS, 'on')
+        self.assertOldLinkMissing()
+        self.assertNewLinksMissing()
 
     def test_subscribe_link_feature_flag_off_bug_super(self):
         with celebrity_logged_in('admin'):
             admin = getUtility(ILaunchBag).user
             self.target.setBugSupervisor(
                 self.regular_user, admin)
-        old_link, new_link = self._create_scenario(
-            self.regular_user, None)
-        self.assertNotEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self._create_scenario(self.regular_user, None)
+        self.assertNotEqual(None, self.old_link)
+        self.assertNewLinksMissing()
 
     def test_subscribe_link_feature_flag_on_bug_super(self):
         with celebrity_logged_in('admin'):
             admin = getUtility(ILaunchBag).user
             self.target.setBugSupervisor(
                 self.regular_user, admin)
-        old_link, new_link = self._create_scenario(
-            self.regular_user, 'on')
-        self.assertEqual(None, old_link)
-        self.assertNotEqual(None, new_link)
+        self._create_scenario(self.regular_user, 'on')
+        self.assertOldLinkMissing()
+        self.assertNewLinksPresent()
 
     def test_subscribe_link_feature_flag_off_admin(self):
         admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
-        old_link, new_link = self._create_scenario(
-            admin, None)
-        self.assertNotEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self._create_scenario(admin, None)
+        self.assertNotEqual(None, self.old_link)
+        self.assertNewLinksMissing()
 
     def test_subscribe_link_feature_flag_on_admin(self):
         from lp.testing.sampledata import ADMIN_EMAIL
         admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
-        old_link, new_link = self._create_scenario(
-            admin, 'on')
-        self.assertEqual(None, old_link)
-        self.assertNotEqual(None, new_link)
+        self._create_scenario(admin, 'on')
+        self.assertOldLinkMissing()
+        self.assertNewLinksPresent()
 
 
 class TestDistroMilestoneViewStructSubs(TestDistroViewStructSubs):
@@ -425,28 +423,24 @@ class TestDistroMilestoneViewStructSubs(TestDistroViewStructSubs):
         self.target = self.factory.makeMilestone(distribution=self.distro)
 
     def test_subscribe_link_feature_flag_off_owner(self):
-        old_link, new_link = self._create_scenario(
-            self.distro.owner, None)
-        self.assertNotEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self._create_scenario(self.distro.owner, None)
+        self.assertNotEqual(None, self.old_link)
+        self.assertNewLinksMissing()
 
     def test_subscribe_link_feature_flag_on_owner(self):
-        old_link, new_link = self._create_scenario(
-            self.distro.owner, 'on')
-        self.assertEqual(None, old_link)
-        self.assertNotEqual(None, new_link)
+        self._create_scenario(self.distro.owner, 'on')
+        self.assertOldLinkMissing()
+        self.assertNewLinksPresent()
 
     def test_subscribe_link_feature_flag_off_user(self):
-        old_link, new_link = self._create_scenario(
-            self.regular_user, None)
-        self.assertNotEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self._create_scenario(self.regular_user, None)
+        self.assertNotEqual(None, self.old_link)
+        self.assertNewLinksMissing()
 
     def test_subscribe_link_feature_flag_on_user_no_bug_super(self):
-        old_link, new_link = self._create_scenario(
-            self.regular_user, 'on')
-        self.assertEqual(None, old_link)
-        self.assertNotEqual(None, new_link)
+        self._create_scenario(self.regular_user, 'on')
+        self.assertOldLinkMissing()
+        self.assertNewLinksPresent()
 
     def test_subscribe_link_feature_flag_on_user_with_bug_super(self):
         with celebrity_logged_in('admin'):
@@ -454,57 +448,50 @@ class TestDistroMilestoneViewStructSubs(TestDistroViewStructSubs):
             supervisor = self.factory.makePerson()
             self.distro.setBugSupervisor(
                 supervisor, admin)
-        old_link, new_link = self._create_scenario(
-            self.regular_user, 'on')
-        self.assertEqual(None, old_link)
-        self.assertNotEqual(None, new_link)
+        self._create_scenario(self.regular_user, 'on')
+        self.assertOldLinkMissing()
+        self.assertNewLinksPresent()
 
     def test_subscribe_link_feature_flag_off_anonymous(self):
-        old_link, new_link = self._create_scenario(
-            ANONYMOUS, None)
-        self.assertNotEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self._create_scenario(ANONYMOUS, None)
+        self.assertNotEqual(None, self.old_link)
+        self.assertNewLinksMissing()
 
     def test_subscribe_link_feature_flag_on_anonymous(self):
-        old_link, new_link = self._create_scenario(
-            ANONYMOUS, 'on')
-        self.assertEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self._create_scenario(ANONYMOUS, 'on')
+        self.assertOldLinkMissing()
+        self.assertNewLinksMissing()
 
     def test_subscribe_link_feature_flag_off_bug_super(self):
         with celebrity_logged_in('admin'):
             admin = getUtility(ILaunchBag).user
             self.distro.setBugSupervisor(
                 self.regular_user, admin)
-        old_link, new_link = self._create_scenario(
-            self.regular_user, None)
-        self.assertNotEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self._create_scenario(self.regular_user, None)
+        self.assertNotEqual(None, self.old_link)
+        self.assertNewLinksMissing()
 
     def test_subscribe_link_feature_flag_on_bug_super(self):
         with celebrity_logged_in('admin'):
             admin = getUtility(ILaunchBag).user
             self.distro.setBugSupervisor(
                 self.regular_user, admin)
-        old_link, new_link = self._create_scenario(
-            self.regular_user, 'on')
-        self.assertEqual(None, old_link)
-        self.assertNotEqual(None, new_link)
+        self._create_scenario(self.regular_user, 'on')
+        self.assertOldLinkMissing()
+        self.assertNewLinksPresent()
 
     def test_subscribe_link_feature_flag_off_admin(self):
         admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
-        old_link, new_link = self._create_scenario(
-            admin, None)
-        self.assertNotEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self._create_scenario(admin, None)
+        self.assertNotEqual(None, self.old_link)
+        self.assertNewLinksMissing()
 
     def test_subscribe_link_feature_flag_on_admin(self):
         from lp.testing.sampledata import ADMIN_EMAIL
         admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
-        old_link, new_link = self._create_scenario(
-            admin, 'on')
-        self.assertEqual(None, old_link)
-        self.assertNotEqual(None, new_link)
+        self._create_scenario(admin, 'on')
+        self.assertOldLinkMissing()
+        self.assertNewLinksPresent()
 
 
 class TestProductMilestoneViewStructSubs(TestDistroViewStructSubs):
@@ -519,22 +506,19 @@ class TestProductMilestoneViewStructSubs(TestDistroViewStructSubs):
         self.target = self.factory.makeMilestone(product=self.product)
 
     def test_subscribe_link_feature_flag_off_owner(self):
-        old_link, new_link = self._create_scenario(
-            self.product.owner, None)
-        self.assertNotEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self._create_scenario(self.product.owner, None)
+        self.assertNotEqual(None, self.old_link)
+        self.assertNewLinksMissing()
 
     def test_subscribe_link_feature_flag_on_owner(self):
-        old_link, new_link = self._create_scenario(
-            self.product.owner, 'on')
-        self.assertEqual(None, old_link)
-        self.assertNotEqual(None, new_link)
+        self._create_scenario(self.product.owner, 'on')
+        self.assertOldLinkMissing()
+        self.assertNewLinksPresent()
 
     def test_subscribe_link_feature_flag_off_user(self):
-        old_link, new_link = self._create_scenario(
-            self.regular_user, None)
-        self.assertNotEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self._create_scenario(self.regular_user, None)
+        self.assertNotEqual(None, self.old_link)
+        self.assertNewLinksMissing()
 
     # There are no special bug supervisor rules for products.
     test_subscribe_link_feature_flag_on_user_no_bug_super = None
@@ -543,31 +527,27 @@ class TestProductMilestoneViewStructSubs(TestDistroViewStructSubs):
     test_subscribe_link_feature_flag_on_bug_super = None
 
     def test_subscribe_link_feature_flag_off_anonymous(self):
-        old_link, new_link = self._create_scenario(
-            ANONYMOUS, None)
-        self.assertNotEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self._create_scenario(ANONYMOUS, None)
+        self.assertNotEqual(None, self.old_link)
+        self.assertNewLinksMissing()
 
     def test_subscribe_link_feature_flag_on_anonymous(self):
-        old_link, new_link = self._create_scenario(
-            ANONYMOUS, 'on')
-        self.assertEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self._create_scenario(ANONYMOUS, 'on')
+        self.assertOldLinkMissing()
+        self.assertNewLinksMissing()
 
     def test_subscribe_link_feature_flag_off_admin(self):
         admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
-        old_link, new_link = self._create_scenario(
-            admin, None)
-        self.assertNotEqual(None, old_link)
-        self.assertEqual(None, new_link)
+        self._create_scenario(admin, None)
+        self.assertNotEqual(None, self.old_link)
+        self.assertNewLinksMissing()
 
     def test_subscribe_link_feature_flag_on_admin(self):
         from lp.testing.sampledata import ADMIN_EMAIL
         admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
-        old_link, new_link = self._create_scenario(
-            admin, 'on')
-        self.assertEqual(None, old_link)
-        self.assertNotEqual(None, new_link)
+        self._create_scenario(admin, 'on')
+        self.assertOldLinkMissing()
+        self.assertNewLinksPresent()
 
 
 class TestProductSeriesMilestoneViewStructSubs(
