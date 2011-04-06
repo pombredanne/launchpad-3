@@ -87,7 +87,8 @@ class SearchPickerWidget(OnPageWidget):
         self.search_input_xpath = (
             self.visible_xpath + "//input[@class='yui3-picker-search']")
         self.search_button_xpath = (
-            self.visible_xpath + "//div[@class='yui3-picker-search-box']/button")
+            self.visible_xpath +
+            "//div[@class='yui3-picker-search-box']/button")
 
     def _get_result_xpath_by_number(self, item_number):
         """Return the XPath for the given search result number."""

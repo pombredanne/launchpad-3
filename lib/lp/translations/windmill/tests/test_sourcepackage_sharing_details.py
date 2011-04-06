@@ -76,8 +76,8 @@ class TestSharingDetails(WindmillTestCase):
         client.click(
             xpath=overlay.visible_xpath + '//input[@value="Submit"]')
         client.waits.forElementProperty(
-            id='upstream-sync-incomplete', option='className|sprite no unseen',
-            timeout=FOR_ELEMENT)
+            id='upstream-sync-incomplete',
+            option='className|sprite no unseen', timeout=FOR_ELEMENT)
         transaction.commit()
         self.assertEqual(sourcepackage.productseries, productseries)
         self.assertEqual(branch, productseries.branch)
