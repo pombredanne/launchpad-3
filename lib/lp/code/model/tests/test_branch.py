@@ -79,6 +79,7 @@ from lp.code.interfaces.branchmergeproposal import (
     )
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.branchrevision import IBranchRevision
+from lp.code.interfaces.codehosting import BRANCH_ID_ALIAS_PREFIX
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
@@ -178,6 +179,17 @@ class TestBranchChanged(TestCaseWithFactory):
         login_person(branch.owner)
         branch.branchChanged(
             stacked_on.unique_name, '', *self.arbitrary_formats)
+        self.assertEqual(stacked_on, branch.stacked_on)
+
+    def test_branchChanged_sets_stacked_on_branch_id_alias(self):
+        # branchChanged sets the stacked_on attribute based on the id of the
+        # branch if it is valid.
+        branch = self.factory.makeAnyBranch()
+        stacked_on = self.factory.makeAnyBranch()
+        login_person(branch.owner)
+        stacked_on_location = '/%s/%s' % (
+            BRANCH_ID_ALIAS_PREFIX, stacked_on.id)
+        branch.branchChanged(stacked_on_location, '', *self.arbitrary_formats)
         self.assertEqual(stacked_on, branch.stacked_on)
 
     def test_branchChanged_unsets_stacked_on(self):

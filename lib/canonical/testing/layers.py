@@ -1985,6 +1985,7 @@ class BaseWindmillLayer(AppServerLayer):
     http://bugs.launchpad.dev:8085/).
     """
 
+    facet = None
     base_url = None
     shell_objects = None
     config_file = None
@@ -2038,6 +2039,14 @@ class BaseWindmillLayer(AppServerLayer):
         # belong to Windmill, which will be cleaned up on layer
         # tear down.
         BaseLayer.disable_thread_check = True
+        socket.setdefaulttimeout(120)
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        # To play nice with Windmill layers, we need to reset
+        # the socket timeout default in this method, too.
+        socket.setdefaulttimeout(None)
 
     @classmethod
     def _fixStandardInputFileno(cls):
