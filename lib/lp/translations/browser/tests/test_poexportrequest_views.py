@@ -256,4 +256,3 @@ class TestPOExportView(TestCaseWithFactory):
         view = self._createView(pofile)
 
         self.assertFalse(view.has_pochanged_option)
-
