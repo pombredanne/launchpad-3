@@ -320,6 +320,20 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertEqual(
             [dsd_comment_2, dsd_comment], list(ds_diff.getComments()))
 
+    def test_latest_comment(self):
+        # latest_comment is a property containing the most recent comment.
+        ds_diff = self.factory.makeDistroSeriesDifference()
+
+        with person_logged_in(ds_diff.owner):
+            comments = [
+                ds_diff.addComment(
+                    ds_diff.owner, "Wait until version 2.1"),
+                ds_diff.addComment(
+                    ds_diff.owner, "Wait until version 2.1"),
+                ]
+
+        self.assertEqual(comments[-1], ds_diff.latest_comment)
+
     def test_addComment_not_public(self):
         # Comments cannot be added with launchpad.View.
         ds_diff = self.factory.makeDistroSeriesDifference()

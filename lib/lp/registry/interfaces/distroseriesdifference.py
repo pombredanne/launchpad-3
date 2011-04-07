@@ -172,6 +172,11 @@ class IDistroSeriesDifferencePublic(IHasOwner, Interface):
         :return: True if the record was updated, False otherwise.
         """
 
+    latest_comment = Reference(
+        Interface, # IDistroSeriesDifferenceComment
+        title=_("The latest comment"),
+        readonly=True)
+
     def getComments():
         """Return a result set of the comments for this difference."""
 

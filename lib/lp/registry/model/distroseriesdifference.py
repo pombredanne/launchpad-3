@@ -496,6 +496,11 @@ class DistroSeriesDifference(Storm):
         return getUtility(IDistroSeriesDifferenceCommentSource).new(
             self, commenter, comment)
 
+    @cachedproperty
+    def latest_comment(self):
+        """See `IDistroSeriesDifference`."""
+        return self.getComments().first()
+
     def getComments(self):
         """See `IDistroSeriesDifference`."""
         DSDComment = DistroSeriesDifferenceComment

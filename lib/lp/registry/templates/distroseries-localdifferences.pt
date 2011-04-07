@@ -105,7 +105,7 @@
                   </tal:signer>
               </td>
               <td>
-                <tal:comment tal:define="comment python:difference.getComments().first();"
+                <tal:comment tal:define="comment difference/latest_comment"
                              tal:condition="comment">
                   <span tal:replace="comment/body_text/fmt:shorten/50">I'm on this.</span>
                   <br /><span class="greyed-out greylink"><span

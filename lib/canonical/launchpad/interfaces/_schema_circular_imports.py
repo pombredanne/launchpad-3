@@ -486,6 +486,9 @@ patch_plain_parameter_type(
 patch_collection_return_type(
     IDistroSeries, 'getDerivedSeries', IDistroSeries)
 
+# IDistroSeriesDifference
+patch_reference_property(
+    IDistroSeriesDifference, 'latest_comment', IDistroSeriesDifferenceComment)
 
 # IDistroSeriesDifferenceComment
 IDistroSeriesDifferenceComment['comment_author'].schema = IPerson
