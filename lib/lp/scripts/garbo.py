@@ -964,6 +964,9 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     continue_on_failure = False # If True, an exception in a tunable loop
                                 # does not cause the script to abort.
 
+    # Default run time of the script in seconds. Override.
+    default_abort_script_time = None
+
     # _maximum_chunk_size is used to override the defined
     # maximum_chunk_size to allow our tests to ensure multiple calls to
     # __call__ are required without creating huge amounts of test data.
@@ -976,15 +979,19 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
             test_args=test_args)
 
     def add_my_options(self):
+
         self.parser.add_option("-x", "--experimental", dest="experimental",
             default=False, action="store_true",
             help="Run experimental jobs. Normally this is just for staging.")
         self.parser.add_option("--abort-script",
-            dest="abort_script", default=None, action="store", type="float",
-            metavar="SECS", help="Abort script after SECS seconds.")
+            dest="abort_script", default=self.default_abort_script_time,
+            action="store", type="float", metavar="SECS",
+            help="Abort script after SECS seconds [Default %d]."
+            % self.default_abort_script_time)
         self.parser.add_option("--abort-task",
             dest="abort_task", default=None, action="store", type="float",
-            metavar="SECS", help="Abort a task if it runs over SECS seconds.")
+            metavar="SECS", help="Abort a task if it runs over SECS seconds "
+                "[Default (threads * abort_script / tasks)].")
         self.parser.add_option("--threads",
             dest="threads", default=multiprocessing.cpu_count(),
             action="store", type="int", metavar='NUM',
@@ -1003,9 +1010,10 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
         else:
             tunable_loops = list(self.tunable_loops)
 
-        a_very_long_time = 31536000 # 1 year
-        abort_task = self.options.abort_task or a_very_long_time
+        a_very_long_time = float(31536000) # 1 year
         abort_script = self.options.abort_script or a_very_long_time
+        abort_task = self.options.abort_task or min(
+            abort_script, options.threads * abort_script / len(tunable_loops))
 
         def worker():
             self.logger.debug(
@@ -1101,12 +1109,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         ]
     experimental_tunable_loops = []
 
-    def add_my_options(self):
-        super(HourlyDatabaseGarbageCollector, self).add_my_options()
-        # By default, abort any tunable loop taking more than 15 minutes.
-        self.parser.set_defaults(abort_task=900)
-        # And abort the script if it takes more than 55 minutes.
-        self.parser.set_defaults(abort_script=55*60)
+    default_abort_script_time = 60 * 60
 
 
 class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
@@ -1128,7 +1131,4 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         PersonPruner,
         ]
 
-    def add_my_options(self):
-        super(DailyDatabaseGarbageCollector, self).add_my_options()
-        # Abort script after 24 hours by default.
-        self.parser.set_defaults(abort_script=86400)
+    default_abort_script_time = 60 * 60 * 24
