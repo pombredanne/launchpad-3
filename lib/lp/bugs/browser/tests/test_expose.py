@@ -132,7 +132,7 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
         self.assertThat(len(team_info), Equals(expected_number_teams))
         # The items info consist of a dictionary with link and title keys.
         for i in range(expected_number_teams):
-            self.assertThat(team_info[i], KeysEqual('link', 'title'))
+            self.assertThat(team_info[i], KeysEqual('link', 'title', 'url'))
         # The link is the title of the team.
         self.assertThat(
             team_info[0]['title'], Equals(u'Bug Supervisor Sub Team'))
@@ -165,7 +165,7 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
         self.assertThat(len(team_info), Equals(expected_number_teams))
         # The items info consist of a dictionary with link and title keys.
         for i in range(expected_number_teams):
-            self.assertThat(team_info[i], KeysEqual('link', 'title'))
+            self.assertThat(team_info[i], KeysEqual('link', 'title', 'url'))
         # The link is the title of the team.
         self.assertThat(
             team_info[0]['title'], Equals(u'Bug Supervisor Sub Team'))
@@ -193,7 +193,7 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
         self.assertThat(len(team_info), Equals(expected_number_teams))
         # The items info consist of a dictionary with link and title keys.
         for i in range(expected_number_teams):
-            self.assertThat(team_info[i], KeysEqual('link', 'title'))
+            self.assertThat(team_info[i], KeysEqual('link', 'title', 'url'))
         # The link is the title of the team.
         self.assertThat(
             team_info[0]['title'], Equals(u'Bug Supervisor Sub Team'))

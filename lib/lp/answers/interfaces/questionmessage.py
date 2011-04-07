@@ -12,6 +12,7 @@ __all__ = [
     ]
 
 from zope.schema import (
+    Bool,
     Choice,
     Field,
     )
@@ -47,4 +48,8 @@ class IQuestionMessage(IMessage):
         "related the action operated by this message."), required=True,
         readonly=True, default=QuestionStatus.OPEN,
         vocabulary=QuestionStatus)
+    visible = Bool(
+        title=_("Message visibility."),
+        description=_("Whether or not the message is visible."),
+        readonly=True)
 

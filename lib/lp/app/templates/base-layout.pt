@@ -127,13 +127,15 @@
 
             <tal:maintenance
               replace="structure context/@@+maintenancemessage" />
-            <tal:notifications
-              define="notifications request/notifications"
-              condition="notifications">
-              <metal:notifications
-                use-macro="context/@@+base-layout-macros/notifications"/>
-            </tal:notifications>
-              <metal:main define-slot="main" />
+            <div id="request-notifications">
+              <tal:notifications
+                define="notifications request/notifications"
+                condition="notifications">
+                <metal:notifications
+                  use-macro="context/@@+base-layout-macros/notifications"/>
+              </tal:notifications>
+            </div>
+            <metal:main define-slot="main" />
           </div><!-- yui-b -->
         </div><!-- yui-main -->
 
@@ -180,8 +182,8 @@
 
     At least ${log}
 
-    Features: ${request/features/usedFlags} 
-    in scopes ${request/features/usedScopes} 
+    Features: ${request/features/usedFlags}
+    in scopes ${request/features/usedScopes}
 
     r${revno}
   --&gt;" />
