@@ -16,6 +16,7 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
+from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
@@ -244,6 +245,19 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
             run_commercial_compat: true
             """))
         self.addCleanup(config.pop, "commercial-compat")
+
+    def enableRunPartsDir(self, base_directory):
+        """Enable given run-parts directory for this test.
+
+        :parma base_directory: Base directory.  Must exist in the
+            filesystem, and contain <distro>/publish-distro.d and/or
+            <distro>/finalize.d.
+        """
+        config.push("run-parts", dedent("""\
+            [archivepublisher]
+            run_parts_location: %s
+            """ % base_directory))
+        self.addCleanup(config.pop, "run-parts")
 
     def test_script_runs_successfully(self):
         ubuntu = self.prepareUbuntu()
@@ -719,3 +733,36 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         script.runFinalizeParts = FakeMethod()
         script.publishAllUploads()
         self.assertEqual(1, script.runFinalizeParts.call_count)
+
+    def test_runFinalizeParts_quotes_archiveroots(self):
+        distro = self.makeDistro()
+        self.factory.makeArchive(
+            distribution=distro, purpose=ArchivePurpose.PARTNER)
+        script = self.makeScript(distro)
+        script.setUp()
+        script.setUpDirs()
+        distro_config = get_pub_config(distro)
+        parts_dir = os.path.join(distro_config.root_dir, "distro-parts")
+        finalize_parts = os.path.join(parts_dir, distro.name, "finalize.d")
+        os.makedirs(finalize_parts)
+        self.enableRunParts(parts_dir)
+        plugin_script = file(os.join(finalize_parts, "touchroots"), "w")
+        plugin_script.write(dedent("""\
+            #!/bin/sh -e
+            for DIRECTORY in $ARCHIVEROOTS
+            do
+                MARKER=$DIRECTORY/"marker file"
+                if [ ! -e $MARKER ]
+                then
+                    echo "This is an archive root." >$MARKER
+                fi
+            done
+            """))
+        plugin_script.flush()
+        script.runFinalizeParts()
+        for archive in [distro.main_archive, distro.getArchive("partner")]:
+            archive_root = getPubConfig(archive).archiveroot
+            self.assertEqual(
+                "This is an archive root.",
+                self.readMarkerFile([archive_root, "marker file"]),
+                "Did not find expected marker for %s." % archive.purpose)
