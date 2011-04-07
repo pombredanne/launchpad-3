@@ -18,8 +18,8 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     )
 from lp.bugs.interfaces.personsubscriptioninfo import (
-    IDirectSubscriptionInfoCollection,
     IRealSubscriptionInfo,
+    IRealSubscriptionInfoCollection,
     IVirtualSubscriptionInfo,
     IVirtualSubscriptionInfoCollection,
     )
@@ -44,16 +44,15 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         self.bug = self.factory.makeBug()
         self.subscriptions = PersonSubscriptions(self.subscriber, self.bug)
 
-    def assertCollectionsAreNone(self, except_=None):
+    def assertCollectionsAreEmpty(self, except_=None):
         names = ('direct', 'from_duplicate', 'as_owner', 'as_assignee')
         assert except_ is None or except_ in names
         for name in names:
+            collection = getattr(self.subscriptions, name)
             if name == except_:
-                collection = getattr(self.subscriptions, name)
-                self.assertIsNot(None, collection)
                 self.assertEqual(self.subscriptions.count, collection.count)
             else:
-                self.assertIs(None, getattr(self.subscriptions, name))
+                self.assertEqual(collection.count, 0)
 
     def assertCollectionContents(
         self, collection,
@@ -65,22 +64,15 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
                             ('as_team_member', as_team_member),
                             ('as_team_admin', as_team_admin)):
             actual = getattr(collection, name)
-            if (name=='personal' and
-                IDirectSubscriptionInfoCollection.providedBy(collection)):
-                # This is the only one that is not a collection.
-                if expected == 1:
-                    self.assertThat(actual, Provides(IRealSubscriptionInfo))
-                else:
-                    assert expected == 0
-                    self.assertIs(None, actual)
+            self.assertEqual(expected, len(actual))
+            if IVirtualSubscriptionInfoCollection.providedBy(collection):
+                expected_interface = IVirtualSubscriptionInfo
             else:
-                self.assertEqual(expected, len(actual))
-                if IVirtualSubscriptionInfoCollection.providedBy(collection):
-                    expected_interface = IVirtualSubscriptionInfo
-                else:
-                    expected_interface = IRealSubscriptionInfo
-                for info in actual:
-                    self.assertThat(info, Provides((expected_interface)))
+                self.assertThat(collection,
+                                Provides(IRealSubscriptionInfoCollection))
+                expected_interface = IRealSubscriptionInfo
+            for info in actual:
+                self.assertThat(info, Provides(expected_interface))
 
     def assertVirtualSubscriptionInfoMatches(
         self, info, bug, principal, pillar, bugtasks):
@@ -105,7 +97,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
     def test_no_subscriptions(self):
         # Load a `PersonSubscriptionInfo`s for a subscriber and a bug.
         self.subscriptions.reload()
-        self.assertCollectionsAreNone()
+        self.assertCollectionsAreEmpty()
         self.failIf(self.subscriptions.muted)
 
     def test_no_subscriptions_getDataForClient(self):
@@ -124,7 +116,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
             self.bug.default_bugtask.transitionToAssignee(self.subscriber)
         self.subscriptions.reload()
 
-        self.assertCollectionsAreNone(except_='as_assignee')
+        self.assertCollectionsAreEmpty(except_='as_assignee')
         self.failIf(self.subscriptions.muted)
         self.assertCollectionContents(
             self.subscriptions.as_assignee, personal=1)
@@ -133,21 +125,24 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
             self.bug, self.subscriber,
             self.bug.default_bugtask.target, [self.bug.default_bugtask])
 
-    def test_no_subscriptions_getDataForClient(self):
+    def test_assignee_getDataForClient(self):
         with person_logged_in(self.subscriber):
             self.bug.default_bugtask.transitionToAssignee(self.subscriber)
         self.subscriptions.reload()
 
         subscriptions, references = self.subscriptions.getDataForClient()
-        self.assertEqual(references, {})
+        self.assertEqual(len(references), 3)
         self.assertEqual(subscriptions['count'], 1)
         self.assertEqual(subscriptions['muted'], False)
         self.assertEqual(subscriptions['direct']['count'], 0)
         self.assertEqual(subscriptions['from_duplicate']['count'], 0)
         self.assertEqual(subscriptions['as_owner']['count'], 0)
         self.assertEqual(subscriptions['as_assignee']['count'], 1)
-        self.assertEqual(subscriptions['as_assignee']['personal'][0],
-                         {})
+        personal = subscriptions['as_assignee']['personal'][0]
+        self.assertEqual(references[personal['bug']], self.bug)
+        self.assertEqual(references[personal['principal']], self.subscriber)
+        self.assertEqual(references[personal['pillar']],
+                         self.bug.default_bugtask.target)
 
     def test_assignee_through_team(self):
         team = self.factory.makeTeam(members=[self.subscriber])
@@ -155,7 +150,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
             self.bug.bugtasks[0].transitionToAssignee(team)
         self.subscriptions.reload()
 
-        self.assertCollectionsAreNone(except_='as_assignee')
+        self.assertCollectionsAreEmpty(except_='as_assignee')
         self.failIf(self.subscriptions.muted)
         self.assertCollectionContents(
             self.subscriptions.as_assignee, as_team_member=1)
@@ -172,7 +167,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
             self.bug.bugtasks[0].transitionToAssignee(team)
         self.subscriptions.reload()
 
-        self.assertCollectionsAreNone(except_='as_assignee')
+        self.assertCollectionsAreEmpty(except_='as_assignee')
         self.failIf(self.subscriptions.muted)
         self.assertCollectionContents(
             self.subscriptions.as_assignee, as_team_admin=1)
@@ -189,12 +184,12 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         # Load a `PersonSubscriptionInfo`s for subscriber and a bug.
         self.subscriptions.reload()
 
-        self.assertCollectionsAreNone(except_='direct')
+        self.assertCollectionsAreEmpty(except_='direct')
         self.failIf(self.subscriptions.muted)
         self.assertCollectionContents(
             self.subscriptions.direct, personal=1)
         self.assertRealSubscriptionInfoMatches(
-            self.subscriptions.direct.personal,
+            self.subscriptions.direct.personal[0],
             self.bug, self.subscriber, False, [], [])
 
     def test_direct_through_team(self):
@@ -206,7 +201,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         # Load a `PersonSubscriptionInfo`s for subscriber and a bug.
         self.subscriptions.reload()
 
-        self.assertCollectionsAreNone(except_='direct')
+        self.assertCollectionsAreEmpty(except_='direct')
         self.failIf(self.subscriptions.muted)
         self.assertCollectionContents(
             self.subscriptions.direct, as_team_member=1)
@@ -226,7 +221,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         # Load a `PersonSubscriptionInfo`s for subscriber and a bug.
         self.subscriptions.reload()
 
-        self.assertCollectionsAreNone(except_='direct')
+        self.assertCollectionsAreEmpty(except_='direct')
         self.failIf(self.subscriptions.muted)
         self.assertCollectionContents(
             self.subscriptions.direct, as_team_admin=1)
@@ -243,7 +238,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         # Load a `PersonSubscriptionInfo`s for subscriber and a bug.
         self.subscriptions.reload()
 
-        self.assertCollectionsAreNone(except_='from_duplicate')
+        self.assertCollectionsAreEmpty(except_='from_duplicate')
         self.failIf(self.subscriptions.muted)
         self.assertCollectionContents(
             self.subscriptions.from_duplicate, personal=1)
@@ -260,7 +255,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         # Load a `PersonSubscriptionInfo`s for subscriber and a bug.
         self.subscriptions.reload()
 
-        self.assertCollectionsAreNone(except_='from_duplicate')
+        self.assertCollectionsAreEmpty(except_='from_duplicate')
         self.failIf(self.subscriptions.muted)
         self.assertCollectionContents(
             self.subscriptions.from_duplicate, personal=1)
@@ -280,7 +275,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         # Load a `PersonSubscriptionInfo`s for subscriber and a bug.
         self.subscriptions.reload()
 
-        self.assertCollectionsAreNone(except_='from_duplicate')
+        self.assertCollectionsAreEmpty(except_='from_duplicate')
         self.failIf(self.subscriptions.muted)
         self.assertCollectionContents(
             self.subscriptions.from_duplicate, personal=2)
@@ -301,7 +296,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         # Load a `PersonSubscriptionInfo`s for subscriber and a bug.
         self.subscriptions.reload()
 
-        self.assertCollectionsAreNone(except_='from_duplicate')
+        self.assertCollectionsAreEmpty(except_='from_duplicate')
         self.failIf(self.subscriptions.muted)
         self.assertCollectionContents(
             self.subscriptions.from_duplicate, as_team_member=1)
@@ -323,7 +318,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         # Load a `PersonSubscriptionInfo`s for subscriber and a bug.
         self.subscriptions.reload()
 
-        self.assertCollectionsAreNone(except_='from_duplicate')
+        self.assertCollectionsAreEmpty(except_='from_duplicate')
         self.failIf(self.subscriptions.muted)
         self.assertCollectionContents(
             self.subscriptions.from_duplicate, as_team_admin=1)
@@ -341,7 +336,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         # Load a `PersonSubscriptionInfo`s for subscriber and a bug.
         self.subscriptions.reload()
         self.assertRealSubscriptionInfoMatches(
-            self.subscriptions.direct.personal,
+            self.subscriptions.direct.personal[0],
             self.bug, self.subscriber, True, [], [])
 
     def test_subscriber_is_security_contact(self):
@@ -354,7 +349,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         # Load a `PersonSubscriptionInfo`s for subscriber and a bug.
         self.subscriptions.reload()
         self.assertRealSubscriptionInfoMatches(
-            self.subscriptions.direct.personal,
+            self.subscriptions.direct.personal[0],
             self.bug, self.subscriber, False,
              [{'task': self.bug.default_bugtask, 'pillar': target}], [])
 
@@ -368,7 +363,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         # Load a `PersonSubscriptionInfo`s for subscriber and a bug.
         self.subscriptions.reload()
         self.assertRealSubscriptionInfoMatches(
-            self.subscriptions.direct.personal,
+            self.subscriptions.direct.personal[0],
             self.bug, self.subscriber, False,
              [], [{'task': self.bug.default_bugtask, 'pillar': target}])
 
@@ -378,7 +373,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         # Load a `PersonSubscriptionInfo`s for target.owner and a bug.
         self.subscriptions.loadSubscriptionsFor(target.owner, self.bug)
 
-        self.assertCollectionsAreNone(except_='as_owner')
+        self.assertCollectionsAreEmpty(except_='as_owner')
         self.failIf(self.subscriptions.muted)
         self.assertCollectionContents(
             self.subscriptions.as_owner, personal=1)
@@ -392,7 +387,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         removeSecurityProxy(target).bug_supervisor = target.owner
         # Subscribed directly to the bug.
         self.subscriptions.loadSubscriptionsFor(target.owner, self.bug)
-        self.assertCollectionsAreNone()
+        self.assertCollectionsAreEmpty()
         self.failIf(self.subscriptions.muted)
 
     def test_owner_through_team(self):
@@ -403,7 +398,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         # Load a `PersonSubscriptionInfo`s for target.owner and a bug.
         self.subscriptions.reload()
 
-        self.assertCollectionsAreNone(except_='as_owner')
+        self.assertCollectionsAreEmpty(except_='as_owner')
         self.failIf(self.subscriptions.muted)
         self.assertCollectionContents(
             self.subscriptions.as_owner, as_team_member=1)
@@ -423,7 +418,7 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         # Load a `PersonSubscriptionInfo`s for target.owner and a bug.
         self.subscriptions.reload()
 
-        self.assertCollectionsAreNone(except_='as_owner')
+        self.assertCollectionsAreEmpty(except_='as_owner')
         self.failIf(self.subscriptions.muted)
         self.assertCollectionContents(
             self.subscriptions.as_owner, as_team_admin=1)

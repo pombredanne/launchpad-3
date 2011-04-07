@@ -16,8 +16,7 @@ from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bug import Bug
 from lp.bugs.interfaces.personsubscriptioninfo import (
     IAbstractSubscriptionInfoCollection,
-    IDirectSubscriptionInfoCollection,
-    IDuplicateSubscriptionInfoCollection,
+    IRealSubscriptionInfoCollection,
     IPersonSubscriptions,
     IRealSubscriptionInfo,
     IVirtualSubscriptionInfo,
@@ -64,18 +63,14 @@ class AbstractSubscriptionInfoCollection:
     def __init__(self, person, administrated_teams):
         self.person = person
         self.administrated_teams = administrated_teams
-        self._personal = []
+        self.personal = []
         self.as_team_member = []
         self.as_team_admin = []
         self.count = 0
 
-    @property
-    def personal(self):
-        return self._personal
-
     def add(self, principal, bug, *args):
         if sameProxiedObjects(principal, self.person):
-            collection = self._personal
+            collection = self.personal
         else:
             assert principal.isTeam(), (principal, self.person)
             if principal in self.administrated_teams:
@@ -110,12 +105,14 @@ class VirtualSubscriptionInfoCollection(AbstractSubscriptionInfoCollection):
         info.tasks.append(task)
 
 
-class AbstractRealSubscriptionInfoCollection(
+class RealSubscriptionInfoCollection(
     AbstractSubscriptionInfoCollection):
     """Core functionality for Duplicate and Direct"""
 
+    implements(IRealSubscriptionInfoCollection)
+
     def __init__(self, person, administrated_teams):
-        super(AbstractRealSubscriptionInfoCollection, self).__init__(
+        super(RealSubscriptionInfoCollection, self).__init__(
             person, administrated_teams)
         self._principal_bug_to_infos = {}
 
@@ -150,27 +147,6 @@ class AbstractRealSubscriptionInfoCollection(
                         getattr(info, collection_name).append(value)
 
 
-class DirectSubscriptionInfoCollection(
-    AbstractRealSubscriptionInfoCollection):
-    """See `IDirectSubscriptionInfoCollection`."""
-
-    implements(IDirectSubscriptionInfoCollection)
-
-    @property
-    def personal(self):
-        if self._personal:
-            assert len(self._personal) == 1
-            return self._personal[0]
-        return None
-
-
-class DuplicateSubscriptionInfoCollection(
-    AbstractRealSubscriptionInfoCollection):
-    """See `IDuplicateSubscriptionInfoCollection`."""
-
-    implements(IDuplicateSubscriptionInfoCollection)
-
-
 class PersonSubscriptions(object):
     """See `IPersonSubscriptions`."""
 
@@ -199,9 +175,9 @@ class PersonSubscriptions(object):
             TeamParticipation.personID == person.id,
             TeamParticipation.teamID == Person.id)
 
-        direct = DirectSubscriptionInfoCollection(
+        direct = RealSubscriptionInfoCollection(
             self.person, self.administrated_teams)
-        duplicates = DuplicateSubscriptionInfoCollection(
+        duplicates = RealSubscriptionInfoCollection(
             self.person, self.administrated_teams)
         bugs = set()
         for subscription, subscribed_bug, subscriber in info:
@@ -262,15 +238,16 @@ class PersonSubscriptions(object):
             assignee = bugtask.assignee
             if person.inTeam(assignee):
                 as_assignee.add(assignee, bug, pillar, bugtask)
-        self.muted = (direct.personal is not None
-                      and direct.personal.subscription.bug_notification_level
-                          == BugNotificationLevel.NOTHING)
+        self.muted = bool(
+            direct.personal and
+            direct.personal[0].subscription.bug_notification_level
+                == BugNotificationLevel.NOTHING)
         self.count = 0
         for name, collection in (
             ('direct', direct), ('from_duplicate', from_duplicate),
             ('as_owner', as_owner), ('as_assignee', as_assignee)):
             self.count += collection.count
-            setattr(self, name, collection if collection.count > 0 else None)
+            setattr(self, name, collection)
 
     def getDataForClient(self):
         reference_map = {}
@@ -281,7 +258,7 @@ class PersonSubscriptions(object):
             identifier = reference_map.get(obj)
             if identifier is None:
                 identifier = 'subscription-cache-reference-%d' % (
-                    typename, len(reference_map))
+                    len(reference_map),)
                 reference_map[obj] = identifier
                 dest[identifier] = obj
             return identifier
@@ -332,9 +309,6 @@ class PersonSubscriptions(object):
                                 ('as_team_admin', collection.as_team_admin),
                                 ('as_team_member', collection.as_team_member)
                                 ):
-                if name == 'personal' and category is direct:
-                    category[name] = real_sub_data(inner)
-                else:
-                    category[name] = [real_sub_data(info) for info in inner]
+                category[name] = [real_sub_data(info) for info in inner]
             category['count'] = collection.count
         return subscription_data, dest

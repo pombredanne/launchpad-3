@@ -681,16 +681,10 @@
               lp.bugs.interfaces.personsubscriptioninfo.IVirtualSubscriptionInfo"/>
     </class>
 
-    <class class="lp.bugs.model.personsubscriptioninfo.DirectSubscriptionInfoCollection">
+    <class class="lp.bugs.model.personsubscriptioninfo.RealSubscriptionInfoCollection">
         <allow
             interface="
-              lp.bugs.interfaces.personsubscriptioninfo.IDirectSubscriptionInfoCollection"/>
-    </class>
-
-    <class class="lp.bugs.model.personsubscriptioninfo.DuplicateSubscriptionInfoCollection">
-        <allow
-            interface="
-              lp.bugs.interfaces.personsubscriptioninfo.IDuplicateSubscriptionInfoCollection"/>
+              lp.bugs.interfaces.personsubscriptioninfo.IRealSubscriptionInfoCollection"/>
     </class>
 
     <class class="lp.bugs.model.personsubscriptioninfo.VirtualSubscriptionInfoCollection">

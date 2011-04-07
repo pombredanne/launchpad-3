@@ -5,10 +5,9 @@
 
 __all__ = [
     'IAbstractSubscriptionInfoCollection',
-    'IDirectSubscriptionInfoCollection',
-    'IDuplicateSubscriptionInfoCollection',
     'IPersonSubscriptions',
     'IRealSubscriptionInfo',
+    'IRealSubscriptionInfoCollection',
     'IVirtualSubscriptionInfo',
     'IVirtualSubscriptionInfoCollection'
     ]
@@ -83,8 +82,8 @@ class IAbstractSubscriptionInfoCollection(Interface):
         'The total number of contained subscriptions.')
 
     personal = Attribute(
-        "List of information on the personal subscription or subscriptions.  "
-        "None if empty.")
+        "List of information objects about the personal duplicate "
+        "subscriptions.")
 
     as_team_member = Attribute(
         "List of information objects about the subscriptions "
@@ -95,29 +94,10 @@ class IAbstractSubscriptionInfoCollection(Interface):
         "through teams of which the person is an admin.")
 
 
-class IDirectSubscriptionInfoCollection(IAbstractSubscriptionInfoCollection):
-    """Contains information about all direct subscriptions.
-
-    Includes those through membership in teams directly subscribed to a bug.
+class IRealSubscriptionInfoCollection(IAbstractSubscriptionInfoCollection):
+    """Contains information about real subscriptions.
 
     All objects in collections provide IRealSubscriptionInfo."""
-
-    personal = Attribute(
-        "An IRealSubscriptionInfo about the personal subscription.  "
-        "None if empty.")
-
-
-class IDuplicateSubscriptionInfoCollection(
-    IAbstractSubscriptionInfoCollection):
-    """Contains information about all subscriptions through duplicate bugs.
-
-    Includes those through team membership.
-
-    All objects in collections provide IRealSubscriptionInfo."""
-
-    personal = Attribute(
-        "List of information objects about the personal duplicate "
-        "subscriptions.")
 
 
 class IVirtualSubscriptionInfoCollection(IAbstractSubscriptionInfoCollection):
@@ -126,10 +106,6 @@ class IVirtualSubscriptionInfoCollection(IAbstractSubscriptionInfoCollection):
     Includes those through team membership.
 
     All objects in collections provide IVirtualSubscriptionInfo."""
-
-    personal = Attribute(
-        "List of information objects about the personal virtual "
-        "subscriptions.")
 
 
 class IPersonSubscriptions(Interface):
@@ -154,21 +130,26 @@ class IPersonSubscriptions(Interface):
         vocabulary='ValidPersonOrTeam',
         description=_("The person for which this information is gathered."))
 
-    direct = Attribute("An IDirectSubscriptionInfoCollection or None.")
+    direct = Attribute(
+        "An IRealSubscriptionInfoCollection.  Contains information about all "
+        "direct subscriptions. Includes those through membership in teams "
+        "directly subscribed to a bug.")
 
     from_duplicate = Attribute(
-        "An IDuplicateSubscriptionInfoCollection or None.")
+        "An IRealSubscriptionInfoCollection.  Contains information about all "
+        "subscriptions through duplicate bugs. Includes those through team "
+        "membership.")
 
     as_owner = Attribute(
         "An IVirtualSubscriptionInfoCollection containing information about "
         "all virtual subscriptions as target owner when no bug supervisor "
         "is defined for the target, including those through team "
-        "memberships; or None.")
+        "memberships.")
 
     as_assignee = Attribute(
         "An IVirtualSubscriptionInfoCollection containing information about "
         "all virtual subscriptions as an assignee, including those through "
-        "team memberships; or None.")
+        "team memberships.")
 
     def reload():
         """Reload subscriptions for a person/bug."""
