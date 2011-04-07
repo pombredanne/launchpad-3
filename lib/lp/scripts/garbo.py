@@ -1010,19 +1010,12 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
 
         a_very_long_time = float(31536000) # 1 year
         abort_script = self.options.abort_script or a_very_long_time
-        abort_task = self.options.abort_task or min(
-            abort_script, options.threads * abort_script / len(tunable_loops))
 
         def worker():
             self.logger.debug(
                 "Worker thread %s running.", threading.currentThread().name)
             self.login()
             while True:
-                try:
-                    tunable_loop_class = tunable_loops.pop(0)
-                except IndexError:
-                    break
-
                 if start_time + abort_script - time.time() <= 0:
                     # Exit silently. We warn later.
                     self.logger.debug(
@@ -1030,11 +1023,38 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
                         threading.currentThread().name)
                     break
 
+                num_remaining_tasks = len(tunable_loops)
+                if not num_remaining_tasks:
+                    break
+                tunable_loop_class = tunable_loops.pop(0)
+
                 self.logger.info("Running %s", tunable_loop_class.__name__)
 
-                abort_time = min(
-                    abort_task,
+                # How long until the script should abort.
+                remaining_script_time = (
                     abort_script + start_time - time.time())
+
+                # How long until the task should abort.
+                if self.options.abort_task is not None:
+                    # Task timeout specified on command line.
+                    abort_task = self.options.abort_task
+
+                elif num_remaining_tasks <= self.options.threads:
+                    # We have a thread for every remaining task. Let the
+                    # task run until the script timeout.
+                    self.logger.debug2("Task may run until script timeout.")
+                    abort_task = remaining_script_time
+
+                else:
+                    # Evenly distribute the remaining time to the
+                    # remaining tasks.
+                    abort_task = (
+                        self.options.threads
+                        * remaining_script_time / num_remaining_tasks)
+
+                abort_time = min(abort_task, remaining_script_time)
+                self.logger.debug2(
+                    "Task will be terminated in %0.3f seconds", abort_time)
 
                 tunable_loop = tunable_loop_class(
                     abort_time=abort_time, log=self.logger)
@@ -1056,7 +1076,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
         threads = set()
         for count in range(0, self.options.threads):
             thread = threading.Thread(
-                target=worker,name='Worker-%d' % (count+1,))
+                target=worker, name='Worker-%d' % (count+1,))
             thread.start()
             threads.add(thread)
 
@@ -1066,9 +1086,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
         # down when the script timeout is hit, and the extra time is to
         # give them a chance to clean up.
         for thread in threads:
-            time_to_go = min(
-                abort_task,
-                start_time + abort_script - time.time()) + 60
+            time_to_go = start_time + abort_script - time.time() + 60
             if time_to_go > 0:
                 thread.join(time_to_go)
             else:
