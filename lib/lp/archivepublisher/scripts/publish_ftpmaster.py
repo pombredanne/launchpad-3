@@ -43,9 +43,44 @@ def compose_shell_boolean(boolean_value):
     return boolean_text[boolean_value]
 
 
-def compose_env_string(env):
-    """Turn a dict into a series of shell parameter assignments."""
+def shell_quote(literal):
+    """Escape `literal` for use in a double-quoted shell string.
+
+    This is a pretty naive substitution: it doesn't deal well with
+    non-ASCII characters or special characters.
+    """
+    # Characters that need backslash-escaping.  Do the backslash itself
+    # first; any escapes we introduced *before* the backslash would have
+    # their own backslashes escaped afterwards when we got to the
+    # backslash itself.
+    special_characters = '\\"$`\n'
+    for escapee in special_characters:
+        literal = literal.replace(escapee, '\\' + escapee)
+    return '"%s"' % literal
+
+
+def compose_env_string(*env_dicts):
+    """Turn dict(s) into a series of shell parameter assignments.
+
+    Values in later dicts override any values with the same respective
+    keys in earlier dicts.
+    """
+    env = {}
+    for env_dict in env_dicts:
+        env.update(env_dict)
     return ' '.join(['='.join(pair) for pair in env.iteritems()])
+
+
+def extend_PATH():
+    """Produce env dict for extending $PATH.
+
+    Adds the Launchpad source tree's cronscripts/publishing to the
+    existing $PATH.
+
+    :return: a dict suitable for passing to compose_env_string.
+    """
+    scripts_dir = os.path.join(config.root, "cronscripts", "publishing")
+    return {"PATH": '"$PATH":%s' % shell_quote(scripts_dir)}
 
 
 def get_distscopyroot(archive_config):
@@ -256,8 +291,8 @@ class PublishFTPMaster(LaunchpadCronScript):
         """Execute the publish-distro hooks."""
         archive_config = self.configs[archive.purpose]
         env = {
-            'DISTSROOT': archive_config.distsroot,
-            'ARCHIVEROOT': archive_config.archiveroot,
+            'DISTSROOT': shell_quote(archive_config.distsroot),
+            'ARCHIVEROOT': shell_quote(archive_config.archiveroot),
             }
         self.runParts('publish-distro.d', env)
 
@@ -305,11 +340,10 @@ class PublishFTPMaster(LaunchpadCronScript):
         if not config.archivepublisher.run_commercial_compat:
             return
 
-        self.executeShell("""
-            env PATH="$PATH:%s/cronscripts/publishing" \
-                LPCONFIG="%s" \
-                commercial-compat.sh
-            """ % (config.root, config.instance_name))
+        env = {"LPCONFIG": shell_quote(config.instance_name)}
+        self.executeShell(
+            "env %s commercial-compat.sh"
+            % compose_env_string(env, extend_PATH()))
 
     def generateListings(self):
         """Create ls-lR.gz listings."""
@@ -361,22 +395,21 @@ class PublishFTPMaster(LaunchpadCronScript):
         if parts_dir is None:
             self.logger.debug("Skipping run-parts %s: not configured.", parts)
             return
-        total_env_string = ' '.join([
-            "PATH=\"$PATH:%s/cronscripts/publishing\"" % config.root,
-            compose_env_string(env),
-            ])
+        env_string = compose_env_string(env, extend_PATH())
         self.executeShell(
-            "env %s run-parts -- '%s'" % (total_env_string, parts_dir),
+            "env %s run-parts -- '%s'" % (env_string, parts_dir),
             failure=LaunchpadScriptFailure(
                 "Failure while executing run-parts %s." % parts_dir))
 
     def runFinalizeParts(self, security_only=False):
         """Run the finalize.d parts to finalize publication."""
+        archive_roots = ' '.join([
+            shell_quote(archive_config.archiveroot)
+            for archive_config in self.configs.itervalues()])
+
         env = {
             'SECURITY_UPLOAD_ONLY': compose_shell_boolean(security_only),
-            'ARCHIVEROOTS': ' '.join([
-                archive_config.archiveroot
-                for archive_config in self.configs.itervalues()]),
+            'ARCHIVEROOTS': shell_quote(archive_roots),
         }
         self.runParts('finalize.d', env)
 

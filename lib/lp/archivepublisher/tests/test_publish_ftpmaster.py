@@ -33,6 +33,7 @@ from lp.archivepublisher.scripts.publish_ftpmaster import (
     compose_shell_boolean,
     find_run_parts_dir,
     PublishFTPMaster,
+    shell_quote,
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
@@ -101,13 +102,34 @@ class HelpersMixin:
 
 class TestPublishFTPMasterHelpers(TestCase):
 
-    def test_compose_env_string_iterates_env(self):
+    def test_compose_env_string_iterates_env_dict(self):
         env = {
             "A": "1",
             "B": "2",
         }
         env_string = compose_env_string(env)
         self.assertIn(env_string, ["A=1 B=2", "B=2 A=1"])
+
+    def test_compose_env_string_combines_env_dicts(self):
+        env1 = {"A": "1"}
+        env2 = {"B": "2"}
+        env_string = compose_env_string(env1, env2)
+        self.assertIn(env_string, ["A=1 B=2", "B=2 A=1"])
+
+    def test_compose_env_string_overrides_repeated_keys(self):
+        self.assertEqual("A=2", compose_env_string({"A": 1}, {"B": 2}))
+
+    def test_shell_quote_quotes_string(self):
+        self.assertEqual('"x"', shell_quote("x"))
+
+    def test_shell_quote_escapes_string(self):
+        self.assertEqual(r"\\", shell_quote("\\"))
+
+    def test_shell_quote_does_not_escape_its_own_escapes(self):
+        self.assertEqual(r"\$", shell_quote("$"))
+
+    def test_shell_quote_escapes_entire_string(self):
+        self.assertEqual(r"\$\$\$", shell_quote("$$$"))
 
     def test_compose_shell_boolean_shows_True_as_yes(self):
         self.assertEqual("yes", compose_shell_boolean(True))
