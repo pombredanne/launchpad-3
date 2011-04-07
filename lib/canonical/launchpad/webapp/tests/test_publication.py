@@ -439,7 +439,7 @@ class TestBlockingOffsitePosts(TestCase):
         maybe_block_offsite_form_post(request)
 
 
-class TestUnicodePath(TestCaseWithFactory):
+class TestEncodedReferer(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
@@ -455,7 +455,7 @@ class TestUnicodePath(TestCaseWithFactory):
         self.assertEqual('NotFound', self.oopses[0].type)
 
 
-class TestEncodedReferer(TestCaseWithFactory):
+class TestUnicodePath(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
