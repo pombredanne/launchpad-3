@@ -809,6 +809,90 @@ class DistroSeriesMissingPackagesPageTestCase(DistroSeriesDifferenceMixin,
             html, packageset_text, 'parent-packagesets', 'Parent packagesets')
 
 
+class DistroSerieUniquePackageDiffsTestCase(TestCaseWithFactory):
+    """Test the distroseries +uniquepackages view."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_uniquepackages_differences(self):
+        # The view fetches the differences with type
+        # UNIQUE_TO_DERIVED_SERIES.
+        derived_series = self.factory.makeDistroSeries(
+            name='derilucid', parent_series=self.factory.makeDistroSeries(
+                name='lucid'))
+
+        missing_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
+        missing_blacklisted_diff = self.factory.makeDistroSeriesDifference(
+            difference_type=missing_type,
+            derived_series=derived_series,
+            status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
+
+        missing_diff = self.factory.makeDistroSeriesDifference(
+            difference_type=missing_type,
+            derived_series=derived_series,
+            status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION)
+
+        view = create_initialized_view(
+            derived_series, '+uniquepackages')
+
+        self.assertContentEqual(
+            [missing_diff], view.cached_differences.batch)
+
+    def test_uniquepackages_differences_empty(self):
+        # The view is empty if there is no differences with type
+        # UNIQUE_TO_DERIVED_SERIES.
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+
+        not_missing_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
+
+        missing_diff = self.factory.makeDistroSeriesDifference(
+            difference_type=not_missing_type,
+            derived_series=derived_series,
+            status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION)
+
+        view = create_initialized_view(
+            derived_series, '+uniquepackages')
+
+        self.assertContentEqual(
+            [], view.cached_differences.batch)
+
+
+class DistroSeriesUniquePackagesPageTestCase(DistroSeriesDifferenceMixin,
+                                             TestCaseWithFactory):
+    """Test the distroseries +uniquepackages page."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(DistroSeriesUniquePackagesPageTestCase,
+              self).setUp('foo.bar@canonical.com')
+        set_derived_series_ui_feature_flag(self)
+        self.simple_user = self.factory.makePerson()
+
+    def test_packagesets_uniquepackages(self):
+        # +uniquepackages displays the packagesets in the parent.
+        missing_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
+        self.ds_diff = self.factory.makeDistroSeriesDifference(
+            difference_type=missing_type)
+
+        with celebrity_logged_in('admin'):
+            ps = self.factory.makePackageset(
+                packages=[self.ds_diff.source_package_name],
+                distroseries=self.ds_diff.derived_series)
+
+        with person_logged_in(self.simple_user):
+            view = create_initialized_view(
+                self.ds_diff.derived_series,
+                '+uniquepackages',
+                principal=self.simple_user)
+            html = view()
+
+        packageset_text = re.compile('\s*' + ps.name)
+        self._test_packagesets(
+            html, packageset_text, 'packagesets', 'Packagesets')
+
+
 class TestMilestoneBatchNavigatorAttribute(TestCaseWithFactory):
     """Test the series.milestone_batch_navigator attribute."""
 
