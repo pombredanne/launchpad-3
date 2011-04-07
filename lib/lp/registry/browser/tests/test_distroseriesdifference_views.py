@@ -15,10 +15,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
+from canonical.testing import LaunchpadFunctionalLayer
 from lp.registry.browser.distroseriesdifference import (
     DistroSeriesDifferenceDisplayComment,
     )
@@ -208,6 +205,36 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         tags = soup.find('ul', 'package-diff-status').findAll('span')
         self.assertEqual(1, len(tags))
 
+    def _makeDistroSeriesDifferenceView(self, difference_type):
+        # Helper method to create a view with the specified
+        # difference_type.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            difference_type=difference_type)
+        view = create_initialized_view(
+            ds_diff, '+listing-distroseries-extra')
+        return view
+
+    def test_packagediffs_display_diff_version(self):
+        # The packages diffs slots are displayed when the diff
+        # is of type DIFFERENT_VERSIONS.
+        view = self._makeDistroSeriesDifferenceView(
+            DistroSeriesDifferenceType.DIFFERENT_VERSIONS)
+        self.assertTrue(view.can_have_packages_diffs)
+
+    def test_packagediffs_display_missing_from_derived(self):
+        # The packages diffs slots are not displayed when the diff
+        # is of type MISSING_FROM_DERIVED_SERIES.
+        view = self._makeDistroSeriesDifferenceView(
+            DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES)
+        self.assertFalse(view.can_have_packages_diffs)
+
+    def test_packagediffs_display_unique_to_derived(self):
+        # The packages diffs slots are not displayed when the diff
+        # is of type UNIQUE_TO_DERIVED_SERIES.
+        view = self._makeDistroSeriesDifferenceView(
+            DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES)
+        self.assertFalse(view.can_have_packages_diffs)
+
 
 class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
 
@@ -310,7 +337,7 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
                 (DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES))
 
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
-        self.assertEqual(1, self.number_of_request_diff_texts(view()))
+        self.assertEqual(0, self.number_of_request_diff_texts(view()))
 
     def test_parent_source_diff_rendering_diff(self):
         # A linked description of the diff is displayed when
@@ -337,7 +364,7 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
                 (DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES))
 
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
-        self.assertEqual(1, self.number_of_request_diff_texts(view()))
+        self.assertEqual(0, self.number_of_request_diff_texts(view()))
 
     def test_comments_rendered(self):
         # If there are comments on the difference, they are rendered.
