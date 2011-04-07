@@ -1,4 +1,4 @@
-launchpad-buildd (78~0) hardy-cat; urgency=low
+launchpad-buildd (78) hardy-cat; urgency=low
 
   * Correctly update sudoers files when needed.  LP: #742881
 
