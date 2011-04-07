@@ -1034,6 +1034,11 @@ class POExportView(BaseExportView):
 
     @property
     def has_pochanged_option(self):
+        is_ubuntu = (
+            self.context.potemplate.translation_side ==
+                TranslationSide.UBUNTU)
+        if is_ubuntu:
+            return True
         other_side_pofile = self.context.getOtherSidePOFile()
         return other_side_pofile is not None
 
