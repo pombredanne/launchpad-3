@@ -14,6 +14,7 @@ from testtools.matchers import (
     Equals,
     )
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -57,6 +58,7 @@ from lp.testing import (
     login_person,
     person_logged_in,
     set_feature_flag,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.matchers import HasQueryCount
@@ -278,6 +280,28 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory):
         with recorder:
             view()
         self.assertThat(recorder, HasQueryCount(Equals(1)))
+
+    def test_queries(self):
+        versions = {
+            'base': u'1.0',
+            'derived': u'1.0derived1',
+            'parent': u'1.0-1',
+            }
+        login_person(self.simple_user)
+        derived_series = self.factory.makeDistroSeries(
+            parent_series=self.factory.makeDistroSeries())
+        for ignore in xrange(5):
+            dsd = self.factory.makeDistroSeriesDifference(
+                derived_series=derived_series,
+                versions=versions)
+            removeSecurityProxy(dsd).base_version = versions["base"]
+        view = create_initialized_view(
+            derived_series, '+localpackagediffs', principal=self.simple_user)
+        from canonical.database.sqlbase import flush_database_caches
+        flush_database_caches()
+        with StormStatementRecorder() as recorder:
+            view()
+            self.assertThat(recorder, HasQueryCount(Equals(1)))
 
 
 class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory):
