@@ -173,7 +173,7 @@ class SoyuzTestPublisher:
 
         return package_upload
 
-    def getPubSource(self, sourcename=None, version='666', component='main',
+    def getPubSource(self, sourcename=None, version=None, component='main',
                      filename=None, section='base',
                      filecontent='I do not care about sources.',
                      changes_file_content="Fake: fake changes file content",
@@ -196,6 +196,8 @@ class SoyuzTestPublisher:
         """
         if sourcename is None:
             sourcename = self.default_package_name
+        if version is None:
+            version = '666'
         spn = getUtility(ISourcePackageNameSet).getOrCreateByName(sourcename)
 
         component = getUtility(IComponentSet)[component]
@@ -292,7 +294,7 @@ class SoyuzTestPublisher:
                        distroseries=None,
                        archive=None,
                        pub_source=None,
-                       version='666',
+                       version=None,
                        architecturespecific=False,
                        builder=None,
                        component='main',
@@ -329,7 +331,7 @@ class SoyuzTestPublisher:
                     build, binaryname + '-dbgsym', filecontent, summary,
                     description, shlibdep, depends, recommends, suggests,
                     conflicts, replaces, provides, pre_depends, enhances,
-                    breaks, BinaryPackageFormat.DDEB)
+                    breaks, BinaryPackageFormat.DDEB, version=version)
                 pub_binaries += self.publishBinaryInArchive(
                     binarypackagerelease_ddeb, archive.debug_archive, status,
                     pocket, scheduleddeletiondate, dateremoved)
@@ -340,7 +342,7 @@ class SoyuzTestPublisher:
                 build, binaryname, filecontent, summary, description,
                 shlibdep, depends, recommends, suggests, conflicts, replaces,
                 provides, pre_depends, enhances, breaks, format,
-                binarypackagerelease_ddeb,
+                binarypackagerelease_ddeb, version=version,
                 user_defined_fields=user_defined_fields)
             pub_binaries += self.publishBinaryInArchive(
                 binarypackagerelease, archive, status, pocket,
@@ -363,7 +365,7 @@ class SoyuzTestPublisher:
         depends=None, recommends=None, suggests=None, conflicts=None,
         replaces=None, provides=None, pre_depends=None, enhances=None,
         breaks=None, format=BinaryPackageFormat.DEB, debug_package=None,
-        user_defined_fields=None, homepage=None):
+        user_defined_fields=None, homepage=None, version=None):
         """Return the corresponding `BinaryPackageRelease`."""
         sourcepackagerelease = build.source_package_release
         distroarchseries = build.distro_arch_series
@@ -373,8 +375,11 @@ class SoyuzTestPublisher:
         binarypackagename = getUtility(
             IBinaryPackageNameSet).getOrCreateByName(binaryname)
 
+        if version is None:
+            version = sourcepackagerelease.version
+
         binarypackagerelease = build.createBinaryPackageRelease(
-            version=sourcepackagerelease.version,
+            version=version,
             component=sourcepackagerelease.component,
             section=sourcepackagerelease.section,
             binarypackagename=binarypackagename,

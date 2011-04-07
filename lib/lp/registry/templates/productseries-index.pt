@@ -211,6 +211,9 @@
             <li tal:condition="overview_menu/subscribe_to_bug_mail/enabled|nothing">
               <a tal:replace="structure overview_menu/subscribe_to_bug_mail/fmt:link" />
             </li>
+            <li tal:condition="overview_menu/edit_bug_mail/enabled|nothing">
+              <a tal:replace="structure overview_menu/edit_bug_mail/fmt:link" />
+            </li>
           </tal:advanced-structural-subscriptions>
           <tal:not-advanced-structural-subscriptions
              condition="not: feature_flag">

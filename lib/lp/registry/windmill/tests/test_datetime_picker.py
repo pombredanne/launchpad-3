@@ -6,11 +6,10 @@
 __metaclass__ = type
 __all__ = []
 
-import unittest
-
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.testing import WindmillTestCase
 from lp.testing.windmill import lpuser
+from lp.testing.windmill.constants import FOR_ELEMENT
 
 
 class TestDateTimeCalendarWidget(WindmillTestCase):
@@ -27,14 +26,11 @@ class TestDateTimeCalendarWidget(WindmillTestCase):
         which opens up a calendar widget. The extra class 'withtime' is
         used to optionally include time fields.
         """
-        lpuser.SAMPLE_PERSON.ensure_login(self.client)
-
         # Open a new sprint page and wait for it to finish loading.
-        self.client.open(
-            url=u'%s/sprints/+new'
-                % self.layer.appserver_root_url('blueprints'))
-        self.client.waits.forPageLoad(timeout=u'20000')
-        self.client.waits.forElement(link=u'Choose...', timeout=u'8000')
+        client, start_url = self.getClientFor(
+            '/sprints/+new', user=lpuser.SAMPLE_PERSON,
+            base_url=self.layer.appserver_root_url('blueprints'))
+        self.client.waits.forElement(link=u'Choose...', timeout=FOR_ELEMENT)
 
         # Enter a date directly in the field first (which will ensure
         # the calendar widget opens with this date.)
@@ -70,7 +66,3 @@ class TestDateTimeCalendarWidget(WindmillTestCase):
                    u"/div[2]/button"))
         self.client.asserts.assertValue(
             validator=u'2009-06-09 10:30', id=u'field.time_starts')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
