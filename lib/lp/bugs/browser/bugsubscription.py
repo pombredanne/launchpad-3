@@ -578,84 +578,6 @@ class SubscriptionAttrDecorator:
     def css_name(self):
         return 'subscriber-%s' % self.subscription.person.id
 
-# These are the descriptions strings of what might be the cause of you getting
-# an email.
-
-_BECAUSE_YOU_ARE = 'You receive emails about this bug because you are '
-# These are components for team participation.
-_OF_TEAM = 'of the team $(team)s. That team is '
-_OF_TEAMS = 'of the teams $(teams)s.  Those teams are '
-_BECAUSE_TEAM_IS = _BECAUSE_YOU_ARE + 'a member ' + _OF_TEAM
-_ADMIN_BECAUSE_TEAM_IS = (
-    _BECAUSE_YOU_ARE + 'a member and administrator ' + _OF_TEAM)
-_BECAUSE_TEAMS_ARE = _BECAUSE_YOU_ARE + 'a member ' + _OF_TEAMS
-_ADMIN_BECAUSE_TEAMS_ARE = (
-    _BECAUSE_YOU_ARE + 'a member and administrator ' + _OF_TEAMS)
-    
-# These are the assignment variations.
-# These are components.
-_ASSIGNED = 'assigned to work on it.'
-# These are the actual strings to use.
-YOU_ASSIGNED = _BECAUSE_YOU_ARE + _ASSIGNED
-TEAM_ASSIGNED = _BECAUSE_TEAM_IS + _ASSIGNED
-ADMIN_TEAM_ASSIGNED = _ADMIN_BECAUSE_TEAM_IS + _ASSIGNED
-TEAMS_ASSIGNED = _BECAUSE_TEAMS_ARE + _ASSIGNED
-ADMIN_TEAMS_ASSIGNED = _ADMIN_BECAUSE_TEAMS_ARE + _ASSIGNED
-
-# These are the direct subscription variations.
-# First we have the string components.
-_SUBSCRIBED = 'directly subscribed to it.'
-_MAY_HAVE_BEEN_CREATED = ' This subscription may have been created '
-# Now these are the actual options we use.
-YOU_SUBSCRIBED = _BECAUSE_YOU_ARE + _SUBSCRIBED
-YOU_REPORTED = (YOU_SUBSCRIBED + _MAY_HAVE_BEEN_CREATED +
-                'when you reported the bug.')
-YOU_SUBSCRIBED_BUG_SUPERVISOR = (
-    YOU_SUBSCRIBED + _MAY_HAVE_BEEN_CREATED +
-    'because the bug was private and you are a bug supervisor.')
-YOU_SUBSCRIBED_SECURITY_CONTACT = (
-    YOU_SUBSCRIBED + _MAY_HAVE_BEEN_CREATED +
-    'because the bug was security related and you are a security contact.')
-TEAM_SUBSCRIBED = _BECAUSE_TEAM_IS + _SUBSCRIBED
-ADMIN_TEAM_SUBSCRIBED = _ADMIN_BECAUSE_TEAM_IS + _SUBSCRIBED
-TEAMS_SUBSCRIBED = _BECAUSE_TEAMS_ARE + _SUBSCRIBED
-ADMIN_TEAMS_SUBSCRIBED = _ADMIN_BECAUSE_TEAMS_ARE + _SUBSCRIBED
-
-# These are the duplicate bug variations.
-_SUBSCRIBED_TO_DUPLICATE = (
-    'a direct subscriber to bug #$(dupe_bug_id)s, which is marked as a '
-    'duplicate of this bug, #$(bug_id)s')
-_SUBSCRIBED_TO_PRIMARY = (
-    'a direct subscriber to bug #$(primary_bug_id)s, of which this bug, '
-    '#$(bug_id)s, is marked a duplicate.')
-# These are the actual strings to use.
-YOU_SUBSCRIBED_TO_DUPLICATE = _BECAUSE_YOU_ARE + _SUBSCRIBED_TO_DUPLICATE
-YOU_SUBSCRIBED_TO_PRIMARY = _BECAUSE_YOU_ARE + _SUBSCRIBED_TO_PRIMARY
-TEAM_SUBSCRIBED_TO_DUPLICATE = _BECAUSE_TEAM_IS + _SUBSCRIBED_TO_DUPLICATE
-ADMIN_TEAM_SUBSCRIBED_TO_DUPLICATE = (
-    _ADMIN_BECAUSE_TEAM_IS + _SUBSCRIBED_TO_DUPLICATE)
-TEAMS_SUBSCRIBED_TO_DUPLICATE = _BECAUSE_TEAMS_ARE + _SUBSCRIBED_TO_DUPLICATE
-ADMIN_TEAMS_SUBSCRIBED_TO_DUPLICATE = (
-    _ADMIN_BECAUSE_TEAMS_ARE + _SUBSCRIBED_TO_DUPLICATE)
-TEAM_SUBSCRIBED_TO_PRIMARY = _BECAUSE_TEAM_IS + _SUBSCRIBED_TO_PRIMARY
-ADMIN_TEAM_SUBSCRIBED_TO_PRIMARY = (
-    _ADMIN_BECAUSE_TEAM_IS + _SUBSCRIBED_TO_PRIMARY)
-TEAMS_SUBSCRIBED_TO_PRIMARY = _BECAUSE_TEAMS_ARE + _SUBSCRIBED_TO_PRIMARY
-ADMIN_TEAMS_SUBSCRIBED_TO_PRIMARY = (
-    _ADMIN_BECAUSE_TEAMS_ARE + _SUBSCRIBED_TO_PRIMARY)
-
-# These are the owner variations.
-_OWNER = ("the owner of the $(pillar_type) "
-          "<a href='$(pillar_url)'>$(pillar_name)</a>, which has no bug "
-          "supervisor.")
-YOU_OWNER = _BECAUSE_YOU_ARE + _OWNER
-TEAM_OWNER = _BECAUSE_TEAM_IS + _OWNER
-ADMIN_TEAM_OWNER = _ADMIN_BECAUSE_TEAM_IS + _OWNER
-TEAMS_OWNER = _BECAUSE_TEAMS_ARE + _OWNER
-
-# That's 27 options.
-# Also: "You are not subscribed to this bug." or similar.
-# Also: "You have muted all email from this bug."
 
 class BugSubscriptionListView(LaunchpadView):
     """A view to show all a person's subscriptions to a bug."""
@@ -666,8 +588,13 @@ class BugSubscriptionListView(LaunchpadView):
             self.context.bug, self.user)
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user, subscriptions)
-        self.subscriptions_info = PersonSubscriptions(
-                self.user, self.context.bug) # XXX do something with this! :-)
+        subscriptions_info = PersonSubscriptions(
+                self.user, self.context.bug)
+        subdata, references = subscriptions_info.getDataForClient()
+        cache = IJSONRequestCache(request).objects
+        cache.update(references)
+        cache['bug_subscription_info'] = subdata
+        
 
     @property
     def label(self):

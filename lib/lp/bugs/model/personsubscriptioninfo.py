@@ -272,3 +272,69 @@ class PersonSubscriptions(object):
             self.count += collection.count
             setattr(self, name, collection if collection.count > 0 else None)
 
+    def getDataForClient(self):
+        reference_map = {}
+        dest = {}
+        def get_id(obj):
+            "Get an id for the object so it can be shared."
+            # We could leverage .id for most objects, but not pillars.
+            identifier = reference_map.get(obj)
+            if identifier is None:
+                identifier = 'subscription-cache-reference-%d' % (
+                    typename, len(reference_map))
+                reference_map[obj] = identifier
+                dest[identifier] = obj
+            return identifier
+        def virtual_sub_data(info):
+            return {
+                'principal': get_id(info.principal),
+                'bug': get_id(info.bug),
+                'pillar': get_id(info.pillar),
+                # We won't add bugtasks yet unless we need them.
+                }
+        def real_sub_data(info):
+            return {
+                'principal': get_id(info.principal),
+                'bug': get_id(info.bug),
+                'subscription': get_id(info.subscription),
+                'principal_is_reporter': info.principal_is_reporter,
+                # We won't add bugtasks yet unless we need them.
+                'security_contact_pillars': sorted(set(
+                    get_id(d['pillar']) for d
+                    in info.security_contact_tasks)),
+                'bug_supervisor_pillars': sorted(set(
+                    get_id(d['pillar']) for d
+                    in info.bug_supervisor_tasks)),
+                }
+        direct = {}
+        from_duplicate = {}
+        as_owner = {} # This is an owner of a pillar with no bug supervisor.
+        as_assignee = {}
+        subscription_data = {
+            'direct': direct,
+            'from_duplicate': from_duplicate,
+            'as_owner': as_owner,
+            'as_assignee': as_assignee,
+            'count': self.count,
+            'muted': self.muted
+            }
+        for category, collection in ((as_owner, self.as_owner),
+                                 (as_assignee, self.as_assignee)):
+            for name, inner in (('personal', collection.personal),
+                                ('as_team_admin', collection.as_team_admin),
+                                ('as_team_member', collection.as_team_member)
+                                ):
+                category[name] = [virtual_sub_data(info) for info in inner]
+            category['count'] = collection.count
+        for category, collection in ((direct, self.direct),
+                                     (from_duplicate, self.from_duplicate)):
+            for name, inner in (('personal', collection.personal),
+                                ('as_team_admin', collection.as_team_admin),
+                                ('as_team_member', collection.as_team_member)
+                                ):
+                if name == 'personal' and category is direct:
+                    category[name] = real_sub_data(inner)
+                else:
+                    category[name] = [real_sub_data(info) for info in inner]
+            category['count'] = collection.count
+        return subscription_data, dest

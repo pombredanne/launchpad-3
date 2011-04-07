@@ -172,3 +172,19 @@ class IPersonSubscriptions(Interface):
 
     def reload():
         """Reload subscriptions for a person/bug."""
+
+    def getDataForClient():
+        """Get data for use in client-side code.
+        
+        Returns two dicts, subscription info and references.  references is
+        expected to be used as
+        IJSONRequestCache(request).objects.extend(references).
+        subscription info also is expected to be placed in .objects for
+        lazr.restful to marshall for the client.  For objects in the data
+        structure, values are strings that are keys into the "references"
+        map.  With expected usage, then, on the client side LP.cache[name]
+        would return the desired value.
+        
+        subscription info roughly mirrors the structure of the
+        IPersonSubscriptions that sends it.
+        """

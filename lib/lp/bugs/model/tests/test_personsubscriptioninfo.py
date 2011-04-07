@@ -108,6 +108,17 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         self.assertCollectionsAreNone()
         self.failIf(self.subscriptions.muted)
 
+    def test_no_subscriptions_getDataForClient(self):
+        self.subscriptions.reload()
+        subscriptions, references = self.subscriptions.getDataForClient()
+        self.assertEqual(references, {})
+        self.assertEqual(subscriptions['count'], 0)
+        self.assertEqual(subscriptions['muted'], False)
+        self.assertEqual(subscriptions['direct']['count'], 0)
+        self.assertEqual(subscriptions['from_duplicate']['count'], 0)
+        self.assertEqual(subscriptions['as_owner']['count'], 0)
+        self.assertEqual(subscriptions['as_assignee']['count'], 0)
+
     def test_assignee(self):
         with person_logged_in(self.subscriber):
             self.bug.default_bugtask.transitionToAssignee(self.subscriber)
@@ -121,6 +132,22 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
             self.subscriptions.as_assignee.personal[0],
             self.bug, self.subscriber,
             self.bug.default_bugtask.target, [self.bug.default_bugtask])
+
+    def test_no_subscriptions_getDataForClient(self):
+        with person_logged_in(self.subscriber):
+            self.bug.default_bugtask.transitionToAssignee(self.subscriber)
+        self.subscriptions.reload()
+
+        subscriptions, references = self.subscriptions.getDataForClient()
+        self.assertEqual(references, {})
+        self.assertEqual(subscriptions['count'], 1)
+        self.assertEqual(subscriptions['muted'], False)
+        self.assertEqual(subscriptions['direct']['count'], 0)
+        self.assertEqual(subscriptions['from_duplicate']['count'], 0)
+        self.assertEqual(subscriptions['as_owner']['count'], 0)
+        self.assertEqual(subscriptions['as_assignee']['count'], 1)
+        self.assertEqual(subscriptions['as_assignee']['personal'][0],
+                         {})
 
     def test_assignee_through_team(self):
         team = self.factory.makeTeam(members=[self.subscriber])
