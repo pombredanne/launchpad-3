@@ -403,13 +403,13 @@ class PublishFTPMaster(LaunchpadCronScript):
 
     def runFinalizeParts(self, security_only=False):
         """Run the finalize.d parts to finalize publication."""
-        archive_roots = ' '.join([
-            shell_quote(archive_config.archiveroot)
-            for archive_config in self.configs.itervalues()])
+        archive_roots = shell_quote(' '.join([
+            archive_config.archiveroot
+            for archive_config in self.configs.itervalues()]))
 
         env = {
             'SECURITY_UPLOAD_ONLY': compose_shell_boolean(security_only),
-            'ARCHIVEROOTS': shell_quote(archive_roots),
+            'ARCHIVEROOTS': archive_roots,
         }
         self.runParts('finalize.d', env)
 
