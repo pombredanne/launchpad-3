@@ -31,8 +31,6 @@ class TestBranchStatus(WindmillTestCase):
         branch = self.factory.makeBranch(owner=eric)
         transaction.commit()
 
-        client = self.client
-
         client, start_url = self.getClientFor(branch, user=eric)
         # Click on the element containing the branch status.
         client.click(id=u'edit-lifecycle_status')

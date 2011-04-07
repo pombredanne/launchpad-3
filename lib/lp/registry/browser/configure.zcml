@@ -154,9 +154,21 @@
         class="canonical.launchpad.browser.AskAQuestionButtonView"
         permission="zope.Public"/>
     <browser:page
+        name="+missingpackages"
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.registry.browser.distroseries.DistroSeriesMissingPackagesView"
+        template="../templates/distroseries-localdifferences.pt"
+        permission="zope.Public"/>
+    <browser:page
+        name="+uniquepackages"
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.registry.browser.distroseries.DistroSeriesUniquePackagesView"
+        template="../templates/distroseries-localdifferences.pt"
+        permission="zope.Public"/>
+     <browser:page
         name="+localpackagediffs"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        class="lp.registry.browser.distroseries.DistroSeriesLocalDifferences"
+        class="lp.registry.browser.distroseries.DistroSeriesLocalDifferencesView"
         template="../templates/distroseries-localdifferences.pt"
         permission="zope.Public"/>
     <browser:url
@@ -1957,15 +1969,15 @@
         class="lp.registry.browser.distroseries.DistroSeriesAddView"
         facet="overview"
         permission="launchpad.Admin"
-        template="../../app/templates/generic-edit.pt">
+        template="../templates/distroseries-add.pt">
     </browser:page>
     <browser:page
         name="+addseries"
         for="lp.registry.interfaces.distribution.IDerivativeDistribution"
         class="lp.registry.browser.distroseries.DistroSeriesAddView"
         facet="overview"
-        permission="launchpad.Append"
-        template="../../app/templates/generic-edit.pt">
+        permission="launchpad.Moderate"
+        template="../templates/distroseries-add.pt">
     </browser:page>
     <browser:page
         name="+initseries"
