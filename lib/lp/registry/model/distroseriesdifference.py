@@ -9,15 +9,17 @@ __all__ = [
     'DistroSeriesDifference',
     ]
 
+from operator import itemgetter
+
 from debian.changelog import (
     Changelog,
     Version,
     )
 from lazr.enum import DBItem
-from operator import itemgetter
 from sqlobject import StringCol
 from storm.expr import (
     And,
+    compile as storm_compile,
     Desc,
     SQL,
     )
@@ -157,6 +159,36 @@ def most_recent_publications(dsds, in_parent, include_pending, match_version):
     return DecoratedResultSet(results, itemgetter(1, 2))
 
 
+def most_recent_comments(dsds):
+    """The most recent comments for the given `DistroSeriesDifference`s.
+
+    Returns an `IResultSet` that yields a single column of
+        `DistroSeriesDifferenceComment`.
+
+    :param dsds: An iterable of `DistroSeriesDifference` instances.
+    """
+    distinct_on = storm_compile(
+        DistroSeriesDifferenceComment.distro_series_difference_id)
+    columns = (
+        # XXX: GavinPanella 2010-04-06 bug=374777: This SQL(...) is a
+        # hack; it does not seem to be possible to express DISTINCT ON
+        # with Storm.
+        SQL("DISTINCT ON (%s) 0 AS ignore" % distinct_on),
+        DistroSeriesDifferenceComment,
+        )
+    conditions = And(
+        DistroSeriesDifferenceComment
+            .distro_series_difference_id.is_in(
+                dsd.id for dsd in dsds))
+    order_by = (
+        DistroSeriesDifferenceComment.distro_series_difference_id,
+        Desc(DistroSeriesDifferenceComment.id),
+        )
+    store = IStore(DistroSeriesDifferenceComment)
+    comments = store.find(columns, conditions).order_by(*order_by)
+    return DecoratedResultSet(comments, itemgetter(1))
+
+
 class DistroSeriesDifference(Storm):
     """See `DistroSeriesDifference`."""
     implements(IDistroSeriesDifference)
@@ -257,11 +289,15 @@ class DistroSeriesDifference(Storm):
                 most_recent_publications(
                     dsds, in_parent=True, include_pending=True,
                     match_version=False))
+
+            latest_comment_by_dsd_id = dict(most_recent_comments(dsds))
+
             for dsd in dsds:
                 spn_id = dsd.source_package_name_id
                 cache = get_property_cache(dsd)
                 cache.source_pub = source_pubs[spn_id]
                 cache.parent_source_pub = parent_source_pubs[spn_id]
+                cache.latest_comment = latest_comment_by_dsd_id.get(dsd.id)
 
         return DecoratedResultSet(
             differences, pre_iter_hook=eager_load)
