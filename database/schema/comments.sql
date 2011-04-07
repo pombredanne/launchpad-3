@@ -1360,6 +1360,7 @@ COMMENT ON TABLE BugMessage IS 'This table maps a message to a bug. In other wor
 COMMENT ON COLUMN BugMessage.bugwatch IS 'The external bug this bug comment was imported from.';
 COMMENT ON COLUMN BugMessage.remote_comment_id IS 'The id this bug comment has in the external bug tracker, if it is an imported comment. If it is NULL while having a bugwatch set, this comment was added in Launchpad and needs to be pushed to the external bug tracker.';
 COMMENT ON COLUMN BugMessage.index IS 'The index (used in urls) of the message in a particular bug.';
+COMMENT ON COLUMN BugMessage.owner IS 'Denormalised owner from Message, used for efficient queries on commentors.';
 
 -- Messaging subsytem
 COMMENT ON TABLE Message IS 'This table stores a single RFC822-style message. Messages can be threaded (using the parent field). These messages can then be referenced from elsewhere in the system, such as the BugMessage table, integrating messageboard facilities with the rest of The Launchpad.';
