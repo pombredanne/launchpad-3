@@ -18,10 +18,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import (
-    DatabaseFunctionalLayer,
-    LaunchpadFunctionalLayer,
-    )
+from canonical.testing import LaunchpadFunctionalLayer
 from lp.registry.browser.distroseriesdifference import (
     DistroSeriesDifferenceDisplayComment,
     )
@@ -419,6 +416,33 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
                 ds_diff, '+listing-distroseries-extra')
             self.assertThat(view(), package_diff_request_matcher)
             self.assertTrue(view.show_package_diffs_request_link)
+
+    def test_package_diff_label(self):
+        # If base_version is not None the label for the section is
+        # there.
+        changelog_lfa = self.factory.makeChangelog('foo', ['0.30-1'])
+        parent_changelog_lfa = self.factory.makeChangelog(
+            'foo', ['0.32-1', '0.30-1'])
+        transaction.commit() # Yay, librarian.
+        ds_diff = self.factory.makeDistroSeriesDifference(versions={
+            'derived': '0.30-1',
+            'parent': '0.32-1',
+            }, changelogs={
+            'derived': changelog_lfa,
+            'parent': parent_changelog_lfa})
+        package_diff_header_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Package diffs header', 'dt',
+                text=re.compile(
+                    '\s*Differences from last common version:')))
+
+        with celebrity_logged_in('admin'):
+            ds_diff.parent_package_diff = self.factory.makePackageDiff()
+            ds_diff.package_diff = self.factory.makePackageDiff()
+            view = create_initialized_view(
+                ds_diff, '+listing-distroseries-extra')
+            html = view()
+            self.assertThat(html, package_diff_header_matcher)
 
     def test_package_diff_no_base_version(self):
         # If diff's base_version is None packages diffs are not displayed
