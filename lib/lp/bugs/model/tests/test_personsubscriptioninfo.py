@@ -159,6 +159,16 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
             self.bug, team,
             self.bug.default_bugtask.target, [self.bug.default_bugtask])
 
+    def test_assignee_through_team_getDataForClient(self):
+        team = self.factory.makeTeam(members=[self.subscriber])
+        with person_logged_in(self.subscriber):
+            self.bug.bugtasks[0].transitionToAssignee(team)
+        self.subscriptions.reload()
+
+        subscriptions, references = self.subscriptions.getDataForClient()
+        personal = subscriptions['as_assignee']['as_team_member'][0]
+        self.assertEqual(references[personal['principal']], team)
+
     def test_assignee_through_team_as_admin(self):
         team = self.factory.makeTeam()
         with person_logged_in(team.teamowner):
@@ -176,6 +186,18 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
             self.bug, team,
             self.bug.default_bugtask.target, [self.bug.default_bugtask])
 
+    def test_assignee_through_team_as_admin_getDataForClient(self):
+        team = self.factory.makeTeam()
+        with person_logged_in(team.teamowner):
+            team.addMember(self.subscriber, team.teamowner,
+                           status=TeamMembershipStatus.ADMIN)
+            self.bug.bugtasks[0].transitionToAssignee(team)
+        self.subscriptions.reload()
+
+        subscriptions, references = self.subscriptions.getDataForClient()
+        personal = subscriptions['as_assignee']['as_team_admin'][0]
+        self.assertEqual(references[personal['principal']], team)
+
     def test_direct(self):
         # Subscribed directly to the bug.
         with person_logged_in(self.subscriber):
@@ -191,6 +213,22 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         self.assertRealSubscriptionInfoMatches(
             self.subscriptions.direct.personal[0],
             self.bug, self.subscriber, False, [], [])
+
+    def test_direct_getDataForClient(self):
+        # Subscribed directly to the bug.
+        with person_logged_in(self.subscriber):
+            subscription = self.bug.subscribe(
+                self.subscriber, self.subscriber)
+        self.subscriptions.reload()
+
+        subscriptions, references = self.subscriptions.getDataForClient()
+        personal = subscriptions['direct']['personal'][0]
+        self.assertEqual(references[personal['principal']], self.subscriber)
+        self.assertEqual(references[personal['bug']], self.bug)
+        self.assertEqual(references[personal['subscription']], subscription)
+        self.assertEqual(personal['principal_is_reporter'], False)
+        self.assertEqual(personal['security_contact_pillars'], [])
+        self.assertEqual(personal['bug_supervisor_pillars'], [])
 
     def test_direct_through_team(self):
         # Subscribed to the bug through membership in a team.
