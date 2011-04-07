@@ -16,6 +16,7 @@ __all__ = [
 import cgi
 
 from lazr.delegates import delegates
+from lazr.restful.interfaces import IJSONRequestCache
 from simplejson import dumps
 from zope import formlib
 from zope.app.form import CustomWidgetFactory
@@ -591,7 +592,7 @@ class BugSubscriptionListView(LaunchpadView):
         subscriptions_info = PersonSubscriptions(
                 self.user, self.context.bug)
         subdata, references = subscriptions_info.getDataForClient()
-        cache = IJSONRequestCache(request).objects
+        cache = IJSONRequestCache(self.request).objects
         cache.update(references)
         cache['bug_subscription_info'] = subdata
         

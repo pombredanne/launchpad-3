@@ -247,6 +247,17 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
             self.subscriptions.direct.as_team_member[0],
             self.bug, team, False, [], [])
 
+    def test_direct_through_team_getDataForClient(self):
+        # Subscribed to the bug through membership in a team.
+        team = self.factory.makeTeam(members=[self.subscriber])
+        with person_logged_in(self.subscriber):
+            self.bug.subscribe(team, self.subscriber)
+        self.subscriptions.reload()
+
+        subscriptions, references = self.subscriptions.getDataForClient()
+        personal = subscriptions['direct']['as_team_member'][0]
+        self.assertEqual(references[personal['principal']], team)
+
     def test_direct_through_team_as_admin(self):
         # Subscribed to the bug through membership in a team
         # as an admin of that team.
@@ -266,6 +277,20 @@ class TestPersonSubscriptionInfo(TestCaseWithFactory):
         self.assertRealSubscriptionInfoMatches(
             self.subscriptions.direct.as_team_admin[0],
             self.bug, team, False, [], [])
+
+    def test_direct_through_team_as_admin_getDataForClient(self):
+        # Subscribed to the bug through membership in a team
+        # as an admin of that team.
+        team = self.factory.makeTeam()
+        with person_logged_in(team.teamowner):
+            team.addMember(self.subscriber, team.teamowner,
+                           status=TeamMembershipStatus.ADMIN)
+            self.bug.subscribe(team, team.teamowner)
+        self.subscriptions.reload()
+
+        subscriptions, references = self.subscriptions.getDataForClient()
+        personal = subscriptions['direct']['as_team_admin'][0]
+        self.assertEqual(references[personal['principal']], team)
 
     def test_duplicate_direct(self):
         # Subscribed directly to the duplicate bug.

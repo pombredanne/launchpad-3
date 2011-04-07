@@ -22,9 +22,8 @@ from lp.bugs.interfaces.personsubscriptioninfo import (
     IVirtualSubscriptionInfo,
     IVirtualSubscriptionInfoCollection,
     )
-from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTargetHelper)
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
 
@@ -196,7 +195,8 @@ class PersonSubscriptions(object):
             direct.annotateReporter(bug, bug.owner)
             for task in bug.bugtasks:
                 # get security_contact and bug_supervisor
-                pillar = self._get_pillar(task.target)
+                pillar = IStructuralSubscriptionTargetHelper(
+                    task.target).pillar
                 duplicates.annotateBugTaskResponsibilities(
                     task, pillar,
                     pillar.security_contact, pillar.bug_supervisor)
@@ -204,17 +204,6 @@ class PersonSubscriptions(object):
                     task, pillar,
                     pillar.security_contact, pillar.bug_supervisor)
         return (direct, duplicates)
-
-    def _get_pillar(self, target):
-        if IProductSeries.providedBy(target):
-            pillar = target.product
-        elif IDistroSeries.providedBy(target):
-            pillar = target.distribution
-        elif ISourcePackage.providedBy(target):
-            pillar = target.distribution
-        else:
-            pillar = target
-        return pillar
 
     def loadSubscriptionsFor(self, person, bug):
         self.person = person
@@ -231,7 +220,8 @@ class PersonSubscriptions(object):
         as_assignee = VirtualSubscriptionInfoCollection(
             self.person, self.administrated_teams)
         for bugtask in bug.bugtasks:
-            pillar = self._get_pillar(bugtask.target)
+            pillar = IStructuralSubscriptionTargetHelper(
+                bugtask.target).pillar
             owner = pillar.owner
             if person.inTeam(owner) and pillar.bug_supervisor is None:
                 as_owner.add(owner, bug, pillar, bugtask)

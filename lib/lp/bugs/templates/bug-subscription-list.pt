@@ -35,9 +35,6 @@
 
             <div id="structural-subscription-content-box"></div>
 
-        <div id="description" tal:content="view/description">
-        </div>
-
       </div>
     </div>
   </div>
