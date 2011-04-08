@@ -1118,6 +1118,8 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
 
             loop_name = tunable_loop_class.__name__
 
+            loop_logger = self.get_loop_logger(loop_name)
+
             # Aquire a lock for the task. Multiple garbo processes
             # might be running simultaneously.
             loop_lock_path = os.path.join(
@@ -1126,25 +1128,25 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
             loop_lock = GlobalLock(loop_lock_path, logger=None)
             try:
                 loop_lock.acquire()
+                loop_logger.debug("Aquired lock %s.", loop_lock_path)
             except LockAlreadyAcquired:
                 # If the lock cannot be acquired, but we have plenty
                 # of time remaining, just put the task back to the
                 # end of the queue.
                 if self.get_remaining_script_time() > 60:
-                    self.logger.debug3(
-                        "Unable to acquire lock. %s running elsewhere [%s].",
-                        loop_name, loop_lock_path)
+                    loop_logger.debug3(
+                        "Unable to acquire lock %s. Running elsewhere?",
+                        loop_lock_path)
                     time.sleep(0.3) # Avoid spinning.
                     tunable_loops.append(tunable_loop_class)
                 # Otherwise, emit a warning and skip the task.
                 else:
-                    self.logger.warn(
-                        "Unable to acquire lock. %s running elsewhere [%s].",
-                        loop_name, loop_lock_path)
+                    loop_logger.warn(
+                        "Unable to acquire lock %s. Running elsewhere?",
+                        loop_lock_path)
                 continue
 
             try:
-                loop_logger = self.get_loop_logger(loop_name)
                 loop_logger.info("Running %s", loop_name)
 
                 abort_time = self.get_loop_abort_time(num_remaining_tasks)
@@ -1170,6 +1172,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
 
             finally:
                 loop_lock.release()
+                loop_logger.debug("Released lock %s.", loop_lock_path)
                 transaction.abort()
 
 
