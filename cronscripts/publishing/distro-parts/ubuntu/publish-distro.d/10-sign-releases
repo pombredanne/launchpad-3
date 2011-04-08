@@ -1,5 +1,11 @@
 #!/bin/sh -e
 
+# The calling script may set GNUPGHOME to a value set up by Launchpad's
+# script machinery.  In production, we have a dedicated directory set up
+# for this.
+GNUPGHOME=/srv/launchpad.net/ubuntu-archive/gnupg-home
+
+
 RELEASE_FILES=`find "$DISTSROOT".new -maxdepth 2 -name Release`
 DIST_UPGRADER_TARBALLS=`
 	find "$DISTSROOT".new"/*/*/dist-upgrader* -name "*.tar.gz" || true`
