@@ -479,8 +479,8 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         script.runPublishDistroParts(distro.main_archive)
         args, kwargs = script.runParts.calls[0]
         parts_dir, env = args
-        required_parameters = set(
-            ["ARCHIVEROOT", "DISTSROOT", "OVERRIDEROOT"])
+        required_parameters = set([
+            "ARCHIVEROOT", "DISTSROOT", "OVERRIDEROOT"])
         missing_parameters = required_parameters.difference(set(env.keys()))
         self.assertEqual(set(), missing_parameters)
 
