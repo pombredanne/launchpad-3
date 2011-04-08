@@ -160,6 +160,24 @@ class SeriesTests(TestCaseWithFactory):
         self.assertEquals(series, distro.getSeries("42.6"))
 
 
+class SeriesTests(TestCaseWithFactory):
+    """Test IDistribution.derivatives.
+    """
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_derivatives(self):
+        distro1 = self.factory.makeDistribution()
+        distro2 = self.factory.makeDistribution()
+        parent_series = self.factory.makeDistroRelease(
+            distribution=distro1)
+        series = self.factory.makeDistroRelease(
+            distribution=distro2,
+            parent_series=parent_series)
+        self.assertContentEqual(
+            [series], distro1.derivatives)
+
+
 class DistroSnapshotTestCase(TestCaseWithFactory):
     """A TestCase for distribution snapshots."""
 

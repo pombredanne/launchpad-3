@@ -1989,6 +1989,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getDerivedSeries(self):
         """See `IDistroSeriesPublic`."""
+        # rvb 2011-04-08 bug=754750: The clause
+        # 'DistroSeries.distributionID!=self.distributionID' is only
+        # required because the parent_series attribute has been
+        # (mis-)used to denote other relations than proper derivation
+        # relashionships. We should be rid of this condition once
+        # the bug is fixed.
         results = Store.of(self).find(
             DistroSeries,
             DistroSeries.parent_series==self.id,
