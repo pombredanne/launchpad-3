@@ -9,6 +9,7 @@ __all__ = [
     'defer_to_thread',
     'extract_result',
     'gatherResults',
+    'no_traceback_failures',
     'suppress_stderr',
     ]
 
