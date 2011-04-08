@@ -69,9 +69,9 @@ class TestValidatingMergeView(TestCaseWithFactory):
         self.assertEqual(
             ["You can't merge target into itself."], view.errors)
 
-    def test_cannot_merge_person_with_an_existing_merge_job(self):
-        # A merge cannot be requested for an IPerson if it is involved
-        # with an existing merge.
+    def test_cannot_merge_dupe_person_with_an_existing_merge_job(self):
+        # A merge cannot be requested for an IPerson if it there is a job
+        # queued to merge it into another IPerson.
         job_source = getUtility(IPersonMergeJobSource)
         duplicate_job = job_source.create(
             from_person=self.dupe, to_person=self.target)
@@ -79,8 +79,19 @@ class TestValidatingMergeView(TestCaseWithFactory):
         view = create_initialized_view(
             self.person_set, '+requestmerge', form=self.getForm())
         self.assertEqual(
-            ["dupe is already queued for merging.",
-             "target is already queued for merging."], view.errors)
+            ["dupe is already queued for merging."], view.errors)
+
+    def test_cannot_merge_target_person_with_an_existing_merge_job(self):
+        # A merge cannot be requested for an IPerson if it there is a job
+        # queued to merge it into another IPerson.
+        job_source = getUtility(IPersonMergeJobSource)
+        duplicate_job = job_source.create(
+            from_person=self.target, to_person=self.dupe)
+        login_person(self.target)
+        view = create_initialized_view(
+            self.person_set, '+requestmerge', form=self.getForm())
+        self.assertEqual(
+            ["target is already queued for merging."], view.errors)
 
 
 class TestRequestPeopleMergeMultipleEmailsView(TestCaseWithFactory):
