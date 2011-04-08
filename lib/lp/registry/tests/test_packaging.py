@@ -63,7 +63,7 @@ class TestPackaging(TestCaseWithFactory):
         self.assertIs(removeSecurityProxy(packaging), event.object)
 
     def test_destroySelf__not_allowed_for_anonymous(self):
-        """Anonumous cannot delete a packaing."""
+        """Anonymous cannot delete a packaging."""
         packaging = self.factory.makePackagingLink()
         packaging_util = getUtility(IPackagingUtil)
         self.assertRaises(
@@ -72,7 +72,7 @@ class TestPackaging(TestCaseWithFactory):
             packaging.distroseries)
 
     def test_destroySelf__not_allowed_for_arbitrary_user(self):
-        """Arbitrary users cannot delete a packaing."""
+        """Arbitrary users cannot delete a packaging."""
         packaging = self.factory.makePackagingLink()
         packaging_util = getUtility(IPackagingUtil)
         with person_logged_in(self.factory.makePerson()):
@@ -82,7 +82,7 @@ class TestPackaging(TestCaseWithFactory):
                 packaging.distroseries)
 
     def test_destroySelf__allowed_for_packaging_owner(self):
-        """A packaging owner can delete a packaing."""
+        """A packaging owner can delete a packaging."""
         packaging = self.factory.makePackagingLink()
         sourcepackagename = packaging.sourcepackagename
         distroseries = packaging.distroseries
@@ -121,7 +121,7 @@ class TestPackaging(TestCaseWithFactory):
                 sourcepackagename, distroseries, productseries))
 
     def test_destroySelf__allowed_for_admin(self):
-        """A package maintainer can delete a packaging."""
+        """A Launchpad admin can delete a packaging."""
         packaging = self.factory.makePackagingLink()
         sourcepackagename = packaging.sourcepackagename
         distroseries = packaging.distroseries
