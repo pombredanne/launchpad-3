@@ -19,6 +19,7 @@ from sqlobject import (
     StringCol,
     )
 from sqlobject.sqlbuilder import SQLConstant
+from storm.info import ClassAlias
 from storm.locals import (
     And,
     Desc,
@@ -29,7 +30,6 @@ from storm.locals import (
     SQL,
     )
 from storm.store import Store
-from storm.info import ClassAlias
 from zope.component import getUtility
 from zope.interface import (
     alsoProvides,
