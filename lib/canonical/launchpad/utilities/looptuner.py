@@ -332,4 +332,5 @@ class TunableLoop:
             minimum_chunk_size = self.minimum_chunk_size,
             maximum_chunk_size = self.maximum_chunk_size,
             cooldown_time = self.cooldown_time,
-            abort_time = self.abort_time).run()
+            abort_time = self.abort_time,
+            log = self.log).run()
