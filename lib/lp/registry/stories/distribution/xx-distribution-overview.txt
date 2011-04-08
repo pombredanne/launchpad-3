@@ -102,7 +102,7 @@ along with a link to list all of them.
    All derivatives
 
 
-The "All derivatives" link take you to the derivatives page.
+The "All derivatives" link takes you to the derivatives page.
 
     >>> anon_browser.getLink('All derivatives').url
     'http://launchpad.dev/ubuntu/+derivatives'
