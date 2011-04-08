@@ -18,8 +18,8 @@ ARCHIVEROOT - the archive's root directory
 DISTSROOT - the archive's dists root directory
 (e.g. /srv/launchpad.net/ubuntu-archive/ubuntu/dists )
 
-OVERRIDEROOT - the archive's overrides root directory
-(e.g. /srv/launchpad.net/ubuntu-overrides )
+OVERRIDEROOT - the archive's overrides root directory (primary archive only)
+(e.g. /srv/launchpad.net/ubuntu-overrides, or the empty string for partner)
 
 The script's PATH will be extended with the Launchpad source tree's
 cronscripts/publishing directory.
