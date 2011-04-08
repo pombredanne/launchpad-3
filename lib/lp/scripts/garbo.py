@@ -1056,13 +1056,16 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
         return self.options.abort_script or a_very_long_time
 
     def get_loop_logger(self, loop_name):
-        # Configure logging for this loop to use a prefix.
-        # Log output from multiple threads will be
-        # interleaved, and this lets us tell log output
-        # from different tasks apart. We only do this once
-        # per process, so no need to check if the filter has
-        # already been added.
+        """Retrieve a logger for use by a particular task.
+
+        The logger will be configured to add the loop_name as a
+        prefix to all log messages, making interleaved output from
+        multiple threads somewhat readable.
+        """
         loop_logger = logging.getLogger('garbo.' + loop_name)
+        for filter in loop_logger.filters:
+            if isinstance(filter, PrefixFilter):
+                return loop_logger # Already have a PrefixFilter attached.
         loop_logger.addFilter(PrefixFilter(loop_name))
         return loop_logger
 
