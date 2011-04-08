@@ -936,7 +936,7 @@ class TestGarbo(TestCaseWithFactory):
 
     def test_mirror_bugmessages(self):
         # Nuke the owner in sampledata.
-        con = DatabaseLayer._db_fixture.root_connection()
+        con = DatabaseLayer._db_fixture.superuser_connection()
         try:
             cur = con.cursor()
             cur.execute("ALTER TABLE bugmessage "
