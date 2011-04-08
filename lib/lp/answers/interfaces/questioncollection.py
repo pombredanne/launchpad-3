@@ -11,7 +11,7 @@ __all__ = [
     'IQuestionCollection',
     'IQuestionSet',
     'ISearchableByQuestionOwner',
-    'QUESTION_STATUS_DEFAULT_SEARCH'
+    'QUESTION_STATUS_DEFAULT_SEARCH',
     ]
 
 from zope.interface import (
@@ -26,7 +26,6 @@ from lazr.restful.declarations import (
     export_read_operation,
     operation_for_version,
     operation_parameters,
-    REQUEST_USER,
     )
 
 from canonical.launchpad import _
@@ -58,7 +57,7 @@ class IQuestionCollection(Interface):
         against the question's language. If None or an empty sequence,
         the language is not included as a filter criteria.
 
-        :sort:  An attribute of QuestionSort. If None, a default value is used.
+        :sort: An attribute of QuestionSort. If None, a default value is used.
         When there is a search_text value, the default is to sort by
         RELEVANCY, otherwise results are sorted NEWEST_FIRST.
         """
@@ -90,11 +89,11 @@ class ISearchableByQuestionOwner(IQuestionCollection):
         """
 
 
+# Hurray circular imports!
 from lp.answers.interfaces.question import IQuestion
 class IQuestionSet(IQuestionCollection):
     """A utility that contain all the questions published in Launchpad."""
 
-    # Hurray circular imports!
     export_as_webservice_collection(IQuestion)
 
     title = Attribute('Title')

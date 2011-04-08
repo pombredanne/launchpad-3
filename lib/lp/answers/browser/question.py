@@ -73,7 +73,6 @@ from canonical.launchpad.webapp import (
     Link,
     Navigation,
     NavigationMenu,
-    redirection,
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
