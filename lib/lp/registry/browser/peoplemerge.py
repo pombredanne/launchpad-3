@@ -73,7 +73,8 @@ class ValidatingMergeView(LaunchpadFormView):
                     "can be merged. It may take ten minutes to remove the "
                     "deleted PPA's files.",
                     mapping=dict(name=dupe_person.name)))
-
+        # XXX sinzui 2011-04-06: verify
+        # dupe_person.is_merge_pending and target_person.is_merge_pending
 
 class AdminMergeBaseView(ValidatingMergeView):
     """Base view for the pages where admins can merge people/teams."""
