@@ -296,7 +296,7 @@ class TestPerson(TestCaseWithFactory):
         to_person = self.factory.makePerson()
         getUtility(IPersonSet).mergeAsync(from_person, to_person)
         self.assertTrue(from_person.is_merge_pending)
-        self.assertTrue(to_person.is_merge_pending)
+        self.assertFalse(to_person.is_merge_pending)
 
     def test_mergeAsync_success(self):
         # mergeAsync returns a job with the from and to persons.
