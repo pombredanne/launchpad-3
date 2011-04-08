@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-from zope.security.proxy import removeSecurityProxy
-
 from canonical.launchpad.ftests import LaunchpadFormHarness
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import LaunchpadFunctionalLayer
@@ -17,7 +15,6 @@ from lp.bugs.browser.bugsubscription import (
     BugSubscriptionSubscribeSelfView,
     )
 from lp.bugs.enum import BugNotificationLevel
-from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.testing import (
     feature_flags,
     person_logged_in,
