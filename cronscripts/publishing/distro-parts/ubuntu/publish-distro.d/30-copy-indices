@@ -1,9 +1,12 @@
 #!/bin/sh -e
 
-echo "$(date -R): Copying the indices into place."
+if [ -n "$OVERRIDEROOT" ]
+then
+    echo "$(date -R): Copying the indices into place."
 
-INDICES=$ARCHIVEROOT/indices
+    INDICES=$ARCHIVEROOT/indices
 
-mkdir -p -- $INDICES
-rm -f -- $INDICES/override
-cp -- $OVERRIDEROOT/override.* $INDICES/
+    mkdir -p -- $INDICES
+    rm -f -- $INDICES/override
+    cp -- $OVERRIDEROOT/override.* $INDICES/
+fi

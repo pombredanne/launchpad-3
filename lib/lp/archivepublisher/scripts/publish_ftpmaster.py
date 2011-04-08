@@ -293,8 +293,9 @@ class PublishFTPMaster(LaunchpadCronScript):
         env = {
             'ARCHIVEROOT': shell_quote(archive_config.archiveroot),
             'DISTSROOT': shell_quote(archive_config.distsroot + ".new"),
-            'OVERRIDEROOT': shell_quote(archive_config.overrideroot),
             }
+        if archive_config.overrideroot is not None:
+            env["OVERRIDEROOT"] = shell_quote(archive_config.overrideroot)
         self.runParts('publish-distro.d', env)
 
     def installDists(self):
