@@ -22,8 +22,8 @@
           Y.on('domready', function() {
               ss_module.setup_bug_subscriptions(
                   {content_box: "#structural-subscription-content-box"});
-              info_module.add_subscription(
-                  {description_box: "#description"});
+              console.log(info_module.get_subscription_reason(
+                  {description_box: "#description"}));
           });
       });
     </script>
