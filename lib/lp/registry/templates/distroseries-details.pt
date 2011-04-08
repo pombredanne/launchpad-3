@@ -70,7 +70,7 @@
             condition="not: repeat/child_series/end">,</tal:comma>
         </tal:per_child_series>
        <tal:none condition="all_child_series/is_empty">
-          <tal:name replace="context/named_version"/> has no derived series.
+          No derived series.
         </tal:none>
       </dd>
     </dl>

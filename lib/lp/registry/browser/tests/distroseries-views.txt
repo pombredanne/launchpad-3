@@ -394,3 +394,8 @@ But version '2009.06' can be used by another distribution.
     >>> experimental_distroseries = other_distro.getSeries('experimental')
     >>> print experimental_distroseries.version
     2009.06
+
+Distroseries derivatives
+------------------------
+
+

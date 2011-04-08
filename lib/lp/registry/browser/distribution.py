@@ -23,7 +23,6 @@ __all__ = [
     'DistributionPendingReviewMirrorsView',
     'DistributionPublisherConfigView',
     'DistributionReassignmentView',
-    'DistributionSeriesBaseView',
     'DistributionSeriesView',
     'DistributionDerivativesView',
     'DistributionSeriesMirrorsRSSView',

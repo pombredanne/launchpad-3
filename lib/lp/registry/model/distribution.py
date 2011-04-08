@@ -606,7 +606,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             DistroSeries,
             ParentDistroSeries.id==DistroSeries.parent_seriesID,
             ParentDistroSeries.distributionID==self.id)
-        return ret.order_by(Desc(DistroSeries.date_created))
+        return ret.config(distinct=True).order_by(Desc(DistroSeries.date_created))
 
     @property
     def architectures(self):
