@@ -2,7 +2,8 @@
 
 echo "$(date -R): Copying the indices into place."
 
-INDICES="$ARCHIVEROOT/indices"
+INDICES=$ARCHIVEROOT/indices
 
+mkdir -p -- $INDICES
 rm -f -- "$INDICES/override"
-cp -- "$OVERRIDEROOT"/override.* "$INDICES/"
+cp -- $OVERRIDEROOT/override.* $INDICES/

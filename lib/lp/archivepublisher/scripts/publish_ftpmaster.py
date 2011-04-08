@@ -253,8 +253,9 @@ class PublishFTPMaster(LaunchpadCronScript):
         """Execute the publish-distro hooks."""
         archive_config = self.configs[archive.purpose]
         env = {
-            'DISTSROOT': archive_config.distsroot,
             'ARCHIVEROOT': archive_config.archiveroot,
+            'DISTSROOT': archive_config.distsroot,
+            'OVERRIDEROOT': archive_config.overrideroot,
             }
         self.runParts('publish-distro.d', env)
 
