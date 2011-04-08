@@ -99,25 +99,6 @@ class AdminMergeBaseView(ValidatingMergeView):
     def success_url(self):
         return canonical_url(self.target_person)
 
-    def validate(self, data):
-        """Check that user is not attempting to merge a person into itself."""
-        dupe_person = data.get('dupe_person')
-        target_person = data.get('target_person')
-        if dupe_person == target_person and dupe_person is not None:
-            self.addError(_("You can't merge ${name} into itself.",
-                  mapping=dict(name=dupe_person.name)))
-        # We cannot merge the teams if there is a PPA with published
-        # packages on the duplicate person, unless that PPA is removed.
-        dupe_person_ppas = getUtility(IArchiveSet).getPPAOwnedByPerson(
-            dupe_person, statuses=[ArchiveStatus.ACTIVE,
-                                   ArchiveStatus.DELETING])
-        if dupe_person_ppas is not None:
-            self.addError(_(
-                "${name} has a PPA that must be deleted before it "
-                "can be merged. It may take ten minutes to remove the "
-                "deleted PPA's files.",
-                mapping=dict(name=dupe_person.name)))
-
     def render(self):
         # Subclasses may define other actions that they will render manually
         # only in certain circunstances, so don't include them in the list of
