@@ -6,10 +6,6 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.emailaddress import (
-    EmailAddressStatus,
-    IEmailAddressSet,
-    )
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -172,16 +168,6 @@ class TestAdminTeamMergeView(TestCaseWithFactory):
                 }
         return create_initialized_view(
             self.person_set, '+adminteammerge', form=form)
-
-    def test_merge_team_with_email_address(self):
-        # Team email addresses are not transferred.
-        self.factory.makeEmail(
-            "del@ex.dom", self.dupe_team, email_status=EmailAddressStatus.NEW)
-        view = self.getView()
-        self.assertEqual([], view.errors)
-        self.assertEqual(self.target_team, self.dupe_team.merged)
-        emails = getUtility(IEmailAddressSet).getByPerson(self.target_team)
-        self.assertEqual(0, emails.count())
 
     def test_cannot_merge_team_with_ppa(self):
         # A team with a PPA cannot be merged.
