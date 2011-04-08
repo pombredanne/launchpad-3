@@ -2170,7 +2170,7 @@ class IPersonSet(Interface):
     def latest_teams(limit=5):
         """Return the latest teams registered, up to the limit specified."""
 
-    def mergeAsync(from_person, to_person):
+    def mergeAsync(from_person, to_person, reviewer=None):
         """Merge a person/team into another asynchronously.
 
         This schedules a call to `merge()` to happen outside of the current
@@ -2179,10 +2179,13 @@ class IPersonSet(Interface):
         guaranteed to succeed. If either user is in a pending person merge
         job, None is returned.
 
+        :param from_person: An IPerson or ITeam that is a duplicate.
+        :param to_person: An IPerson or ITeam that is a master.
+        :param reviewer: An IPerson who approved the ITeam merger.
         :return: A `PersonMergeJob` or None.
         """
 
-    def merge(from_person, to_person):
+    def merge(from_person, to_person, reviewer=None):
         """Merge a person/team into another.
 
         The old person/team (from_person) will be left as an atavism.
@@ -2196,9 +2199,9 @@ class IPersonSet(Interface):
         passing deactivate_members=True. In that case the user who's
         performing the merge must be provided as well.
 
-        We are not yet game to delete the `from_person` entry from the
-        database yet. We will let it roll for a while and see what cruft
-        develops. -- StuartBishop 20050812
+        :param from_person: An IPerson or ITeam that is a duplicate.
+        :param to_person: An IPerson or ITeam that is a master.
+        :param reviewer: An IPerson who approved the ITeam merger.
         """
 
     def getValidPersons(persons):

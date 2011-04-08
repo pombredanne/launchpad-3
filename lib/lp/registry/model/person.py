@@ -3835,10 +3835,10 @@ class PersonSet:
             naked_from_team.retractTeamMembership(team, reviewer)
         IStore(from_team).flush()
 
-    def mergeAsync(self, from_person, to_person):
+    def mergeAsync(self, from_person, to_person, reviewer=None):
         """See `IPersonSet`."""
         return getUtility(IPersonMergeJobSource).create(
-            from_person=from_person, to_person=to_person)
+            from_person=from_person, to_person=to_person, reviewer=reviewer)
 
     def merge(self, from_person, to_person, reviewer=None):
         """See `IPersonSet`."""
