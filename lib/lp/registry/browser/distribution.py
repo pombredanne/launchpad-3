@@ -466,7 +466,7 @@ class DerivativeDistributionOverviewMenu(DistributionOverviewMenu):
 
     usedfor = IDerivativeDistribution
 
-    @enabled_with_permission('launchpad.Append')
+    @enabled_with_permission('launchpad.Moderate')
     def addseries(self):
         text = 'Add series'
         return Link('+addseries', text, icon='add')
