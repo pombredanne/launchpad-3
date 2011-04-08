@@ -161,8 +161,11 @@ class PersonSubscriptions(object):
 
     def _getTaskPillar(self, bugtask):
         """Return a pillar for a given BugTask."""
-        # XXX: There is no adaptor for ISourcePackage, perhaps there
+        # There is no adaptor for ISourcePackage. Perhaps there
         # should be since the data model doesn't seem to prohibit it.
+        # For now, we simply work around the problem.  It Would Be Nice If
+        # there were a reliable generic way of getting the pillar for any
+        # bugtarget, but we are not going to tackle that right now.
         if ISourcePackage.providedBy(bugtask.target):
             pillar = IStructuralSubscriptionTargetHelper(
                 bugtask.target.distribution_sourcepackage).pillar
