@@ -6,6 +6,7 @@ __all__ = [
     'LaunchpadCronScript',
     'LaunchpadScript',
     'LaunchpadScriptFailure',
+    'LOCK_PATH',
     'SilentLaunchpadScriptFailure',
     ]
 
