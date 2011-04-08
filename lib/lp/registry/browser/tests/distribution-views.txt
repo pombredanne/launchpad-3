@@ -343,10 +343,7 @@ the derivatives and the CSS class to present them with.
     hoary-test
     krunch
     breezy-autotest
-    breezy-autotest
     2k5 highlight
-    grumpy
-    hoary highlight
 
 
 Distribution +ppas

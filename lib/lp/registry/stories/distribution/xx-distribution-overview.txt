@@ -96,9 +96,6 @@ along with a link to list all of them.
    6.6.6
    &#8220;Breezy Badger Autotest&#8221; series
    (from Warty)
-   6.6.6
-   &#8220;Breezy Badger Autotest&#8221; series
-   (from Hoary)
    2005
    &#8220;Guada2005&#8221; series
    (from Hoary)

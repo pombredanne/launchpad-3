@@ -1990,7 +1990,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getDerivedSeries(self):
         """See `IDistroSeriesPublic`."""
         results = Store.of(self).find(
-            DistroSeries, DistroSeries.parent_series == self)
+            DistroSeries,
+            DistroSeries.parent_series==self.id,
+            DistroSeries.distributionID!=self.distributionID)
         return results.order_by(Desc(DistroSeries.date_created))
 
     def getBugTaskWeightFunction(self):

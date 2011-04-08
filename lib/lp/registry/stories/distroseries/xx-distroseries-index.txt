@@ -47,8 +47,7 @@ on the series' details.
     Release manager: None
     Status: Current Stable Release
     Derives from: Warty (4.10) is not derived from another series.
-    Derived series: Hoary Mock (9.9.9), Breezy Badger Autotest (6.6.6),
-     Grumpy (5.10), Hoary (5.04)
+    Derived series: Hoary Mock (9.9.9), Breezy Badger Autotest (6.6.6)
     Source packages: 3
     Binary packages: 4
 

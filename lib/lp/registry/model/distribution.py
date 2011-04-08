@@ -605,8 +605,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         ret = Store.of(self).find(
             DistroSeries,
             ParentDistroSeries.id==DistroSeries.parent_seriesID,
-            ParentDistroSeries.distributionID==self.id)
-        return ret.config(distinct=True).order_by(Desc(DistroSeries.date_created))
+            ParentDistroSeries.distributionID==self.id,
+            DistroSeries.distributionID!=self.id)
+        return ret.config(
+            distinct=True).order_by(Desc(DistroSeries.date_created))
 
     @property
     def architectures(self):
