@@ -78,6 +78,26 @@ def get_run_parts_path():
     return os.path.join("cronscripts", "publishing", "distro-parts")
 
 
+def write_marker_file(path, contents):
+    """Write a marker file for checking direction movements.
+
+    :param path: A list of path components.
+    :param contents: Text to write into the file.
+    """
+    marker = file(os.path.join(*path), "w")
+    marker.write(contents)
+    marker.flush()
+    marker.close()
+
+
+def read_marker_file(path):
+    """Read the contents of a marker file.
+
+    :param return: Contents of the marker file.
+    """
+    return file(os.path.join(*path)).read()
+
+
 class HelpersMixin:
     """Helpers for the PublishFTPMaster tests."""
 
@@ -197,24 +217,6 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertEqual(1, len(sections))
         return dict(sections[0])
 
-    def writeMarkerFile(self, path, contents):
-        """Write a marker file for checking direction movements.
-
-        :param path: A list of path components.
-        :param contents: Text to write into the file.
-        """
-        marker = file(os.path.join(*path), "w")
-        marker.write(contents)
-        marker.flush()
-        marker.close()
-
-    def readMarkerFile(self, path):
-        """Read the contents of a marker file.
-
-        :param return: Contents of the marker file.
-        """
-        return file(os.path.join(*path)).read()
-
     def enableCommercialCompat(self):
         """Enable commercial-compat.sh runs for the duration of the test."""
         config.push("commercial-compat", dedent("""\
@@ -313,7 +315,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         dists_copy_root = get_distscopy_root(pub_config)
         new_distsroot = dists_root + ".new"
         os.makedirs(new_distsroot)
-        self.writeMarkerFile([new_distsroot, "marker"], "dists.new")
+        write_marker_file([new_distsroot, "marker"], "dists.new")
         os.makedirs(dists_copy_root)
 
         script = self.makeScript(distro)
@@ -321,7 +323,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         script.rollBackNewDistsRoot()
         self.assertEqual(
             "dists.new",
-            self.readMarkerFile([dists_copy_root, "dists", "marker"]))
+            read_marker_file([dists_copy_root, "dists", "marker"]))
 
     def test_getDirtySuites_returns_suite_with_pending_publication(self):
         spph = self.factory.makeSourcePackagePublishingHistory()
@@ -387,11 +389,10 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         dists_root = get_dists_root(get_pub_config(distro))
         os.makedirs(dists_root)
         os.makedirs(dists_root + ".new")
-        self.writeMarkerFile([dists_root, "new-file"], "New file")
+        write_marker_file([dists_root, "new-file"], "New file")
         script.rsyncNewDists(ArchivePurpose.PRIMARY)
         self.assertEqual(
-            "New file",
-            self.readMarkerFile([dists_root + ".new", "new-file"]))
+            "New file", read_marker_file([dists_root + ".new", "new-file"]))
 
     def test_rsync_cleans_up_obsolete_files(self):
         distro = self.makeDistro()
@@ -401,7 +402,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         os.makedirs(dists_root)
         os.makedirs(dists_root + ".new")
         old_file = [dists_root + ".new", "old-file"]
-        self.writeMarkerFile(old_file, "old-file")
+        write_marker_file(old_file, "old-file")
         script.rsyncNewDists(ArchivePurpose.PRIMARY)
         self.assertFalse(path_exists(*old_file))
 
@@ -431,14 +432,17 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
 
     def test_setUpDirs_moves_dists_to_dists_new(self):
         distro = self.makeDistro()
-        dists_root = get_dists_root(get_pub_config(distro))
+        pub_config = get_pub_config(distro)
+        distscopy_root = get_distscopy_root(pub_config)
+        os.makedirs(os.path.join(distscopy_root, "dists"))
+        write_marker_file([distscopy_root, "dists", "marker"], "X")
         script = self.makeScript(distro)
         script.setUp()
         script.setUpDirs()
-        self.writeMarkerFile([dists_root, "marker"], "X")
-        script.setUpDirs()
         self.assertEqual(
-            "X", self.readMarkerFile([dists_root + ".new", "marker"]))
+            "X",
+            read_marker_file(
+                [get_archive_root(pub_config), "dists.new", "marker"]))
 
     def test_publishDistroArchive_runs_parts(self):
         distro = self.makeDistro()
@@ -474,14 +478,14 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         pub_config = get_pub_config(distro)
         dists_root = get_dists_root(pub_config)
 
-        self.writeMarkerFile([dists_root, "marker"], "old")
-        self.writeMarkerFile([dists_root + ".new", "marker"], "new")
+        write_marker_file([dists_root, "marker"], "old")
+        write_marker_file([dists_root + ".new", "marker"], "new")
 
         script.installDists()
         script.restoreDistsCopy()
 
-        self.assertEqual("new", self.readMarkerFile([dists_root, "marker"]))
-        self.assertEqual("old", self.readMarkerFile(
+        self.assertEqual("new", read_marker_file([dists_root, "marker"]))
+        self.assertEqual("old", read_marker_file(
             [get_distscopy_root(pub_config), "dists", "marker"]))
 
     def test_runCommercialCompat_runs_commercial_compat_script(self):
@@ -543,7 +547,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         nonempty_dir = os.path.join(
             get_dists_root(get_pub_config(distro)), 'nonempty-dir')
         os.makedirs(nonempty_dir)
-        self.writeMarkerFile([nonempty_dir, "placeholder"], "Data here!")
+        write_marker_file([nonempty_dir, "placeholder"], "Data here!")
         script.clearEmptyDirs()
         self.assertTrue(file_exists(nonempty_dir))
 

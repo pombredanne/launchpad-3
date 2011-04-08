@@ -191,8 +191,8 @@ class PublishFTPMaster(LaunchpadCronScript):
         any point during the publishing cycle (which would cause buildds
         to explode).
 
-        This is now done through maintaining a persistent backup copy of
-        the dists directory, which we move into place and bring up to
+        This is done through maintaining a persistent backup copy of the
+        dists directory, which we move into place and bring up to
         date with rsync.  Should achieve the same effect as copying, but
         faster.
         """
@@ -208,7 +208,6 @@ class PublishFTPMaster(LaunchpadCronScript):
 
         for purpose, archive_config in self.configs.iteritems():
             dists = os.path.join(get_distscopyroot(archive_config), "dists")
-            dists_new = os.path.join(archive_config.archiveroot, "dists.new")
             if not file_exists(dists):
                 self.logger.debug(
                     "Creating backup dists directory %s for %s",
@@ -216,7 +215,11 @@ class PublishFTPMaster(LaunchpadCronScript):
                 os.makedirs(dists)
             self.logger.debug(
                 "Moving backup dist for %s into place.", purpose.title)
-            os.rename(dists, dists_new)
+            os.rename(dists, archive_config.distsroot + ".new")
+
+    def updateNewDists(self):
+        """Update the new dists directory based on the current one."""
+        for purpose, archive_config in self.configs.iteritems():
             self.rsyncNewDists(purpose)
 
     def publishDistroArchive(self, archive, security_suites=None):
@@ -425,9 +428,10 @@ class PublishFTPMaster(LaunchpadCronScript):
     def main(self):
         """See `LaunchpadScript`."""
         self.setUp()
+        self.processAccepted()
         try:
-            self.processAccepted()
             self.setUpDirs()
+            self.updateNewDists()
         except:
             self.rollBackNewDistsRoot()
             raise
