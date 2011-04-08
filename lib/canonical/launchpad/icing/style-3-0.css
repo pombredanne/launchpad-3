@@ -1932,13 +1932,6 @@ body.tab-bugs #duplicate-actions .sprite {
 /* ====================
    Global notifications
 */
-/* Move the content down so the notification banner doesn't hide any content. */
-body.global-notification-visible {
-    padding-top: 40px;
-    }
-body.global-notification-visible .login-logout {
-    top: 45px;
-    }
 .global-notification {
     position: fixed;
     z-index: 10;
