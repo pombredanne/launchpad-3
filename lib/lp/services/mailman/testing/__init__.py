@@ -94,7 +94,7 @@ class MailmanTestCase(TestCaseWithFactory):
             if os.path.islink(list_dir):
                 os.unlink(list_dir)
             elif os.path.isdir(list_dir):
-                shutil.rmtree(list_dir)
+                shutil.rmtree(list_dir, ignore_errors=True)
 
     def makeMailmanMessage(self, mm_list, sender, subject, content,
                            mime_type='plain', attachment=None):
