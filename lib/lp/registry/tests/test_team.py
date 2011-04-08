@@ -173,8 +173,7 @@ class TestTeamGetTeamAdminsEmailAddresses(TestCaseWithFactory):
         return admin_team
 
     def test_admins_are_teams_with_preferred_email_addresses(self):
-        # The team's admin is a team without a contact address.
-        # The admin team members provide the email addresses.
+        # The team's admin is a team with a contact address.
         admin_team = self.setUpAdminingTeam(self.team)
         admin_team.setContactAddress(
             self.factory.makeEmail('team@eg.dom', admin_team))
@@ -182,7 +181,8 @@ class TestTeamGetTeamAdminsEmailAddresses(TestCaseWithFactory):
             ['team@eg.dom'], self.team.getTeamAdminsEmailAddresses())
 
     def test_admins_are_teams_without_preferred_email_addresses(self):
-        # The team's admin is a team with a contact address.
+        # The team's admin is a team without a contact address.
+        # The admin team members provide the email addresses.
         admin_team = self.setUpAdminingTeam(self.team)
         emails = sorted(
             m.preferredemail.email for m in admin_team.activemembers)
