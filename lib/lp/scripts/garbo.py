@@ -1009,11 +1009,10 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
         # Stores the number of failed tasks.
         self.failure_count = 0
 
+        # Copy the list so we can safely consume it.
+        tunable_loops = list(self.tunable_loops)
         if self.options.experimental:
-            tunable_loops = list(
-                self.tunable_loops + self.experimental_tunable_loops)
-        else:
-            tunable_loops = list(self.tunable_loops)
+            tunable_loops.extend(self.experimental_tunable_loops)
 
         threads = set()
         for count in range(0, self.options.threads):
