@@ -29,6 +29,7 @@ from storm.locals import (
     SQL,
     )
 from storm.store import Store
+from storm.info import ClassAlias
 from zope.component import getUtility
 from zope.interface import (
     alsoProvides,
@@ -596,6 +597,16 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             DistroSeries,
             distribution=self)
         return sorted(ret, key=lambda a: Version(a.version), reverse=True)
+
+    @cachedproperty
+    def derivatives(self):
+        """See `IDistribution`."""
+        ParentDistroSeries = ClassAlias(DistroSeries)
+        ret = Store.of(self).find(
+            DistroSeries,
+            ParentDistroSeries.id==DistroSeries.parent_seriesID,
+            ParentDistroSeries.distributionID==self.id)
+        return ret.order_by(Desc(DistroSeries.date_created))
 
     @property
     def architectures(self):
