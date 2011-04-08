@@ -1,4 +1,4 @@
-# Copyright 20010 Canonical Ltd.  This software is licensed under the
+# Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Test the  mlist-sync script."""
 
@@ -61,7 +61,7 @@ class TestMListSync(MailmanTestCase):
         self.addCleanup(self.cleanMailmanList, None, self.mm_list)
         archive_dir = os.path.join(mm_cfg.VAR_PREFIX, 'mhonarc')
         os.makedirs(os.path.join(archive_dir, self.team.name))
-        self.addCleanup(shutil.rmtree, archive_dir)
+        self.addCleanup(shutil.rmtree, archive_dir, ignore_errors=True)
         self.naked_email_address_set = EmailAddressSet()
 
     def setupProductionFiles(self):
@@ -70,7 +70,7 @@ class TestMListSync(MailmanTestCase):
         source_dir = os.path.join(tempdir, 'production')
         shutil.copytree(
             config.mailman.build_var_dir, source_dir, symlinks=True)
-        self.addCleanup(shutil.rmtree, source_dir)
+        self.addCleanup(shutil.rmtree, source_dir, ignore_errors=True)
         return source_dir
 
     def runMListSync(self, source_dir):
@@ -120,7 +120,8 @@ class TestMListSync(MailmanTestCase):
         self.assertEqual(list_summary, self.getListInfo())
 
     def test_staging_sync_list_without_team(self):
-        # Lists without a team are not synced.
+        # Lists without a team are not synced. This happens when a team
+        # is deleted, but the list and archive remain.
         with production_config(self.host_name):
             mlist = self.makeMailmanListWithoutTeam('no-team', 'ex@eg.dom')
             mlist.Unlock()
