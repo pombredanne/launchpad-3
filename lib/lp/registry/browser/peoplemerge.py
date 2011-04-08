@@ -90,7 +90,8 @@ class AdminMergeBaseView(ValidatingMergeView):
     # subclasses.
     should_confirm_email_reassignment = False
     should_confirm_member_deactivation = False
-    merge_message = _('Merge completed successfully.')
+    merge_message = _(
+        'A merge is queued and is expected to complete in a few minutes.')
 
     dupe_person_emails = ()
     dupe_person = None
@@ -138,7 +139,7 @@ class AdminMergeBaseView(ValidatingMergeView):
                 naked_email.personID = self.target_person.id
                 naked_email.accountID = self.target_person.accountID
                 naked_email.status = EmailAddressStatus.NEW
-        getUtility(IPersonSet).merge(
+        job = getUtility(IPersonSet).mergeAsync(
             self.dupe_person, self.target_person, reviewer=self.user)
         self.request.response.addInfoNotification(self.merge_message)
         self.next_url = self.success_url
@@ -251,7 +252,7 @@ class DeleteTeamView(AdminTeamMergeView):
 
     page_title = 'Delete'
     field_names = ['dupe_person', 'target_person']
-    merge_message = _('Team deleted.')
+    merge_message = _('The team is queued to be deleted.')
 
     @property
     def label(self):

@@ -31,13 +31,10 @@ A team (name21) can be merged into another (ubuntu-team).
     ...     person_set, '+adminteammerge', form=form)
     >>> len(view.errors)
     0
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    A merge is queued and is expected to complete in a few minutes.
 
-The old team is now renamed but the target team remains.
-
-    >>> print person_set.getByName('name21')
-    None
-    >>> print person_set.getByName('ubuntu-team').displayname
-    Ubuntu Team
 
 Attempting to merge a non-existent team results in an error.
 
@@ -181,18 +178,15 @@ The user is redirected to /people when a team is deleted.
 
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
-    Team deleted.
+    The team is queued to be deleted.
 
     >>> print view.next_url
     http://launchpad.dev/people
 
-    >>> print person_set.getByName('deletable')
-    None
-
 The delete team view cannot be hacked to delete another team, or change
 the team that the merge operation is performed with.
 
-    >>> deletable_team = factory.makeTeam(owner=team_owner, name='deletable')
+    >>> deletable_team = factory.makeTeam(owner=team_owner, name='delete-me')
     >>> transaction.commit()
     >>> form = {
     ...     'field.target_person': 'rosetta-admins',
@@ -205,9 +199,6 @@ the team that the merge operation is performed with.
 
     >>> view.request.response.notifications
     []
-
-    >>> print deletable_team.name
-    deletable
 
 A team with a mailing list cannot be deleted.
 
@@ -246,4 +237,4 @@ Private teams can be deleted by admins.
     []
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
-    Team deleted.
+    The team is queued to be deleted.
