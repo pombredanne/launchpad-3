@@ -241,8 +241,7 @@
                     conjoined_slave
                     subscribe
                     getConjoinedMaster
-                    findSimilarBugs
-                    isContributor"/>
+                    findSimilarBugs"/>
             <require
                 permission="launchpad.Edit"
                 attributes="

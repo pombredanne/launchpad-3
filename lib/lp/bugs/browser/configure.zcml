@@ -537,6 +537,12 @@
             permission="launchpad.View"
             name="+activity"
             template="../templates/bug-activity.pt"/>
+        <browser:page
+            for="lp.bugs.interfaces.bugtask.IBugTask"
+            class="lp.bugs.browser.bugtask.BugContributorView"
+            permission="launchpad.View"
+            name="+check-contributor"
+            attribute="__call__"/>
         <browser:url
             for="lp.bugs.interfaces.bugactivity.IBugActivity"
             path_expression="string:activity"

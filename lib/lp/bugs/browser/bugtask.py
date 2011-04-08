@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BugContributorView',
     'BugListingBatchNavigator',
     'BugListingPortletInfoView',
     'BugListingPortletStatsView',
@@ -43,6 +44,7 @@ __all__ = [
     ]
 
 import cgi
+import simplejson
 from collections import defaultdict
 from datetime import (
     datetime,
@@ -73,6 +75,7 @@ from lazr.restful.interfaces import (
     IReference,
     IWebServiceClientRequest,
     )
+from lazr.restful.marshallers import URLDereferencingMixin
 from lazr.uri import URI
 from pytz import utc
 from simplejson import dumps
@@ -163,6 +166,7 @@ from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.publisher import UserAttributeCache
 from canonical.lazr.interfaces import IObjectPrivacy
 from canonical.lazr.utils import smartquote
 from lp.answers.interfaces.questiontarget import IQuestionTarget
@@ -1646,6 +1650,31 @@ class BugTaskStatusView(LaunchpadView):
         self.importance_widget = CustomWidgetFactory(DBItemDisplayWidget)
 
         setUpWidgets(self, IBugTask, IDisplayWidget, names=field_names)
+
+
+class BugContributorView(URLDereferencingMixin, UserAttributeCache):
+    """A view used to see if a person is a contributor to a bug target.
+
+    This view is called by Javascript an returns a data structure with the
+    result of the contributor check as well as other details so that a message
+    can be displayed to the user.
+    """
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def __call__(self):
+        result = {}
+        person_uri = self.request.form['person']
+        person_resource = self.dereference_url(person_uri)
+        person = removeSecurityProxy(person_resource).context
+        self.request.response.setHeader('Content-type', 'application/json')
+        result['is_contributor'] = person.isBugContributorInTarget(
+            self.user, self.context.pillar)
+        result['person_name'] = person.displayname
+        result['pillar_name'] = self.context.pillar.displayname
+        return simplejson.dumps(result)
 
 
 class BugTaskListingView(LaunchpadView):
