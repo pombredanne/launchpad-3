@@ -61,7 +61,7 @@
             <tr tal:define="parent_source_pub difference/parent_source_pub;
                             source_pub difference/source_pub;
                             src_name difference/source_package_name/name;"
-                tal:attributes="class parent_source_pub/source_package_name">
+                tal:attributes="class src_name">
               <td>
                 <input tal:condition="view/canPerformSync"
                   name="field.selected_differences" type="checkbox"
@@ -70,7 +70,7 @@
                     id string:field.selected_differences.${src_name}"/>
 
                 <a tal:attributes="href difference/fmt:url" class="toggle-extra"
-                   tal:content="parent_source_pub/source_package_name">Foo</a>
+                   tal:content="src_name">Foo</a>
               </td>
               <td tal:condition="view/show_parent_version">
                 <a tal:condition="difference/parent_source_package_release"

@@ -2308,7 +2308,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         versions=None,
         difference_type=DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
         status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
-        changelogs=None):
+        changelogs=None,
+        set_base_version=False):
         """Create a new distro series source package difference."""
         if derived_series is None:
             parent_series = self.makeDistroSeries()
@@ -2361,6 +2362,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             derived_series, source_package_name)
 
         removeSecurityProxy(diff).status = status
+
+        if set_base_version:
+            version = versions.get('base', "%s.0" % self.getUniqueInteger())
+            removeSecurityProxy(diff).base_version = version
 
         # We clear the cache on the diff, returning the object as if it
         # was just loaded from the store.

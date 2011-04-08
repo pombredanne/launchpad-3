@@ -522,8 +522,9 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         script.runPublishDistroParts(distro.main_archive)
         args, kwargs = script.runParts.calls[0]
         parts_dir, env = args
-        required_parameters = set(["DISTSROOT", "ARCHIVEROOT"])
-        missing_parameters = set(env.keys()).difference(required_parameters)
+        required_parameters = set([
+            "ARCHIVEROOT", "DISTSROOT", "OVERRIDEROOT"])
+        missing_parameters = required_parameters.difference(set(env.keys()))
         self.assertEqual(set(), missing_parameters)
 
     def test_installDists_sets_done_pub(self):
@@ -685,7 +686,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         args, kwargs = script.runParts.calls[0]
         parts_dir, env = args
         required_parameters = set(["ARCHIVEROOTS", "SECURITY_UPLOAD_ONLY"])
-        missing_parameters = set(env.keys()).difference(required_parameters)
+        missing_parameters = required_parameters.difference(set(env.keys()))
         self.assertEqual(set(), missing_parameters)
 
     def test_publishSecurityUploads_skips_pub_if_no_security_updates(self):
